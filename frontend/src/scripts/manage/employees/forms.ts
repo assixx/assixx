@@ -8,8 +8,20 @@ import { resetAndReinitializePasswordToggles } from '../../../utils/password-tog
 import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 import { showErrorAlert } from '../../utils/alerts';
 import type { Employee, WindowWithEmployeeHandlers } from './types';
-import { fillBasicFormFields, fillOptionalFormFields, fillAvailabilityFields, setStatusAndClearPasswords } from './ui';
-import { getEmployeesManager, handleSaveEmployee, handleLoadDepartments, handleLoadTeams } from './data';
+import {
+  fillBasicFormFields,
+  fillOptionalFormFields,
+  fillAvailabilityFields,
+  setStatusAndClearPasswords,
+  setMultiSelectValues,
+} from './ui';
+import {
+  getEmployeesManager,
+  handleSaveEmployee,
+  // NOTE: handleLoadAreas, handleLoadDepartments removed - Employees only get teams
+  handleLoadTeams,
+  // NOTE: setupFullAccessToggle, filterDepartmentsBySelectedAreas, filterTeamsBySelectedDepartmentsAndAreas removed
+} from './data';
 
 // ===== CONSTANTS =====
 const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
@@ -17,6 +29,9 @@ const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
 // Field state classes for validation feedback (Design System)
 const FIELD_STATE_ERROR = 'is-error';
 const FIELD_STATE_SUCCESS = 'is-success';
+
+// CSS class for disabled state visual feedback
+// NOTE: DISABLED_OPACITY_CLASS removed - not needed after form simplification
 
 // Password toggle cleanup controller (prevent memory leaks)
 let passwordToggleCleanup: AbortController | null = null;
@@ -47,6 +62,9 @@ export const SELECTORS = {
 
 // ===== HELPER FUNCTIONS =====
 
+// NOTE: applyFullAccessDisabledState removed - Employees don't have fullAccess toggle anymore
+// Employees ONLY get Team assignments (Area/Department inherited from Team)
+
 /**
  * Reset a single dropdown to default state
  */
@@ -74,7 +92,7 @@ function resetDropdown(triggerId: string, inputId: string, defaultText: string |
 
 /**
  * Reset custom dropdown displays to default values
- * Following manage-admins clearFormFields pattern
+ * SIMPLIFIED: Only team multi-select for employees
  */
 export function resetCustomDropdowns(): void {
   // Reset Position Dropdown
@@ -86,11 +104,16 @@ export function resetCustomDropdowns(): void {
   // Reset Availability Status Dropdown - default to "Verfügbar"
   resetDropdown('availability-status-trigger', 'availability-status', 'Verfügbar', 'available');
 
-  // Reset Department Dropdown
-  resetDropdown('department-trigger', 'employee-department', 'Keine Abteilung', '');
+  // SIMPLIFIED: Only team multi-select for employees
+  const teamSelect = $$id('employee-teams') as HTMLSelectElement | null;
 
-  // Reset Team Dropdown
-  resetDropdown('team-trigger', 'employee-team', 'Kein Team', '');
+  // Clear team multi-select
+  if (teamSelect !== null) {
+    Array.from(teamSelect.options).forEach((opt) => (opt.selected = false));
+    teamSelect.disabled = false;
+  }
+
+  // NOTE: Removed area/department/fullAccess reset - Employees don't use these anymore
 }
 
 /**
@@ -214,38 +237,8 @@ export function setupValidationListeners(): void {
 // ===== SUBMIT-TIME VALIDATION =====
 // Note: validatePasswordOnSubmit moved to data.ts to avoid circular dependency
 
-/**
- * Update dropdown trigger text from menu option
- */
-function updateDropdownTriggerText(trigger: HTMLElement, menu: HTMLElement, value: number): void {
-  const selectedOption = menu.querySelector(`[data-value="${value}"]`);
-  if (selectedOption !== null) {
-    const span = trigger.querySelector('span');
-    if (span !== null) {
-      span.textContent = selectedOption.textContent;
-    }
-  }
-}
-
-/**
- * Restore custom dropdown value by setting hidden input and trigger text
- */
-function restoreDropdownValue(inputId: string, triggerId: string, menuId: string, value: number | undefined): void {
-  if (value === undefined) return;
-
-  const input = $$id(inputId) as HTMLInputElement | null;
-  const trigger = $$id(triggerId);
-  const menu = $$id(menuId);
-
-  if (input !== null) {
-    input.value = String(value);
-
-    // Update trigger text from selected option
-    if (trigger !== null && menu !== null) {
-      updateDropdownTriggerText(trigger, menu, value);
-    }
-  }
-}
+// N:M REFACTORING: Removed updateDropdownTriggerText and restoreDropdownValue
+// These functions were for custom dropdowns, now using native multi-selects
 
 // ===== MODAL FUNCTIONS =====
 
@@ -281,6 +274,10 @@ export function showAddEmployeeModal(): void {
     }
   });
 
+  // Hide status dropdown for CREATE (new employees are always active)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.add('u-hidden');
+
   // Initialize password toggles
   passwordToggleCleanup = resetAndReinitializePasswordToggles(
     [
@@ -313,14 +310,15 @@ export function showAddEmployeeModal(): void {
     modal.classList.add(MODAL_ACTIVE_CLASS);
   }
 
-  // Load departments and teams
+  // NOTE: setupFullAccessToggle removed - Employees don't have fullAccess anymore
+
+  // SIMPLIFIED: Load only teams for employees
   setTimeout(() => {
     const w = window as WindowWithEmployeeHandlers;
     void (async () => {
-      if (w.loadDepartmentsForEmployeeSelect !== undefined) {
-        await w.loadDepartmentsForEmployeeSelect();
-      }
+      // Load teams only (Areas/Departments are inherited from Team)
       await w.loadTeamsForEmployeeSelect?.();
+      // NOTE: Removed area/department loading and filtering
     })();
   }, 100);
 }
@@ -328,9 +326,11 @@ export function showAddEmployeeModal(): void {
 /**
  * Show employee modal for editing existing employee
  * Following manage-admins showEditAdminModal pattern
+ * N:M REFACTORING: Updated to handle multi-select for departments/teams
  */
-// eslint-disable-next-line max-lines-per-function
-export function showEditEmployeeModal(employee: Employee, departmentId?: number, teamId?: number): void {
+
+export function showEditEmployeeModal(employee: Employee, _departmentIds?: number[], teamIds?: number[]): void {
+  // NOTE: departmentIds parameter kept for backwards compatibility but not used anymore
   console.info('[showEditEmployeeModal] Opening modal for employee:', employee.id);
 
   const modal = $$id(SELECTORS.EMPLOYEE_MODAL);
@@ -355,6 +355,10 @@ export function showEditEmployeeModal(employee: Employee, departmentId?: number,
     }
   });
 
+  // Show status dropdown for EDIT (allows changing status)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.remove('u-hidden');
+
   // Initialize password toggles
   passwordToggleCleanup = resetAndReinitializePasswordToggles(
     [
@@ -387,28 +391,22 @@ export function showEditEmployeeModal(employee: Employee, departmentId?: number,
     modal.classList.add(MODAL_ACTIVE_CLASS);
   }
 
-  // Load departments and teams, then restore selection
+  // NOTE: setupFullAccessToggle removed - Employees don't have fullAccess anymore
+
+  // SIMPLIFIED: Load only teams and restore team selection
   setTimeout(() => {
     const w = window as WindowWithEmployeeHandlers;
     void (async () => {
-      if (w.loadDepartmentsForEmployeeSelect !== undefined) {
-        await w.loadDepartmentsForEmployeeSelect();
-      }
-
-      // Restore department selection (custom dropdown)
-      if (departmentId !== undefined) {
-        console.info('[showEditEmployeeModal] Restoring department selection:', departmentId);
-        restoreDropdownValue('employee-department', 'department-trigger', 'department-menu', departmentId);
-      }
-
-      // Load teams
+      // Load teams for employee select
       await w.loadTeamsForEmployeeSelect?.();
 
-      // Restore team selection (custom dropdown)
-      if (teamId !== undefined) {
-        console.info('[showEditEmployeeModal] Restoring team selection:', teamId);
-        restoreDropdownValue('employee-team', 'team-trigger', 'team-menu', teamId);
+      // Restore team selections
+      if (teamIds !== undefined && teamIds.length > 0) {
+        console.info('[showEditEmployeeModal] Restoring team selections:', teamIds);
+        setMultiSelectValues('employee-teams', teamIds);
       }
+
+      // NOTE: Removed area/department loading and filtering - Employees only get teams
     })();
   }, 100);
 }
@@ -481,6 +479,7 @@ export function closeDeleteModal(): void {
 /**
  * Setup Edit Employee Window Handler
  * Opens modal in edit mode with employee data pre-populated
+ * N:M REFACTORING: Updated to pass department/team arrays
  */
 export function setupEditEmployee(): void {
   const w = window as WindowWithEmployeeHandlers;
@@ -492,8 +491,9 @@ export function setupEditEmployee(): void {
     console.info('Edit employee:', employee);
     console.info('Employee details:', {
       employeeNumber: employee.employeeNumber,
-      departmentId: employee.departmentId,
-      teamId: employee.teamId,
+      departmentIds: employee.departmentIds,
+      teamIds: employee.teamIds,
+      hasFullAccess: employee.hasFullAccess,
       isActive: employee.isActive,
     });
 
@@ -502,8 +502,14 @@ export function setupEditEmployee(): void {
       employeesManager.currentEmployeeId = id;
     }
 
+    // N:M REFACTORING: Pass arrays instead of single IDs
+    // Support both new array format and legacy single ID format for backward compatibility
+    const departmentIds =
+      employee.departmentIds ?? (employee.departmentId !== undefined ? [employee.departmentId] : []);
+    const teamIds = employee.teamIds ?? (employee.teamId !== undefined ? [employee.teamId] : []);
+
     // Show modal in edit mode with employee data
-    showEditEmployeeModal(employee, employee.departmentId, employee.teamId);
+    showEditEmployeeModal(employee, departmentIds, teamIds);
   };
 }
 
@@ -599,10 +605,11 @@ export function setupSaveEmployee(): void {
 
 /**
  * Setup Load Dropdowns Window Handlers
- * Sets up department and team dropdown loaders
+ * SIMPLIFIED: Only teams for employees (Area/Dept inherited from Team)
  */
 export function setupLoadDropdowns(): void {
   const w = window as WindowWithEmployeeHandlers;
-  w.loadDepartmentsForEmployeeSelect = handleLoadDepartments;
+  // NOTE: loadAreasForEmployeeSelect and loadDepartmentsForEmployeeSelect removed
+  // Employees only get team assignments
   w.loadTeamsForEmployeeSelect = handleLoadTeams;
 }

@@ -25,7 +25,7 @@ class TeamsManager {
   public apiClient: ApiClient; // Made public for access in global functions
   private teams: Team[] = [];
   private filteredTeams: Team[] = [];
-  private currentFilter: 'all' | 'active' | 'inactive' = 'active'; // Default to active
+  private currentFilter: 'all' | 'active' | 'inactive' | 'archived' = 'active'; // Default to active
   private searchTerm = '';
 
   constructor() {
@@ -61,21 +61,8 @@ class TeamsManager {
       void (window as WindowWithTeamHandlers).saveTeam?.();
     });
 
-    // Delete modal
-    document.querySelector('#confirm-delete-team')?.addEventListener('click', () => {
-      const deleteInput = document.querySelector<HTMLInputElement>('#delete-team-id');
-      if (deleteInput !== null && deleteInput.value !== '') {
-        void this.confirmDeleteTeam(Number.parseInt(deleteInput.value, 10));
-      }
-    });
-    document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
-      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
-      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
-    });
-    document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
-      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
-      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
-    });
+    // Double-check delete pattern (Step 1 + Step 2)
+    this.initDeleteConfirmation();
 
     // Force Delete Warning Modal
     document.querySelector('#confirm-force-delete')?.addEventListener('click', () => {
@@ -104,6 +91,45 @@ class TeamsManager {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       this.handleTeamAction(target);
+    });
+  }
+
+  /**
+   * Initialize delete confirmation buttons (double-check pattern)
+   */
+  private initDeleteConfirmation(): void {
+    // Delete Modal Step 1: Close buttons
+    document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
+      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
+    });
+    document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
+      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
+    });
+
+    // Delete Modal Step 1: Proceed to second confirmation
+    document.querySelector('#proceed-delete-team')?.addEventListener('click', () => {
+      const firstModal = document.querySelector(DELETE_TEAM_MODAL_ID);
+      if (firstModal) firstModal.classList.remove(MODAL_ACTIVE_CLASS);
+      const confirmModal = document.querySelector('#delete-team-confirm-modal');
+      confirmModal?.classList.add(MODAL_ACTIVE_CLASS);
+    });
+
+    // Delete Modal Step 2: Cancel button
+    document.querySelector('#cancel-delete-confirm')?.addEventListener('click', () => {
+      const confirmModal = document.querySelector('#delete-team-confirm-modal');
+      confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
+    });
+
+    // Delete Modal Step 2: Final confirmation - actually delete
+    document.querySelector('#confirm-delete-team-final')?.addEventListener('click', () => {
+      const deleteInput = document.querySelector<HTMLInputElement>('#delete-team-id');
+      if (deleteInput !== null && deleteInput.value !== '') {
+        const confirmModal = document.querySelector('#delete-team-confirm-modal');
+        confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
+        void this.confirmDeleteTeam(Number.parseInt(deleteInput.value, 10));
+      }
     });
   }
 
@@ -272,8 +298,23 @@ class TeamsManager {
     let filtered = this.teams;
 
     // Filter by status
-    if (this.currentFilter !== 'all') {
-      filtered = filtered.filter((team) => team.status === this.currentFilter);
+    switch (this.currentFilter) {
+      case 'active':
+        // Show only active AND not archived
+        filtered = filtered.filter((team) => team.status === 'active' && team.isArchived !== true);
+        break;
+      case 'inactive':
+        // Show only inactive AND not archived
+        filtered = filtered.filter((team) => team.status === 'inactive' && team.isArchived !== true);
+        break;
+      case 'archived':
+        // Show only archived (regardless of status)
+        filtered = filtered.filter((team) => team.isArchived === true);
+        break;
+      case 'all':
+      default:
+        // Show all
+        break;
     }
 
     // Filter by search term

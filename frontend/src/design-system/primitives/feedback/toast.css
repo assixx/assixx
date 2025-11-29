@@ -103,6 +103,9 @@
   /* Size */
   width: 100%;
   max-width: 400px;
+
+  /* Spacing - consistent gap below toast when used inline (e.g., login form) */
+  margin-bottom: var(--spacing-4); /* 16px */
   padding: var(--spacing-4) var(--spacing-5);
 
   /* Appearance */

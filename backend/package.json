@@ -56,24 +56,24 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.15.3",
-    "nodemailer": "^7.0.10",
-    "rate-limit-redis": "4.2.3",
+    "nodemailer": "^7.0.11",
+    "rate-limit-redis": "4.3.0",
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "ws": "^8.18.3",
-    "zod": "4.1.12"
+    "zod": "4.1.13"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/jest": "^30.0.0",
-    "@types/lodash": "^4.17.20",
+    "@types/lodash": "^4.17.21",
     "@types/node": "^24.10.1",
     "@types/nodemailer": "^7.0.4",
     "eslint": "^9.39.1",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.1",
     "typescript": "^5.9.3"
   },
   "engines": {

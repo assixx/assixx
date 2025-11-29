@@ -8,7 +8,6 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
@@ -89,7 +88,7 @@
             <div class="card__body">
               <!-- Loading State -->
               <div id="machines-loading" class="spinner-container u-hidden">
-                <div class="spinner"></div>
+                <div class="spinner-ring spinner-ring--md"></div>
                 <p class="mt-2 text-[var(--color-text-secondary)]">Maschinen werden geladen...</p>
               </div>
 
@@ -259,23 +258,48 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div id="delete-machine-modal" class="modal-overlay">
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Maschine löschen</h3>
-          <button class="ds-modal__close" id="close-delete-modal">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Maschine löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <p class="mb-3">Möchten Sie diese Maschine wirklich löschen?</p>
-          <p class="text-[var(--color-text-secondary)]">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diese Maschine wirklich löschen?</p>
           <input type="hidden" id="delete-machine-id" />
         </div>
         <div class="ds-modal__footer">
           <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-machine">Löschen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-machine">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-machine-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Die Maschine wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-machine-final">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>

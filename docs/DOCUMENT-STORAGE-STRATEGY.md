@@ -500,7 +500,7 @@ EOF
 # 2. Run migration
 bash scripts/quick-backup.sh "before_document_storage_upgrade"
 docker cp database/migrations/006-document-storage-upgrade.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/006-document-storage-upgrade.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/006-document-storage-upgrade.sql'
 ```
 
 ### Next Steps:

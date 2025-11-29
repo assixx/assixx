@@ -167,31 +167,37 @@ interface UserUsernameResult extends RowDataPacket {
  *
  */
 class ChatService {
-  /** Common SELECT fields for user queries */
-  private readonly userSelectFields = `u.id, u.username, u.first_name, u.last_name, u.email, u.role, u.department_id, d.name as department, NULL as employee_number, NULL as position, u.profile_picture as profile_image_url, 0 AS is_online, NULL as shift_type, NULL as start_time, NULL as end_time, NULL as location`;
+  /** Common SELECT fields for user queries - N:M REFACTORING: department_id from user_departments */
+  private readonly userSelectFields = `u.id, u.username, u.first_name, u.last_name, u.email, u.role, ud.department_id, d.name as department, NULL as employee_number, NULL as position, u.profile_picture as profile_image_url, 0 AS is_online, NULL as shift_type, NULL as start_time, NULL as end_time, NULL as location`;
 
-  /** Build query for fetching users based on role */
+  /** Build query for fetching users based on role - N:M REFACTORING: uses user_departments table */
   private buildUsersQuery(
     userRole: string,
     userDepartmentId: number | null,
   ): { query: string; params: number[] } {
     if (userRole === 'root' || userRole === 'admin') {
       return {
-        query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
+        query: `SELECT ${this.userSelectFields} FROM users u
+          LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+          LEFT JOIN departments d ON ud.department_id = d.id
           WHERE u.tenant_id = ? AND u.id != ? ORDER BY u.role DESC, d.name, u.last_name, u.first_name`,
         params: [],
       };
     }
     if (userDepartmentId == null) {
       return {
-        query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
+        query: `SELECT ${this.userSelectFields} FROM users u
+          LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+          LEFT JOIN departments d ON ud.department_id = d.id
           WHERE u.tenant_id = ? AND u.id != ? AND u.role IN ('admin', 'root') ORDER BY u.role DESC, u.last_name, u.first_name`,
         params: [],
       };
     }
     return {
-      query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
-        WHERE u.tenant_id = ? AND u.id != ? AND (u.department_id = ? OR u.role IN ('admin', 'root')) ORDER BY u.role DESC, u.last_name, u.first_name`,
+      query: `SELECT ${this.userSelectFields} FROM users u
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN departments d ON ud.department_id = d.id
+        WHERE u.tenant_id = ? AND u.id != ? AND (ud.department_id = ? OR u.role IN ('admin', 'root')) ORDER BY u.role DESC, u.last_name, u.first_name`,
       params: [userDepartmentId],
     };
   }

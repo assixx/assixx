@@ -9,22 +9,28 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 // Import from types
 import type { Admin, AdminStatusFilter, ManageAdminsWindow } from './types';
 // Import from data layer
-import { admins, loadAdmins, loadTenants, deleteAdmin as deleteAdminAPI } from './data';
+import {
+  admins,
+  loadAdmins,
+  loadTenants,
+  deleteAdmin as deleteAdminAPI,
+  // N:M REFACTORING: Import toggle setup function
+  setupAdminFullAccessToggle,
+  // Area → Department filter: Hide departments that belong to selected areas
+  setupAreaDepartmentFilter,
+  // Department → Team filter: Hide teams that belong to selected departments
+  setupDepartmentTeamFilter,
+} from './data';
 // Import from UI layer
-import { renderAdminTable, renderSearchResults, closeSearchResults, showDeleteConfirmationModal } from './ui';
+import { renderAdminTable, renderSearchResults, closeSearchResults } from './ui';
 // Import from forms layer
 import {
   SELECTORS,
   getPositionDisplay,
   updateTenantDropdown,
-  loadAndPopulateDepartments,
-  loadAndPopulateDepartmentGroups,
   editAdminHandler,
   showAddAdminModal,
   closeAdminModal,
-  closePermissionsModal,
-  showPermissionsModal,
-  savePermissionsHandler,
   handleFormSubmit,
   initPositionDropdown,
   initStatusDropdown,
@@ -82,27 +88,10 @@ async function loadTenantsAndUpdate() {
 
 async function deleteAdminHandler(adminId: number) {
   console.info('deleteAdminHandler called with ID:', adminId);
-  console.info('Current admins array:', admins);
-  // Convert to string for comparison since API returns string IDs
-  const admin = admins.find((a) => String(a.id) === String(adminId));
 
-  if (!admin) {
-    console.error('Admin not found for ID:', adminId);
-    console.error(
-      'Available admin IDs:',
-      admins.map((a) => a.id),
-    );
-    return;
-  }
-
-  console.info('Found admin:', admin);
-
-  const confirmDelete = await showDeleteConfirmationModal(admin);
-
-  if (!confirmDelete) {
-    console.info('Delete cancelled');
-    return;
-  }
+  // NOTE: Confirmation is already handled by the double-check modal pattern in HTML
+  // (delete-admin-modal → delete-admin-confirm-modal)
+  // This function is called AFTER user has confirmed deletion
 
   try {
     await deleteAdminAPI(adminId);
@@ -116,9 +105,24 @@ async function deleteAdminHandler(adminId: number) {
   }
 }
 
-// Close delete modal
+// Close delete modal (step 1)
 function closeDeleteModal(): void {
   deleteModal?.classList.remove('modal-overlay--active');
+}
+
+// Close delete confirm modal (step 2)
+function closeDeleteConfirmModal(): void {
+  const confirmModal = document.querySelector('#delete-admin-confirm-modal');
+  confirmModal?.classList.remove('modal-overlay--active');
+}
+
+// Show delete confirm modal (step 2 - double-check pattern)
+function showDeleteConfirmModal(): void {
+  // Close first modal
+  closeDeleteModal();
+  // Show second modal
+  const confirmModal = document.querySelector('#delete-admin-confirm-modal');
+  confirmModal?.classList.add('modal-overlay--active');
 }
 
 // Show delete modal
@@ -141,11 +145,8 @@ function showDeleteModal(adminId: number): void {
 function setupGlobalFunctions() {
   (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
   (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
-  (window as unknown as ManageAdminsWindow).showPermissionsModal = showPermissionsModal;
   (window as unknown as ManageAdminsWindow).showAddAdminModal = showAddAdminModal;
   (window as unknown as ManageAdminsWindow).closeAdminModal = closeAdminModal;
-  (window as unknown as ManageAdminsWindow).closePermissionsModal = closePermissionsModal;
-  (window as unknown as ManageAdminsWindow).savePermissionsHandler = savePermissionsHandler;
   (window as unknown as ManageAdminsWindow).reloadAdminsTable = loadAdminsAndRender;
 }
 
@@ -612,64 +613,6 @@ function loadInitialData(): void {
   })();
 }
 
-// Setup permission type radio handlers
-function setupPermissionRadioHandlers(): void {
-  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
-    radio.addEventListener('change', (e) => {
-      void (async () => {
-        const permissionType = (e.target as HTMLInputElement).value;
-        const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-        const groupContainer = $$('#group-select-container');
-
-        // Hide all containers first (reset inline styles to let CSS classes work)
-        if (deptContainer !== null) {
-          deptContainer.classList.add('hidden');
-          deptContainer.style.display = ''; // Reset inline style
-        }
-        if (groupContainer !== null) {
-          groupContainer.classList.add('hidden');
-          groupContainer.style.display = ''; // Reset inline style
-        }
-
-        if (permissionType === 'specific' && deptContainer !== null) {
-          deptContainer.classList.remove('hidden');
-          deptContainer.style.display = 'block'; // Explicitly show element
-          await loadAndPopulateDepartments();
-        } else if (permissionType === 'groups' && groupContainer !== null) {
-          groupContainer.classList.remove('hidden');
-          groupContainer.style.display = 'block'; // Explicitly show element
-          await loadAndPopulateDepartmentGroups();
-        }
-      })();
-    });
-  });
-}
-
-// Setup department selection buttons
-function setupDepartmentSelectionButtons(): void {
-  const selectAllBtn = $$('#select-all-departments');
-  const deselectAllBtn = $$('#deselect-all-departments');
-  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
-
-  selectAllBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (deptSelect !== null) {
-      [...deptSelect.options].forEach((option) => {
-        option.selected = true;
-      });
-    }
-  });
-
-  deselectAllBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (deptSelect !== null) {
-      [...deptSelect.options].forEach((option) => {
-        option.selected = false;
-      });
-    }
-  });
-}
-
 /**
  * Setup form submit handler
  */
@@ -736,24 +679,21 @@ function attachModalCloseListeners(): void {
   document.querySelector('#cancel-delete-modal')?.addEventListener('click', closeDeleteModal);
 }
 
-// Attach permissions modal listeners
-function attachPermissionsModalListeners(): void {
-  document.querySelector('#close-permissions-modal')?.addEventListener('click', () => {
-    closePermissionsModal();
+// Attach delete confirmation listeners (double-check pattern)
+function attachDeleteConfirmListeners(): void {
+  // Step 1: Proceed to second confirmation
+  document.querySelector('#proceed-delete-admin')?.addEventListener('click', () => {
+    showDeleteConfirmModal();
   });
-  document.querySelector('#cancel-permissions-modal')?.addEventListener('click', () => {
-    closePermissionsModal();
-  });
-  document.querySelector('#save-permissions')?.addEventListener('click', () => {
-    void savePermissionsHandler();
-  });
-}
 
-// Attach delete confirmation listener
-function attachDeleteConfirmListener(): void {
-  document.querySelector('#confirm-delete-admin')?.addEventListener('click', () => {
+  // Step 2: Cancel on second modal
+  document.querySelector('#cancel-delete-confirm')?.addEventListener('click', closeDeleteConfirmModal);
+
+  // Step 2: Final confirmation - actually delete
+  document.querySelector('#confirm-delete-admin-final')?.addEventListener('click', () => {
     const deleteInput = document.querySelector<HTMLInputElement>('#delete-admin-id');
     if (deleteInput !== null && deleteInput.value !== '') {
+      closeDeleteConfirmModal();
       void deleteAdminHandler(Number.parseInt(deleteInput.value, 10));
     }
   });
@@ -781,15 +721,6 @@ function attachTableActionListeners(): void {
         showDeleteModal(Number.parseInt(adminId, 10));
       }
     }
-
-    // Handle permissions
-    const permBtn = target.closest<HTMLElement>('[data-action="show-permissions"]');
-    if (permBtn) {
-      const adminId = permBtn.dataset['adminId'];
-      if (adminId !== undefined) {
-        void showPermissionsModal(Number.parseInt(adminId, 10));
-      }
-    }
   });
 }
 
@@ -797,8 +728,7 @@ function attachTableActionListeners(): void {
 function attachEventListeners(): void {
   attachAddAdminListeners();
   attachModalCloseListeners();
-  attachPermissionsModalListeners();
-  attachDeleteConfirmListener();
+  attachDeleteConfirmListeners(); // Double-check pattern for delete
   attachTableActionListeners();
 }
 
@@ -812,14 +742,15 @@ function attachEventListeners(): void {
   loadInitialData();
   initPositionDropdown(); // Initialize custom position dropdown
   initStatusDropdown(); // Initialize custom status dropdown
-  setupPermissionRadioHandlers();
-  setupDepartmentSelectionButtons();
   setupFormSubmitHandler();
   initializeTooltipHandlers();
   setupEmailValidation(); // Initialize live email validation
   setupPasswordValidation(); // Initialize live password validation
   setupSearchInput(); // Initialize search input functionality
   setupStatusToggle(); // Initialize status filter toggle
+  setupAdminFullAccessToggle(); // N:M REFACTORING: Setup full access toggle handler
+  setupAreaDepartmentFilter(); // Area → Department filter: Hide departments covered by selected areas
+  setupDepartmentTeamFilter(); // Department → Team filter: Hide teams covered by selected departments
 })();
 
 // End of file

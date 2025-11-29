@@ -4,17 +4,6 @@
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
  */
 
-// Development mode flag - verbose logs only in dev
-// Uses hostname check since import.meta.env requires Vite type definitions
-const IS_DEV = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-
-/** Dev-only logging - silenced in production */
-function devLog(message: string, ...args: unknown[]): void {
-  if (IS_DEV) {
-    console.info(message, ...args);
-  }
-}
-
 // Import types
 import type { User, Tenant } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
@@ -102,7 +91,7 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/manage-admins': ['admin', 'root'],
   '/manage-users': ['admin', 'root'],
   '/manage-departments': ['admin', 'root'],
-  '/manage-department-groups': ['admin', 'root'],
+  // NOTE: /manage-department-groups REMOVED - deprecated, use Areas instead
   '/manage-areas': ['admin', 'root'],
   '/manage-teams': ['admin', 'root'],
   '/manage-machines': ['admin', 'root'],
@@ -218,15 +207,9 @@ class UnifiedNavigation {
       | 'employee'
       | 'root';
 
-    console.info(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
-
     if (!this.canAccessPage(currentPath, activeRole)) {
-      console.warn(`[UnifiedNav] Access denied: Role '${activeRole}' cannot access '${currentPath}'`);
       const dashboard = this.getDashboardForRole(activeRole);
-      console.info(`[UnifiedNav] Redirecting to dashboard: ${dashboard}`);
       window.location.href = dashboard;
-    } else {
-      console.info(`[UnifiedNav] Access granted: Role '${activeRole}' can access '${currentPath}'`);
     }
   }
 
@@ -304,8 +287,6 @@ class UnifiedNavigation {
     const roleChannel = new BroadcastChannel('role_switch_channel');
     roleChannel.onmessage = (event: MessageEvent<RoleSwitchMessage>) => {
       if (event.data.type === 'ROLE_SWITCHED') {
-        console.info('[UnifiedNav] Received role switch notification from another tab');
-
         // Update local storage with new role data
         if (event.data.newRole !== undefined) {
           localStorage.setItem('activeRole', event.data.newRole);
@@ -328,8 +309,6 @@ class UnifiedNavigation {
     // Listen for storage events from other tabs
     window.addEventListener('storage', (event) => {
       if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
-        console.info('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
-
         // Clear any pending redirects
         if (redirectTimeout) {
           clearTimeout(redirectTimeout);
@@ -346,7 +325,6 @@ class UnifiedNavigation {
   private handleRoleChangeRedirect(newActiveRole: string | null, isRedirecting: boolean): void {
     // Prevent multiple redirects
     if (isRedirecting) {
-      console.info('[UnifiedNav] Redirect already in progress, skipping...');
       return;
     }
 
@@ -374,15 +352,12 @@ class UnifiedNavigation {
     if (targetPath !== '' && !currentPagePath.includes(targetPath)) {
       // Check if user has permission for the target role
       if (newActiveRole === 'root' && userRole !== 'root') {
-        console.info('[UnifiedNav] User does not have root permission, skipping redirect');
         return;
       }
 
-      console.info(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
       // Use replace to avoid adding to browser history
       window.location.replace(targetPath);
     } else {
-      console.info('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
       // Just refresh navigation if we're already on the right page
       this.refresh();
     }
@@ -518,14 +493,6 @@ class UnifiedNavigation {
     this.currentRole = this.determineActiveRole(dashboardType, payload);
     this.updateActiveRoleInStorage(dashboardType, storedUserRole);
 
-    devLog('[UnifiedNav] Role determined:', {
-      currentPath,
-      storedUserRole,
-      tokenRole: payload.role,
-      activeRole: localStorage.getItem('activeRole'),
-      finalRole: this.currentRole,
-    });
-
     void this.loadFullUserProfile();
   }
 
@@ -534,21 +501,17 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (token === null || token === 'test-mode') return;
 
-      devLog('[UnifiedNav] Fetching full user profile with company data');
-
       // Always try to load v2 user profile
       await this.loadV2UserProfile();
     } catch (error) {
-      console.error('[UnifiedNav] Error loading full user profile:', error);
+      console.error('Error loading full user profile:', error);
     }
   }
 
   private async loadV2UserProfile(): Promise<void> {
     try {
       // Use cached user data from auth.js to prevent duplicate API calls
-      devLog('[UnifiedNav] Using cached user data from auth.js');
       const userData = (await loadUserInfoFromAuth()) as UserProfileResponse;
-      devLog('[UnifiedNav] Full user data from cache:', userData);
 
       this.updateCompanyInfo(userData);
       this.updateUserInfo(userData);
@@ -559,7 +522,7 @@ class UnifiedNavigation {
 
       this.userProfileData = userData;
     } catch (error) {
-      console.error('[UnifiedNav] Error loading user data:', error);
+      console.error('Error loading user data:', error);
     }
   }
 
@@ -567,7 +530,6 @@ class UnifiedNavigation {
     const companyElement = $$('#sidebar-company-name');
     const companyName = userData.tenant?.companyName ?? userData.companyName;
     if (companyElement && companyName !== undefined) {
-      devLog('[UnifiedNav] Setting company name to:', companyName);
       companyElement.textContent = companyName;
     }
 
@@ -614,7 +576,6 @@ class UnifiedNavigation {
       userDataTyped.data?.employeeNumber;
 
     if (employeeNumber !== undefined) {
-      devLog('[UnifiedNav] Setting employee number to:', employeeNumber);
       // Set display flex and center content
       sidebarEmployeeNumber.style.display = 'flex';
       sidebarEmployeeNumber.style.justifyContent = 'center';
@@ -648,11 +609,9 @@ class UnifiedNavigation {
       (userData as { position?: string }).position ?? (userData.data as { position?: string } | undefined)?.position;
 
     if (position !== undefined && position !== '') {
-      devLog('[UnifiedNav] Setting admin position to:', position);
       positionElement.textContent = position;
       positionElement.style.display = 'block';
     } else {
-      devLog('[UnifiedNav] No position found for admin');
       positionElement.style.display = 'none';
     }
   }
@@ -663,16 +622,13 @@ class UnifiedNavigation {
 
     const firstName = userData.firstName ?? userData.data?.firstName ?? '';
     const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-    devLog('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
     if (firstName !== '' || lastName !== '') {
       const fullName = `${firstName} ${lastName}`.trim();
       headerUserName.textContent = fullName;
-      devLog('[UnifiedNav] Set header name to:', fullName);
     } else {
       // No fallback - keep empty if no name available
       headerUserName.textContent = '';
-      devLog('[UnifiedNav] No name available, keeping empty');
     }
   }
 
@@ -724,18 +680,7 @@ class UnifiedNavigation {
       icon: this.getSVGIcon('building'),
       label: 'Abteilungen',
       url: '/manage-departments',
-      children: [
-        {
-          id: 'departments-all',
-          label: 'Alle Abteilungen',
-          url: '/manage-departments',
-        },
-        {
-          id: 'department-groups',
-          label: 'Abteilungsgruppen',
-          url: '/manage-department-groups',
-        },
-      ],
+      // NOTE: Removed 'Abteilungsgruppen' child - deprecated, use Areas instead
     };
   }
 
@@ -770,14 +715,6 @@ class UnifiedNavigation {
           },
         ],
       },
-      {
-        id: 'areas',
-        icon: this.getSVGIcon('sitemap'),
-        label: 'Bereiche',
-        url: '/manage-areas',
-        section: 'areas',
-      },
-      this.getDepartmentsNavItem(),
       {
         id: 'teams',
         icon: this.getSVGIcon('team'),
@@ -1248,29 +1185,11 @@ class UnifiedNavigation {
     setHTML(sidebar as HTMLElement, this.createNavigationHTML());
   }
 
-  // Unused method - kept for potential future use
-  // private _createFullNavigationStructure(): string {
-  //   const { storedUserRole, activeRole, userRole } = this.getUserRoles();
-  //   const { displayName, firstName, lastName, profilePicture } = this.getUserDisplayInfo();
-  //   const dashboardUrl = this.getDashboardUrl(storedUserRole, userRole);
-  //   const logoSrc = this.getLogoSrc();
-  //   const warningBanner = this.createRoleSwitchBanner(storedUserRole, activeRole);
-  //   const roleSwitchDropdown = this.createRoleSwitchDropdown(userRole, activeRole);
-  //   const userAvatar = this.createUserAvatar(profilePicture, firstName, lastName);
-
-  //   return `
-  //     ${this.createHeader(dashboardUrl, logoSrc, roleSwitchDropdown, userAvatar, displayName)}
-  //     ${this.createLogoutModal()}
-  //     ${warningBanner}
-  //   `;
-  // }
-
   private createHeaderOnly(): string {
-    const { storedUserRole, userRole } = this.getUserRoles();
+    const { storedUserRole, activeRole, userRole } = this.getUserRoles();
     const { displayName, firstName, lastName, profilePicture } = this.getUserDisplayInfo();
     const dashboardUrl = this.getDashboardUrl(storedUserRole, userRole);
     const logoSrc = this.getLogoSrc();
-    const { activeRole } = this.getUserRoles();
     const roleSwitchDropdown = this.createRoleSwitchDropdown(userRole, activeRole);
     const userAvatar = this.createUserAvatar(profilePicture, firstName, lastName);
 
@@ -1301,12 +1220,12 @@ class UnifiedNavigation {
     profilePicture: string | null;
   } {
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
-    const firstName = this.userProfileData?.firstName ?? this.userProfileData?.firstName ?? '';
-    const lastName = this.userProfileData?.lastName ?? this.userProfileData?.lastName ?? '';
+    const firstName = this.userProfileData?.firstName ?? '';
+    const lastName = this.userProfileData?.lastName ?? '';
     const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
 
-    // API v2 returns profilePicture (camelCase via dbToApi), fallback for transition
-    let profilePicture = this.userProfileData?.profilePicture ?? this.userProfileData?.profilePicture ?? null;
+    // API v2 returns profilePicture (camelCase via dbToApi)
+    let profilePicture = this.userProfileData?.profilePicture ?? null;
 
     if (profilePicture === '') {
       profilePicture = null;
@@ -1882,10 +1801,7 @@ class UnifiedNavigation {
     const chatMain = $$('.chat-main');
     const chatSidebar = $$('.chat-sidebar');
 
-    this.debugSidebarInfo(sidebar, toggleBtn, mainContent);
-
     if (!toggleBtn || !sidebar) {
-      console.error('[UnifiedNav] Toggle button or sidebar not found!');
       return;
     }
 
@@ -1893,24 +1809,6 @@ class UnifiedNavigation {
     this.setupToggleClickHandler(toggleBtn, sidebar, mainContent, chatMain, chatSidebar);
     this.setupHoverEffects(toggleBtn, sidebar);
     this.addCollapsedTooltips();
-  }
-
-  private debugSidebarInfo(sidebar: Element | null, toggleBtn: Element | null, mainContent: Element | null): void {
-    // Only log in development mode to reduce console noise in production
-    if (!IS_DEV) return;
-
-    const allSidebars = document.querySelectorAll('.sidebar');
-    devLog('[UnifiedNav] Number of sidebars found:', allSidebars.length);
-    allSidebars.forEach((sb, index) => {
-      devLog(`[UnifiedNav] Sidebar ${index}:`, sb);
-      devLog(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
-    });
-
-    devLog('[UnifiedNav] Toggle button:', toggleBtn);
-    devLog('[UnifiedNav] Sidebar:', sidebar);
-    devLog('[UnifiedNav] Sidebar ID:', sidebar?.id);
-    devLog('[UnifiedNav] Sidebar class:', sidebar?.className);
-    devLog('[UnifiedNav] Main content:', mainContent);
   }
 
   private applySavedCollapsedState(
@@ -1940,9 +1838,6 @@ class UnifiedNavigation {
       e.preventDefault();
       e.stopPropagation();
 
-      devLog('[UnifiedNav] Toggle clicked!');
-      devLog('[UnifiedNav] Sidebar classes before:', sidebar.className);
-
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
 
@@ -1969,8 +1864,6 @@ class UnifiedNavigation {
       if (headerLogo !== null) {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
-
-      devLog('[UnifiedNav] Sidebar collapsed state:', newState);
     });
   }
 
@@ -2105,11 +1998,9 @@ class UnifiedNavigation {
     if (isActive) {
       dropdownDisplay.classList.remove('active');
       dropdownOptions.classList.remove('active');
-      devLog('[UnifiedNav] Dropdown closed');
     } else {
       dropdownDisplay.classList.add('active');
       dropdownOptions.classList.add('active');
-      devLog('[UnifiedNav] Dropdown opened');
     }
   }
 
@@ -2117,8 +2008,6 @@ class UnifiedNavigation {
     dropdownDisplay.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      devLog('[UnifiedNav] Dropdown clicked');
-      console.info('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
       this.toggleDropdown(dropdownDisplay, dropdownOptions);
     });
   }
@@ -2135,7 +2024,6 @@ class UnifiedNavigation {
     }
 
     const selectedRole = option.dataset['value'] as 'root' | 'admin' | 'employee';
-    console.info('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
     // Update display with icon and text - copy innerHTML from option
     const displaySpan = dropdownDisplay.querySelector('span');
@@ -2149,7 +2037,6 @@ class UnifiedNavigation {
     dropdownOptions.classList.remove('active');
 
     // Call the role switch function
-    console.info('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
     void switchRoleForRoot(selectedRole);
   }
 
@@ -2224,18 +2111,15 @@ class UnifiedNavigation {
         dropdownDisplay.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          devLog('[UnifiedNav] Dropdown clicked');
 
           const isActive = dropdownDisplay.classList.contains('active');
 
           if (isActive) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
-            devLog('[UnifiedNav] Dropdown closed');
           } else {
             dropdownDisplay.classList.add('active');
             dropdownOptions.classList.add('active');
-            devLog('[UnifiedNav] Dropdown opened');
           }
         });
 
@@ -2248,14 +2132,12 @@ class UnifiedNavigation {
               const roleValue = (option as HTMLElement).dataset['value'];
               if (roleValue === 'root' || roleValue === 'admin' || roleValue === 'employee') {
                 const selectedRole = roleValue;
-                console.info('[UnifiedNav] Admin view switching to role:', selectedRole);
 
                 // Close dropdown
                 dropdownDisplay.classList.remove('active');
                 dropdownOptions.classList.remove('active');
 
                 // Admin users can only switch between admin and employee
-                console.info('[UnifiedNav] Admin user, calling switchRoleForAdmin');
                 await switchRoleForAdmin(selectedRole as 'admin' | 'employee');
               }
             })();
@@ -2578,8 +2460,6 @@ class UnifiedNavigation {
 
   // Public method to refresh navigation
   public refresh(): void {
-    console.info('[UnifiedNav] Refreshing navigation');
-
     // Reload user info from token
     this.loadUserInfo();
 
@@ -2667,128 +2547,14 @@ class UnifiedNavigation {
     }
   }
 
-  // Update Calendar unread events count (Events mit ausstehender Statusanfrage)
-  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
-  // This method is currently disabled - badge updates will come from sse-client.ts
+  // Badge updates handled by SSE (sse-client.ts) - method kept for API compatibility
   public updateUnreadCalendarEvents(): void {
-    // Method disabled - will be handled by SSE
-    return;
-
-    /* Original implementation kept for reference during SSE migration:
-    try {
-      const token = localStorage.getItem('token');
-      if (token === null || token === '' || token === 'test-mode') return;
-
-      const data = await apiClient.get<{
-        totalUnread: number;
-        eventsRequiringResponse: {
-          id: number;
-          title: string;
-          startTime: string;
-          requiresResponse: boolean;
-        }[];
-      }>('/calendar/unread-events');
-
-      const badge = $$('#calendar-unread-badge');
-      if (badge) {
-        // Nur Events mit Statusanfrage zählen
-        const count = data.totalUnread;
-        if (count > 0) {
-          badge.textContent = count > 99 ? '99+' : count.toString();
-          badge.style.display = DISPLAY_INLINE_BLOCK;
-        } else {
-          badge.style.display = 'none';
-        }
-      }
-    } catch (error) {
-      console.error('Error updating unread calendar events:', error);
-    }
-    */
+    // No-op: handled by SSE
   }
 
-  // DEPRECATED: Helper methods for KVP updates - will be removed with SSE migration
-  /* These methods are kept for reference but are no longer used:
-  private shouldSkipKvpUpdate(): boolean {
-    const token = localStorage.getItem('token');
-    return token === null || token === '' || token === 'test-mode';
-  }
-
-  private hideKvpBadgeForNonAdmins(): boolean {
-    if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
-      const badge = $$('#kvp-badge');
-      if (badge) badge.style.display = 'none';
-      return true;
-    }
-    return false;
-  }
-  */
-
-  // DEPRECATED: Additional KVP helper methods - will be removed with SSE migration
-  /* These methods are kept for reference but are no longer used:
-  private shouldShowKvpBadge(currentCount: number, hasClickedKvp: boolean): boolean {
-    return currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount);
-  }
-
-  private updateKvpBadgeDisplay(badge: HTMLElement, currentCount: number, show: boolean): void {
-    if (show) {
-      badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
-      badge.style.display = DISPLAY_INLINE_BLOCK;
-      console.info('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
-    } else {
-      badge.style.display = 'none';
-      console.info('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
-    }
-  }
-
-  private updateLastKnownKvpCount(currentCount: number, hasClickedKvp: boolean): void {
-    if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
-      this.lastKnownKvpCount = currentCount;
-      localStorage.setItem('lastKnownKvpCount', currentCount.toString());
-    }
-  }
-  */
-
-  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
-  // This method is currently disabled - badge updates will come from sse-client.ts
+  // Badge updates handled by SSE (sse-client.ts) - method kept for API compatibility
   public updateNewKvpSuggestions(): void {
-    // Method disabled - will be handled by SSE
-    return;
-
-    /* Original implementation kept for reference during SSE migration:
-    try {
-      if (this.shouldSkipKvpUpdate()) {
-        return;
-      }
-
-      if (this.hideKvpBadgeForNonAdmins()) {
-        return;
-      }
-
-      const data = await apiClient.get<{
-        totalSuggestions: number;
-        newSuggestions: number;
-        inProgress: number;
-        implemented: number;
-        rejected: number;
-        avgSavings: number | null;
-      }>('/kvp/dashboard/stats');
-
-      const badge = $$('#kvp-badge');
-      if (badge === null) {
-        return;
-      }
-
-      const currentCount = data.newSuggestions;
-      const hasClickedKvp = this.lastKvpClickTimestamp !== null;
-      const shouldShow = this.shouldShowKvpBadge(currentCount, hasClickedKvp);
-
-      this.updateKvpBadgeDisplay(badge, currentCount, shouldShow);
-      this.updateLastKnownKvpCount(currentCount, hasClickedKvp);
-      this.updateLeanManagementParentBadge();
-    } catch (error) {
-      console.error('Error updating KVP suggestions count:', error);
-    }
-    */
+    // No-op: handled by SSE
   }
 
   private getBadgeCount(badge: HTMLElement | null): number {
@@ -2842,110 +2608,9 @@ class UnifiedNavigation {
     }
   }
 
-  // Offene Umfragen aktualisieren
-
-  // DEPRECATED: Document helper methods - will be removed with SSE migration
-  /* These methods are kept for reference but are no longer used:
-  private shouldSkipDocumentUpdate(): boolean {
-    const token = localStorage.getItem('token');
-    if (token === null || token === '' || token === 'test-mode') {
-      return true;
-    }
-
-    const role = localStorage.getItem('userRole') ?? this.currentRole;
-    return role !== 'employee' && role !== 'admin';
-  }
-
-  private countUnreadDocuments(
-    documents: {
-      is_read?: boolean;
-      category?: string;
-      scope?: 'company' | 'department' | 'team' | 'personal';
-    }[],
-  ): Record<string, number> {
-    const unreadCounts = {
-      company: 0,
-      department: 0,
-      team: 0,
-      personal: 0,
-      payroll: 0,
-      total: 0,
-    };
-
-    documents.forEach((doc) => {
-      if (doc.is_read !== false) {
-        return;
-      }
-
-      unreadCounts.total++;
-
-      if (doc.category === 'salary') {
-        unreadCounts.payroll++;
-      } else if (doc.scope !== undefined) {
-        unreadCounts[doc.scope as keyof typeof unreadCounts]++;
-      }
-    });
-
-    return unreadCounts;
-  }
-
-  private updateDocumentBadge(badgeId: string, count: number): void {
-    const badge = document.querySelector(`#${badgeId}`);
-    if (badge instanceof HTMLElement) {
-      this.updateBadgeDisplay(badge, count);
-    }
-  }
-
-  private updateAllDocumentBadges(unreadCounts: Record<string, number>): void {
-    // Update main badge
-    const mainBadge = $$('#documents-unread-badge');
-    if (mainBadge) {
-      this.updateBadgeDisplay(mainBadge, unreadCounts.total);
-    }
-
-    // Update category badges
-    this.updateDocumentBadge('badge-docs-company', unreadCounts.company);
-    this.updateDocumentBadge('badge-docs-department', unreadCounts.department);
-    this.updateDocumentBadge('badge-docs-team', unreadCounts.team);
-    this.updateDocumentBadge('badge-docs-personal', unreadCounts.personal);
-    this.updateDocumentBadge('badge-docs-payroll', unreadCounts.payroll);
-  }
-  */
-
-  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
-  // This method is currently disabled - badge updates will come from sse-client.ts
+  // Badge updates handled by SSE (sse-client.ts) - method kept for API compatibility
   public updateUnreadDocuments(): void {
-    // Method disabled - will be handled by SSE
-    return;
-
-    /* Original implementation kept for reference during SSE migration:
-    try {
-      if (this.shouldSkipDocumentUpdate()) {
-        return;
-      }
-
-      const result = await apiClient.get<{
-        documents: Document[];
-        pagination?: { total: number; page: number; perPage: number };
-      }>('/documents');
-
-      const documents = result.documents;
-      if (documents.length === 0) {
-        return;
-      }
-
-      const unreadCounts = this.countUnreadDocuments(
-        documents as {
-          is_read?: boolean;
-          category?: string;
-          scope?: 'company' | 'department' | 'team' | 'personal';
-        }[],
-      );
-      this.updateAllDocumentBadges(unreadCounts);
-    } catch (error) {
-      console.error('Error updating unread documents:', error);
-    }
-    */
+    // No-op: handled by SSE
   }
 
   // Mark all documents as read
@@ -2968,12 +2633,10 @@ class UnifiedNavigation {
 
   // Reset KVP badge when admin/root clicks on KVP
   private async resetKvpBadge(): Promise<void> {
-    console.info('[UnifiedNav] Resetting KVP badge');
     const badge = $$('#kvp-badge');
     if (badge) {
       badge.style.display = 'none';
       badge.textContent = '0';
-      console.info('[UnifiedNav] KVP badge hidden');
     }
 
     // Save the timestamp of when the user clicked on KVP
@@ -2995,7 +2658,6 @@ class UnifiedNavigation {
         // data is always returned from apiClient.get
         this.lastKnownKvpCount = data.newSuggestions;
         localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
-        console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
       }
     } catch (error) {
       console.error('Error fetching KVP count for baseline:', error);
@@ -3042,11 +2704,8 @@ class UnifiedNavigation {
   private initializeSSE(): void {
     const token = localStorage.getItem('token');
     if (token === null || token === '' || token === 'test-mode') {
-      console.info('[UnifiedNav] SSE not initialized - no valid token');
       return;
     }
-
-    console.info('[UnifiedNav] Initializing SSE connection');
 
     // Connect to SSE endpoint
     this.sseClient = new SSEClient('/api/v2/notifications/stream');
@@ -3054,7 +2713,6 @@ class UnifiedNavigation {
 
     // Reconnect SSE after token refresh to use new token
     tokenManager.onTokenRefreshed(() => {
-      console.info('[UnifiedNav] Token refreshed - reconnecting SSE with new token');
       if (this.sseClient) {
         this.sseClient.reconnectWithNewToken();
       }
@@ -3063,7 +2721,6 @@ class UnifiedNavigation {
     // Reconnect on visibility change
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.sseClient && !this.sseClient.isConnected()) {
-        console.info('[UnifiedNav] Page visible - reconnecting SSE');
         this.sseClient.connect();
       }
     });
@@ -3071,7 +2728,6 @@ class UnifiedNavigation {
     // Clean up SSE connection before page unload to prevent errors
     window.addEventListener('beforeunload', () => {
       if (this.sseClient?.isConnected() === true) {
-        console.info('[UnifiedNav] Page unloading - closing SSE connection cleanly');
         this.sseClient.disconnect();
       }
     });
@@ -3145,7 +2801,6 @@ class UnifiedNavigation {
   private injectCSS(): void {
     // CSS is already loaded via <link> tags in HTML files
     // No dynamic injection needed anymore
-    devLog('[UnifiedNav] CSS loaded via HTML link tags');
   }
 
   // Storage Widget erstellen (nur für Root User)
@@ -3259,9 +2914,8 @@ class UnifiedNavigation {
   // If needed in future, consider using the showToast from role-switch.ts instead
 }
 
-// CSS automatisch einbinden
-// CSS loading removed - now handled via static HTML link tags
-devLog('[UnifiedNav] CSS loaded via HTML link tags');
+// CSS loading handled via static HTML link tags
+// Log message moved to injectCSS() method to avoid duplicate on module load
 
 // Export to window for backwards compatibility
 

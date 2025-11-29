@@ -960,7 +960,7 @@ mysql -u root
 
 # 4. Passwort ändern (in MySQL)
 USE mysql;
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'StrongP@ssw0rd!123';
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'YOUR_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EXIT;
 
@@ -969,7 +969,7 @@ sudo killall -TERM mysqld
 sudo systemctl start mysql
 
 # 6. Testen
-mysql -u root -p'StrongP@ssw0rd!123' -e "SELECT VERSION();"
+mysql -u root -p'YOUR_ROOT_PASSWORD' -e "SELECT VERSION();"
 ```
 
 Alternativ mit SQL-Datei:

@@ -20,7 +20,7 @@ import {
   RootApiFiltersSchema,
   UpdateAdminSchema,
   UpdateRootUserSchema,
-} from './validation.zod.js';
+} from './root.validation.zod.js';
 
 const router = Router();
 

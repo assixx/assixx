@@ -2,11 +2,14 @@
 FROM node:24.11.1-alpine
 
 # Install development tools
-RUN apk add --no-cache curl jq
+# Fix CVE-2025-10966: Upgrade curl to latest available version
+RUN apk add --no-cache curl jq && \
+    apk upgrade --no-cache curl
 
-# Install pnpm and development tools globally
-# Using npm only to bootstrap pnpm, then pnpm handles everything else
-RUN npm install -g pnpm@latest tsx nodemon
+# Install pnpm globally (pinned version matching packageManager field)
+# tsx and nodemon are in devDependencies - no need to install globally!
+# Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
+RUN npm install -g pnpm@10.24.0
 
 # Arbeitsverzeichnis
 WORKDIR /app

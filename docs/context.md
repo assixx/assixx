@@ -715,45 +715,46 @@ tsconfig.test.json 1ms (unchanged)
 
 vite v7.2.4 building client environment for production...
 transforming...
-✓ 311 modules transformed.
+✓ 322 modules transformed.
 rendering chunks...
 computing gzip size...
 ../dist/pages/rate-limit.html                             1.77 kB │ gzip:   0.85 kB
 ../dist/pages/survey-results.html                         1.99 kB │ gzip:   0.79 kB
 ../dist/pages/login.html                                  2.01 kB │ gzip:   0.89 kB
-../dist/pages/root-dashboard.html                         3.17 kB │ gzip:   1.32 kB
+../dist/pages/root-dashboard.html                         3.23 kB │ gzip:   1.34 kB
 ../dist/pages/survey-employee.html                        3.31 kB │ gzip:   1.23 kB
-../dist/pages/tenant-deletion-status.html                 3.92 kB │ gzip:   1.63 kB
+../dist/pages/tenant-deletion-status.html                 3.92 kB │ gzip:   1.64 kB
 ../dist/fonts/fa-v4compatibility.woff2                    4.80 kB
 ../dist/pages/calendar.html                               4.84 kB │ gzip:   1.53 kB
-../dist/pages/storage-upgrade.html                        4.88 kB │ gzip:   1.81 kB
-../dist/pages/admin-dashboard.html                        5.58 kB │ gzip:   1.48 kB
+../dist/pages/storage-upgrade.html                        4.88 kB │ gzip:   1.82 kB
+../dist/pages/admin-dashboard.html                        5.64 kB │ gzip:   1.50 kB
 ../dist/pages/design-system-demo.html                     5.89 kB │ gzip:   1.85 kB
+../dist/pages/blackboard-detail.html                      5.90 kB │ gzip:   1.89 kB
 ../dist/pages/manage-department-groups.html               6.25 kB │ gzip:   2.06 kB
-../dist/pages/root-features.html                          6.36 kB │ gzip:   1.74 kB
-../dist/pages/account-settings.html                       6.60 kB │ gzip:   2.19 kB
-../dist/pages/employee-dashboard.html                     6.85 kB │ gzip:   1.82 kB
+../dist/pages/root-features.html                          6.36 kB │ gzip:   1.75 kB
+../dist/pages/account-settings.html                       6.60 kB │ gzip:   2.20 kB
+../dist/pages/employee-dashboard.html                     6.92 kB │ gzip:   1.83 kB
 ../dist/pages/root-profile.html                           6.96 kB │ gzip:   2.07 kB
+../dist/pages/manage-departments.html                     7.05 kB │ gzip:   2.09 kB
 ../dist/pages/admin-profile.html                          7.17 kB │ gzip:   2.08 kB
 ../dist/pages/employee-profile.html                       7.18 kB │ gzip:   2.10 kB
 ../dist/pages/survey-admin.html                           7.76 kB │ gzip:   2.33 kB
-../dist/pages/manage-departments.html                     8.03 kB │ gzip:   2.27 kB
 ../dist/pages/chat.html                                   8.06 kB │ gzip:   2.34 kB
 ../dist/pages/manage-areas.html                           8.07 kB │ gzip:   2.27 kB
 ../dist/pages/manage-teams.html                           8.27 kB │ gzip:   2.25 kB
 ../dist/pages/manage-machines.html                        8.78 kB │ gzip:   2.37 kB
 ../dist/pages/signup.html                                 8.96 kB │ gzip:   2.54 kB
-../dist/pages/kvp-detail.html                             9.66 kB │ gzip:   2.45 kB
-../dist/pages/kvp.html                                   10.61 kB │ gzip:   2.91 kB
+../dist/pages/kvp.html                                   10.61 kB │ gzip:   2.92 kB
 ../dist/fonts/fa-v4compatibility.ttf                     10.84 kB
 ../dist/pages/manage-root.html                           11.07 kB │ gzip:   2.98 kB
+../dist/pages/kvp-detail.html                            11.35 kB │ gzip:   2.86 kB
+../dist/pages/blackboard.html                            12.01 kB │ gzip:   3.31 kB
 ../dist/pages/index.html                                 12.63 kB │ gzip:   4.02 kB
 ../dist/pages/manage-admins.html                         12.70 kB │ gzip:   3.17 kB
-../dist/pages/manage-employees.html                      13.50 kB │ gzip:   3.21 kB
-../dist/pages/documents-explorer.html                    13.63 kB │ gzip:   3.62 kB
+../dist/pages/manage-employees.html                      13.51 kB │ gzip:   3.21 kB
+../dist/pages/documents-explorer.html                    13.87 kB │ gzip:   3.70 kB
 ../dist/pages/shifts.html                                15.10 kB │ gzip:   3.55 kB
 ../dist/pages/logs.html                                  15.36 kB │ gzip:   3.66 kB
-../dist/pages/blackboard.html                            15.56 kB │ gzip:   4.91 kB
 ../dist/fonts/fa-regular-400.woff2                       25.47 kB
 ../dist/fonts/fa-regular-400.ttf                         68.06 kB
 ../dist/images/logo-Bz_kpWvs.png                         77.67 kB
@@ -766,86 +767,128 @@ computing gzip size...
 ../dist/css/account-settings-B_xzhqU4.css                 0.65 kB │ gzip:   0.34 kB
 ../dist/css/root-dashboard-DKhc549F.css                   0.77 kB │ gzip:   0.41 kB
 ../dist/css/admin-profile-DtlXzP9t.css                    1.02 kB │ gzip:   0.48 kB
+../dist/css/manage-department-groups-Bj54oGEx.css         1.25 kB │ gzip:   0.59 kB
 ../dist/css/documents-explorer-CkGyZdgc.css               1.47 kB │ gzip:   0.48 kB
-../dist/css/manage-department-groups-tFBAcKVC.css         1.66 kB │ gzip:   0.68 kB
 ../dist/css/user-info-update-DLgpDt9A.css                 1.82 kB │ gzip:   0.51 kB
 ../dist/css/root-profile-C_qu9_kS.css                     1.96 kB │ gzip:   0.66 kB
 ../dist/css/admin-dashboard-DDzb0YWF.css                  2.07 kB │ gzip:   0.74 kB
 ../dist/css/survey-employee-C1yxz8qT.css                  2.08 kB │ gzip:   0.66 kB
 ../dist/css/survey-results-KLaD6120.css                   2.16 kB │ gzip:   0.64 kB
-../dist/css/survey-admin-Z1Lyb1lw.css                     2.64 kB │ gzip:   0.71 kB
+../dist/css/survey-admin-mNSU7zJp.css                     2.60 kB │ gzip:   0.70 kB
 ../dist/css/root-features-Y2Tx6bPz.css                    2.67 kB │ gzip:   0.87 kB
 ../dist/css/storage-upgrade-C3wJEpxd.css                  3.16 kB │ gzip:   0.95 kB
+../dist/css/login-AAHCp0Zq.css                            3.68 kB │ gzip:   1.05 kB
 ../dist/css/alerts-CatR5Du7.css                           3.94 kB │ gzip:   1.02 kB
 ../dist/css/tenant-deletion-status-DSfxbATV.css           3.99 kB │ gzip:   1.18 kB
-../dist/css/login-CHorRVJu.css                            4.16 kB │ gzip:   1.18 kB
 ../dist/css/employee-dashboard-DpAkMjkl.css               4.60 kB │ gzip:   1.33 kB
 ../dist/css/kvp-CMTyD4Yf.css                              4.86 kB │ gzip:   1.33 kB
 ../dist/css/password-strength-core-CN_pz3he.css           5.27 kB │ gzip:   1.16 kB
-../dist/css/logs-Dqn2OUGk.css                             6.74 kB │ gzip:   1.83 kB
-../dist/css/signup-D8qk-yWp.css                           8.81 kB │ gzip:   1.97 kB
+../dist/css/logs-B_9dDQi0.css                             5.29 kB │ gzip:   1.51 kB
+../dist/css/signup-Bg-Ydf-Z.css                           8.45 kB │ gzip:   1.88 kB
 ../dist/css/index-DMYTOmsT.css                           10.29 kB │ gzip:   2.12 kB
-../dist/css/unified-navigation-BJ_j5Jvv.css              13.85 kB │ gzip:   3.47 kB
-../dist/css/kvp-detail-Y6qRqjXn.css                      13.93 kB │ gzip:   3.07 kB
-../dist/css/chat-Bvt_ODNy.css                            21.94 kB │ gzip:   4.18 kB
-../dist/css/blackboard-CbmzZ439.css                      29.84 kB │ gzip:   6.21 kB
-../dist/css/shifts-BRLZfeIU.css                          37.19 kB │ gzip:   6.43 kB
-../dist/css/calendar-FRlggYIb.css                        40.04 kB │ gzip:   8.73 kB
+../dist/css/unified-navigation-D42AQeGR.css              12.16 kB │ gzip:   3.09 kB
+../dist/css/kvp-detail-Bn34LV6a.css                      15.75 kB │ gzip:   3.46 kB
+../dist/css/blackboard-Cp_8496r.css                      16.20 kB │ gzip:   3.85 kB
+../dist/css/chat-brzEz0Dw.css                            18.60 kB │ gzip:   3.69 kB
+../dist/css/shifts-as6aJ282.css                          31.06 kB │ gzip:   5.60 kB
+../dist/css/calendar-CkKY-_94.css                        40.08 kB │ gzip:   8.74 kB
 ../dist/css/fontawesome.css                              77.00 kB │ gzip:  17.40 kB
-../dist/css/main-u0-vAjak.css                           218.25 kB │ gzip:  36.36 kB
+../dist/css/main-Z1bhseI9.css                           219.05 kB │ gzip:  36.53 kB
 ../dist/js/modulepreload-polyfill-YP0FEG5d.js             0.93 kB │ gzip:   0.59 kB │ map:   0.12 kB
 ../dist/js/preload-helper-CgvsJPj0.js                     1.44 kB │ gzip:   0.89 kB │ map:   0.11 kB
 ../dist/js/storage.service-Ej_YB_Y-.js                    9.00 kB │ gzip:   3.75 kB │ map:   5.73 kB
 ../dist/js/password-strength-core-C3VPIOGa.js            10.25 kB │ gzip:   4.77 kB │ map:   6.53 kB
 ../dist/js/rate-limit.js                                 10.72 kB │ gzip:   4.44 kB │ map:   6.41 kB
-../dist/js/password-toggle-CzVg23bh.js                   12.39 kB │ gzip:   4.71 kB │ map:   8.32 kB
-../dist/js/index.js                                      16.40 kB │ gzip:   6.92 kB │ map:  10.18 kB
+../dist/js/password-toggle-q0lq3cK0.js                   12.39 kB │ gzip:   4.71 kB │ map:   8.32 kB
+../dist/js/index.js                                      16.41 kB │ gzip:   6.92 kB │ map:  10.19 kB
 ../dist/js/storage-upgrade.js                            17.57 kB │ gzip:   7.74 kB │ map:  10.86 kB
-../dist/js/dom-utils-9WrK0bjZ.js                         18.76 kB │ gzip:   7.08 kB │ map:  12.54 kB
-../dist/js/password-strength-integration-1vNyoY5T.js     30.11 kB │ gzip:  10.36 kB │ map:  19.59 kB
-../dist/js/account-settings.js                           34.06 kB │ gzip:  12.58 kB │ map:  21.28 kB
-../dist/js/logs.js                                       43.69 kB │ gzip:  16.38 kB │ map:  26.69 kB
+../dist/js/dom-utils-BATYkr7_.js                         18.76 kB │ gzip:   7.07 kB │ map:  12.54 kB
+../dist/js/password-strength-integration-C8g-vKao.js     30.12 kB │ gzip:  10.38 kB │ map:  19.59 kB
+../dist/js/account-settings.js                           34.07 kB │ gzip:  12.58 kB │ map:  21.29 kB
+../dist/js/logs.js                                       43.76 kB │ gzip:  16.40 kB │ map:  26.74 kB
+../dist/js/root-dashboard.js                             44.74 kB │ gzip:  15.77 kB │ map:  26.48 kB
 ../dist/js/fullcalendar-list-B2WVsApM.js                 45.13 kB │ gzip:  16.12 kB │ map:  27.58 kB
 ../dist/js/tenant-deletion-status.js                     45.51 kB │ gzip:  15.82 kB │ map:  25.86 kB
-../dist/js/root-dashboard.js                             45.64 kB │ gzip:  15.78 kB │ map:  26.94 kB
-../dist/js/alerts-BhtjEW0V.js                            45.77 kB │ gzip:  14.81 kB │ map:  26.46 kB
-../dist/js/breadcrumb-Cnum1Rdz.js                        50.86 kB │ gzip:  16.77 kB │ map:  30.96 kB
-../dist/js/signup.js                                     57.84 kB │ gzip:  19.19 kB │ map:  36.51 kB
-../dist/js/login.js                                      58.45 kB │ gzip:  21.26 kB │ map:  35.91 kB
+../dist/js/alerts-DQbV5yKj.js                            45.77 kB │ gzip:  14.82 kB │ map:  26.45 kB
+../dist/js/breadcrumb-D3EMSU2c.js                        51.09 kB │ gzip:  16.83 kB │ map:  31.09 kB
+../dist/js/widget-jZ0gGhsE.js                            51.87 kB │ gzip:  18.41 kB │ map:  31.55 kB
+../dist/js/employee-dashboard.js                         57.76 kB │ gzip:  21.26 kB │ map:  36.84 kB
+../dist/js/signup.js                                     57.84 kB │ gzip:  19.17 kB │ map:  36.51 kB
+../dist/js/login.js                                      58.42 kB │ gzip:  21.26 kB │ map:  35.90 kB
 ../dist/js/survey-results.js                             65.56 kB │ gzip:  21.58 kB │ map:  39.79 kB
-../dist/js/root-features.js                              72.18 kB │ gzip:  24.63 kB │ map:  44.86 kB
-../dist/js/admin-profile.js                              78.66 kB │ gzip:  25.92 kB │ map:  49.93 kB
-../dist/js/employee-profile.js                           79.00 kB │ gzip:  25.99 kB │ map:  50.12 kB
-../dist/js/survey-employee.js                            86.30 kB │ gzip:  28.52 kB │ map:  52.02 kB
-../dist/js/employee-dashboard.js                         90.88 kB │ gzip:  31.86 kB │ map:  55.74 kB
+../dist/js/root-features.js                              72.07 kB │ gzip:  24.56 kB │ map:  44.74 kB
+../dist/js/admin-profile.js                              78.59 kB │ gzip:  25.95 kB │ map:  49.88 kB
+../dist/js/employee-profile.js                           78.94 kB │ gzip:  25.97 kB │ map:  50.07 kB
+../dist/js/survey-employee.js                            86.69 kB │ gzip:  28.70 kB │ map:  52.28 kB
 ../dist/js/vendor-CSiHmso_.js                            96.37 kB │ gzip:  35.03 kB │ map:  58.22 kB
-../dist/js/admin-dashboard.js                            98.42 kB │ gzip:  29.30 kB │ map:  61.61 kB
-../dist/js/root-profile.js                               98.44 kB │ gzip:  31.21 kB │ map:  61.76 kB
-../dist/js/manage-departments.js                         99.88 kB │ gzip:  31.31 kB │ map:  60.52 kB
-../dist/js/manage-department-groups.js                  102.71 kB │ gzip:  31.07 kB │ map:  62.86 kB
-../dist/js/manage-areas.js                              102.78 kB │ gzip:  30.90 kB │ map:  61.98 kB
-../dist/js/manage-root.js                               104.83 kB │ gzip:  32.83 kB │ map:  64.82 kB
-../dist/js/manage-machines.js                           113.31 kB │ gzip:  35.74 kB │ map:  70.59 kB
-../dist/js/manage-teams.js                              130.79 kB │ gzip:  38.26 kB │ map:  79.64 kB
-../dist/js/kvp.js                                       135.48 kB │ gzip:  41.88 kB │ map:  82.31 kB
+../dist/js/admin-dashboard.js                            96.61 kB │ gzip:  28.84 kB │ map:  60.40 kB
+../dist/js/manage-departments.js                         97.72 kB │ gzip:  30.79 kB │ map:  59.27 kB
+../dist/js/root-profile.js                               98.38 kB │ gzip:  31.29 kB │ map:  61.71 kB
+../dist/js/manage-department-groups.js                  102.72 kB │ gzip:  31.08 kB │ map:  62.87 kB
+../dist/js/manage-areas.js                              102.99 kB │ gzip:  30.92 kB │ map:  62.08 kB
+../dist/js/blackboard-detail.js                         104.35 kB │ gzip:  32.15 kB │ map:  64.53 kB
+../dist/js/manage-root.js                               105.10 kB │ gzip:  32.87 kB │ map:  64.99 kB
+../dist/js/manage-machines.js                           113.55 kB │ gzip:  35.81 kB │ map:  70.70 kB
+../dist/js/manage-teams.js                              132.32 kB │ gzip:  38.93 kB │ map:  80.62 kB
+../dist/js/kvp.js                                       135.49 kB │ gzip:  41.93 kB │ map:  82.31 kB
 ../dist/js/fullcalendar-daygrid-DASi-aaQ.js             139.91 kB │ gzip:  43.71 kB │ map:  86.02 kB
 ../dist/js/vendor-utils-CwyYg7ZL.js                     145.22 kB │ gzip:  49.20 kB │ map:  91.98 kB
 ../dist/js/fullcalendar-timegrid--iCeik0h.js            160.03 kB │ gzip:  49.87 kB │ map:  98.22 kB
-../dist/js/survey-admin.js                              161.01 kB │ gzip:  48.07 kB │ map:  99.89 kB
-../dist/js/manage-employees.js                          177.58 kB │ gzip:  53.75 kB │ map: 109.22 kB
-../dist/js/kvp-detail.js                                180.74 kB │ gzip:  51.24 kB │ map: 111.11 kB
+../dist/js/survey-admin.js                              161.83 kB │ gzip:  48.45 kB │ map: 100.42 kB
+../dist/js/manage-employees.js                          177.95 kB │ gzip:  53.65 kB │ map: 109.42 kB
 ../dist/js/marked.min-Dr1dxkuQ.js                       188.97 kB │ gzip:  56.57 kB │ map: 111.90 kB
-../dist/js/manage-admins.js                             193.45 kB │ gzip:  57.60 kB │ map: 120.30 kB
+../dist/js/blackboard.js                                192.09 kB │ gzip:  54.98 kB │ map: 121.70 kB
+../dist/js/manage-admins.js                             194.63 kB │ gzip:  57.88 kB │ map: 121.08 kB
+../dist/js/kvp-detail.js                                198.09 kB │ gzip:  56.93 kB │ map: 122.24 kB
 ../dist/js/zxcvbn-core-B2v0qZns.js                      198.73 kB │ gzip:  62.55 kB │ map: 130.78 kB
 ../dist/js/fullcalendar-interaction-DSTqP4XH.js         217.24 kB │ gzip:  59.81 kB │ map: 137.27 kB
-../dist/js/blackboard.js                                226.23 kB │ gzip:  69.58 kB │ map: 137.34 kB
-../dist/js/chat.js                                      254.60 kB │ gzip:  70.91 kB │ map: 154.43 kB
-../dist/js/documents-explorer.js                        289.71 kB │ gzip:  84.38 kB │ map: 176.93 kB
-../dist/js/calendar.js                                  354.46 kB │ gzip: 100.63 kB │ map: 217.25 kB
-../dist/js/unified-navigation-B5kfZRMg.js               520.09 kB │ gzip: 154.19 kB │ map: 314.67 kB
-../dist/js/shifts.js                                    694.47 kB │ gzip: 192.39 kB │ map: 416.60 kB
+../dist/js/chat.js                                      255.11 kB │ gzip:  71.00 kB │ map: 154.74 kB
+../dist/js/documents-explorer.js                        297.95 kB │ gzip:  87.34 kB │ map: 181.91 kB
+../dist/js/calendar.js                                  364.71 kB │ gzip: 103.75 kB │ map: 223.80 kB
+../dist/js/unified-navigation-CsSuIoRn.js               519.48 kB │ gzip: 154.80 kB │ map: 314.81 kB
+../dist/js/shifts.js                                    696.80 kB │ gzip: 193.10 kB │ map: 418.17 kB
 ../dist/js/fullcalendar-core-IyfgmfmD.js                990.65 kB │ gzip: 298.50 kB │ map: 622.63 kB
 ../dist/js/zxcvbn-common-C5FGJ3pm.js                  1,117.39 kB │ gzip: 529.81 kB │ map: 489.22 kB
 ../dist/js/zxcvbn-de-DPs7F-u1.js                      1,910.51 kB │ gzip: 840.88 kB │ map: 820.25 kB
-✓ built in 9.24s
+✓ built in 9.14s
 
+
+
+
+
+scs@SOSCSPC1M16:~/projects/Assixx$cd docker
+scs@SOSCSPC1M16:~/projects/Assixx/docker$ docker-compose build --no-cache
+[+] Building 44.7s (18/18) FINISHED
+ => [internal] load local bake definitions                                                                                                                                            0.0s
+ => => reading from stdin 544B                                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile.dev                                                                                                                              0.0s
+ => => transferring dockerfile: 1.10kB                                                                                                                                                0.0s
+ => [internal] load metadata for docker.io/library/node:24.11.1-alpine                                                                                                                1.3s
+ => [auth] library/node:pull token for registry-1.docker.io                                                                                                                           0.0s
+ => [internal] load .dockerignore                                                                                                                                                     0.0s
+ => => transferring context: 2B                                                                                                                                                       0.0s
+ => CACHED [ 1/10] FROM docker.io/library/node:24.11.1-alpine@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c732e60e19e8e75c7239c43                                                 0.0s
+ => => resolve docker.io/library/node:24.11.1-alpine@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c732e60e19e8e75c7239c43                                                          0.0s
+ => [internal] load build context                                                                                                                                                     0.0s
+ => => transferring context: 424.54kB                                                                                                                                                 0.0s
+ => [ 2/10] RUN apk add --no-cache curl jq &&     apk upgrade --no-cache curl                                                                                                         2.1s
+ => [ 3/10] RUN npm install -g pnpm@10.24.0                                                                                                                                           2.6s
+ => [ 4/10] WORKDIR /app                                                                                                                                                              0.0s
+ => [ 5/10] COPY package.json ./                                                                                                                                                      0.0s
+ => [ 6/10] COPY pnpm-lock.yaml ./                                                                                                                                                    0.0s
+ => [ 7/10] COPY pnpm-workspace.yaml ./                                                                                                                                               0.0s
+ => [ 8/10] COPY frontend/package.json ./frontend/                                                                                                                                    0.0s
+ => [ 9/10] COPY backend/package.json ./backend/                                                                                                                                      0.0s
+ => [10/10] RUN pnpm install --frozen-lockfile                                                                                                                                       12.1s
+ => exporting to image                                                                                                                                                               26.0s
+ => => exporting layers                                                                                                                                                              14.9s
+ => => exporting manifest sha256:5535ea66921352eca37af6354e7e198869d4909d0a4b48662951bd396f847569                                                                                     0.0s
+ => => exporting config sha256:47d11813976699f9cd81d622612dbb87e32a4d75fdab27161dd7d7a4a8f2163a                                                                                       0.0s
+ => => exporting attestation manifest sha256:2cdc98b7535f3e46f7af92cdab3f8a0f2fe5a15993fa5b0b9522521f83d0a651                                                                         0.0s
+ => => exporting manifest list sha256:a11a2b3d501392175926a870df4ff8ea70f94441feb8ea9c62a6338a7b224daf                                                                                0.0s
+ => => naming to docker.io/library/assixx-backend:dev                                                                                                                                 0.0s
+ => => unpacking to docker.io/library/assixx-backend:dev                                                                                                                             11.0s
+ => resolving provenance for metadata file                                                                                                                                            0.0s
+[+] Building 1/1
+ ✔ assixx-backend:dev  Built0.0s
+scs@SOSCSPC1M16:~/projects/Assixx/docker$

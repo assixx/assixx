@@ -1,10 +1,13 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment (NEVER commit secrets!)
 .env
 .env.local
 .env.production
+docker/.env
+**/.env
+!**/.env.example
 
 # Logs
 *.log

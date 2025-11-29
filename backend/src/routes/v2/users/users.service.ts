@@ -7,6 +7,13 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import userModel from '../../../models/user/index.js';
+// N:M REFACTORING: Import department assignment functions
+import {
+  type UserDepartmentRow,
+  bulkAssignUserDepartments,
+  getUserDepartments,
+  removeAllUserDepartments,
+} from '../../../models/user/user.departments.js';
 import type { AvailabilityData, UserFilter } from '../../../models/user/user.types.js';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
 import {
@@ -17,6 +24,43 @@ import {
   UpdateUserBody,
   UserDbFields,
 } from './users.types.js';
+
+/**
+ * N:M REFACTORING: Helper to add department info to API response
+ */
+function addDepartmentInfoToResponse(
+  response: Record<string, unknown>,
+  departments: UserDepartmentRow[],
+): void {
+  response['departmentIds'] = departments.map((dept: UserDepartmentRow) => dept.department_id);
+  response['departmentNames'] = departments.map((dept: UserDepartmentRow) => dept.department_name);
+}
+
+/**
+ * N:M REFACTORING: Helper to handle department assignments
+ * Returns true if assignments were made, false otherwise
+ */
+async function handleDepartmentAssignments(
+  userId: number,
+  departmentIds: number[] | undefined,
+  tenantId: number,
+  isUpdate: boolean,
+): Promise<void> {
+  if (!Array.isArray(departmentIds)) return;
+
+  // For updates, remove existing assignments first
+  if (isUpdate) {
+    await removeAllUserDepartments(userId, tenantId);
+  }
+
+  // Add new assignments if any
+  if (departmentIds.length > 0) {
+    const firstDept = departmentIds[0];
+    if (firstDept !== undefined) {
+      await bulkAssignUserDepartments(userId, departmentIds, tenantId, firstDept);
+    }
+  }
+}
 
 // Constants
 const USER_NOT_FOUND_MESSAGE = 'User not found';
@@ -145,6 +189,7 @@ export class UsersService {
    * Get user by ID
    * @param userId - The user ID
    * @param tenantId - The tenant ID
+   * N:M REFACTORING: Include department assignments in response
    */
   async getUserById(userId: number, tenantId: number): Promise<unknown> {
     const user = await userModel.findById(userId, tenantId);
@@ -153,7 +198,13 @@ export class UsersService {
       throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
-    return dbToApi(sanitizeUser(user));
+    // N:M REFACTORING: Fetch department assignments
+    const departments = await getUserDepartments(userId, tenantId);
+    const response = dbToApi(sanitizeUser(user));
+    addDepartmentInfoToResponse(response, departments);
+    // TODO: Add teamIds when user_teams is implemented
+
+    return response;
   }
 
   /**
@@ -198,14 +249,28 @@ export class UsersService {
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
+    // N:M REFACTORING: Extract department/team arrays before apiToDb conversion
+    // Note: teamIds reserved for future user_teams implementation
+    const {
+      departmentIds: rawDeptIds,
+      teamIds,
+      hasFullAccess,
+      ...userDataWithoutArrays
+    } = userData;
+    void teamIds; // Explicitly mark as intentionally unused
+    // Explicit type for ESLint
+    const departmentIds: number[] | undefined = rawDeptIds;
+
     // Convert from camelCase to snake_case
     const dbUserData = apiToDb({
-      ...userData,
+      ...userDataWithoutArrays,
       tenantId,
       password: hashedPassword,
       employeeNumber,
       username: userData.email, // Email is used as username
       isActive: true,
+      // N:M REFACTORING: Set has_full_access flag
+      hasFullAccess: hasFullAccess === true ? 1 : 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -216,6 +281,11 @@ export class UsersService {
         dbUserData as unknown as Parameters<typeof userModel.create>[0],
       );
 
+      // N:M REFACTORING: Assign departments if provided
+      await handleDepartmentAssignments(userId, departmentIds, tenantId, false);
+
+      // TODO: Implement team assignments via user_teams table when needed
+
       // Fetch complete user data
       const createdUser = await userModel.findById(userId, tenantId);
 
@@ -223,7 +293,12 @@ export class UsersService {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve created user', 500);
       }
 
-      return dbToApi(sanitizeUser(createdUser));
+      // N:M REFACTORING: Include department assignments in response
+      const departments = await getUserDepartments(userId, tenantId);
+      const response = dbToApi(sanitizeUser(createdUser));
+      addDepartmentInfoToResponse(response, departments);
+
+      return response;
     } catch (error: unknown) {
       return this.handleDuplicateError(error);
     }
@@ -231,6 +306,7 @@ export class UsersService {
 
   /**
    * Prepare update data for database
+   * N:M REFACTORING: Added handling for hasFullAccess
    */
   private async prepareUpdateData(updateData: UpdateUserBody): Promise<Record<string, unknown>> {
     const dbUpdateData = apiToDb(updateData as Record<string, unknown>);
@@ -245,6 +321,9 @@ export class UsersService {
     // Remove fields that shouldn't be updated this way
     delete dbUpdateData['tenant_id'];
     delete dbUpdateData['created_at'];
+    // N:M REFACTORING: Remove array fields (handled separately)
+    delete dbUpdateData['department_ids'];
+    delete dbUpdateData['team_ids'];
 
     return dbUpdateData;
   }
@@ -264,20 +343,48 @@ export class UsersService {
    * @param userId - The user ID
    * @param updateData - The updateData parameter
    * @param tenantId - The tenant ID
+   * N:M REFACTORING: Added department/team array handling
    */
   async updateUser(userId: number, updateData: UpdateUserBody, tenantId: number): Promise<unknown> {
     try {
       await this.validateUserExists(userId, tenantId);
-      const dbUpdateData = await this.prepareUpdateData(updateData);
 
+      // N:M REFACTORING: Extract department/team arrays before processing
+      // Note: teamIds reserved for future user_teams implementation
+      const {
+        departmentIds: rawDeptIds,
+        teamIds,
+        hasFullAccess,
+        ...userDataWithoutArrays
+      } = updateData;
+      void teamIds; // Explicitly mark as intentionally unused
+      // Explicit type for ESLint
+      const departmentIds: number[] | undefined = rawDeptIds;
+
+      // Add hasFullAccess to update data if provided
+      if (hasFullAccess !== undefined) {
+        (userDataWithoutArrays as Record<string, unknown>)['hasFullAccess'] = hasFullAccess ? 1 : 0;
+      }
+
+      const dbUpdateData = await this.prepareUpdateData(userDataWithoutArrays as UpdateUserBody);
       await userModel.update(userId, dbUpdateData, tenantId);
+
+      // N:M REFACTORING: Update department assignments using helper
+      await handleDepartmentAssignments(userId, departmentIds, tenantId, true);
+
+      // TODO: Implement team assignments via user_teams table when needed
 
       const updatedUser = await userModel.findById(userId, tenantId);
       if (!updatedUser) {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
       }
 
-      return dbToApi(sanitizeUser(updatedUser));
+      // N:M REFACTORING: Include department assignments in response
+      const departments = await getUserDepartments(userId, tenantId);
+      const response = dbToApi(sanitizeUser(updatedUser));
+      addDepartmentInfoToResponse(response, departments);
+
+      return response;
     } catch (error: unknown) {
       return this.handleDuplicateError(error);
     }

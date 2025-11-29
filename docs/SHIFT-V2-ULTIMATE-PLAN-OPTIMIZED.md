@@ -333,7 +333,7 @@ INSERT INTO user_teams (user_id, team_id, role, joined_at) VALUES
 
 ```bash
 # Nach jedem Schritt: DB prüfen!
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main
 
 # Prüfungen:
 SELECT * FROM areas WHERE name = 'Werk Nord';

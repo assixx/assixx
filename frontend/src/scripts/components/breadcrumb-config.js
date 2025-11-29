@@ -102,7 +102,7 @@ export const urlMappings = {
   '/manage-areas': { label: 'Bereiche verwalten', icon: ICON_BUILDING },
   '/manage-teams': { label: 'Teams verwalten', icon: ICON_USERS },
   '/manage-machines': { label: 'Maschinen verwalten', icon: ICON_INDUSTRY },
-  '/manage-department-groups': { label: 'Abteilungsgruppen', icon: ICON_LAYER_GROUP },
+  // NOTE: /manage-department-groups REMOVED - deprecated, use Areas
   '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: ICON_ARCHIVE },
   '/account-settings': { label: 'Konto-Einstellungen', icon: ICON_USER_COG },
   '/storage-upgrade': { label: 'Speicher-Upgrade', icon: ICON_HDD },

@@ -5,7 +5,7 @@
 
 import type { Admin, AdminStatusFilter } from './types';
 import { $$, setHTML } from '../../../utils/dom-utils';
-import { getPositionDisplay, getStatusBadge, getDepartmentsBadge } from './forms';
+import { getPositionDisplay, getStatusBadge, getDepartmentsBadge, getAreasBadge, getTeamsBadge } from './forms';
 
 /**
  * Generate HTML for a single admin table row
@@ -13,7 +13,9 @@ import { getPositionDisplay, getStatusBadge, getDepartmentsBadge } from './forms
 export function generateAdminRow(admin: Admin): string {
   console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
 
+  const areaBadge = getAreasBadge(admin);
   const deptBadge = getDepartmentsBadge(admin);
+  const teamBadge = getTeamsBadge(admin);
   const statusBadge = getStatusBadge(admin);
   const employeeNumber = admin.employeeNumber ?? '-';
 
@@ -34,7 +36,9 @@ export function generateAdminRow(admin: Admin): string {
       <td>${employeeNumber}</td>
       <td>${getPositionDisplay(admin.position ?? '')}</td>
       <td>${statusBadge}</td>
+      <td>${areaBadge}</td>
       <td>${deptBadge}</td>
+      <td>${teamBadge}</td>
       <td>
         <div class="flex gap-2">
           <button
@@ -45,15 +49,6 @@ export function generateAdminRow(admin: Admin): string {
             aria-label="Admin bearbeiten"
           >
             <i class="fas fa-edit"></i>
-          </button>
-          <button
-            class="action-icon action-icon--view"
-            data-action="show-permissions"
-            data-admin-id="${String(admin.id)}"
-            title="Berechtigungen"
-            aria-label="Berechtigungen anzeigen"
-          >
-            <i class="fas fa-key"></i>
           </button>
           <button
             class="action-icon action-icon--delete"
@@ -90,13 +85,6 @@ export function getEmptyStateDescription(statusFilter: AdminStatusFilter): strin
 }
 
 /**
- * Check if add button should be hidden for current filter
- */
-export function shouldHideAddButton(statusFilter: AdminStatusFilter): boolean {
-  return statusFilter === 'inactive' || statusFilter === 'archived';
-}
-
-/**
  * Update empty state content based on current filter
  */
 export function updateEmptyStateContent(statusFilter: AdminStatusFilter): void {
@@ -105,7 +93,6 @@ export function updateEmptyStateContent(statusFilter: AdminStatusFilter): void {
 
   const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
   const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
-  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
 
   if (emptyStateTitle !== null) {
     emptyStateTitle.textContent = getEmptyStateTitle(statusFilter);
@@ -113,14 +100,6 @@ export function updateEmptyStateContent(statusFilter: AdminStatusFilter): void {
 
   if (emptyStateDesc !== null) {
     emptyStateDesc.textContent = getEmptyStateDescription(statusFilter);
-  }
-
-  if (emptyStateAddBtn !== null) {
-    if (shouldHideAddButton(statusFilter)) {
-      emptyStateAddBtn.classList.add('u-hidden');
-    } else {
-      emptyStateAddBtn.classList.remove('u-hidden');
-    }
   }
 }
 
@@ -201,7 +180,9 @@ export function renderAdminTable(
             <th scope="col">Personalnummer</th>
             <th scope="col">Position</th>
             <th scope="col">Status</th>
+            <th scope="col">Bereiche</th>
             <th scope="col">Abteilungen</th>
+            <th scope="col">Teams</th>
             <th scope="col">Aktionen</th>
           </tr>
         </thead>

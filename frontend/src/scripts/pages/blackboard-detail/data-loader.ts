@@ -143,6 +143,19 @@ export class BlackboardDetailDataLoader {
   }
 
   /**
+   * Remove confirmation (mark as unread)
+   */
+  async unconfirmEntry(): Promise<boolean> {
+    try {
+      await this.apiClient.delete(`/blackboard/entries/${this.entryId}/confirm`);
+      return true;
+    } catch (error) {
+      console.error('[Blackboard Detail] Error unconfirming entry:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Add comment to entry
    */
   async addComment(comment: string, isInternal: boolean = false): Promise<{ id: number }> {

@@ -7,7 +7,20 @@ import { ApiClient } from '../../../utils/api-client';
 import { $$id } from '../../../utils/dom-utils';
 import { showErrorAlert } from '../../utils/alerts';
 import type { Employee, IEmployeesManager, WindowWithEmployeeHandlers } from './types';
-import { processFormField } from './ui';
+import { processFormField, getMultiSelectValues } from './ui';
+
+// ===== CONSTANTS =====
+// NOTE: Employee assignment simplified - ONLY teamIds
+// Area/Department are inherited from Team automatically
+const EMPLOYEE_FORM_ELEMENT_IDS = {
+  TEAMS_SELECT: 'employee-teams',
+  // NOTE: Removed - Employees don't have area/dept/fullAccess assignments
+  // AREAS_SELECT: 'employee-areas',
+  // DEPARTMENTS_SELECT: 'employee-departments',
+  // FULL_ACCESS_TOGGLE: 'employee-full-access',
+} as const;
+
+// NOTE: DISABLED_OPACITY_CLASS removed - no longer needed after form simplification
 
 // ===== GLOBAL STATE =====
 // Note: employeesManager will be set from index.ts to avoid circular dependencies
@@ -128,6 +141,7 @@ function generateUsernameFromEmail(email: string): string {
 
 /**
  * Prepare employee data for save operation
+ * SIMPLIFIED: Employees ONLY get teamIds - Area/Department inherited from Team
  */
 function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
   data['role'] = 'employee';
@@ -135,6 +149,16 @@ function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
   if (data['isActive'] !== undefined) {
     data['isActive'] = data['isActive'] === '1' || data['isActive'] === true;
   }
+
+  // SIMPLIFIED: Only teamIds for employees
+  // Area/Department are inherited from Team automatically
+  const teamIds = getMultiSelectValues(EMPLOYEE_FORM_ELEMENT_IDS.TEAMS_SELECT);
+  data['teamIds'] = teamIds;
+
+  // NOTE: Removed areaIds, departmentIds, hasFullAccess - Employees don't use these
+  // They get Area/Department access via Team membership inheritance
+
+  console.info('[prepareEmployeeDataForSave] Employee teams:', { teamIds: data['teamIds'] });
 }
 
 // ===== SAVE OPERATIONS =====
@@ -200,60 +224,44 @@ export async function handleSaveEmployee(): Promise<void> {
   }
 }
 
-// ===== DROPDOWN LOADING =====
+// ===== MULTI-SELECT LOADING (SIMPLIFIED - ONLY TEAMS) =====
+
+// NOTE: handleLoadAreas and handleLoadDepartments removed - Employees only get teams
 
 /**
- * Handle loading departments for employee select (custom dropdown)
- */
-export async function handleLoadDepartments(): Promise<void> {
-  const departments = await employeesManager?.loadDepartments();
-  const menu = $$id('department-menu');
-
-  if (menu !== null && departments !== undefined) {
-    // Clear existing options and add default
-    menu.innerHTML = '<div class="dropdown__option" data-value="">Keine Abteilung</div>';
-
-    // Add department options
-    departments.forEach((dept) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown__option';
-      option.dataset['value'] = dept.id.toString();
-      option.textContent = dept.name;
-      menu.append(option);
-    });
-
-    console.info('[EmployeesManager] Loaded departments:', departments.length);
-  }
-}
-
-/**
- * Handle loading teams for employee select (custom dropdown)
+ * Handle loading teams for employee multi-select
+ * SIMPLIFIED: This is the ONLY assignment for employees
+ * Area/Department are inherited from the Team automatically
  */
 export async function handleLoadTeams(): Promise<void> {
   const teams = await employeesManager?.loadTeams();
-  const deptInput = $$id('employee-department') as HTMLInputElement | null;
-  const selectedDeptId = deptInput?.value;
-  const menu = $$id('team-menu');
+  const teamSelect = $$id(EMPLOYEE_FORM_ELEMENT_IDS.TEAMS_SELECT) as HTMLSelectElement | null;
 
-  if (menu !== null && teams !== undefined) {
-    // Filter teams by department if one is selected
-    let filteredTeams = teams;
-    if (selectedDeptId !== undefined && selectedDeptId !== '' && selectedDeptId !== '0') {
-      filteredTeams = teams.filter((team) => team.departmentId === Number.parseInt(selectedDeptId, 10));
-    }
+  if (teamSelect !== null && teams !== undefined) {
+    teamSelect.innerHTML = '';
 
-    // Clear existing options and add default
-    menu.innerHTML = '<div class="dropdown__option" data-value="">Kein Team</div>';
-
-    // Add team options
-    filteredTeams.forEach((team) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown__option';
-      option.dataset['value'] = team.id.toString();
-      option.textContent = team.name;
-      menu.append(option);
+    // Load all teams for employee assignment
+    teams.forEach((team) => {
+      const option = document.createElement('option');
+      option.value = team.id.toString();
+      // Show team name with department for context
+      option.textContent = team.departmentName !== undefined ? `${team.name} (${team.departmentName})` : team.name;
+      teamSelect.append(option);
     });
 
-    console.info('[EmployeesManager] Loaded teams:', filteredTeams.length);
+    console.info('[EmployeesManager] Loaded teams for employee select:', teams.length);
   }
 }
+
+// NOTE: All full access and area/department filter functions have been REMOVED
+// Employees ONLY get team assignments - Area/Department are inherited from Team
+// Removed functions:
+// - disableAndClearSelect
+// - applyFullAccessEnabledState
+// - applyFullAccessDisabledState
+// - setupFullAccessToggle
+// - filterDepartmentsBySelectedAreas
+// - getDepartmentsCoveredByAreas
+// - filterTeamsBySelectedDepartmentsAndAreas
+// - setupAreaDepartmentFilter
+// - setupDepartmentTeamFilter

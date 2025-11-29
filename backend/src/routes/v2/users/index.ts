@@ -4,6 +4,7 @@
  */
 import express, { RequestHandler, Response, Router } from 'express';
 
+import { filterDepartmentResults } from '../../../middleware/departmentAccess.js';
 import { rateLimiter } from '../../../middleware/rateLimiter.js';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -78,11 +79,12 @@ router.use(rateLimiter.api);
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-// List all users (admin only)
+// List all users (admin only) - filtered by accessible departments
 router.get(
   '/',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
+  filterDepartmentResults as RequestHandler, // Filter results by user's department access
   usersValidationZod.list,
   typed.auth((req: AuthenticatedRequest, res: Response) => usersController.listUsers(req, res)),
 );

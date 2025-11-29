@@ -1,6 +1,7 @@
 /**
  * Areas Controller v2
  * HTTP request handlers for area/location management
+ * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
  */
 import { Response } from 'express';
 
@@ -10,10 +11,10 @@ import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
 import {
+  assignDepartmentsToArea,
   createArea,
   deleteArea,
   getAreaById,
-  getAreaHierarchy,
   getAreaStats,
   getAreas,
   updateArea,
@@ -33,8 +34,8 @@ const USER_AGENT_HEADER = 'user-agent';
 function buildCreateRequest(body: CreateAreaBody): CreateAreaRequest {
   const data: CreateAreaRequest = { name: body.name, type: body.type };
   if (body.description !== undefined) data.description = body.description;
+  if (body.areaLeadId !== undefined) data.areaLeadId = body.areaLeadId;
   if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
-  if (body.parentId !== undefined && body.parentId !== null) data.parentId = body.parentId;
   if (body.address !== undefined) data.address = body.address;
   return data;
 }
@@ -44,11 +45,12 @@ function buildUpdateRequest(body: UpdateAreaBody): UpdateAreaRequest {
   const data: UpdateAreaRequest = {};
   if (body.name !== undefined) data.name = body.name;
   if (body.description !== undefined) data.description = body.description;
+  if (body.areaLeadId !== undefined) data.areaLeadId = body.areaLeadId;
   if (body.type !== undefined) data.type = body.type;
   if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
-  if (body.parentId !== undefined) data.parentId = body.parentId;
   if (body.address !== undefined) data.address = body.address;
   if (body.isActive !== undefined) data.isActive = body.isActive;
+  if (body.isArchived !== undefined) data.isArchived = body.isArchived;
   return data;
 }
 
@@ -90,33 +92,12 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
     const filters: AreaFilters = {
       ...(query.type !== undefined && { type: query.type }),
       ...(query.isActive !== undefined && { isActive: query.isActive }),
-      ...(query.parentId !== undefined && { parentId: query.parentId }),
       ...(query.search !== undefined && { search: query.search }),
     };
 
     const areas = await getAreas(req.user.tenant_id, filters);
 
     res.json(successResponse(areas, 'Areas retrieved successfully'));
-  } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    res.status(500).json(errorResponse('SERVER_ERROR', message));
-  }
-}
-
-/**
- * Get area hierarchy
- * GET /api/v2/areas/hierarchy
- * @param req - The request object
- * @param res - The response object
- */
-export async function getAreaHierarchyController(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
-  try {
-    const hierarchy = await getAreaHierarchy(req.user.tenant_id);
-
-    res.json(successResponse(hierarchy, 'Area hierarchy retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     res.status(500).json(errorResponse('SERVER_ERROR', message));
@@ -174,7 +155,6 @@ export async function createAreaController(
     await logAreaAction(req, 'create', newArea.id, `Erstellt: ${data.name}`, undefined, {
       name: data.name,
       type: data.type,
-      parent_id: data.parentId,
       address: data.address,
       capacity: data.capacity,
       created_by: req.user.email,
@@ -230,7 +210,6 @@ export async function updateAreaController(
       {
         name: oldArea?.name,
         type: oldArea?.type,
-        parent_id: oldArea?.parent_id,
         address: oldArea?.address,
         capacity: oldArea?.capacity,
         is_active: oldArea?.is_active,
@@ -238,7 +217,6 @@ export async function updateAreaController(
       {
         name: data.name,
         type: data.type,
-        parent_id: data.parentId,
         address: data.address,
         capacity: data.capacity,
         is_active: data.isActive,
@@ -296,7 +274,6 @@ export async function deleteAreaController(
     await logAreaAction(req, 'delete', areaId, `Gelöscht: ${String(deletedArea?.name)}`, {
       name: deletedArea?.name,
       type: deletedArea?.type,
-      parent_id: deletedArea?.parent_id,
       address: deletedArea?.address,
       capacity: deletedArea?.capacity,
       deleted_by: req.user.email,
@@ -339,5 +316,53 @@ export async function getAreaStatsController(
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     res.status(500).json(errorResponse('SERVER_ERROR', message));
+  }
+}
+
+/**
+ * Assign departments to an area (bulk update)
+ * POST /api/v2/areas/:id/departments
+ * @param req - The request object with area ID and department IDs
+ * @param res - The response object
+ */
+export async function assignDepartmentsController(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'root') {
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
+      return;
+    }
+
+    const params = req.params as unknown as AreaIdParam;
+    const areaId = params.id;
+    const { departmentIds } = req.body as { departmentIds: number[] };
+
+    // Validate departmentIds is an array
+    if (!Array.isArray(departmentIds)) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'departmentIds must be an array'));
+      return;
+    }
+
+    await assignDepartmentsToArea(areaId, departmentIds, req.user.tenant_id);
+
+    await logAreaAction(
+      req,
+      'assign_departments',
+      areaId,
+      `${departmentIds.length} Abteilungen zugewiesen`,
+      undefined,
+      { departmentIds, assigned_by: req.user.email },
+    );
+
+    res.json(successResponse(null, 'Departments assigned successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      const message = getErrorMessage(error);
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
+    }
   }
 }

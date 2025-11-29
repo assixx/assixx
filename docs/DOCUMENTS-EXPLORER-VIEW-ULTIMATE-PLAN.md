@@ -1136,7 +1136,7 @@ export class Sidebar {
 
 **Verification (Run this):**
 ```bash
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e \
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e \
   "SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS \
    WHERE TABLE_NAME='documents' AND COLUMN_NAME IN \
    ('file_uuid', 'file_checksum', 'storage_type', 'version');"
@@ -3431,7 +3431,7 @@ curl -I http://localhost:3000/documents-department.html
 
 ```bash
 # Check database has UUID columns
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e \
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e \
   "SELECT id, file_uuid, file_checksum, storage_type, file_path FROM documents LIMIT 5;"
 ```
 
@@ -3451,7 +3451,7 @@ Already done in grid.ts:
 # Test upload workflow
 # 1. Upload document via existing upload page
 # 2. Check database:
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e \
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e \
   "SELECT file_uuid, file_path FROM documents ORDER BY id DESC LIMIT 1;"
 
 # 3. Check file exists at UUID path:

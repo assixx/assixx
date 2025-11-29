@@ -341,11 +341,11 @@ CREATE TABLE documents (
 bash scripts/quick-backup.sh "before_ultimate_refactoring"
 
 # 2. Export current data
-docker exec assixx-mysql mysqldump -u assixx_user -pAssixxP@ss2025! \
+docker exec assixx-mysql mysqldump -u assixx_user -pYOUR_PASSWORD \
   main documents > /tmp/documents_backup.sql
 
 # 3. Document current state
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main \
   -e "SELECT COUNT(*), recipient_type, category FROM documents GROUP BY recipient_type, category;"
 
 # 4. Create migration branch
@@ -751,21 +751,21 @@ ALTER TABLE documents
 
 ```bash
 # 1. Test on local copy
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD \
   main < database/migrations/2025-01-10_document_schema_refactor.sql
 
 # 2. Verify constraints
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main \
   -e "INSERT INTO documents (tenant_id, access_scope) VALUES (1, 'personal');"
 # Should FAIL: chk_personal_has_owner
 
 # 3. Verify data integrity
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main \
   -e "SELECT * FROM documents WHERE access_scope IS NULL;"
 # Should return 0 rows
 
 # 4. Performance test
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main \
   -e "EXPLAIN SELECT * FROM documents
       WHERE tenant_id = 1 AND access_scope = 'personal' AND owner_user_id = 5;"
 # Should use idx_tenant_scope_owner
@@ -903,7 +903,7 @@ If something goes wrong:
 
 ```bash
 # 1. Restore from backup
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! \
+docker exec assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD \
   main < /tmp/documents_backup.sql
 
 # 2. Revert code changes

@@ -459,7 +459,12 @@ export async function deleteEntry(req: AuthenticatedRequest, res: Response): Pro
       req.user.id,
     );
 
-    const result = await blackboardService.deleteEntry(entryId, req.user.tenant_id, req.user.id);
+    const result = await blackboardService.deleteEntry(
+      entryId,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
 
     // Get numeric ID for logging (rootLog requires numeric ID)
     const numericId = (deletedEntry as BlackboardEntry).id;
@@ -589,6 +594,32 @@ export async function confirmEntry(req: AuthenticatedRequest, res: Response): Pr
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse(ERR_SERVER, 'Failed to confirm entry'));
+    }
+  }
+}
+
+/**
+ * Remove confirmation (mark as unread)
+ * @param req - The request object
+ * @param res - The response object
+ */
+export async function unconfirmEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_BAD_REQUEST, MSG_ENTRY_ID_REQUIRED));
+      return;
+    }
+    const entryId = parseEntryId(idParam);
+    const result = await blackboardService.unconfirmEntry(entryId, req.user.id);
+
+    res.json(successResponse(result));
+  } catch (error: unknown) {
+    logger.error('Error unconfirming blackboard entry:', error);
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      res.status(500).json(errorResponse(ERR_SERVER, 'Failed to mark entry as unread'));
     }
   }
 }

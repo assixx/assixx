@@ -105,14 +105,7 @@
     z-index: -100;
     inset: 0;
 
-    background: linear-gradient(
-      360deg,
-      transparent,
-      rgb(0 142 255 / 10%) 100%,
-      rgb(1 0 4 / 51%) 0,
-      rgb(0 0 4 / 60%) 100%,
-      #000
-    );
+    background: linear-gradient(360deg, #0000, #0070ff1f 100%, #01000482 0, #00000499 100%, #000);
   }
 
   /* Typography */

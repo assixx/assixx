@@ -3,8 +3,9 @@
  */
 
 import type { ApiClient } from '../../../utils/api-client';
-import type { Area } from './types';
+import type { Area, Department, AdminUser } from './types';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
+import { loadAndPopulateAreaLeads } from './forms';
 
 /**
  * API wrapper for area operations
@@ -43,16 +44,10 @@ export class AreaAPI {
 
   /**
    * Create new area
+   * NOTE: parent_id removed (2025-11-29) - areas are now flat (non-hierarchical)
    */
   async create(data: Partial<Area>): Promise<Area> {
-    const cleanedData = { ...data };
-
-    // Clean up empty values
-    if (cleanedData.parent_id === null || cleanedData.parent_id === undefined || cleanedData.parent_id === 0) {
-      delete cleanedData.parent_id;
-    }
-
-    const response = await this.apiClient.post<Area>('/areas', cleanedData);
+    const response = await this.apiClient.post<Area>('/areas', data);
 
     showSuccessAlert('Bereich erfolgreich erstellt');
     return response;
@@ -105,6 +100,72 @@ export class AreaAPI {
       console.error('Error getting area details:', error);
       showErrorAlert('Fehler beim Laden der Bereichsdetails');
       return null;
+    }
+  }
+
+  /**
+   * Fetch all departments (for multi-select dropdown)
+   */
+  async fetchAllDepartments(): Promise<Department[]> {
+    try {
+      const response = await this.apiClient.request<Department[] | { success: boolean; data: Department[] }>(
+        '/departments',
+        { method: 'GET' },
+      );
+
+      if (Array.isArray(response)) {
+        return response;
+      } else if (typeof response === 'object' && 'data' in response) {
+        return Array.isArray(response.data) ? response.data : [];
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error loading departments:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Assign departments to an area (bulk update)
+   * Sets area_id for selected departments, clears area_id for unselected
+   * @param areaId - The area ID to assign departments to
+   * @param departmentIds - Array of department IDs to assign
+   */
+  async assignDepartments(areaId: number, departmentIds: number[]): Promise<void> {
+    try {
+      await this.apiClient.post(`/areas/${areaId}/departments`, { departmentIds });
+    } catch (error) {
+      console.error('Error assigning departments:', error);
+      showErrorAlert('Fehler beim Zuweisen der Abteilungen');
+      throw error;
+    }
+  }
+
+  /**
+   * Load admin/root users for area lead dropdown
+   * Fetches all users with role 'admin' or 'root'
+   */
+  async loadAreaLeads(): Promise<AdminUser[]> {
+    try {
+      // Fetch admins and roots separately (API may not support multiple role filter)
+      const [adminsResponse, rootsResponse] = await Promise.all([
+        this.apiClient.request<AdminUser[]>('/users?role=admin', { method: 'GET' }),
+        this.apiClient.request<AdminUser[]>('/users?role=root', { method: 'GET' }),
+      ]);
+
+      const admins = Array.isArray(adminsResponse) ? adminsResponse : [];
+      const roots = Array.isArray(rootsResponse) ? rootsResponse : [];
+
+      // Combine and deduplicate by id
+      const combined = [...roots, ...admins];
+      const uniqueUsers = combined.filter((user, index, self) => index === self.findIndex((u) => u.id === user.id));
+
+      loadAndPopulateAreaLeads(uniqueUsers);
+      return uniqueUsers;
+    } catch (error) {
+      console.error('Error loading area leads:', error);
+      return [];
     }
   }
 }

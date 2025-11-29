@@ -6,8 +6,9 @@ import { Request, Response, Router } from 'express';
 
 import { apiLimiter, authLimiter } from '../../../middleware/security-enhanced.js';
 import { validateBody, validateParams } from '../../../middleware/validation.zod.js';
+import { sanitizeForLog } from '../../../utils/logger.js';
 import { signupController } from './controller.js';
-import { SignupRequestSchema, SubdomainCheckRequestSchema } from './validation.zod.js';
+import { SignupRequestSchema, SubdomainCheckRequestSchema } from './signup.validation.zod.js';
 
 const router = Router();
 
@@ -130,8 +131,9 @@ router.post(
   authLimiter, // Rate limiting for registration
   validateBody(SignupRequestSchema), // CRITICAL: Input validation to prevent SQL injection and XSS
   async (req: Request, res: Response) => {
+    // SECURITY: Use sanitizeForLog to prevent password exposure in logs
     console.info('[SIGNUP ROUTE] Request received');
-    console.info('[SIGNUP ROUTE] Body validated:', req.body);
+    console.info('[SIGNUP ROUTE] Body validated:', sanitizeForLog(req.body));
     console.info('[SIGNUP ROUTE] About to call controller');
     try {
       console.info('[SIGNUP ROUTE] Inside try block');

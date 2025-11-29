@@ -44,25 +44,23 @@ export interface UsersRow extends RowDataPacket {
   tenant_id: number;
   username: string;
   email: string;
-  profile_picture_url: string | null;
   password: string;
   role: 'root' | 'admin' | 'employee';
+  has_full_access: number; // tinyint(1) - 0 or 1, Full tenant access without individual assignments
   first_name: string | null;
   last_name: string | null;
   age: number | null;
   employee_id: string | null;
   employee_number: string;
-  iban: string | null;
-  company: string | null;
+  // REMOVED: iban and company columns dropped from users table (2025-11-27)
   notes: string | null;
-  department_id: number | null;
+  // N:M REFACTORING: department_id column REMOVED from users table (2025-11-27)
+  // Data now comes from user_departments table via SQL JOIN as 'primary_department_id'
   position: string | null;
   phone: string | null;
   landline: string | null;
-  mobile: string | null;
   profile_picture: string | null;
   address: string | null;
-  birthday: Date | string | null;
   date_of_birth: Date | string | null;
   hire_date: Date | string | null;
   emergency_contact: string | null;
@@ -70,7 +68,6 @@ export interface UsersRow extends RowDataPacket {
   notification_preferences: object | null;
   is_active: number; // tinyint(1) - 0 or 1
   is_archived: number; // tinyint(1) - 0 or 1
-  status: 'active' | 'inactive';
   last_login: Date | string | null;
   password_reset_token: string | null;
   password_reset_expires: Date | string | null;
@@ -128,7 +125,7 @@ export interface DepartmentsRow extends RowDataPacket {
   tenant_id: number;
   name: string;
   description: string | null;
-  manager_id: number | null;
+  department_lead_id: number | null;
   area_id: number | null;
   status: 'active' | 'inactive';
   visibility: 'public' | 'private';
@@ -880,6 +877,39 @@ export interface AdminGroupPermissionsRow extends RowDataPacket {
   can_write: number; // tinyint(1)
   can_delete: number; // tinyint(1)
   assigned_by: number;
+  assigned_at: Date | string;
+}
+
+/**
+ * User Area Permissions table row - Hierarchical area-level access
+ * Part of Assignment System Refactoring (2025-11-27)
+ */
+
+export interface UserAreaPermissionsRow extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  user_id: number;
+  area_id: number;
+  can_read: number; // tinyint(1)
+  can_write: number; // tinyint(1)
+  can_delete: number; // tinyint(1)
+  assigned_by: number;
+  assigned_at: Date | string;
+}
+
+/**
+ * User Departments junction table row - N:M user-department relationship
+ * Part of Assignment System Refactoring (2025-11-27)
+ * Replaces users.department_id (1:1) with consistent N:M pattern
+ */
+
+export interface UserDepartmentsRow extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  user_id: number;
+  department_id: number;
+  is_primary: number; // tinyint(1) - 0 or 1
+  assigned_by: number | null;
   assigned_at: Date | string;
 }
 

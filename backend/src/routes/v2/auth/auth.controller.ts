@@ -65,7 +65,7 @@ interface FoundUser {
   email: string;
   password: string;
   role: string;
-  status: string;
+  is_active?: boolean | number; // DB returns TINYINT (0/1)
   reset_token?: string | null;
   reset_token_expires?: Date | null;
   [key: string]: unknown;
@@ -316,7 +316,9 @@ async function login(
       return;
     }
 
-    if (foundUser.status !== 'active') {
+    // Check if user is active (DB returns TINYINT 0/1, normalize to boolean)
+    const isActiveValue = foundUser.is_active as boolean | number | undefined;
+    if (isActiveValue !== true && isActiveValue !== 1) {
       res.status(403).json(errorResponse('ACCOUNT_INACTIVE', 'Ihr Account ist nicht aktiv'));
       return;
     }
@@ -406,7 +408,7 @@ async function register(req: AuthenticatedRequest, res: Response): Promise<void>
       first_name: firstName,
       last_name: lastName,
       role,
-      status: 'active',
+      is_active: true,
     });
 
     const newUser = await user.findById(userId, tenantId);

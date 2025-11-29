@@ -16,7 +16,7 @@ import authV2Routes from '../routes/v2/auth/index.js';
 import blackboardV2Routes from '../routes/v2/blackboard/index.js';
 import calendarV2Routes from '../routes/v2/calendar/index.js';
 import chatV2Routes from '../routes/v2/chat/index.js';
-import departmentGroupsV2Routes from '../routes/v2/department-groups/index.js';
+// NOTE: departmentGroupsV2Routes REMOVED - deprecated, use Areas instead
 import departmentsV2Routes from '../routes/v2/departments/index.js';
 import documentsV2Routes from '../routes/v2/documents/index.js';
 import featuresV2Routes from '../routes/v2/features/index.js';
@@ -90,7 +90,7 @@ export function loadAPIRoutes(app: Application): void {
   mountRoute(app, '/api/v2/areas', areasV2Routes);
   mountRoute(app, '/api/v2/root', rootV2Routes);
   mountRoute(app, '/api/v2/admin-permissions', adminPermissionsV2Routes);
-  mountRoute(app, '/api/v2/department-groups', departmentGroupsV2Routes);
+  // NOTE: /api/v2/department-groups REMOVED - deprecated, use Areas
   mountRoute(app, '/api/v2/roles', rolesV2Routes);
 
   console.log('✅ API v2 routes mounted');

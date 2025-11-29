@@ -15,8 +15,6 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <!-- Font Awesome - Must load BEFORE page-specific CSS -->
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/blackboard.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -333,27 +331,57 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal - Design System -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div class="modal-overlay" id="deleteEntryModal" hidden>
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Eintrag löschen?</h3>
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Eintrag löschen?
+          </h3>
           <button type="button" class="ds-modal__close" data-action="close-modal" data-modal-id="deleteEntryModal" aria-label="Schließen">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <div class="text-center py-3">
-            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem"></i>
-            <p id="deleteEntryMessage" class="mt-3 mb-0">Möchten Sie diesen Eintrag wirklich löschen?</p>
-          </div>
+          <p id="deleteEntryMessage" class="text-[var(--color-text-secondary)]">Möchten Sie diesen Eintrag wirklich löschen?</p>
           <input type="hidden" id="deleteEntryId" value="" />
         </div>
         <div class="ds-modal__footer ds-modal__footer--right">
           <button type="button" class="btn btn-cancel" data-action="close-modal" data-modal-id="deleteEntryModal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-action="confirm-delete">
+          <button type="button" class="btn btn-danger" id="proceedDeleteBtn" data-action="proceed-delete">
             <i class="fas fa-trash-alt mr-2"></i>
             Löschen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div class="modal-overlay" id="deleteEntryConfirmModal" hidden>
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Eintrag wird unwiderruflich aus dem Schwarzen Brett entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button
+            type="button"
+            class="confirm-modal__btn confirm-modal__btn--cancel"
+            data-action="close-modal"
+            data-modal-id="deleteEntryConfirmModal"
+          >
+            Abbrechen
+          </button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirmDeleteBtn" data-action="confirm-delete">
+            Endgültig löschen
           </button>
         </div>
       </div>

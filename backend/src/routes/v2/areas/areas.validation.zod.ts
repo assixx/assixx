@@ -37,7 +37,7 @@ export const GetAreasQuerySchema = z.object({
       : val,
     z.boolean().optional(),
   ),
-  parentId: IdSchema.optional(),
+  // NOTE: parentId removed (2025-11-29) - areas are now flat (non-hierarchical)
   search: z
     .string()
     .trim()
@@ -75,6 +75,12 @@ export const CreateAreaBodySchema = z.object({
     .trim()
     .max(1000, 'Description must not exceed 1000 characters')
     .optional(),
+  areaLeadId: z
+    .number()
+    .int()
+    .positive('Area lead ID must be a positive integer')
+    .nullable()
+    .optional(),
   type: AreaTypeSchema.default('other'),
   capacity: z
     .number()
@@ -82,7 +88,7 @@ export const CreateAreaBodySchema = z.object({
     .nonnegative('Capacity must be a non-negative integer')
     .nullable()
     .optional(),
-  parentId: z.number().int().positive('Parent ID must be a positive integer').nullable().optional(),
+  // NOTE: parentId removed (2025-11-29) - areas are now flat (non-hierarchical)
   address: z.string().trim().max(500, 'Address must not exceed 500 characters').optional(),
 });
 
@@ -101,6 +107,12 @@ export const UpdateAreaBodySchema = z.object({
     .trim()
     .max(1000, 'Description must not exceed 1000 characters')
     .optional(),
+  areaLeadId: z
+    .number()
+    .int()
+    .positive('Area lead ID must be a positive integer')
+    .nullable()
+    .optional(),
   type: AreaTypeSchema.optional(),
   capacity: z
     .number()
@@ -108,9 +120,10 @@ export const UpdateAreaBodySchema = z.object({
     .nonnegative('Capacity must be a non-negative integer')
     .nullable()
     .optional(),
-  parentId: z.number().int().positive('Parent ID must be a positive integer').nullable().optional(),
+  // NOTE: parentId removed (2025-11-29) - areas are now flat (non-hierarchical)
   address: z.string().trim().max(500, 'Address must not exceed 500 characters').optional(),
   isActive: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
 });
 
 // ============================================================

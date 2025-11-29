@@ -16,8 +16,9 @@ export interface RootUser {
   notes?: string;
   employeeId?: string;
   employeeNumber?: string;
-  departmentId?: number;
+  // N:M REFACTORING: Root users have has_full_access=1, no departmentId needed
   isActive: boolean | number;
+  isArchived?: boolean | number;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
@@ -36,11 +37,12 @@ export interface FormValues {
   position: string;
   notes: string;
   employeeNumber: string;
-  departmentId: string;
+  // N:M REFACTORING: Root users have has_full_access=1, no departmentId needed
   isActive: boolean;
+  isArchived: boolean;
 }
 
 /**
  * Root user status filter types
  */
-export type RootStatusFilter = 'active' | 'inactive' | 'all';
+export type RootStatusFilter = 'active' | 'inactive' | 'archived' | 'all';

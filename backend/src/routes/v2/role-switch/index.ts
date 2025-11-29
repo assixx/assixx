@@ -8,7 +8,7 @@ import { securityV2 } from '../../../middleware/v2/security.middleware.js';
 import { validateBody } from '../../../middleware/validation.zod.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { RoleSwitchController } from './role-switch.controller.js';
-import { EmptyBodySchema } from './validation.zod.js';
+import { EmptyBodySchema } from './role-switch.validation.zod.js';
 
 const router = Router();
 

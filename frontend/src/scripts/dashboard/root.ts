@@ -8,7 +8,7 @@ import type { User } from '../../types/api.types';
 import { ApiClient } from '../../utils/api-client';
 import { setHTML } from '../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert, showAlert } from '../utils/alerts';
-import { getAuthToken } from '../auth/index';
+import { getAuthToken, loadUserInfo } from '../auth/index';
 
 // API Endpoints
 const API_ENDPOINTS = {
@@ -116,8 +116,8 @@ function setupEventListeners(): void {
 }
 
 // Load all initial data
+// NOTE: loadHeaderUserInfo() removed - UnifiedNavigation already handles this via loadUserInfo()
 function loadAllData(): void {
-  void loadHeaderUserInfo();
   void checkEmployeeNumber();
   void loadDashboardData();
   void loadAdmins();
@@ -126,6 +126,7 @@ function loadAllData(): void {
 }
 
 // Check if user has temporary employee number
+// Uses cached loadUserInfo() to prevent duplicate /api/v2/users/me calls
 async function checkEmployeeNumber(): Promise<void> {
   try {
     interface UserWithEmployeeNumber extends User {
@@ -133,7 +134,8 @@ async function checkEmployeeNumber(): Promise<void> {
       employee_number?: string;
     }
 
-    const user = await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
+    // Use cached loadUserInfo instead of direct API call
+    const user = (await loadUserInfo()) as UserWithEmployeeNumber;
 
     // Check if user has temporary employee number
     const employeeNumber = user.employeeNumber ?? user.employeeNumber ?? '';
@@ -145,8 +147,8 @@ async function checkEmployeeNumber(): Promise<void> {
 
       if (modal === null || form === null || input === null) return;
 
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      // Show modal (Design System pattern: add --active class)
+      modal.classList.add('modal-overlay--active');
       input.focus();
 
       // Allow letters, numbers and hyphens
@@ -172,12 +174,17 @@ async function checkEmployeeNumber(): Promise<void> {
               }),
             });
 
-            // Reload user data to update cache and UI
-            await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
+            // Reload user data with cache invalidation to update UI
+            await loadUserInfo(true);
+
+            // Update sidebar employee number directly
+            const sidebarEmployeeNumber = document.querySelector('#sidebar-employee-number span');
+            if (sidebarEmployeeNumber !== null) {
+              sidebarEmployeeNumber.textContent = newEmployeeNumber;
+            }
 
             showNotification('Mitarbeiternummer erfolgreich aktualisiert.', 'success');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            modal.classList.remove('modal-overlay--active');
           } catch (error) {
             console.error('Error updating employee number:', error);
             showNotification(
@@ -259,19 +266,19 @@ async function loadDashboardData(): Promise<void> {
       dashboardContent,
       `
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="card-stat">
                     <span class="stat-value">${data.adminCount}</span>
                     <span class="stat-label">Admins</span>
                 </div>
-                <div class="stat-card">
+                <div class="card-stat">
                     <span class="stat-value">${data.employeeCount}</span>
                     <span class="stat-label">Mitarbeiter</span>
                 </div>
-                <div class="stat-card">
+                <div class="card-stat">
                     <span class="stat-value">${data.totalUsers}</span>
                     <span class="stat-label">Gesamte Benutzer</span>
                 </div>
-                <div class="stat-card">
+                <div class="card-stat">
                     <span class="stat-value">${data.tenantCount}</span>
                     <span class="stat-label">Tenants</span>
                 </div>
@@ -388,19 +395,9 @@ async function deleteAdmin(adminId: number): Promise<void> {
   }
 }
 
-// Load header user info
-async function loadHeaderUserInfo(): Promise<void> {
-  try {
-    const user = await apiClient.request<User>(API_ENDPOINTS.USERS_ME);
-    const userNameEl = document.querySelector('#header-userName');
-    const userRoleEl = document.querySelector('#header-userRole');
-
-    if (userNameEl !== null) userNameEl.textContent = user.username;
-    if (userRoleEl !== null) userRoleEl.textContent = user.role;
-  } catch (error) {
-    console.error('Error loading header info:', error);
-  }
-}
+// loadHeaderUserInfo() REMOVED - Redundant!
+// UnifiedNavigation already handles header user info via loadUserInfo() from auth/index.ts
+// This was causing duplicate /api/v2/users/me calls on every page load
 
 // Load dashboard statistics
 async function loadDashboardStats(): Promise<void> {
@@ -420,19 +417,19 @@ async function loadDashboardStats(): Promise<void> {
     setHTML(
       statsEl as HTMLElement,
       `
-            <div class="stat-card">
+            <div class="card-stat">
                 <h3>👥 Admins</h3>
                 <div class="stat-value">${stats.totalAdmins}</div>
             </div>
-            <div class="stat-card">
+            <div class="card-stat">
                 <h3>👤 Mitarbeiter</h3>
                 <div class="stat-value">${stats.totalEmployees}</div>
             </div>
-            <div class="stat-card">
+            <div class="card-stat">
                 <h3>🏢 Mandanten</h3>
                 <div class="stat-value">${stats.totalTenants}</div>
             </div>
-            <div class="stat-card">
+            <div class="card-stat">
                 <h3>📊 Aktivitäten (24h)</h3>
                 <div class="stat-value">${stats.recentActivity}</div>
             </div>

@@ -864,7 +864,8 @@ class DocumentsService {
 
       case 'department':
         // Check if user is in the target department
-        return user.department_id === document.target_department_id;
+        // N:M REFACTORING: department_id now from user_departments (primary dept)
+        return user['department_id'] === document.target_department_id;
 
       case 'company':
         // All users in tenant can see company documents

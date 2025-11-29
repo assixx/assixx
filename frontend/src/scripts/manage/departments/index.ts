@@ -18,6 +18,9 @@ import {
 } from './forms';
 import { DepartmentAPI } from './api';
 
+/** CSS class for active modal overlay */
+const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
+
 class DepartmentsManager {
   private readonly api: DepartmentAPI;
   public departments: Department[] = [];
@@ -44,13 +47,23 @@ class DepartmentsManager {
   }
 
   /**
-   * Initialize floating action button for adding departments
+   * Initialize floating action button and empty state button for adding departments
    */
   private initFloatingActionButton(): void {
+    // Floating button (bottom right)
     document.querySelector('.add-department-btn')?.addEventListener('click', () => {
       this.currentDepartmentId = null;
       showAddDepartmentModal();
       void this.loadAreas();
+      void this.loadDepartmentLeads();
+    });
+
+    // Empty state button
+    document.querySelector('#empty-state-add-btn')?.addEventListener('click', () => {
+      this.currentDepartmentId = null;
+      showAddDepartmentModal();
+      void this.loadAreas();
+      void this.loadDepartmentLeads();
     });
   }
 
@@ -147,7 +160,7 @@ class DepartmentsManager {
       closeDepartmentModal();
     });
 
-    // Delete modal close buttons
+    // Delete Modal Step 1: Close buttons
     document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
       closeDeleteModal();
     });
@@ -156,10 +169,27 @@ class DepartmentsManager {
       closeDeleteModal();
     });
 
-    // Delete confirmation button
-    document.querySelector('#confirm-delete-department')?.addEventListener('click', () => {
+    // Delete Modal Step 1: Proceed to second confirmation (double-check pattern)
+    document.querySelector('#proceed-delete-department')?.addEventListener('click', () => {
+      // Close first modal, show second modal
+      closeDeleteModal();
+      const confirmModal = document.querySelector('#delete-department-confirm-modal');
+      confirmModal?.classList.add(MODAL_ACTIVE_CLASS);
+    });
+
+    // Delete Modal Step 2: Cancel button
+    document.querySelector('#cancel-delete-confirm')?.addEventListener('click', () => {
+      const confirmModal = document.querySelector('#delete-department-confirm-modal');
+      confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
+    });
+
+    // Delete Modal Step 2: Final confirmation - actually delete
+    document.querySelector('#confirm-delete-department-final')?.addEventListener('click', () => {
       const deleteInput = document.querySelector<HTMLInputElement>('#delete-department-id');
       if (deleteInput !== null && deleteInput.value !== '') {
+        // Close second modal first
+        const confirmModal = document.querySelector('#delete-department-confirm-modal');
+        confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
         void this.confirmDeleteDepartment(Number.parseInt(deleteInput.value, 10));
       }
     });
@@ -208,7 +238,7 @@ class DepartmentsManager {
     if (modal !== null && messageEl !== null && deleteIdInput !== null) {
       messageEl.textContent = `Möchten Sie die Abteilung "${department.name}" wirklich löschen?`;
       deleteIdInput.value = departmentId.toString();
-      modal.classList.add('modal-overlay--active');
+      modal.classList.add(MODAL_ACTIVE_CLASS);
     }
   }
 
@@ -241,9 +271,11 @@ class DepartmentsManager {
    * Initialize custom dropdown components
    */
   private initCustomDropdowns(): void {
-    // Initialize all dropdowns (area, status)
+    // Initialize all dropdowns (area, department lead, status)
     this.initDropdown('area-dropdown', 'area-trigger', 'area-menu', 'department-area');
-    this.initDropdown('status-dropdown', 'status-trigger', 'status-menu', 'department-status');
+    this.initDropdown('department-lead-dropdown', 'department-lead-trigger', 'department-lead-menu', 'department-lead');
+    // Status dropdown uses special mapping (isActive + isArchived)
+    this.initStatusDropdown();
   }
 
   /**
@@ -336,6 +368,82 @@ class DepartmentsManager {
   }
 
   /**
+   * Initialize status dropdown with isActive/isArchived mapping
+   */
+  private initStatusDropdown(): void {
+    const trigger = $$id('status-trigger');
+    const menu = $$id('status-menu');
+    const dropdown = $$id('status-dropdown');
+    const isActiveInput = $$id('department-is-active') as HTMLInputElement | null;
+    const isArchivedInput = $$id('department-is-archived') as HTMLInputElement | null;
+
+    if (trigger === null || menu === null || dropdown === null) {
+      console.warn('[initStatusDropdown] Status dropdown elements not found');
+      return;
+    }
+
+    if (isActiveInput === null || isArchivedInput === null) {
+      console.warn('[initStatusDropdown] Status hidden inputs not found');
+      return;
+    }
+
+    // Toggle menu on trigger click
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      trigger.classList.toggle('active');
+      menu.classList.toggle('active');
+    });
+
+    // Handle option selection
+    menu.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const option = target.closest('.dropdown__option');
+
+      if (option === null || !(option instanceof HTMLElement)) {
+        return;
+      }
+
+      const value = option.dataset['value'] ?? '';
+      const badge = option.querySelector('.badge');
+
+      // Map UI value to DB fields (isActive + isArchived)
+      switch (value) {
+        case 'active':
+          isActiveInput.value = '1';
+          isArchivedInput.value = '0';
+          break;
+        case 'inactive':
+          isActiveInput.value = '0';
+          isArchivedInput.value = '0';
+          break;
+        case 'archived':
+          isActiveInput.value = '0';
+          isArchivedInput.value = '1';
+          break;
+      }
+
+      // Update trigger with badge
+      const triggerSpan = trigger.querySelector('span');
+      if (triggerSpan !== null && badge !== null) {
+        setSafeHTML(triggerSpan, badge.outerHTML);
+      }
+
+      // Close menu
+      menu.classList.remove('active');
+      trigger.classList.remove('active');
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!dropdown.contains(target)) {
+        menu.classList.remove('active');
+        trigger.classList.remove('active');
+      }
+    });
+  }
+
+  /**
    * Initialize event delegation for table actions (edit, delete)
    */
   private initTableActions(): void {
@@ -377,12 +485,20 @@ class DepartmentsManager {
    * Filter by status
    */
   private filterByStatus(departments: Department[]): Department[] {
-    if (this.currentFilter === 'active') {
-      return departments.filter((dept) => dept.isActive);
-    } else if (this.currentFilter === 'inactive') {
-      return departments.filter((dept) => !dept.isActive);
+    switch (this.currentFilter) {
+      case 'active':
+        // Show only active AND not archived
+        return departments.filter((dept) => dept.isActive && dept.isArchived !== true);
+      case 'inactive':
+        // Show only inactive AND not archived
+        return departments.filter((dept) => !dept.isActive && dept.isArchived !== true);
+      case 'archived':
+        // Show only archived (regardless of isActive)
+        return departments.filter((dept) => dept.isArchived === true);
+      case 'all':
+      default:
+        return departments;
     }
-    return departments;
   }
 
   /**
@@ -514,7 +630,7 @@ class DepartmentsManager {
 
     // Close the first delete modal and show warning modal
     closeDeleteModal();
-    modal.classList.add('modal-overlay--active');
+    modal.classList.add(MODAL_ACTIVE_CLASS);
   }
 
   /**
@@ -523,7 +639,7 @@ class DepartmentsManager {
   private closeForceDeleteModal(): void {
     const modal = document.querySelector('#force-delete-warning-modal');
     if (modal) {
-      modal.classList.remove('modal-overlay--active');
+      modal.classList.remove(MODAL_ACTIVE_CLASS);
     }
   }
 
@@ -556,10 +672,49 @@ class DepartmentsManager {
   async loadAreas(): Promise<void> {
     await this.api.loadAreas();
   }
+
+  /**
+   * Load department leads (admin/root users) for dropdown
+   */
+  async loadDepartmentLeads(): Promise<void> {
+    await this.api.loadDepartmentLeads();
+  }
 }
 
 // Export manager instance
 let departmentsManager: DepartmentsManager | null = null;
+
+/**
+ * Process a single form field and add to data object
+ * Handles field mapping (snake_case → camelCase) and type conversion
+ */
+function processFormField(data: Record<string, unknown>, key: string, value: string): void {
+  // Field mapping configuration: formKey → { apiKey, parseAsNumber }
+  const fieldMappings: Record<string, { apiKey: string; parseAsNumber: boolean }> = {
+    area_id: { apiKey: 'areaId', parseAsNumber: true },
+    departmentLeadId: { apiKey: 'departmentLeadId', parseAsNumber: true },
+  };
+
+  // Check if field needs special mapping
+  // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
+  const mapping = fieldMappings[key];
+
+  if (mapping !== undefined) {
+    data[mapping.apiKey] = value === '' ? null : Number.parseInt(value, 10);
+    return;
+  }
+
+  // Handle description (empty string → null)
+  if (key === 'description' && value === '') {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: key is literal 'description'
+    data[key] = null;
+    return;
+  }
+
+  // Default: use value as-is
+  // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
+  data[key] = value;
+}
 
 // Save department handler
 async function handleSaveDepartment(): Promise<void> {
@@ -575,18 +730,7 @@ async function handleSaveDepartment(): Promise<void> {
 
   formData.forEach((value, key) => {
     if (typeof value === 'string') {
-      // Handle empty strings for optional fields
-      if (key === 'description' && value === '') {
-        // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
-        data[key] = null;
-      } else if (key === 'area_id' && value === '') {
-        data['areaId'] = null; // camelCase for API v2
-      } else if (key === 'area_id' && value !== '') {
-        data['areaId'] = Number.parseInt(value, 10); // camelCase for API v2
-      } else {
-        // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
-        data[key] = value;
-      }
+      processFormField(data, key, value);
     }
   });
 
@@ -633,8 +777,8 @@ function setupWindowHandlers(): void {
       departmentsManager.currentDepartmentId = id;
     }
 
-    // Load areas before showing modal
-    await departmentsManager?.loadAreas();
+    // Load areas and department leads before showing modal
+    await Promise.all([departmentsManager?.loadAreas(), departmentsManager?.loadDepartmentLeads()]);
 
     // Show modal in edit mode with department data
     showEditDepartmentModal(department);
@@ -656,6 +800,7 @@ function setupWindowHandlers(): void {
     }
     showAddDepartmentModal();
     void departmentsManager?.loadAreas();
+    void departmentsManager?.loadDepartmentLeads();
   };
 
   w.hideDepartmentModal = () => {

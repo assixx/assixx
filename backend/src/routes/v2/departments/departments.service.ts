@@ -11,14 +11,15 @@ export interface DepartmentV2 {
   id: number;
   name: string;
   description?: string;
-  managerId?: number;
+  departmentLeadId?: number;
   areaId?: number; // Add areaId field (camelCase)
   isActive: boolean;
+  isArchived: boolean;
   tenantId: number;
   createdAt?: string;
   updatedAt?: string;
   // Extended fields
-  managerName?: string;
+  departmentLeadName?: string;
   areaName?: string;
   employeeCount?: number;
   employeeNames?: string;
@@ -29,17 +30,19 @@ export interface DepartmentV2 {
 export interface CreateDepartmentData {
   name: string;
   description?: string | undefined;
-  managerId?: number | undefined;
+  departmentLeadId?: number | undefined;
   areaId?: number | undefined;
   isActive?: boolean | undefined;
+  isArchived?: boolean | undefined;
 }
 
 export interface UpdateDepartmentData {
   name?: string | undefined;
   description?: string | undefined;
-  managerId?: number | undefined;
+  departmentLeadId?: number | undefined;
   areaId?: number | undefined;
   isActive?: boolean | undefined;
+  isArchived?: boolean | undefined;
 }
 
 export interface DepartmentMember {
@@ -106,11 +109,12 @@ class DepartmentService {
       id: dept.id,
       name: dept.name,
       isActive: Boolean(dept.is_active ?? 1),
+      isArchived: Boolean(dept.is_archived ?? 0),
       tenantId: dept.tenant_id,
     };
 
     if (dept.description !== undefined) result.description = dept.description;
-    if (dept.manager_id !== undefined) result.managerId = dept.manager_id;
+    if (dept.department_lead_id !== undefined) result.departmentLeadId = dept.department_lead_id;
     if (dept.area_id !== undefined) result.areaId = dept.area_id;
     if (dept.created_at !== undefined) result.createdAt = dept.created_at.toISOString();
     if (dept.updated_at !== undefined) result.updatedAt = dept.updated_at.toISOString();
@@ -124,7 +128,8 @@ class DepartmentService {
    * @param dept - Source database department record
    */
   private addExtendedFields(result: DepartmentV2, dept: DbDepartment): void {
-    if (dept.manager_name !== undefined) result.managerName = dept.manager_name;
+    if (dept.department_lead_name !== undefined)
+      result.departmentLeadName = dept.department_lead_name;
     if (dept.areaName !== undefined) result.areaName = dept.areaName;
     if (dept.employee_count !== undefined) result.employeeCount = dept.employee_count;
     if (dept.employee_names !== undefined) result.employeeNames = dept.employee_names;
@@ -189,19 +194,21 @@ class DepartmentService {
   ): {
     name: string;
     description?: string;
-    manager_id?: number;
+    department_lead_id?: number;
     area_id?: number;
     is_active: number;
+    is_archived: number;
     tenant_id: number;
   } {
     const createData: ReturnType<typeof this.buildCreateDataForDepartment> = {
       name: data.name,
       tenant_id: tenantId,
       is_active: data.isActive === false ? 0 : 1, // Default active
+      is_archived: data.isArchived === true ? 1 : 0, // Default not archived
     };
 
     if (data.description !== undefined) createData.description = data.description;
-    if (data.managerId !== undefined) createData.manager_id = data.managerId;
+    if (data.departmentLeadId !== undefined) createData.department_lead_id = data.departmentLeadId;
     if (data.areaId !== undefined) createData.area_id = data.areaId;
 
     return createData;
@@ -248,15 +255,18 @@ class DepartmentService {
    */
 
   /**
-   * Validate manager for department
+   * Validate department lead
    */
-  private async validateManager(managerId: number | undefined, tenantId: number): Promise<void> {
-    if (managerId === undefined) return;
+  private async validateDepartmentLead(
+    departmentLeadId: number | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (departmentLeadId === undefined) return;
 
     const User = (await import('../../../models/user/index.js')).default;
-    const manager = await User.findById(managerId, tenantId);
-    if (!manager) {
-      throw new ServiceError(400, 'Manager not found');
+    const lead = await User.findById(departmentLeadId, tenantId);
+    if (!lead) {
+      throw new ServiceError(400, 'Department lead not found');
     }
   }
 
@@ -266,9 +276,10 @@ class DepartmentService {
   private buildUpdateData(data: UpdateDepartmentData): Partial<{
     name: string;
     description: string;
-    manager_id: number;
+    department_lead_id: number;
     area_id: number;
     is_active: number;
+    is_archived: number;
   }> {
     const updateData: ReturnType<typeof this.buildUpdateData> = {};
 
@@ -278,14 +289,17 @@ class DepartmentService {
     if (data.description !== undefined) {
       updateData.description = data.description;
     }
-    if (data.managerId !== undefined) {
-      updateData.manager_id = data.managerId;
+    if (data.departmentLeadId !== undefined) {
+      updateData.department_lead_id = data.departmentLeadId;
     }
     if (data.areaId !== undefined) {
       updateData.area_id = data.areaId;
     }
     if (data.isActive !== undefined) {
       updateData.is_active = data.isActive ? 1 : 0; // Convert boolean to TINYINT
+    }
+    if (data.isArchived !== undefined) {
+      updateData.is_archived = data.isArchived ? 1 : 0; // Convert boolean to TINYINT
     }
 
     return updateData;
@@ -309,8 +323,8 @@ class DepartmentService {
         throw new ServiceError(404, 'Department not found');
       }
 
-      // Validate manager if provided
-      await this.validateManager(data.managerId, tenantId);
+      // Validate department lead if provided
+      await this.validateDepartmentLead(data.departmentLeadId, tenantId);
 
       const updateData = this.buildUpdateData(data);
       const success = await Department.update(id, updateData);
@@ -576,7 +590,7 @@ class DepartmentService {
           position?: string;
           employee_id?: string;
           role?: string;
-          status?: string;
+          is_active?: boolean | number;
         }): DepartmentMember => {
           const member: DepartmentMember = {
             id: user.id,
@@ -585,7 +599,7 @@ class DepartmentService {
             firstName: user.first_name ?? '',
             lastName: user.last_name ?? '',
             role: user.role ?? 'employee',
-            isActive: user.status === 'active',
+            isActive: Boolean(user.is_active),
           };
 
           // Add optional fields only if defined

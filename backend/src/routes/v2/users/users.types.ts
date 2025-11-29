@@ -10,7 +10,12 @@ export interface CreateUserBody {
   lastName: string;
   password: string;
   role?: 'employee' | 'admin';
+  // N:M REFACTORING: Legacy field (deprecated, use departmentIds)
   departmentId?: number;
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds?: number[];
+  teamIds?: number[];
+  hasFullAccess?: boolean;
   position?: string;
   phone?: string;
   address?: string;
@@ -22,7 +27,12 @@ export interface UpdateUserBody {
   firstName?: string;
   lastName?: string;
   role?: 'employee' | 'admin';
+  // N:M REFACTORING: Legacy field (deprecated, use departmentIds)
   departmentId?: number;
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds?: number[];
+  teamIds?: number[];
+  hasFullAccess?: boolean;
   position?: string;
   phone?: string;
   address?: string;

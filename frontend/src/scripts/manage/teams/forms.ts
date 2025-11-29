@@ -31,14 +31,17 @@ function resetTeamFormInputs(): void {
   const teamLeadField = document.querySelector<HTMLInputElement>('#team-lead');
   const membersField = document.querySelector<HTMLInputElement>('#team-members-select');
   const machinesField = document.querySelector<HTMLInputElement>('#team-machines-select');
-  const statusField = document.querySelector<HTMLInputElement>('#team-status');
+  const isActiveField = document.querySelector<HTMLInputElement>('#team-is-active');
+  const isArchivedField = document.querySelector<HTMLInputElement>('#team-is-archived');
 
   if (teamIdField !== null) teamIdField.value = '';
   if (departmentField !== null) departmentField.value = '';
   if (teamLeadField !== null) teamLeadField.value = '';
   if (membersField !== null) membersField.value = '';
   if (machinesField !== null) machinesField.value = '';
-  if (statusField !== null) statusField.value = 'active';
+  // Reset to active state (isActive=1, isArchived=0)
+  if (isActiveField !== null) isActiveField.value = '1';
+  if (isArchivedField !== null) isArchivedField.value = '0';
 }
 
 /**
@@ -106,6 +109,16 @@ export function setupEditTeam(): void {
     // Populate form with team data
     populateTeamForm(team);
 
+    // Update modal title for edit mode
+    const modalTitle = document.querySelector('#team-modal-title');
+    if (modalTitle !== null) {
+      modalTitle.textContent = 'Team bearbeiten';
+    }
+
+    // Show status dropdown for EDIT (allows changing status)
+    const statusFieldGroup = document.querySelector('#status-field-group');
+    statusFieldGroup?.classList.remove('u-hidden');
+
     // Setup dropdown listeners
     setupDropdownListeners();
   };
@@ -167,6 +180,10 @@ export function setupShowTeamModal(): void {
     if (modalTitle !== null) {
       modalTitle.textContent = 'Neues Team';
     }
+
+    // Hide status dropdown for CREATE (new teams are always active)
+    const statusFieldGroup = document.querySelector('#status-field-group');
+    statusFieldGroup?.classList.add('u-hidden');
 
     // Setup dropdown listeners
     setupDropdownListeners();

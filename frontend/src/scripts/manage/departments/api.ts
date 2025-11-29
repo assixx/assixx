@@ -3,9 +3,9 @@
  */
 
 import type { ApiClient } from '../../../utils/api-client';
-import type { Department, Area } from './types';
+import type { Department, Area, AdminUser } from './types';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
-import { loadAndPopulateAreas } from './forms';
+import { loadAndPopulateAreas, loadAndPopulateDepartmentLeads } from './forms';
 
 /**
  * API wrapper for department operations
@@ -116,6 +116,33 @@ export class DepartmentAPI {
       return areas;
     } catch (error) {
       console.error('Error loading areas:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Load admin/root users for department lead dropdown
+   * Fetches all users with role 'admin' or 'root'
+   */
+  async loadDepartmentLeads(): Promise<AdminUser[]> {
+    try {
+      // Fetch admins and roots separately (API may not support multiple role filter)
+      const [adminsResponse, rootsResponse] = await Promise.all([
+        this.apiClient.request<AdminUser[]>('/users?role=admin', { method: 'GET' }),
+        this.apiClient.request<AdminUser[]>('/users?role=root', { method: 'GET' }),
+      ]);
+
+      const admins = Array.isArray(adminsResponse) ? adminsResponse : [];
+      const roots = Array.isArray(rootsResponse) ? rootsResponse : [];
+
+      // Combine and deduplicate by id
+      const combined = [...roots, ...admins];
+      const uniqueUsers = combined.filter((user, index, self) => index === self.findIndex((u) => u.id === user.id));
+
+      loadAndPopulateDepartmentLeads(uniqueUsers);
+      return uniqueUsers;
+    } catch (error) {
+      console.error('Error loading department leads:', error);
       return [];
     }
   }

@@ -105,6 +105,7 @@ export const UpdateTeamBodySchema = z.object({
       message: 'Status must be either "active" or "inactive"',
     })
     .optional(),
+  isArchived: z.boolean().optional(),
 });
 
 /**

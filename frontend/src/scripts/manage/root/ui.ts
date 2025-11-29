@@ -104,20 +104,12 @@ export function displayRootUsers(users: RootUser[]): void {
 /**
  * Show empty state with filter-specific content
  */
-export function showEmptyState(statusFilter: RootStatusFilter): void {
+export function showEmptyState(_statusFilter: RootStatusFilter): void {
   const emptyStateEl = $('#root-users-empty');
   const tableContent = $('#rootTableContent');
 
   emptyStateEl.classList.remove('u-hidden');
   setHTML(tableContent, '');
-
-  // Hide "Add" button in empty state when filtering for inactive users
-  const emptyStateAddBtn = $('#empty-state-add-btn');
-  if (statusFilter === 'inactive') {
-    emptyStateAddBtn.classList.add('u-hidden');
-  } else {
-    emptyStateAddBtn.classList.remove('u-hidden');
-  }
 }
 
 /**

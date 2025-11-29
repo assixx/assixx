@@ -145,11 +145,10 @@ export function showDeleteModal(id: number, title: string): void {
 }
 
 /**
- * Close Delete Modal
+ * Close Delete Modal (Step 1)
  */
 export function closeDeleteModal(): void {
   const modal = $$id('deleteEntryModal'); // Fixed ID to match HTML
-  const deleteIdInput = $$id('deleteEntryId') as HTMLInputElement | null; // Fixed ID to match HTML
 
   if (modal !== null) {
     modal.classList.remove(MODAL_ACTIVE_CLASS);
@@ -158,7 +157,39 @@ export function closeDeleteModal(): void {
       modal.setAttribute('hidden', '');
     }, 300);
   }
+}
 
+/**
+ * Show Delete Confirm Modal (Step 2 - double-check pattern)
+ */
+export function showDeleteConfirmModal(): void {
+  // Close first modal
+  closeDeleteModal();
+
+  // Show second modal
+  const confirmModal = $$id('deleteEntryConfirmModal');
+  if (confirmModal !== null) {
+    confirmModal.removeAttribute('hidden');
+    confirmModal.classList.add(MODAL_ACTIVE_CLASS);
+    console.info('[Modals] Delete confirm modal (step 2) opened');
+  }
+}
+
+/**
+ * Close Delete Confirm Modal (Step 2)
+ */
+export function closeDeleteConfirmModal(): void {
+  const modal = $$id('deleteEntryConfirmModal');
+  const deleteIdInput = $$id('deleteEntryId') as HTMLInputElement | null;
+
+  if (modal !== null) {
+    modal.classList.remove(MODAL_ACTIVE_CLASS);
+    setTimeout(() => {
+      modal.setAttribute('hidden', '');
+    }, 300);
+  }
+
+  // Clear the ID when closing final modal
   if (deleteIdInput !== null) {
     deleteIdInput.value = '';
   }

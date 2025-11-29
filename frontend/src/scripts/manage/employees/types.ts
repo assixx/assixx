@@ -19,6 +19,7 @@ export interface IEmployeesManager {
   updateEmployee(id: number, data: Partial<Employee>): Promise<Employee>;
   createEmployee(data: Partial<Employee>): Promise<Employee>;
   loadEmployees(): Promise<void>;
+  loadAreas(): Promise<Area[]>;
   loadDepartments(): Promise<Department[]>;
   loadTeams(): Promise<Team[]>;
   handleEmployeeSaveError(error: unknown): void;
@@ -28,13 +29,27 @@ export interface IEmployeesManager {
 export interface Employee extends User {
   employeeId?: string | undefined;
   // employeeNumber inherited from User
-  // departmentId inherited from User
+  // N:M REFACTORING: Legacy single IDs (for backward compatibility)
+  // departmentId inherited from User - DEPRECATED, use departmentIds
   departmentName?: string | undefined;
-  // teamId inherited from User
+  // teamId inherited from User - DEPRECATED, use teamIds
   teamName?: string | undefined;
+  // INHERITANCE-FIX: Full inheritance chain from Team → Department → Area
+  teamDepartmentId?: number | undefined;
+  teamDepartmentName?: string | undefined;
+  teamAreaId?: number | undefined;
+  teamAreaName?: string | undefined;
+  // N:M REFACTORING: New array fields for multiple assignments
+  areas?: Area[];
+  departments?: Department[];
+  teams?: Team[];
+  areaIds?: number[];
+  departmentIds?: number[];
+  teamIds?: number[];
+  hasFullAccess?: boolean | number; // 1 or true = full tenant access
   // position inherited from User
   hireDate?: string;
-  birthday?: string; // Birthday field for form
+  dateOfBirth?: string; // Date of birth field for form
   status: 'active' | 'inactive' | 'vacation' | 'sick' | 'terminated';
   // Availability fields (availabilityStatus, availabilityStart, availabilityEnd, availabilityNotes inherited from User)
   availabilityReason?: string;
@@ -51,16 +66,25 @@ export interface Employee extends User {
   vacationDays?: number;
 }
 
+export interface Area {
+  id: number;
+  name: string;
+  description?: string;
+  departmentCount?: number;
+}
+
 export interface Department {
   id: number;
   name: string;
   areaId?: number;
+  areaName?: string;
 }
 
 export interface Team {
   id: number;
   name: string;
   departmentId?: number;
+  departmentName?: string;
 }
 
 export interface WindowWithEmployeeHandlers extends Window {
@@ -71,6 +95,7 @@ export interface WindowWithEmployeeHandlers extends Window {
   hideEmployeeModal?: () => void;
   closeEmployeeModal?: () => void; // Alias for hideEmployeeModal
   saveEmployee?: () => Promise<void>;
+  loadAreasForEmployeeSelect?: () => Promise<void>;
   loadDepartmentsForEmployeeSelect?: () => Promise<void>;
   loadTeamsForEmployeeSelect?: () => Promise<void>;
 }

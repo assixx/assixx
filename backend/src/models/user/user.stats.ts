@@ -121,7 +121,9 @@ export async function getUserDocumentCount(userId: number): Promise<number> {
 /**
  * Get user's department and team information
  * @param userId - User ID
- * @returns Object with role, departmentId, teamId, departmentName, and teamName
+ * @returns Object with role, departmentId, teamId, departmentName, teamName, and hasFullAccess
+ * N:M REFACTORING: Uses user_departments table for primary department
+ * VISIBILITY-FIX: Added hasFullAccess for blackboard admin filtering
  */
 export async function getUserDepartmentAndTeam(userId: number): Promise<{
   role: string | null;
@@ -129,18 +131,23 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
   teamId: number | null;
   departmentName: string | null;
   teamName: string | null;
+  hasFullAccess: boolean;
 }> {
   try {
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    // VISIBILITY-FIX: Added has_full_access for admin filtering
     const query = `
         SELECT
           u.role,
-          u.department_id,
+          u.has_full_access,
+          ud.department_id as primary_department_id,
           ut.team_id,
           d.name as department_name,
           t.name as team_name
         FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
-        LEFT JOIN user_teams ut ON u.id = ut.user_id
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN departments d ON ud.department_id = d.id
+        LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id
         WHERE u.id = ?
       `;
@@ -155,15 +162,17 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
         teamId: null,
         departmentName: null,
         teamName: null,
+        hasFullAccess: false,
       };
     }
 
     return {
       role: user.role,
-      departmentId: user.department_id,
+      departmentId: user.primary_department_id,
       teamId: user.team_id,
       departmentName: user.department_name,
       teamName: user.team_name,
+      hasFullAccess: user.has_full_access === 1,
     };
   } catch (error: unknown) {
     logger.error(`Error getting user department and team: ${(error as Error).message}`);

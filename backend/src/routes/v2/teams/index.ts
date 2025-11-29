@@ -9,6 +9,7 @@
  */
 import { RequestHandler, Response, Router } from 'express';
 
+import { filterTeamsByDepartment } from '../../../middleware/departmentAccess.js';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
@@ -54,6 +55,7 @@ const router = Router();
 router.get(
   '/',
   authenticateV2,
+  filterTeamsByDepartment as RequestHandler, // Filter by user's accessible departments
   teamsValidationZod.list,
   typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.listTeams(req, res);

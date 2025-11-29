@@ -6,14 +6,15 @@ interface DbDepartment extends RowDataPacket {
   id: number;
   name: string;
   description?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   area_id?: number;
   is_active?: number; // TINYINT(1) from DB
+  is_archived?: number; // TINYINT(1) from DB
   tenant_id: number;
   created_at?: Date;
   updated_at?: Date;
   // Extended fields from queries
-  manager_name?: string;
+  department_lead_name?: string;
   areaName?: string;
   employee_count?: number;
   employee_names?: string;
@@ -34,37 +35,40 @@ interface DbUser extends RowDataPacket {
 interface DepartmentCreateData {
   name: string;
   description?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   area_id?: number;
   is_active?: number; // TINYINT(1) 0 or 1
+  is_archived?: number; // TINYINT(1) 0 or 1
   tenant_id: number;
 }
 
 interface DepartmentUpdateData {
   name?: string;
   description?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   area_id?: number;
   is_active?: number; // TINYINT(1) 0 or 1
+  is_archived?: number; // TINYINT(1) 0 or 1
 }
 
 export async function createDepartment(departmentData: DepartmentCreateData): Promise<number> {
   const {
     name,
     description,
-    manager_id: managerId,
+    department_lead_id: departmentLeadId,
     area_id: areaId,
     is_active: isActive = 1,
+    is_archived: isArchived = 0,
     tenant_id: tenantId,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
 
   try {
     const query = `
-      INSERT INTO departments (name, description, manager_id, area_id, is_active, tenant_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO departments (name, description, department_lead_id, area_id, is_active, is_archived, tenant_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    const params = [name, description, managerId, areaId, isActive, tenantId];
+    const params = [name, description, departmentLeadId, areaId, isActive, isArchived, tenantId];
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
     logger.info(`Department created successfully with ID ${result.insertId}`);
@@ -75,70 +79,49 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
   }
 }
 
-export async function findAllDepartments(
-  tenantId: number, // PFLICHT!
-): Promise<DbDepartment[]> {
+/** SQL query for fetching departments with employee/team counts via user_departments N:M */
+const FIND_ALL_DEPARTMENTS_QUERY = `
+  WITH employee_counts AS (
+    SELECT ud.department_id, COUNT(*) as count,
+      GROUP_CONCAT(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, u.username))
+        ORDER BY u.last_name, u.first_name SEPARATOR '\n') as names
+    FROM user_departments ud
+    JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
+    WHERE ud.tenant_id = ? AND u.is_active = 1 AND u.is_archived = 0
+    GROUP BY ud.department_id
+  ),
+  team_counts AS (
+    SELECT department_id, COUNT(*) as count,
+      GROUP_CONCAT(name ORDER BY name SEPARATOR '\n') as names
+    FROM teams GROUP BY department_id
+  )
+  SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as areaName,
+    COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
+    COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+  FROM departments d
+  LEFT JOIN users u ON d.department_lead_id = u.id
+  LEFT JOIN areas a ON d.area_id = a.id
+  LEFT JOIN employee_counts ec ON ec.department_id = d.id
+  LEFT JOIN team_counts tc ON tc.department_id = d.id
+  WHERE d.tenant_id = ? AND d.is_active = 1
+  ORDER BY d.name`;
+
+export async function findAllDepartments(tenantId: number): Promise<DbDepartment[]> {
   logger.info(`Fetching all departments for tenant ${tenantId}`);
-
   try {
-    // Modern CTE approach (Best Practice 2025 for MySQL 8.0+)
-    const query = `
-        WITH employee_counts AS (
-          SELECT
-            department_id,
-            COUNT(*) as count,
-            GROUP_CONCAT(
-              CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, username))
-              ORDER BY last_name, first_name
-              SEPARATOR '\n'
-            ) as names
-          FROM users
-          WHERE tenant_id = ?
-            AND is_active = 1
-            AND is_archived = 0
-          GROUP BY department_id
-        ),
-        team_counts AS (
-          SELECT
-            department_id,
-            COUNT(*) as count,
-            GROUP_CONCAT(name ORDER BY name SEPARATOR '\n') as names
-          FROM teams
-          GROUP BY department_id
-        )
-        SELECT
-          d.*,
-          u.username as manager_name,
-          a.name as areaName,
-          COALESCE(ec.count, 0) as employee_count,
-          COALESCE(ec.names, '') as employee_names,
-          COALESCE(tc.count, 0) as team_count,
-          COALESCE(tc.names, '') as team_names
-        FROM departments d
-        LEFT JOIN users u ON d.manager_id = u.id
-        LEFT JOIN areas a ON d.area_id = a.id
-        LEFT JOIN employee_counts ec ON ec.department_id = d.id
-        LEFT JOIN team_counts tc ON tc.department_id = d.id
-        WHERE d.tenant_id = ?
-          AND d.is_active = 1
-        ORDER BY d.name
-      `;
-
-    const [rows] = await executeQuery<DbDepartment[]>(query, [tenantId, tenantId]);
+    const [rows] = await executeQuery<DbDepartment[]>(FIND_ALL_DEPARTMENTS_QUERY, [
+      tenantId,
+      tenantId,
+    ]);
     logger.info(`Retrieved ${rows.length} departments with names in tooltips`);
-
     return rows;
   } catch (error: unknown) {
-    logger.warn(
-      `Error with extended query: ${(error as Error).message}, falling back to simple query`,
+    logger.warn(`Error with extended query: ${(error as Error).message}, falling back to simple`);
+    const [rows] = await executeQuery<DbDepartment[]>(
+      'SELECT * FROM departments WHERE tenant_id = ? AND is_active = 1 ORDER BY name',
+      [tenantId],
     );
-
-    // Fallback to simple query
-    const simpleQuery =
-      'SELECT * FROM departments WHERE tenant_id = ? AND is_active = 1 ORDER BY name';
-    const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [tenantId]);
     logger.info(`Retrieved ${rows.length} departments with simple query`);
-
     return rows;
   }
 }
@@ -182,9 +165,9 @@ export async function updateDepartment(
     fields.push('description = ?');
     values.push(departmentData.description);
   }
-  if (departmentData.manager_id !== undefined) {
-    fields.push('manager_id = ?');
-    values.push(departmentData.manager_id);
+  if (departmentData.department_lead_id !== undefined) {
+    fields.push('department_lead_id = ?');
+    values.push(departmentData.department_lead_id);
   }
   if (departmentData.area_id !== undefined) {
     fields.push('area_id = ?');
@@ -236,10 +219,12 @@ export async function deleteDepartment(id: number): Promise<boolean> {
 
 export async function getUsersByDepartment(departmentId: number): Promise<DbUser[]> {
   logger.info(`Fetching users for department ${departmentId}`);
+  // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
   const query = `
       SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
       FROM users u
-      WHERE u.department_id = ?
+      JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
+      WHERE ud.department_id = ?
     `;
 
   try {

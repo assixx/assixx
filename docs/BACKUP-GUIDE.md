@@ -122,7 +122,7 @@ docker-compose up -d
 sleep 10
 
 # Schema importieren
-mysql -u root -pStrongP@ssw0rd!123 assixx < database/docker-init.sql
+mysql -u root -pYOUR_ROOT_PASSWORD assixx < database/docker-init.sql
 
 # Daten wiederherstellen
 ./restore-database.sh
@@ -208,7 +208,7 @@ docker ps | grep mysql
 
 ```bash
 # Nur Struktur ohne Daten
-docker exec assixx-mysql mysqldump -u root -p'StrongP@ssw0rd!123' --no-data assixx > structure_only.sql
+docker exec assixx-mysql mysqldump -u root -p'YOUR_ROOT_PASSWORD' --no-data assixx > structure_only.sql
 ```
 
 ### Problem: "Restore schlägt fehl"

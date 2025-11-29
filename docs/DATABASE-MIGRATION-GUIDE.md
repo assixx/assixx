@@ -3,6 +3,10 @@
 > **Letztes Update:** 02.06.2025
 > **Erstellt aus:** Lernerfahrungen der plans-system Migration
 
+## 🔐 Credentials
+
+**WICHTIG:** Passwort ist in `docker/.env` gespeichert. Verwende `$MYSQL_PASSWORD` in Scripts oder ersetze `YOUR_PASSWORD` mit dem echten Wert aus `.env`.
+
 ## 🎯 Übersicht
 
 Diese Anleitung dokumentiert den **richtigen Weg** für Datenbank-Migrationen im Assixx-Projekt.
@@ -16,10 +20,10 @@ bash scripts/quick-backup.sh "before_migration_$(date +%Y%m%d_%H%M%S)"
 # 2. Migration kopieren und ausführen (1 Minute)
 MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
 docker cp $MIGRATION_FILE assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/'$(basename $MIGRATION_FILE)
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/'$(basename $MIGRATION_FILE)
 
 # 3. Verifizieren (30 Sekunden)
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SHOW TABLES;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SHOW TABLES;"'
 ```
 
 ## 🏗️ Komplette Migration Checkliste
@@ -39,7 +43,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 bash scripts/quick-backup.sh "before_migration_$(date +%Y%m%d_%H%M%S)"
 
 # MySQL Verbindung testen
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT 1;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT 1;"'
 ```
 
 ### 2️⃣ **Migration Datei vorbereiten**
@@ -82,7 +86,7 @@ DROP TABLE IF EXISTS plans;
 docker cp database/migrations/003-add-plans-system.sql assixx-mysql:/tmp/
 
 # Migration ausführen
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/003-add-plans-system.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/003-add-plans-system.sql'
 ```
 
 #### **Option B: Via Node.js Script**
@@ -96,10 +100,10 @@ docker exec assixx-backend node /app/backend/src/utils/scripts/run-migration.js
 
 ```bash
 # Tabellen verifizieren
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SHOW TABLES LIKE '\''%neue_tabelle%'\'';"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SHOW TABLES LIKE '\''%neue_tabelle%'\'';"'
 
 # Daten prüfen
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM neue_tabelle;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT COUNT(*) FROM neue_tabelle;"'
 
 # Bei Schema-Änderungen: Backend neustarten
 cd docker && docker-compose restart backend
@@ -111,10 +115,10 @@ cd docker && docker-compose restart backend
 
 ```bash
 # FALSCH ❌
-docker exec assixx-mysql mysql -u root -p'StrongP@ssw0rd!123' main
+docker exec assixx-mysql mysql -u root -p'YOUR_ROOT_PASSWORD' main
 
 # RICHTIG ✅ (mit sh -c wrapper)
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "YOUR SQL HERE"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "YOUR SQL HERE"'
 ```
 
 ### Problem 2: Foreign Key Constraint Error
@@ -182,13 +186,13 @@ SELECT ...;
 ```bash
 # Quick Test Suite für Migrationen
 echo "=== Testing MySQL Connection ==="
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT VERSION();"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT VERSION();"'
 
 echo "=== Listing Tables ==="
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SHOW TABLES;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SHOW TABLES;"'
 
 echo "=== Checking Foreign Keys ==="
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "
 SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
 WHERE REFERENCED_TABLE_NAME IS NOT NULL

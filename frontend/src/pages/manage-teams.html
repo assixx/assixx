@@ -8,7 +8,6 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
@@ -52,6 +51,10 @@
                   <button class="toggle-group__btn" data-status="inactive" title="Inaktive Teams">
                     <i class="fas fa-times-circle"></i>
                     Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Teams">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
                   </button>
                   <button class="toggle-group__btn" data-status="all" title="Alle Teams">
                     <i class="fas fa-users"></i>
@@ -199,14 +202,16 @@
             </div>
           </div>
 
-          <div class="form-field">
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
             <label class="form-field__label" for="team-status">
               Status
               <span class="text-red-500">*</span>
             </label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="team-status" name="status" value="active" />
-            <!-- Custom Dropdown -->
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="team-is-active" name="isActive" value="1" />
+            <input type="hidden" id="team-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
                 <span>Aktiv</span>
@@ -219,8 +224,14 @@
                 <div class="dropdown__option" data-value="inactive">
                   <span class="badge badge--warning">Inaktiv</span>
                 </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
               </div>
             </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Teams werden nicht angezeigt
+            </span>
           </div>
         </div>
 
@@ -231,23 +242,48 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div id="delete-team-modal" class="modal-overlay">
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Team löschen</h3>
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Team löschen
+          </h3>
           <button type="button" class="ds-modal__close" id="close-delete-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <p class="mb-3">Möchten Sie dieses Team wirklich löschen?</p>
-          <p class="text-[var(--color-text-secondary)]">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie dieses Team wirklich löschen?</p>
           <input type="hidden" id="delete-team-id" />
         </div>
         <div class="ds-modal__footer">
           <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-team">Löschen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-team">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-team-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Das Team wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-team-final">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>

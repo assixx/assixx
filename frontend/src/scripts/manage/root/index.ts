@@ -12,6 +12,7 @@ import { loadRootUsers as loadRootUsersAPI, deleteRootUserAPI, allRootUsers } fr
 // Import from UI layer
 import { displayRootUsers, showEmptyState, renderSearchResults, closeSearchResults } from './ui';
 // Import from forms layer
+// N:M REFACTORING: loadDepartments removed - Root users have has_full_access=1
 import {
   setupValidationListeners,
   handleFormSubmit,
@@ -19,7 +20,7 @@ import {
   showAddRootModal,
   editRootUserHandler,
   setupSingleDropdown,
-  loadDepartments,
+  setupStatusDropdown,
   CSS_CLASSES,
 } from './forms';
 
@@ -54,9 +55,18 @@ async function loadRootUsers(): Promise<void> {
 function filterByStatus(users: RootUser[], status: RootStatusFilter): RootUser[] {
   switch (status) {
     case 'active':
-      return users.filter((user) => user.isActive === true || user.isActive === 1);
+      // Show only active AND not archived
+      return users.filter(
+        (user) => (user.isActive === true || user.isActive === 1) && user.isArchived !== true && user.isArchived !== 1,
+      );
     case 'inactive':
-      return users.filter((user) => user.isActive === false || user.isActive === 0);
+      // Show only inactive AND not archived
+      return users.filter(
+        (user) => (user.isActive === false || user.isActive === 0) && user.isArchived !== true && user.isArchived !== 1,
+      );
+    case 'archived':
+      // Show only archived (regardless of isActive)
+      return users.filter((user) => user.isArchived === true || user.isArchived === 1);
     case 'all':
       return users;
     default:
@@ -124,8 +134,9 @@ async function confirmDeleteRootUser(): Promise<void> {
     await deleteRootUserAPI(userId);
     showSuccessAlert('Root-Benutzer erfolgreich gelöscht');
 
-    const deleteModal = $('#delete-root-modal');
-    deleteModal.classList.remove(CSS_CLASSES.MODAL_ACTIVE);
+    // Close the second (final) confirmation modal
+    const deleteConfirmModal = $('#delete-root-confirm-modal');
+    deleteConfirmModal.classList.remove(CSS_CLASSES.MODAL_ACTIVE);
 
     await loadRootUsers();
   } catch (error) {
@@ -225,19 +236,20 @@ function setupSearch(): void {
 }
 
 /**
- * Setup dropdown handlers for position and department selection
+ * Setup dropdown handlers for position and status selection
  * Uses Design System dropdown component pattern
+ * N:M REFACTORING: Department dropdown removed - Root users have has_full_access=1
  */
 function setupDropdownHandlers(): void {
   setupSingleDropdown('position-dropdown', 'position-trigger', 'position-menu', 'root-position');
-  setupSingleDropdown('department-dropdown', 'department-trigger', 'department-menu', 'root-department-id');
+  setupStatusDropdown();
 }
 
 function initializeApp(): void {
   console.log('[RootUsers] Initializing...');
 
   void loadRootUsers();
-  void loadDepartments();
+  // N:M REFACTORING: loadDepartments() removed - Root users have has_full_access=1
 
   // Initialize position dropdown
   setupDropdownHandlers();
@@ -270,7 +282,7 @@ function initializeApp(): void {
   const cancelModalBtn = $('#cancel-root-modal');
   cancelModalBtn.addEventListener('click', closeRootModal);
 
-  // Delete modal buttons
+  // Delete Modal Step 1: Initial confirmation (ds-modal)
   const closeDeleteModalBtn = $('#close-delete-modal');
   closeDeleteModalBtn.addEventListener('click', () => {
     $('#delete-root-modal').classList.remove(CSS_CLASSES.MODAL_ACTIVE);
@@ -281,8 +293,22 @@ function initializeApp(): void {
     $('#delete-root-modal').classList.remove(CSS_CLASSES.MODAL_ACTIVE);
   });
 
-  const confirmDeleteBtn = $('#confirm-delete-root');
-  confirmDeleteBtn.addEventListener('click', () => void confirmDeleteRootUser());
+  // Proceed to second confirmation (double-check pattern)
+  const proceedDeleteBtn = $('#proceed-delete-root');
+  proceedDeleteBtn.addEventListener('click', () => {
+    // Hide first modal, show second (dangerous) confirmation
+    $('#delete-root-modal').classList.remove(CSS_CLASSES.MODAL_ACTIVE);
+    $('#delete-root-confirm-modal').classList.add(CSS_CLASSES.MODAL_ACTIVE);
+  });
+
+  // Delete Modal Step 2: Final dangerous confirmation (confirm-modal--danger)
+  const cancelDeleteConfirmBtn = $('#cancel-delete-confirm');
+  cancelDeleteConfirmBtn.addEventListener('click', () => {
+    $('#delete-root-confirm-modal').classList.remove(CSS_CLASSES.MODAL_ACTIVE);
+  });
+
+  const confirmDeleteFinalBtn = $('#confirm-delete-root-final');
+  confirmDeleteFinalBtn.addEventListener('click', () => void confirmDeleteRootUser());
 
   // Close modal on overlay click
   document.addEventListener('click', (e) => {

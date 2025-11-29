@@ -35,7 +35,8 @@ import {
   showAddEntryModal,
   showEditEntryModal,
   showDeleteModal,
-  closeDeleteModal,
+  showDeleteConfirmModal,
+  closeDeleteConfirmModal,
   closeViewEntryModal,
 } from './modals';
 import { initializeFilters, handlePageChange } from './filters';
@@ -69,8 +70,9 @@ async function initializeBlackboard(): Promise<void> {
     const userInfo = await loadUserInfo();
     const isAdmin = userInfo.role === 'admin' || userInfo.role === 'root';
 
-    // Initialize state
-    blackboardState.initialize(apiClient, userInfo.id, isAdmin);
+    // Initialize state with role for permission checks
+    // Note: canEditEntry checks for 'root' role OR author, not admin
+    blackboardState.initialize(apiClient, userInfo.id, isAdmin, userInfo.role);
 
     // Load organization data (departments, teams)
     await loadOrganizationData(apiClient);
@@ -160,7 +162,14 @@ function handleDeleteEntryClick(target: HTMLElement): void {
 }
 
 /**
- * Handle confirm delete button click
+ * Handle proceed delete click (Step 1 → Step 2, double-check pattern)
+ */
+function handleProceedDeleteClick(): void {
+  showDeleteConfirmModal();
+}
+
+/**
+ * Handle confirm delete click (Step 2 - actually delete)
  */
 async function handleConfirmDeleteClick(): Promise<void> {
   const deleteIdInput = document.querySelector('#deleteEntryId'); // Fixed ID to match HTML
@@ -169,7 +178,7 @@ async function handleConfirmDeleteClick(): Promise<void> {
     if (inputValue !== '') {
       const entryId = Number.parseInt(inputValue, 10);
       await handleDeleteEntry(entryId);
-      closeDeleteModal();
+      closeDeleteConfirmModal(); // Close the confirm modal (step 2)
       await loadEntriesAndRender();
     }
   }
@@ -298,7 +307,11 @@ function setupClickDelegation(): void {
       handleEditEntryClick(target);
     } else if (target.closest('[data-action="delete-entry"]')) {
       handleDeleteEntryClick(target);
+    } else if (target.closest('[data-action="proceed-delete"]')) {
+      // Step 1 → Step 2 (double-check pattern)
+      handleProceedDeleteClick();
     } else if (target.closest('[data-action="confirm-delete"]')) {
+      // Step 2 → actually delete
       void handleConfirmDeleteClick();
     } else if (target.closest('.pinboard-sticky')) {
       handleViewEntryClick(target);
@@ -508,6 +521,37 @@ function setupColorPicker(): void {
 }
 
 /**
+ * Setup custom event listeners for edit/delete actions from sticky-note-component
+ * These events are dispatched by ui.ts handleEditEntry/handleDeleteEntry
+ */
+function setupCustomEventListeners(): void {
+  // Listen for edit entry custom event
+  document.addEventListener('blackboard:edit-entry', ((
+    e: CustomEvent<{ entry: ReturnType<typeof blackboardState.getEntryById> }>,
+  ) => {
+    const entry = e.detail.entry;
+    if (entry !== undefined) {
+      populateEntryForm(entry);
+      showEditEntryModal(entry);
+      console.info('[Blackboard] Edit entry event handled for ID:', entry.id);
+    }
+  }) as EventListener);
+
+  // Listen for delete entry custom event
+  document.addEventListener('blackboard:delete-entry', ((
+    e: CustomEvent<{ entry: ReturnType<typeof blackboardState.getEntryById> }>,
+  ) => {
+    const entry = e.detail.entry;
+    if (entry !== undefined) {
+      showDeleteModal(entry.id, entry.title);
+      console.info('[Blackboard] Delete entry event handled for ID:', entry.id);
+    }
+  }) as EventListener);
+
+  console.info('[Blackboard] Custom event listeners initialized');
+}
+
+/**
  * Setup all event listeners using event delegation
  */
 function setupEventListeners(): void {
@@ -515,6 +559,7 @@ function setupEventListeners(): void {
   setupFormHandlers();
   setupEntryCompanyToggle();
   setupColorPicker();
+  setupCustomEventListeners();
   console.info('[Blackboard] Event listeners initialized');
 }
 

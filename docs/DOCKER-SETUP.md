@@ -77,7 +77,7 @@ lsof -i :3000
 **MySQL Fehler:**
 
 ```bash
-docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025!
+docker exec -it assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD
 ```
 
 ## Test-Accounts

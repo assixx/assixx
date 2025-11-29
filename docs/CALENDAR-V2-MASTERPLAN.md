@@ -75,10 +75,10 @@ bash scripts/quick-backup.sh "before_calendar_migration_$(date +%Y%m%d_%H%M%S)"
 
 # 2. Migration kopieren und ausführen
 docker cp database/migrations/016-calendar-tenant-isolation.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/016-calendar-tenant-isolation.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/016-calendar-tenant-isolation.sql'
 
 # 3. Verifizieren
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DESCRIBE calendar_attendees;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "DESCRIBE calendar_attendees;"'
 ```
 
 #### Was macht die Migration

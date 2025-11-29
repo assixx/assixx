@@ -19,7 +19,7 @@ import department, {
 // Service-specific interfaces
 interface DepartmentFilters {
   search?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   parent_id?: number;
   include_counts?: boolean;
   limit?: number;

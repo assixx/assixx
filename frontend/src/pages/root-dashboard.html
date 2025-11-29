@@ -16,21 +16,21 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/root-dashboard.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
-    <!-- Employee Number Modal -->
-    <div id="employeeNumberModal" class="modal hidden">
-      <div class="modal__content max-w-[400px]">
-        <div class="modal__header">
-          <h2 class="modal__title">Personalnummer eingeben</h2>
+    <!-- Employee Number Modal (Design System) -->
+    <div id="employeeNumberModal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Personalnummer eingeben</h3>
+          <!-- No close button - modal is mandatory -->
         </div>
-        <div class="modal__body">
-          <p class="mb-5">
+        <div class="ds-modal__body">
+          <p class="mb-4 text-[var(--color-text-secondary)]">
             Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu 10 Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche
             enthalten.
           </p>
@@ -48,10 +48,10 @@
               />
               <span class="form-field__message">Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen</span>
             </div>
-            <div class="flex justify-end mt-6">
-              <button type="submit" class="btn btn-primary">Personalnummer speichern</button>
-            </div>
           </form>
+        </div>
+        <div class="ds-modal__footer">
+          <button type="submit" form="employeeNumberForm" class="btn btn-primary">Personalnummer speichern</button>
         </div>
       </div>
     </div>

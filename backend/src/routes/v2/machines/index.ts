@@ -12,7 +12,7 @@ import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middl
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { machinesController } from './machines.controller.js';
-import { machinesValidationZod } from './validation.zod.js';
+import { machinesValidationZod } from './machines.validation.zod.js';
 
 const router: Router = express.Router();
 

@@ -29,29 +29,32 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   }
 
   const finalUsername = email;
-  const iban = userData.iban ?? '';
+  // REMOVED: iban column dropped (2025-11-27)
   const hashedPassword = password;
 
   const finalEmployeeId = await generateInitialEmployeeId(employeeId, tenantId, role);
 
+  // N:M REFACTORING: department_id removed - departments assigned via user_departments table
+  // Root users get has_full_access = 1 for full tenant access
+  // REMOVED: company and iban columns dropped (2025-11-27)
   const query = `
     INSERT INTO users (
-      username, email, password, role, company, notes,
-      first_name, last_name, age, employee_id, employee_number, iban,
-      department_id, position, phone, address, birthday,
+      username, email, password, role, notes,
+      first_name, last_name, age, employee_id, employee_number,
+      position, phone, address, date_of_birth,
       hire_date, emergency_contact, profile_picture,
-      status, is_archived, is_active, tenant_id
+      is_archived, is_active, has_full_access, tenant_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   try {
+    // REMOVED: iban parameter dropped (2025-11-27)
     const queryParams = buildUserQueryParams(
       userData,
       finalUsername,
       hashedPassword,
       finalEmployeeId,
-      iban,
     );
     const [result] = await executeQuery<ResultSetHeader>(query, queryParams);
     logger.info(`User created successfully with ID: ${result.insertId}`);
@@ -110,24 +113,38 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
       throw new Error(`Invalid user ID (${id}) or tenant ID (${tenantId})`);
     }
 
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    // INHERITANCE-FIX: Include full chain - Team → Department → Area
     const [rows] = await executeQuery<DbUser[]>(
       process.env['NODE_ENV'] === 'test' ?
-        `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
-             ut.team_id, tm.name as team_name
+        `SELECT u.*, ud.department_id as primary_department_id, d.name as department_name,
+             t.company_name as company_name, t.subdomain,
+             ut.team_id, tm.name as team_name,
+             tm.department_id as team_department_id, td.name as team_department_name,
+             td.area_id as team_area_id, ta.name as team_area_name
              FROM users u
-             LEFT JOIN departments d ON u.department_id = d.id
+             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+             LEFT JOIN departments d ON ud.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
              LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
+             LEFT JOIN departments td ON tm.department_id = td.id AND td.tenant_id = u.tenant_id
+             LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
              WHERE u.id = ? AND u.tenant_id = ?`
-      : `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
+      : `SELECT u.*, ud.department_id as primary_department_id, d.name as department_name,
+             t.company_name as company_name, t.subdomain,
              u.availability_status, u.availability_start, u.availability_end, u.availability_notes,
-             ut.team_id, tm.name as team_name
+             ut.team_id, tm.name as team_name,
+             tm.department_id as team_department_id, td.name as team_department_name,
+             td.area_id as team_area_id, ta.name as team_area_name
              FROM users u
-             LEFT JOIN departments d ON u.department_id = d.id
+             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+             LEFT JOIN departments d ON ud.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
              LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
+             LEFT JOIN departments td ON tm.department_id = td.id AND td.tenant_id = u.tenant_id
+             LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
              WHERE u.id = ? AND u.tenant_id = ?`,
       [id, tenantId],
     );
@@ -164,19 +181,31 @@ export async function findUsersByRole(
       `[findUsersByRole] Called with role=${role}, includeArchived=${includeArchived}, tenantId=${tenantId}`,
     );
 
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    // REMOVED: company column dropped (2025-11-27)
+    // INHERITANCE-FIX: Include full chain - Team → Department → Area
     let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company, u.tenant_id,
-        u.first_name, u.last_name, u.created_at, u.department_id,
-        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status, u.is_archived,
+        SELECT u.id, u.username, u.email, u.role, u.tenant_id,
+        u.first_name, u.last_name, u.created_at,
+        ud.department_id as primary_department_id,
+        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
+        u.has_full_access,
         d.name as department_name,
+        ut.team_id,
         t.name as team_name,
-        ut.team_id
+        t.department_id as team_department_id,
+        td.name as team_department_name,
+        td.area_id as team_area_id,
+        ta.name as team_area_name
         FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN departments d ON ud.department_id = d.id
         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
+        LEFT JOIN departments td ON t.department_id = td.id AND td.tenant_id = u.tenant_id
+        LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
         WHERE u.role = ? AND u.tenant_id = ?
       `;
 
@@ -256,29 +285,28 @@ export async function updateUser(
 ): Promise<boolean> {
   try {
     // Define allowed fields for update to prevent SQL injection
+    // N:M REFACTORING: department_id removed - departments managed via user_departments table
+    // REMOVED: company and iban columns dropped (2025-11-27)
     const allowedFields: readonly (keyof UserCreateData)[] = [
       'username',
       'email',
       'password',
       'role',
-      'company',
       'notes',
       'first_name',
       'last_name',
       'age',
       'employee_id',
-      'iban',
-      'department_id',
+      // N:M REFACTORING: department_id removed from allowed update fields
       'position',
       'phone',
       'landline',
       'employee_number',
       'address',
-      'birthday',
+      'date_of_birth',
       'hire_date',
       'emergency_contact',
       'profile_picture',
-      'status',
       'is_archived',
       'is_active',
       'last_login', // Track last successful login timestamp
@@ -330,19 +358,30 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
       await autoResetExpiredAvailability(filters.tenant_id);
     }
 
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    // REMOVED: company column dropped (2025-11-27)
+    // INHERITANCE-FIX: Include full chain - Team → Department → Area
     const baseQuery = `
-        SELECT u.id, u.username, u.email, u.role, u.company,
+        SELECT u.id, u.username, u.email, u.role,
         u.first_name, u.last_name, u.employee_id, u.created_at,
-        u.department_id, u.position, u.phone, u.landline, u.employee_number, u.status, u.is_archived,
+        ud.department_id as primary_department_id, u.position, u.phone, u.landline, u.employee_number, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
+        u.has_full_access,
         d.name as department_name,
+        ut.team_id,
         t.name as team_name,
-        ut.team_id
+        t.department_id as team_department_id,
+        td.name as team_department_name,
+        td.area_id as team_area_id,
+        ta.name as team_area_name
         FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN departments d ON ud.department_id = d.id
         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
+        LEFT JOIN departments td ON t.department_id = td.id AND td.tenant_id = u.tenant_id
+        LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
         WHERE u.tenant_id = ?
       `;
 
@@ -400,13 +439,17 @@ export async function findArchivedUsers(
   role: string | null = null,
 ): Promise<DbUser[]> {
   try {
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    // REMOVED: company column dropped (2025-11-27)
     let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company,
-        u.first_name, u.last_name, u.created_at, u.department_id,
-        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status,
+        SELECT u.id, u.username, u.email, u.role,
+        u.first_name, u.last_name, u.created_at,
+        ud.department_id as primary_department_id,
+        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.is_active,
         d.name as department_name
         FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN departments d ON ud.department_id = d.id
         WHERE u.is_archived = true AND u.tenant_id = ?
       `;
 
@@ -433,9 +476,11 @@ export async function findArchivedUsers(
  */
 export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
   try {
-    let query = `SELECT u.*, d.name as department
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
+    let query = `SELECT u.*, ud.department_id as primary_department_id, d.name as department
                    FROM users u
-                   LEFT JOIN departments d ON u.department_id = d.id
+                   LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+                   LEFT JOIN departments d ON ud.department_id = d.id
                    WHERE u.tenant_id = ?`;
     const params: unknown[] = [filters.tenant_id];
 
@@ -463,10 +508,12 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
  */
 export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> {
   try {
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
     const [rows] = await executeQuery<DbUser[]>(
-      `SELECT u.*, d.name as department
+      `SELECT u.*, ud.department_id as primary_department_id, d.name as department
          FROM users u
-         LEFT JOIN departments d ON u.department_id = d.id
+         LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+         LEFT JOIN departments d ON ud.department_id = d.id
          WHERE u.tenant_id = ?`,
       [tenantId],
     );

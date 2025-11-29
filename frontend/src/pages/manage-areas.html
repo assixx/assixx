@@ -12,7 +12,6 @@
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
 
     <!-- Common Scripts with ApiClient -->
@@ -50,6 +49,10 @@
                     <i class="fas fa-times"></i>
                     Inaktive
                   </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Bereiche">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
+                  </button>
                   <button class="toggle-group__btn" data-status="all" title="Alle Bereiche">
                     <i class="fas fa-map-marked-alt"></i>
                     Alle
@@ -76,7 +79,7 @@
             <div class="card__body">
               <!-- Loading State -->
               <div id="areas-loading" class="spinner-container u-hidden">
-                <div class="spinner"></div>
+                <div class="spinner-ring spinner-ring--md"></div>
                 <p class="mt-2 text-[var(--color-text-secondary)]">Bereiche werden geladen...</p>
               </div>
 
@@ -130,6 +133,31 @@
             <textarea id="area-description" name="description" class="form-field__control" rows="3"></textarea>
           </div>
 
+          <!-- Area Lead Dropdown (Custom) -->
+          <div class="form-field">
+            <label class="form-field__label">
+              <i class="fas fa-user-tie mr-1"></i>
+              Bereichsleiter
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="area-lead" name="areaLeadId" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="area-lead-dropdown">
+              <div class="dropdown__trigger" id="area-lead-trigger">
+                <span>Kein Bereichsleiter</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="area-lead-menu">
+                <div class="dropdown__option" data-value="">Kein Bereichsleiter</div>
+                <!-- Will be populated dynamically with root/admin users -->
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)]">
+              <i class="fas fa-info-circle mr-1"></i>
+              Nur Administratoren können als Bereichsleiter zugewiesen werden.
+            </span>
+          </div>
+
           <div class="form-field">
             <label class="form-field__label" for="area-type">
               Typ
@@ -164,31 +192,33 @@
             <input type="text" id="area-address" name="address" class="form-field__control" />
           </div>
 
-          <div class="form-field">
-            <label class="form-field__label" for="area-parent">Übergeordneter Bereich</label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="area-parent" name="parent_id" />
-            <!-- Custom Dropdown -->
-            <div class="dropdown" id="parent-dropdown">
-              <div class="dropdown__trigger" id="parent-trigger">
-                <span>Kein übergeordneter Bereich</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <div class="dropdown__menu" id="parent-menu">
-                <div class="dropdown__option" data-value="">Kein übergeordneter Bereich</div>
-                <!-- Will be populated dynamically -->
-              </div>
-            </div>
+          <!-- NOTE: Parent dropdown removed (2025-11-29) - areas are now flat (non-hierarchical) -->
+
+          <!-- Department Multi-Select: Bulk-assign departments to this area -->
+          <div class="form-field" id="area-departments-container">
+            <label class="form-field__label" for="area-departments">
+              <i class="fas fa-sitemap mr-1"></i>
+              Abteilungen zuweisen
+            </label>
+            <select id="area-departments" name="departmentIds" multiple class="form-field__control min-h-[120px]">
+              <!-- Options populated dynamically -->
+            </select>
+            <span class="form-field__message text-[var(--color-text-secondary)]">
+              <i class="fas fa-info-circle mr-1"></i>
+              Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte Abteilungen werden diesem Bereich zugeordnet.
+            </span>
           </div>
 
-          <div class="form-field">
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
             <label class="form-field__label" for="area-status">
               Status
               <span class="text-red-500">*</span>
             </label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="area-status" name="status" value="active" />
-            <!-- Custom Dropdown -->
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="area-is-active" name="isActive" value="1" />
+            <input type="hidden" id="area-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
                 <span>Aktiv</span>
@@ -201,8 +231,14 @@
                 <div class="dropdown__option" data-value="inactive">
                   <span class="badge badge--warning">Inaktiv</span>
                 </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
               </div>
             </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Bereiche werden nicht angezeigt
+            </span>
           </div>
         </div>
 
@@ -213,25 +249,48 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div id="delete-area-modal" class="modal-overlay">
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Bereich löschen</h3>
-          <button class="ds-modal__close" id="close-delete-modal">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Bereich löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <p class="mb-3" id="delete-area-message">Möchten Sie diesen Bereich wirklich löschen?</p>
-          <p class="text-[var(--color-text-secondary)]">
-            Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Daten werden gelöscht.
-          </p>
+          <p class="text-[var(--color-text-secondary)]" id="delete-area-message">Möchten Sie diesen Bereich wirklich löschen?</p>
           <input type="hidden" id="delete-area-id" />
         </div>
         <div class="ds-modal__footer">
           <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-area">Löschen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-area">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-area-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Bereich wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-area-final">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>

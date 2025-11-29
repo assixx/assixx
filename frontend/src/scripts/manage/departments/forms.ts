@@ -3,7 +3,7 @@
  */
 
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
-import type { Department, Area } from './types';
+import type { Department, Area, AdminUser } from './types';
 
 // Constants
 const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
@@ -29,6 +29,21 @@ export function showAddDepartmentModal(): void {
     deptIdInput.value = '';
   }
 
+  // Reset custom dropdown triggers (form.reset() only clears hidden inputs, not trigger text)
+  const areaTriggerSpan = $$id('area-trigger')?.querySelector('span');
+  if (areaTriggerSpan !== null && areaTriggerSpan !== undefined) {
+    areaTriggerSpan.textContent = 'Kein Bereich';
+  }
+
+  const leadTriggerSpan = $$id('department-lead-trigger')?.querySelector('span');
+  if (leadTriggerSpan !== null && leadTriggerSpan !== undefined) {
+    leadTriggerSpan.textContent = 'Kein Abteilungsleiter';
+  }
+
+  // Hide status dropdown for CREATE (new departments are always active)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.add('u-hidden');
+
   modal?.classList.add(MODAL_ACTIVE_CLASS);
 }
 
@@ -49,6 +64,29 @@ function setAreaDropdown(department: Department): void {
   const areaTriggerSpan = areaTrigger.querySelector('span');
   if (areaTriggerSpan !== null) {
     areaTriggerSpan.textContent = department.areaName ?? 'Kein Bereich';
+  }
+}
+
+/**
+ * Helper: Set Department Lead Dropdown value (Custom Dropdown)
+ */
+function setDepartmentLeadDropdown(department: Department): void {
+  const leadInput = $$id('department-lead') as HTMLInputElement | null;
+  const leadTrigger = $$id('department-lead-trigger');
+
+  if (leadInput === null || leadTrigger === null) {
+    return;
+  }
+
+  const leadValue =
+    department.departmentLeadId !== null && department.departmentLeadId !== undefined
+      ? String(department.departmentLeadId)
+      : '';
+  leadInput.value = leadValue;
+
+  const leadTriggerSpan = leadTrigger.querySelector('span');
+  if (leadTriggerSpan !== null) {
+    leadTriggerSpan.textContent = department.departmentLeadName ?? 'Kein Abteilungsleiter';
   }
 }
 
@@ -93,6 +131,10 @@ export function showEditDepartmentModal(department: Department): void {
     deptIdInput.value = String(department.id);
   }
 
+  // Show status dropdown for EDIT (allows changing status)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.remove('u-hidden');
+
   // Populate basic form fields
   if (form !== null) {
     const nameInput = form.querySelector<HTMLInputElement>('#department-name');
@@ -108,6 +150,7 @@ export function showEditDepartmentModal(department: Department): void {
 
   // Set custom dropdowns
   setAreaDropdown(department);
+  setDepartmentLeadDropdown(department);
   setStatusDropdown(department);
 
   modal?.classList.add(MODAL_ACTIVE_CLASS);
@@ -163,5 +206,30 @@ export function loadAndPopulateAreas(areas: Area[]): void {
     option.dataset['value'] = String(area.id);
     option.textContent = area.name;
     areaMenu.appendChild(option);
+  });
+}
+
+/**
+ * Load and populate department lead dropdown (Custom Dropdown)
+ * Shows only admin/root users
+ */
+export function loadAndPopulateDepartmentLeads(users: AdminUser[]): void {
+  const leadMenu = $$id('department-lead-menu');
+
+  if (leadMenu === null) {
+    return;
+  }
+
+  // Clear existing options and add default
+  leadMenu.innerHTML = '<div class="dropdown__option" data-value="">Kein Abteilungsleiter</div>';
+
+  // Add user options
+  users.forEach((user) => {
+    const option = document.createElement('div');
+    option.className = 'dropdown__option';
+    option.dataset['value'] = String(user.id);
+    const roleLabel = user.role === 'root' ? '(Root)' : '(Admin)';
+    option.textContent = `${user.firstName} ${user.lastName} ${roleLabel}`;
+    leadMenu.appendChild(option);
   });
 }

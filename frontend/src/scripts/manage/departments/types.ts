@@ -6,13 +6,14 @@ export interface Department {
   id: number;
   name: string;
   description?: string | null;
-  managerId?: number | null;
-  managerName?: string;
+  departmentLeadId?: number | null;
+  departmentLeadName?: string | null;
   areaId?: number | null;
-  areaName?: string;
+  areaName?: string | null;
   parentId?: number | null;
-  parentName?: string;
+  parentName?: string | null;
   isActive: boolean;
+  isArchived?: boolean;
   employeeCount?: number;
   employeeNames?: string;
   teamCount?: number;
@@ -28,6 +29,17 @@ export interface Department {
   createdBy?: number;
 }
 
+/**
+ * Admin/Root user for department lead dropdown
+ */
+export interface AdminUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'admin' | 'root';
+}
+
 export interface Area {
   id: number;
   name: string;
@@ -35,7 +47,7 @@ export interface Area {
   description?: string;
 }
 
-export type DepartmentStatusFilter = 'all' | 'active' | 'inactive';
+export type DepartmentStatusFilter = 'all' | 'active' | 'inactive' | 'archived';
 
 export interface WindowWithDepartmentHandlers extends Window {
   editDepartment?: (id: number) => Promise<void>;

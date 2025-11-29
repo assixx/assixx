@@ -232,14 +232,17 @@ class BlackboardDetailPage {
   }
 
   /**
-   * Setup confirm button (read confirmation)
+   * Setup confirm/unconfirm buttons (read confirmation)
    */
   private setupConfirmButton(): void {
-    // Use event delegation since button may be re-rendered
+    // Use event delegation since buttons may be re-rendered
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (target.closest('[data-action="confirm-entry"]') !== null) {
         void this.handleConfirm();
+      }
+      if (target.closest('[data-action="unconfirm-entry"]') !== null) {
+        void this.handleUnconfirm();
       }
     });
   }
@@ -251,10 +254,28 @@ class BlackboardDetailPage {
     await this.actions.confirmEntry(
       (message) => {
         this.showSuccess(message);
-        // Update entry data after successful confirmation
         if (this.entry !== null) {
           this.entry.isConfirmed = true;
           this.entry.confirmedAt = new Date().toISOString();
+        }
+        this.loadConfirmationStatus();
+      },
+      (error) => {
+        this.showError(error);
+      },
+    );
+  }
+
+  /**
+   * Handle unconfirm entry action (mark as unread)
+   */
+  private async handleUnconfirm(): Promise<void> {
+    await this.actions.unconfirmEntry(
+      (message) => {
+        this.showSuccess(message);
+        if (this.entry !== null) {
+          this.entry.isConfirmed = false;
+          this.entry.confirmedAt = null;
         }
         this.loadConfirmationStatus();
       },

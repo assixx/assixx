@@ -175,14 +175,17 @@ function createDepartmentBadge(): HTMLElement | null {
 
 /**
  * Update department badge display
+ * hasFullAccess from DB is the single source of truth
  */
 function updateDepartmentBadge(
   badgeSpan: Element,
-  data: { hasAllAccess?: boolean; departments?: { name: string }[] },
+  data: { hasFullAccess?: boolean | number; departments?: { name: string }[] },
 ): void {
-  if (data.hasAllAccess === true) {
-    badgeSpan.className = 'badge badge-success';
-    badgeSpan.textContent = 'Alle Abteilungen';
+  const hasFullAccess = data.hasFullAccess === true || data.hasFullAccess === 1;
+
+  if (hasFullAccess) {
+    badgeSpan.className = 'badge badge--primary';
+    badgeSpan.textContent = 'Vollzugriff';
     return;
   }
 
@@ -210,7 +213,7 @@ async function loadDepartmentBadge(): Promise<void> {
 
   try {
     const data = await apiClient.get<{
-      hasAllAccess?: boolean;
+      hasFullAccess?: boolean | number;
       departments?: { name: string }[];
     }>('/admin-permissions/my');
 

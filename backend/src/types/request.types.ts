@@ -9,6 +9,7 @@ import { ParsedQs } from 'qs';
 import { TenantInfo } from './tenant.types.js';
 
 // User object that gets attached to authenticated requests
+// N:M REFACTORING: department_id now comes from user_departments table (primary department)
 export interface AuthUser {
   id: number;
   userId: number; // Alias for id
@@ -19,7 +20,7 @@ export interface AuthUser {
   tenantName?: string;
   first_name?: string;
   last_name?: string;
-  department_id?: number | null;
+  department_id?: number | null; // Primary department from user_departments table
   team_id?: number | null;
   position?: string | null;
   activeRole?: 'root' | 'admin' | 'employee'; // For role switching functionality
@@ -61,8 +62,9 @@ export interface PaginatedRequest extends AuthenticatedRequest {
 }
 
 // Request with typed params
-export interface ParamsRequest<T extends ParamsDictionary = ParamsDictionary>
-  extends AuthenticatedRequest {
+export interface ParamsRequest<
+  T extends ParamsDictionary = ParamsDictionary,
+> extends AuthenticatedRequest {
   params: T;
 }
 

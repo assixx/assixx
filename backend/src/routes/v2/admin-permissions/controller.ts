@@ -12,7 +12,12 @@ import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
-import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
+import {
+  BulkPermissionsRequest,
+  PermissionLevel,
+  SetAreaPermissionsRequest,
+  SetPermissionsRequest,
+} from './types.js';
 
 // Validation helper removed - using Zod validation in routes
 
@@ -25,6 +30,7 @@ const ADMIN_NOT_FOUND = 'Admin not found';
 
 // SQL Queries
 const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'";
+const GET_USER_TENANT_QUERY = 'SELECT tenant_id FROM users WHERE id = ?';
 
 export const adminPermissionsController = {
   /**
@@ -102,10 +108,11 @@ export const adminPermissionsController = {
 
       // Only admins need permission info
       if (req.user.role !== 'admin') {
+        // Root users always have full access (has_full_access = 1 in DB)
         const response = {
           departments: [],
           groups: [],
-          hasAllAccess: req.user.role === 'root',
+          hasFullAccess: req.user.role === 'root',
           totalDepartments: 0,
           assignedDepartments: 0,
         };
@@ -399,6 +406,153 @@ export const adminPermissionsController = {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
         res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to check access'));
+      }
+    }
+  },
+
+  /**
+   * Set Area permissions for a user
+   * Root only
+   */
+  async setAreaPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      if (userIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID is required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+
+      const { areaIds = [], permissions = { canRead: true, canWrite: false, canDelete: false } } =
+        req.body as SetAreaPermissionsRequest;
+
+      // Get user tenant
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.setAreaPermissions(
+        userId,
+        areaIds,
+        permissions,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(successResponse(null, 'Area permissions updated successfully'));
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Set area permissions error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to set area permissions'));
+      }
+    }
+  },
+
+  /**
+   * Remove specific Area permission
+   * Root only
+   */
+  async removeAreaPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      const areaIdParam = req.params['areaId'];
+      if (userIdParam === undefined || areaIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID and Area ID are required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+      const areaId = Number.parseInt(areaIdParam);
+
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.removeAreaPermission(
+        userId,
+        areaId,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(successResponse(null, 'Area permission removed successfully'));
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Remove area permission error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to remove area permission'));
+      }
+    }
+  },
+
+  /**
+   * Set has_full_access flag for a user
+   * Root only
+   */
+  async setFullAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      if (userIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID is required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+
+      const { hasFullAccess } = req.body as { hasFullAccess: boolean };
+      if (typeof hasFullAccess !== 'boolean') {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'hasFullAccess must be a boolean'));
+        return;
+      }
+
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.setHasFullAccess(
+        userId,
+        hasFullAccess,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(
+        successResponse(null, hasFullAccess ? 'Full access granted' : 'Full access revoked'),
+      );
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Set full access error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update full access'));
       }
     }
   },

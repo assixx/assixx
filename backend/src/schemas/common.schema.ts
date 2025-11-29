@@ -68,13 +68,14 @@ export const PasswordSchema = z
 
 /**
  * Username validation
+ * NOTE: Username = Email in our system, so we allow email characters (\@, ., etc.)
+ * The regex is relaxed to accept email-like usernames
  */
 export const UsernameSchema = z
   .string()
   .min(3, 'Username must be at least 3 characters')
-  .max(30, 'Username must be at most 30 characters')
-  .regex(/^[\w-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens')
-  .trim();
+  .max(255, 'Username must be at most 255 characters')
+  .transform((val: string) => val.toLowerCase().trim());
 
 /**
  * Role enum - matches database ENUM

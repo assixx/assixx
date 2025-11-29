@@ -13,7 +13,7 @@ interface Department {
   id: number;
   name: string;
   description?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   parent_id?: number;
   is_active: number; // TINYINT(1) from DB
   [key: string]: unknown;
@@ -43,7 +43,7 @@ function getErrorCode(errorObj: { code?: number; message?: string }): string {
 interface DepartmentBody {
   name: string;
   description?: string | undefined;
-  managerId?: number | undefined;
+  departmentLeadId?: number | undefined;
   areaId?: number | undefined;
   isActive?: boolean | undefined;
 }
@@ -52,7 +52,7 @@ interface DepartmentBody {
 function buildDepartmentData(body: DepartmentBody): DepartmentBody {
   const data: DepartmentBody = { name: body.name };
   if (body.description !== undefined) data.description = body.description;
-  if (body.managerId !== undefined) data.managerId = body.managerId;
+  if (body.departmentLeadId !== undefined) data.departmentLeadId = body.departmentLeadId;
   if (body.areaId !== undefined) data.areaId = body.areaId;
   if (body.isActive !== undefined) data.isActive = body.isActive;
   return data;
@@ -62,7 +62,7 @@ function buildDepartmentData(body: DepartmentBody): DepartmentBody {
 interface DepartmentUpdateBody {
   name?: string | undefined;
   description?: string | undefined;
-  managerId?: number | undefined;
+  departmentLeadId?: number | undefined;
   areaId?: number | undefined;
   isActive?: boolean | undefined;
 }
@@ -72,7 +72,7 @@ function buildUpdateData(body: DepartmentUpdateBody): DepartmentUpdateBody {
   const data: DepartmentUpdateBody = {};
   if (body.name !== undefined) data.name = body.name;
   if (body.description !== undefined) data.description = body.description;
-  if (body.managerId !== undefined) data.managerId = body.managerId;
+  if (body.departmentLeadId !== undefined) data.departmentLeadId = body.departmentLeadId;
   if (body.areaId !== undefined) data.areaId = body.areaId;
   if (body.isActive !== undefined) data.isActive = body.isActive;
   return data;
@@ -264,7 +264,7 @@ class DepartmentController {
         {
           name: body.name,
           description: body.description,
-          manager_id: body.managerId,
+          department_lead_id: body.departmentLeadId,
           is_active: booleanToTinyInt(body.isActive),
           created_by: req.user.email,
         },
@@ -299,13 +299,13 @@ class DepartmentController {
       old_values: {
         name: oldDept?.name,
         description: oldDept?.description,
-        manager_id: oldDept?.manager_id,
+        department_lead_id: oldDept?.department_lead_id,
         is_active: oldDept?.is_active,
       },
       new_values: {
         name: body.name,
         description: body.description,
-        manager_id: body.managerId,
+        department_lead_id: body.departmentLeadId,
         is_active:
           body.isActive !== undefined ?
             body.isActive ?
@@ -383,7 +383,7 @@ class DepartmentController {
       await logDepartmentAction(req, 'delete', departmentId, `Gelöscht: ${String(dept?.name)}`, {
         name: dept?.name,
         description: dept?.description,
-        manager_id: dept?.manager_id,
+        department_lead_id: dept?.department_lead_id,
         is_active: dept?.is_active,
         deleted_by: req.user.email,
       });

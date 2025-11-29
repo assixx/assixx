@@ -503,7 +503,7 @@ const response = await fetch('/api/v2/auth/refresh', {
 ```bash
 bash scripts/quick-backup.sh "before_refresh_token_rotation"
 docker cp database/migrations/20251126_add_refresh_tokens_table.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/20251126_add_refresh_tokens_table.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/20251126_add_refresh_tokens_table.sql'
 ```
 
 ### Schritt 3: Service erstellen

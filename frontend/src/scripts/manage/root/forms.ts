@@ -4,20 +4,15 @@
  * Form handling, validation, modal logic
  */
 
-import { $, $$, getData, setData, setHTML, $$id } from '../../../utils/dom-utils';
+import { $, $$, getData, $$id, setSafeHTML } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
 import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 // Import from types
 import type { RootUser, FormValues } from './types';
 // Import from data layer
-import {
-  currentEditId,
-  setCurrentEditId,
-  saveRootUser,
-  loadDepartments as loadDepartmentsAPI,
-  allRootUsers,
-} from './data';
+// N:M REFACTORING: Removed loadDepartments - Root users have has_full_access=1
+import { currentEditId, setCurrentEditId, saveRootUser, allRootUsers } from './data';
 
 // Field state classes for validation feedback (Design System)
 const FIELD_STATE_ERROR = 'is-error';
@@ -200,37 +195,16 @@ function handleSaveError(error: unknown): void {
   showErrorAlert('Fehler beim Speichern: ' + (errorMessage !== '' ? errorMessage : 'Netzwerkfehler'));
 }
 
-/**
- * Load departments and populate dropdown
- */
-export async function loadDepartments(): Promise<void> {
-  try {
-    const departments = await loadDepartmentsAPI();
-    const departmentMenu = $('#department-menu');
-
-    const firstOption = departmentMenu.querySelector('.dropdown__option[data-value=""]');
-    setHTML(departmentMenu, '');
-    if (firstOption !== null) {
-      departmentMenu.appendChild(firstOption);
-    }
-
-    departments.forEach((dept) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown__option';
-      setData(option, 'value', dept.id.toString());
-      setData(option, 'text', dept.name);
-      option.textContent = dept.name;
-      departmentMenu.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Failed to load departments:', error);
-  }
-}
+// N:M REFACTORING: loadDepartments removed - Root users have has_full_access=1, no department assignment needed
 
 /**
  * Get form values
  */
 function getFormValues(): FormValues {
+  // Read from hidden inputs (set by status dropdown)
+  const isActiveValue = ($('#root-is-active') as HTMLInputElement).value;
+  const isArchivedValue = ($('#root-is-archived') as HTMLInputElement).value;
+
   return {
     firstName: ($('#root-first-name') as HTMLInputElement).value,
     lastName: ($('#root-last-name') as HTMLInputElement).value,
@@ -241,8 +215,9 @@ function getFormValues(): FormValues {
     position: ($('#root-position') as HTMLInputElement | null)?.value ?? '',
     notes: ($('#root-notes') as HTMLTextAreaElement | null)?.value ?? '',
     employeeNumber: ($$(SELECTORS.ROOT_EMPLOYEE_NUMBER) as HTMLInputElement | null)?.value ?? '',
-    departmentId: ($('#root-department-id') as HTMLSelectElement | null)?.value ?? '',
-    isActive: currentEditId !== null ? (($('#root-is-active') as HTMLInputElement | null)?.checked ?? false) : true,
+    // N:M REFACTORING: departmentId removed - Root users have has_full_access=1
+    isActive: isActiveValue === '1',
+    isArchived: isArchivedValue === '1',
   };
 }
 
@@ -405,15 +380,14 @@ function buildUserData(values: FormValues, isEdit: boolean): Record<string, unkn
     position: values.position,
     notes: values.notes,
     isActive: values.isActive,
+    isArchived: values.isArchived,
   };
 
   if (values.employeeNumber !== '') {
     userData['employeeNumber'] = values.employeeNumber;
   }
 
-  if (values.departmentId !== '') {
-    userData['departmentId'] = Number.parseInt(values.departmentId, 10);
-  }
+  // N:M REFACTORING: departmentId removed - Root users have has_full_access=1
 
   // Password handling
   if (!isEdit) {
@@ -510,12 +484,7 @@ export function showAddRootModal(): void {
   }
   ($('#root-position') as HTMLInputElement).value = '';
 
-  const departmentTrigger = $('#department-trigger');
-  const departmentTriggerSpan = departmentTrigger.querySelector('span');
-  if (departmentTriggerSpan !== null) {
-    departmentTriggerSpan.textContent = 'Keine Abteilung zuweisen';
-  }
-  ($('#root-department-id') as HTMLInputElement).value = '';
+  // N:M REFACTORING: Department dropdown removed - Root users have has_full_access=1
 
   $('#password-group').classList.remove('u-hidden');
   $('#password-confirm-group').classList.remove('u-hidden');
@@ -572,24 +541,7 @@ function populateBasicFields(user: RootUser): void {
   }
 }
 
-/**
- * Set department dropdown value and display
- */
-function setDepartmentValue(departmentId: number): void {
-  const departmentInput = $('#root-department-id') as HTMLInputElement;
-  departmentInput.value = departmentId.toString();
-
-  const departmentTrigger = $('#department-trigger');
-  const departmentOption = document.querySelector(`.dropdown__option[data-value="${departmentId}"]`);
-
-  if (departmentOption !== null) {
-    const triggerSpan = departmentTrigger.querySelector('span');
-    if (triggerSpan !== null) {
-      const departmentEl = departmentOption as HTMLElement;
-      triggerSpan.textContent = getData(departmentEl, 'text') ?? departmentOption.textContent;
-    }
-  }
-}
+// N:M REFACTORING: setDepartmentValue removed - Root users have has_full_access=1, no department assignment needed
 
 /**
  * Set position dropdown value and display
@@ -604,9 +556,54 @@ function setPositionValue(position: string): void {
 }
 
 /**
+ * Set status dropdown value and display
+ */
+function setStatusDropdownValue(isActive: boolean | number, isArchived: boolean | number | undefined): void {
+  const isActiveInput = $('#root-is-active') as HTMLInputElement;
+  const isArchivedInput = $('#root-is-archived') as HTMLInputElement;
+  const statusTrigger = $('#status-trigger');
+  const statusTriggerSpan = statusTrigger.querySelector('span');
+
+  // Determine status: archived takes precedence, then active/inactive
+  let statusValue: 'active' | 'inactive' | 'archived';
+  let badgeHtml: string;
+
+  if (isArchived === true || isArchived === 1) {
+    statusValue = 'archived';
+    badgeHtml = '<span class="badge badge--error">Archiviert</span>';
+    isActiveInput.value = '0';
+    isArchivedInput.value = '1';
+  } else if (isActive === true || isActive === 1) {
+    statusValue = 'active';
+    badgeHtml = '<span class="badge badge--success">Aktiv</span>';
+    isActiveInput.value = '1';
+    isArchivedInput.value = '0';
+  } else {
+    statusValue = 'inactive';
+    badgeHtml = '<span class="badge badge--warning">Inaktiv</span>';
+    isActiveInput.value = '0';
+    isArchivedInput.value = '0';
+  }
+
+  // Update trigger display
+  if (statusTriggerSpan !== null) {
+    setSafeHTML(statusTriggerSpan, badgeHtml);
+  }
+
+  // Mark the correct option as selected (visual feedback)
+  const statusMenu = $('#status-menu');
+  statusMenu.querySelectorAll('.dropdown__option').forEach((opt) => {
+    opt.classList.remove('selected');
+    if (getData(opt as HTMLElement, 'value') === statusValue) {
+      opt.classList.add('selected');
+    }
+  });
+}
+
+/**
  * Configure form for edit mode
  */
-function configureEditMode(isActive: boolean | number): void {
+function configureEditMode(isActive: boolean | number, isArchived?: boolean | number): void {
   // Show email/password fields in edit mode (Root can change them)
   $('#password-group').classList.remove('u-hidden');
   $('#password-confirm-group').classList.remove('u-hidden');
@@ -622,10 +619,10 @@ function configureEditMode(isActive: boolean | number): void {
   passwordField.value = '';
   passwordConfirmField.value = '';
 
+  // Show status group and set dropdown value
   const activeStatusGroup = $('#active-status-group');
   activeStatusGroup.classList.remove('u-hidden');
-  const checkbox = $('#root-is-active') as HTMLInputElement;
-  checkbox.checked = Boolean(isActive);
+  setStatusDropdownValue(isActive, isArchived);
 }
 
 /**
@@ -647,15 +644,13 @@ export function editRootUserHandler(userId: number): void {
 
   populateBasicFields(user);
 
-  if (user.departmentId !== undefined) {
-    setDepartmentValue(user.departmentId);
-  }
+  // N:M REFACTORING: Department assignment removed - Root users have has_full_access=1
 
   if (user.position !== undefined && user.position !== '') {
     setPositionValue(user.position);
   }
 
-  configureEditMode(user.isActive);
+  configureEditMode(user.isActive, user.isArchived);
 
   const modal = $('#root-modal');
   modal.classList.add(CSS_CLASSES.MODAL_ACTIVE);
@@ -686,6 +681,84 @@ export function editRootUserHandler(userId: number): void {
       const employeeNumber = ($$id('root-employee-number') as HTMLInputElement | null)?.value ?? '';
       return [firstName, lastName, email, employeeNumber].filter((v) => v !== '');
     },
+  });
+}
+
+/** Get status badge HTML by value */
+function getStatusBadgeHtml(value: string): string {
+  switch (value) {
+    case 'inactive':
+      return '<span class="badge badge--warning">Inaktiv</span>';
+    case 'archived':
+      return '<span class="badge badge--error">Archiviert</span>';
+    default:
+      return '<span class="badge badge--success">Aktiv</span>';
+  }
+}
+
+/** Handle status dropdown option selection */
+function handleStatusOptionSelect(
+  value: string,
+  triggerSpan: HTMLElement | null,
+  isActiveInput: HTMLInputElement,
+  isArchivedInput: HTMLInputElement,
+): void {
+  // Map UI value to DB fields
+  switch (value) {
+    case 'inactive':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '0';
+      break;
+    case 'archived':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '1';
+      break;
+    default: // active
+      isActiveInput.value = '1';
+      isArchivedInput.value = '0';
+  }
+
+  if (triggerSpan !== null) {
+    setSafeHTML(triggerSpan, getStatusBadgeHtml(value));
+  }
+}
+
+/**
+ * Setup status dropdown with isActive/isArchived mapping
+ */
+export function setupStatusDropdown(): void {
+  const trigger = $('#status-trigger');
+  const menu = $('#status-menu');
+  const isActiveInput = $('#root-is-active') as HTMLInputElement;
+  const isArchivedInput = $('#root-is-archived') as HTMLInputElement;
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    trigger.classList.toggle('active');
+    menu.classList.toggle('active');
+  });
+
+  menu.addEventListener('click', (e) => {
+    const option = (e.target as HTMLElement).closest('.dropdown__option');
+    if (option === null || !(option instanceof HTMLElement)) return;
+
+    const value = getData(option, 'value') ?? '';
+    handleStatusOptionSelect(value, trigger.querySelector<HTMLElement>('span'), isActiveInput, isArchivedInput);
+
+    menu.querySelectorAll('.dropdown__option').forEach((opt) => {
+      opt.classList.remove('selected');
+    });
+    option.classList.add('selected');
+    trigger.classList.remove('active');
+    menu.classList.remove('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    const dropdown = $('#status-dropdown');
+    if (!dropdown.contains(e.target as HTMLElement)) {
+      trigger.classList.remove('active');
+      menu.classList.remove('active');
+    }
   });
 }
 

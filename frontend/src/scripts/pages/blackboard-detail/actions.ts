@@ -47,6 +47,19 @@ export class BlackboardDetailActions {
   }
 
   /**
+   * Remove confirmation (mark as unread)
+   */
+  async unconfirmEntry(onSuccess: SuccessCallback, onError: ErrorCallback): Promise<void> {
+    try {
+      await this.dataLoader.unconfirmEntry();
+      onSuccess('Eintrag als ungelesen markiert');
+    } catch (error) {
+      console.error('[Blackboard Detail] Error unconfirming entry:', error);
+      onError('Fehler beim Zurücksetzen');
+    }
+  }
+
+  /**
    * Add a comment to the entry
    */
   async addComment(

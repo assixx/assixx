@@ -115,11 +115,14 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: process.env.NODE_ENV === 'production',
+        // In Production: Entferne nur debug/log/info, BEHALTE error/warn!
+        drop_console: false, // Don't drop ALL console calls
         drop_debugger: true,
         // 🔥 NEW: More aggressive compression
         passes: 2,
-        pure_funcs: ['console.debug'],
+        // Selektiv entfernen: debug/log/info werden entfernt, error/warn bleiben
+        pure_funcs:
+          process.env.NODE_ENV === 'production' ? ['console.debug', 'console.log', 'console.info'] : ['console.debug'],
       },
       // 🔥 NEW: Better mangle options
       mangle: {

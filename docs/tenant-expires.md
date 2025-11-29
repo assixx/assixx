@@ -100,7 +100,7 @@ const query = `
 ### Prüfe Trial-Status eines Tenants
 
 ```bash
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "
 SELECT
   tp.*,
   t.subdomain,
@@ -113,7 +113,7 @@ WHERE tp.tenant_id = [TENANT_ID];"'
 ### Prüfe Feature-Status
 
 ```bash
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "
 SELECT
   tf.*,
   f.code,
