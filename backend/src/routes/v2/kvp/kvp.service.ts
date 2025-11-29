@@ -2,9 +2,9 @@
  * KVP API v2 Service Layer
  * Business logic for Continuous Improvement Process (Kontinuierlicher Verbesserungsprozess)
  */
-import kvpModel from '../../../models/kvp.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import kvpModel from './kvp.model.js';
 
 /**
  * Helper: Check if string is UUIDv7 format

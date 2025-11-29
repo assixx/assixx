@@ -7,14 +7,14 @@ import { Pool } from 'mysql2/promise';
 // ESLint incorrectly flags Model/Class imports as naming convention violations
 // Models are exported as default classes with PascalCase names, which is correct
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Tenant from '../models/tenant.js';
+import Tenant from '../routes/v2/tenants/tenant.model.js';
 import {
   type TenantCreateData as ModelTenantCreateData,
   type TenantCreateResult,
   deleteTenant,
   findAllTenants,
   findTenantById,
-} from '../models/tenant.js';
+} from '../routes/v2/tenants/tenant.model.js';
 import type { DatabaseTenant } from '../types/models.js';
 
 // Interfaces

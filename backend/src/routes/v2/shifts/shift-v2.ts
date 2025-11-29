@@ -2,8 +2,8 @@
  * Shift V2 API Operations
  * V2 API shift management operations
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
-import { logger } from '../utils/logger.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 import { getShiftTemplates } from './shift-core.js';
 import {
   type DbShiftTemplate,

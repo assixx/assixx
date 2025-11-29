@@ -4,16 +4,16 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Department from '../../../models/department.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Team from '../../../models/team.js';
-import type { DbTeam, TeamCreateData, TeamUpdateData } from '../../../models/team.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import User from '../../../models/user/index.js';
 import { execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Department from '../departments/department.model.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import User from '../users/model/index.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Team from './team.model.js';
+import type { DbTeam, TeamCreateData, TeamUpdateData } from './team.model.js';
 
 // Query result types for type safety
 interface TeamMemberResult extends RowDataPacket {

@@ -2,9 +2,12 @@
  * User Utility Functions
  * Pure functions for data formatting, filtering, and query building
  */
-import { query as executeQuery } from '../../utils/db.js';
-import { generateEmployeeId, generateTempEmployeeId } from '../../utils/employeeIdGenerator.js';
-import { logger } from '../../utils/logger.js';
+import { query as executeQuery } from '../../../../utils/db.js';
+import {
+  generateEmployeeId,
+  generateTempEmployeeId,
+} from '../../../../utils/employeeIdGenerator.js';
+import { logger } from '../../../../utils/logger.js';
 import { SubdomainResult, UserCreateData, UserFilter } from './user.types.js';
 
 /**

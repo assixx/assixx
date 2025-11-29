@@ -4,10 +4,10 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import rootLog from '../logs/logs.service.js';
 
 // Query result types for type safety
 interface SystemSettingResult extends RowDataPacket {

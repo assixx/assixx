@@ -12,10 +12,10 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
 import {
   DocumentCreateInput,
   DocumentFilters,

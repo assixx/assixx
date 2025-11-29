@@ -4,9 +4,9 @@
  */
 import { v7 as uuidv7 } from 'uuid';
 
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
-import user from '../user/index.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
+import user from '../../users/model/index.js';
 import { addEventAttendee } from './calendar.attendees.js';
 import { generateRecurringEvents } from './calendar.recurring.js';
 import {

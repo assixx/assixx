@@ -4,7 +4,7 @@
  */
 import { NextFunction, Request, Response } from 'express';
 
-import tenantModel from '../models/tenant.js';
+import tenantModel from '../routes/v2/tenants/tenant.model.js';
 import { DatabaseTenant } from '../types/models.js';
 import { TenantInfo, TenantTrialStatus } from '../types/tenant.types.js';
 import { logger } from '../utils/logger.js';

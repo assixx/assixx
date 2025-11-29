@@ -8,7 +8,7 @@ import department, {
   DepartmentCreateData,
   DbDepartment as DepartmentData,
   DepartmentUpdateData,
-} from '../models/department.js';
+} from '../routes/v2/departments/department.model.js';
 
 /**
  * Department Service

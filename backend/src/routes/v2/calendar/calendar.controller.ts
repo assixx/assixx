@@ -8,14 +8,14 @@
  */
 import { NextFunction, Response } from 'express';
 
-import type { CalendarEvent } from '../../../models/calendar.js';
-import calendarModel from '../../../models/calendar.js';
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import rootLog from '../logs/logs.service.js';
 import { ServiceError } from '../users/users.service.js';
 import { calendarService } from './calendar.service.js';
 import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
+import type { CalendarEvent } from './model/index.js';
+import calendarModel from './model/index.js';
 
 // Constants
 const INTERNAL_SERVER_ERROR = 'Internal server error';

@@ -8,7 +8,7 @@ import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import path from 'path';
 
 import { getRedisClient } from '../config/redis.js';
-import { DbUser } from '../models/user/index.js';
+import { DbUser } from '../routes/v2/users/model/index.js';
 import { execute, query, transaction } from '../utils/db.js';
 import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
 import emailService from '../utils/emailService.js';

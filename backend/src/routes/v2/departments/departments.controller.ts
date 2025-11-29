@@ -1,9 +1,9 @@
 import { NextFunction, Response } from 'express';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
 import { departmentService } from './departments.service.js';
 
 const DEFAULT_ERROR_MESSAGE = 'Error occurred';

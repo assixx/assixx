@@ -8,12 +8,12 @@ import { Response } from 'express';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
 import { documentsService } from '../documents/documents.service.js';
+import rootLog from '../logs/logs.service.js';
 import { blackboardService } from './blackboard.service.js';
 
 // ============================================================================

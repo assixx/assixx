@@ -3,7 +3,7 @@
  * Handles generation and management of recurring calendar events
  * Uses Dependency Injection to avoid circular dependencies
  */
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../../../utils/logger.js';
 import { CreateEventFn, DbCalendarEvent, EventCreateData } from './calendar.types.js';
 
 /**

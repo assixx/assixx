@@ -9,7 +9,7 @@ import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
-} from '../models/team.js';
+} from '../routes/v2/teams/team.model.js';
 
 /**
  * Team Service

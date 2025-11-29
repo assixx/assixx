@@ -4,10 +4,11 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import rootLog, {
-  type DbRootLog,
-  type RootLogCreateData as ModelRootLogCreateData,
-} from '../models/rootLog.js';
+import rootLog from '../routes/v2/logs/logs.service.js';
+import type {
+  DbRootLog,
+  RootLogCreateData as ModelRootLogCreateData,
+} from '../routes/v2/logs/types.js';
 
 /**
  * Admin Log Service
@@ -95,7 +96,7 @@ class AdminLogService {
       // Return the data without trying to match RowDataPacket structure
       return {
         id: id,
-        admin_id: modelData.user_id,
+        user_id: modelData.user_id,
         tenant_id: data.tenant_id,
         action: modelData.action,
         entity_type: modelData.entity_type,

@@ -2,17 +2,17 @@
  * Blackboard API v2 Service Layer
  * Business logic for company announcements and bulletin board
  */
+import { hierarchyPermissionService } from '../../../services/hierarchyPermission.service.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { query as executeQuery } from '../../../utils/db.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 import blackboard, {
   DbBlackboardComment,
   DbBlackboardEntry,
   EntryCreateData,
   EntryQueryOptions,
   EntryUpdateData,
-} from '../../../models/blackboard.js';
-import { hierarchyPermissionService } from '../../../services/hierarchyPermission.service.js';
-import { ServiceError } from '../../../utils/ServiceError.js';
-import { query as executeQuery } from '../../../utils/db.js';
-import { dbToApi } from '../../../utils/fieldMapping.js';
+} from './blackboard.model.js';
 
 // Error message constants to avoid duplication (sonarjs/no-duplicate-string)
 const ERROR_ENTRY_NOT_FOUND = 'Entry not found';

@@ -20,7 +20,7 @@ import {
   getEventById,
   removeEventAttendee,
   updateEvent,
-} from '../models/calendar.js';
+} from '../routes/v2/calendar/model/index.js';
 
 // UserInfo is defined below
 

@@ -1,8 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import PlanModel from '../../../models/plan.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog.js';
 import { query } from '../../../utils/db.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import RootLog from '../logs/logs.service.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import PlanModel from './plan.model.js';
 import {
   CostCalculation,
   CurrentPlanResponse,

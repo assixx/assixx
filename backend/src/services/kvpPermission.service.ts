@@ -58,6 +58,7 @@ class KvpPermissionService {
   private async canEmployeeViewSuggestion(
     userId: number,
     suggestion: KvpSuggestionDetailsResult,
+    tenantId: number,
   ): Promise<boolean> {
     // Can see own suggestions
     if (suggestion.submitted_by === userId) return true;
@@ -67,8 +68,8 @@ class KvpPermissionService {
 
     // Can see department suggestions if in same department
     const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
-      'SELECT department_id FROM users WHERE id = ?',
-      [userId],
+      'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+      [userId, tenantId],
     );
 
     const userRow = userInfo[0];
@@ -118,7 +119,7 @@ class KvpPermissionService {
 
       // Check role-specific permissions
       if (role === 'employee') {
-        return await this.canEmployeeViewSuggestion(userId, suggestion);
+        return await this.canEmployeeViewSuggestion(userId, suggestion, tenantId);
       }
 
       // At this point, role must be 'admin' (union type exhausted)
@@ -182,13 +183,14 @@ class KvpPermissionService {
 
   private async addEmployeeVisibilityConditions(
     userId: number,
+    tenantId: number,
     conditions: string[],
     queryParams: (string | number)[],
   ): Promise<void> {
     // Get user's department
     const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
-      'SELECT department_id FROM users WHERE id = ?',
-      [userId],
+      'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+      [userId, tenantId],
     );
 
     const userDeptId = userInfo[0]?.department_id;
@@ -268,7 +270,7 @@ class KvpPermissionService {
     if (role === 'root') {
       // No additional filters needed for root
     } else if (role === 'employee') {
-      await this.addEmployeeVisibilityConditions(userId, conditions, queryParams);
+      await this.addEmployeeVisibilityConditions(userId, tenantId, conditions, queryParams);
     } else {
       await this.addAdminVisibilityConditions(userId, tenantId, conditions, queryParams);
     }

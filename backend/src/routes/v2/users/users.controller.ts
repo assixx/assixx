@@ -4,9 +4,6 @@
  */
 import { Response } from 'express';
 
-// Removed express-validator - using Zod validation in routes
-
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import {
   type PaginationMeta,
@@ -15,6 +12,9 @@ import {
   successResponse,
 } from '../../../utils/apiResponse.js';
 import { uploadMiddleware } from '../../../utils/uploadMiddleware.js';
+// Removed express-validator - using Zod validation in routes
+
+import rootLog from '../logs/logs.service.js';
 import { ServiceError, usersService } from './users.service.js';
 import {
   ChangePasswordBody,

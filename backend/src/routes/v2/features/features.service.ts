@@ -1,9 +1,9 @@
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog.js';
 import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError.js';
 import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db.js';
 import { fieldMapper } from '../../../utils/fieldMapper.js';
 import { logger } from '../../../utils/logger.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import RootLog from '../logs/logs.service.js';
 import {
   ActivationOptions,
   DbFeature,

@@ -2,7 +2,9 @@
  * Calendar v2 Service Layer
  * Handles all business logic for calendar events
  */
-import calendarModel from '../../../models/calendar.js';
+import { dbToApiEvent } from '../../../utils/fieldMapping.js';
+import { ServiceError } from '../users/users.service.js';
+import calendarModel from './model/index.js';
 import type {
   CalendarEvent,
   DbCalendarEvent,
@@ -10,9 +12,7 @@ import type {
   EventCreateData,
   EventQueryOptions,
   EventUpdateData,
-} from '../../../models/calendar.js';
-import { dbToApiEvent } from '../../../utils/fieldMapping.js';
-import { ServiceError } from '../users/users.service.js';
+} from './model/index.js';
 
 export interface CalendarFilters {
   status?: 'active' | 'cancelled';

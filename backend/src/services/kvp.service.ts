@@ -9,7 +9,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import kvpModel, { type DbCategory } from '../models/kvp.js';
+import kvpModel, { type DbCategory } from '../routes/v2/kvp/kvp.model.js';
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors

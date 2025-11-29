@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import featureModel from '../models/feature.js';
+import featureModel from '../routes/v2/features/feature.model.js';
 import { AuthenticatedRequest } from '../types/request.types.js';
 import { RowDataPacket, query } from '../utils/db.js';
 import { logger } from '../utils/logger.js';

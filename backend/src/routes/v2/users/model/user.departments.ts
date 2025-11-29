@@ -5,8 +5,8 @@
  * Part of Assignment System Refactoring (2025-11-27)
  * Replaces users.department_id (1:1) with consistent N:M pattern
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
 
 /**
  * User department assignment row from database

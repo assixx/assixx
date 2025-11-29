@@ -18,13 +18,13 @@ import {
   REFRESH_TOKEN_EXPIRES,
   REFRESH_TOKEN_EXPIRES_SECONDS,
 } from '../../../config/token.config.js';
-import rootLog from '../../../models/rootLog.js';
-import user from '../../../models/user/index.js';
 import * as refreshTokenService from '../../../services/refreshToken.service.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
+import user from '../users/model/index.js';
 
 // JWT Payload interface for type safety
 interface JwtPayload extends jwt.JwtPayload {

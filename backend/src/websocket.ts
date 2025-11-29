@@ -70,6 +70,7 @@ interface MessageDetailsResult extends RowDataPacket {
   content: string;
   sender_id: number;
   created_at: Date | string;
+  tenant_id: number;
 }
 
 interface MessageWithSenderResult extends RowDataPacket {
@@ -271,7 +272,7 @@ export class ChatWebSocketServer {
     return result.insertId;
   }
 
-  private async getSenderInfo(userId: number): Promise<
+  private async getSenderInfo(userId: number, tenantId: number): Promise<
     | {
         id: number;
         username: string;
@@ -283,9 +284,9 @@ export class ChatWebSocketServer {
   > {
     const senderQuery = `
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
-      FROM users WHERE id = ?
+      FROM users WHERE id = ? AND tenant_id = ?
     `;
-    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId]);
+    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId, tenantId]);
     return senderInfo[0] as
       | {
           id: number;
@@ -390,7 +391,7 @@ export class ChatWebSocketServer {
       }
 
       const messageId = await this.saveMessage(conversationId, ws.userId, content, ws.tenantId);
-      const sender = await this.getSenderInfo(ws.userId);
+      const sender = await this.getSenderInfo(ws.userId, ws.tenantId);
       const messageData = this.buildMessageData(
         messageId,
         conversationId,
@@ -638,13 +639,13 @@ export class ChatWebSocketServer {
     );
 
     const [participants] = await query<ConversationParticipantResult[]>(
-      'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-      [message.conversation_id],
+      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND tenant_id = ?',
+      [message.conversation_id, message.tenant_id],
     );
 
     const [senderInfo] = await query<UserInfoResult[]>(
-      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = ?',
-      [message.sender_id],
+      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = ? AND tenant_id = ?',
+      [message.sender_id, message.tenant_id],
     );
     const sender = senderInfo[0] as
       | { first_name: string | null; last_name: string | null; profile_picture_url: string | null }

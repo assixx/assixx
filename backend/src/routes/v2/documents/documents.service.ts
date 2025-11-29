@@ -5,18 +5,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { getEntryById as getBlackboardEntry } from '../../../models/blackboard.js';
-// Model classes are exported as PascalCase objects for backward compatibility
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Department from '../../../models/department.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Document, { DbDocument, DocumentUpdateData } from '../../../models/document.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Team from '../../../models/team.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import User from '../../../models/user/index.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
+import { getEntryById as getBlackboardEntry } from '../blackboard/blackboard.model.js';
+// Model classes are exported as PascalCase objects for backward compatibility
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Department from '../departments/department.model.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Team from '../teams/team.model.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import User from '../users/model/index.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Document, { DbDocument, DocumentUpdateData } from './document.model.js';
 
 // Error constants
 const ERROR_CODES = {

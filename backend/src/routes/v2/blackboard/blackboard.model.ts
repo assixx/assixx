@@ -6,9 +6,9 @@
  */
 import { v7 as uuidv7 } from 'uuid';
 
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
-import { logger } from '../utils/logger.js';
-import User from './user/index.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
+import User from '../users/model/index.js';
 
 // Database interfaces
 interface DbBlackboardEntry extends RowDataPacket {
