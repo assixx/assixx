@@ -2,10 +2,8 @@
  * Shift Rotation Service
  * Business logic for shift rotation patterns
  */
-import type { ResultSetHeader, RowDataPacket } from 'mysql2';
-import type { PoolConnection } from 'mysql2/promise';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
 import { query as executeQuery, getConnection } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import type {
@@ -50,7 +48,7 @@ export async function getRotationPatterns(
       u.username as created_by_name
     FROM shift_rotation_patterns p
     LEFT JOIN users u ON p.created_by = u.id
-    WHERE p.tenant_id = ?
+    WHERE p.tenant_id = $1
   `;
 
   const params: (string | number | boolean)[] = [tenantId];
@@ -88,7 +86,7 @@ export async function getRotationPattern(
       u.username as created_by_name
     FROM shift_rotation_patterns p
     LEFT JOIN users u ON p.created_by = u.id
-    WHERE p.id = ? AND p.tenant_id = ?
+    WHERE p.id = $1 AND p.tenant_id = $2
   `;
 
   const [rows] = await executeQuery<RotationPatternResult[]>(query, [patternId, tenantId]);
@@ -125,7 +123,7 @@ export async function createRotationPattern(
       tenant_id, team_id, name, description, pattern_type,
       pattern_config, cycle_length_weeks, starts_at,
       ends_at, is_active, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
   `;
 
   const params = [
@@ -150,6 +148,7 @@ export async function createRotationPattern(
 /**
  * Update a rotation pattern
  */
+// eslint-disable-next-line max-lines-per-function
 export async function updateRotationPattern(
   patternId: number,
   data: Partial<CreateRotationPatternRequest>,
@@ -161,43 +160,52 @@ export async function updateRotationPattern(
   const updates: string[] = [];
   const params: (string | number | boolean | null)[] = [];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   if (data.name !== undefined) {
-    updates.push('name = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`name = $${paramIndex}`);
     params.push(data.name);
   }
 
   if (data.description !== undefined) {
-    updates.push('description = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`description = $${paramIndex}`);
     params.push(data.description ?? null);
   }
 
   if (data.team_id !== undefined) {
-    updates.push('team_id = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`team_id = $${paramIndex}`);
     params.push(data.team_id ?? null);
   }
 
   if (data.pattern_config !== undefined) {
-    updates.push('pattern_config = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`pattern_config = $${paramIndex}`);
     params.push(JSON.stringify(data.pattern_config));
   }
 
   if (data.cycle_length_weeks !== undefined) {
-    updates.push('cycle_length_weeks = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`cycle_length_weeks = $${paramIndex}`);
     params.push(data.cycle_length_weeks);
   }
 
   if (data.starts_at !== undefined) {
-    updates.push('starts_at = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`starts_at = $${paramIndex}`);
     params.push(data.starts_at);
   }
 
   if (data.ends_at !== undefined) {
-    updates.push('ends_at = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`ends_at = $${paramIndex}`);
     params.push(data.ends_at ?? null);
   }
 
   if (data.is_active !== undefined) {
-    updates.push('is_active = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`is_active = $${paramIndex}`);
     params.push(data.is_active);
   }
 
@@ -205,12 +213,15 @@ export async function updateRotationPattern(
     throw new ServiceError('BAD_REQUEST', 'No fields to update', 400);
   }
 
+  // PostgreSQL: Dynamic parameter numbering for WHERE clause
+  const patternIdParamIndex = params.length + 1;
+  const tenantIdParamIndex = params.length + 2;
   params.push(patternId, tenantId);
 
   const query = `
     UPDATE shift_rotation_patterns
     SET ${updates.join(', ')}
-    WHERE id = ? AND tenant_id = ?
+    WHERE id = $${patternIdParamIndex} AND tenant_id = $${tenantIdParamIndex}
   `;
 
   await executeQuery(query, params);
@@ -226,7 +237,7 @@ export async function deleteRotationPattern(patternId: number, tenantId: number)
   await getRotationPattern(patternId, tenantId);
 
   // Delete pattern (cascade will handle assignments and history)
-  const query = 'DELETE FROM shift_rotation_patterns WHERE id = ? AND tenant_id = ?';
+  const query = 'DELETE FROM shift_rotation_patterns WHERE id = $1 AND tenant_id = $2';
   await executeQuery(query, [patternId, tenantId]);
 }
 
@@ -238,7 +249,7 @@ async function updateRotationAssignment(
   endsAt: string | null | undefined,
 ): Promise<void> {
   await executeQuery(
-    `UPDATE shift_rotation_assignments SET shift_group = ?, starts_at = ?, ends_at = ?, updated_at = NOW() WHERE id = ?`,
+    `UPDATE shift_rotation_assignments SET shift_group = $1, starts_at = $2, ends_at = $3, updated_at = NOW() WHERE id = $4`,
     [shiftGroup, startsAt, endsAt ?? null, assignmentId],
   );
 }
@@ -257,7 +268,7 @@ async function createRotationAssignment(
   await executeQuery<ResultSetHeader>(
     `INSERT INTO shift_rotation_assignments (tenant_id, pattern_id, user_id, team_id, shift_group,
      rotation_order, can_override, starts_at, ends_at, is_active, assigned_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       tenantId,
       patternId,
@@ -291,10 +302,10 @@ async function getActiveAssignmentsForPattern(
 ): Promise<AssignmentRow[]> {
   const assignmentsQuery = `
     SELECT * FROM shift_rotation_assignments
-    WHERE pattern_id = ? AND tenant_id = ?
+    WHERE pattern_id = $1 AND tenant_id = $2
     AND is_active = TRUE
-    AND starts_at <= ?
-    AND (ends_at IS NULL OR ends_at >= ?)
+    AND starts_at <= $3
+    AND (ends_at IS NULL OR ends_at >= $4)
   `;
   const [assignments] = await executeQuery<AssignmentRow[]>(assignmentsQuery, [
     patternId,
@@ -312,7 +323,7 @@ async function getPatternAssignments(
 ): Promise<ShiftRotationAssignment[]> {
   const [rows] = await executeQuery<RowDataPacket[]>(
     `SELECT a.*, u.username, u.first_name, u.last_name FROM shift_rotation_assignments a
-     JOIN users u ON a.user_id = u.id WHERE a.pattern_id = ? AND a.tenant_id = ? AND a.is_active = TRUE`,
+     JOIN users u ON a.user_id = u.id WHERE a.pattern_id = $1 AND a.tenant_id = $2 AND a.is_active = TRUE`,
     [patternId, tenantId],
   );
   return rows.map((row: RowDataPacket) => dbToApi(row) as unknown as ShiftRotationAssignment);
@@ -340,7 +351,7 @@ export async function assignUsersToPattern(
     }
 
     const [existing] = await executeQuery<AssignmentIdResult[]>(
-      `SELECT id FROM shift_rotation_assignments WHERE tenant_id = ? AND pattern_id = ? AND user_id = ?
+      `SELECT id FROM shift_rotation_assignments WHERE tenant_id = $1 AND pattern_id = $2 AND user_id = $3
        AND (ends_at IS NULL OR ends_at > NOW())`,
       [tenantId, data.pattern_id, userId],
     );
@@ -582,7 +593,7 @@ async function saveGeneratedShiftInTransaction(
   // Check if shift already exists
   const checkQuery = `
     SELECT id FROM shift_rotation_history
-    WHERE tenant_id = ? AND user_id = ? AND shift_date = ?
+    WHERE tenant_id = $1 AND user_id = $2 AND shift_date = $3
   `;
   const [existing] = await connection.query<RowDataPacket[]>(checkQuery, [
     tenantId,
@@ -602,7 +613,7 @@ async function saveGeneratedShiftInTransaction(
       INSERT INTO shift_rotation_history (
         tenant_id, pattern_id, assignment_id, user_id, team_id,
         shift_date, shift_type, week_number, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'generated')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated')
     `;
 
     await connection.query(insertQuery, [
@@ -647,33 +658,39 @@ export async function getRotationHistory(
     FROM shift_rotation_history h
     JOIN users u ON h.user_id = u.id
     JOIN shift_rotation_patterns p ON h.pattern_id = p.id
-    WHERE h.tenant_id = ?
+    WHERE h.tenant_id = $1
   `;
 
   const params: (string | number)[] = [tenantId];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   if (filters.patternId !== undefined) {
-    query += ' AND h.pattern_id = ?';
+    const paramIndex = params.length + 1;
+    query += ` AND h.pattern_id = $${paramIndex}`;
     params.push(filters.patternId);
   }
 
   if (filters.userId !== undefined) {
-    query += ' AND h.user_id = ?';
+    const paramIndex = params.length + 1;
+    query += ` AND h.user_id = $${paramIndex}`;
     params.push(filters.userId);
   }
 
   if (filters.startDate !== undefined && filters.startDate !== '') {
-    query += ' AND h.shift_date >= ?';
+    const paramIndex = params.length + 1;
+    query += ` AND h.shift_date >= $${paramIndex}`;
     params.push(filters.startDate);
   }
 
   if (filters.endDate !== undefined && filters.endDate !== '') {
-    query += ' AND h.shift_date <= ?';
+    const paramIndex = params.length + 1;
+    query += ` AND h.shift_date <= $${paramIndex}`;
     params.push(filters.endDate);
   }
 
   if (filters.status !== undefined && filters.status !== '') {
-    query += ' AND h.status = ?';
+    const paramIndex = params.length + 1;
+    query += ` AND h.status = $${paramIndex}`;
     params.push(filters.status);
   }
 
@@ -705,7 +722,7 @@ export async function deleteRotationHistory(
     // 1. Delete from shift_rotation_history (if exists)
     const historyQuery = `
       DELETE FROM shift_rotation_history
-      WHERE tenant_id = ? AND team_id = ?
+      WHERE tenant_id = $1 AND team_id = $2
     `;
     const [historyResult] = await connection.execute<ResultSetHeader>(historyQuery, [
       tenantId,
@@ -715,7 +732,7 @@ export async function deleteRotationHistory(
     // 2. Delete from shift_rotation_assignments - CRITICAL: team_id filter!
     const assignmentsQuery = `
       DELETE FROM shift_rotation_assignments
-      WHERE tenant_id = ? AND team_id = ?
+      WHERE tenant_id = $1 AND team_id = $2
     `;
     const [assignmentsResult] = await connection.execute<ResultSetHeader>(assignmentsQuery, [
       tenantId,
@@ -725,7 +742,7 @@ export async function deleteRotationHistory(
     // 3. Delete from shift_rotation_patterns - CRITICAL: team_id filter!
     const patternsQuery = `
       DELETE FROM shift_rotation_patterns
-      WHERE tenant_id = ? AND team_id = ?
+      WHERE tenant_id = $1 AND team_id = $2
     `;
     const [patternsResult] = await connection.execute<ResultSetHeader>(patternsQuery, [
       tenantId,

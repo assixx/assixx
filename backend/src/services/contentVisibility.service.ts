@@ -14,9 +14,7 @@
  *
  * Part of Assignment System Refactoring (2025-11-27)
  */
-import { RowDataPacket } from 'mysql2/promise';
-
-import { execute } from '../utils/db.js';
+import { RowDataPacket, execute } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 import { hierarchyPermissionService } from './hierarchyPermission.service.js';
 
@@ -37,7 +35,7 @@ export interface ContentVisibility {
 interface UserInfoRow extends RowDataPacket {
   id: number;
   role: string;
-  has_full_access: number;
+  has_full_access: boolean;
   tenant_id: number;
 }
 
@@ -82,7 +80,7 @@ class ContentVisibilityService {
       }
 
       // Step 2: Root or has_full_access sees everything
-      if (user.role === 'root' || user.has_full_access === 1) {
+      if (user.role === 'root' || user.has_full_access) {
         return true;
       }
 
@@ -177,7 +175,7 @@ class ContentVisibilityService {
     if (user === null) return [];
 
     // Root or full access sees everything
-    if (user.role === 'root' || user.has_full_access === 1) {
+    if (user.role === 'root' || user.has_full_access) {
       return items;
     }
 
@@ -259,7 +257,7 @@ class ContentVisibilityService {
   private async getUserInfo(userId: number, tenantId: number): Promise<UserInfoRow | null> {
     const [rows] = await execute<UserInfoRow[]>(
       `SELECT id, role, has_full_access, tenant_id
-       FROM users WHERE id = ? AND tenant_id = ?`,
+       FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
     return rows[0] ?? null;
@@ -270,7 +268,7 @@ class ContentVisibilityService {
    */
   private async isTeamMember(userId: number, teamId: number): Promise<boolean> {
     const [rows] = await execute<TeamMemberRow[]>(
-      `SELECT user_id FROM user_teams WHERE user_id = ? AND team_id = ?`,
+      `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2`,
       [userId, teamId],
     );
     return rows.length > 0;
@@ -281,7 +279,7 @@ class ContentVisibilityService {
    */
   private async getAllTenantUserIds(tenantId: number): Promise<number[]> {
     const [rows] = await execute<{ id: number }[] & RowDataPacket[]>(
-      `SELECT id FROM users WHERE tenant_id = ? AND is_archived = 0`,
+      `SELECT id FROM users WHERE tenant_id = $1 AND is_archived = false`,
       [tenantId],
     );
     return rows.map((r: { id: number }) => r.id);
@@ -294,8 +292,8 @@ class ContentVisibilityService {
     const [rows] = await execute<{ id: number }[] & RowDataPacket[]>(
       `SELECT DISTINCT u.id FROM users u
        LEFT JOIN admin_area_permissions aap ON u.id = aap.admin_user_id AND aap.tenant_id = u.tenant_id
-       WHERE u.tenant_id = ? AND u.is_archived = 0
-       AND (u.role = 'root' OR u.has_full_access = 1 OR aap.area_id = ?)`,
+       WHERE u.tenant_id = $1 AND u.is_archived = false
+       AND (u.role = 'root' OR u.has_full_access = true OR aap.area_id = $2)`,
       [tenantId, areaId],
     );
     return rows.map((r: { id: number }) => r.id);
@@ -313,10 +311,10 @@ class ContentVisibilityService {
     const [rows] = await execute<{ id: number }[] & RowDataPacket[]>(
       `SELECT DISTINCT u.id FROM users u
        LEFT JOIN admin_department_permissions adp ON u.id = adp.admin_user_id AND adp.tenant_id = u.tenant_id
-       LEFT JOIN departments d ON d.id = ? AND d.tenant_id = u.tenant_id
+       LEFT JOIN departments d ON d.id = $1 AND d.tenant_id = u.tenant_id
        LEFT JOIN admin_area_permissions aap ON u.id = aap.admin_user_id AND aap.area_id = d.area_id AND aap.tenant_id = u.tenant_id
-       WHERE u.tenant_id = ? AND u.is_archived = 0
-       AND (u.role = 'root' OR u.has_full_access = 1 OR adp.department_id = ? OR aap.area_id IS NOT NULL)`,
+       WHERE u.tenant_id = $2 AND u.is_archived = false
+       AND (u.role = 'root' OR u.has_full_access = true OR adp.department_id = $3 OR aap.area_id IS NOT NULL)`,
       [departmentId, tenantId, departmentId],
     );
     return rows.map((r: { id: number }) => r.id);
@@ -329,7 +327,7 @@ class ContentVisibilityService {
     const [rows] = await execute<{ user_id: number; tenant_id: number }[] & RowDataPacket[]>(
       `SELECT ut.user_id, u.tenant_id FROM user_teams ut
        JOIN users u ON ut.user_id = u.id
-       WHERE ut.team_id = ? AND u.is_archived = 0`,
+       WHERE ut.team_id = $1 AND u.is_archived = false`,
       [teamId],
     );
 
@@ -341,7 +339,7 @@ class ContentVisibilityService {
     // Also include root and has_full_access users
     const [adminRows] = await execute<{ id: number }[] & RowDataPacket[]>(
       `SELECT id FROM users
-       WHERE tenant_id = ? AND is_archived = 0 AND (role = 'root' OR has_full_access = 1)`,
+       WHERE tenant_id = $1 AND is_archived = false AND (role = 'root' OR has_full_access = true)`,
       [tenantId],
     );
 

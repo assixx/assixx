@@ -3,7 +3,7 @@
  * Handles feature-related business logic
  */
 // import Feature from '../models/feature.js';
-import { Pool } from 'mysql2/promise';
+import { Pool } from '../utils/db.js';
 
 // Interfaces
 interface FeatureData {

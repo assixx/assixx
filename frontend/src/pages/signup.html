@@ -41,12 +41,17 @@
         </div>
       </div>
 
-      <!-- Success Message - Design System Alert -->
-      <div id="successMessage" class="alert alert--success" style="display: none" role="alert">
-        <span class="alert__icon">✅</span>
-        <div class="alert__content">
-          <div class="alert__title">Erfolgreich registriert!</div>
-          <div class="alert__message">Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...</div>
+      <!-- Success Message - Design System Toast (no close button - users must wait) -->
+      <div class="toast toast--success" id="successMessage" style="display: none" role="alert">
+        <div class="toast__icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast__content">
+          <div class="toast__title">Erfolgreich registriert!</div>
+          <div class="toast__message">Sie werden in 10 Sekunden zur Anmeldung weitergeleitet...</div>
+        </div>
+        <div class="toast__progress">
+          <div class="toast__progress-bar" style="animation-duration: 10s"></div>
         </div>
       </div>
 

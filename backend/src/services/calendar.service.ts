@@ -2,8 +2,6 @@
  * Calendar Service
  * Handles calendar business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import {
   type DbCalendarEvent,
   type EventQueryOptions,
@@ -21,6 +19,7 @@ import {
   removeEventAttendee,
   updateEvent,
 } from '../routes/v2/calendar/model/index.js';
+import { Pool } from '../utils/db.js';
 
 // UserInfo is defined below
 

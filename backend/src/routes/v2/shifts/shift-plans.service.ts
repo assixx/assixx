@@ -2,10 +2,8 @@
  * Shift Plans Service
  * Handles shift plan operations and favorites management
  */
-import { RowDataPacket } from 'mysql2';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute, query } from '../../../utils/db.js';
+import { RowDataPacket, execute, query } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
 import { kontischichtService } from './kontischicht.service.js';
@@ -100,7 +98,7 @@ class ShiftPlansService {
         tenant_id, name, shift_notes,
         department_id, team_id, machine_id, area_id,
         start_date, end_date, status, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft', $10)`,
       [
         tenantId,
         planName,
@@ -154,7 +152,7 @@ class ShiftPlansService {
           date, start_time, end_time, type,
           area_id, department_id, team_id, machine_id,
           status, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'planned', $12)`,
         [
           tenantId,
           planId,
@@ -268,6 +266,7 @@ class ShiftPlansService {
 
   /**
    * Build UPDATE query fields and values for shift plan
+   * PostgreSQL: Dynamic $N parameter numbering
    * @param data - Update data
    * @returns Object with fields array and values array
    */
@@ -279,36 +278,45 @@ class ShiftPlansService {
     const updateValues: unknown[] = [];
 
     // Explicitly check each field to avoid object injection
+    // PostgreSQL: Dynamic parameter numbering
     if (data.name !== undefined) {
-      updateFields.push('name = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`name = $${paramIndex}`);
       updateValues.push(data.name);
     }
     if (data.shiftNotes !== undefined) {
-      updateFields.push('shift_notes = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`shift_notes = $${paramIndex}`);
       updateValues.push(data.shiftNotes);
     }
     if (data.startDate !== undefined) {
-      updateFields.push('start_date = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`start_date = $${paramIndex}`);
       updateValues.push(data.startDate);
     }
     if (data.endDate !== undefined) {
-      updateFields.push('end_date = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`end_date = $${paramIndex}`);
       updateValues.push(data.endDate);
     }
     if (data.departmentId !== undefined) {
-      updateFields.push('department_id = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`department_id = $${paramIndex}`);
       updateValues.push(data.departmentId);
     }
     if (data.teamId !== undefined) {
-      updateFields.push('team_id = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`team_id = $${paramIndex}`);
       updateValues.push(data.teamId);
     }
     if (data.machineId !== undefined) {
-      updateFields.push('machine_id = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`machine_id = $${paramIndex}`);
       updateValues.push(data.machineId);
     }
     if (data.areaId !== undefined) {
-      updateFields.push('area_id = ?');
+      const paramIndex = updateValues.length + 1;
+      updateFields.push(`area_id = $${paramIndex}`);
       updateValues.push(data.areaId);
     }
 
@@ -329,7 +337,7 @@ class ShiftPlansService {
     tenantId: number,
   ): Promise<{ id: number; department_id: number }> {
     const [existingPlans] = await execute(
-      'SELECT id, department_id FROM shift_plans WHERE id = ? AND tenant_id = ?',
+      'SELECT id, department_id FROM shift_plans WHERE id = $1 AND tenant_id = $2',
       [planId, tenantId],
     );
 
@@ -368,7 +376,7 @@ class ShiftPlansService {
     userId: number,
   ): Promise<number[]> {
     // Delete existing shifts
-    await execute('DELETE FROM shifts WHERE plan_id = ? AND tenant_id = ?', [planId, tenantId]);
+    await execute('DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2', [planId, tenantId]);
 
     // Insert new shifts
     const shiftIds: number[] = [];
@@ -377,7 +385,7 @@ class ShiftPlansService {
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, type,
           start_time, end_time, department_id, created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
         [
           tenantId,
           planId,
@@ -399,6 +407,7 @@ class ShiftPlansService {
 
   /**
    * Build filter query conditions for shift plans
+   * PostgreSQL: Dynamic $N parameter numbering
    */
   private buildPlanFilterQuery(
     filters: {
@@ -411,23 +420,27 @@ class ShiftPlansService {
     },
     tenantId: number,
   ): { query: string; params: (string | number)[] } {
-    let query = 'SELECT * FROM shift_plans WHERE tenant_id = ?';
+    let query = 'SELECT * FROM shift_plans WHERE tenant_id = $1';
     const params: (string | number)[] = [tenantId];
 
     if (filters.departmentId !== undefined) {
-      query += ' AND department_id = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND department_id = $${paramIndex}`;
       params.push(filters.departmentId);
     }
     if (filters.teamId !== undefined) {
-      query += ' AND team_id = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND team_id = $${paramIndex}`;
       params.push(filters.teamId);
     }
     if (filters.machineId !== undefined) {
-      query += ' AND machine_id = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND machine_id = $${paramIndex}`;
       params.push(filters.machineId);
     }
     if (filters.areaId !== undefined) {
-      query += ' AND area_id = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND area_id = $${paramIndex}`;
       params.push(filters.areaId);
     }
     if (
@@ -436,7 +449,9 @@ class ShiftPlansService {
       filters.endDate !== undefined &&
       filters.endDate !== ''
     ) {
-      query += ' AND start_date <= ? AND end_date >= ?';
+      const endDateParamIndex = params.length + 1;
+      const startDateParamIndex = params.length + 2;
+      query += ` AND start_date <= $${endDateParamIndex} AND end_date >= $${startDateParamIndex}`;
       params.push(filters.endDate, filters.startDate);
     }
     query += ' ORDER BY created_at DESC LIMIT 1';
@@ -468,7 +483,7 @@ class ShiftPlansService {
 
       const [shifts] = await execute(
         `SELECT s.*, u.first_name, u.last_name, u.username FROM shifts s
-         LEFT JOIN users u ON s.user_id = u.id WHERE s.plan_id = ? ORDER BY s.date, s.start_time`,
+         LEFT JOIN users u ON s.user_id = u.id WHERE s.plan_id = $1 ORDER BY s.date, s.start_time`,
         [(plan as { id: number }).id],
       );
 
@@ -512,9 +527,12 @@ class ShiftPlansService {
       const { fields, values } = this.buildPlanUpdateQuery(data);
 
       if (fields.length > 0) {
+        // PostgreSQL: Add planId and tenantId with dynamic param indexes
+        const planIdParamIndex = values.length + 1;
+        const tenantIdParamIndex = values.length + 2;
         values.push(planId, tenantId);
         await execute(
-          `UPDATE shift_plans SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`,
+          `UPDATE shift_plans SET ${fields.join(', ')} WHERE id = $${planIdParamIndex} AND tenant_id = $${tenantIdParamIndex}`,
           values,
         );
       }
@@ -560,7 +578,7 @@ class ShiftPlansService {
   async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
     // First check if the plan exists and belongs to this tenant
     const [plans] = await execute(
-      'SELECT id, department_id, team_id FROM shift_plans WHERE id = ? AND tenant_id = ?',
+      'SELECT id, department_id, team_id FROM shift_plans WHERE id = $1 AND tenant_id = $2',
       [planId, tenantId],
     );
 
@@ -569,10 +587,10 @@ class ShiftPlansService {
     }
 
     // Delete all shifts associated with this plan
-    await execute('DELETE FROM shifts WHERE plan_id = ? AND tenant_id = ?', [planId, tenantId]);
+    await execute('DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2', [planId, tenantId]);
 
     // Delete the shift plan itself
-    const [result] = await execute('DELETE FROM shift_plans WHERE id = ? AND tenant_id = ?', [
+    const [result] = await execute('DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2', [
       planId,
       tenantId,
     ]);
@@ -608,7 +626,7 @@ class ShiftPlansService {
         team_name as teamName,
         created_at as createdAt
       FROM shift_favorites
-      WHERE tenant_id = ? AND user_id = ?
+      WHERE tenant_id = $1 AND user_id = $2
       ORDER BY created_at DESC`,
       [tenantId, userId],
     );
@@ -621,7 +639,7 @@ class ShiftPlansService {
   async createFavorite(tenantId: number, userId: number, data: FavoriteData): Promise<unknown> {
     // Check if a favorite with the same name already exists for this user
     const [existing] = await query<RowDataPacket[]>(
-      'SELECT id FROM shift_favorites WHERE tenant_id = ? AND user_id = ? AND name = ?',
+      'SELECT id FROM shift_favorites WHERE tenant_id = $1 AND user_id = $2 AND name = $3',
       [tenantId, userId, data.name],
     );
 
@@ -643,7 +661,7 @@ class ShiftPlansService {
         machine_name,
         team_id,
         team_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         tenantId,
         userId,
@@ -674,7 +692,7 @@ class ShiftPlansService {
   async deleteFavorite(favoriteId: number, tenantId: number, userId: number): Promise<void> {
     // Delete the favorite (will fail if not exists or no permission)
     const [result] = await execute(
-      'DELETE FROM shift_favorites WHERE id = ? AND tenant_id = ? AND user_id = ?',
+      'DELETE FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3',
       [favoriteId, tenantId, userId],
     );
 

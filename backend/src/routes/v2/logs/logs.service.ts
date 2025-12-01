@@ -1,6 +1,5 @@
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { ResultSetHeader, RowDataPacket, query as executeQuery  } from '../../../utils/db.js';
 
-import { query as executeQuery } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import type {
   DbRootLog,
@@ -30,7 +29,7 @@ interface DbLogRow extends RowDataPacket {
   ip_address?: string;
   user_agent?: string;
   was_role_switched: number;
-  created_at: Date;
+  created_at: Date | null; // PostgreSQL can return null for timestamps
 }
 
 interface StatsRow extends RowDataPacket {
@@ -70,25 +69,12 @@ class LogsService {
   ): void {
     if (search === undefined || search === '') return;
 
+    const paramIndex = params.length + 1;
     conditions.push(
-      '(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)',
+      `(u.username LIKE $${paramIndex} OR u.email LIKE $${paramIndex + 1} OR rl.action LIKE $${paramIndex + 2} OR rl.entity_type LIKE $${paramIndex + 3})`,
     );
     const searchPattern = `%${search}%`;
     params.push(searchPattern, searchPattern, searchPattern, searchPattern);
-  }
-
-  /**
-   * Add filter condition to query
-   */
-  private addFilterCondition(
-    value: unknown,
-    condition: string,
-    conditions: string[],
-    params: unknown[],
-  ): void {
-    if (value === undefined || value === '') return;
-    conditions.push(condition);
-    params.push(value);
   }
 
   /**
@@ -100,18 +86,21 @@ class LogsService {
 
     const { userId, tenantId, action, entityType, startDate, endDate, search } = filters;
 
-    // Add simple filter conditions
-    const filterMappings = [
-      { value: userId, condition: 'rl.user_id = ?' },
-      { value: tenantId, condition: 'rl.tenant_id = ?' },
-      { value: action, condition: 'rl.action = ?' },
-      { value: entityType, condition: 'rl.entity_type = ?' },
-      { value: startDate, condition: 'rl.created_at >= ?' },
-      { value: endDate, condition: 'rl.created_at <= ?' },
+    // Add simple filter conditions with PostgreSQL dynamic $N placeholders
+    const filterFields = [
+      { value: userId, field: 'rl.user_id' },
+      { value: tenantId, field: 'rl.tenant_id' },
+      { value: action, field: 'rl.action' },
+      { value: entityType, field: 'rl.entity_type' },
+      { value: startDate, field: 'rl.created_at', operator: '>=' },
+      { value: endDate, field: 'rl.created_at', operator: '<=' },
     ];
 
-    filterMappings.forEach(({ value, condition }: { value: unknown; condition: string }) => {
-      this.addFilterCondition(value, condition, conditions, params);
+    filterFields.forEach(({ value, field, operator = '=' }: { value: unknown; field: string; operator?: string }) => {
+      if (value === undefined || value === '') return;
+      const paramIndex = params.length + 1;
+      conditions.push(`${field} ${operator} $${paramIndex}`);
+      params.push(value);
     });
 
     // Add search condition
@@ -140,6 +129,7 @@ class LogsService {
 
   /**
    * Get paginated logs from database
+   * PostgreSQL: Dynamic $N parameter numbering based on WHERE clause params
    */
   private async getLogRecords(
     whereClause: string,
@@ -147,6 +137,10 @@ class LogsService {
     limit: number,
     offset: number,
   ): Promise<DbLogRow[]> {
+    // Dynamic parameter indexes: LIMIT comes after WHERE params, OFFSET after LIMIT
+    const limitParamIndex = params.length + 1;
+    const offsetParamIndex = params.length + 2;
+
     const logsQuery = `SELECT
         rl.*,
         u.username as user_name,
@@ -158,7 +152,7 @@ class LogsService {
        LEFT JOIN tenants t ON rl.tenant_id = t.id
        WHERE ${whereClause}
        ORDER BY rl.created_at DESC
-       LIMIT ? OFFSET ?`;
+       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
 
     logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
     logger.info(`[Logs v2 Service] Logs query params:`, [...params, limit, offset]);
@@ -213,8 +207,8 @@ class LogsService {
     const [rows] = await executeQuery<StatsRow[]>(
       `SELECT COUNT(*) as total_logs, COUNT(DISTINCT user_id) as unique_users,
        COUNT(DISTINCT tenant_id) as unique_tenants,
-       SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
-       FROM root_logs WHERE tenant_id = ?`,
+       SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as today_logs
+       FROM root_logs WHERE tenant_id = $1`,
       [tenantId],
     );
     return rows;
@@ -225,7 +219,7 @@ class LogsService {
    */
   private async getTopActions(tenantId: number): Promise<TopActionResult[]> {
     const [rows] = await executeQuery<TopActionResult[]>(
-      `SELECT action, COUNT(*) as count FROM root_logs WHERE tenant_id = ?
+      `SELECT action, COUNT(*) as count FROM root_logs WHERE tenant_id = $1
        GROUP BY action ORDER BY count DESC LIMIT 10`,
       [tenantId],
     );
@@ -239,7 +233,7 @@ class LogsService {
     const [rows] = await executeQuery<TopUserResult[]>(
       `SELECT rl.user_id, u.username as user_name, COUNT(*) as count
        FROM root_logs rl LEFT JOIN users u ON rl.user_id = u.id
-       WHERE rl.tenant_id = ? GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
+       WHERE rl.tenant_id = $1 GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
       [tenantId],
     );
     return rows;
@@ -287,21 +281,22 @@ class LogsService {
   }): { conditions: string[]; params: unknown[] } {
     const conditions: string[] = [];
     const params: unknown[] = [];
+    let paramIndex = 1;
 
     if (filters.userId !== undefined) {
-      conditions.push('user_id = ?');
+      conditions.push(`user_id = $${paramIndex++}`);
       params.push(filters.userId);
     }
     if (filters.tenantId !== undefined) {
-      conditions.push('tenant_id = ?');
+      conditions.push(`tenant_id = $${paramIndex++}`);
       params.push(filters.tenantId);
     }
     if (filters.action !== undefined && filters.action !== '') {
-      conditions.push('action = ?');
+      conditions.push(`action = $${paramIndex++}`);
       params.push(filters.action);
     }
     if (filters.entityType !== undefined && filters.entityType !== '') {
-      conditions.push('entity_type = ?');
+      conditions.push(`entity_type = $${paramIndex++}`);
       params.push(filters.entityType);
     }
 
@@ -326,7 +321,8 @@ class LogsService {
       if (filters.olderThanDays === 0) {
         conditions.push('1=1');
       } else {
-        conditions.push('created_at < DATE_SUB(NOW(), INTERVAL ? DAY)');
+        const paramIndex = params.length + 1;
+        conditions.push(`created_at < NOW() - ($${paramIndex} * INTERVAL '1 day')`);
         params.push(filters.olderThanDays);
       }
     }
@@ -372,13 +368,18 @@ class LogsService {
    * Format database log to API response
    */
   private formatLogResponse(log: DbLogRow): LogsResponse {
+    // Handle null/undefined created_at safely
+    const createdAtValue = log.created_at != null
+      ? (log.created_at instanceof Date ? log.created_at.toISOString() : String(log.created_at))
+      : new Date().toISOString();
+
     const response: LogsResponse = {
       id: log.id,
       tenantId: log.tenant_id,
       userId: log.user_id,
       action: log.action,
       wasRoleSwitched: Boolean(log.was_role_switched),
-      createdAt: log.created_at.toISOString(),
+      createdAt: createdAtValue,
     };
 
     this.applyOptionalLogFields(response, log);
@@ -412,7 +413,7 @@ class LogsService {
     } = logData;
 
     const sql = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, details, old_values, new_values, ip_address, user_agent, was_role_switched)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(sql, [
@@ -466,11 +467,11 @@ class LogsService {
    */
   async getLogsByUserId(userId: number, days?: number): Promise<DbRootLog[]> {
     const effectiveDays: number = days ?? 0;
-    let sql = `SELECT * FROM root_logs WHERE user_id = ?`;
+    let sql = `SELECT * FROM root_logs WHERE user_id = $1`;
     const params: unknown[] = [userId];
 
     if (effectiveDays > 0) {
-      sql += ` AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+      sql += ` AND created_at >= NOW() - ($2 * INTERVAL '1 day')`;
       params.push(effectiveDays);
     }
 
@@ -492,7 +493,7 @@ class LogsService {
    */
   async getLastLogin(userId: number): Promise<DbRootLog | null> {
     const sql = `SELECT * FROM root_logs
-                 WHERE user_id = ? AND action = 'login'
+                 WHERE user_id = $1 AND action = 'login'
                  ORDER BY created_at DESC LIMIT 1`;
 
     try {

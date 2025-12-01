@@ -186,11 +186,13 @@ export class SignupFormController {
 ### Features and unified-navigation !!!! CRITICAL and biggest
 
 - [x] calendar.html ✅ (2025-11-23) - 100% Design System compliant (toggle-group for filters, ds-modal, form-field, dropdown, confirm-modal for delete events, TypeScript modules split to api/filters/modals/state/types/ui/index layers, FullCalendar integration with Design System theming, Schichten toggle button independent from organization filters, fixed field mapping startTime/endTime from API v2, no inline styles/JS, no Bootstrap)
-- [ ] blackboard.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] shifts.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] blackboard.html
+- [ ] chat.html
+- [ ] shifts.html
 - [ ] logs.html
 - [ ] unified-navigation.ts und css !
+last one
+- [ ] tenant-deletion-status.html - last one
 - [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
 - [x] kvp-detail.html ✅ (2025-11-15) - 100% Design System compliant (ds-modal, form-field, dropdown, choice-card, data-list, badge, btn-cancel, TypeScript modules split to actions/data-loader/index/permissions/renderer/share-modal/ui layers, lightbox photo gallery, comments section with avatar, kvp-detail.css 399 lines domain-specific only, fixed Bootstrap btn-secondary→btn-cancel and btn-light→btn-cancel, no inline styles/JS, no Bootstrap)
 
@@ -215,8 +217,6 @@ export class SignupFormController {
 - [x] storage-upgrade.html - **COMPLETED 2025-11-21** - Full migration: 420→178 lines (-58%), 1 TypeScript module (256 lines inline JS extracted), 4 inline styles → CSS classes, alert() → toasts, btn-cancel → btn-secondary
 - [x] rate-limit.html - **COMPLETED 2025-11-21** - Full migration: 100→38 lines (-62%), 1 TypeScript module (73 lines inline JS → 133 lines structured), Design System `.card` + Tailwind utilities, CSS: 119→48 lines (-60%), only domain-specific animations kept (fade-in-up, pulse), countdown timer with auto-redirect
 
-last one
-- [ ] tenant-deletion-status.html
 
 
 ## Migration Strategy

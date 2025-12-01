@@ -32,11 +32,13 @@ export async function countUsersWithFilters(filters: UserFilter): Promise<number
  */
 export async function countUsers(filters: UserFilter): Promise<number> {
   try {
-    let query = 'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?';
+    let query = 'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1';
     const params: unknown[] = [filters.tenant_id];
 
+    // PostgreSQL: Dynamic $N parameter numbering
     if (filters.role != null && filters.role !== '') {
-      query += ' AND role = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND role = $${paramIndex}`;
       params.push(filters.role);
     }
 
@@ -60,7 +62,7 @@ export async function countActiveUsersByTenant(tenantId: number): Promise<number
       count: number;
     }
     const [rows] = await executeQuery<ActiveCountResult[]>(
-      'SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1',
+      'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND is_active = true',
       [tenantId],
     );
     return rows[0]?.count ?? 0;
@@ -78,7 +80,7 @@ export async function userHasDocuments(userId: number): Promise<boolean> {
     const query = `
         SELECT COUNT(*) as document_count
         FROM documents
-        WHERE user_id = ?
+        WHERE user_id = $1
       `;
 
     const [rows] = await executeQuery<DocumentCountResult[]>(query, [userId]);
@@ -102,7 +104,7 @@ export async function getUserDocumentCount(userId: number): Promise<number> {
     const query = `
         SELECT COUNT(*) as document_count
         FROM documents
-        WHERE user_id = ?
+        WHERE user_id = $1
       `;
 
     const [rows] = await executeQuery<DocumentCountResult[]>(query, [userId]);
@@ -145,11 +147,11 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
           d.name as department_name,
           t.name as team_name
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
         LEFT JOIN departments d ON ud.department_id = d.id
         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id
-        WHERE u.id = ?
+        WHERE u.id = $1
       `;
 
     const [rows] = await executeQuery<UserDepartmentTeam[]>(query, [userId]);
@@ -172,7 +174,7 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
       teamId: user.team_id,
       departmentName: user.department_name,
       teamName: user.team_name,
-      hasFullAccess: user.has_full_access === 1,
+      hasFullAccess: user.has_full_access === true,
     };
   } catch (error: unknown) {
     logger.error(`Error getting user department and team: ${(error as Error).message}`);

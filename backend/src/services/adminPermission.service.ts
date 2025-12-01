@@ -48,7 +48,7 @@ class AdminPermissionService {
       const [directPermissions] = await execute<PermissionCheckResult[]>(
         `SELECT can_read, can_write, can_delete
          FROM admin_department_permissions
-         WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
+         WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 
@@ -64,9 +64,9 @@ class AdminPermissionService {
         `SELECT agp.can_read, agp.can_write, agp.can_delete
          FROM admin_group_permissions agp
          JOIN department_group_members dgm ON agp.group_id = dgm.group_id
-         WHERE agp.admin_user_id = ?
-         AND dgm.department_id = ?
-         AND agp.tenant_id = ?`,
+         WHERE agp.admin_user_id = $1
+         AND dgm.department_id = $2
+         AND agp.tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 
@@ -95,11 +95,11 @@ class AdminPermissionService {
   ): boolean {
     switch (requiredLevel) {
       case 'read':
-        return permission.can_read === 1;
+        return permission.can_read;
       case 'write':
-        return permission.can_write === 1;
+        return permission.can_write;
       case 'delete':
-        return permission.can_delete === 1;
+        return permission.can_delete;
       default:
         return false;
     }
@@ -111,9 +111,9 @@ class AdminPermissionService {
       id: dept.id,
       name: dept.name,
       description: dept.description,
-      can_read: dept.can_read === 1,
-      can_write: dept.can_write === 1,
-      can_delete: dept.can_delete === 1,
+      can_read: dept.can_read,
+      can_write: dept.can_write,
+      can_delete: dept.can_delete,
     };
   }
 
@@ -125,9 +125,9 @@ class AdminPermissionService {
     for (const dept of depts) {
       const existing = map.get(dept.id);
       if (existing !== undefined) {
-        existing.can_read = existing.can_read || dept.can_read === 1;
-        existing.can_write = existing.can_write || dept.can_write === 1;
-        existing.can_delete = existing.can_delete || dept.can_delete === 1;
+        existing.can_read = existing.can_read || dept.can_read;
+        existing.can_write = existing.can_write || dept.can_write;
+        existing.can_delete = existing.can_delete || dept.can_delete;
       } else {
         map.set(dept.id, this.toDeptWithPermission(dept));
       }
@@ -146,11 +146,11 @@ class AdminPermissionService {
     try {
       const [adminInfo] = await execute<DeptCountResult[]>(
         `SELECT COUNT(*) as dept_count FROM admin_department_permissions
-         WHERE admin_user_id = ? AND tenant_id = ?`,
+         WHERE admin_user_id = $1 AND tenant_id = $2`,
         [adminId, tenantId],
       );
       const [totalDepts] = await execute<TotalCountResult[]>(
-        `SELECT COUNT(*) as total FROM departments WHERE tenant_id = ?`,
+        `SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1`,
         [tenantId],
       );
       const hasAllAccess =
@@ -162,7 +162,7 @@ class AdminPermissionService {
       const [directDepts] = await execute<DepartmentWithPermissionResult[]>(
         `SELECT d.id, d.name, d.description, adp.can_read, adp.can_write, adp.can_delete
          FROM departments d JOIN admin_department_permissions adp ON d.id = adp.department_id
-         WHERE adp.admin_user_id = ? AND adp.tenant_id = ?`,
+         WHERE adp.admin_user_id = $1 AND adp.tenant_id = $2`,
         [adminId, tenantId],
       );
       const [groupDepts] = await execute<DepartmentWithPermissionResult[]>(
@@ -170,7 +170,7 @@ class AdminPermissionService {
                 MAX(agp.can_read) as can_read, MAX(agp.can_write) as can_write, MAX(agp.can_delete) as can_delete
          FROM departments d JOIN department_group_members dgm ON d.id = dgm.department_id
          JOIN admin_group_permissions agp ON dgm.group_id = agp.group_id
-         WHERE agp.admin_user_id = ? AND agp.tenant_id = ? GROUP BY d.id, d.name, d.description`,
+         WHERE agp.admin_user_id = $1 AND agp.tenant_id = $2 GROUP BY d.id, d.name, d.description`,
         [adminId, tenantId],
       );
 
@@ -213,7 +213,7 @@ class AdminPermissionService {
       sampleValue: values[0],
     });
 
-    const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const placeholders = departmentIds.map(() => '($1, $2, $3, $4, $5, $6, $7)').join(', ');
 
     await connection.execute(
       `INSERT INTO admin_department_permissions
@@ -238,7 +238,7 @@ class AdminPermissionService {
     await connection.execute(
       `INSERT INTO admin_permission_logs
        (tenant_id, action, admin_user_id, target_id, target_type, changed_by, old_permissions, new_permissions)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         tenantId,
         'modify',
@@ -274,11 +274,11 @@ class AdminPermissionService {
 
       const [oldPerms] = await connection.execute(
         `SELECT department_id, can_read, can_write, can_delete
-         FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?`,
+         FROM admin_department_permissions WHERE admin_user_id = $1 AND tenant_id = $2`,
         [adminId, tenantId],
       );
       await connection.execute(
-        `DELETE FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?`,
+        `DELETE FROM admin_department_permissions WHERE admin_user_id = $1 AND tenant_id = $2`,
         [adminId, tenantId],
       );
       await this.insertDepartmentPermissions(
@@ -337,7 +337,7 @@ class AdminPermissionService {
       // Remove all existing group permissions
       await connection.execute(
         `DELETE FROM admin_group_permissions
-         WHERE admin_user_id = ? AND tenant_id = ?`,
+         WHERE admin_user_id = $1 AND tenant_id = $2`,
         [adminId, tenantId],
       );
 
@@ -353,7 +353,7 @@ class AdminPermissionService {
           assignedBy,
         ]);
 
-        const placeholders = groupIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = groupIds.map(() => '($1, $2, $3, $4, $5, $6, $7)').join(', ');
 
         await connection.execute(
           `INSERT INTO admin_group_permissions
@@ -388,7 +388,7 @@ class AdminPermissionService {
     try {
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_department_permissions
-         WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
+         WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 
@@ -413,7 +413,7 @@ class AdminPermissionService {
     try {
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_group_permissions
-         WHERE admin_user_id = ? AND group_id = ? AND tenant_id = ?`,
+         WHERE admin_user_id = $4 AND group_id = $2 AND tenant_id = $3`,
         [adminId, groupId, tenantId],
       );
 
@@ -449,7 +449,7 @@ class AdminPermissionService {
       await execute<ResultSetHeader>(
         `INSERT INTO admin_permission_logs
          (tenant_id, action, admin_user_id, target_id, target_type, changed_by, old_permissions, new_permissions)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           tenantId,
           action,

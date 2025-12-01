@@ -3,8 +3,8 @@
  * Tests continuous improvement process functionality
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
-import type { ResultSetHeader } from 'mysql2';
-import { Pool } from 'mysql2/promise';
+import type { ResultSetHeader } from '../../../utils/db.js';
+import { Pool } from '../../../utils/db.js';
 import request from 'supertest';
 
 import app from '../../../app.js';

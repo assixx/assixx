@@ -265,7 +265,7 @@ export async function deleteAreaController(
     const params = req.params as unknown as AreaIdParam;
     const areaId = params.id;
 
-    // Get force parameter from query string (e.g., /areas/123?force=true)
+    // Get force parameter from query string (e.g., /areas/123$1force=true)
     const force = req.query['force'] === 'true';
 
     const deletedArea = await getAreaById(areaId, req.user.tenant_id);

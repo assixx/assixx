@@ -1,5 +1,4 @@
-import type { RowDataPacket } from 'mysql2';
-
+import type { RowDataPacket } from '../../../utils/db.js';
 import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 // Model classes are exported as PascalCase objects for backward compatibility
@@ -354,7 +353,7 @@ class DepartmentService {
     tenantId: number,
   ): Promise<number> {
     const [rows] = await execute<RowDataPacket[]>(
-      `SELECT id FROM ${tableName} WHERE department_id = ? AND tenant_id = ?`,
+      `SELECT id FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
     );
     return rows.length;
@@ -454,11 +453,11 @@ class DepartmentService {
   ): Promise<void> {
     if (operation === 'UPDATE') {
       await execute(
-        `UPDATE ${tableName} SET department_id = NULL WHERE department_id = ? AND tenant_id = ?`,
+        `UPDATE ${tableName} SET department_id = NULL WHERE department_id = $1 AND tenant_id = $2`,
         [departmentId, tenantId],
       );
     } else {
-      await execute(`DELETE FROM ${tableName} WHERE department_id = ? AND tenant_id = ?`, [
+      await execute(`DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`, [
         departmentId,
         tenantId,
       ]);

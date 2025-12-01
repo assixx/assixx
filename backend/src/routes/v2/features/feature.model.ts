@@ -61,7 +61,7 @@ export async function findAllFeatures(): Promise<DbFeature[]> {
 // Feature by Code finden
 export async function findFeatureByCode(code: string): Promise<DbFeature | undefined> {
   try {
-    const [features] = await executeQuery<DbFeature[]>('SELECT * FROM features WHERE code = ?', [
+    const [features] = await executeQuery<DbFeature[]>('SELECT * FROM features WHERE code = $1', [
       code,
     ]);
     return features[0];
@@ -81,9 +81,9 @@ export async function checkTenantFeatureAccess(
         SELECT tf.*, f.code, f.name
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ?
-        AND f.code = ?
-        AND tf.is_active = 1
+        WHERE tf.tenant_id = $1
+        AND f.code = $2
+        AND tf.is_active = true
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `;
 
@@ -135,12 +135,12 @@ export async function activateFeatureForTenant(
     const query = `
         INSERT INTO tenant_features
         (tenant_id, feature_id, is_active, activated_by, expires_at, custom_config)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-        is_active = VALUES(is_active),
-        activated_by = VALUES(activated_by),
-        expires_at = VALUES(expires_at),
-        custom_config = VALUES(custom_config),
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (tenant_id, feature_id) DO UPDATE SET
+        is_active = EXCLUDED.is_active,
+        activated_by = EXCLUDED.activated_by,
+        expires_at = EXCLUDED.expires_at,
+        custom_config = EXCLUDED.custom_config,
         updated_at = CURRENT_TIMESTAMP
       `;
 
@@ -175,7 +175,7 @@ export async function deactivateFeatureForTenant(
     const query = `
         UPDATE tenant_features
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
-        WHERE tenant_id = ? AND feature_id = ?
+        WHERE tenant_id = $3 AND feature_id = $2
       `;
 
     await executeQuery(query, [tenant_id, feature.id]);
@@ -202,13 +202,13 @@ export async function logFeatureUsage(
 
     // Log erstellen
     await executeQuery(
-      'INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)',
+      'INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES ($1, $2, $3, CURRENT_DATE, $4)',
       [tenant_id, feature.id, userId, JSON.stringify(metadata)],
     );
 
     // Current usage erhöhen
     await executeQuery(
-      'UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?',
+      'UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = $1 AND feature_id = $2',
       [tenant_id, feature.id],
     );
 
@@ -234,7 +234,7 @@ export async function getTenantFeatures(tenant_id: number): Promise<DbTenantFeat
             ELSE 0
           END as is_available
         FROM features f
-        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = ?
+        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
         WHERE f.is_active = true
         ORDER BY f.category, f.name
       `;
@@ -266,9 +266,9 @@ export async function getFeatureUsageStats(
           COUNT(*) as usage_count,
           COUNT(DISTINCT user_id) as unique_users
         FROM feature_usage_logs
-        WHERE tenant_id = ?
-        AND feature_id = ?
-        AND usage_date BETWEEN ? AND ?
+        WHERE tenant_id = $1
+        AND feature_id = $2
+        AND usage_date BETWEEN $3 AND $4
         GROUP BY DATE(usage_date)
         ORDER BY date
       `;

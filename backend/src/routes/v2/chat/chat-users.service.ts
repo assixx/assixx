@@ -2,8 +2,7 @@
  * Chat Users Service v2
  * Business logic for chat user listing and access permissions
  */
-import type { RowDataPacket } from 'mysql2/promise';
-
+import type { RowDataPacket } from '../../../utils/db.js';
 import { execute } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type { ChatUser, ChatUserRow } from './chat.types.js';
@@ -40,19 +39,19 @@ function buildChatUsersQuery(
       d.name as department_name,
       u.role
     FROM users u
-    LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+    LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
     LEFT JOIN departments d ON ud.department_id = d.id
   `;
 
   if (currentUser.role === 'admin' || currentUser.role === 'root') {
     return {
-      query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ?`,
+      query: `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2`,
       params: [tenantId, currentUserId],
     };
   }
 
   return {
-    query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ? AND (ud.department_id = ? OR u.role IN ('admin', 'root'))`,
+    query: `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND (ud.department_id = $3 OR u.role IN ('admin', 'root'))`,
     params: [tenantId, currentUserId, currentUser.department_id],
   };
 }
@@ -108,8 +107,12 @@ export async function getChatUsers(
 ): Promise<ChatUser[]> {
   try {
     // Get current user's role and department for permission checking
+    // Note: department_id is now in user_departments table (many-to-many)
     const [userRows] = await execute<CurrentUserPermissions[]>(
-      'SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?',
+      `SELECT u.role, ud.department_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       WHERE u.id = $1 AND u.tenant_id = $2`,
       [currentUserId, tenantId],
     );
 

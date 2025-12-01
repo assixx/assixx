@@ -55,14 +55,14 @@ export async function assignUserToDepartment(data: UserDepartmentAssignInput): P
     // If setting as primary, first unset any existing primary for this user
     if (isPrimaryInput) {
       await executeQuery<ResultSetHeader>(
-        `UPDATE user_departments SET is_primary = 0 WHERE user_id = ? AND tenant_id = ?`,
+        `UPDATE user_departments SET is_primary = 0 WHERE user_id = $1 AND tenant_id = $2`,
         [userId, tenantId],
       );
     }
 
     // Check if assignment already exists
     const [existing] = await executeQuery<UserDepartmentRow[]>(
-      `SELECT id FROM user_departments WHERE user_id = ? AND department_id = ? AND tenant_id = ?`,
+      `SELECT id FROM user_departments WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3`,
       [userId, departmentId, tenantId],
     );
 
@@ -70,7 +70,7 @@ export async function assignUserToDepartment(data: UserDepartmentAssignInput): P
       // Update existing assignment
       const existingId = existing[0].id;
       await executeQuery<ResultSetHeader>(
-        `UPDATE user_departments SET is_primary = ?, assigned_by = ?, assigned_at = NOW() WHERE id = ?`,
+        `UPDATE user_departments SET is_primary = $1, assigned_by = $2, assigned_at = NOW() WHERE id = $3`,
         [isPrimaryInput ? 1 : 0, assignedBy ?? null, existingId],
       );
       logger.info(`Updated existing assignment ID ${existingId}`);
@@ -80,7 +80,7 @@ export async function assignUserToDepartment(data: UserDepartmentAssignInput): P
     // Insert new assignment
     const [result] = await executeQuery<ResultSetHeader>(
       `INSERT INTO user_departments (tenant_id, user_id, department_id, is_primary, assigned_by, assigned_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
       [tenantId, userId, departmentId, isPrimaryInput ? 1 : 0, assignedBy ?? null],
     );
 
@@ -104,7 +104,7 @@ export async function removeUserFromDepartment(
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(
-      `DELETE FROM user_departments WHERE user_id = ? AND department_id = ? AND tenant_id = ?`,
+      `DELETE FROM user_departments WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3`,
       [userId, departmentId, tenantId],
     );
 
@@ -129,7 +129,7 @@ export async function removeAllUserDepartments(userId: number, tenantId: number)
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(
-      `DELETE FROM user_departments WHERE user_id = ? AND tenant_id = ?`,
+      `DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -155,13 +155,13 @@ export async function setPrimaryDepartment(
   try {
     // First unset all primary flags for this user
     await executeQuery<ResultSetHeader>(
-      `UPDATE user_departments SET is_primary = 0 WHERE user_id = ? AND tenant_id = ?`,
+      `UPDATE user_departments SET is_primary = 0 WHERE user_id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
 
     // Set the specified department as primary
     const [result] = await executeQuery<ResultSetHeader>(
-      `UPDATE user_departments SET is_primary = 1 WHERE user_id = ? AND department_id = ? AND tenant_id = ?`,
+      `UPDATE user_departments SET is_primary = true WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3`,
       [userId, departmentId, tenantId],
     );
 
@@ -190,7 +190,7 @@ export async function getUserDepartments(
       `SELECT ud.*, d.name as department_name
        FROM user_departments ud
        JOIN departments d ON ud.department_id = d.id
-       WHERE ud.user_id = ? AND ud.tenant_id = ?
+       WHERE ud.user_id = $1 AND ud.tenant_id = $2
        ORDER BY ud.is_primary DESC, d.name ASC`,
       [userId, tenantId],
     );
@@ -214,7 +214,7 @@ export async function getUserPrimaryDepartment(
       `SELECT ud.*, d.name as department_name
        FROM user_departments ud
        JOIN departments d ON ud.department_id = d.id
-       WHERE ud.user_id = ? AND ud.tenant_id = ? AND ud.is_primary = 1`,
+       WHERE ud.user_id = $1 AND ud.tenant_id = $2 AND ud.is_primary = true`,
       [userId, tenantId],
     );
 
@@ -237,7 +237,7 @@ export async function getDepartmentUsers(
       `SELECT ud.*, u.username, u.first_name, u.last_name, u.email
        FROM user_departments ud
        JOIN users u ON ud.user_id = u.id
-       WHERE ud.department_id = ? AND ud.tenant_id = ?
+       WHERE ud.department_id = $1 AND ud.tenant_id = $2
        ORDER BY ud.is_primary DESC, u.last_name ASC, u.first_name ASC`,
       [departmentId, tenantId],
     );
@@ -259,7 +259,7 @@ export async function isUserInDepartment(
 ): Promise<boolean> {
   try {
     const [rows] = await executeQuery<UserDepartmentRow[]>(
-      `SELECT id FROM user_departments WHERE user_id = ? AND department_id = ? AND tenant_id = ?`,
+      `SELECT id FROM user_departments WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3`,
       [userId, departmentId, tenantId],
     );
 

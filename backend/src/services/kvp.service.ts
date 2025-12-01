@@ -7,9 +7,8 @@
  * createSuggestion, getSuggestions, etc. This should be refactored
  * to expose the full KVP functionality.
  */
-import { Pool } from 'mysql2/promise';
-
 import kvpModel, { type DbCategory } from '../routes/v2/kvp/kvp.model.js';
+import { Pool } from '../utils/db.js';
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors

@@ -3,8 +3,6 @@
  * Blackboard Service
  * Handles blackboard business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import {
   type DbBlackboardEntry,
   type EntryQueryOptions,
@@ -15,6 +13,7 @@ import {
   getEntryById,
   updateEntry,
 } from '../routes/v2/blackboard/blackboard.model.js';
+import { Pool } from '../utils/db.js';
 
 // Service-specific interfaces
 type BlackboardEntry = DbBlackboardEntry;

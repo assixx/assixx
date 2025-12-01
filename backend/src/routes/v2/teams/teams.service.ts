@@ -2,9 +2,7 @@
  * Teams v2 Service Layer
  * Handles all business logic for team management
  */
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-
-import { execute } from '../../../utils/db.js';
+import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -592,7 +590,7 @@ class TeamsService {
           mt.notes
         FROM machine_teams mt
         JOIN machines m ON mt.machine_id = m.id
-        WHERE mt.team_id = ? AND mt.tenant_id = ?`,
+        WHERE mt.team_id = $1 AND mt.tenant_id = $2`,
         [teamId, tenantId],
       );
 
@@ -622,7 +620,7 @@ class TeamsService {
     try {
       // Check if machine exists
       const [machineResult] = await execute(
-        'SELECT id FROM machines WHERE id = ? AND tenant_id = ?',
+        'SELECT id FROM machines WHERE id = $1 AND tenant_id = $2',
         [machineId, tenantId],
       );
 
@@ -632,7 +630,7 @@ class TeamsService {
 
       // Check if machine is already assigned to this team
       const [existingResult] = await execute(
-        'SELECT id FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?',
+        'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
         [machineId, teamId, tenantId],
       );
 
@@ -643,7 +641,7 @@ class TeamsService {
       // Add machine to team
       const [result] = await execute(
         `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, is_primary)
-         VALUES (?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5)`,
         [tenantId, machineId, teamId, assignedBy, false],
       );
 
@@ -674,7 +672,7 @@ class TeamsService {
     try {
       // Check if machine is assigned to this team
       const [existingResult] = await execute(
-        'SELECT id FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?',
+        'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
         [machineId, teamId, tenantId],
       );
 
@@ -684,7 +682,7 @@ class TeamsService {
 
       // Remove machine from team
       await execute(
-        'DELETE FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?',
+        'DELETE FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
         [machineId, teamId, tenantId],
       );
 

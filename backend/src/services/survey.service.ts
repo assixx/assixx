@@ -2,9 +2,8 @@
  * Survey Service
  * Handles survey business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import survey, { type SurveyStatistics } from '../routes/v2/surveys/survey.model.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces
 interface SurveyData {

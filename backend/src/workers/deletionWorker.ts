@@ -38,7 +38,8 @@ class DeletionWorker {
 
     try {
       // Test database connection
-      await pool.getConnection();
+      const client = await pool.connect();
+      client.release();
       logger.info('✅ Database connected');
 
       // Redis connection would be initialized here if needed

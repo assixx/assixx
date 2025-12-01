@@ -327,7 +327,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       // Zusätzliche Sicherheitsvalidierung als Backup
       // Pattern das auch malformed end tags erkennt (z.B. </script foo="bar">)
       // codeql[js/bad-tag-filter] - This is a backup check after comprehensive sanitization
-      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script[^>]*>/i;
+      const scriptPattern = /<script\b[^>]*>[\s\S]*$3<\/script[^>]*>/i;
       const eventHandlerPattern = /\bon\w+\s*=/i;
 
       if (

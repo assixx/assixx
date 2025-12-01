@@ -47,7 +47,7 @@ export class FeaturesService {
       }
     }
     // Set status based on is_active and expires_at
-    const isActive = row.is_active === true || row.is_active === 1;
+    const isActive = row.is_active === true;
     if (isActive) {
       const isExpired = row.expires_at !== null && new Date(row.expires_at) < new Date();
       mapped.status = isExpired ? 'expired' : 'active';
@@ -163,7 +163,7 @@ export class FeaturesService {
    */
   static async getFeatureByCode(code: string): Promise<Feature | null> {
     try {
-      const [rows] = await query<DbFeature[]>('SELECT * FROM features WHERE code = ?', [code]);
+      const [rows] = await query<DbFeature[]>('SELECT * FROM features WHERE code = $1', [code]);
 
       if (rows.length === 0) return null;
       return fieldMapper.dbToApi(rows[0]) as Feature;
@@ -190,7 +190,7 @@ export class FeaturesService {
           f.base_price as default_price
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ?
+        WHERE tf.tenant_id = $1
         ORDER BY f.category, f.name
       `,
         [tenantId],
@@ -226,7 +226,7 @@ export class FeaturesService {
             ELSE 'not_activated'
           END as status
         FROM features f
-        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = ?
+        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
         WHERE f.is_active = true
         ORDER BY f.category, f.sort_order, f.name
       `,
@@ -251,9 +251,9 @@ export class FeaturesService {
     const customConfig =
       options.customConfig !== undefined ? JSON.stringify(options.customConfig) : null;
     await execute(
-      `UPDATE tenant_features SET is_active = true, activated_at = NOW(), expires_at = ?,
-       activated_by = ?, custom_config = ?, updated_at = NOW()
-       WHERE tenant_id = ? AND feature_id = ?`,
+      `UPDATE tenant_features SET is_active = true, activated_at = NOW(), expires_at = $1,
+       activated_by = $1, custom_config = $2, updated_at = NOW()
+       WHERE tenant_id = $3 AND feature_id = $2`,
       [options.expiresAt ?? null, options.activatedBy, customConfig, tenantId, featureId],
     );
   }
@@ -269,7 +269,7 @@ export class FeaturesService {
     await execute(
       `INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at, expires_at,
        activated_by, custom_config, created_at, updated_at)
-       VALUES (?, ?, ?, NOW(), ?, ?, ?, NOW(), NOW())`,
+       VALUES ($1, $2, $3, NOW(), $4, $5, $6, NOW(), NOW())`,
       [tenantId, featureId, true, options.expiresAt ?? null, options.activatedBy, customConfig],
     );
   }
@@ -292,7 +292,7 @@ export class FeaturesService {
       const options: ActivationOptions = { ...request.options, activatedBy };
 
       const [existing] = await query<RowDataPacket[]>(
-        'SELECT id FROM tenant_features WHERE tenant_id = ? AND feature_id = ?',
+        'SELECT id FROM tenant_features WHERE tenant_id = $1 AND feature_id = $2',
         [request.tenantId, feature.id],
       );
 
@@ -339,7 +339,7 @@ export class FeaturesService {
         `
         UPDATE tenant_features
         SET is_active = false, updated_at = NOW()
-        WHERE tenant_id = ? AND feature_id = ?
+        WHERE tenant_id = $1 AND feature_id = $2
       `,
         [tenantId, feature.id],
       );
@@ -391,9 +391,9 @@ export class FeaturesService {
           COUNT(*) as usage_count,
           COUNT(DISTINCT user_id) as unique_users
         FROM feature_usage_logs
-        WHERE tenant_id = ?
-        AND feature_id = ?
-        AND DATE(created_at) BETWEEN ? AND ?
+        WHERE tenant_id = $1
+        AND feature_id = $2
+        AND DATE(created_at) BETWEEN $3 AND $4
         GROUP BY DATE(created_at)
         ORDER BY date
       `,
@@ -473,9 +473,9 @@ export class FeaturesService {
         SELECT tf.*
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ?
-        AND f.code = ?
-        AND tf.is_active = 1
+        WHERE tf.tenant_id = $1
+        AND f.code = $2
+        AND tf.is_active = true
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `,
         [tenantId, featureCode],
@@ -513,7 +513,7 @@ export class FeaturesService {
       await execute(
         `
         INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, action, metadata)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
       `,
         [tenantId, feature.id, userId ?? 0, 'usage', JSON.stringify(metadata)],
       );

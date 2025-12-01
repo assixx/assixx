@@ -19,7 +19,7 @@ export async function updateUserProfilePicture(
 ): Promise<boolean> {
   try {
     // SECURITY: Always include tenant_id in WHERE clause
-    const query = `UPDATE users SET profile_picture = ? WHERE id = ? AND tenant_id = ?`;
+    const query = `UPDATE users SET profile_picture = $1 WHERE id = $2 AND tenant_id = $3`;
     const values = [picturePath, userId, tenantId];
 
     const [result] = await executeQuery<ResultSetHeader>(query, values);
@@ -56,7 +56,7 @@ export async function changeUserPassword(
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     // Passwort in der Datenbank aktualisieren
-    const query = 'UPDATE users SET password = ? WHERE id = ?';
+    const query = 'UPDATE users SET password = $1 WHERE id = $2';
     const [result] = await executeQuery<ResultSetHeader>(query, [hashedNewPassword, userId]);
 
     if (result.affectedRows > 0) {
@@ -121,9 +121,11 @@ export async function updateOwnProfile(
     const fields = [...updates.keys()];
     const values = [...updates.values()];
     // SECURITY FIX: Escape column names with backticks to prevent SQL injection
-    const setClause = fields.map((field: string) => `\`${field}\` = ?`).join(', ');
+    const setClause = fields
+      .map((field: string, index: number) => `\`${field}\` = $${index + 1}`)
+      .join(', ');
 
-    const query = `UPDATE users SET ${setClause} WHERE id = ?`;
+    const query = `UPDATE users SET ${setClause} WHERE id = $${values.length + 1}`;
     values.push(userId);
 
     const [result] = await executeQuery<ResultSetHeader>(query, values);

@@ -253,7 +253,7 @@ class BlackboardService {
     areaIds: number[] = [],
   ): Promise<void> {
     // Delete existing mappings
-    await executeQuery('DELETE FROM blackboard_entry_organizations WHERE entry_id = ?', [entryId]);
+    await executeQuery('DELETE FROM blackboard_entry_organizations WHERE entry_id = $1', [entryId]);
 
     // Prepare batch inserts
     const insertValues: [number, string, number][] = [];
@@ -276,7 +276,7 @@ class BlackboardService {
     // Insert all mappings in single query (batch insert for performance)
     if (insertValues.length > 0) {
       await executeQuery(
-        'INSERT INTO blackboard_entry_organizations (entry_id, org_type, org_id) VALUES ?',
+        'INSERT INTO blackboard_entry_organizations (entry_id, org_type, org_id) VALUES $1',
         [insertValues],
       );
     }

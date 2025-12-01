@@ -87,7 +87,7 @@ export async function findAllPlans(): Promise<DbPlan[]> {
 // Get plan by code
 export async function findPlanByCode(code: string): Promise<DbPlan | null> {
   try {
-    const query = 'SELECT * FROM plans WHERE code = ? AND is_active = true';
+    const query = 'SELECT * FROM plans WHERE code = $1 AND is_active = true';
     const [plans] = await executeQuery<DbPlan[]>(query, [code]);
     return plans.length > 0 ? (plans[0] ?? null) : null;
   } catch (error: unknown) {
@@ -108,7 +108,7 @@ export async function getPlanFeatures(planId: number): Promise<DbPlanFeature[]> 
           pf.is_included
         FROM plan_features pf
         JOIN features f ON pf.feature_id = f.id
-        WHERE pf.plan_id = ?
+        WHERE pf.plan_id = $1
         AND f.is_active = true
         ORDER BY f.category, f.name
       `;
@@ -130,7 +130,7 @@ export async function getTenantPlan(tenantId: number): Promise<DbTenantPlan | nu
           p.name as plan_name
         FROM tenant_plans tp
         JOIN plans p ON tp.plan_id = p.id
-        WHERE tp.tenant_id = ?
+        WHERE tp.tenant_id = $1
         AND tp.status IN ('active', 'trial')
         ORDER BY tp.started_at DESC
         LIMIT 1
@@ -157,19 +157,19 @@ export async function changeTenantPlan(request: PlanChangeRequest): Promise<bool
     await executeQuery<ResultSetHeader>(
       `UPDATE tenant_plans 
          SET status = 'cancelled', cancelled_at = NOW() 
-         WHERE tenant_id = ? AND status IN ('active', 'trial')`,
+         WHERE tenant_id = $1 AND status IN ('active', 'trial')`,
       [request.tenantId],
     );
 
     // Create new plan subscription
     await executeQuery<ResultSetHeader>(
       `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
-         VALUES (?, ?, 'active', ?)`,
+         VALUES ($1, $2, 'active', $3)`,
       [request.tenantId, newPlan.id, effectiveDate],
     );
 
     // Update tenant's current_plan_id
-    await executeQuery<ResultSetHeader>('UPDATE tenants SET current_plan_id = ? WHERE id = ?', [
+    await executeQuery<ResultSetHeader>('UPDATE tenants SET current_plan_id = $1 WHERE id = $2', [
       newPlan.id,
       request.tenantId,
     ]);
@@ -181,11 +181,15 @@ export async function changeTenantPlan(request: PlanChangeRequest): Promise<bool
       .map((f: DbPlanFeature) => f.feature_id);
 
     if (includedFeatureIds.length > 0) {
+      // PostgreSQL: Sequential parameters - $1 = tenantId, $2, $3... = feature IDs
+      const featurePlaceholders = includedFeatureIds
+        .map((_: number, idx: number) => `$${idx + 2}`)
+        .join(',');
       await executeQuery<ResultSetHeader>(
-        `UPDATE tenant_features 
-           SET is_active = FALSE 
-           WHERE tenant_id = ? 
-           AND feature_id NOT IN (${includedFeatureIds.map(() => '?').join(',')})`,
+        `UPDATE tenant_features
+           SET is_active = FALSE
+           WHERE tenant_id = $1
+           AND feature_id NOT IN (${featurePlaceholders})`,
         [request.tenantId, ...includedFeatureIds],
       );
     }
@@ -203,7 +207,7 @@ export async function getTenantAddons(tenantId: number): Promise<DbTenantAddon[]
   try {
     const query = `
         SELECT * FROM tenant_addons 
-        WHERE tenant_id = ? 
+        WHERE tenant_id = $1 
         AND status = 'active'
       `;
     const [addons] = await executeQuery<DbTenantAddon[]>(query, [tenantId]);
@@ -246,10 +250,10 @@ export async function updateTenantAddons(request: AddonUpdateRequest): Promise<b
     for (const update of updates) {
       await executeQuery<ResultSetHeader>(
         `INSERT INTO tenant_addons (tenant_id, addon_type, quantity, unit_price, status)
-           VALUES (?, ?, ?, ?, 'active')
-           ON DUPLICATE KEY UPDATE
-           quantity = VALUES(quantity),
-           unit_price = VALUES(unit_price),
+           VALUES ($1, $2, $3, $4, 'active')
+           ON CONFLICT (tenant_id, addon_type) DO UPDATE SET
+           quantity = EXCLUDED.quantity,
+           unit_price = EXCLUDED.unit_price,
            updated_at = NOW()`,
         [request.tenantId, update.type, update.quantity, update.unitPrice],
       );
@@ -278,7 +282,7 @@ export async function calculateTenantCost(tenantId: number): Promise<{
         LEFT JOIN tenant_plans tp ON t.id = tp.tenant_id AND tp.status IN ('active', 'trial')
         LEFT JOIN plans p ON tp.plan_id = p.id
         LEFT JOIN tenant_addons ta ON t.id = ta.tenant_id AND ta.status = 'active'
-        WHERE t.id = ?
+        WHERE t.id = $1
         GROUP BY t.id, tp.custom_price, p.base_price
       `;
 

@@ -3,10 +3,9 @@
  * Checks tenant deletion status and blocks access to suspended/deleting tenants
  */
 import { NextFunction, Request, Response } from 'express';
-import { RowDataPacket } from 'mysql2';
 
 import type { AuthUser, AuthenticatedRequest } from '../types/request.types.js';
-import { query } from '../utils/db.js';
+import { RowDataPacket, query } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 interface TenantStatusRow extends RowDataPacket {
@@ -119,7 +118,7 @@ export async function checkTenantStatus(
 
     // Check tenant status
     const [tenantRows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = ?',
+      'SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = $1',
       [tenantId],
     );
 
@@ -173,7 +172,7 @@ export async function requireActiveTenant(
 
     // Additional check for marked_for_deletion
     const [rows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status FROM tenants WHERE id = ?',
+      'SELECT deletion_status FROM tenants WHERE id = $1',
       [authReq.user.tenant_id],
     );
 
@@ -204,7 +203,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
 } | null> {
   try {
     const [tenantRows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = ?',
+      'SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = $1',
       [tenantId],
     );
 

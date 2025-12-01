@@ -3,13 +3,12 @@
  * Team Service
  * Handles team-related business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
 } from '../routes/v2/teams/team.model.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Team Service

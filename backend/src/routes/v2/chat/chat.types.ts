@@ -3,7 +3,7 @@
  * All type definitions and interfaces for chat features
  * Extracted from chat.service.ts for better maintainability
  */
-import type { RowDataPacket } from 'mysql2/promise';
+import type { RowDataPacket } from '../../../utils/db.js';
 
 // ============================================================
 // PUBLIC API TYPES (Exported to Controllers)
@@ -195,7 +195,7 @@ export interface CountResult extends RowDataPacket {
 export interface ConversationRow extends RowDataPacket {
   id: number;
   name: string | null;
-  is_group: number;
+  is_group: boolean;
   created_at: Date;
   updated_at: Date;
   last_message_id: number | null;

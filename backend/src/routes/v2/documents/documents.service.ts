@@ -657,14 +657,14 @@ class DocumentsService {
       if (document.file_content != null) {
         // File stored in database (Buffer exists)
         content = document.file_content;
-      } else if (document['file_path'] != null) {
+      } else if (document.file_path != null) {
         // File stored on filesystem
         const fs = await import('fs/promises');
         const path = await import('path');
 
         // Construct absolute path (file_path is relative from project root)
         // Safe: we already checked file_path != null above
-        const absolutePath = path.join(process.cwd(), String(document['file_path']));
+        const absolutePath = path.join(process.cwd(), document.file_path);
 
         try {
           content = await fs.readFile(absolutePath);
@@ -739,9 +739,9 @@ class DocumentsService {
       if (document.file_content != null) {
         // File stored in database (Buffer exists)
         content = document.file_content;
-      } else if (document['file_path'] != null) {
+      } else if (document.file_path != null) {
         // File stored on filesystem
-        const absolutePath = path.join(process.cwd(), String(document['file_path']));
+        const absolutePath = path.join(process.cwd(), document.file_path);
 
         try {
           // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based

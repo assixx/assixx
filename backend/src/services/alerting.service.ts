@@ -320,7 +320,7 @@ export class AlertingService {
       await execute(
         `INSERT INTO deletion_alerts 
          (queue_id, alert_type, severity, channel, title, message, sent_at, response_code, response_body) 
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8)`,
         [
           0, // Queue ID 0 for general alerts
           alertType,

@@ -3,10 +3,8 @@
  * Business logic for area/location management
  * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
  */
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute } from '../../../utils/db.js';
+import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
 import { Area, AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 
 interface AreaRow extends RowDataPacket {
@@ -51,8 +49,9 @@ function applyTypeFilter(
   type: string | undefined,
 ): string {
   if (type !== undefined && type !== '') {
+    const paramIndex = params.length + 1;
     params.push(type);
-    return query + ' AND a.type = ?';
+    return query + ` AND a.type = $${paramIndex}`;
   }
   return query;
 }
@@ -66,8 +65,9 @@ function applySearchFilter(
   search: string | undefined,
 ): string {
   if (search !== undefined && search !== '') {
+    const paramIndex = params.length + 1;
     params.push(`%${search}%`, `%${search}%`);
-    return query + ' AND (a.name LIKE ? OR a.description LIKE ?)';
+    return query + ` AND (a.name LIKE $${paramIndex} OR a.description LIKE $${paramIndex + 1})`;
   }
   return query;
 }
@@ -80,18 +80,19 @@ function buildAreaQuery(
   tenantId: number,
   filters?: AreaFilters,
 ): { query: string; params: (string | number | boolean)[] } {
+  // PostgreSQL: Use MAX() for non-aggregated columns from LEFT JOIN to satisfy GROUP BY requirements
   const baseQuery = `
     SELECT
       a.*,
-      NULLIF(TRIM(CONCAT(COALESCE(area_lead.first_name, ''), ' ', COALESCE(area_lead.last_name, ''))), '') as area_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(MAX(area_lead.first_name), ''), ' ', COALESCE(MAX(area_lead.last_name), ''))), '') as area_lead_name,
       COUNT(DISTINCT e.id) as employee_count,
       COUNT(DISTINCT d.id) as department_count,
-      GROUP_CONCAT(DISTINCT d.name ORDER BY d.name SEPARATOR ', ') as department_names
+      STRING_AGG(DISTINCT d.name, ', ' ORDER BY d.name) as department_names
     FROM areas a
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-    WHERE a.tenant_id = ?
+    WHERE a.tenant_id = $1
   `;
 
   const params: (string | number | boolean)[] = [tenantId];
@@ -152,18 +153,19 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
  * @param tenantId - The tenant ID
  */
 export async function getAreaById(id: number, tenantId: number): Promise<Area | null> {
+  // PostgreSQL: Use MAX() for non-aggregated columns from LEFT JOIN to satisfy GROUP BY requirements
   const query = `
     SELECT
       a.*,
-      NULLIF(TRIM(CONCAT(COALESCE(area_lead.first_name, ''), ' ', COALESCE(area_lead.last_name, ''))), '') as area_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(MAX(area_lead.first_name), ''), ' ', COALESCE(MAX(area_lead.last_name), ''))), '') as area_lead_name,
       COUNT(DISTINCT e.id) as employee_count,
       COUNT(DISTINCT d.id) as department_count,
-      GROUP_CONCAT(DISTINCT d.name ORDER BY d.name SEPARATOR ', ') as department_names
+      STRING_AGG(DISTINCT d.name, ', ' ORDER BY d.name) as department_names
     FROM areas a
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-    WHERE a.id = ? AND a.tenant_id = ?
+    WHERE a.id = $1 AND a.tenant_id = $2
     GROUP BY a.id
   `;
 
@@ -218,7 +220,7 @@ export async function createArea(
     INSERT INTO areas (
       tenant_id, name, description, area_lead_id, type, capacity,
       address, created_by, is_active, is_archived
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
   `;
 
   const [result] = await execute<ResultSetHeader>(query, [
@@ -254,35 +256,43 @@ function buildUpdateQuery(data: UpdateAreaRequest): {
   const values: (string | number | boolean | null)[] = [];
 
   if (data.name !== undefined) {
-    updates.push('name = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`name = $${paramIndex}`);
     values.push(data.name);
   }
   if (data.description !== undefined) {
-    updates.push('description = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`description = $${paramIndex}`);
     values.push(data.description);
   }
   if (data.areaLeadId !== undefined) {
-    updates.push('area_lead_id = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`area_lead_id = $${paramIndex}`);
     values.push(data.areaLeadId);
   }
   if (data.type !== undefined) {
-    updates.push('type = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`type = $${paramIndex}`);
     values.push(data.type);
   }
   if (data.capacity !== undefined) {
-    updates.push('capacity = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`capacity = $${paramIndex}`);
     values.push(data.capacity);
   }
   if (data.address !== undefined) {
-    updates.push('address = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`address = $${paramIndex}`);
     values.push(data.address);
   }
   if (data.isActive !== undefined) {
-    updates.push('is_active = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`is_active = $${paramIndex}`);
     values.push(data.isActive ? 1 : 0);
   }
   if (data.isArchived !== undefined) {
-    updates.push('is_archived = ?');
+    const paramIndex = values.length + 1;
+    updates.push(`is_archived = $${paramIndex}`);
     values.push(data.isArchived ? 1 : 0);
   }
 
@@ -314,11 +324,13 @@ export async function updateArea(
   }
 
   // Execute update
+  const idIndex = values.length + 1;
+  const tenantIndex = values.length + 2;
   values.push(id, tenantId);
   const query = `
     UPDATE areas
     SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND tenant_id = ?
+    WHERE id = $${idIndex} AND tenant_id = $${tenantIndex}
   `;
 
   await execute(query, values);
@@ -350,27 +362,27 @@ async function checkAreaDependencies(
   total: number;
 }> {
   const [departments] = await execute<RowDataPacket[]>(
-    'SELECT id FROM departments WHERE area_id = ? AND tenant_id = ? AND is_active = 1',
+    'SELECT id FROM departments WHERE area_id = $1 AND tenant_id = $2 AND is_active = true',
     [id, tenantId],
   );
 
   const [machines] = await execute<RowDataPacket[]>(
-    'SELECT id FROM machines WHERE area_id = ? AND tenant_id = ?',
+    'SELECT id FROM machines WHERE area_id = $1 AND tenant_id = $2',
     [id, tenantId],
   );
 
   const [shifts] = await execute<RowDataPacket[]>(
-    'SELECT id FROM shifts WHERE area_id = ? AND tenant_id = ?',
+    'SELECT id FROM shifts WHERE area_id = $1 AND tenant_id = $2',
     [id, tenantId],
   );
 
   const [shiftPlans] = await execute<RowDataPacket[]>(
-    'SELECT id FROM shift_plans WHERE area_id = ? AND tenant_id = ?',
+    'SELECT id FROM shift_plans WHERE area_id = $1 AND tenant_id = $2',
     [id, tenantId],
   );
 
   const [shiftFavorites] = await execute<RowDataPacket[]>(
-    'SELECT id FROM shift_favorites WHERE area_id = ? AND tenant_id = ?',
+    'SELECT id FROM shift_favorites WHERE area_id = $1 AND tenant_id = $2',
     [id, tenantId],
   );
 
@@ -401,35 +413,35 @@ async function removeAreaDependencies(
   deps: Awaited<ReturnType<typeof checkAreaDependencies>>,
 ): Promise<void> {
   if (deps.departments > 0) {
-    await execute('UPDATE departments SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+    await execute('UPDATE departments SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
   }
 
   if (deps.machines > 0) {
-    await execute('UPDATE machines SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+    await execute('UPDATE machines SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
   }
 
   if (deps.shifts > 0) {
-    await execute('UPDATE shifts SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+    await execute('UPDATE shifts SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
   }
 
   if (deps.shiftPlans > 0) {
-    await execute('UPDATE shift_plans SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+    await execute('UPDATE shift_plans SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
   }
 
   if (deps.shiftFavorites > 0) {
-    await execute('DELETE FROM shift_favorites WHERE area_id = ? AND tenant_id = ?', [
+    await execute('DELETE FROM shift_favorites WHERE area_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
@@ -503,7 +515,7 @@ export async function deleteArea(
   await handleAreaDependenciesForDeletion(id, tenantId, force);
 
   // Hard delete - wirklich löschen
-  await execute('DELETE FROM areas WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+  await execute('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 }
 
 /**
@@ -520,10 +532,10 @@ export async function getAreaStats(tenantId: number): Promise<{
     `
     SELECT
       COUNT(*) as total_areas,
-      SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_areas,
+      SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active_areas,
       SUM(capacity) as total_capacity
     FROM areas
-    WHERE tenant_id = ?
+    WHERE tenant_id = $1
   `,
     [tenantId],
   );
@@ -532,7 +544,7 @@ export async function getAreaStats(tenantId: number): Promise<{
     `
     SELECT type, COUNT(*) as count
     FROM areas
-    WHERE tenant_id = ? AND is_active = 1
+    WHERE tenant_id = $1 AND is_active = true
     GROUP BY type
   `,
     [tenantId],
@@ -593,20 +605,20 @@ export async function assignDepartmentsToArea(
   await execute(
     `UPDATE departments
      SET area_id = NULL
-     WHERE tenant_id = ?
-     AND area_id = ?`,
+     WHERE tenant_id = $1
+     AND area_id = $2`,
     [tenantId, areaId],
   );
 
   // Step 2: Set area_id for all selected departments (if any)
   if (departmentIds.length > 0) {
-    // Build placeholders for IN clause
-    const placeholders = departmentIds.map(() => '?').join(', ');
+    // Build placeholders for IN clause - start after areaId and tenantId
+    const placeholders = departmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
 
     await execute(
       `UPDATE departments
-       SET area_id = ?
-       WHERE tenant_id = ?
+       SET area_id = $1
+       WHERE tenant_id = $2
        AND id IN (${placeholders})`,
       [areaId, tenantId, ...departmentIds],
     );

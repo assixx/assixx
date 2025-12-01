@@ -91,7 +91,7 @@ class AuditTrailService {
     try {
       // Get user details for audit
       const [userRows] = await connection.execute<UserUsernameRoleResult[]>(
-        `SELECT username, role FROM users WHERE id = ? AND tenant_id = ?`,
+        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2`,
         [userId, tenantId],
       );
 
@@ -109,7 +109,7 @@ class AuditTrailService {
           tenant_id, user_id, user_name, user_role,
           action, resource_type, resource_id, resource_name,
           changes, ip_address, user_agent, status, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           tenantId,
           userId,
@@ -140,39 +140,42 @@ class AuditTrailService {
     whereClause: string;
     params: (string | number)[];
   } {
-    const conditions: string[] = ['tenant_id = ?'];
+    const conditions: string[] = ['tenant_id = $1'];
     const params: (string | number)[] = [filter.tenantId];
+    let paramIndex = 2;
 
     if (filter.userId !== undefined) {
-      conditions.push('user_id = ?');
+      conditions.push(`user_id = $${paramIndex++}`);
       params.push(filter.userId);
     }
     if (filter.action !== undefined) {
-      conditions.push('action = ?');
+      conditions.push(`action = $${paramIndex++}`);
       params.push(filter.action);
     }
     if (filter.resourceType !== undefined) {
-      conditions.push('resource_type = ?');
+      conditions.push(`resource_type = $${paramIndex++}`);
       params.push(filter.resourceType);
     }
     if (filter.resourceId !== undefined) {
-      conditions.push('resource_id = ?');
+      conditions.push(`resource_id = $${paramIndex++}`);
       params.push(filter.resourceId);
     }
     if (filter.status !== undefined) {
-      conditions.push('status = ?');
+      conditions.push(`status = $${paramIndex++}`);
       params.push(filter.status);
     }
     if (filter.dateFrom !== undefined) {
-      conditions.push('created_at >= ?');
+      conditions.push(`created_at >= $${paramIndex++}`);
       params.push(filter.dateFrom);
     }
     if (filter.dateTo !== undefined) {
-      conditions.push('created_at <= ?');
+      conditions.push(`created_at <= $${paramIndex++}`);
       params.push(filter.dateTo);
     }
     if (filter.search !== undefined) {
-      conditions.push('(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)');
+      conditions.push(
+        `(user_name LIKE $${paramIndex} OR resource_name LIKE $${paramIndex + 1} OR action LIKE $${paramIndex + 2})`,
+      );
       const searchPattern = `%${filter.search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
     }
@@ -212,8 +215,10 @@ class AuditTrailService {
     const orderBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
+    const limitParamIndex = params.length + 1;
+    const offsetParamIndex = params.length + 2;
     const [rows] = await query<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail WHERE ${whereClause} ORDER BY ${orderBy} ${order} LIMIT ? OFFSET ?`,
+      `SELECT * FROM audit_trail WHERE ${whereClause} ORDER BY ${orderBy} ${order} LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
       [...params, limit, offset],
     );
 
@@ -227,7 +232,7 @@ class AuditTrailService {
    */
   async getEntryById(id: number, tenantId: number): Promise<AuditEntry> {
     const [rows] = await execute<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail WHERE id = ? AND tenant_id = ?`,
+      `SELECT * FROM audit_trail WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
 
@@ -252,15 +257,16 @@ class AuditTrailService {
     params: (string | number | Date)[];
   } {
     const { tenantId, dateFrom, dateTo } = filter;
-    const conditions: string[] = ['tenant_id = ?'];
+    const conditions: string[] = ['tenant_id = $1'];
     const params: (string | number | Date)[] = [tenantId];
+    let paramIndex = 2;
 
     if (dateFrom !== undefined && dateFrom !== '') {
-      conditions.push('created_at >= ?');
+      conditions.push(`created_at >= $${paramIndex++}`);
       params.push(dateFrom);
     }
     if (dateTo !== undefined && dateTo !== '') {
-      conditions.push('created_at <= ?');
+      conditions.push(`created_at <= $${paramIndex++}`);
       params.push(dateTo);
     }
 
@@ -378,7 +384,7 @@ class AuditTrailService {
     dateTo: string,
     generatedBy: number,
   ): Promise<ComplianceReport> {
-    const conditions: string[] = ['tenant_id = ?', 'created_at >= ?', 'created_at <= ?'];
+    const conditions: string[] = ['tenant_id = $1', 'created_at >= $2', 'created_at <= $3'];
     const params: (string | number)[] = [tenantId, dateFrom, dateTo];
 
     // Add report-specific filters
@@ -450,7 +456,7 @@ class AuditTrailService {
    */
   async deleteOldEntries(tenantId: number, olderThan: Date): Promise<number> {
     const [result] = await execute<ResultSetHeader>(
-      `DELETE FROM audit_trail WHERE tenant_id = ? AND created_at < ?`,
+      `DELETE FROM audit_trail WHERE tenant_id = $1 AND created_at < $2`,
       [tenantId, olderThan],
     );
 

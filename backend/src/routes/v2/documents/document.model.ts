@@ -18,6 +18,7 @@ interface DbDocument extends RowDataPacket {
   file_name: string;
   filename?: string;
   original_name?: string;
+  file_path?: string;
   file_content?: Buffer;
   file_size?: number;
   mime_type?: string;
@@ -155,7 +156,7 @@ function buildCreateParams(data: DocumentCreateData, documentUuid: string): unkn
 }
 
 const CREATE_DOCUMENT_SQL =
-  'INSERT INTO documents (uuid, tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, blackboard_entry_id, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  'INSERT INTO documents (uuid, tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, blackboard_entry_id, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)';
 
 export async function createDocument(data: DocumentCreateData): Promise<number> {
   logger.info(
@@ -183,8 +184,9 @@ export async function findDocumentsByUserId(
   tenantId: number,
 ): Promise<DbDocument[]> {
   // NEW: Query by owner_user_id for personal/payroll documents (refactored 2025-01-10)
+  // PostgreSQL: Use single quotes for string literals
   const query =
-    'SELECT id, file_name, upload_date, category, description, salary_year, salary_month, is_archived, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND access_scope IN ("personal", "payroll") ORDER BY uploaded_at DESC';
+    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, is_archived, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND access_scope IN ('personal', 'payroll') ORDER BY uploaded_at DESC";
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [userId, tenantId]);
     return rows;
@@ -210,8 +212,9 @@ export async function findDocumentsByUserIdAndCategory(
     `Fetching ${category} owner documents for user ${userId} in tenant ${tenantId} (archived: ${resolvedArchived})`,
   );
   // NEW: Query by owner_user_id with salary_month ordering (refactored 2025-01-10)
+  // PostgreSQL: Use single quotes for string literals
   const query =
-    'SELECT id, file_name, upload_date, category, description, salary_year, salary_month, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND category = ? AND is_archived = ? AND access_scope IN ("personal", "payroll") ORDER BY salary_year DESC, salary_month DESC';
+    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND category = $3 AND is_archived = $4 AND access_scope IN ('personal', 'payroll') ORDER BY salary_year DESC, salary_month DESC";
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
@@ -229,7 +232,7 @@ export async function findDocumentsByUserIdAndCategory(
 }
 
 export async function findDocumentById(id: number, tenantId: number): Promise<DbDocument | null> {
-  const query = 'SELECT * FROM documents WHERE id = ? AND tenant_id = ?';
+  const query = 'SELECT * FROM documents WHERE id = $1 AND tenant_id = $2';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [id, tenantId]);
     if (rows.length === 0) {
@@ -255,7 +258,7 @@ export async function findDocumentByFileUuid(
   fileUuid: string,
   tenantId: number,
 ): Promise<DbDocument | null> {
-  const query = 'SELECT * FROM documents WHERE file_uuid = ? AND tenant_id = ?';
+  const query = 'SELECT * FROM documents WHERE file_uuid = $1 AND tenant_id = $2';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [fileUuid, tenantId]);
     if (rows.length === 0) {
@@ -274,7 +277,7 @@ export async function findDocumentByFileUuid(
 export async function incrementDownloadCount(id: number, tenantId: number): Promise<boolean> {
   // Note: download_count column doesn't exist in current schema
   // For now, just verify the document exists and belongs to tenant
-  const query = 'SELECT id FROM documents WHERE id = ? AND tenant_id = ?';
+  const query = 'SELECT id FROM documents WHERE id = $1 AND tenant_id = $2';
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(query, [id, tenantId]);
     if (rows.length === 0) {
@@ -290,6 +293,9 @@ export async function incrementDownloadCount(id: number, tenantId: number): Prom
   }
 }
 
+/**
+ * Build update query with PostgreSQL dynamic $N parameter numbering
+ */
 function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params: unknown[] } {
   const updates: string[] = [];
   const params: unknown[] = [];
@@ -308,14 +314,16 @@ function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params
   for (const [key, dbColumn] of Object.entries(fieldMappings)) {
     const value = data[key as keyof DocumentUpdateData];
     if (value !== undefined) {
-      updates.push(`${dbColumn} = ?`);
+      const paramIndex = params.length + 1;
+      updates.push(`${dbColumn} = $${paramIndex}`);
       params.push(value);
     }
   }
 
   // Handle special case for tags
   if (data.tags !== undefined) {
-    updates.push('tags = ?');
+    const paramIndex = params.length + 1;
+    updates.push(`tags = $${paramIndex}`);
     params.push(JSON.stringify(data.tags));
   }
 
@@ -334,7 +342,8 @@ export async function updateDocument(
     return false;
   }
 
-  const query = `UPDATE documents SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`;
+  const paramCount = params.length;
+  const query = `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramCount + 1} AND tenant_id = $${paramCount + 2}`;
   params.push(id, tenantId);
 
   try {
@@ -362,7 +371,7 @@ export async function unarchiveDocument(id: number, tenantId: number): Promise<b
 }
 
 export async function deleteDocument(id: number, tenantId: number): Promise<boolean> {
-  const query = 'DELETE FROM documents WHERE id = ? AND tenant_id = ?';
+  const query = 'DELETE FROM documents WHERE id = $1 AND tenant_id = $2';
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     if (result.affectedRows === 0) {
@@ -392,12 +401,13 @@ export async function findAllDocuments(
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
       LEFT JOIN users u ON d.owner_user_id = u.id
-      WHERE d.tenant_id = ?`;
+      WHERE d.tenant_id = $1`;
 
   const params: unknown[] = [tenantId];
+  let paramIndex = 2;
 
   if (category !== null && category !== '') {
-    query += ' AND d.category = ?';
+    query += ` AND d.category = $${paramIndex++}`;
     params.push(category);
   }
 
@@ -427,7 +437,7 @@ export async function searchDocuments(
   );
   // NEW: Search by owner_user_id (refactored 2025-01-10)
   const query =
-    'SELECT id, file_name, filename, upload_date, category, description, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND access_scope IN ("personal", "payroll") AND (filename LIKE ? OR description LIKE ?)';
+    "SELECT id, file_name, filename, upload_date, category, description, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND access_scope IN ('personal', 'payroll') AND (filename LIKE $3 OR description LIKE $4)";
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
@@ -474,8 +484,8 @@ export async function searchDocumentsWithEmployeeAccess(
       LEFT JOIN users u ON d.owner_user_id = u.id
       LEFT JOIN teams t ON d.target_team_id = t.id
       LEFT JOIN departments dept ON d.target_department_id = dept.id
-      WHERE d.tenant_id = ?
-        AND (d.filename LIKE ? OR d.description LIKE ?)
+      WHERE d.tenant_id = $1
+        AND (d.filename LIKE $2 OR d.description LIKE $3)
         AND ${buildAccessCondition()}
       ORDER BY d.uploaded_at DESC`;
 
@@ -525,17 +535,18 @@ export async function countDocuments(filters?: DocumentCountFilter): Promise<num
   logger.info('Counting documents with filters');
   let query = 'SELECT COUNT(*) as total FROM documents WHERE 1=1';
   const params: unknown[] = [];
+  let paramIndex = 1;
 
   if (filters.userId != null && filters.userId !== 0) {
-    query += ' AND user_id = ?';
+    query += ` AND user_id = $${paramIndex++}`;
     params.push(filters.userId);
   }
   if (filters.category != null && filters.category !== '') {
-    query += ' AND category = ?';
+    query += ` AND category = $${paramIndex++}`;
     params.push(filters.category);
   }
   if (filters.isArchived !== undefined) {
-    query += ' AND is_archived = ?';
+    query += ` AND is_archived = $${paramIndex++}`;
     params.push(filters.isArchived);
   }
 
@@ -560,19 +571,22 @@ export async function findDocumentsByUser(userId: number, tenantId: number): Pro
 function buildAccessCondition(): string {
   return `(
     -- Personal documents (only owner can access)
-    (d.access_scope = 'personal' AND d.owner_user_id = ?)
+    (d.access_scope = 'personal' AND d.owner_user_id = $3)
     OR
     -- Payroll documents (only owner can access)
-    (d.access_scope = 'payroll' AND d.owner_user_id = ?)
+    (d.access_scope = 'payroll' AND d.owner_user_id = $4)
     OR
     -- Team documents (user is member of the team)
     (d.access_scope = 'team' AND d.target_team_id IN (
-      SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
+      SELECT team_id FROM user_teams WHERE user_id = $5 AND tenant_id = $2
     ))
     OR
     -- Department documents (user is in the department)
-    (d.access_scope = 'department' AND d.target_department_id = (
-      SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
+    -- Note: department_id is now in user_departments table (many-to-many)
+    (d.access_scope = 'department' AND d.target_department_id IN (
+      SELECT ud.department_id FROM users u
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+      WHERE u.id = $6 AND u.tenant_id = $2
     ))
     OR
     -- Company-wide documents (all users in tenant)
@@ -584,8 +598,11 @@ function buildAccessCondition(): string {
       SELECT be.id FROM blackboard_entries be
       WHERE be.tenant_id = d.tenant_id AND (
         be.org_level = 'company'
-        OR (be.org_level = 'department' AND be.org_id = (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-        OR (be.org_level = 'team' AND be.org_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?))
+        OR (be.org_level = 'department' AND be.org_id IN (
+          SELECT ud.department_id FROM users u
+          LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+          WHERE u.id = $7 AND u.tenant_id = $2))
+        OR (be.org_level = 'team' AND be.org_id IN (SELECT team_id FROM user_teams WHERE user_id = $8 AND tenant_id = $2))
       )
     ))
   )`;
@@ -599,14 +616,17 @@ function isValidFilterValue(value: unknown, type: 'string' | 'number'): boolean 
   return value != null && value !== 0;
 }
 
-// Helper: Add single filter condition
+// Helper: Add single filter condition with PostgreSQL $n placeholders
 function addFilterCondition(
   query: string,
   params: unknown[],
   condition: string,
   value: unknown,
 ): { query: string; params: unknown[] } {
-  const updatedQuery = query + condition;
+  const paramIndex = params.length + 1;
+  // Replace ? with $n
+  const updatedCondition = condition.replace('?', `$${paramIndex}`);
+  const updatedQuery = query + updatedCondition;
   const updatedParams = [...params, value];
   return { query: updatedQuery, params: updatedParams };
 }
@@ -651,13 +671,15 @@ function applyDocumentFilters(
 
   // Handle special cases
   if (filters.isArchived !== undefined) {
-    updatedQuery += ' AND d.is_archived = ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND d.is_archived = $${paramIndex}`;
     updatedParams.push(filters.isArchived);
   }
 
   const searchTerm = filters.searchTerm;
   if (searchTerm != null && searchTerm !== '') {
-    updatedQuery += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND (d.filename LIKE $${paramIndex} OR d.description LIKE $${paramIndex + 1})`;
     const searchPattern = `%${searchTerm}%`;
     updatedParams.push(searchPattern, searchPattern);
   }
@@ -726,14 +748,17 @@ async function getDocumentCount(
   filters?: DocumentFilters,
 ): Promise<number> {
   const baseQuery = `SELECT COUNT(DISTINCT d.id) as total ${DOC_FROM_JOINS}
-    WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
+    WHERE d.tenant_id = $1 AND ${buildAccessCondition()}`;
   const baseParams = buildAccessParams(tenantId, userId);
   const { query, params } = applyDocumentFilters(baseQuery, baseParams, filters);
   const [countResult] = await executeQuery<CountResult[]>(query, params);
   return countResult[0]?.total ?? 0;
 }
 
-/** Add pagination to query */
+/**
+ * Add pagination to query
+ * PostgreSQL: Dynamic $N parameter numbering
+ */
 function addPaginationToQuery(
   query: string,
   params: unknown[],
@@ -742,10 +767,12 @@ function addPaginationToQuery(
   let finalQuery = query;
   const finalParams = [...params];
   if (filters?.limit != null && filters.limit !== 0) {
-    finalQuery += ' LIMIT ?';
+    const limitParamIndex = finalParams.length + 1;
+    finalQuery += ` LIMIT $${limitParamIndex}`;
     finalParams.push(filters.limit);
     if (filters.offset != null && filters.offset !== 0) {
-      finalQuery += ' OFFSET ?';
+      const offsetParamIndex = finalParams.length + 1;
+      finalQuery += ` OFFSET $${offsetParamIndex}`;
       finalParams.push(filters.offset);
     }
   }
@@ -761,7 +788,7 @@ export async function findDocumentsByEmployeeWithAccess(
   logger.info(`Fetching accessible documents for employee ${userId} in tenant ${tenantId}`);
 
   const baseQuery = `${EMPLOYEE_DOC_SELECT} ${DOC_FROM_JOINS}
-    WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
+    WHERE d.tenant_id = $1 AND ${buildAccessCondition()}`;
   const baseParams = buildAccessParams(tenantId, userId);
 
   try {
@@ -787,7 +814,7 @@ export async function findDocumentsByEmployeeWithAccess(
 export async function countDocumentsByTenant(tenant_id: number): Promise<number> {
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(
-      'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
+      'SELECT COUNT(*) as count FROM documents WHERE tenant_id = $1',
       [tenant_id],
     );
     return (rows[0] as { count?: number }).count ?? 0;
@@ -801,7 +828,7 @@ export async function countDocumentsByTenant(tenant_id: number): Promise<number>
 export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
   try {
     const [rows] = await executeQuery<TotalSizeResult[]>(
-      'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
+      'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = $1',
       [tenant_id],
     );
     // MySQL SUM can return null or string, ensure we return a number
@@ -813,7 +840,10 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
   }
 }
 
-// Helper: Apply all document filters including date ranges
+/**
+ * Helper: Apply all document filters including date ranges
+ * PostgreSQL: Dynamic $N parameter numbering
+ */
 function applyAllDocumentFilters(
   query: string,
   params: unknown[],
@@ -825,12 +855,14 @@ function applyAllDocumentFilters(
 
   // Add owner user filter (NEW: uses owner_user_id, refactored 2025-01-10)
   if (filters.userId != null && filters.userId !== 0) {
-    updatedQuery += ' AND d.owner_user_id = ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND d.owner_user_id = $${paramIndex}`;
     updatedParams.push(filters.userId);
   }
 
   // Always filter by tenant_id for security
-  updatedQuery += ' AND d.tenant_id = ?';
+  const tenantParamIndex = updatedParams.length + 1;
+  updatedQuery += ` AND d.tenant_id = $${tenantParamIndex}`;
   updatedParams.push(tenantId);
 
   // Apply standard filters (reuse existing helper)
@@ -845,19 +877,24 @@ function applyAllDocumentFilters(
   const finalParams = [...filteredParams];
 
   if (filters.uploadDateFrom) {
-    finalQuery += ' AND d.uploaded_at >= ?';
+    const paramIndex = finalParams.length + 1;
+    finalQuery += ` AND d.uploaded_at >= $${paramIndex}`;
     finalParams.push(filters.uploadDateFrom);
   }
 
   if (filters.uploadDateTo) {
-    finalQuery += ' AND d.uploaded_at <= ?';
+    const paramIndex = finalParams.length + 1;
+    finalQuery += ` AND d.uploaded_at <= $${paramIndex}`;
     finalParams.push(filters.uploadDateTo);
   }
 
   return { query: finalQuery, params: finalParams };
 }
 
-// Helper: Add pagination to query
+/**
+ * Helper: Add pagination to query
+ * PostgreSQL: Dynamic $N parameter numbering
+ */
 function addPagination(
   query: string,
   params: unknown[],
@@ -867,11 +904,13 @@ function addPagination(
   const paginatedParams = [...params];
 
   if (filters.limit != null && filters.limit !== 0) {
-    paginatedQuery += ' LIMIT ?';
+    const limitParamIndex = paginatedParams.length + 1;
+    paginatedQuery += ` LIMIT $${limitParamIndex}`;
     paginatedParams.push(filters.limit);
 
     if (filters.offset != null && filters.offset !== 0) {
-      paginatedQuery += ' OFFSET ?';
+      const offsetParamIndex = paginatedParams.length + 1;
+      paginatedQuery += ` OFFSET $${offsetParamIndex}`;
       paginatedParams.push(filters.offset);
     }
   }
@@ -959,8 +998,8 @@ export async function markDocumentAsRead(
 ): Promise<void> {
   const query = `
       INSERT INTO document_read_status (document_id, user_id, tenant_id)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP
+      VALUES ($1, $2, $3)
+      ON CONFLICT (document_id, user_id, tenant_id) DO UPDATE SET read_at = CURRENT_TIMESTAMP
     `;
   await executeQuery(query, [documentId, userId, tenant_id]);
 }
@@ -973,7 +1012,7 @@ export async function isDocumentReadByUser(
 ): Promise<boolean> {
   const query = `
       SELECT 1 FROM document_read_status
-      WHERE document_id = ? AND user_id = ? AND tenant_id = ?
+      WHERE document_id = $1 AND user_id = $2 AND tenant_id = $3
       LIMIT 1
     `;
   const [results] = await executeQuery<RowDataPacket[]>(query, [documentId, userId, tenant_id]);
@@ -989,10 +1028,10 @@ export async function getUnreadDocumentCountForUser(
   const query = `
       SELECT COUNT(DISTINCT d.id) as unread_count
       FROM documents d
-      LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ? AND drs.tenant_id = ?
-      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = ? AND ut.tenant_id = ?
-      LEFT JOIN users u ON u.id = ? AND u.tenant_id = ?
-      WHERE d.tenant_id = ?
+      LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = $3 AND drs.tenant_id = $2
+      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = $4 AND ut.tenant_id = $2
+      LEFT JOIN users u ON u.id = $5 AND u.tenant_id = $2
+      WHERE d.tenant_id = $6
         AND drs.id IS NULL
         AND ${buildAccessCondition()}
     `;
@@ -1029,9 +1068,9 @@ export async function getDocumentCountsByCategory(
         d.category,
         COUNT(DISTINCT d.id) as count
       FROM documents d
-      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = ?
-      LEFT JOIN users u ON u.id = ?
-      WHERE d.tenant_id = ?
+      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = $1
+      LEFT JOIN users u ON u.id = $2
+      WHERE d.tenant_id = $3
         AND d.is_archived = false
         AND ${buildAccessCondition()}
       GROUP BY d.category

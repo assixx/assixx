@@ -70,7 +70,7 @@ export class PlansService {
       featureId: dbFeature.feature_id,
       featureCode: dbFeature.feature_code,
       featureName: dbFeature.feature_name,
-      isIncluded: Boolean(dbFeature.is_included),
+      isIncluded: dbFeature.is_included,
     };
   }
 
@@ -133,7 +133,7 @@ export class PlansService {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
         const features = dbFeatures
-          .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
+          .filter((f: DbPlanFeature) => f.is_included)
           .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
         return {
@@ -149,7 +149,7 @@ export class PlansService {
    * @param planId - The planId parameter
    */
   static async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
-    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = ?', [planId]);
+    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = $1', [planId]);
 
     if (dbPlans.length === 0) {
       return null;
@@ -164,7 +164,7 @@ export class PlansService {
 
     const plan = this.dbToApiPlan(dbPlan);
     const features = dbFeatures
-      .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
+      .filter((f: DbPlanFeature) => f.is_included)
       .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
     return {
@@ -196,7 +196,7 @@ export class PlansService {
     const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan);
     const planDetails = this.dbToApiPlan(dbPlan);
     const features = dbFeatures
-      .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
+      .filter((f: DbPlanFeature) => f.is_included)
       .map((f: DbPlanFeature) => this.dbToApiFeature(f));
     const addons = dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
 
@@ -302,7 +302,7 @@ export class PlansService {
         COALESCE(MAX(CASE WHEN addon_type = 'admins' THEN quantity END), 0) as extra_admins,
         COALESCE(MAX(CASE WHEN addon_type = 'storage_gb' THEN quantity END), 0) as extra_storage_gb
       FROM tenant_addons
-      WHERE tenant_id = ? AND status = 'active'`,
+      WHERE tenant_id = $1 AND status = 'active'`,
       [tenantId],
     );
 

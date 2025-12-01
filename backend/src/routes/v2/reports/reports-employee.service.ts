@@ -38,9 +38,9 @@ export async function getEmployeeReport(filters: ReportFilters): Promise<Record<
       DATE(created_at) as date,
       COUNT(*) as count
     FROM users
-    WHERE tenant_id = ?
+    WHERE tenant_id = $1
       AND role = 'employee'
-      AND created_at BETWEEN ? AND ?
+      AND created_at BETWEEN $2 AND $3
     GROUP BY DATE(created_at)
     ORDER BY date
   `,
@@ -113,22 +113,22 @@ export async function getDepartmentReport(filters: {
       0 as avg_overtime
     FROM departments d
     LEFT JOIN user_departments ud ON ud.department_id = d.id AND ud.tenant_id = d.tenant_id
-    LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = 1 AND u.is_archived = 0
+    LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = true AND u.is_archived = false
     LEFT JOIN teams t ON t.department_id = d.id
     LEFT JOIN kvp_suggestions k ON k.org_id = d.id
       AND k.org_level = 'department'
-      AND k.created_at BETWEEN ? AND ?
+      AND k.created_at BETWEEN $1 AND $2
     LEFT JOIN (
       SELECT
         department_id,
         1 as coverage_rate,
         0 as overtime_hours
       FROM shifts
-      WHERE tenant_id = ?
-        AND date BETWEEN ? AND ?
+      WHERE tenant_id = $3
+        AND date BETWEEN $4 AND $5
       GROUP BY department_id
     ) s ON s.department_id = d.id
-    WHERE d.tenant_id = ?
+    WHERE d.tenant_id = $6
     GROUP BY d.id, d.name
     ORDER BY d.name
   `,

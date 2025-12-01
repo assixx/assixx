@@ -17,7 +17,7 @@ export async function addEventAttendee(
   try {
     // Check if already an attendee
     const [attendees] = await executeQuery<DbEventAttendee[]>(
-      'SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
+      'SELECT * FROM calendar_attendees WHERE event_id = $1 AND user_id = $2',
       [eventId, userId],
     );
 
@@ -30,7 +30,7 @@ export async function addEventAttendee(
     let finalTenantId = tenantIdParam;
     if (finalTenantId == null || finalTenantId === 0) {
       const [event] = await executeQuery<DbCalendarEvent[]>(
-        'SELECT tenant_id FROM calendar_events WHERE id = ?',
+        'SELECT tenant_id FROM calendar_events WHERE id = $1',
         [eventId],
       );
       const firstEvent = event[0];
@@ -41,7 +41,7 @@ export async function addEventAttendee(
 
     // Add new attendee with tenant_id
     await executeQuery(
-      'INSERT INTO calendar_attendees (event_id, user_id, tenant_id) VALUES (?, ?, ?)',
+      'INSERT INTO calendar_attendees (event_id, user_id, tenant_id) VALUES ($1, $2, $3)',
       [eventId, userId, finalTenantId],
     );
 
@@ -58,7 +58,7 @@ export async function addEventAttendee(
 export async function removeEventAttendee(eventId: number, userId: number): Promise<boolean> {
   try {
     // Remove attendee
-    const query = 'DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?';
+    const query = 'DELETE FROM calendar_attendees WHERE event_id = $1 AND user_id = $2';
     const [result] = await executeQuery<ResultSetHeader>(query, [eventId, userId]);
 
     return result.affectedRows > 0;
@@ -82,7 +82,7 @@ export async function getEventAttendees(
         FROM calendar_attendees a
         JOIN users u ON a.user_id = u.id
         JOIN calendar_events e ON a.event_id = e.id
-        WHERE a.event_id = ? AND e.tenant_id = ?
+        WHERE a.event_id = $1 AND e.tenant_id = $2
         ORDER BY u.first_name, u.last_name
       `;
 

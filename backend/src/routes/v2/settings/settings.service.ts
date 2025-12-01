@@ -2,10 +2,8 @@
  * Settings v2 Service
  * Business logic for system, tenant, and user settings management
  */
-import { RowDataPacket } from 'mysql2';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { query as executeQuery } from '../../../utils/db.js';
+import { RowDataPacket, query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import rootLog from '../logs/logs.service.js';
 
@@ -200,17 +198,20 @@ export async function getSystemSettings(
 
   // Apply filters
   if (filters.category !== undefined && filters.category !== '') {
-    query += ` AND category = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
   if (filters.is_public !== undefined) {
-    query += ` AND is_public = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND is_public = $${nextIndex}`;
     params.push(filters.is_public ? 1 : 0);
   }
 
   if (filters.search !== undefined && filters.search !== '') {
-    query += ` AND (setting_key LIKE ? OR description LIKE ?)`;
+    const nextIndex = params.length + 1;
+    query += ` AND (setting_key LIKE $${nextIndex} OR description LIKE $${nextIndex + 1})`;
     params.push(`%${filters.search}%`, `%${filters.search}%`);
   }
 
@@ -243,7 +244,7 @@ export async function getSystemSetting(
 > {
   // Check if setting is public or user has permission
   const [rows] = await executeQuery<SystemSettingResult[]>(
-    `SELECT * FROM system_settings WHERE setting_key = ?`,
+    `SELECT * FROM system_settings WHERE setting_key = $1`,
     [key],
   );
 
@@ -256,7 +257,7 @@ export async function getSystemSetting(
   }
 
   // Non-admin users can only access public settings
-  const isPublic = setting.is_public === 1 || setting.is_public === true;
+  const isPublic = setting.is_public === true;
   if (userRole !== 'root' && userRole !== 'admin' && !isPublic) {
     throw new ServiceError('FORBIDDEN', 'Access denied', 403);
   }
@@ -294,7 +295,7 @@ export async function upsertSystemSetting(
 
   // Check if setting exists
   const [rows] = await executeQuery<IdOnlyResult[]>(
-    `SELECT id FROM system_settings WHERE setting_key = ?`,
+    `SELECT id FROM system_settings WHERE setting_key = $1`,
     [data.setting_key],
   );
 
@@ -302,8 +303,8 @@ export async function upsertSystemSetting(
     // Update existing
     await executeQuery(
       `UPDATE system_settings
-       SET setting_value = ?, value_type = ?, category = ?, description = ?, is_public = ?, updated_at = NOW()
-       WHERE setting_key = ?`,
+       SET setting_value = $1, value_type = $2, category = $3, description = $4, is_public = $5, updated_at = NOW()
+       WHERE setting_key = $1`,
       [
         serializedValue,
         data.value_type ?? 'string',
@@ -318,7 +319,7 @@ export async function upsertSystemSetting(
     await executeQuery(
       `INSERT INTO system_settings
        (setting_key, setting_value, value_type, category, description, is_public)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         data.setting_key,
         serializedValue,
@@ -367,7 +368,7 @@ export async function deleteSystemSetting(
   }
 
   const [rows] = await executeQuery<SystemSettingResult[]>(
-    `SELECT * FROM system_settings WHERE setting_key = ?`,
+    `SELECT * FROM system_settings WHERE setting_key = $1`,
     [key],
   );
 
@@ -376,7 +377,7 @@ export async function deleteSystemSetting(
   }
   const setting = rows[0];
 
-  await executeQuery(`DELETE FROM system_settings WHERE setting_key = ?`, [key]);
+  await executeQuery(`DELETE FROM system_settings WHERE setting_key = $1`, [key]);
 
   // Log the action for system settings
   await rootLog.create({
@@ -408,16 +409,18 @@ export async function getTenantSettings(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   })[]
 > {
-  let query = `SELECT * FROM tenant_settings WHERE tenant_id = ?`;
+  let query = `SELECT * FROM tenant_settings WHERE tenant_id = $1`;
   const params: (string | number | boolean)[] = [tenantId];
 
   if (filters.category !== undefined && filters.category !== '') {
-    query += ` AND category = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
   if (filters.search !== undefined && filters.search !== '') {
-    query += ` AND setting_key LIKE ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND setting_key LIKE $${nextIndex}`;
     params.push(`%${filters.search}%`);
   }
 
@@ -447,7 +450,7 @@ export async function getTenantSetting(
   }
 > {
   const [rows] = await executeQuery<TenantSettingResult[]>(
-    `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+    `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [key, tenantId],
   );
 
@@ -491,7 +494,7 @@ export async function upsertTenantSetting(
 
   // Check if setting exists
   const [rows] = await executeQuery<IdOnlyResult[]>(
-    `SELECT id FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+    `SELECT id FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [data.setting_key, tenantId],
   );
 
@@ -499,8 +502,8 @@ export async function upsertTenantSetting(
     // Update existing
     await executeQuery(
       `UPDATE tenant_settings
-       SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
-       WHERE setting_key = ? AND tenant_id = ?`,
+       SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
+       WHERE setting_key = $4 AND tenant_id = $5`,
       [
         serializedValue,
         data.value_type ?? 'string',
@@ -514,7 +517,7 @@ export async function upsertTenantSetting(
     await executeQuery(
       `INSERT INTO tenant_settings
        (tenant_id, setting_key, setting_value, value_type, category)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [
         tenantId,
         data.setting_key,
@@ -562,7 +565,7 @@ export async function deleteTenantSetting(
   }
 
   const [settingRows] = await executeQuery<TenantSettingResult[]>(
-    `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+    `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [key, tenantId],
   );
 
@@ -571,7 +574,7 @@ export async function deleteTenantSetting(
   }
   const setting = settingRows[0];
 
-  await executeQuery(`DELETE FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`, [
+  await executeQuery(`DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`, [
     key,
     tenantId,
   ]);
@@ -610,12 +613,13 @@ export async function getUserSettings(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   })[]
 > {
-  let query = `SELECT * FROM user_settings WHERE user_id = ?`;
+  let query = `SELECT * FROM user_settings WHERE user_id = $1`;
   const params: (string | number | boolean | null)[] = [userId];
 
   // Add tenant_id filter if provided
   if (tenantId !== undefined) {
-    query += ` AND tenant_id = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND tenant_id = $${nextIndex}`;
     params.push(tenantId);
   }
 
@@ -624,18 +628,21 @@ export async function getUserSettings(
     if (teamId === null) {
       query += ` AND team_id IS NULL`;
     } else {
-      query += ` AND (team_id = ? OR team_id IS NULL)`;
+      const nextIndex = params.length + 1;
+      query += ` AND (team_id = $${nextIndex} OR team_id IS NULL)`;
       params.push(teamId);
     }
   }
 
   if (filters.category !== undefined && filters.category !== '') {
-    query += ` AND category = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
   if (filters.search !== undefined && filters.search !== '') {
-    query += ` AND setting_key LIKE ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND setting_key LIKE $${nextIndex}`;
     params.push(`%${filters.search}%`);
   }
 
@@ -665,7 +672,7 @@ export async function getUserSetting(
   }
 > {
   const [rows] = await executeQuery<UserSettingResult[]>(
-    `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
+    `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
     [key, userId],
   );
 
@@ -708,18 +715,18 @@ export async function upsertUserSetting(
   // Check if setting exists
   const [rows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM user_settings
-     WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
-     AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
-    [data.setting_key, userId, tenantId, settingTeamId, settingTeamId],
+     WHERE setting_key = $1 AND user_id = $2 AND tenant_id = $3
+     AND (team_id = $4 OR (team_id IS NULL AND $4 IS NULL))`,
+    [data.setting_key, userId, tenantId, settingTeamId],
   );
 
   if (rows.length > 0) {
     // Update existing
     await executeQuery(
       `UPDATE user_settings
-       SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
-       WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
-       AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
+       SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
+       WHERE setting_key = $4 AND user_id = $5 AND tenant_id = $6
+       AND (team_id = $7 OR (team_id IS NULL AND $7 IS NULL))`,
       [
         serializedValue,
         data.value_type ?? 'string',
@@ -728,7 +735,6 @@ export async function upsertUserSetting(
         userId,
         tenantId,
         settingTeamId,
-        settingTeamId,
       ],
     );
   } else {
@@ -736,7 +742,7 @@ export async function upsertUserSetting(
     await executeQuery(
       `INSERT INTO user_settings
        (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         userId,
         tenantId,
@@ -762,7 +768,7 @@ export async function deleteUserSetting(
   userId: number,
 ): Promise<{ success: boolean }> {
   const [settingRows] = await executeQuery<UserSettingResult[]>(
-    `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
+    `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
     [key, userId],
   );
 
@@ -770,7 +776,7 @@ export async function deleteUserSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
 
-  await executeQuery(`DELETE FROM user_settings WHERE setting_key = ? AND user_id = ?`, [
+  await executeQuery(`DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`, [
     key,
     userId,
   ]);
@@ -799,7 +805,7 @@ export async function getAdminUserSettings(
 
   // Verify user belongs to same tenant
   const [userRows] = await executeQuery<IdOnlyResult[]>(
-    `SELECT id FROM users WHERE id = ? AND tenant_id = ?`,
+    `SELECT id FROM users WHERE id = $1 AND tenant_id = $2`,
     [targetUserId, tenantId],
   );
 

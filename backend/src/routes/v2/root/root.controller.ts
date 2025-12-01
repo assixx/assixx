@@ -883,18 +883,17 @@ class RootController {
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: Deletion status
-   *       404:
-   *         description: No active deletion found
+   *         description: Deletion status (null if no active deletion)
    */
   async getDeletionStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const status = await rootService.getDeletionStatus(req.user.tenant_id, req.user.id);
 
       if (!status) {
-        res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'No active deletion found',
+        // No active deletion is a valid state, not an error
+        res.json({
+          data: null,
+          message: 'No active deletion',
         });
         return;
       }

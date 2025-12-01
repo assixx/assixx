@@ -1,7 +1,23 @@
-# 🚀 ASSIXX - Database Setup Guide
+# ⚠️ DEPRECATED - ASSIXX Database Setup Guide (MySQL)
+
+> **🚨 DEPRECATED (November 2025)**
+>
+> This documentation describes the **old MySQL setup** which is no longer used.
+> Assixx has migrated to **PostgreSQL 17** with Row Level Security (RLS).
+>
+> **For current database setup, see:**
+> - `docs/POSTGRESQL-MIGRATION-PLAN.md` - Migration strategy and new architecture
+> - `docs/DATABASE-MIGRATION-GUIDE.md` - Current database patterns
+> - `docker/docker-compose.yml` - PostgreSQL container configuration
+>
+> **This file is kept for historical reference only.**
+
+---
+
+# 🚀 ASSIXX - Database Setup Guide (ARCHIVED - MySQL)
 
 **SaaS Platform für Industrieunternehmen**
-_Komplette Anleitung für neue Entwickler_
+_Komplette Anleitung für neue Entwickler - VERALTET_
 
 ---
 

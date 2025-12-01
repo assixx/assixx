@@ -85,15 +85,15 @@ export async function getEmployeeMetrics(
     SELECT
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
-      COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_this_month,
-      (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1) as department_count,
+      COUNT(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as new_this_month,
+      (SELECT COUNT(*) FROM departments WHERE tenant_id = $1 AND is_active = true) as department_count,
       CASE
-        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1) > 0
-        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1)
+        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = $2 AND is_active = true) > 0
+        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = $3 AND is_active = true)
         ELSE 0
       END as avg_per_department
     FROM users
-    WHERE tenant_id = ?
+    WHERE tenant_id = $4
       AND role = 'employee'
   `,
     [tenantId, tenantId, tenantId, tenantId],
@@ -134,10 +134,10 @@ export async function getDepartmentMetrics(
     LEFT JOIN (
       SELECT department_id, COUNT(*) as emp_count
       FROM users
-      WHERE tenant_id = ? AND role = 'employee'
+      WHERE tenant_id = $1 AND role = 'employee'
       GROUP BY department_id
     ) e ON e.department_id = d.id
-    WHERE d.tenant_id = ?
+    WHERE d.tenant_id = $2
   `,
     [tenantId, tenantId],
   );
@@ -172,8 +172,8 @@ export async function getShiftMetrics(
       0 as overtime_hours,
       1 as coverage_rate
     FROM shifts
-    WHERE tenant_id = ?
-      AND date BETWEEN ? AND ?
+    WHERE tenant_id = $1
+      AND date BETWEEN $2 AND $3
   `,
     [tenantId, dateFrom, dateTo],
   );
@@ -211,8 +211,8 @@ export async function getKvpMetrics(
       AVG(CASE WHEN status = 'implemented' AND estimated_cost > 0
           THEN (actual_savings - estimated_cost) / estimated_cost ELSE NULL END) as avg_roi
     FROM kvp_suggestions
-    WHERE tenant_id = ?
-      AND created_at BETWEEN ? AND ?
+    WHERE tenant_id = $1
+      AND created_at BETWEEN $2 AND $3
   `,
     [tenantId, dateFrom, dateTo],
   );
@@ -253,13 +253,13 @@ export async function getSurveyMetrics(
         survey_id,
         COUNT(DISTINCT user_id) / (
           SELECT COUNT(*) FROM users
-          WHERE tenant_id = ? AND role = 'employee'
+          WHERE tenant_id = $3 AND role = 'employee'
         ) as response_rate
       FROM survey_responses
-      WHERE started_at BETWEEN ? AND ?
+      WHERE started_at BETWEEN $4 AND $2
       GROUP BY survey_id
     ) r ON r.survey_id = s.id
-    WHERE s.tenant_id = ?
+    WHERE s.tenant_id = $5
       AND s.status = 'active'
   `,
     [tenantId, dateFrom, dateTo, tenantId],
@@ -327,10 +327,10 @@ export async function getPerformanceMetrics(
     `
     SELECT
       COUNT(DISTINCT submitted_by) as participants,
-      (SELECT COUNT(*) FROM users WHERE tenant_id = ? AND role = 'employee') as total_employees
+      (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee') as total_employees
     FROM kvp_suggestions
-    WHERE tenant_id = ?
-      AND created_at BETWEEN ? AND ?
+    WHERE tenant_id = $2
+      AND created_at BETWEEN $3 AND $4
   `,
     [tenantId, tenantId, dateFrom, dateTo],
   );

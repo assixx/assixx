@@ -4,14 +4,13 @@
  * Business logic for root user operations and tenant management
  */
 import bcrypt from 'bcryptjs';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { UsersRow } from '../../../types/database-rows.types.js';
 import type { DatabaseTenant } from '../../../types/models.js';
 import { CountResult, IdResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute } from '../../../utils/db.js';
+import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
 import { logger } from '../../../utils/logger.js';
 import rootLog from '../logs/logs.service.js';
@@ -508,12 +507,12 @@ class RootService {
       return await Promise.all(
         tenants.map(async (tenant: DatabaseTenant) => {
           const [adminCount] = await execute<CountResult[]>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'admin'",
+            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
             [tenant.id],
           );
 
           const [employeeCount] = await execute<CountResult[]>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'employee'",
+            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
             [tenant.id],
           );
 
@@ -521,7 +520,7 @@ class RootService {
             total: number;
           }
           const [storageUsed] = await execute<StorageTotalResult[]>(
-            'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
+            'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
             [tenant.id],
           );
 
@@ -579,8 +578,8 @@ class RootService {
           u.id, u.username, u.email, u.first_name, u.last_name,
           u.position, u.notes, u.employee_number, ud.department_id, u.is_active, u.employee_id, u.created_at, u.updated_at
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
-        WHERE u.role = 'root' AND u.tenant_id = ?
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+        WHERE u.role = 'root' AND u.tenant_id = $1
         ORDER BY u.created_at DESC`,
         [tenantId],
       );
@@ -630,8 +629,8 @@ class RootService {
           u.id, u.username, u.email, u.first_name, u.last_name,
           u.position, u.notes, u.employee_number, ud.department_id, u.is_active, u.employee_id, u.created_at, u.updated_at
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
-        WHERE u.id = ? AND u.role = 'root' AND u.tenant_id = ?`,
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+        WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2`,
         [id, tenantId],
       );
 
@@ -680,7 +679,7 @@ class RootService {
    */
   private async checkEmailExists(email: string, tenantId: number): Promise<void> {
     const [existing] = await execute<IdResult[]>(
-      'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
+      'SELECT id FROM users WHERE email = $1 AND tenant_id = $2',
       [email, tenantId],
     );
 
@@ -697,7 +696,7 @@ class RootService {
       subdomain: string;
     }
     const [tenantData] = await execute<SubdomainResult[]>(
-      'SELECT subdomain FROM tenants WHERE id = ?',
+      'SELECT subdomain FROM tenants WHERE id = $1',
       [tenantId],
     );
     return tenantData[0]?.subdomain ?? 'DEFAULT';
@@ -742,13 +741,13 @@ class RootService {
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
-      // Create root user (N:M REFACTORING: department_id removed, has_full_access = 1 for root)
+      // Create root user (N:M REFACTORING: department_id removed, has_full_access = true for root)
       // CRITICAL: username = email (always lowercase)
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO users (
           username, email, password, first_name, last_name,
           role, position, notes, employee_number, is_active, has_full_access, tenant_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, 1, ?, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, 1, $10, NOW(), NOW())`,
         [
           normalizedEmail, // username = email (lowercase)
           normalizedEmail, // email (lowercase)
@@ -765,7 +764,10 @@ class RootService {
 
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
-      await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
+      await execute('UPDATE users SET employee_id = $3 WHERE id = $2', [
+        employeeId,
+        result.insertId,
+      ]);
 
       // N:M REFACTORING: Root users have has_full_access=1, no individual department assignments needed
 
@@ -786,9 +788,11 @@ class RootService {
   private buildRootUserUpdateFields(data: UpdateRootUserRequest): {
     fields: string[];
     values: unknown[];
+    nextParamIndex: number;
   } {
     const fields: string[] = [];
     const values: unknown[] = [];
+    let paramIndex = 1;
 
     // Map of request properties to database columns
     // N:M REFACTORING: department_id removed - now managed via user_departments table
@@ -801,11 +805,11 @@ class RootService {
       { field: 'isActive', column: 'is_active' },
     ];
 
-    // Build fields and values arrays
+    // Build fields and values arrays with PostgreSQL $n placeholders
     for (const mapping of fieldMappings) {
       const value = data[mapping.field];
       if (value !== undefined) {
-        fields.push(`${mapping.column} = ?`);
+        fields.push(`${mapping.column} = $${paramIndex++}`);
         values.push(value);
       }
     }
@@ -813,13 +817,13 @@ class RootService {
     // CRITICAL: When email changes, also update username (username = email, lowercase)
     if (data.email !== undefined) {
       const normalizedEmail = data.email.toLowerCase().trim();
-      fields.push('email = ?');
+      fields.push(`email = $${paramIndex++}`);
       values.push(normalizedEmail);
-      fields.push('username = ?'); // username = email
+      fields.push(`username = $${paramIndex++}`); // username = email
       values.push(normalizedEmail);
     }
 
-    return { fields, values };
+    return { fields, values, nextParamIndex: paramIndex };
   }
 
   /**
@@ -836,20 +840,22 @@ class RootService {
         throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
-      const { fields, values } = this.buildRootUserUpdateFields(data);
+      const { fields, values, nextParamIndex } = this.buildRootUserUpdateFields(data);
+      let paramIndex = nextParamIndex;
 
       // Hash password if provided
       if (data.password !== undefined && data.password !== '') {
         const hashedPassword = await bcrypt.hash(data.password, 10);
-        fields.push('password = ?');
+        fields.push(`password = $${paramIndex++}`);
         values.push(hashedPassword);
       }
 
       // Update user fields if any
       if (fields.length > 0) {
         fields.push('updated_at = NOW()');
+        const idParamIndex = paramIndex;
         values.push(id);
-        await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+        await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = $${idParamIndex}`, values);
       }
 
       // N:M REFACTORING: Root users have has_full_access=1, no individual department assignments needed
@@ -881,7 +887,7 @@ class RootService {
 
       // Check if at least one root user will remain
       const [rootCount] = await execute<CountResult[]>(
-        "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = ? AND id != ?",
+        "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2",
         [tenantId, id],
       );
 
@@ -896,12 +902,18 @@ class RootService {
 
       // Delete user's related data first (to avoid foreign key constraints)
       // SECURITY: tenant_id required for multi-tenant isolation
-      await execute('DELETE FROM oauth_tokens WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
-      await execute('DELETE FROM user_teams WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
-      await execute('DELETE FROM user_departments WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
+      await execute('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
+        id,
+        tenantId,
+      ]);
+      await execute('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [id, tenantId]);
+      await execute('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
+        id,
+        tenantId,
+      ]);
 
       // Now delete the user - SECURITY: tenant_id required for multi-tenant isolation
-      await execute('DELETE FROM users WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+      await execute('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to delete root user', error);
@@ -933,7 +945,7 @@ class RootService {
         `SELECT f.code
          FROM tenant_features tf
          JOIN features f ON tf.feature_id = f.id
-         WHERE tf.tenant_id = ? AND tf.is_active = 1`,
+         WHERE tf.tenant_id = $1 AND tf.is_active = true`,
         [tenantId],
       );
 
@@ -979,16 +991,16 @@ class RootService {
       // Get storage breakdown in parallel
       const [documentsSize, attachmentsSize, logsSize] = await Promise.all([
         getStorageTotal(
-          'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
+          'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
           [tenantId],
         ),
         getStorageTotal(
           `SELECT COALESCE(SUM(ka.file_size), 0) as total FROM kvp_attachments ka
-           JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id WHERE ks.tenant_id = ?`,
+           JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id WHERE ks.tenant_id = $1`,
           [tenantId],
         ),
         getStorageTotal(
-          "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
+          "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = $1",
           [tenantId],
         ),
       ]);
@@ -1072,7 +1084,7 @@ class RootService {
         FROM tenant_deletion_queue dq
         JOIN tenants t ON t.id = dq.tenant_id
         JOIN users u ON u.id = dq.created_by
-        WHERE dq.tenant_id = ? AND dq.status NOT IN ('cancelled', 'completed')
+        WHERE dq.tenant_id = $1 AND dq.status NOT IN ('cancelled', 'completed')
         ORDER BY dq.created_at DESC LIMIT 1`,
         [tenantId],
       );
@@ -1147,8 +1159,8 @@ class RootService {
         FROM tenant_deletion_queue q
         JOIN tenants t ON t.id = q.tenant_id
         JOIN users u ON u.id = q.created_by
-        WHERE q.status = 'pending'
-        AND q.created_by != ?
+        WHERE q.status = 'pending_approval'
+        AND q.created_by != $1
         ORDER BY q.created_at DESC`,
         [currentUserId],
       );
