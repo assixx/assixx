@@ -11,9 +11,8 @@
  * NOTE: This service is currently not imported anywhere in the codebase.
  * It may be legacy code kept for backward compatibility.
  */
-import { Pool } from 'mysql2/promise';
-
 import User, { DbUser, UserCreateData, UserFilter } from '../routes/v2/users/model/index.js';
+import { Pool } from '../utils/db.js';
 
 // Type aliases: Map employee-specific types to User model types
 // This provides semantic clarity (Employee vs User terminology)

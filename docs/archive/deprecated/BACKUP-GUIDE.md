@@ -1,6 +1,26 @@
-# 🛡️ Assixx Backup & Recovery Guide
+# ⚠️ DEPRECATED - Assixx Backup & Recovery Guide (MySQL)
 
-## 📋 Übersicht
+> **🚨 DEPRECATED (November 2025)**
+>
+> This backup guide describes **MySQL-specific backup procedures** which are no longer applicable.
+> Assixx now uses **PostgreSQL 17** with different backup tools (`pg_dump`, `pg_restore`).
+>
+> **For current backup procedures, use PostgreSQL tools:**
+> ```bash
+> # PostgreSQL backup
+> docker exec assixx-postgres pg_dump -U assixx_user assixx > backup.sql
+>
+> # PostgreSQL restore
+> docker exec -i assixx-postgres psql -U assixx_user assixx < backup.sql
+> ```
+>
+> **This file is kept for historical reference only.**
+
+---
+
+# 🛡️ Assixx Backup & Recovery Guide (ARCHIVED - MySQL)
+
+## 📋 Übersicht (VERALTET)
 
 Dieses Backup-System schützt Ihre Assixx-Datenbank vor Datenverlust durch:
 

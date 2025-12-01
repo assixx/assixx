@@ -2,10 +2,8 @@
  * Roles Service v2
  * Business logic for role management
  */
-import { RowDataPacket } from 'mysql2/promise';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { Role, RoleCheckRequest, RoleName } from './types.js';
 
@@ -98,7 +96,7 @@ class RolesService {
     try {
       // Get user's current role from database
       const [rows] = await execute<UserRoleResult[]>(
-        'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
+        'SELECT role FROM users WHERE id = $1 AND tenant_id = $2',
         [request.userId, request.tenantId],
       );
 

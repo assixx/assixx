@@ -3,9 +3,9 @@
  * Business logic for conversation management (CRUD operations)
  */
 import { log, error as logError } from 'console';
-import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import type { CountResult } from '../../../types/query-results.types.js';
+import type { ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
 import { execute } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type {
@@ -20,7 +20,7 @@ import type {
 
 // Query result interfaces
 interface ParticipantAdminResult extends RowDataPacket {
-  is_admin: number; // tinyint(1)
+  is_admin: boolean; // tinyint(1)
 }
 
 /**
@@ -32,18 +32,20 @@ function buildConversationWhereClause(
   userId: number,
 ): { whereClause: string; params: unknown[] } {
   let whereClause = `
-    WHERE c.tenant_id = ?
-    AND cp.user_id = ?
+    WHERE c.tenant_id = $1
+    AND cp.user_id = $2
   `;
   const params: unknown[] = [tenantId, userId];
+  let paramIndex = 3;
 
   if (filters.search !== undefined && filters.search !== '') {
-    whereClause += ` AND (c.name LIKE ? OR m.content LIKE ?)`;
+    whereClause += ` AND (c.name LIKE $${paramIndex} OR m.content LIKE $${paramIndex + 1})`;
     params.push(`%${filters.search}%`, `%${filters.search}%`);
+    paramIndex += 2;
   }
 
   if (filters.isGroup !== undefined) {
-    whereClause += ` AND c.is_group = ?`;
+    whereClause += ` AND c.is_group = $${paramIndex}`;
     params.push(filters.isGroup ? 1 : 0);
   }
 
@@ -58,6 +60,8 @@ async function getConversationParticipants(conversationIds: number[]): Promise<P
     return [];
   }
 
+  // PostgreSQL: Generate sequential $1, $2, $3... for each conversation ID
+  const placeholders = conversationIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
   const query = `
     SELECT
       cp.conversation_id,
@@ -70,7 +74,7 @@ async function getConversationParticipants(conversationIds: number[]): Promise<P
       u.profile_picture
     FROM conversation_participants cp
     INNER JOIN users u ON cp.user_id = u.id
-    WHERE cp.conversation_id IN (${conversationIds.map(() => '?').join(',')})
+    WHERE cp.conversation_id IN (${placeholders})
   `;
 
   const [rows] = await execute<ParticipantRow[]>(query, conversationIds);
@@ -90,6 +94,11 @@ async function getUnreadCounts(
     return unreadCounts;
   }
 
+  // PostgreSQL: Generate sequential $1, $2, $3... for conversation IDs, then userId params
+  const convPlaceholders = conversationIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+  const userIdParamIndex1 = conversationIds.length + 1;
+  const userIdParamIndex2 = conversationIds.length + 2;
+
   const query = `
     SELECT
       m.conversation_id,
@@ -97,9 +106,9 @@ async function getUnreadCounts(
     FROM messages m
     LEFT JOIN conversation_participants cp
       ON cp.conversation_id = m.conversation_id
-      AND cp.user_id = ${userId}
-    WHERE m.conversation_id IN (${conversationIds.map(() => '?').join(',')})
-      AND m.sender_id != ${userId}
+      AND cp.user_id = $${userIdParamIndex1}
+    WHERE m.conversation_id IN (${convPlaceholders})
+      AND m.sender_id != $${userIdParamIndex2}
       AND m.id > COALESCE(cp.last_read_message_id, 0)
     GROUP BY m.conversation_id
   `;
@@ -109,7 +118,7 @@ async function getUnreadCounts(
     unread_count: number;
   }
 
-  const [rows] = await execute<UnreadCountRow[]>(query, conversationIds);
+  const [rows] = await execute<UnreadCountRow[]>(query, [...conversationIds, userId, userId]);
 
   for (const row of rows) {
     unreadCounts.set(row.conversation_id, row.unread_count);
@@ -150,7 +159,7 @@ function transformConversation(
   return {
     id: conv.id,
     name: conv.name,
-    isGroup: conv.is_group === 1,
+    isGroup: conv.is_group,
     createdAt: new Date(conv.created_at),
     updatedAt: new Date(conv.updated_at),
     lastMessage,
@@ -174,15 +183,15 @@ async function findExisting1to1Conversation(
   const [existing] = await execute<ConversationIdRow[]>(
     `SELECT c.id
      FROM conversations c
-     WHERE c.tenant_id = ?
+     WHERE c.tenant_id = $1
      AND c.is_group = 0
      AND EXISTS (
        SELECT 1 FROM conversation_participants cp1
-       WHERE cp1.conversation_id = c.id AND cp1.user_id = ?
+       WHERE cp1.conversation_id = c.id AND cp1.user_id = $2
      )
      AND EXISTS (
        SELECT 1 FROM conversation_participants cp2
-       WHERE cp2.conversation_id = c.id AND cp2.user_id = ?
+       WHERE cp2.conversation_id = c.id AND cp2.user_id = $3
      )
      AND (
        SELECT COUNT(*) FROM conversation_participants cp3
@@ -204,7 +213,7 @@ async function insertConversation(
 ): Promise<number> {
   const [result] = await execute<ResultSetHeader>(
     `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
-     VALUES (?, ?, ?, NOW(), NOW())`,
+     VALUES ($1, $2, $3, NOW(), NOW())`,
     [tenantId, name, isGroup ? 1 : 0],
   );
   log('[Chat Service] Created conversation with ID:', result.insertId);
@@ -224,7 +233,7 @@ async function addParticipants(
   // Add creator as admin
   await execute(
     `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-     VALUES (?, ?, ?, 1, NOW())`,
+     VALUES ($1, $2, $3, 1, NOW())`,
     [tenantId, conversationId, creatorId],
   );
 
@@ -232,7 +241,7 @@ async function addParticipants(
   for (const participantId of participantIds) {
     await execute(
       `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-       VALUES (?, ?, ?, 0, NOW())`,
+       VALUES ($1, $2, $3, 0, NOW())`,
       [tenantId, conversationId, participantId],
     );
   }
@@ -403,7 +412,7 @@ export async function createConversation(
 
 interface ConvParticipantRow extends RowDataPacket {
   user_id: number;
-  is_admin: number;
+  is_admin: boolean;
   joined_at: string | Date;
   username: string;
   first_name: string | null;
@@ -462,7 +471,7 @@ export async function getConversation(
     return {
       id: conv.id,
       name: conv.name,
-      isGroup: conv.is_group === 1,
+      isGroup: conv.is_group,
       createdAt: new Date(conv.created_at),
       updatedAt: new Date(conv.updated_at),
       lastMessage: null,
@@ -491,7 +500,7 @@ export async function deleteConversation(
     // Check if user is participant
     const [participant] = await execute<ParticipantAdminResult[]>(
       `SELECT is_admin FROM conversation_participants
-       WHERE conversation_id = ? AND user_id = ?`,
+       WHERE conversation_id = $1 AND user_id = $2`,
       [conversationId, userId],
     );
 
@@ -506,7 +515,7 @@ export async function deleteConversation(
     // Check permissions: must be admin or the only participant
     const [participantCount] = await execute<CountResult[]>(
       `SELECT COUNT(*) as count FROM conversation_participants
-       WHERE conversation_id = ?`,
+       WHERE conversation_id = $1`,
       [conversationId],
     );
 
@@ -519,7 +528,7 @@ export async function deleteConversation(
     const canDelete =
       userRole === 'root' ||
       userRole === 'admin' ||
-      firstParticipant.is_admin === 1 ||
+      firstParticipant.is_admin ||
       firstCount.count === 1;
 
     if (!canDelete) {
@@ -531,13 +540,13 @@ export async function deleteConversation(
     }
 
     // Delete in correct order to avoid FK constraints
-    await execute(`DELETE FROM messages WHERE conversation_id = ?`, [conversationId]);
+    await execute(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
 
-    await execute(`DELETE FROM conversation_participants WHERE conversation_id = ?`, [
+    await execute(`DELETE FROM conversation_participants WHERE conversation_id = $1`, [
       conversationId,
     ]);
 
-    await execute(`DELETE FROM conversations WHERE id = ?`, [conversationId]);
+    await execute(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
   } catch (error: unknown) {
     throw error instanceof ServiceError ? error : (
         new ServiceError('DELETE_CONVERSATION_ERROR', 'Failed to delete conversation', 500)

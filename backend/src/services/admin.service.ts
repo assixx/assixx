@@ -2,13 +2,12 @@
  * Admin Log Service
  * Handles admin log business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import rootLog from '../routes/v2/logs/logs.service.js';
 import type {
   DbRootLog,
   RootLogCreateData as ModelRootLogCreateData,
 } from '../routes/v2/logs/types.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Admin Log Service

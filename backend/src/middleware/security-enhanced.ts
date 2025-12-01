@@ -385,7 +385,7 @@ function getRateLimitHTML(retryAfterMinutes: number, isAuthLimit: boolean = fals
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Zu viele Anfragen - Assixx</title>
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2$1family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
       <style>${rateLimitStyles}</style>
     </head>
     <body>

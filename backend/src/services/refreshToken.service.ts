@@ -11,9 +11,8 @@
  * @see docs/AUTH-TOKEN-REFACTOR-PLAN.md
  */
 import crypto from 'crypto';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { execute } from '../utils/db.js';
+import { ResultSetHeader, RowDataPacket, execute } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 // ============================================
@@ -27,7 +26,7 @@ interface RefreshTokenRow extends RowDataPacket {
   token_hash: string;
   token_family: string;
   expires_at: Date;
-  is_revoked: number;
+  is_revoked: boolean;
   used_at: Date | null;
   replaced_by_hash: string | null;
   created_at: Date;
@@ -65,7 +64,7 @@ function rowToToken(row: RefreshTokenRow): StoredRefreshToken {
     tokenHash: row.token_hash,
     tokenFamily: row.token_family,
     expiresAt: row.expires_at,
-    isRevoked: row.is_revoked === 1,
+    isRevoked: row.is_revoked,
     usedAt: row.used_at,
     replacedByHash: row.replaced_by_hash,
     createdAt: row.created_at,
@@ -126,7 +125,7 @@ export async function storeRefreshToken(
   await execute(
     `INSERT INTO refresh_tokens
      (token_hash, user_id, tenant_id, token_family, expires_at, ip_address, user_agent)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [tokenHash, userId, tenantId, tokenFamily, expiresAt, ipAddress ?? null, userAgent ?? null],
   );
 
@@ -147,7 +146,7 @@ export async function storeRefreshToken(
 export async function findValidRefreshToken(tokenHash: string): Promise<StoredRefreshToken | null> {
   const [rows] = await execute<RefreshTokenRow[]>(
     `SELECT * FROM refresh_tokens
-     WHERE token_hash = ?
+     WHERE token_hash = $1
      AND is_revoked = 0
      AND expires_at > NOW()`,
     [tokenHash],
@@ -176,7 +175,7 @@ export async function findValidRefreshToken(tokenHash: string): Promise<StoredRe
  */
 export async function isTokenAlreadyUsed(tokenHash: string): Promise<boolean> {
   const [rows] = await execute<RefreshTokenRow[]>(
-    `SELECT used_at FROM refresh_tokens WHERE token_hash = ?`,
+    `SELECT used_at FROM refresh_tokens WHERE token_hash = $1`,
     [tokenHash],
   );
 
@@ -201,8 +200,8 @@ export async function isTokenAlreadyUsed(tokenHash: string): Promise<boolean> {
 export async function markTokenAsUsed(tokenHash: string, replacementHash: string): Promise<void> {
   await execute(
     `UPDATE refresh_tokens
-     SET used_at = NOW(), replaced_by_hash = ?
-     WHERE token_hash = ?`,
+     SET used_at = NOW(), replaced_by_hash = $2
+     WHERE token_hash = $1`,
     [replacementHash, tokenHash],
   );
 
@@ -223,8 +222,8 @@ export async function markTokenAsUsed(tokenHash: string, replacementHash: string
 export async function revokeTokenFamily(tokenFamily: string): Promise<number> {
   const [result] = await execute<ResultSetHeader>(
     `UPDATE refresh_tokens
-     SET is_revoked = 1
-     WHERE token_family = ?`,
+     SET is_revoked = true
+     WHERE token_family = $1`,
     [tokenFamily],
   );
 
@@ -248,8 +247,8 @@ export async function revokeTokenFamily(tokenFamily: string): Promise<number> {
 export async function revokeAllUserTokens(userId: number, tenantId: number): Promise<number> {
   const [result] = await execute<ResultSetHeader>(
     `UPDATE refresh_tokens
-     SET is_revoked = 1
-     WHERE user_id = ? AND tenant_id = ?`,
+     SET is_revoked = true
+     WHERE user_id = $1 AND tenant_id = $2`,
     [userId, tenantId],
   );
 
@@ -270,8 +269,8 @@ export async function revokeAllUserTokens(userId: number, tenantId: number): Pro
 export async function cleanupExpiredTokens(olderThanDays: number = 30): Promise<number> {
   const [result] = await execute<ResultSetHeader>(
     `DELETE FROM refresh_tokens
-     WHERE (expires_at < NOW() OR is_revoked = 1)
-     AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)`,
+     WHERE (expires_at < NOW() OR is_revoked = true)
+     AND created_at < NOW() - ($1 * INTERVAL '1 day')`,
     [olderThanDays],
   );
 
@@ -303,18 +302,18 @@ export async function getUserTokenStats(
     `SELECT
        COUNT(*) as total,
        SUM(CASE WHEN is_revoked = 0 AND expires_at > NOW() THEN 1 ELSE 0 END) as active,
-       SUM(CASE WHEN is_revoked = 1 THEN 1 ELSE 0 END) as revoked,
+       SUM(CASE WHEN is_revoked = true THEN 1 ELSE 0 END) as revoked,
        SUM(CASE WHEN expires_at <= NOW() AND is_revoked = 0 THEN 1 ELSE 0 END) as expired
      FROM refresh_tokens
-     WHERE user_id = ? AND tenant_id = ?`,
+     WHERE user_id = $1 AND tenant_id = $2`,
     [userId, tenantId],
   );
 
   const stats = rows[0] ?? { total: 0, active: 0, revoked: 0, expired: 0 };
   return {
-    total: Number(stats.total),
-    active: Number(stats.active),
-    revoked: Number(stats.revoked),
-    expired: Number(stats.expired),
+    total: Number(stats['total']),
+    active: Number(stats['active']),
+    revoked: Number(stats['revoked']),
+    expired: Number(stats['expired']),
   };
 }

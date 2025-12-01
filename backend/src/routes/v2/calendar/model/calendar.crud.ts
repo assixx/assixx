@@ -101,7 +101,7 @@ export async function getAllEvents(
         SELECT e.*, u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        WHERE e.tenant_id = ? AND e.status = ?
+        WHERE e.tenant_id = $1 AND e.status = $2
       `;
 
     // Apply filters and execute query
@@ -114,7 +114,11 @@ export async function getAllEvents(
 
     // Apply sorting and pagination
     const offset = (page - 1) * limit;
-    const finalQuery = filteredQuery + ` ORDER BY e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
+    const paramIndexLimit = queryParams.length + 1;
+    const paramIndexOffset = queryParams.length + 2;
+    const finalQuery =
+      filteredQuery +
+      ` ORDER BY e.${sortBy} ${sortDir} LIMIT $${paramIndexLimit} OFFSET $${paramIndexOffset}`;
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
@@ -146,7 +150,7 @@ export async function getAllEvents(
 export async function checkEventExists(id: number, tenantId: number): Promise<boolean> {
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(
-      'SELECT 1 FROM calendar_events WHERE id = ? AND tenant_id = ?',
+      'SELECT 1 FROM calendar_events WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
     return rows.length > 0;
@@ -174,7 +178,7 @@ export async function getEventById(
                u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        WHERE e.id = ? AND e.tenant_id = ?
+        WHERE e.id = $1 AND e.tenant_id = $2
       `;
 
     const [events] = await executeQuery<DbCalendarEvent[]>(query, [id, tenantId]);
@@ -233,7 +237,7 @@ const INSERT_EVENT_QUERY = `
   (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
    org_level, department_id, team_id, created_by_role, allow_attendees,
    type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 `;
 
 /**
@@ -299,7 +303,7 @@ export async function updateEvent(
 
     // Get the updated event - we need to get the current user_id first
     const [eventRows] = await executeQuery<UserIdResult[]>(
-      'SELECT user_id FROM calendar_events WHERE id = ? AND tenant_id = ?',
+      'SELECT user_id FROM calendar_events WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
 
@@ -325,7 +329,7 @@ export async function updateEvent(
 export async function deleteEvent(id: number, tenantId: number): Promise<boolean> {
   try {
     // Delete event
-    const query = 'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
+    const query = 'DELETE FROM calendar_events WHERE id = $1 AND tenant_id = $2';
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
 
     return result.affectedRows > 0;
@@ -370,8 +374,8 @@ export async function getDashboardEvents(
                u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        WHERE e.tenant_id = ? AND e.status = 'confirmed'
-        AND e.start_date >= ? AND e.start_date <= ?
+        WHERE e.tenant_id = $1 AND e.status = 'confirmed'
+        AND e.start_date >= $2 AND e.start_date <= $3
       `;
 
     const queryParams: unknown[] = [tenantId, todayStr, endDateStr];
@@ -380,18 +384,20 @@ export async function getDashboardEvents(
     if (role !== 'admin' && role !== 'root') {
       query += ` AND (
           e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.department_id = ?) OR
-          (e.org_level = 'team' AND e.team_id = ?) OR
-          e.user_id = ? OR
-          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
+          (e.org_level = 'department' AND e.department_id = $4) OR
+          (e.org_level = 'team' AND e.team_id = $5) OR
+          e.user_id = $6 OR
+          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $7)
         )`;
       queryParams.push(userDepartmentId, userTeamId, userId, userId);
     }
 
     // Sort by start time, limited to the next few events
+    // PostgreSQL uses $n placeholders - calculate next index dynamically
+    const limitParamIndex = queryParams.length + 1;
     query += `
         ORDER BY e.start_date ASC
-        LIMIT ?
+        LIMIT $${limitParamIndex}
       `;
     queryParams.push(Number.parseInt(resolvedLimit.toString(), 10));
 
@@ -415,7 +421,7 @@ export async function canManageEvent(
   try {
     // Get event details
     const [events] = await executeQuery<DbCalendarEvent[]>(
-      'SELECT * FROM calendar_events WHERE id = ?',
+      'SELECT * FROM calendar_events WHERE id = $1',
       [eventId],
     );
 

@@ -221,7 +221,7 @@ async function insertSurveyQuestions(
       `
         INSERT INTO survey_questions (
           tenant_id, survey_id, question_text, question_type, is_required, order_index
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         tenantId,
@@ -261,7 +261,7 @@ async function insertQuestionOptions(
       `
         INSERT INTO survey_question_options (
           tenant_id, question_id, option_text, order_position
-        ) VALUES (?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4)
       `,
       [tenantId, questionId, optionText, index],
     );
@@ -284,7 +284,7 @@ async function insertSurveyAssignments(
       `
         INSERT INTO survey_assignments (
           tenant_id, survey_id, assignment_type, area_id, department_id, team_id, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       `,
       [
         tenantId,
@@ -327,7 +327,7 @@ export async function createSurvey(
         INSERT INTO surveys (
           tenant_id, title, description, created_by, status,
           is_anonymous, is_mandatory, start_date, end_date, uuid
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `,
       [
         tenantId,
@@ -369,27 +369,31 @@ export async function getAllSurveysByTenant(
   const { status, page = 1, limit = 20 } = filters;
   const offset = (page - 1) * limit;
 
+  // PostgreSQL: Use MAX() for non-aggregated columns from LEFT JOIN to satisfy GROUP BY requirements
   let query = `
       SELECT
         s.*,
-        u.first_name as creator_first_name,
-        u.last_name as creator_last_name,
+        MAX(u.first_name) as creator_first_name,
+        MAX(u.last_name) as creator_last_name,
         COUNT(DISTINCT sr.id) as response_count,
         COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.tenant_id = ?
+      WHERE s.tenant_id = $1
     `;
 
   const params: unknown[] = [tenantId];
 
   if (status !== undefined) {
-    query += ' AND s.status = ?';
+    const statusParamIndex = params.length + 1;
+    query += ` AND s.status = $${statusParamIndex}`;
     params.push(status);
   }
 
-  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+  const limitParamIndex = params.length + 1;
+  const offsetParamIndex = params.length + 2;
+  query += ` GROUP BY s.id ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -404,9 +408,9 @@ async function getEmployeeDeptInfo(
   // N:M REFACTORING: department_id from user_departments table
   const [userInfo] = await typedQuery<UserDepartmentResult[]>(
     `SELECT ud.department_id, d.area_id FROM users u
-     LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+     LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
      LEFT JOIN departments d ON ud.department_id = d.id
-     WHERE u.id = ? AND u.tenant_id = ?`,
+     WHERE u.id = $1 AND u.tenant_id = $2`,
     [employeeUserId, tenantId],
   );
   return userInfo[0] ?? null;
@@ -415,31 +419,44 @@ async function getEmployeeDeptInfo(
 /** Get employee team IDs */
 async function getEmployeeTeamIds(employeeUserId: number, tenantId: number): Promise<number[]> {
   const [userTeams] = await typedQuery<UserTeamResult[]>(
-    `SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?`,
+    `SELECT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2`,
     [employeeUserId, tenantId],
   );
   return userTeams.map((team: UserTeamResult) => team.team_id);
 }
 
 /** Build team condition SQL for survey query */
-function buildTeamCondition(teamIds: number[]): string {
-  return teamIds.length > 0 ?
-      `(sa.assignment_type = 'team' AND sa.team_id IN (${teamIds.map(() => '?').join(',')}))`
-    : `(sa.assignment_type = 'team' AND 1=0)`;
+function buildTeamCondition(
+  teamIds: number[],
+  startParamIndex: number,
+): { sql: string; paramCount: number } {
+  if (teamIds.length === 0) {
+    return { sql: `(sa.assignment_type = 'team' AND 1=0)`, paramCount: 0 };
+  }
+  // PostgreSQL: Generate sequential $5, $6, $7... for each team ID
+  const placeholders = teamIds
+    .map((_: number, idx: number) => `$${startParamIndex + idx}`)
+    .join(',');
+  return {
+    sql: `(sa.assignment_type = 'team' AND sa.team_id IN (${placeholders}))`,
+    paramCount: teamIds.length,
+  };
 }
 
-/** Build employee survey query */
-function buildEmployeeSurveyQuery(teamCondition: string): string {
-  return `SELECT DISTINCT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name,
+/** Build employee survey query - PostgreSQL: MAX() for JOINed non-aggregated columns */
+function buildEmployeeSurveyQuery(teamCondition: string, userIdParamIndex: number): string {
+  return `SELECT s.*,
+    MAX(u.first_name) as creator_first_name,
+    MAX(u.last_name) as creator_last_name,
     COUNT(DISTINCT sr.id) as response_count,
     COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
     FROM surveys s LEFT JOIN users u ON s.created_by = u.id
     LEFT JOIN survey_responses sr ON s.id = sr.survey_id
     INNER JOIN survey_assignments sa ON s.id = sa.survey_id
-    WHERE s.tenant_id = ? AND (
-      sa.assignment_type = 'all_users' OR (sa.assignment_type = 'area' AND sa.area_id = ?)
-      OR (sa.assignment_type = 'department' AND sa.department_id = ?)
-      OR ${teamCondition} OR (sa.assignment_type = 'user' AND sa.user_id = ?))`;
+    WHERE s.tenant_id = $1 AND (
+      sa.assignment_type = 'all_users' OR (sa.assignment_type = 'area' AND sa.area_id = $2)
+      OR (sa.assignment_type = 'department' AND sa.department_id = $3)
+      OR ${teamCondition} OR (sa.assignment_type = 'user' AND sa.user_id = $${userIdParamIndex}))`;
 }
 
 /**
@@ -458,17 +475,26 @@ export async function getAllSurveysByTenantForEmployee(
 
   const { department_id: departmentId, area_id: areaId } = userRow;
   const teamIds = await getEmployeeTeamIds(employeeUserId, tenantId);
-  const teamCondition = buildTeamCondition(teamIds);
 
-  let query = buildEmployeeSurveyQuery(teamCondition);
+  // PostgreSQL: Sequential parameter numbering
+  // $1 = tenantId, $2 = areaId, $3 = departmentId, $4...$N = teamIds, $N+1 = employeeUserId
+  const teamStartIndex = 4; // teamIds start at $4
+  const teamConditionResult = buildTeamCondition(teamIds, teamStartIndex);
+  const userIdParamIndex = teamStartIndex + teamConditionResult.paramCount;
+
+  let query = buildEmployeeSurveyQuery(teamConditionResult.sql, userIdParamIndex);
   const params: unknown[] = [tenantId, areaId, departmentId, ...teamIds, employeeUserId];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   if (status !== undefined) {
-    query += ' AND s.status = ?';
+    const paramIndex = params.length + 1;
+    query += ` AND s.status = $${paramIndex}`;
     params.push(status);
   }
 
-  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+  const limitParamIndex = params.length + 1;
+  const offsetParamIndex = params.length + 2;
+  query += ` GROUP BY s.id ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -489,19 +515,20 @@ export async function getAllSurveysByTenantForAdmin(
   const { status, page = 1, limit = 20 } = filters;
   const offset = (page - 1) * limit;
 
+  // PostgreSQL: Use MAX() for non-aggregated columns from LEFT JOIN to satisfy GROUP BY requirements
   let query = `
-      SELECT DISTINCT
+      SELECT
         s.*,
-        u.first_name as creator_first_name,
-        u.last_name as creator_last_name,
+        MAX(u.first_name) as creator_first_name,
+        MAX(u.last_name) as creator_last_name,
         COUNT(DISTINCT sr.id) as response_count,
         COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
       LEFT JOIN survey_assignments sa ON s.id = sa.survey_id
-      LEFT JOIN admin_department_permissions adp ON adp.admin_user_id = ? AND adp.tenant_id = s.tenant_id
-      WHERE s.tenant_id = ?
+      LEFT JOIN admin_department_permissions adp ON adp.admin_user_id = $1 AND adp.tenant_id = s.tenant_id
+      WHERE s.tenant_id = $2
       AND (
         -- Admin can see surveys assigned to all users
         sa.assignment_type = 'all_users'
@@ -510,21 +537,25 @@ export async function getAllSurveysByTenantForAdmin(
         sa.assignment_type = 'area'
         OR
         -- Admin can see surveys assigned to their departments
-        (sa.assignment_type = 'department' AND sa.department_id = adp.department_id AND adp.can_read = 1)
+        (sa.assignment_type = 'department' AND sa.department_id = adp.department_id AND adp.can_read = true)
         OR
         -- Admin created the survey
-        s.created_by = ?
+        s.created_by = $3
       )
     `;
 
   const params: unknown[] = [adminUserId, tenantId, adminUserId];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   if (status !== undefined) {
-    query += ' AND s.status = ?';
+    const paramIndex = params.length + 1;
+    query += ` AND s.status = $${paramIndex}`;
     params.push(status);
   }
 
-  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+  const limitParamIndex = params.length + 1;
+  const offsetParamIndex = params.length + 2;
+  query += ` GROUP BY s.id ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -542,7 +573,8 @@ async function loadQuestionOptions(
 ): Promise<Map<number, DbSurveyQuestionOption[]>> {
   if (questionIds.length === 0) return new Map();
 
-  const placeholders = questionIds.map(() => '?').join(',');
+  // PostgreSQL: Generate sequential $1, $2, $3... for each question ID
+  const placeholders = questionIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
   const [options] = await typedQuery<DbSurveyQuestionOption[]>(
     `
       SELECT id, question_id, option_text, order_position
@@ -588,7 +620,7 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
         u.last_name as creator_last_name
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
-      WHERE s.id = ? AND s.tenant_id = ?
+      WHERE s.id = $1 AND s.tenant_id = $2
     `,
     [surveyId, tenantId],
   );
@@ -612,7 +644,7 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
   const [questions] = await typedQuery<DbSurveyQuestion[]>(
     `
       SELECT * FROM survey_questions
-      WHERE survey_id = ?
+      WHERE survey_id = $1
       ORDER BY order_index
     `,
     [surveyId],
@@ -638,7 +670,7 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
   const [assignments] = await typedQuery<DbSurveyAssignment[]>(
     `
       SELECT * FROM survey_assignments
-      WHERE survey_id = ?
+      WHERE survey_id = $1
     `,
     [surveyId],
   );
@@ -663,7 +695,7 @@ export async function getSurveyByUUID(
         u.last_name as creator_last_name
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
-      WHERE s.uuid = ? AND s.tenant_id = ?
+      WHERE s.uuid = $1 AND s.tenant_id = $2
     `,
     [surveyUUID, tenantId],
   );
@@ -687,7 +719,7 @@ export async function getSurveyByUUID(
   const [questions] = await typedQuery<DbSurveyQuestion[]>(
     `
       SELECT * FROM survey_questions
-      WHERE survey_id = ?
+      WHERE survey_id = $1
       ORDER BY order_index
     `,
     [survey.id],
@@ -713,7 +745,7 @@ export async function getSurveyByUUID(
   const [assignments] = await typedQuery<DbSurveyAssignment[]>(
     `
       SELECT * FROM survey_assignments
-      WHERE survey_id = ?
+      WHERE survey_id = $1
     `,
     [survey.id],
   );
@@ -736,7 +768,7 @@ async function updateSurveyQuestions(
   if (!questions) return;
 
   // Delete existing questions (cascade will handle options)
-  await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
+  await connection.query('DELETE FROM survey_questions WHERE survey_id = $1', [surveyId]);
 
   // Add new questions (reuse insertSurveyQuestions logic)
   for (const [index, question] of questions.entries()) {
@@ -744,7 +776,7 @@ async function updateSurveyQuestions(
       `
         INSERT INTO survey_questions (
           tenant_id, survey_id, question_text, question_type, is_required, order_index
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         tenantId,
@@ -779,7 +811,7 @@ async function updateSurveyAssignments(
   if (assignments === undefined) return;
 
   // Delete existing assignments
-  await connection.query('DELETE FROM survey_assignments WHERE survey_id = ?', [surveyId]);
+  await connection.query('DELETE FROM survey_assignments WHERE survey_id = $1', [surveyId]);
 
   // Add new assignments
   if (assignments.length > 0) {
@@ -788,7 +820,7 @@ async function updateSurveyAssignments(
         `
           INSERT INTO survey_assignments (
             tenant_id, survey_id, assignment_type, area_id, department_id, team_id, user_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         `,
         [
           tenantId,
@@ -824,17 +856,18 @@ export async function updateSurvey(
     await connection.beginTransaction();
 
     // Update survey main data
+    // PostgreSQL: Sequential parameter numbering $1, $2, $3...
     await connection.query(
       `
         UPDATE surveys SET
-          title = ?,
-          description = ?,
-          status = ?,
-          is_anonymous = ?,
-          is_mandatory = ?,
-          start_date = ?,
-          end_date = ?
-        WHERE id = ? AND tenant_id = ?
+          title = $1,
+          description = $2,
+          status = $3,
+          is_anonymous = $4,
+          is_mandatory = $5,
+          start_date = $6,
+          end_date = $7
+        WHERE id = $8 AND tenant_id = $9
       `,
       [
         surveyData.title,
@@ -868,7 +901,7 @@ export async function updateSurvey(
  */
 export async function deleteSurvey(surveyId: number, tenantId: number): Promise<boolean> {
   const [result] = await typedQuery<ResultSetHeader>(
-    'DELETE FROM surveys WHERE id = ? AND tenant_id = ?',
+    'DELETE FROM surveys WHERE id = $1 AND tenant_id = $2',
     [surveyId, tenantId],
   );
   return result.affectedRows > 0;
@@ -881,7 +914,7 @@ export async function getSurveyTemplates(tenantId: number): Promise<DbSurveyTemp
   const [templates] = await typedQuery<DbSurveyTemplate[]>(
     `
       SELECT * FROM survey_templates
-      WHERE tenant_id = ? OR is_public = 1
+      WHERE tenant_id = $1 OR is_public = true
       ORDER BY name
     `,
     [tenantId],
@@ -900,7 +933,7 @@ export async function createSurveyFromTemplate(
   const [templates] = await typedQuery<DbSurveyTemplate[]>(
     `
       SELECT * FROM survey_templates
-      WHERE id = ? AND (tenant_id = ? OR is_public = 1)
+      WHERE id = $1 AND (tenant_id = $2 OR is_public = true)
     `,
     [templateId, tenantId],
   );
@@ -978,7 +1011,7 @@ async function getChoiceQuestionStats(question: DbSurveyQuestion): Promise<Optio
     `
       SELECT sa.answer_options
       FROM survey_answers sa
-      WHERE sa.question_id = ?
+      WHERE sa.question_id = $1
       AND sa.answer_options IS NOT NULL
     `,
     [question.id],
@@ -1023,7 +1056,7 @@ async function getTextQuestionResponses(
       FROM survey_answers sa
       JOIN survey_responses sr ON sa.response_id = sr.id
       LEFT JOIN users u ON sr.user_id = u.id
-      WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
+      WHERE sa.question_id = $1 AND sa.answer_text IS NOT NULL
     `,
     [questionId],
   );
@@ -1044,7 +1077,7 @@ async function getRatingQuestionStats(questionId: number): Promise<RatingStat> {
         MAX(sa.answer_number) as max,
         COUNT(sa.answer_number) as total_responses
       FROM survey_answers sa
-      WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
+      WHERE sa.question_id = $1 AND sa.answer_number IS NOT NULL
     `,
     [questionId],
   );
@@ -1081,7 +1114,7 @@ async function getDateQuestionStats(questionId: number): Promise<OptionStat[]> {
         sa.answer_date,
         COUNT(*) as count
       FROM survey_answers sa
-      WHERE sa.question_id = ? AND sa.answer_date IS NOT NULL
+      WHERE sa.question_id = $1 AND sa.answer_date IS NOT NULL
       GROUP BY sa.answer_date
       ORDER BY count DESC, sa.answer_date DESC
     `,
@@ -1175,7 +1208,7 @@ export async function getSurveyStatistics(
         COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
         MIN(sr.started_at) as first_response, MAX(sr.completed_at) as last_response
         FROM surveys s LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-        WHERE s.id = ? AND s.tenant_id = ?`,
+        WHERE s.id = $1 AND s.tenant_id = $2`,
       [surveyId, tenantId],
     );
 
@@ -1206,14 +1239,15 @@ export async function getAssignmentsBySurveyIds(
     return [];
   }
 
-  // Create placeholders for IN clause (?, ?, ?)
-  const placeholders = surveyIds.map(() => '?').join(',');
+  // PostgreSQL: Generate sequential $1, $2, $3... for each survey ID, then tenant_id at the end
+  const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+  const tenantParamIndex = surveyIds.length + 1;
 
   const [assignments] = await typedQuery<DbSurveyAssignment[]>(
     `
       SELECT * FROM survey_assignments
       WHERE survey_id IN (${placeholders})
-        AND tenant_id = ?
+        AND tenant_id = $${tenantParamIndex}
       ORDER BY survey_id, id
     `,
     [...surveyIds, tenantId],

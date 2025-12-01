@@ -7,8 +7,6 @@
  * createShiftTemplate, getShiftPlans, createShiftPlan, etc.
  * This should be refactored to expose the full shift planning functionality.
  */
-import { Pool } from 'mysql2/promise';
-
 import type { DbShift, DbShiftTemplate } from '../routes/v2/shifts/shift-types.js';
 import {
   assignEmployeeToShift,
@@ -20,6 +18,7 @@ import {
   getShiftTemplates,
   getShiftsByPlan,
 } from '../routes/v2/shifts/shift.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {

@@ -66,14 +66,14 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
     department_id,
     team_lead_id,
     tenant_id,
-    is_active = 1,
-    is_archived = 0,
+    is_active = true,
+    is_archived = false,
   } = teamData;
   logger.info(`Creating new team: ${name}`);
 
   const query = `
       INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id, is_active, is_archived)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
 
   try {
@@ -105,19 +105,19 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name,
              (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) AS member_count,
-             (SELECT GROUP_CONCAT(CONCAT(users.first_name, ' ', users.last_name) SEPARATOR '\n')
+             (SELECT STRING_AGG(CONCAT(users.first_name, ' ', users.last_name), E'\n')
               FROM user_teams ut2
               LEFT JOIN users ON ut2.user_id = users.id
               WHERE ut2.team_id = t.id) AS member_names,
              (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) AS machine_count,
-             (SELECT GROUP_CONCAT(machines.name SEPARATOR '\n')
+             (SELECT STRING_AGG(machines.name, E'\n')
               FROM machine_teams mt2
               LEFT JOIN machines ON mt2.machine_id = machines.id
               WHERE mt2.team_id = t.id) AS machine_names
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id
-      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = ?' : ''}
+      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = $1' : ''}
       ORDER BY t.name
     `;
 
@@ -145,7 +145,7 @@ export async function findTeamById(id: number, tenantId: number): Promise<DbTeam
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id AND d.tenant_id = t.tenant_id
       LEFT JOIN users u ON t.team_lead_id = u.id AND u.tenant_id = t.tenant_id
-      WHERE t.id = ? AND t.tenant_id = ?
+      WHERE t.id = $1 AND t.tenant_id = $2
     `;
 
   try {
@@ -172,27 +172,27 @@ function buildUpdateQuery(teamData: TeamUpdateData): {
   const { name, description, department_id, team_lead_id, is_active, is_archived } = teamData;
 
   if (name !== undefined) {
-    updateFields.push('name = ?');
+    updateFields.push('name = $1');
     values.push(name);
   }
   if (description !== undefined) {
-    updateFields.push('description = ?');
+    updateFields.push('description = $1');
     values.push(description);
   }
   if (department_id !== undefined) {
-    updateFields.push('department_id = ?');
+    updateFields.push('department_id = $1');
     values.push(department_id);
   }
   if (team_lead_id !== undefined) {
-    updateFields.push('team_lead_id = ?');
+    updateFields.push('team_lead_id = $1');
     values.push(team_lead_id);
   }
   if (is_active !== undefined) {
-    updateFields.push('is_active = ?');
+    updateFields.push('is_active = $1');
     values.push(is_active);
   }
   if (is_archived !== undefined) {
-    updateFields.push('is_archived = ?');
+    updateFields.push('is_archived = $1');
     values.push(is_archived);
   }
 
@@ -214,10 +214,11 @@ export async function updateTeam(
   }
 
   // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant updates
+  const paramCount = values.length;
   const query = `
       UPDATE teams
       SET ${updateFields.join(', ')}
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $${paramCount + 1} AND tenant_id = $${paramCount + 2}
     `;
   values.push(id, tenantId);
 
@@ -238,7 +239,7 @@ export async function updateTeam(
 export async function deleteTeam(id: number, tenantId: number): Promise<boolean> {
   logger.info(`Deleting team ${String(id)} for tenant ${String(tenantId)}`);
   // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant deletions
-  const query = 'DELETE FROM teams WHERE id = ? AND tenant_id = ?';
+  const query = 'DELETE FROM teams WHERE id = $1 AND tenant_id = $2';
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
@@ -264,7 +265,7 @@ export async function addUserToTeam(
   logger.info(
     `Adding user ${String(userId)} to team ${String(teamId)} for tenant ${String(tenantId)}`,
   );
-  const query = 'INSERT INTO user_teams (user_id, team_id, tenant_id) VALUES (?, ?, ?)';
+  const query = 'INSERT INTO user_teams (user_id, team_id, tenant_id) VALUES ($1, $2, $3)';
 
   try {
     await executeQuery(query, [userId, teamId, tenantId]);
@@ -286,7 +287,7 @@ export async function addUserToTeam(
 
 export async function removeUserFromTeam(userId: number, teamId: number): Promise<boolean> {
   logger.info(`Removing user ${String(userId)} from team ${String(teamId)}`);
-  const query = 'DELETE FROM user_teams WHERE user_id = ? AND team_id = ?';
+  const query = 'DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2';
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [userId, teamId]);
@@ -310,7 +311,7 @@ export async function getTeamMembers(teamId: number): Promise<DbTeamMember[]> {
       SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
       FROM users u
       JOIN user_teams ut ON u.id = ut.user_id
-      WHERE ut.team_id = ?
+      WHERE ut.team_id = $1
     `;
 
   try {
@@ -330,7 +331,7 @@ export async function getUserTeams(userId: number): Promise<DbTeam[]> {
       FROM teams t
       JOIN user_teams ut ON t.id = ut.team_id
       LEFT JOIN departments d ON t.department_id = d.id
-      WHERE ut.user_id = ?
+      WHERE ut.user_id = $1
     `;
 
   try {
@@ -351,7 +352,7 @@ export async function getTeamMachines(
       SELECT m.id, m.name, m.model
       FROM machines m
       JOIN machine_teams mt ON m.id = mt.machine_id
-      WHERE mt.team_id = ?
+      WHERE mt.team_id = $1
     `;
 
   try {

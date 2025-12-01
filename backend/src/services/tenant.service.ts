@@ -2,8 +2,6 @@
  * Tenant Service
  * Handles tenant-related business logic
  */
-import { Pool } from 'mysql2/promise';
-
 // ESLint incorrectly flags Model/Class imports as naming convention violations
 // Models are exported as default classes with PascalCase names, which is correct
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -16,6 +14,7 @@ import {
   findTenantById,
 } from '../routes/v2/tenants/tenant.model.js';
 import type { DatabaseTenant } from '../types/models.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces
 interface TenantData {

@@ -57,8 +57,8 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
     description,
     department_lead_id: departmentLeadId,
     area_id: areaId,
-    is_active: isActive = 1,
-    is_archived: isArchived = 0,
+    is_active: isActive = true,
+    is_archived: isArchived = false,
     tenant_id: tenantId,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
@@ -66,7 +66,7 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
   try {
     const query = `
       INSERT INTO departments (name, description, department_lead_id, area_id, is_active, is_archived, tenant_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
     const params = [name, description, departmentLeadId, areaId, isActive, isArchived, tenantId];
 
@@ -83,16 +83,16 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
 const FIND_ALL_DEPARTMENTS_QUERY = `
   WITH employee_counts AS (
     SELECT ud.department_id, COUNT(*) as count,
-      GROUP_CONCAT(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, u.username))
-        ORDER BY u.last_name, u.first_name SEPARATOR '\n') as names
+      STRING_AGG(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, u.username)),
+        E'\n' ORDER BY u.last_name, u.first_name) as names
     FROM user_departments ud
     JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
-    WHERE ud.tenant_id = ? AND u.is_active = 1 AND u.is_archived = 0
+    WHERE ud.tenant_id = $1 AND u.is_active = true AND u.is_archived = false
     GROUP BY ud.department_id
   ),
   team_counts AS (
     SELECT department_id, COUNT(*) as count,
-      GROUP_CONCAT(name ORDER BY name SEPARATOR '\n') as names
+      STRING_AGG(name, E'\n' ORDER BY name) as names
     FROM teams GROUP BY department_id
   )
   SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as areaName,
@@ -103,7 +103,7 @@ const FIND_ALL_DEPARTMENTS_QUERY = `
   LEFT JOIN areas a ON d.area_id = a.id
   LEFT JOIN employee_counts ec ON ec.department_id = d.id
   LEFT JOIN team_counts tc ON tc.department_id = d.id
-  WHERE d.tenant_id = ? AND d.is_active = 1
+  WHERE d.tenant_id = $2 AND d.is_active = true
   ORDER BY d.name`;
 
 export async function findAllDepartments(tenantId: number): Promise<DbDepartment[]> {
@@ -118,7 +118,7 @@ export async function findAllDepartments(tenantId: number): Promise<DbDepartment
   } catch (error: unknown) {
     logger.warn(`Error with extended query: ${(error as Error).message}, falling back to simple`);
     const [rows] = await executeQuery<DbDepartment[]>(
-      'SELECT * FROM departments WHERE tenant_id = ? AND is_active = 1 ORDER BY name',
+      'SELECT * FROM departments WHERE tenant_id = $1 AND is_active = true ORDER BY name',
       [tenantId],
     );
     logger.info(`Retrieved ${rows.length} departments with simple query`);
@@ -131,7 +131,7 @@ export async function findDepartmentById(
   tenantId: number,
 ): Promise<DbDepartment | null> {
   logger.info(`Fetching department with ID ${id} for tenant ${tenantId}`);
-  const query = 'SELECT * FROM departments WHERE id = ? AND tenant_id = ?';
+  const query = 'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2';
 
   try {
     const [rows] = await executeQuery<DbDepartment[]>(query, [id, tenantId]);
@@ -156,25 +156,30 @@ export async function updateDepartment(
   const fields: string[] = [];
   const values: unknown[] = [];
 
-  // Only update provided fields
+  // Only update provided fields - PostgreSQL dynamic $N parameter numbering
   if (departmentData.name !== undefined) {
-    fields.push('name = ?');
+    const paramIndex = values.length + 1;
+    fields.push(`name = $${paramIndex}`);
     values.push(departmentData.name);
   }
   if (departmentData.description !== undefined) {
-    fields.push('description = ?');
+    const paramIndex = values.length + 1;
+    fields.push(`description = $${paramIndex}`);
     values.push(departmentData.description);
   }
   if (departmentData.department_lead_id !== undefined) {
-    fields.push('department_lead_id = ?');
+    const paramIndex = values.length + 1;
+    fields.push(`department_lead_id = $${paramIndex}`);
     values.push(departmentData.department_lead_id);
   }
   if (departmentData.area_id !== undefined) {
-    fields.push('area_id = ?');
+    const paramIndex = values.length + 1;
+    fields.push(`area_id = $${paramIndex}`);
     values.push(departmentData.area_id);
   }
   if (departmentData.is_active !== undefined) {
-    fields.push('is_active = ?');
+    const paramIndex = values.length + 1;
+    fields.push(`is_active = $${paramIndex}`);
     values.push(departmentData.is_active);
   }
 
@@ -182,8 +187,9 @@ export async function updateDepartment(
     return false;
   }
 
+  const idParamIndex = values.length + 1;
   values.push(id);
-  const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = ?`;
+  const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = $${idParamIndex}`;
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, values);
@@ -201,7 +207,7 @@ export async function updateDepartment(
 
 export async function deleteDepartment(id: number): Promise<boolean> {
   logger.info(`Deleting department ${id}`);
-  const query = 'DELETE FROM departments WHERE id = ?';
+  const query = 'DELETE FROM departments WHERE id = $1';
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id]);
@@ -224,7 +230,7 @@ export async function getUsersByDepartment(departmentId: number): Promise<DbUser
       SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
       FROM users u
       JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
-      WHERE ud.department_id = ?
+      WHERE ud.department_id = $1
     `;
 
   try {
@@ -246,7 +252,7 @@ export async function countDepartmentsByTenant(tenantId: number): Promise<number
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
-      'SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?',
+      'SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1',
       [tenantId],
     );
     return rows[0]?.count ?? 0;
@@ -263,7 +269,7 @@ export async function countTeamsByTenant(tenantId: number): Promise<number> {
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
-      'SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?',
+      'SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1',
       [tenantId],
     );
     return rows[0]?.count ?? 0;

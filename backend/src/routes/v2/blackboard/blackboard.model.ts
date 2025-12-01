@@ -139,15 +139,15 @@ function applyAccessControl(
       EXISTS (
         SELECT 1 FROM blackboard_entry_organizations beo
         JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
-        WHERE beo.entry_id = e.id AND aap.admin_user_id = ?
+        WHERE beo.entry_id = e.id AND aap.admin_user_id = $1
       )
       OR
       -- Entries assigned to departments the admin has access to (direct or via area)
       EXISTS (
         SELECT 1 FROM blackboard_entry_organizations beo
         JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
-        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $2
+        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $3
         WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
       )
       OR
@@ -156,8 +156,8 @@ function applyAccessControl(
         SELECT 1 FROM blackboard_entry_organizations beo
         JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
         JOIN departments d ON t.department_id = d.id
-        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $4
+        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $5
         WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
       )
     )`;
@@ -166,10 +166,13 @@ function applyAccessControl(
   }
 
   // Employee users: Filter by their department/team
+  // PostgreSQL: Dynamic $N parameter numbering
+  const deptParamIndex = params.length + 1;
+  const teamParamIndex = params.length + 2;
   query += ` AND (
     e.org_level = 'company' OR
-    (e.org_level = 'department' AND e.org_id = ?) OR
-    (e.org_level = 'team' AND e.org_id = ?)
+    (e.org_level = 'department' AND e.org_id = $${deptParamIndex}) OR
+    (e.org_level = 'team' AND e.org_id = $${teamParamIndex})
   )`;
   params.push(departmentId ?? 0, teamId ?? 0);
 
@@ -198,8 +201,10 @@ function buildQueryFilters(
   const updatedParams = [...params];
 
   // Apply org level filter
+  // PostgreSQL: Dynamic $N parameter numbering
   if (options.filter !== undefined && options.filter !== 'all') {
-    updatedQuery += ' AND e.org_level = ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND e.org_level = $${paramIndex}`;
     updatedParams.push(options.filter);
   }
 
@@ -217,14 +222,16 @@ function buildQueryFilters(
 
   // Apply search filter
   if (options.search !== undefined && options.search !== '') {
-    updatedQuery += ' AND (e.title LIKE ? OR e.content LIKE ?)';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND (e.title LIKE $${paramIndex} OR e.content LIKE $${paramIndex + 1})`;
     const searchTerm = `%${options.search}%`;
     updatedParams.push(searchTerm, searchTerm);
   }
 
   // Apply priority filter
   if (options.priority !== undefined && options.priority !== '') {
-    updatedQuery += ' AND e.priority = ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND e.priority = $${paramIndex}`;
     updatedParams.push(options.priority);
   }
 
@@ -277,7 +284,7 @@ async function getTotalEntriesCount(
   const countQuery = `
     SELECT COUNT(*) as total
     FROM blackboard_entries e
-    WHERE e.tenant_id = ? AND e.status = ?
+    WHERE e.tenant_id = $1 AND e.status = $2
   `;
   const countBaseParams: unknown[] = [tenant_id, status];
 
@@ -347,8 +354,8 @@ async function fetchEntries(
            (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
     FROM blackboard_entries e
     LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-    WHERE e.tenant_id = ? AND e.status = ?
+    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+    WHERE e.tenant_id = $2 AND e.status = $3
   `;
 
   const baseParams: unknown[] = [userId, tenant_id, status];
@@ -376,7 +383,9 @@ async function fetchEntries(
     baseParams,
     entryFilters,
   );
-  const finalQuery = `${filteredQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
+  const limitIndex = queryParams.length + 1;
+  const offsetIndex = queryParams.length + 2;
+  const finalQuery = `${filteredQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir} LIMIT $${limitIndex} OFFSET $${offsetIndex}`;
   queryParams.push(Number.parseInt(limit.toString(), 10), (page - 1) * limit);
   const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
   return entries;
@@ -512,7 +521,7 @@ async function checkAdminEntryAccess(
   // Check if entry has no org assignments (company-wide)
   const [noAssignments] = await executeQuery<RowDataPacket[]>(
     `SELECT 1 FROM blackboard_entries e
-     WHERE e.id = ? AND e.tenant_id = ?
+     WHERE e.id = $1 AND e.tenant_id = $2
      AND NOT EXISTS (SELECT 1 FROM blackboard_entry_organizations WHERE entry_id = e.id)`,
     [entryId, tenantId],
   );
@@ -524,7 +533,7 @@ async function checkAdminEntryAccess(
   const [areaAccess] = await executeQuery<RowDataPacket[]>(
     `SELECT 1 FROM blackboard_entry_organizations beo
      JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
-     WHERE beo.entry_id = ? AND aap.admin_user_id = ?`,
+     WHERE beo.entry_id = $1 AND aap.admin_user_id = $2`,
     [entryId, userId],
   );
   if (areaAccess.length > 0) {
@@ -535,9 +544,9 @@ async function checkAdminEntryAccess(
   const [deptAccess] = await executeQuery<RowDataPacket[]>(
     `SELECT 1 FROM blackboard_entry_organizations beo
      JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
-     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
-     WHERE beo.entry_id = ? AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
+     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $1
+     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $2
+     WHERE beo.entry_id = $3 AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
     [userId, userId, entryId],
   );
   if (deptAccess.length > 0) {
@@ -549,9 +558,9 @@ async function checkAdminEntryAccess(
     `SELECT 1 FROM blackboard_entry_organizations beo
      JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
      JOIN departments d ON t.department_id = d.id
-     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
-     WHERE beo.entry_id = ? AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
+     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $1
+     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $2
+     WHERE beo.entry_id = $3 AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
     [userId, userId, entryId],
   );
   if (teamAccess.length > 0) {
@@ -620,8 +629,8 @@ export async function getEntryById(
                (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-        WHERE e.id = ? AND e.tenant_id = ?
+        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+        WHERE e.id = $2 AND e.tenant_id = $3
       `;
 
     const [entries] = await executeQuery<DbBlackboardEntry[]>(query, [userId, id, tenant_id]);
@@ -686,8 +695,8 @@ export async function getEntryByUuid(
                (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-        WHERE e.uuid = ? AND e.tenant_id = ?
+        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+        WHERE e.uuid = $2 AND e.tenant_id = $3
       `;
 
     const [entries] = await executeQuery<DbBlackboardEntry[]>(query, [userId, uuid, tenant_id]);
@@ -757,7 +766,7 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
     const query = `
         INSERT INTO blackboard_entries
         (uuid, tenant_id, title, content, org_level, org_id, area_id, author_id, expires_at, priority, color)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -803,11 +812,13 @@ function buildUpdateQuery(entryData: EntryUpdateData): { query: string; params: 
     ['status', 'status', (v: EntryValue) => v],
   ];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   for (const [key, column, transform] of fields) {
     // eslint-disable-next-line security/detect-object-injection -- key is from predefined array, not user input
     const value = entryData[key];
     if (value !== undefined) {
-      query += `, ${column} = ?`;
+      const paramIndex = queryParams.length + 1;
+      query += `, ${column} = $${paramIndex}`;
       queryParams.push(transform(value as EntryValue));
     }
   }
@@ -831,7 +842,9 @@ export async function updateEntry(
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
 
     // Finish query
-    const finalQuery = query + ` WHERE ${idColumn} = ? AND tenant_id = ?`;
+    const paramIndex = params.length + 1;
+    const finalQuery =
+      query + ` WHERE ${idColumn} = $${paramIndex} AND tenant_id = $${paramIndex + 1}`;
     params.push(id, tenant_id);
 
     // Execute update
@@ -841,7 +854,7 @@ export async function updateEntry(
     let numericId: number;
     if (typeof id === 'string') {
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        'SELECT id FROM blackboard_entries WHERE uuid = ? AND tenant_id = ?',
+        'SELECT id FROM blackboard_entries WHERE uuid = $1 AND tenant_id = $2',
         [id, tenant_id],
       );
       const foundEntry = entries[0];
@@ -868,7 +881,7 @@ export async function deleteEntry(id: number | string, tenant_id: number): Promi
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
 
     // Delete entry
-    const query = `DELETE FROM blackboard_entries WHERE ${idColumn} = ? AND tenant_id = ?`;
+    const query = `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
 
     return result.affectedRows > 0;
@@ -887,7 +900,7 @@ export async function confirmEntry(entryId: number | string, userId: number): Pr
     interface UserRow extends RowDataPacket {
       tenant_id: number;
     }
-    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = ?', [
+    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = $1', [
       userId,
     ]);
     const userRow = users[0];
@@ -901,7 +914,7 @@ export async function confirmEntry(entryId: number | string, userId: number): Pr
 
     // Check if entry exists and belongs to same tenant
     const [entries] = await executeQuery<DbBlackboardEntry[]>(
-      `SELECT id FROM blackboard_entries WHERE ${idColumn} = ? AND tenant_id = ?`,
+      `SELECT id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [entryId, userTenantId],
     );
 
@@ -914,7 +927,7 @@ export async function confirmEntry(entryId: number | string, userId: number): Pr
 
     // Check if already confirmed
     const [confirmations] = await executeQuery<RowDataPacket[]>(
-      'SELECT * FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?',
+      'SELECT * FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
       [numericId, userId],
     );
 
@@ -924,7 +937,7 @@ export async function confirmEntry(entryId: number | string, userId: number): Pr
 
     // Add confirmation
     await executeQuery(
-      'INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES (?, ?, ?)',
+      'INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES ($1, $2, $3)',
       [userTenantId, numericId, userId],
     );
 
@@ -944,7 +957,7 @@ export async function unconfirmEntry(entryId: number | string, userId: number): 
     interface UserRow extends RowDataPacket {
       tenant_id: number;
     }
-    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = ?', [
+    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = $1', [
       userId,
     ]);
     const userRow = users[0];
@@ -958,7 +971,7 @@ export async function unconfirmEntry(entryId: number | string, userId: number): 
 
     // Get numeric entry ID
     const [entries] = await executeQuery<DbBlackboardEntry[]>(
-      `SELECT id FROM blackboard_entries WHERE ${idColumn} = ? AND tenant_id = ?`,
+      `SELECT id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [entryId, userTenantId],
     );
 
@@ -971,7 +984,7 @@ export async function unconfirmEntry(entryId: number | string, userId: number): 
 
     // Delete confirmation
     const [result] = await executeQuery<ResultSetHeader>(
-      'DELETE FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?',
+      'DELETE FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
       [numericId, userId],
     );
 
@@ -995,7 +1008,7 @@ export async function getConfirmationStatus(
 
     // Get the entry first
     const [entries] = await executeQuery<DbBlackboardEntry[]>(
-      `SELECT id, org_level, org_id FROM blackboard_entries WHERE ${idColumn} = ? AND tenant_id = ?`,
+      `SELECT id, org_level, org_id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [entryId, tenant_id],
     );
 
@@ -1012,8 +1025,8 @@ export async function getConfirmationStatus(
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as confirmed,
                c.confirmed_at
         FROM users u
-        LEFT JOIN blackboard_confirmations c ON u.id = c.user_id AND c.entry_id = ?
-        WHERE u.tenant_id = ?
+        LEFT JOIN blackboard_confirmations c ON u.id = c.user_id AND c.entry_id = $1
+        WHERE u.tenant_id = $2
       `;
 
     const queryParams: unknown[] = [numericId, tenant_id];
@@ -1021,12 +1034,12 @@ export async function getConfirmationStatus(
     // Filter by org level
     // N:M REFACTORING: department filter now uses user_departments table
     if (entry.org_level === 'department') {
-      usersQuery +=
-        ' AND u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = ? AND ud.tenant_id = u.tenant_id)';
+      const paramIndex = queryParams.length + 1;
+      usersQuery += ` AND u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = $${paramIndex} AND ud.tenant_id = u.tenant_id)`;
       queryParams.push(entry.org_id);
     } else if (entry.org_level === 'team') {
-      usersQuery +=
-        ' AND u.id IN (SELECT ut.user_id FROM user_teams ut WHERE ut.team_id = ? AND ut.tenant_id = u.tenant_id)';
+      const paramIndex = queryParams.length + 1;
+      usersQuery += ` AND u.id IN (SELECT ut.user_id FROM user_teams ut WHERE ut.team_id = $${paramIndex} AND ut.tenant_id = u.tenant_id)`;
       queryParams.push(entry.org_id);
     }
 
@@ -1061,8 +1074,8 @@ const DASHBOARD_BASE_QUERY = `
          (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
   FROM blackboard_entries e
   LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-  LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-  WHERE e.tenant_id = ? AND e.status = 'active'
+  LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+  WHERE e.tenant_id = $2 AND e.status = 'active'
 `;
 
 /**
@@ -1076,21 +1089,21 @@ const ADMIN_VISIBILITY_FILTER = ` AND (
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
-    WHERE beo.entry_id = e.id AND aap.admin_user_id = ?
+    WHERE beo.entry_id = e.id AND aap.admin_user_id = $1
   )
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
-    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $2
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $3
     WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
   )
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
     JOIN departments d ON t.department_id = d.id
-    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
-    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $4
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $5
     WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
   )
 )`;
@@ -1120,11 +1133,15 @@ function buildVisibilityFilter(
   }
 
   // Employee users: simple department/team filter
+  // Note: These will be appended after baseParams, so we use relative indexing
+  // Since buildDashboardQuery adds userId and tenant_id first ($1, $2), these become $3 and $4
+  // However, if admin filter is applied, it uses 5 params, so we need to calculate dynamically
+  // For simplicity, employee filter adds 2 params - they will be added at the end
   return {
     sql: ` AND (
       e.org_level = 'company' OR
-      (e.org_level = 'department' AND e.org_id = ?) OR
-      (e.org_level = 'team' AND e.org_id = ?)
+      (e.org_level = 'department' AND e.org_id = $3) OR
+      (e.org_level = 'team' AND e.org_id = $4)
     )`,
     params: [departmentId ?? 0, teamId ?? 0],
   };
@@ -1146,9 +1163,12 @@ function buildDashboardQuery(
   const baseParams: unknown[] = [userId, tenant_id];
   const visibility = buildVisibilityFilter(role, userId, departmentId, teamId, hasFullAccess);
 
+  // PostgreSQL: Dynamic LIMIT placeholder based on total params
+  // baseParams (2) + visibility.params (variable) + limit (1)
+  const limitParamIndex = baseParams.length + visibility.params.length + 1;
   const orderClause = `
     ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.created_at DESC
-    LIMIT ?
+    LIMIT $${limitParamIndex}
   `;
 
   return {
@@ -1216,7 +1236,7 @@ export async function getComments(
     let numericId: number;
     if (typeof entryId === 'string') {
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        'SELECT id FROM blackboard_entries WHERE uuid = ? AND tenant_id = ?',
+        'SELECT id FROM blackboard_entries WHERE uuid = $1 AND tenant_id = $2',
         [entryId, tenantId],
       );
       const foundEntry = entries[0];
@@ -1238,7 +1258,7 @@ export async function getComments(
               u.profile_picture as user_profile_picture
        FROM blackboard_comments c
        LEFT JOIN users u ON c.user_id = u.id AND u.tenant_id = c.tenant_id
-       WHERE c.entry_id = ? AND c.tenant_id = ?
+       WHERE c.entry_id = $1 AND c.tenant_id = $2
        ORDER BY c.created_at ASC`,
       [numericId, tenantId],
     );
@@ -1273,7 +1293,7 @@ export async function addComment(
     );
     if (typeof entryId === 'string') {
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        'SELECT id FROM blackboard_entries WHERE uuid = ? AND tenant_id = ?',
+        'SELECT id FROM blackboard_entries WHERE uuid = $1 AND tenant_id = $2',
         [entryId, tenantId],
       );
       const foundEntry = entries[0];
@@ -1291,7 +1311,7 @@ export async function addComment(
 
     const [result] = await executeQuery<ResultSetHeader>(
       `INSERT INTO blackboard_comments (tenant_id, entry_id, user_id, comment, is_internal)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [tenantId, numericId, userId, comment, isInternal ? 1 : 0],
     );
 
@@ -1310,7 +1330,7 @@ export async function addComment(
 export async function deleteComment(commentId: number, tenantId: number): Promise<boolean> {
   try {
     const [result] = await executeQuery<ResultSetHeader>(
-      'DELETE FROM blackboard_comments WHERE id = ? AND tenant_id = ?',
+      'DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2',
       [commentId, tenantId],
     );
 
@@ -1341,7 +1361,7 @@ export async function getCommentById(
               u.profile_picture as user_profile_picture
        FROM blackboard_comments c
        LEFT JOIN users u ON c.user_id = u.id AND u.tenant_id = c.tenant_id
-       WHERE c.id = ? AND c.tenant_id = ?`,
+       WHERE c.id = $1 AND c.tenant_id = $2`,
       [commentId, tenantId],
     );
 

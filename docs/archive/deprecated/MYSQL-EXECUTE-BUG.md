@@ -1,4 +1,18 @@
-# MySQL Execute Bug Documentation
+# ⚠️ DEPRECATED - MySQL Execute Bug Documentation
+
+> **🚨 DEPRECATED (November 2025)**
+>
+> This documentation is no longer relevant. Assixx has migrated from MySQL to **PostgreSQL 17** with Row Level Security (RLS).
+>
+> - MySQL is no longer used in this project
+> - All `execute()` vs `query()` issues are MySQL-specific and don't apply to PostgreSQL
+> - See `docs/POSTGRESQL-MIGRATION-PLAN.md` for the new database architecture
+>
+> **This file is kept for historical reference only.**
+
+---
+
+# MySQL Execute Bug Documentation (ARCHIVED)
 
 ## Problem Beschreibung (21.06.2025)
 

@@ -22,7 +22,9 @@
       "glob@>=11.0.0 <11.1.0": ">=11.1.0",
       "body-parser@>=2.2.0 <2.2.1": ">=2.2.1",
       "esbuild@<0.27.0": ">=0.27.0",
-      "tar@<7.5.2": ">=7.5.2"
+      "tar@<7.5.2": ">=7.5.2",
+      "test-exclude": "^7.0.1",
+      "express@>=5.0.0 <5.2.0": ">=5.2.0"
     }
   },
   "scripts": {
@@ -87,7 +89,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
@@ -114,7 +116,7 @@
     "@trivago/prettier-plugin-sort-imports": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.5",
+    "@types/express": "^5.0.6",
     "@types/hpp": "^0.2.7",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
@@ -149,11 +151,11 @@
     "markdownlint-cli": "^0.46.0",
     "nodemon": "^3.1.11",
     "playwright": "^1.57.0",
-    "prettier": "^3.7.1",
+    "prettier": "^3.7.3",
     "prettier-plugin-css-order": "^2.1.2",
     "purgecss": "7.0.2",
     "storybook": "10.1.0",
-    "stylelint": "^16.26.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-clean-order": "^8.0.0",
     "stylelint-config-standard": "^39.0.1",
     "stylelint-config-standard-scss": "^16.0.0",
@@ -161,10 +163,10 @@
     "stylelint-prettier": "^5.0.3",
     "stylelint-scss": "^6.12.1",
     "supertest": "^7.1.4",
-    "ts-jest": "^29.4.5",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.6"
   }
 }

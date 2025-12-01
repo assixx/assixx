@@ -40,7 +40,7 @@ export async function getShiftTemplates(tenantId: number): Promise<DbShiftTempla
   try {
     const query = `
       SELECT * FROM shift_templates
-      WHERE tenant_id = ? AND is_active = TRUE
+      WHERE tenant_id = $1 AND is_active = TRUE
       ORDER BY name ASC
     `;
 
@@ -85,7 +85,7 @@ export async function createShiftTemplate(
       INSERT INTO shift_templates
       (tenant_id, name, description, start_time, end_time, duration_hours,
        break_minutes, color, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -102,7 +102,7 @@ export async function createShiftTemplate(
 
     // Get the created template
     const [created] = await executeQuery<DbShiftTemplate[]>(
-      'SELECT * FROM shift_templates WHERE id = ?',
+      'SELECT * FROM shift_templates WHERE id = $1',
       [result.insertId],
     );
 
@@ -133,14 +133,19 @@ function applyShiftPlanAccessControl(
 
   if (role !== 'admin' && role !== 'root') {
     if (role === 'manager') {
-      updatedQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
+      const paramIndex = updatedParams.length + 1;
+      updatedQuery += SQL_FRAGMENTS.departmentFilter(paramIndex);
       updatedParams.push(departmentId);
     } else if (role === 'team_lead') {
-      updatedQuery += SQL_FRAGMENTS.TEAM_FILTER;
+      const paramIndex = updatedParams.length + 1;
+      updatedQuery += SQL_FRAGMENTS.teamFilter(paramIndex);
       updatedParams.push(teamId);
     } else {
       // Regular employees can only see published plans for their department/team
-      updatedQuery += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
+      // PostgreSQL: Dynamic $N parameter numbering, single quotes for string literals
+      const deptParamIndex = updatedParams.length + 1;
+      const teamParamIndex = updatedParams.length + 2;
+      updatedQuery += ` AND sp.status = 'published' AND (sp.department_id = $${deptParamIndex} OR sp.team_id = $${teamParamIndex})`;
       updatedParams.push(departmentId ?? 0, teamId ?? 0);
     }
   }
@@ -150,6 +155,7 @@ function applyShiftPlanAccessControl(
 
 /**
  * Apply filters to shift plan queries
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function applyShiftPlanFilters(
   query: string,
@@ -160,26 +166,31 @@ function applyShiftPlanFilters(
   const updatedParams = [...params];
 
   if (options.department_id != null && options.department_id !== 0) {
-    updatedQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += SQL_FRAGMENTS.departmentFilter(paramIndex);
     updatedParams.push(options.department_id);
   }
 
   if (options.team_id != null && options.team_id !== 0) {
-    updatedQuery += SQL_FRAGMENTS.TEAM_FILTER;
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += SQL_FRAGMENTS.teamFilter(paramIndex);
     updatedParams.push(options.team_id);
   }
 
   if (options.start_date != null && options.start_date !== '') {
-    updatedQuery += ' AND sp.end_date >= ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND sp.end_date >= $${paramIndex}`;
     updatedParams.push(options.start_date);
   }
 
   if (options.end_date != null && options.end_date !== '') {
-    updatedQuery += ' AND sp.start_date <= ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND sp.start_date <= $${paramIndex}`;
     updatedParams.push(options.end_date);
   }
 
-  updatedQuery += ' AND sp.status = ?';
+  const statusParamIndex = updatedParams.length + 1;
+  updatedQuery += ` AND sp.status = $${statusParamIndex}`;
   updatedParams.push(options.status ?? 'draft');
 
   return { query: updatedQuery, params: updatedParams };
@@ -193,7 +204,7 @@ async function executeCountQuery(
   teamId: number | null,
   options: ShiftPlanFilters,
 ): Promise<number> {
-  const baseCountQuery = 'SELECT COUNT(*) as total FROM shift_plans sp WHERE sp.tenant_id = ?';
+  const baseCountQuery = 'SELECT COUNT(*) as total FROM shift_plans sp WHERE sp.tenant_id = $1';
   const { query: countAccessQuery, params: countAccessParams } = applyShiftPlanAccessControl(
     baseCountQuery,
     [tenantId],
@@ -242,7 +253,7 @@ export async function getShiftPlans(
       LEFT JOIN users u ON sp.created_by = u.id
       LEFT JOIN departments d ON sp.department_id = d.id
       LEFT JOIN teams t ON sp.team_id = t.id
-      WHERE sp.tenant_id = ?
+      WHERE sp.tenant_id = $1
     `;
 
     // Apply access control and filters to main query
@@ -257,7 +268,7 @@ export async function getShiftPlans(
 
     // Add pagination
     const offset = (page - 1) * limit;
-    const paginatedQuery = filteredQuery + ' ORDER BY sp.start_date DESC LIMIT ? OFFSET ?';
+    const paginatedQuery = filteredQuery + ' ORDER BY sp.start_date DESC LIMIT $1 OFFSET $2';
     const paginatedParams = [...filteredParams, Number.parseInt(limit.toString(), 10), offset];
 
     // Execute main query
@@ -310,7 +321,7 @@ export async function createShiftPlan(planData: ShiftPlanData): Promise<DbShiftP
     const query = `
       INSERT INTO shift_plans
       (tenant_id, name, description, start_date, end_date, department_id, team_id, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -325,7 +336,7 @@ export async function createShiftPlan(planData: ShiftPlanData): Promise<DbShiftP
     ]);
 
     // Get the created plan
-    const [created] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = ?', [
+    const [created] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = $1', [
       result.insertId,
     ]);
 
@@ -356,17 +367,18 @@ export async function getShiftsByPlan(
       throw new Error('Access denied to this shift plan');
     }
 
+    // PostgreSQL: Use MAX() for non-aggregated columns from LEFT JOIN to satisfy GROUP BY requirements
     const query = `
-      SELECT s.*, st.name as template_name, st.color as template_color,
-             GROUP_CONCAT(
-               CONCAT(u.first_name, ' ', u.last_name, ':', sa.status)
-               SEPARATOR '; '
+      SELECT s.*, MAX(st.name) as template_name, MAX(st.color) as template_color,
+             STRING_AGG(
+               CONCAT(u.first_name, ' ', u.last_name, ':', sa.status),
+               '; '
              ) as assignments
       FROM shifts s
       LEFT JOIN shift_templates st ON s.template_id = st.id
       LEFT JOIN shift_assignments sa ON s.id = sa.shift_id
       LEFT JOIN users u ON sa.user_id = u.id
-      WHERE s.plan_id = ? AND s.tenant_id = ?
+      WHERE s.plan_id = $1 AND s.tenant_id = $2
       GROUP BY s.id
       ORDER BY s.date ASC, s.start_time ASC
     `;
@@ -424,7 +436,7 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
       INSERT INTO shifts
       (tenant_id, plan_id, template_id, date, start_time, end_time,
        required_employees, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -439,7 +451,7 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
     ]);
 
     // Get the created shift
-    const [created] = await executeQuery<DbShift[]>('SELECT * FROM shifts WHERE id = ?', [
+    const [created] = await executeQuery<DbShift[]>('SELECT * FROM shifts WHERE id = $1', [
       result.insertId,
     ]);
 
@@ -461,7 +473,7 @@ async function checkSameDayConflict(
   userId: number,
   tenantId: number,
 ): Promise<void> {
-  const [shiftInfo] = await executeQuery<DbShift[]>('SELECT date FROM shifts WHERE id = ?', [
+  const [shiftInfo] = await executeQuery<DbShift[]>('SELECT date FROM shifts WHERE id = $1', [
     shiftId,
   ]);
   if (shiftInfo.length === 0) return;
@@ -469,7 +481,7 @@ async function checkSameDayConflict(
   if (shiftData === undefined) throw new Error('Failed to retrieve shift information');
   const [dayAssignments] = await executeQuery<RowDataPacket[]>(
     `SELECT sa.* FROM shift_assignments sa JOIN shifts s ON sa.shift_id = s.id
-     WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?`,
+     WHERE sa.user_id = $1 AND s.date = $2 AND s.tenant_id = $3`,
     [userId, shiftData.date, tenantId],
   );
   if (dayAssignments.length > 0) {
@@ -493,7 +505,7 @@ export async function assignEmployeeToShift(
 
     // Check if already assigned to this specific shift
     const [existing] = await executeQuery<RowDataPacket[]>(
-      'SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?',
+      'SELECT * FROM shift_assignments WHERE shift_id = $1 AND user_id = $2',
       [shift_id, user_id],
     );
     if (existing.length > 0) throw new Error('Employee already assigned to this shift');
@@ -504,7 +516,7 @@ export async function assignEmployeeToShift(
     const query = `
       INSERT INTO shift_assignments
       (tenant_id, shift_id, user_id, assigned_by)
-      VALUES (?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -520,7 +532,7 @@ export async function assignEmployeeToShift(
       SELECT sa.*, u.first_name, u.last_name, u.username
       FROM shift_assignments sa
       JOIN users u ON sa.user_id = u.id
-      WHERE sa.id = ?
+      WHERE sa.id = $1
     `,
       [result.insertId],
     );
@@ -549,8 +561,8 @@ export async function getEmployeeAvailability(
   try {
     const query = `
       SELECT * FROM employee_availability
-      WHERE tenant_id = ? AND user_id = ?
-      AND date >= ? AND date <= ?
+      WHERE tenant_id = $1 AND user_id = $2
+      AND date >= $3 AND date <= $4
       ORDER BY date ASC
     `;
 
@@ -574,7 +586,7 @@ async function updateAvailabilityRecord(
   data: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   await executeQuery(
-    `UPDATE employee_availability SET availability_type = ?, start_time = ?, end_time = ?, notes = ?, updated_at = NOW() WHERE id = ?`,
+    `UPDATE employee_availability SET availability_type = $1, start_time = $2, end_time = $3, notes = $4, updated_at = NOW() WHERE id = $5`,
     [
       data.availability_type,
       data.start_time ?? null,
@@ -597,7 +609,7 @@ async function createAvailabilityRecord(
   data: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   const [result] = await executeQuery<ResultSetHeader>(
-    `INSERT INTO employee_availability (tenant_id, user_id, date, availability_type, start_time, end_time, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO employee_availability (tenant_id, user_id, date, availability_type, start_time, end_time, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       data.tenant_id,
       data.user_id,
@@ -609,7 +621,7 @@ async function createAvailabilityRecord(
     ],
   );
   const [created] = await executeQuery<DbEmployeeAvailability[]>(
-    'SELECT * FROM employee_availability WHERE id = ?',
+    'SELECT * FROM employee_availability WHERE id = $1',
     [result.insertId],
   );
   const availability = created[0];
@@ -633,7 +645,7 @@ export async function setEmployeeAvailability(
 
     // Check if availability already exists for this date
     const [existing] = await executeQuery<DbEmployeeAvailability[]>(
-      'SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?',
+      'SELECT * FROM employee_availability WHERE tenant_id = $1 AND user_id = $2 AND date = $3',
       [tenant_id, user_id, formatDateOnlyForMysql(date)],
     );
 
@@ -671,10 +683,10 @@ export async function getShiftExchangeRequests(
       LEFT JOIN shift_templates st ON s.template_id = st.id
       JOIN users u1 ON ser.requester_id = u1.id
       LEFT JOIN users u2 ON ser.target_user_id = u2.id
-      WHERE ser.tenant_id = ? AND (ser.requester_id = ? OR ser.target_user_id = ?)
-      AND ser.status = ?
+      WHERE ser.tenant_id = $1 AND (ser.requester_id = $2 OR ser.target_user_id = $3)
+      AND ser.status = $4
       ORDER BY ser.created_at DESC
-      LIMIT ?
+      LIMIT $5
     `;
 
     const [requests] = await executeQuery<DbShiftExchangeRequest[]>(query, [
@@ -716,7 +728,7 @@ export async function createShiftExchangeRequest(
     const query = `
       INSERT INTO shift_exchange_requests
       (tenant_id, shift_id, requester_id, target_user_id, exchange_type, target_shift_id, message)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -731,7 +743,7 @@ export async function createShiftExchangeRequest(
 
     // Get the created request
     const [created] = await executeQuery<DbShiftExchangeRequest[]>(
-      'SELECT * FROM shift_exchange_requests WHERE id = ?',
+      'SELECT * FROM shift_exchange_requests WHERE id = $1',
       [result.insertId],
     );
 
@@ -755,7 +767,7 @@ export async function canAccessShiftPlan(planId: number, userId: number): Promis
     // Get user info and plan info
     const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-    const [plans] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = ?', [
+    const [plans] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = $1', [
       planId,
     ]);
 
@@ -812,8 +824,8 @@ export async function getEmployeeShifts(
       JOIN shifts s ON sa.shift_id = s.id
       JOIN shift_plans sp ON s.plan_id = sp.id
       LEFT JOIN shift_templates st ON s.template_id = st.id
-      WHERE sa.tenant_id = ? AND sa.user_id = ?
-      AND s.date >= ? AND s.date <= ?
+      WHERE sa.tenant_id = $1 AND sa.user_id = $2
+      AND s.date >= $3 AND s.date <= $4
       ORDER BY s.date ASC, s.start_time ASC
     `;
 
@@ -853,8 +865,8 @@ export async function getShiftsForDateRange(
       LEFT JOIN users u ON sa.user_id = u.id
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN teams t ON s.team_id = t.id
-      WHERE s.tenant_id = ?
-        AND s.date BETWEEN ? AND ?
+      WHERE s.tenant_id = $1
+        AND s.date BETWEEN $2 AND $3
         AND s.deleted_at IS NULL
       ORDER BY s.date, s.start_time
     `;
@@ -881,8 +893,8 @@ export async function getWeekNotes(
         date,
         notes
       FROM shift_notes
-      WHERE tenant_id = ?
-        AND date BETWEEN ? AND ?
+      WHERE tenant_id = $1
+        AND date BETWEEN $2 AND $3
       ORDER BY date
     `;
 

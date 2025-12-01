@@ -22,7 +22,7 @@ export interface DbUser extends RowDataPacket {
   age?: number;
   employee_id?: string;
   // N:M REFACTORING: Removed department_id - now comes from user_departments JOIN
-  primary_department_id?: number | null; // From user_departments WHERE is_primary = 1
+  primary_department_id?: number | null; // From user_departments WHERE is_primary = true
   department_name?: string; // Primary department name from JOIN
   position?: string;
   phone?: string;
@@ -139,11 +139,11 @@ export interface DocumentCountResult extends RowDataPacket {
  */
 export interface UserDepartmentTeam extends RowDataPacket {
   role: string | null;
-  primary_department_id: number | null; // From user_departments WHERE is_primary = 1
+  primary_department_id: number | null; // From user_departments WHERE is_primary = true
   team_id: number | null;
   department_name: string | null;
   team_name: string | null;
-  has_full_access: number | null; // VISIBILITY-FIX: For blackboard admin filtering
+  has_full_access: boolean | null; // VISIBILITY-FIX: For blackboard admin filtering
 }
 
 /**

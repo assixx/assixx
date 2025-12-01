@@ -42,6 +42,7 @@ interface OvertimeSummaryResult extends RowDataPacket {
 
 /**
  * Add date filter to conditions
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function addDateFilter(
   filters: V2ShiftFilters,
@@ -53,13 +54,16 @@ function addDateFilter(
   const endDate = filters.end_date;
 
   if (specificDate != null && specificDate !== '') {
-    conditions.push('s.date = ?');
+    const paramIndex = params.length + 1;
+    conditions.push(`s.date = $${paramIndex}`);
     params.push(formatDateOnlyForMysql(specificDate));
     return;
   }
 
   if (startDate != null && startDate !== '' && endDate != null && endDate !== '') {
-    conditions.push('s.date BETWEEN ? AND ?');
+    const startParamIndex = params.length + 1;
+    const endParamIndex = params.length + 2;
+    conditions.push(`s.date BETWEEN $${startParamIndex} AND $${endParamIndex}`);
     params.push(formatDateOnlyForMysql(startDate));
     params.push(formatDateOnlyForMysql(endDate));
   }
@@ -67,6 +71,7 @@ function addDateFilter(
 
 /**
  * Add filter condition if value is valid
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function addFilterCondition(
   field: string,
@@ -76,7 +81,8 @@ function addFilterCondition(
   emptyValue: string | number,
 ): void {
   if (value != null && value !== emptyValue) {
-    conditions.push(`${field} = ?`);
+    const paramIndex = params.length + 1;
+    conditions.push(`${field} = $${paramIndex}`);
     params.push(value);
   }
 }
@@ -222,7 +228,7 @@ async function getCurrentShiftDate(
     (data.date == null || data.date === '')
   ) {
     const [currentShift] = await executeQuery<DateResult[]>(
-      'SELECT date FROM shifts WHERE id = ? AND tenant_id = ?',
+      'SELECT date FROM shifts WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
     if (currentShift.length > 0) {
@@ -249,6 +255,7 @@ function convertValueForDatabase(value: unknown): string | number | null {
 
 /**
  * Build update fields for template
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function buildTemplateUpdateFields(data: Partial<V2TemplateData>): {
   updateFields: string[];
@@ -274,7 +281,8 @@ function buildTemplateUpdateFields(data: Partial<V2TemplateData>): {
       continue;
     }
 
-    updateFields.push(`${field} = ?`);
+    const paramIndex = values.length + 1;
+    updateFields.push(`${field} = $${paramIndex}`);
     values.push(convertValueForDatabase(value));
   }
 
@@ -283,6 +291,7 @@ function buildTemplateUpdateFields(data: Partial<V2TemplateData>): {
 
 /**
  * Add duration update if times changed
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function addDurationUpdate(
   data: Partial<V2TemplateData>,
@@ -298,7 +307,8 @@ function addDurationUpdate(
     return;
   }
 
-  updateFields.push('duration_hours = ?');
+  const paramIndex = values.length + 1;
+  updateFields.push(`duration_hours = $${paramIndex}`);
   values.push(calculateDurationHours(startTime, endTime));
 }
 
@@ -323,7 +333,7 @@ export async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN teams t ON s.team_id = t.id
-      WHERE s.tenant_id = ?`;
+      WHERE s.tenant_id = $1`;
 
     const queryParams: (string | number | null)[] = [filters.tenant_id];
 
@@ -341,12 +351,14 @@ export async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
     const sortOrder = filters.sort_order ?? 'DESC';
     query += ` ORDER BY s.${sortBy} ${sortOrder}`;
 
-    // Pagination
+    // Pagination - PostgreSQL dynamic $N
     if (filters.limit != null && filters.limit !== 0) {
-      query += ' LIMIT ?';
+      const limitParamIndex = queryParams.length + 1;
+      query += ` LIMIT $${limitParamIndex}`;
       queryParams.push(filters.limit);
       if (filters.offset != null && filters.offset !== 0) {
-        query += ' OFFSET ?';
+        const offsetParamIndex = queryParams.length + 1;
+        query += ` OFFSET $${offsetParamIndex}`;
         queryParams.push(filters.offset);
       }
     }
@@ -378,7 +390,7 @@ export async function findById(id: number, tenantId: number): Promise<V2ShiftDat
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN teams t ON s.team_id = t.id
-      WHERE s.id = ? AND s.tenant_id = ?
+      WHERE s.id = $1 AND s.tenant_id = $2
     `;
 
     const [shifts] = await executeQuery<V2ShiftData[]>(query, [id, tenantId]);
@@ -406,7 +418,7 @@ export async function create(data: Partial<V2ShiftData>): Promise<number> {
       (tenant_id, user_id, plan_id, template_id, date, start_time, end_time,
        department_id, team_id, title, required_employees, break_minutes,
        status, type, notes, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -474,7 +486,8 @@ export async function update(
     for (const field of allowedFields) {
       const fieldValue = getShiftFieldValue(field, data);
       if (fieldValue !== undefined) {
-        updateFields.push(`${field} = ?`);
+        const paramIndex = values.length + 1;
+        updateFields.push(`${field} = $${paramIndex}`);
         values.push(processShiftFieldValue(field, fieldValue, data, currentDate));
       }
     }
@@ -483,10 +496,13 @@ export async function update(
       throw new Error('No fields to update');
     }
 
+    // PostgreSQL: Dynamic parameter numbering for WHERE clause
+    const idParamIndex = values.length + 1;
+    const tenantIdParamIndex = values.length + 2;
     const query = `
       UPDATE shifts
       SET ${updateFields.join(', ')}, updated_at = NOW()
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $${idParamIndex} AND tenant_id = $${tenantIdParamIndex}
     `;
 
     values.push(id, tenantId);
@@ -504,7 +520,7 @@ export async function deleteShift(id: number, tenantId: number): Promise<void> {
   try {
     // Check if shift has assignments
     const [assignments] = await executeQuery<CountResult[]>(
-      'SELECT COUNT(*) as count FROM shift_assignments WHERE shift_id = ?',
+      'SELECT COUNT(*) as count FROM shift_assignments WHERE shift_id = $1',
       [id],
     );
 
@@ -514,11 +530,11 @@ export async function deleteShift(id: number, tenantId: number): Promise<void> {
     }
     if (assignment.count > 0) {
       // Delete assignments first
-      await executeQuery('DELETE FROM shift_assignments WHERE shift_id = ?', [id]);
+      await executeQuery('DELETE FROM shift_assignments WHERE shift_id = $1', [id]);
     }
 
     // Delete the shift
-    await executeQuery('DELETE FROM shifts WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    await executeQuery('DELETE FROM shifts WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   } catch (error: unknown) {
     console.error('Error in deleteShift:', error);
     throw error;
@@ -542,7 +558,7 @@ export async function getTemplateById(
   try {
     const query = `
       SELECT * FROM shift_templates
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $1 AND tenant_id = $2
     `;
 
     const [templates] = await executeQuery<DbShiftTemplate[]>(query, [id, tenantId]);
@@ -568,7 +584,7 @@ export async function createTemplate(data: V2TemplateData): Promise<number> {
     const query = `
       INSERT INTO shift_templates
       (tenant_id, name, start_time, end_time, break_minutes, color, is_night_shift, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -607,10 +623,13 @@ export async function updateTemplate(
     // Add duration update if times changed
     addDurationUpdate(data, updateFields, values);
 
+    // PostgreSQL: Dynamic parameter numbering for WHERE clause
+    const idParamIndex = values.length + 1;
+    const tenantIdParamIndex = values.length + 2;
     const query = `
       UPDATE shift_templates
       SET ${updateFields.join(', ')}, updated_at = NOW()
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $${idParamIndex} AND tenant_id = $${tenantIdParamIndex}
     `;
 
     values.push(id, tenantId);
@@ -626,7 +645,7 @@ export async function updateTemplate(
  */
 export async function deleteTemplate(id: number, tenantId: number): Promise<void> {
   try {
-    await executeQuery('DELETE FROM shift_templates WHERE id = ? AND tenant_id = ?', [
+    await executeQuery('DELETE FROM shift_templates WHERE id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
@@ -661,18 +680,21 @@ export async function getSwapRequests(
       JOIN shifts s ON sa.shift_id = s.id
       JOIN users u1 ON ssr.requested_by = u1.id
       LEFT JOIN users u2 ON ssr.requested_with = u2.id
-      WHERE ssr.tenant_id = ?
+      WHERE ssr.tenant_id = $1
     `;
 
     const queryParams: (string | number)[] = [tenantId];
 
     if (filters.userId != null && filters.userId !== 0) {
-      query += ' AND (ssr.requested_by = ? OR ssr.requested_with = ?)';
+      const userParamIndex1 = queryParams.length + 1;
+      const userParamIndex2 = queryParams.length + 2;
+      query += ` AND (ssr.requested_by = $${userParamIndex1} OR ssr.requested_with = $${userParamIndex2})`;
       queryParams.push(filters.userId, filters.userId);
     }
 
     if (filters.status != null && filters.status !== '') {
-      query += ' AND ssr.status = ?';
+      const statusParamIndex = queryParams.length + 1;
+      query += ` AND ssr.status = $${statusParamIndex}`;
       queryParams.push(filters.status);
     }
 
@@ -693,7 +715,7 @@ export async function createSwapRequest(data: V2SwapRequestData): Promise<number
   try {
     // First, we need to find the assignment_id for this shift and user
     const [assignments] = await executeQuery<IdResult[]>(
-      'SELECT id FROM shift_assignments WHERE shift_id = ? AND user_id = ? AND tenant_id = ?',
+      'SELECT id FROM shift_assignments WHERE shift_id = $1 AND user_id = $2 AND tenant_id = $3',
       [data.shift_id, data.requested_by, data.tenant_id],
     );
 
@@ -710,7 +732,7 @@ export async function createSwapRequest(data: V2SwapRequestData): Promise<number
     const query = `
       INSERT INTO shift_swap_requests
       (tenant_id, assignment_id, requested_by, requested_with, reason, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -739,7 +761,7 @@ export async function getSwapRequestById(
   try {
     const query = `
       SELECT * FROM shift_swap_requests
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $1 AND tenant_id = $2
     `;
 
     const [requests] = await executeQuery<V2SwapRequestResult[]>(query, [id, tenantId]);
@@ -769,8 +791,8 @@ export async function updateSwapRequestStatus(
   try {
     const query = `
       UPDATE shift_swap_requests
-      SET status = ?, approved_by = ?, updated_at = NOW()
-      WHERE id = ? AND tenant_id = ?
+      SET status = $1, approved_by = $2, updated_at = NOW()
+      WHERE id = $3 AND tenant_id = $4
     `;
 
     await executeQuery(query, [status, approvedBy, id, tenantId]);
@@ -778,7 +800,7 @@ export async function updateSwapRequestStatus(
     // If approved, swap the shifts
     if (status === 'approved') {
       const [request] = await executeQuery<V2SwapRequestResult[]>(
-        'SELECT * FROM shift_swap_requests WHERE id = ?',
+        'SELECT * FROM shift_swap_requests WHERE id = $1',
         [id],
       );
 
@@ -791,7 +813,7 @@ export async function updateSwapRequestStatus(
       }
       if (swapRequest.requested_with != null && swapRequest.requested_with !== 0) {
         // Update the shift assignment
-        await executeQuery('UPDATE shifts SET user_id = ? WHERE id = ?', [
+        await executeQuery('UPDATE shifts SET user_id = $1 WHERE id = $2', [
           swapRequest.requested_with,
           swapRequest.shift_id,
         ]);
@@ -843,9 +865,9 @@ async function getOvertimeSummary(
       ) as overtimeHours,
       SUM(break_minutes) / 60.0 as breakHours
     FROM shifts
-    WHERE tenant_id = ?
-      AND user_id = ?
-      AND date BETWEEN ? AND ?
+    WHERE tenant_id = $1
+      AND user_id = $2
+      AND date BETWEEN $3 AND $4
       AND status IN ('completed', 'in_progress')
   `;
 
@@ -899,9 +921,9 @@ async function getOvertimeShiftDetails(
         ELSE 0
       END as overtimeHours
     FROM shifts
-    WHERE tenant_id = ?
-      AND user_id = ?
-      AND date BETWEEN ? AND ?
+    WHERE tenant_id = $1
+      AND user_id = $2
+      AND date BETWEEN $3 AND $4
       AND status IN ('completed', 'in_progress')
     ORDER BY date DESC
   `;

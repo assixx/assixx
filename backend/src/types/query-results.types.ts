@@ -16,7 +16,7 @@
  *
  * // COUNT query
  * const [rows] = await connection.execute<CountResult[]>(
- *   'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?',
+ *   'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1',
  *   [tenantId]
  * );
  * const userCount = rows[0].count; //  Typed as number!
@@ -29,7 +29,7 @@
  * console.log(users[0].department_name); //  Typed!
  * ```
  */
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket } from '../utils/db.js';
 
 // ============================================================================
 // COMMON AGGREGATES
@@ -220,9 +220,9 @@ export interface UserDepartmentIdResult extends RowDataPacket {
  * Use when: SELECT can_read, can_write, can_delete FROM admin_department_permissions
  */
 export interface PermissionCheckResult extends RowDataPacket {
-  can_read: number; // tinyint(1) - 0 or 1
-  can_write: number; // tinyint(1) - 0 or 1
-  can_delete: number; // tinyint(1) - 0 or 1
+  can_read: boolean; // tinyint(1) - 0 or 1
+  can_write: boolean; // tinyint(1) - 0 or 1
+  can_delete: boolean; // tinyint(1) - 0 or 1
 }
 
 /**
@@ -231,9 +231,9 @@ export interface PermissionCheckResult extends RowDataPacket {
  */
 export interface RolePermissionResult extends RowDataPacket {
   role: string;
-  can_read: number;
-  can_write: number;
-  can_delete: number;
+  can_read: boolean;
+  can_write: boolean;
+  can_delete: boolean;
 }
 
 // ============================================================================
@@ -258,9 +258,9 @@ export interface DepartmentWithPermissionResult extends RowDataPacket {
   id: number;
   name: string;
   description: string | null;
-  can_read: number; // tinyint(1) - 0 or 1
-  can_write: number; // tinyint(1) - 0 or 1
-  can_delete: number; // tinyint(1) - 0 or 1
+  can_read: boolean; // tinyint(1) - 0 or 1
+  can_write: boolean; // tinyint(1) - 0 or 1
+  can_delete: boolean; // tinyint(1) - 0 or 1
 }
 
 /**
@@ -575,7 +575,7 @@ export interface ShiftStatsResult extends RowDataPacket {
 export interface ConversationWithLastMessage extends RowDataPacket {
   id: number;
   name: string | null;
-  is_group: number;
+  is_group: boolean;
   last_message: string | null; // FROM latest message
   last_message_at: Date | string | null;
   unread_count: number | null; // Computed

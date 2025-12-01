@@ -3,13 +3,12 @@
  * Handles HTTP requests for admin permissions management
  */
 import { Response } from 'express';
-// Removed express-validator - using Zod validation in routes
-import { RowDataPacket } from 'mysql2/promise';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
-import { execute } from '../../../utils/db.js';
+// Removed express-validator - using Zod validation in routes
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
 import {
@@ -29,8 +28,8 @@ const ROOT_ACCESS_REQUIRED = 'Root access required';
 const ADMIN_NOT_FOUND = 'Admin not found';
 
 // SQL Queries
-const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'";
-const GET_USER_TENANT_QUERY = 'SELECT tenant_id FROM users WHERE id = ?';
+const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = $1 AND role = 'admin'";
+const GET_USER_TENANT_QUERY = 'SELECT tenant_id FROM users WHERE id = $1';
 
 export const adminPermissionsController = {
   /**
@@ -108,7 +107,7 @@ export const adminPermissionsController = {
 
       // Only admins need permission info
       if (req.user.role !== 'admin') {
-        // Root users always have full access (has_full_access = 1 in DB)
+        // Root users always have full access (has_full_access = true in DB)
         const response = {
           departments: [],
           groups: [],

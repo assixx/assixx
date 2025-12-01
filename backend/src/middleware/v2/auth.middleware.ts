@@ -4,11 +4,10 @@
  */
 import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { RowDataPacket } from 'mysql2/promise';
 
 import type { AuthUser, AuthenticatedRequest, PublicRequest } from '../../types/request.types.js';
 import { errorResponse } from '../../utils/apiResponse.js';
-import { query as executeQuery } from '../../utils/db.js';
+import { RowDataPacket, query as executeQuery } from '../../utils/db.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 
 const JWT_SECRET = process.env['JWT_SECRET'] ?? '';
@@ -128,9 +127,9 @@ async function getUserDetails(userId: number, tenantId: number): Promise<UserDet
         d.name as department_name
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
-      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
       LEFT JOIN departments d ON ud.department_id = d.id
-      WHERE u.id = ? AND u.tenant_id = ? AND u.is_active = 1`,
+      WHERE u.id = $1 AND u.tenant_id = $2 AND u.is_active = true`,
       [userId, tenantId],
     );
 

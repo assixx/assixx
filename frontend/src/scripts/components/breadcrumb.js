@@ -154,14 +154,16 @@ function handleDocumentPages(items, currentPage) {
 function handleCommonPages(items, currentPage) {
   const commonPages = ['/documents', '/blackboard', '/chat', '/shifts'];
   if (commonPages.includes(currentPage)) {
-    const isAdmin = localStorage.getItem('userRole') === 'admin';
-    if (!isAdmin) {
+    const userRole = getUserRole();
+    // Only add employee dashboard for employees, not for admin/root
+    if (userRole === 'employee') {
       items.push({
         label: MITARBEITER_DASHBOARD_LABEL,
         href: '/employee-dashboard',
         icon: 'fa-user',
       });
     }
+    // Admin and root go directly to the page without intermediate dashboard
     return true;
   }
   return false;

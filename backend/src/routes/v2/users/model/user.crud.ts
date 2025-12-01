@@ -35,7 +35,7 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   const finalEmployeeId = await generateInitialEmployeeId(employeeId, tenantId, role);
 
   // N:M REFACTORING: department_id removed - departments assigned via user_departments table
-  // Root users get has_full_access = 1 for full tenant access
+  // Root users get has_full_access = true for full tenant access
   // REMOVED: company and iban columns dropped (2025-11-27)
   const query = `
     INSERT INTO users (
@@ -45,7 +45,7 @@ export async function createUser(userData: UserCreateData): Promise<number> {
       hire_date, emergency_contact, profile_picture,
       is_archived, is_active, has_full_access, tenant_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
   `;
 
   try {
@@ -75,7 +75,7 @@ export async function findUserByUsername(username: string): Promise<DbUser | und
   console.info('[DEBUG] findByUsername called for:', username);
   try {
     console.info('[DEBUG] About to execute query');
-    const [rows] = await executeQuery<DbUser[]>('SELECT * FROM users WHERE username = ?', [
+    const [rows] = await executeQuery<DbUser[]>('SELECT * FROM users WHERE username = $1', [
       username,
     ]);
     console.info('[DEBUG] Query completed, rows found:', rows.length);
@@ -123,14 +123,14 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
              tm.department_id as team_department_id, td.name as team_department_name,
              td.area_id as team_area_id, ta.name as team_area_name
              FROM users u
-             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
              LEFT JOIN departments d ON ud.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
              LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
              LEFT JOIN departments td ON tm.department_id = td.id AND td.tenant_id = u.tenant_id
              LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
-             WHERE u.id = ? AND u.tenant_id = ?`
+             WHERE u.id = $1 AND u.tenant_id = $2`
       : `SELECT u.*, ud.department_id as primary_department_id, d.name as department_name,
              t.company_name as company_name, t.subdomain,
              u.availability_status, u.availability_start, u.availability_end, u.availability_notes,
@@ -138,14 +138,14 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
              tm.department_id as team_department_id, td.name as team_department_name,
              td.area_id as team_area_id, ta.name as team_area_name
              FROM users u
-             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
              LEFT JOIN departments d ON ud.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
              LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
              LEFT JOIN departments td ON tm.department_id = td.id AND td.tenant_id = u.tenant_id
              LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
-             WHERE u.id = ? AND u.tenant_id = ?`,
+             WHERE u.id = $1 AND u.tenant_id = $2`,
       [id, tenantId],
     );
 
@@ -200,19 +200,19 @@ export async function findUsersByRole(
         td.area_id as team_area_id,
         ta.name as team_area_name
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
         LEFT JOIN departments d ON ud.department_id = d.id
         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
         LEFT JOIN departments td ON t.department_id = td.id AND td.tenant_id = u.tenant_id
         LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
-        WHERE u.role = ? AND u.tenant_id = ?
+        WHERE u.role = $1 AND u.tenant_id = $2
       `;
 
     const params: unknown[] = [role, tenantId];
 
     if (!includeArchived) {
-      query += ` AND u.is_archived = 0`;
+      query += ` AND u.is_archived = false`;
     }
 
     const [rows] = await executeQuery<DbUser[]>(query, params);
@@ -237,11 +237,11 @@ export async function findUserByEmail(
   tenantId?: number,
 ): Promise<DbUser | undefined> {
   try {
-    let query = 'SELECT * FROM users WHERE email = ? AND is_archived = 0';
+    let query = 'SELECT * FROM users WHERE email = $1 AND is_archived = false';
     const params: (string | number)[] = [email];
 
     if (tenantId !== undefined) {
-      query += ' AND tenant_id = ?';
+      query += ' AND tenant_id = $2';
       params.push(tenantId);
     }
 
@@ -269,7 +269,7 @@ export async function findUserByEmail(
 export async function deleteUser(id: number, tenantId: number): Promise<boolean> {
   try {
     const [result] = await executeQuery<ResultSetHeader>(
-      'DELETE FROM users WHERE id = ? AND tenant_id = ?',
+      'DELETE FROM users WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
     return result.affectedRows > 0;
@@ -339,7 +339,7 @@ export async function updateUser(
     values.push(tenantId);
 
     // SECURITY: Always include tenant_id in WHERE clause
-    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`;
+    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = $${values.length - 1} AND tenant_id = $${values.length}`;
 
     logger.info(`Executing update query: ${query}`);
     logger.info(`With values: ${JSON.stringify(values)}`);
@@ -380,13 +380,13 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
         td.area_id as team_area_id,
         ta.name as team_area_name
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
         LEFT JOIN departments d ON ud.department_id = d.id
         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
         LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
         LEFT JOIN departments td ON t.department_id = td.id AND td.tenant_id = u.tenant_id
         LEFT JOIN areas ta ON td.area_id = ta.id AND ta.tenant_id = u.tenant_id
-        WHERE u.tenant_id = ?
+        WHERE u.tenant_id = $1
       `;
 
     const values: unknown[] = [filters.tenant_id];
@@ -452,15 +452,15 @@ export async function findArchivedUsers(
         u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.is_active,
         d.name as department_name
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
         LEFT JOIN departments d ON ud.department_id = d.id
-        WHERE u.is_archived = true AND u.tenant_id = ?
+        WHERE u.is_archived = true AND u.tenant_id = $1
       `;
 
     const params: unknown[] = [tenantId];
 
     if (role != null && role !== '') {
-      query += ` AND u.role = ?`;
+      query += ` AND u.role = $2`;
       params.push(role);
     }
 
@@ -483,13 +483,13 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
     // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
     let query = `SELECT u.*, ud.department_id as primary_department_id, d.name as department
                    FROM users u
-                   LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+                   LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
                    LEFT JOIN departments d ON ud.department_id = d.id
-                   WHERE u.tenant_id = ?`;
+                   WHERE u.tenant_id = $1`;
     const params: unknown[] = [filters.tenant_id];
 
     if (filters.role != null && filters.role !== '') {
-      query += ' AND u.role = ?';
+      query += ' AND u.role = $2';
       params.push(filters.role);
     }
 
@@ -516,9 +516,9 @@ export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> 
     const [rows] = await executeQuery<DbUser[]>(
       `SELECT u.*, ud.department_id as primary_department_id, d.name as department
          FROM users u
-         LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+         LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
          LEFT JOIN departments d ON ud.department_id = d.id
-         WHERE u.tenant_id = ?`,
+         WHERE u.tenant_id = $1`,
       [tenantId],
     );
 

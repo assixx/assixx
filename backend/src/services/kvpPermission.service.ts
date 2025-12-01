@@ -47,7 +47,7 @@ class KvpPermissionService {
     const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
       `SELECT tenant_id, department_id, org_level, org_id, submitted_by
        FROM kvp_suggestions
-       WHERE id = ?`,
+       WHERE id = $1`,
       [suggestionId],
     );
     const suggestion = suggestions[0];
@@ -67,8 +67,12 @@ class KvpPermissionService {
     if (suggestion.org_level === 'company') return true;
 
     // Can see department suggestions if in same department
+    // Note: department_id is now in user_departments table (many-to-many)
     const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
-      'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+      `SELECT ud.department_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       WHERE u.id = $1 AND u.tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -148,7 +152,7 @@ class KvpPermissionService {
       const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
         `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by
          FROM kvp_suggestions
-         WHERE id = ?`,
+         WHERE id = $1`,
         [suggestionId],
       );
 
@@ -186,10 +190,15 @@ class KvpPermissionService {
     tenantId: number,
     conditions: string[],
     queryParams: (string | number)[],
-  ): Promise<void> {
+    paramIndex: number,
+  ): Promise<number> {
     // Get user's department
+    // Note: department_id is now in user_departments table (many-to-many)
     const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
-      'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+      `SELECT ud.department_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       WHERE u.id = $1 AND u.tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -197,9 +206,9 @@ class KvpPermissionService {
 
     // Employee sees: own + department + company-wide
     const visibilityConditions = [
-      's.submitted_by = ?',
-      '(s.org_level = ? AND s.department_id = ?)',
-      's.org_level = ?',
+      `s.submitted_by = $${paramIndex}`,
+      `(s.org_level = $${paramIndex + 1} AND s.department_id = $${paramIndex + 2})`,
+      `s.org_level = $${paramIndex + 3}`,
     ];
 
     conditions.push(`(${visibilityConditions.join(' OR ')})`);
@@ -209,6 +218,7 @@ class KvpPermissionService {
       userDeptId ?? 0, // Use 0 as fallback for NULL department
       'company',
     );
+    return paramIndex + 4;
   }
 
   private async addAdminVisibilityConditions(
@@ -216,18 +226,26 @@ class KvpPermissionService {
     tenantId: number,
     conditions: string[],
     queryParams: (string | number)[],
-  ): Promise<void> {
+    paramIndex: number,
+  ): Promise<number> {
     // Admin role - Get admin's managed departments
     const adminDepts = await this.getAdminDepartments(userId, tenantId);
 
     if (adminDepts.length > 0) {
-      const deptPlaceholders = adminDepts.map(() => '?').join(',');
-      conditions.push(`(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`);
+      const deptPlaceholders = adminDepts
+        .map((_: number, i: number) => `$${paramIndex + i}`)
+        .join(',');
+      const orgLevelIndex = paramIndex + adminDepts.length;
+      conditions.push(
+        `(s.department_id IN (${deptPlaceholders}) OR s.org_level = $${orgLevelIndex})`,
+      );
       queryParams.push(...adminDepts, 'company');
+      return orgLevelIndex + 1;
     } else {
       // Admin with no departments only sees company-wide
-      conditions.push('s.org_level = ?');
+      conditions.push(`s.org_level = $${paramIndex}`);
       queryParams.push('company');
+      return paramIndex + 1;
     }
   }
 
@@ -236,22 +254,25 @@ class KvpPermissionService {
     includeArchived: boolean | undefined,
     conditions: string[],
     queryParams: (string | number)[],
-  ): void {
+    paramIndex: number,
+  ): number {
     // Status filter
     if (includeArchived === false) {
-      conditions.push('s.status != ?');
+      conditions.push(`s.status != $${paramIndex++}`);
       queryParams.push('archived');
     }
 
     if (statusFilter != null && statusFilter !== '' && statusFilter !== 'all') {
       if (statusFilter === 'active') {
-        conditions.push('s.status NOT IN (?, ?)');
+        conditions.push(`s.status NOT IN ($${paramIndex}, $${paramIndex + 1})`);
         queryParams.push('archived', 'rejected');
+        paramIndex += 2;
       } else {
-        conditions.push('s.status = ?');
+        conditions.push(`s.status = $${paramIndex++}`);
         queryParams.push(statusFilter);
       }
     }
+    return paramIndex;
   }
 
   /**
@@ -263,24 +284,43 @@ class KvpPermissionService {
     queryParams: (string | number)[];
   }> {
     const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
-    const conditions: string[] = ['s.tenant_id = ?'];
+    const conditions: string[] = ['s.tenant_id = $1'];
     const queryParams: (string | number)[] = [tenantId];
+    let paramIndex = 2;
 
     // Add role-specific visibility conditions
     if (role === 'root') {
       // No additional filters needed for root
     } else if (role === 'employee') {
-      await this.addEmployeeVisibilityConditions(userId, tenantId, conditions, queryParams);
+      paramIndex = await this.addEmployeeVisibilityConditions(
+        userId,
+        tenantId,
+        conditions,
+        queryParams,
+        paramIndex,
+      );
     } else {
-      await this.addAdminVisibilityConditions(userId, tenantId, conditions, queryParams);
+      paramIndex = await this.addAdminVisibilityConditions(
+        userId,
+        tenantId,
+        conditions,
+        queryParams,
+        paramIndex,
+      );
     }
 
     // Add status filters
-    this.addStatusFilterConditions(statusFilter, includeArchived, conditions, queryParams);
+    paramIndex = this.addStatusFilterConditions(
+      statusFilter,
+      includeArchived,
+      conditions,
+      queryParams,
+      paramIndex,
+    );
 
     // Department filter (for admins)
     if (departmentFilter != null && departmentFilter !== 0 && role === 'admin') {
-      conditions.push('s.department_id = ?');
+      conditions.push(`s.department_id = $${paramIndex}`);
       queryParams.push(departmentFilter);
     }
 
@@ -306,7 +346,7 @@ class KvpPermissionService {
       const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
         `SELECT tenant_id, department_id, org_level
          FROM kvp_suggestions
-         WHERE id = ?`,
+         WHERE id = $1`,
         [suggestionId],
       );
 
@@ -353,7 +393,7 @@ class KvpPermissionService {
       await executeQuery(
         `INSERT INTO admin_logs
          (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           tenantId,
           adminId,
@@ -376,9 +416,9 @@ class KvpPermissionService {
     tenantId: number,
   ): { where: string; params: (string | number)[] } {
     const params: (string | number)[] = [tenantId];
-    let where = 's.tenant_id = ?';
+    let where = 's.tenant_id = $1';
     if (scope === 'department') {
-      where += ' AND s.department_id = ?';
+      where += ' AND s.department_id = $2';
       params.push(scopeId);
     }
     return { where, params };

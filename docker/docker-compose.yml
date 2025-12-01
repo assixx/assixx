@@ -7,13 +7,60 @@
 # =============================================================================
 
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: assixx-mysql
+  # =============================================================================
+  # MySQL Database - DISABLED (PostgreSQL is now primary)
+  # Kept as backup - uncomment to restore MySQL
+  # =============================================================================
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: assixx-mysql
+  #   restart: unless-stopped
+  #   command: --sql-mode="" --default-time-zone='+02:00' --host-cache-size=0
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '4.0'
+  #         memory: 4G
+  #       reservations:
+  #         cpus: '1.0'
+  #         memory: 1G
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
+  #     MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
+  #     MYSQL_USER: ${MYSQL_USER:-assixx_user}
+  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+  #     TZ: Europe/Berlin
+  #   ports:
+  #     - "3307:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ../database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+  #   networks:
+  #     - assixx-network
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "mysqladmin",
+  #         "ping",
+  #         "-h",
+  #         "localhost",
+  #         "-u",
+  #         "root",
+  #         "-p${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}",
+  #       ]
+  #     interval: 10s
+  #     timeout: 20s
+  #     retries: 10
+  #     start_period: 60s
+
+  # =============================================
+  # PostgreSQL - Primary Database
+  # =============================================
+  postgres:
+    image: postgres:17-alpine
+    container_name: assixx-postgres
     restart: unless-stopped
-    command: --sql-mode="" --default-time-zone='+02:00' --host-cache-size=0
-    # Resource limits for database stability (generous for dev)
     deploy:
       resources:
         limits:
@@ -23,34 +70,23 @@ services:
           cpus: '1.0'
           memory: 1G
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
-      MYSQL_USER: ${MYSQL_USER:-assixx_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      POSTGRES_USER: ${POSTGRES_USER:-assixx_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AssixxP@ss2025!}
+      POSTGRES_DB: ${POSTGRES_DB:-assixx}
       TZ: Europe/Berlin
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ../database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - assixx-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-p${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U assixx_user -d assixx"]
       interval: 10s
-      timeout: 20s
-      retries: 10
-      start_period: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
@@ -71,11 +107,12 @@ services:
           memory: 1G
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-assixx_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
-      DB_NAME: ${MYSQL_DATABASE:-main}
+      # PostgreSQL Connection
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
+      DB_NAME: ${POSTGRES_DB:-assixx}
       JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       SMTP_HOST: ${SMTP_HOST}
@@ -118,7 +155,7 @@ services:
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -180,11 +217,12 @@ services:
           memory: 512M
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-assixx_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
-      DB_NAME: ${MYSQL_DATABASE:-main}
+      # PostgreSQL Connection
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-app_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
+      DB_NAME: ${POSTGRES_DB:-assixx}
       JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       REDIS_HOST: redis
@@ -217,7 +255,7 @@ services:
     depends_on:
       backend:
         condition: service_started
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -237,32 +275,32 @@ services:
     # Worker command - use tsx directly
     command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
-  # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
-  phpmyadmin:
-    image: phpmyadmin:5.2.2
-    container_name: assixx-phpmyadmin
-    restart: unless-stopped
-    # Resource limits for dev tool (generous for large DB operations)
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-    ports:
-      - "8080:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      # PMA_USER and PMA_PASSWORD intentionally NOT set - login via form for security
-      # This prevents hardcoded credentials and allows multi-user access
-      UPLOAD_LIMIT: 50M
-    networks:
-      - assixx-network
-    depends_on:
-      - mysql
+  # =============================================================================
+  # phpMyAdmin - DISABLED (MySQL is disabled, use pgAdmin for PostgreSQL)
+  # Kept as backup - uncomment to restore phpMyAdmin
+  # =============================================================================
+  # phpmyadmin:
+  #   image: phpmyadmin:5.2.2
+  #   container_name: assixx-phpmyadmin
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '2.0'
+  #         memory: 1G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 256M
+  #   ports:
+  #     - "8080:80"
+  #   environment:
+  #     PMA_HOST: mysql
+  #     PMA_PORT: 3306
+  #     UPLOAD_LIMIT: 50M
+  #   networks:
+  #     - assixx-network
+  #   depends_on:
+  #     - mysql
 
   # Optional: Nginx als Reverse Proxy (für Production)
   # nginx:
@@ -286,8 +324,12 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
-    name: assixx_mysql_data
+  # mysql_data - DISABLED (MySQL is disabled)
+  # mysql_data:
+  #   name: assixx_mysql_data
+  #   external: true
+  postgres_data:
+    name: assixx_postgres_data
     external: true
   redis_data:
     name: assixx_redis_data

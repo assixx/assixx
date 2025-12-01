@@ -2,8 +2,6 @@
  * Notifications v2 Service
  * Business logic for notification management
  */
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
-
 import {
   NotificationPreferencesRow,
   NotificationsRow,
@@ -18,34 +16,42 @@ import {
   UnreadCountResult,
 } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { query as executeQuery } from '../../../utils/db.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import rootLog from '../logs/logs.service.js';
 import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
  * Build query conditions for notifications
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function buildNotificationConditions(
   userId: number,
   tenantId: number,
   filters: NotificationFilters,
 ): { conditions: string[]; params: (string | number | boolean)[] } {
-  const conditions = [`n.tenant_id = ?`];
+  const conditions = [`n.tenant_id = $1`];
   const params: (string | number | boolean)[] = [tenantId];
 
-  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-    OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`);
+  // Complex recipient condition - uses params $2 through $6
+  // Note: department_id is now in user_departments table (many-to-many)
+  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
+    OR (n.recipient_type = 'department' AND n.recipient_id IN (
+      SELECT ud.department_id FROM users u
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+      WHERE u.id = $3 AND u.tenant_id = $4))
+    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $5 AND tenant_id = $6)))`);
   params.push(userId, userId, tenantId, userId, tenantId);
 
   if (filters.type !== undefined && filters.type !== '') {
-    conditions.push(`n.type = ?`);
+    const paramIndex = params.length + 1;
+    conditions.push(`n.type = $${paramIndex}`);
     params.push(filters.type);
   }
 
   if (filters.priority !== undefined && filters.priority !== '') {
-    conditions.push(`n.priority = ?`);
+    const paramIndex = params.length + 1;
+    conditions.push(`n.priority = $${paramIndex}`);
     params.push(filters.priority);
   }
 
@@ -64,7 +70,7 @@ async function getNotificationCounts(
   const countQuery = `
     SELECT COUNT(*) as total
     FROM notifications n
-    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
+    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $1
     WHERE ${conditions.join(' AND ')}
     ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
   `;
@@ -77,7 +83,7 @@ async function getNotificationCounts(
   const unreadQuery = `
     SELECT COUNT(*) as unread
     FROM notifications n
-    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
+    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $1
     WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
   `;
   const [[unreadResult]] = await executeQuery<UnreadCountResult[]>(unreadQuery, [
@@ -116,19 +122,26 @@ export async function listNotifications(
 
   const { conditions, params } = buildNotificationConditions(userId, tenantId, filters);
 
+  // PostgreSQL: Dynamic parameter numbering for LIMIT/OFFSET
+  // params array already contains: [tenantId, userId, userId, tenantId, userId, tenantId, ...optional filters]
+  // We need to add userId for the JOIN, then limit and offset at the end
+  const userIdParamIndex = params.length + 1;
+  const limitParamIndex = params.length + 2;
+  const offsetParamIndex = params.length + 3;
+
   // Build and execute main query
-  let query = `
+  const query = `
     SELECT n.*, nrs.read_at,
       CASE WHEN nrs.id IS NOT NULL THEN true ELSE false END as is_read,
       u.username as created_by_name
     FROM notifications n
-    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
+    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $${userIdParamIndex}
     LEFT JOIN users u ON n.created_by = u.id
     WHERE ${conditions.join(' AND ')}
     ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
-    ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
+    ORDER BY n.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, [userId, ...params, limit, offset]);
+  const [rows] = await executeQuery<RowDataPacket[]>(query, [...params, userId, limit, offset]);
 
   const { total, unreadCount } = await getNotificationCounts(userId, conditions, params, filters);
   const totalPages = Math.ceil(total / limit);
@@ -162,7 +175,7 @@ export async function createNotification(
     `INSERT INTO notifications
     (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
      metadata, scheduled_for, created_by, tenant_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       data.type,
       data.title,
@@ -208,11 +221,14 @@ export async function markAsRead(
   // Check if notification exists and user has access
   const [rows] = await executeQuery<RowDataPacket[]>(
     `SELECT * FROM notifications
-     WHERE id = ? AND tenant_id = ?
-     AND (recipient_type = 'all' OR (recipient_type = 'user' AND recipient_id = ?)
-          OR (recipient_type = 'department' AND recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-          OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`,
-    [notificationId, tenantId, userId, userId, tenantId, userId, tenantId],
+     WHERE id = $1 AND tenant_id = $2
+     AND (recipient_type = 'all' OR (recipient_type = 'user' AND recipient_id = $3)
+          OR (recipient_type = 'department' AND recipient_id IN (
+            SELECT ud.department_id FROM users u
+            LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+            WHERE u.id = $3 AND u.tenant_id = $2))
+          OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $3 AND tenant_id = $2)))`,
+    [notificationId, tenantId, userId],
   );
   const notification = rows[0];
 
@@ -223,7 +239,7 @@ export async function markAsRead(
   // Check if already read
   // Mark as read if not already
   await executeQuery(
-    `INSERT IGNORE INTO notification_read_status (notification_id, user_id, tenant_id) VALUES (?, ?, ?)`,
+    `INSERT INTO notification_read_status (notification_id, user_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
     [notificationId, userId, tenantId],
   );
 }
@@ -240,11 +256,14 @@ export async function markAllAsRead(
   // Get all unread notifications for user
   const [unreadNotifications] = await executeQuery<IdResult[]>(
     `SELECT n.id FROM notifications n
-     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-     WHERE n.tenant_id = ?
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
+     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $3
+     WHERE n.tenant_id = $4
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $5)
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (
+            SELECT ud.department_id FROM users u
+            LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+            WHERE u.id = $6 AND u.tenant_id = $2))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $7 AND tenant_id = $2)))
      AND nrs.id IS NULL`,
     [userId, tenantId, userId, userId, tenantId, userId, tenantId],
   );
@@ -252,7 +271,7 @@ export async function markAllAsRead(
   let markedCount = 0;
   for (const notification of unreadNotifications) {
     await executeQuery(
-      `INSERT IGNORE INTO notification_read_status (notification_id, user_id, tenant_id) VALUES (?, ?, ?)`,
+      `INSERT INTO notification_read_status (notification_id, user_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [notification.id, userId, tenantId],
     );
     markedCount++;
@@ -280,7 +299,7 @@ export async function deleteNotification(
 ): Promise<void> {
   // Check if notification exists
   const [rows2] = await executeQuery<NotificationsRow[]>(
-    `SELECT * FROM notifications WHERE id = ? AND tenant_id = ?`,
+    `SELECT * FROM notifications WHERE id = $1 AND tenant_id = $2`,
     [notificationId, tenantId],
   );
 
@@ -304,7 +323,7 @@ export async function deleteNotification(
   }
 
   // Delete notification
-  await executeQuery(`DELETE FROM notifications WHERE id = ?`, [notificationId]);
+  await executeQuery(`DELETE FROM notifications WHERE id = $1`, [notificationId]);
 
   // Log the action
   await rootLog.create({
@@ -327,7 +346,7 @@ export async function deleteNotification(
 export async function getPreferences(userId: number, tenantId: number): Promise<unknown> {
   try {
     const [rows] = await executeQuery<NotificationPreferencesRow[]>(
-      `SELECT * FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
+      `SELECT * FROM notification_preferences WHERE user_id = $1 AND tenant_id = $2 AND notification_type = 'general'`,
       [userId, tenantId],
     );
 
@@ -405,7 +424,7 @@ export async function updatePreferences(
 ): Promise<void> {
   // Check if preferences exist
   const [rows] = await executeQuery<IdResult[]>(
-    `SELECT id FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
+    `SELECT id FROM notification_preferences WHERE user_id = $1 AND tenant_id = $2 AND notification_type = 'general'`,
     [userId, tenantId],
   );
 
@@ -413,9 +432,9 @@ export async function updatePreferences(
     // Update existing
     await executeQuery(
       `UPDATE notification_preferences
-       SET email_notifications = ?, push_notifications = ?, sms_notifications = ?,
-           preferences = ?, updated_at = NOW()
-       WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
+       SET email_notifications = $1, push_notifications = $2, sms_notifications = $3,
+           preferences = $4, updated_at = NOW()
+       WHERE user_id = $5 AND tenant_id = $6 AND notification_type = 'general'`,
       [
         preferences.email_notifications,
         preferences.push_notifications,
@@ -430,7 +449,7 @@ export async function updatePreferences(
     await executeQuery(
       `INSERT INTO notification_preferences
        (user_id, tenant_id, email_notifications, push_notifications, sms_notifications, preferences, notification_type)
-       VALUES (?, ?, ?, ?, ?, ?, 'general')`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'general')`,
       [
         userId,
         tenantId,
@@ -473,17 +492,17 @@ function rowsToRecord<T extends { count: number }>(
  */
 export async function getStatistics(tenantId: number): Promise<unknown> {
   const [[totalResult]] = await executeQuery<TotalCountResult[]>(
-    `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = ?`,
+    `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = $1`,
     [tenantId],
   );
 
   const [byTypeRows] = await executeQuery<TypeCountResult[]>(
-    `SELECT type, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY type`,
+    `SELECT type, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY type`,
     [tenantId],
   );
 
   const [byPriorityRows] = await executeQuery<PriorityCountResult[]>(
-    `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY priority`,
+    `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY priority`,
     [tenantId],
   );
 
@@ -492,7 +511,7 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
             COUNT(DISTINCT nrs.notification_id) as read_notifications
      FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id
-     WHERE n.tenant_id = ?`,
+     WHERE n.tenant_id = $1`,
     [tenantId],
   );
 
@@ -507,7 +526,7 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
 
   const [trendsRows] = await executeQuery<DateCountResult[]>(
     `SELECT DATE(created_at) as date, COUNT(*) as count FROM notifications
-     WHERE tenant_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+     WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
      GROUP BY DATE(created_at) ORDER BY date`,
     [tenantId],
   );
@@ -532,23 +551,30 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
  */
 export async function getPersonalStats(userId: number, tenantId: number): Promise<unknown> {
   // Total notifications for user
+  // Note: department_id is now in user_departments table (many-to-many)
   const [[totalResult]] = await executeQuery<TotalCountResult[]>(
     `SELECT COUNT(*) as total FROM notifications n
-     WHERE n.tenant_id = ?
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`,
+     WHERE n.tenant_id = $3
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $4)
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (
+            SELECT ud.department_id FROM users u
+            LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+            WHERE u.id = $5 AND u.tenant_id = $2))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $6 AND tenant_id = $2)))`,
     [tenantId, userId, userId, tenantId, userId, tenantId],
   );
 
   // Unread count
   const [[unreadResult]] = await executeQuery<UnreadCountResult[]>(
     `SELECT COUNT(*) as unread_count FROM notifications n
-     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-     WHERE n.tenant_id = ?
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
+     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $3
+     WHERE n.tenant_id = $4
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $5)
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (
+            SELECT ud.department_id FROM users u
+            LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+            WHERE u.id = $6 AND u.tenant_id = $2))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $7 AND tenant_id = $2)))
      AND nrs.id IS NULL`,
     [userId, tenantId, userId, userId, tenantId, userId, tenantId],
   );
@@ -556,10 +582,13 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
   // By type
   const [byTypeRows] = await executeQuery<TypeCountResult[]>(
     `SELECT n.type, COUNT(*) as count FROM notifications n
-     WHERE n.tenant_id = ?
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
+     WHERE n.tenant_id = $3
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $4)
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (
+            SELECT ud.department_id FROM users u
+            LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+            WHERE u.id = $5 AND u.tenant_id = $2))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $6 AND tenant_id = $2)))
      GROUP BY n.type`,
     [tenantId, userId, userId, tenantId, userId, tenantId],
   );

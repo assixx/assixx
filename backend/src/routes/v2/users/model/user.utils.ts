@@ -23,7 +23,7 @@ export async function generateInitialEmployeeId(
   }
 
   const [tenantResult] = await executeQuery<SubdomainResult[]>(
-    'SELECT subdomain FROM tenants WHERE id = ?',
+    'SELECT subdomain FROM tenants WHERE id = $1',
     [tenantId],
   );
 
@@ -55,7 +55,7 @@ export async function updateTemporaryEmployeeId(
     finalEmployeeId?.includes('TEMP') === true
   ) {
     const [tenantResult] = await executeQuery<SubdomainResult[]>(
-      'SELECT subdomain FROM tenants WHERE id = ?',
+      'SELECT subdomain FROM tenants WHERE id = $1',
       [tenantId],
     );
 
@@ -67,7 +67,10 @@ export async function updateTemporaryEmployeeId(
       }
       const subdomain = tenant.subdomain;
       const newEmployeeId = generateEmployeeId(subdomain, role ?? 'employee', userId);
-      await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [newEmployeeId, userId]);
+      await executeQuery('UPDATE users SET employee_id = $1 WHERE id = $2', [
+        newEmployeeId,
+        userId,
+      ]);
     }
   }
 }
@@ -75,7 +78,7 @@ export async function updateTemporaryEmployeeId(
 /**
  * Build query parameters for user creation
  * N:M REFACTORING: department_id removed - departments assigned via user_departments table
- * Root users automatically get has_full_access = 1 for full tenant access
+ * Root users automatically get has_full_access = true for full tenant access
  * REMOVED: company and iban columns dropped (2025-11-27)
  */
 export function buildUserQueryParams(
@@ -101,8 +104,8 @@ export function buildUserQueryParams(
     hire_date: hireDate,
     emergency_contact: emergencyContact,
     profile_picture: profilePicture,
-    is_archived: isArchived = 0,
-    is_active: isActive = 1,
+    is_archived: isArchived = false,
+    is_active: isActive = true,
   } = userData;
 
   // Root users get full tenant access, others don't
@@ -137,6 +140,7 @@ export function buildUserQueryParams(
 
 /**
  * Process a single field for user update query
+ * PostgreSQL: No backticks, use dynamic $N parameter numbering
  */
 export function processUpdateField(
   key: string,
@@ -150,8 +154,9 @@ export function processUpdateField(
     return;
   }
 
-  // Use backticks to escape column names properly
-  fields.push(`\`${key}\` = ?`);
+  // PostgreSQL: Dynamic parameter numbering ($1, $2, $3...)
+  const paramIndex = values.length + 1;
+  fields.push(`${key} = $${paramIndex}`);
 
   // Special handling for boolean fields
   if (key === 'is_active' || key === 'is_archived') {
@@ -171,12 +176,16 @@ const USER_SEARCH_COLUMNS = ['username', 'email', 'first_name', 'last_name', 'em
 
 /**
  * Add search filter across multiple columns
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function addSearchFilter(conditions: string[], values: unknown[], search: string): void {
-  const searchCondition = USER_SEARCH_COLUMNS.map((col: string) => `u.${col} LIKE ?`).join(' OR ');
-  conditions.push(`(${searchCondition})`);
   const searchTerm = `%${search}%`;
-  USER_SEARCH_COLUMNS.forEach(() => values.push(searchTerm));
+  const searchConditions = USER_SEARCH_COLUMNS.map((col: string) => {
+    const paramIndex = values.length + 1;
+    values.push(searchTerm);
+    return `u.${col} ILIKE $${paramIndex}`;
+  });
+  conditions.push(`(${searchConditions.join(' OR ')})`);
 }
 
 /**
@@ -189,30 +198,35 @@ function isValidFilter(value: unknown): boolean {
 /**
  * Build filter conditions for user search query
  * N:M REFACTORING: department_id filter now uses user_departments table
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 export function buildFilterConditions(filters: UserFilter, values: unknown[]): string {
   const conditions: string[] = [];
 
   // Archived filter (default: not archived)
-  conditions.push('u.is_archived = ?');
+  const archivedParamIndex = values.length + 1;
+  conditions.push(`u.is_archived = $${archivedParamIndex}`);
   values.push(filters.is_archived ?? false);
 
   // Simple equality filters
   if (isValidFilter(filters.role)) {
-    conditions.push('u.role = ?');
+    const roleParamIndex = values.length + 1;
+    conditions.push(`u.role = $${roleParamIndex}`);
     values.push(filters.role);
   }
 
   // N:M REFACTORING: Filter via user_departments table instead of users.department_id
   if (isValidFilter(filters.department_id)) {
+    const deptParamIndex = values.length + 1;
     conditions.push(
-      'u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = ? AND ud.tenant_id = u.tenant_id)',
+      `u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = $${deptParamIndex} AND ud.tenant_id = u.tenant_id)`,
     );
     values.push(filters.department_id);
   }
 
   if (isValidFilter(filters.status)) {
-    conditions.push('u.is_active = ?');
+    const statusParamIndex = values.length + 1;
+    conditions.push(`u.is_active = $${statusParamIndex}`);
     values.push(filters.status === 'active' ? 1 : 0);
   }
 
@@ -249,6 +263,7 @@ export function buildOrderByClause(filters: UserFilter): string {
 
 /**
  * Build pagination clause for user search query
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 export function buildPaginationClause(filters: UserFilter, values: unknown[]): string {
   if (filters.limit != null && filters.limit !== 0) {
@@ -258,8 +273,11 @@ export function buildPaginationClause(filters: UserFilter, values: unknown[]): s
     const page = Number.isNaN(parsedPage) || parsedPage === 0 ? 1 : parsedPage;
     const offset = (page - 1) * limit;
 
-    values.push(limit, offset);
-    return ` LIMIT ? OFFSET ?`;
+    const limitParamIndex = values.length + 1;
+    values.push(limit);
+    const offsetParamIndex = values.length + 1;
+    values.push(offset);
+    return ` LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
   }
   return '';
 }
@@ -268,7 +286,7 @@ export function buildPaginationClause(filters: UserFilter, values: unknown[]): s
  * Build count query with filters
  */
 export function buildCountQuery(filters: UserFilter, values: unknown[]): string {
-  let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
+  let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = $1`;
   values.push(filters.tenant_id);
 
   // Reuse the existing buildFilterConditions function

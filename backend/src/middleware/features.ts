@@ -41,9 +41,10 @@ const TENANT_NOT_FOUND_ERROR: TenantIdResultError = {
  * Look up tenant ID by subdomain
  */
 async function lookupTenantBySubdomain(subdomain: string): Promise<TenantIdExtractResult> {
-  const [tenantRows] = await query<TenantIdResult[]>('SELECT id FROM tenants WHERE subdomain = ?', [
-    subdomain,
-  ]);
+  const [tenantRows] = await query<TenantIdResult[]>(
+    'SELECT id FROM tenants WHERE subdomain = $1',
+    [subdomain],
+  );
 
   if (tenantRows.length === 0) {
     return TENANT_NOT_FOUND_ERROR;

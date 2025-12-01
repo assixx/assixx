@@ -11,9 +11,7 @@
  *
  * Part of Assignment System Refactoring (2025-11-27)
  */
-import { RowDataPacket } from 'mysql2/promise';
-
-import { execute } from '../utils/db.js';
+import { RowDataPacket, execute } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 // ============================================================================
@@ -28,16 +26,16 @@ export type ResourceType = 'area' | 'department' | 'team';
 
 /** Result from permission check queries */
 interface PermissionRow extends RowDataPacket {
-  can_read: number;
-  can_write: number;
-  can_delete: number;
+  can_read: boolean;
+  can_write: boolean;
+  can_delete: boolean;
 }
 
 /** User info for permission checks */
 interface UserInfoRow extends RowDataPacket {
   id: number;
   role: string;
-  has_full_access: number;
+  has_full_access: boolean;
 }
 
 /** Department info for inheritance */
@@ -121,7 +119,7 @@ class HierarchyPermissionService {
       }
 
       // Step 3: has_full_access flag = full tenant access
-      if (user.has_full_access === 1) {
+      if (user.has_full_access) {
         return true;
       }
 
@@ -162,7 +160,7 @@ class HierarchyPermissionService {
     const [rows] = await execute<PermissionRow[]>(
       `SELECT can_read, can_write, can_delete
        FROM admin_area_permissions
-       WHERE admin_user_id = ? AND area_id = ? AND tenant_id = ?`,
+       WHERE admin_user_id = $1 AND area_id = $2 AND tenant_id = $3`,
       [userId, areaId, tenantId],
     );
 
@@ -191,7 +189,7 @@ class HierarchyPermissionService {
     const [directPerm] = await execute<PermissionRow[]>(
       `SELECT can_read, can_write, can_delete
        FROM admin_department_permissions
-       WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
+       WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
       [userId, departmentId, tenantId],
     );
 
@@ -257,8 +255,8 @@ class HierarchyPermissionService {
     if (user === null) return [];
 
     // Root or full access = all areas
-    if (user.role === 'root' || user.has_full_access === 1) {
-      const [allAreas] = await execute<IdRow[]>(`SELECT id FROM areas WHERE tenant_id = ?`, [
+    if (user.role === 'root' || user.has_full_access) {
+      const [allAreas] = await execute<IdRow[]>(`SELECT id FROM areas WHERE tenant_id = $1`, [
         tenantId,
       ]);
       return allAreas.map((a: IdRow) => a.id);
@@ -267,7 +265,7 @@ class HierarchyPermissionService {
     // Get directly assigned areas
     const [assignedAreas] = await execute<AreaIdRow[]>(
       `SELECT area_id FROM admin_area_permissions
-       WHERE admin_user_id = ? AND tenant_id = ? AND can_read = 1`,
+       WHERE admin_user_id = $1 AND tenant_id = $2 AND can_read = true`,
       [userId, tenantId],
     );
 
@@ -283,8 +281,8 @@ class HierarchyPermissionService {
     if (user === null) return [];
 
     // Root or full access = all departments
-    if (user.role === 'root' || user.has_full_access === 1) {
-      const [allDepts] = await execute<IdRow[]>(`SELECT id FROM departments WHERE tenant_id = ?`, [
+    if (user.role === 'root' || user.has_full_access) {
+      const [allDepts] = await execute<IdRow[]>(`SELECT id FROM departments WHERE tenant_id = $1`, [
         tenantId,
       ]);
       return allDepts.map((d: IdRow) => d.id);
@@ -293,7 +291,7 @@ class HierarchyPermissionService {
     // Get directly assigned departments
     const [directDepts] = await execute<DepartmentIdRow[]>(
       `SELECT department_id FROM admin_department_permissions
-       WHERE admin_user_id = ? AND tenant_id = ? AND can_read = 1`,
+       WHERE admin_user_id = $1 AND tenant_id = $2 AND can_read = true`,
       [userId, tenantId],
     );
 
@@ -302,9 +300,10 @@ class HierarchyPermissionService {
     // Get departments inherited from areas
     const accessibleAreas = await this.getAccessibleAreaIds(userId, tenantId);
     if (accessibleAreas.length > 0) {
+      const placeholders = accessibleAreas.map((_: number, i: number) => `$${i + 2}`).join(',');
       const [inheritedDepts] = await execute<IdRow[]>(
         `SELECT id FROM departments
-         WHERE tenant_id = ? AND area_id IN (${accessibleAreas.map(() => '?').join(',')})`,
+         WHERE tenant_id = $1 AND area_id IN (${placeholders})`,
         [tenantId, ...accessibleAreas],
       );
       for (const d of inheritedDepts) {
@@ -324,8 +323,8 @@ class HierarchyPermissionService {
     if (user === null) return [];
 
     // Root or full access = all teams
-    if (user.role === 'root' || user.has_full_access === 1) {
-      const [allTeams] = await execute<IdRow[]>(`SELECT id FROM teams WHERE tenant_id = ?`, [
+    if (user.role === 'root' || user.has_full_access) {
+      const [allTeams] = await execute<IdRow[]>(`SELECT id FROM teams WHERE tenant_id = $1`, [
         tenantId,
       ]);
       return allTeams.map((t: IdRow) => t.id);
@@ -333,7 +332,7 @@ class HierarchyPermissionService {
 
     // Get teams user is member of
     const [memberTeams] = await execute<TeamIdRow[]>(
-      `SELECT team_id FROM user_teams WHERE user_id = ?`,
+      `SELECT team_id FROM user_teams WHERE user_id = $1`,
       [userId],
     );
 
@@ -342,9 +341,10 @@ class HierarchyPermissionService {
     // Get teams inherited from departments
     const accessibleDepts = await this.getAccessibleDepartmentIds(userId, tenantId);
     if (accessibleDepts.length > 0) {
+      const placeholders = accessibleDepts.map((_: number, i: number) => `$${i + 2}`).join(',');
       const [inheritedTeams] = await execute<IdRow[]>(
         `SELECT id FROM teams
-         WHERE tenant_id = ? AND department_id IN (${accessibleDepts.map(() => '?').join(',')})`,
+         WHERE tenant_id = $1 AND department_id IN (${placeholders})`,
         [tenantId, ...accessibleDepts],
       );
       for (const t of inheritedTeams) {
@@ -364,7 +364,7 @@ class HierarchyPermissionService {
    */
   private async getUserInfo(userId: number, tenantId: number): Promise<UserInfoRow | null> {
     const [rows] = await execute<UserInfoRow[]>(
-      `SELECT id, role, has_full_access FROM users WHERE id = ? AND tenant_id = ?`,
+      `SELECT id, role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
     return rows[0] ?? null;
@@ -378,7 +378,7 @@ class HierarchyPermissionService {
     tenantId: number,
   ): Promise<DepartmentInfoRow | null> {
     const [rows] = await execute<DepartmentInfoRow[]>(
-      `SELECT id, area_id FROM departments WHERE id = ? AND tenant_id = ?`,
+      `SELECT id, area_id FROM departments WHERE id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
     );
     return rows[0] ?? null;
@@ -389,7 +389,7 @@ class HierarchyPermissionService {
    */
   private async getTeamInfo(teamId: number, tenantId: number): Promise<TeamInfoRow | null> {
     const [rows] = await execute<TeamInfoRow[]>(
-      `SELECT id, department_id FROM teams WHERE id = ? AND tenant_id = ?`,
+      `SELECT id, department_id FROM teams WHERE id = $1 AND tenant_id = $2`,
       [teamId, tenantId],
     );
     return rows[0] ?? null;
@@ -400,7 +400,7 @@ class HierarchyPermissionService {
    */
   private async isTeamMember(userId: number, teamId: number, _tenantId: number): Promise<boolean> {
     const [rows] = await execute<TeamMemberRow[]>(
-      `SELECT user_id FROM user_teams WHERE user_id = ? AND team_id = ?`,
+      `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2`,
       [userId, teamId],
     );
     return rows.length > 0;
@@ -412,11 +412,11 @@ class HierarchyPermissionService {
   private hasPermissionLevel(perm: PermissionRow, level: PermissionLevel): boolean {
     switch (level) {
       case 'read':
-        return perm.can_read === 1;
+        return perm.can_read;
       case 'write':
-        return perm.can_write === 1;
+        return perm.can_write;
       case 'delete':
-        return perm.can_delete === 1;
+        return perm.can_delete;
       default:
         return false;
     }

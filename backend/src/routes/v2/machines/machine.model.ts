@@ -1,6 +1,4 @@
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
-
-import { query as executeQuery } from '../../../utils/db.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
 
 export interface MachineStatistics extends RowDataPacket {
   total_machines: number;
@@ -98,38 +96,43 @@ class MachineModel {
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
-      WHERE m.tenant_id = ?
+      WHERE m.tenant_id = $1
     `;
     const params: (string | number | boolean | null)[] = [tenantId];
 
+    // PostgreSQL: Dynamic $N parameter numbering
     if (filters.status != null && filters.status !== '') {
-      query += ' AND m.status = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND m.status = $${paramIndex}`;
       params.push(filters.status);
     }
 
     if (filters.machine_type != null && filters.machine_type !== '') {
-      query += ' AND m.machine_type = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND m.machine_type = $${paramIndex}`;
       params.push(filters.machine_type);
     }
 
     if (filters.department_id != null && filters.department_id !== 0) {
-      query += ' AND m.department_id = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND m.department_id = $${paramIndex}`;
       params.push(filters.department_id);
     }
 
     if (filters.is_active !== undefined) {
-      query += ' AND m.is_active = ?';
+      const paramIndex = params.length + 1;
+      query += ` AND m.is_active = $${paramIndex}`;
       params.push(filters.is_active);
     }
 
     if (filters.needs_maintenance === true) {
       query +=
-        " AND (m.next_maintenance <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) OR m.status = 'maintenance')";
+        " AND (m.next_maintenance <= CURRENT_DATE + INTERVAL '30 days' OR m.status = 'maintenance')";
     }
 
     if (filters.search != null && filters.search !== '') {
-      query +=
-        ' AND (m.name LIKE ? OR m.model LIKE ? OR m.manufacturer LIKE ? OR m.serial_number LIKE ? OR m.asset_number LIKE ?)';
+      const paramIndex = params.length + 1;
+      query += ` AND (m.name LIKE $${paramIndex} OR m.model LIKE $${paramIndex + 1} OR m.manufacturer LIKE $${paramIndex + 2} OR m.serial_number LIKE $${paramIndex + 3} OR m.asset_number LIKE $${paramIndex + 4})`;
       const searchTerm = `%${filters.search}%`;
       params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -147,7 +150,7 @@ class MachineModel {
              d.name as department_name
       FROM machines m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
-      WHERE m.id = ? AND m.tenant_id = ?
+      WHERE m.id = $1 AND m.tenant_id = $2
     `;
     const [rows] = await executeQuery<Machine[]>(query, [id, tenantId]);
     return rows[0] ?? null;
@@ -163,7 +166,7 @@ class MachineModel {
         last_maintenance, next_maintenance, operating_hours,
         production_capacity, energy_consumption, manual_url, 
         qr_code, notes, created_by, updated_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
     `;
 
     const params = [
@@ -229,9 +232,11 @@ class MachineModel {
       'is_active',
     ];
 
+    // PostgreSQL: Dynamic $N parameter numbering
     for (const field of updateFields) {
       if (data[field as keyof Machine] !== undefined) {
-        fields.push(`${field} = ?`);
+        const paramIndex = params.length + 1;
+        fields.push(`${field} = $${paramIndex}`);
         params.push(data[field as keyof Machine]);
       }
     }
@@ -243,10 +248,12 @@ class MachineModel {
     // Always update updated_at
     fields.push('updated_at = CURRENT_TIMESTAMP');
 
+    const idIndex = params.length + 1;
+    const tenantIndex = params.length + 2;
     const query = `
-      UPDATE machines 
+      UPDATE machines
       SET ${fields.join(', ')}
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $${idIndex} AND tenant_id = $${tenantIndex}
     `;
     params.push(id, tenantId);
 
@@ -257,8 +264,8 @@ class MachineModel {
   // Delete machine (hard delete)
   async delete(id: number, tenantId: number): Promise<boolean> {
     const query = `
-      DELETE FROM machines 
-      WHERE id = ? AND tenant_id = ?
+      DELETE FROM machines
+      WHERE id = $1 AND tenant_id = $2
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
@@ -267,9 +274,9 @@ class MachineModel {
   // Deactivate machine (soft delete)
   async deactivate(id: number, tenantId: number): Promise<boolean> {
     const query = `
-      UPDATE machines 
+      UPDATE machines
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $1 AND tenant_id = $2
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
@@ -278,9 +285,9 @@ class MachineModel {
   // Activate machine
   async activate(id: number, tenantId: number): Promise<boolean> {
     const query = `
-      UPDATE machines 
+      UPDATE machines
       SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND tenant_id = ?
+      WHERE id = $1 AND tenant_id = $2
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
@@ -298,7 +305,7 @@ class MachineModel {
       FROM machine_maintenance_history mh
       LEFT JOIN users u1 ON mh.performed_by = u1.id
       LEFT JOIN users u2 ON mh.created_by = u2.id
-      WHERE mh.machine_id = ? AND mh.tenant_id = ?
+      WHERE mh.machine_id = $1 AND mh.tenant_id = $2
       ORDER BY mh.performed_date DESC
     `;
     const [rows] = await executeQuery<MachineMaintenanceHistory[]>(query, [machineId, tenantId]);
@@ -313,7 +320,7 @@ class MachineModel {
         performed_by, external_company, description, parts_replaced,
         cost, duration_hours, status_after, next_maintenance_date,
         report_url, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `;
 
     const params = [
@@ -370,9 +377,9 @@ class MachineModel {
       SELECT m.*, d.name as department_name
       FROM machines m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
-      WHERE m.tenant_id = ?
+      WHERE m.tenant_id = $1
         AND m.is_active = TRUE
-        AND m.next_maintenance <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+        AND m.next_maintenance <= CURRENT_DATE + ($2 * INTERVAL '1 day')
         AND m.status != 'decommissioned'
       ORDER BY m.next_maintenance ASC
     `;
@@ -390,9 +397,9 @@ class MachineModel {
         SUM(CASE WHEN status = 'repair' THEN 1 ELSE 0 END) as in_repair,
         SUM(CASE WHEN status = 'standby' THEN 1 ELSE 0 END) as standby,
         SUM(CASE WHEN status = 'decommissioned' THEN 1 ELSE 0 END) as decommissioned,
-        SUM(CASE WHEN next_maintenance <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND status != 'decommissioned' THEN 1 ELSE 0 END) as needs_maintenance_soon
+        SUM(CASE WHEN next_maintenance <= CURRENT_DATE + INTERVAL '30 days' AND status != 'decommissioned' THEN 1 ELSE 0 END) as needs_maintenance_soon
       FROM machines
-      WHERE tenant_id = ? AND is_active = TRUE
+      WHERE tenant_id = $1 AND is_active = TRUE
     `;
     const [rows] = await executeQuery<MachineStatistics[]>(query, [tenantId]);
     const stats = rows[0];
@@ -404,11 +411,11 @@ class MachineModel {
     return stats;
   }
 
-  // Get machine categories
+  // Get machine categories (global table - shared across all tenants)
   async getCategories(): Promise<MachineCategory[]> {
     const query = `
-      SELECT * FROM machine_categories 
-      WHERE is_active = TRUE 
+      SELECT * FROM global.machine_categories
+      WHERE is_active = TRUE
       ORDER BY sort_order ASC, name ASC
     `;
     const [rows] = await executeQuery<MachineCategory[]>(query);

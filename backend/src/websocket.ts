@@ -1,10 +1,9 @@
 import { IncomingMessage, Server } from 'http';
 import jwt from 'jsonwebtoken';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { URL } from 'url';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
-import { execute, query } from './utils/db.js';
+import { ResultSetHeader, RowDataPacket, execute, query } from './utils/db.js';
 import { logger } from './utils/logger.js';
 
 interface ExtendedWebSocket extends WebSocket {
@@ -240,9 +239,9 @@ export class ChatWebSocketServer {
       SELECT cp.user_id
       FROM conversation_participants cp
       JOIN conversations c ON cp.conversation_id = c.id
-      WHERE cp.conversation_id = ?
-      AND c.tenant_id = ?
-      AND cp.tenant_id = ?
+      WHERE cp.conversation_id = $1
+      AND c.tenant_id = $2
+      AND cp.tenant_id = $3
     `;
     const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
       conversationId,
@@ -261,7 +260,7 @@ export class ChatWebSocketServer {
   ): Promise<number> {
     const messageQuery = `
       INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
-      VALUES (?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4)
     `;
     const [result] = await execute<ResultSetHeader>(messageQuery, [
       conversationId,
@@ -272,7 +271,10 @@ export class ChatWebSocketServer {
     return result.insertId;
   }
 
-  private async getSenderInfo(userId: number, tenantId: number): Promise<
+  private async getSenderInfo(
+    userId: number,
+    tenantId: number,
+  ): Promise<
     | {
         id: number;
         username: string;
@@ -284,7 +286,7 @@ export class ChatWebSocketServer {
   > {
     const senderQuery = `
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
-      FROM users WHERE id = ? AND tenant_id = ?
+      FROM users WHERE id = $1 AND tenant_id = $2
     `;
     const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId, tenantId]);
     return senderInfo[0] as
@@ -428,10 +430,10 @@ export class ChatWebSocketServer {
         SELECT cp.user_id
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ?
-        AND c.tenant_id = ?
-        AND cp.tenant_id = ?
-        AND cp.user_id != ?
+        WHERE cp.conversation_id = $1
+        AND c.tenant_id = $2
+        AND cp.tenant_id = $3
+        AND cp.user_id != $4
       `;
       const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
         conversationId,
@@ -468,13 +470,13 @@ export class ChatWebSocketServer {
       await execute<ResultSetHeader>(
         `
         UPDATE messages
-        SET is_read = 1
-        WHERE id = ?
-        AND tenant_id = ?
+        SET is_read = true
+        WHERE id = $1
+        AND tenant_id = $2
         AND EXISTS (
           SELECT 1 FROM conversation_participants cp
           WHERE cp.conversation_id = messages.conversation_id
-          AND cp.user_id = ?
+          AND cp.user_id = $3
         )
       `,
         [messageId, ws.tenantId, ws.userId],
@@ -482,7 +484,7 @@ export class ChatWebSocketServer {
 
       // Sender über Lesebestätigung informieren
       const messageQuery = `
-        SELECT sender_id, conversation_id FROM messages WHERE id = ?
+        SELECT sender_id, conversation_id FROM messages WHERE id = $1
       `;
       const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [messageId]);
 
@@ -522,10 +524,10 @@ export class ChatWebSocketServer {
         SELECT cp.user_id
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ?
-        AND c.tenant_id = ?
-        AND cp.tenant_id = ?
-        AND cp.user_id != ?
+        WHERE cp.conversation_id = $1
+        AND c.tenant_id = $2
+        AND cp.tenant_id = $3
+        AND cp.user_id != $4
       `;
       const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
         conversationId,
@@ -575,12 +577,13 @@ export class ChatWebSocketServer {
   ): Promise<void> {
     try {
       // Alle Unterhaltungen des Benutzers ermitteln
+      // PostgreSQL params: $1=userId, $2=tenantId, $3=userId (for != check)
       const conversationsQuery = `
         SELECT DISTINCT cp2.user_id
         FROM conversation_participants cp1
         JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
         JOIN conversations c ON cp1.conversation_id = c.id
-        WHERE cp1.user_id = ? AND c.tenant_id = ? AND cp2.user_id != ?
+        WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3
       `;
       const [relatedUsers] = await query<ConversationParticipantResult[]>(conversationsQuery, [
         userId,
@@ -634,17 +637,17 @@ export class ChatWebSocketServer {
    */
   private async processOneScheduledMessage(message: MessageDetailsResult): Promise<void> {
     await execute<ResultSetHeader>(
-      'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
+      "UPDATE messages SET delivery_status = 'delivered', scheduled_delivery = NULL WHERE id = $1",
       [message.id],
     );
 
     const [participants] = await query<ConversationParticipantResult[]>(
-      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND tenant_id = ?',
+      'SELECT user_id FROM conversation_participants WHERE conversation_id = $1 AND tenant_id = $2',
       [message.conversation_id, message.tenant_id],
     );
 
     const [senderInfo] = await query<UserInfoResult[]>(
-      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = ? AND tenant_id = ?',
+      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = $1 AND tenant_id = $2',
       [message.sender_id, message.tenant_id],
     );
     const sender = senderInfo[0] as
@@ -781,7 +784,7 @@ export class ChatWebSocketServer {
   private async deliverMessage(message: MessageWithSenderResult): Promise<void> {
     // Update status to processing
     await execute<ResultSetHeader>(
-      'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
+      "UPDATE message_delivery_queue SET status = 'processing', last_attempt = NOW(), attempts = attempts + 1 WHERE id = $1",
       [message.queue_id],
     );
 
@@ -800,12 +803,12 @@ export class ChatWebSocketServer {
 
     // Mark as delivered
     await execute<ResultSetHeader>(
-      'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
+      "UPDATE message_delivery_queue SET status = 'delivered' WHERE id = $1",
       [message.queue_id],
     );
 
     await execute<ResultSetHeader>(
-      'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
+      "UPDATE messages SET delivery_status = 'delivered' WHERE id = $1",
       [message.message_id],
     );
   }
@@ -815,24 +818,24 @@ export class ChatWebSocketServer {
    */
   private async handleDeliveryFailure(message: MessageWithSenderResult): Promise<void> {
     const [result] = await query<NotificationQueueResult[]>(
-      'SELECT attempts FROM message_delivery_queue WHERE id = ?',
+      'SELECT attempts FROM message_delivery_queue WHERE id = $1',
       [message.queue_id],
     );
 
     if (result[0] && result[0].attempts >= 3) {
       // Mark as failed after max attempts
       await execute<ResultSetHeader>(
-        'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
+        "UPDATE message_delivery_queue SET status = 'failed' WHERE id = $1",
         [message.queue_id],
       );
       await execute<ResultSetHeader>(
-        'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
+        "UPDATE messages SET delivery_status = 'failed' WHERE id = $1",
         [message.message_id],
       );
     } else {
       // Reset to pending for retry
       await execute<ResultSetHeader>(
-        'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
+        "UPDATE message_delivery_queue SET status = 'pending' WHERE id = $1",
         [message.queue_id],
       );
     }

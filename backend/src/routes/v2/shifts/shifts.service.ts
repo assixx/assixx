@@ -2,10 +2,8 @@
  * Shifts API v2 Service Layer
  * Core business logic for shift operations
  */
-import { RowDataPacket } from 'mysql2';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
 import rootLog from '../logs/logs.service.js';
@@ -1013,16 +1011,17 @@ class ShiftsService {
   ): Promise<{ date: string; type: string }[]> {
     try {
       // Query BOTH tables as specified in shifts-in-calendar.md plan
+      // PostgreSQL: Use TEXT instead of CHAR CHARACTER SET / COLLATE
       const sqlQuery = `
         SELECT DISTINCT date, type FROM (
           -- From shifts table (primary source)
           SELECT
             DATE(date) as date,
-            CAST(type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as type
+            type::TEXT as type
           FROM shifts
-          WHERE user_id = ?
-            AND tenant_id = ?
-            AND date BETWEEN ? AND ?
+          WHERE user_id = $1
+            AND tenant_id = $2
+            AND date BETWEEN $3 AND $4
             AND type IN ('F', 'S', 'N', 'early', 'late', 'night')
 
           UNION
@@ -1030,11 +1029,11 @@ class ShiftsService {
           -- From shift_rotation_history table (secondary source)
           SELECT
             DATE(shift_date) as date,
-            CAST(shift_type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as type
+            shift_type::TEXT as type
           FROM shift_rotation_history
-          WHERE user_id = ?
-            AND tenant_id = ?
-            AND shift_date BETWEEN ? AND ?
+          WHERE user_id = $5
+            AND tenant_id = $6
+            AND shift_date BETWEEN $7 AND $8
         ) AS combined_shifts
         ORDER BY date ASC
       `;

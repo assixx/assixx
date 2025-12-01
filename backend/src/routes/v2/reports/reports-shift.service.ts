@@ -17,27 +17,29 @@ function toSafeNumber(value: unknown): number {
 
 /**
  * Build shift query conditions from filters
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function buildShiftQueryConditions(filters: ReportFilters): {
   conditions: string[];
   params: (string | number)[];
 } {
-  const conditions = [`s.tenant_id = ?`];
+  let paramIndex = 1;
+  const conditions = [`s.tenant_id = $${paramIndex++}`];
   const params: (string | number)[] = [filters.tenantId];
 
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
   const dateTo = filters.dateTo ?? getDefaultDateTo();
 
-  conditions.push(`s.date BETWEEN ? AND ?`);
+  conditions.push(`s.date BETWEEN $${paramIndex++} AND $${paramIndex++}`);
   params.push(dateFrom, dateTo);
 
   if (filters.departmentId !== undefined) {
-    conditions.push(`s.department_id = ?`);
+    conditions.push(`s.department_id = $${paramIndex++}`);
     params.push(filters.departmentId);
   }
 
   if (filters.teamId !== undefined) {
-    conditions.push(`s.team_id = ?`);
+    conditions.push(`s.team_id = $${paramIndex++}`);
     params.push(filters.teamId);
   }
 
@@ -85,8 +87,8 @@ async function getOvertimeByDepartment(
       0 as overtime_cost
     FROM shifts s
     JOIN departments d ON d.id = s.department_id
-    WHERE s.tenant_id = ?
-      AND s.date BETWEEN ? AND ?
+    WHERE s.tenant_id = $1
+      AND s.date BETWEEN $2 AND $3
       -- AND s.overtime_hours > 0
     GROUP BY d.id, d.name
     ORDER BY d.name DESC
@@ -112,8 +114,8 @@ async function getPeakHoursAnalysis(
       COUNT(*) as count,
       1 as fill_rate
     FROM shifts
-    WHERE tenant_id = ?
-      AND date BETWEEN ? AND ?
+    WHERE tenant_id = $1
+      AND date BETWEEN $2 AND $3
     GROUP BY type
     ORDER BY count DESC
   `,

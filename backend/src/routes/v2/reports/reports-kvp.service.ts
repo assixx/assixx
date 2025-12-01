@@ -22,6 +22,7 @@ function safeParseFloat(value: unknown): number {
 
 /**
  * Build KVP query conditions from filters
+ * PostgreSQL: Dynamic $N parameter numbering
  */
 function buildKvpQueryConditions(
   tenantId: number,
@@ -29,14 +30,15 @@ function buildKvpQueryConditions(
   dateTo: string,
   categoryId?: number,
 ): { conditions: string[]; params: (string | number)[] } {
-  const conditions = [`k.tenant_id = ?`];
+  let paramIndex = 1;
+  const conditions = [`k.tenant_id = $${paramIndex++}`];
   const params: (string | number)[] = [tenantId];
 
-  conditions.push(`k.created_at BETWEEN ? AND ?`);
+  conditions.push(`k.created_at BETWEEN $${paramIndex++} AND $${paramIndex++}`);
   params.push(dateFrom, dateTo);
 
   if (categoryId !== undefined && categoryId > 0) {
-    conditions.push(`k.category_id = ?`);
+    conditions.push(`k.category_id = $${paramIndex++}`);
     params.push(categoryId);
   }
 
@@ -83,8 +85,8 @@ async function getKvpByCategory(
       AVG(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE NULL END) as avg_savings
     FROM global.kvp_categories c
     LEFT JOIN kvp_suggestions k ON k.category_id = c.id
-      AND k.tenant_id = ?
-      AND k.created_at BETWEEN ? AND ?
+      AND k.tenant_id = $1
+      AND k.created_at BETWEEN $2 AND $3
     GROUP BY c.id, c.name
     ORDER BY suggestions DESC
   `,
@@ -110,8 +112,8 @@ async function getKvpTopPerformers(
       SUM(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE 0 END) as total_savings
     FROM users u
     JOIN kvp_suggestions k ON k.submitted_by = u.id
-    WHERE k.tenant_id = ?
-      AND k.created_at BETWEEN ? AND ?
+    WHERE k.tenant_id = $1
+      AND k.created_at BETWEEN $2 AND $3
     GROUP BY u.id, u.first_name, u.last_name
     HAVING suggestions > 0
     ORDER BY total_savings DESC

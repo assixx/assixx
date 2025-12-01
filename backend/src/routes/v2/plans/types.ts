@@ -1,4 +1,4 @@
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket } from '../../../utils/db.js';
 
 // Plans API v2 Types
 
@@ -128,7 +128,7 @@ export interface DbPlanFeature {
   feature_id: number;
   feature_code: string;
   feature_name: string;
-  is_included: number | boolean;
+  is_included: boolean;
 }
 
 // Database result type for tenant plans

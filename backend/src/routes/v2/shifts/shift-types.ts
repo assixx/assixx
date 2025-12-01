@@ -10,9 +10,10 @@ export const ERROR_MESSAGES = {
 } as const;
 
 // SQL Query Fragments
+// NOTE: These are template strings - actual parameter index must be substituted at runtime
 export const SQL_FRAGMENTS = {
-  DEPARTMENT_FILTER: ' AND sp.department_id = ?',
-  TEAM_FILTER: ' AND sp.team_id = ?',
+  departmentFilter: (paramIndex: number) => ` AND sp.department_id = $${paramIndex}`,
+  teamFilter: (paramIndex: number) => ` AND sp.team_id = $${paramIndex}`,
 } as const;
 
 /**

@@ -76,22 +76,22 @@ async function insertAnswers(
   for (const answer of answers) {
     if (answer.answer_text !== undefined && answer.answer_text !== '') {
       await connection.query(
-        `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, answer.question_id, answer.answer_text, tenantId] as unknown[],
       );
     } else if (answer.answer_number !== undefined) {
       await connection.query(
-        `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, answer.question_id, answer.answer_number, tenantId] as unknown[],
       );
     } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
       await connection.query(
-        `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
       );
     } else if (answer.answer_options !== undefined && answer.answer_options.length > 0) {
       await connection.query(
-        `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES ($1, $2, $3, $4)`,
         [
           responseId,
           answer.question_id,
@@ -123,7 +123,7 @@ async function transformResponseWithAnswers(
 ): Promise<SurveyResponse> {
   const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
     `SELECT sa.*, sq.question_type, sq.question_text FROM survey_answers sa
-     JOIN survey_questions sq ON sa.question_id = sq.id WHERE sa.response_id = ? AND sa.tenant_id = ?`,
+     JOIN survey_questions sq ON sa.question_id = sq.id WHERE sa.response_id = $1 AND sa.tenant_id = $2`,
     [dbResponse.id, tenantId],
   );
 
@@ -154,7 +154,7 @@ class ResponsesService {
     // Check if survey exists and is active
     const [surveys] = await query<SurveyFlagsResult[]>(
       `SELECT id, status, allow_multiple_responses FROM surveys
-       WHERE id = ? AND tenant_id = ? AND status = 'active'`,
+       WHERE id = $1 AND tenant_id = $2 AND status = 'active'`,
       [surveyId, tenantId] as unknown[],
     );
 
@@ -166,7 +166,7 @@ class ResponsesService {
     // Check if user already responded (if multiple responses not allowed)
     if (survey.allow_multiple_responses !== 1) {
       const [existing] = await query<IdResult[]>(
-        `SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND tenant_id = ?`,
+        `SELECT id FROM survey_responses WHERE survey_id = $1 AND user_id = $2 AND tenant_id = $3`,
         [surveyId, userId, tenantId] as unknown[],
       );
       if (existing.length > 0) {
@@ -177,7 +177,7 @@ class ResponsesService {
     return await transaction(async (connection: PoolConnection) => {
       const [result] = await connection.query<ResultSetHeader>(
         `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status)
-         VALUES (?, ?, ?, NOW(), NOW(), 'completed')`,
+         VALUES ($1, $2, $3, NOW(), NOW(), 'completed')`,
         [surveyId, userId, tenantId] as unknown[],
       );
       await insertAnswers(connection, result.insertId, normalizeAnswers(answers), tenantId);
@@ -202,7 +202,7 @@ class ResponsesService {
 
     // Check if survey is anonymous
     const [surveyInfo] = await query<SurveyFlagsResult[]>(
-      `SELECT is_anonymous FROM surveys WHERE id = ? AND tenant_id = ?`,
+      `SELECT is_anonymous FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId] as unknown[],
     );
 
@@ -221,7 +221,7 @@ class ResponsesService {
     const [countResult] = await query<TotalCountResult[]>(
       `SELECT COUNT(*) as total
        FROM survey_responses
-       WHERE survey_id = ? AND tenant_id = ?`,
+       WHERE survey_id = $1 AND tenant_id = $2`,
       [surveyId, tenantId] as unknown[],
     );
 
@@ -242,7 +242,7 @@ class ResponsesService {
 
     const [responses] = await query<SurveyResponseWithUserResult[]>(
       `SELECT sr.*, ${userFields} FROM survey_responses sr ${userJoin}
-       WHERE sr.survey_id = ? AND sr.tenant_id = ? ORDER BY sr.completed_at DESC LIMIT ? OFFSET ?`,
+       WHERE sr.survey_id = $1 AND sr.tenant_id = $2 ORDER BY sr.completed_at DESC LIMIT $3 OFFSET $4`,
       [surveyId, tenantId, options.limit, offset] as unknown[],
     );
 
@@ -264,7 +264,7 @@ class ResponsesService {
     const [responses] = await query<SurveyResponseWithUserResult[]>(
       `SELECT sr.*
        FROM survey_responses sr
-       WHERE sr.survey_id = ? AND sr.user_id = ? AND sr.tenant_id = ?
+       WHERE sr.survey_id = $1 AND sr.user_id = $2 AND sr.tenant_id = $3
        ORDER BY sr.started_at DESC
        LIMIT 1`,
       [surveyId, userId, tenantId] as unknown[],
@@ -284,7 +284,7 @@ class ResponsesService {
       `SELECT sa.*, sq.question_type, sq.question_text
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
-       WHERE sa.response_id = ? AND sa.tenant_id = ?`,
+       WHERE sa.response_id = $1 AND sa.tenant_id = $2`,
       [dbResponse.id, tenantId] as unknown[],
     );
 
@@ -329,7 +329,7 @@ class ResponsesService {
       `SELECT sr.*, u.first_name, u.last_name, u.username
        FROM survey_responses sr
        LEFT JOIN users u ON sr.user_id = u.id
-       WHERE sr.id = ? AND sr.survey_id = ? AND sr.tenant_id = ?`,
+       WHERE sr.id = $1 AND sr.survey_id = $2 AND sr.tenant_id = $3`,
       [responseId, surveyId, tenantId] as unknown[],
     );
 
@@ -352,7 +352,7 @@ class ResponsesService {
       `SELECT sa.*, sq.question_type, sq.question_text
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
-       WHERE sa.response_id = ? AND sa.tenant_id = ?`,
+       WHERE sa.response_id = $1 AND sa.tenant_id = $2`,
       [responseId, tenantId],
     );
 
@@ -398,7 +398,7 @@ class ResponsesService {
       `SELECT sr.*, s.allow_edit_responses
        FROM survey_responses sr
        JOIN surveys s ON sr.survey_id = s.id
-       WHERE sr.id = ? AND sr.survey_id = ? AND sr.user_id = ? AND sr.tenant_id = ?`,
+       WHERE sr.id = $1 AND sr.survey_id = $2 AND sr.user_id = $3 AND sr.tenant_id = $4`,
       [responseId, surveyId, userId, tenantId] as unknown[],
     );
 
@@ -416,13 +416,13 @@ class ResponsesService {
     }
 
     await transaction(async (connection: PoolConnection) => {
-      await connection.query(`DELETE FROM survey_answers WHERE response_id = ? AND tenant_id = ?`, [
-        responseId,
-        tenantId,
-      ]);
+      await connection.query(
+        `DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`,
+        [responseId, tenantId],
+      );
       await insertAnswers(connection, responseId, normalizeAnswers(answers), tenantId);
       await connection.query(
-        `UPDATE survey_responses SET completed_at = NOW() WHERE id = ? AND tenant_id = ?`,
+        `UPDATE survey_responses SET completed_at = NOW() WHERE id = $1 AND tenant_id = $2`,
         [responseId, tenantId] as unknown[],
       );
     });
@@ -445,7 +445,7 @@ class ResponsesService {
 
     // Get survey with questions
     const [surveys] = await query<IdResult[]>(
-      `SELECT id FROM surveys WHERE id = ? AND tenant_id = ?`,
+      `SELECT id FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId] as unknown[],
     );
 
@@ -472,7 +472,7 @@ class ResponsesService {
        LEFT JOIN users u ON sr.user_id = u.id
        LEFT JOIN survey_questions sq ON sq.survey_id = sr.survey_id
        LEFT JOIN survey_answers sa ON sa.response_id = sr.id AND sa.question_id = sq.id
-       WHERE sr.survey_id = ? AND sr.tenant_id = ?
+       WHERE sr.survey_id = $1 AND sr.tenant_id = $2
        ORDER BY sr.id, sq.order_position`,
       [surveyId, tenantId] as unknown[],
     );

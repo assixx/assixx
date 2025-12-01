@@ -59,25 +59,35 @@ export function applyOrgLevelFilter(
       updatedQuery += " AND e.org_level = 'company'";
       break;
     case 'department':
-      updatedQuery += " AND e.org_level = 'department' AND e.department_id = ?";
-      updatedParams.push(userDepartmentId);
+      {
+        const paramIndex = updatedParams.length + 1;
+        updatedQuery += ` AND e.org_level = 'department' AND e.department_id = $${paramIndex}`;
+        updatedParams.push(userDepartmentId);
+      }
       break;
     case 'team':
-      // User can be in multiple teams via user_teams (N:M relation)
-      updatedQuery +=
-        " AND e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)";
-      updatedParams.push(userId);
+      {
+        // User can be in multiple teams via user_teams (N:M relation)
+        const paramIndex = updatedParams.length + 1;
+        updatedQuery += ` AND e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = $${paramIndex})`;
+        updatedParams.push(userId);
+      }
       break;
     case 'area':
-      // User is assigned to area indirectly via department.area_id
-      updatedQuery +=
-        " AND e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)";
-      updatedParams.push(userDepartmentId);
+      {
+        // User is assigned to area indirectly via department.area_id
+        const paramIndex = updatedParams.length + 1;
+        updatedQuery += ` AND e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = $${paramIndex})`;
+        updatedParams.push(userDepartmentId);
+      }
       break;
     case 'personal':
-      updatedQuery +=
-        " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
-      updatedParams.push(userId, userId);
+      {
+        const paramIndex1 = updatedParams.length + 1;
+        const paramIndex2 = updatedParams.length + 2;
+        updatedQuery += ` AND (e.org_level = 'personal' AND (e.user_id = $${paramIndex1} OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${paramIndex2})))`;
+        updatedParams.push(userId, userId);
+      }
       break;
   }
 
@@ -98,17 +108,20 @@ export function applyDateAndSearchFilters(
   const updatedParams = [...params];
 
   if (startDate !== undefined && startDate !== '') {
-    updatedQuery += ' AND e.end_date >= ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND e.end_date >= $${paramIndex}`;
     updatedParams.push(startDate);
   }
 
   if (endDate !== undefined && endDate !== '') {
-    updatedQuery += ' AND e.start_date <= ?';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND e.start_date <= $${paramIndex}`;
     updatedParams.push(endDate);
   }
 
   if (search !== undefined && search !== '') {
-    updatedQuery += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
+    const paramIndex = updatedParams.length + 1;
+    updatedQuery += ` AND (e.title LIKE $${paramIndex} OR e.description LIKE $${paramIndex + 1} OR e.location LIKE $${paramIndex + 2})`;
     const searchTerm = `%${search}%`;
     updatedParams.push(searchTerm, searchTerm, searchTerm);
   }
@@ -125,15 +138,16 @@ function applyAllFilterAccess(
   userDepartmentId: number | null | undefined,
   userId: number,
 ): { query: string; params: unknown[] } {
+  const baseParamCount = params.length;
   const accessQuery =
     query +
     ` AND (
       e.org_level = 'company' OR
-      (e.org_level = 'department' AND e.department_id = ?) OR
-      (e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)) OR
-      (e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)) OR
-      e.user_id = ? OR
-      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
+      (e.org_level = 'department' AND e.department_id = $${baseParamCount + 1}) OR
+      (e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = $${baseParamCount + 2})) OR
+      (e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = $${baseParamCount + 3})) OR
+      e.user_id = $${baseParamCount + 4} OR
+      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${baseParamCount + 5})
     )`;
   return {
     query: accessQuery,
@@ -149,12 +163,13 @@ function applyCountQueryAccess(
   params: unknown[],
   userId: number,
 ): { query: string; params: unknown[] } {
+  const baseParamCount = params.length;
   const accessQuery =
     query +
     ` AND (
       e.type IN ('meeting', 'training') OR
-      e.user_id = ? OR
-      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
+      e.user_id = $${baseParamCount + 1} OR
+      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${baseParamCount + 2})
     )`;
   return { query: accessQuery, params: [...params, userId, userId] };
 }
@@ -232,7 +247,7 @@ export async function getEventCount(
   const countQuery = `
     SELECT COUNT(*) as total
     FROM calendar_events e
-    WHERE e.tenant_id = ? AND e.status = ?
+    WHERE e.tenant_id = $1 AND e.status = $2
   `;
   const countBaseParams: unknown[] = [tenantId, dbStatus];
   const { query: filteredCountQuery, params: countParams } = applyEventFilters(
@@ -254,7 +269,7 @@ export async function getEventCount(
  */
 async function hasTeamAccess(userId: number, teamId: number): Promise<boolean> {
   const [teamRows] = await executeQuery<RowDataPacket[]>(
-    'SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ?',
+    'SELECT 1 FROM user_teams WHERE user_id = $1 AND team_id = $2',
     [userId, teamId],
   );
   return teamRows.length > 0;
@@ -267,7 +282,7 @@ async function hasAreaAccess(userDepartmentId: number | null, areaId: number): P
   if (userDepartmentId === null) return false;
 
   const [areaRows] = await executeQuery<RowDataPacket[]>(
-    'SELECT 1 FROM departments WHERE id = ? AND area_id = ?',
+    'SELECT 1 FROM departments WHERE id = $1 AND area_id = $2',
     [userDepartmentId, areaId],
   );
   return areaRows.length > 0;
@@ -278,7 +293,7 @@ async function hasAreaAccess(userDepartmentId: number | null, areaId: number): P
  */
 async function isEventAttendee(eventId: number, userId: number): Promise<boolean> {
   const [attendeeRows] = await executeQuery<RowDataPacket[]>(
-    'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
+    'SELECT 1 FROM calendar_attendees WHERE event_id = $1 AND user_id = $2',
     [eventId, userId],
   );
   return attendeeRows.length > 0;
@@ -459,14 +474,18 @@ export function buildEventUpdateQuery(
   let query = 'UPDATE calendar_events SET updated_at = NOW()';
   const queryParams: unknown[] = [];
 
+  // PostgreSQL: Dynamic $N parameter numbering
   for (const { condition, field, value } of fieldMappings) {
     if (condition) {
-      query += `, ${field} = ?`;
+      const paramIndex = queryParams.length + 1;
+      query += `, ${field} = $${paramIndex}`;
       queryParams.push(value);
     }
   }
 
-  query += ' WHERE id = ? AND tenant_id = ?';
+  const whereIdIndex = queryParams.length + 1;
+  const whereTenantIndex = queryParams.length + 2;
+  query += ` WHERE id = $${whereIdIndex} AND tenant_id = $${whereTenantIndex}`;
   queryParams.push(id, tenantId);
 
   return { query, params: queryParams };

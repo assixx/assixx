@@ -4,12 +4,18 @@
  * No manual maintenance needed - adapts to schema changes automatically!
  */
 import fs from 'fs/promises';
-import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import path from 'path';
 
 import { getRedisClient } from '../config/redis.js';
 import { DbUser } from '../routes/v2/users/model/index.js';
-import { execute, query, transaction } from '../utils/db.js';
+import {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+  execute,
+  query,
+  transaction,
+} from '../utils/db.js';
 import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
 import emailService from '../utils/emailService.js';
 import { logger } from '../utils/logger.js';
@@ -96,13 +102,14 @@ export class TenantDeletionService {
 
   /**
    * Get all tables with tenant_id column
+   * NOTE: Uses PostgreSQL information_schema - DATABASE() is MySQL-specific, use current_database() for PostgreSQL
    */
   private async getTablesWithTenantId(conn: ConnectionWrapper): Promise<TableNameRow[]> {
     const [tables] = (await conn.query<TableNameRow[]>(`
       SELECT DISTINCT TABLE_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE COLUMN_NAME = 'tenant_id'
-      AND TABLE_SCHEMA = DATABASE()
+      AND TABLE_SCHEMA = current_database()
       AND TABLE_NAME NOT LIKE 'v_%'
       ORDER BY TABLE_NAME
     `)) as unknown as [TableNameRow[], unknown];
@@ -111,14 +118,18 @@ export class TenantDeletionService {
 
   /**
    * Get user-related tables (with user_id FK)
+   * NOTE: Uses PostgreSQL information_schema - DATABASE() is MySQL-specific, use current_database() for PostgreSQL
    */
   private async getUserRelatedTables(conn: ConnectionWrapper): Promise<TableNameRow[]> {
-    const placeholders = this.CRITICAL_TABLES.map(() => '?').join(',');
+    // PostgreSQL: Generate sequential $1, $2, $3... for each table name
+    const placeholders = this.CRITICAL_TABLES.map((_: string, idx: number) => `$${idx + 1}`).join(
+      ',',
+    );
     const [tables] = (await conn.query<TableNameRow[]>(
       `SELECT DISTINCT TABLE_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE COLUMN_NAME = 'user_id'
-      AND TABLE_SCHEMA = DATABASE()
+      AND TABLE_SCHEMA = current_database()
       ${placeholders !== '' ? `AND TABLE_NAME NOT IN (${placeholders})` : ''}`,
       this.CRITICAL_TABLES,
     )) as unknown as [TableNameRow[], unknown];
@@ -130,7 +141,7 @@ export class TenantDeletionService {
    */
   private async checkLegalHolds(tenantId: number, conn: ConnectionWrapper): Promise<void> {
     const [holds] = (await conn.query<LegalHoldRow[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
       [tenantId],
     )) as unknown as [LegalHoldRow[], unknown];
 
@@ -160,7 +171,7 @@ export class TenantDeletionService {
       const tableName = tableRow.TABLE_NAME;
 
       try {
-        const [data] = await conn.query(`SELECT * FROM \`${tableName}\` WHERE tenant_id = ?`, [
+        const [data] = await conn.query(`SELECT * FROM \`${tableName}\` WHERE tenant_id = $1`, [
           tenantId,
         ]);
 
@@ -187,7 +198,7 @@ export class TenantDeletionService {
 
     // Store export path in database
     await conn.query(
-      'INSERT INTO tenant_data_exports (tenant_id, export_path, created_at) VALUES (?, ?, NOW())',
+      'INSERT INTO tenant_data_exports (tenant_id, export_path, created_at) VALUES ($1, $2, NOW())',
       [tenantId, archivePath],
     );
 
@@ -203,7 +214,7 @@ export class TenantDeletionService {
     conn: ConnectionWrapper,
   ): Promise<DeletionLog | null> {
     try {
-      const result = (await conn.query(`DELETE FROM \`${tableName}\` WHERE tenant_id = ?`, [
+      const result = (await conn.query(`DELETE FROM \`${tableName}\` WHERE tenant_id = $1`, [
         tenantId,
       ])) as unknown as ResultSetHeader;
 
@@ -235,7 +246,7 @@ export class TenantDeletionService {
         const result = (await conn.query(
           `DELETE t FROM \`${tableName}\` t
            INNER JOIN users u ON t.user_id = u.id
-           WHERE u.tenant_id = ?`,
+           WHERE u.tenant_id = $1`,
           [tenantId],
         )) as unknown as ResultSetHeader;
 
@@ -259,7 +270,7 @@ export class TenantDeletionService {
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const [admins] = await query<DbUser[]>(
-      'SELECT * FROM users WHERE tenant_id = ? AND role IN ("admin", "root")',
+      'SELECT * FROM users WHERE tenant_id = $1 AND role IN ("admin", "root")',
       [tenantId],
     );
 
@@ -295,13 +306,13 @@ export class TenantDeletionService {
   ): Promise<void> {
     const executeAudit = async (conn: ConnectionWrapper): Promise<void> => {
       const [tenantResults] = await conn.query<TenantInfoRow[]>(
-        'SELECT * FROM tenants WHERE id = ?',
+        'SELECT * FROM tenants WHERE id = $1',
         [tenantId],
       );
       const tenantInfo = (tenantResults?.[0] as TenantInfoRow | undefined) ?? undefined;
 
       const userResults = await conn.query<CountResult[]>(
-        'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?',
+        'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1',
         [tenantId],
       );
       const firstUserResult: CountResult | undefined = userResults[0];
@@ -310,7 +321,7 @@ export class TenantDeletionService {
       await conn.query(
         `INSERT INTO deletion_audit_trail
          (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           tenantId,
           tenantInfo?.company_name ?? 'Unknown',
@@ -365,7 +376,7 @@ export class TenantDeletionService {
     deletionLog.push(...userDeletions);
 
     // Delete tenant record
-    const tenantResult = (await wrappedConn.query('DELETE FROM tenants WHERE id = ?', [
+    const tenantResult = (await wrappedConn.query('DELETE FROM tenants WHERE id = $1', [
       tenantId,
     ])) as unknown as ResultSetHeader;
     deletionLog.push({ table: 'tenants', deleted: tenantResult.affectedRows });
@@ -404,7 +415,7 @@ export class TenantDeletionService {
         }
 
         await wrappedConn.query(
-          'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW() WHERE id = ?',
+          'UPDATE tenant_deletion_queue SET status = $1, completed_at = NOW() WHERE id = $2',
           ['completed', queueId],
         );
         await this.clearRedisCache(tenantId);
@@ -412,7 +423,7 @@ export class TenantDeletionService {
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error) {
         await wrappedConn.query(
-          'UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?',
+          'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
           ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
         );
         throw error;
@@ -483,7 +494,7 @@ export class TenantDeletionService {
       }
 
       const countResult = await conn.query<CountResult[]>(
-        `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = ?`,
+        `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = $1`,
         [tenantId],
       );
 
@@ -515,7 +526,7 @@ export class TenantDeletionService {
 
     // Check if already queued
     const [existing] = await query<QueueRow[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ? AND status IN ("pending", "approved", "processing")',
+      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'processing')",
       [tenantId],
     );
 
@@ -525,7 +536,7 @@ export class TenantDeletionService {
 
     // Check legal holds
     const [legalHolds] = await query<RowDataPacket[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
       [tenantId],
     );
 
@@ -540,14 +551,14 @@ export class TenantDeletionService {
     const [result] = await execute<ResultSetHeader>(
       `INSERT INTO tenant_deletion_queue
        (tenant_id, created_by, scheduled_deletion_date, status, approval_status, deletion_reason, ip_address)
-       VALUES (?, ?, ?, 'pending', 'pending', ?, ?)`,
+       VALUES ($1, $2, $3, 'pending_approval', 'pending', $4, $5)`,
       [tenantId, requestedBy, scheduledDate, reason ?? null, ipAddress ?? null],
     );
 
     const queueId = result.insertId;
 
     // Update tenant status
-    await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['scheduled', tenantId]);
+    await execute('UPDATE tenants SET deletion_status = $1 WHERE id = $2', ['scheduled', tenantId]);
 
     // Send warning emails
     await this.sendDeletionWarningEmails(tenantId, scheduledDate);
@@ -565,7 +576,7 @@ export class TenantDeletionService {
    */
   async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
     const [queue] = await query<QueueRow[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ? AND status = "pending"',
+      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status = 'pending_approval'",
       [tenantId],
     );
 
@@ -579,11 +590,11 @@ export class TenantDeletionService {
     }
 
     await execute(
-      'UPDATE tenant_deletion_queue SET status = "cancelled", completed_at = NOW() WHERE id = ?',
+      "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
       [firstQueueItem.id],
     );
 
-    await execute('UPDATE tenants SET deletion_status = NULL WHERE id = ?', [tenantId]);
+    await execute('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
 
     logger.info(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
   }
@@ -596,7 +607,7 @@ export class TenantDeletionService {
       // Get next approved item ready for deletion
       const [queueItems] = await query<QueueRow[]>(
         `SELECT * FROM tenant_deletion_queue
-         WHERE status = 'pending'
+         WHERE status = 'queued'
          AND approval_status = 'approved'
          AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
          ORDER BY created_at ASC
@@ -648,7 +659,7 @@ export class TenantDeletionService {
 
     // Check blockers
     const [legalHolds] = await query<LegalHoldResult[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
       [tenantId],
     );
 
@@ -669,7 +680,7 @@ export class TenantDeletionService {
 
         try {
           const countResult = await wrappedConn.query<CountResult[]>(
-            `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = ?`,
+            `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = $1`,
             [tenantId],
           );
 
@@ -725,10 +736,10 @@ export class TenantDeletionService {
     await execute(
       `UPDATE tenant_deletion_queue
        SET approval_status = 'approved',
-           approved_by = ?,
+           approved_by = $1,
            approved_at = NOW(),
-           status = 'pending'
-       WHERE id = ? AND approval_status = 'pending'`,
+           status = 'queued'
+       WHERE id = $2 AND approval_status = 'pending'`,
       [approvedBy, queueId],
     );
 
@@ -741,7 +752,7 @@ export class TenantDeletionService {
    */
   async rejectDeletion(queueId: number, rejectedBy: number, _reason?: string): Promise<void> {
     const [queueRows] = await query<QueueRow[]>(
-      'SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?',
+      'SELECT tenant_id FROM tenant_deletion_queue WHERE id = $1',
       [queueId],
     );
 
@@ -780,7 +791,7 @@ export class TenantDeletionService {
     const [rows] = await query<QueueRow[]>(
       `SELECT id, status, scheduled_deletion_date, approval_status
        FROM tenant_deletion_queue
-       WHERE tenant_id = ? AND status != 'cancelled'
+       WHERE tenant_id = $1 AND status != 'cancelled'
        ORDER BY created_at DESC
        LIMIT 1`,
       [tenantId],
@@ -817,13 +828,13 @@ export class TenantDeletionService {
    * Retry a failed deletion
    */
   async retryDeletion(queueId: number): Promise<void> {
-    // Reset status to pending to retry
+    // Reset status to queued to retry
     await execute(
       `UPDATE tenant_deletion_queue
-       SET status = 'pending',
+       SET status = 'queued',
            error_message = NULL,
            retry_count = retry_count + 1
-       WHERE id = ? AND status = 'failed'`,
+       WHERE id = $1 AND status = 'failed'`,
       [queueId],
     );
 

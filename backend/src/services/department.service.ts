@@ -2,13 +2,12 @@
  * Department Service
  * Handles department-related business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import department, {
   DepartmentCreateData,
   DbDepartment as DepartmentData,
   DepartmentUpdateData,
 } from '../routes/v2/departments/department.model.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Department Service

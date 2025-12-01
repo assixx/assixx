@@ -1,6 +1,5 @@
 // Express Request Extensions Type Definitions
-import { Pool } from 'mysql2/promise';
-
+import { Pool } from '../utils/db.js';
 import { AuthUser } from './request.types.js';
 import { TenantInfo } from './tenant.types.js';
 

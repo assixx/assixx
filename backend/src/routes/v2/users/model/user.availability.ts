@@ -20,10 +20,10 @@ export async function autoResetExpiredAvailability(tenantId: number): Promise<vo
            availability_end = NULL,
            availability_notes = NULL,
            updated_at = NOW()
-       WHERE tenant_id = ?
+       WHERE tenant_id = $1
          AND availability_status != 'available'
          AND availability_end IS NOT NULL
-         AND availability_end < CURDATE()`,
+         AND availability_end < CURRENT_DATE`,
       [tenantId],
     );
   } catch (error: unknown) {
@@ -43,12 +43,12 @@ export async function updateUserAvailability(
   try {
     const [result] = await executeQuery<ResultSetHeader>(
       `UPDATE users
-         SET availability_status = ?,
-             availability_start = ?,
-             availability_end = ?,
-             availability_notes = ?,
+         SET availability_status = $1,
+             availability_start = $3,
+             availability_end = $4,
+             availability_notes = $5,
              updated_at = NOW()
-         WHERE id = ? AND tenant_id = ?`,
+         WHERE id = $6 AND tenant_id = $2`,
       [
         availabilityData.availability_status,
         availabilityData.availability_start ?? null,

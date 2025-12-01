@@ -3,7 +3,7 @@
  * Tests business logic with real database
  */
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import type { ResultSetHeader } from 'mysql2';
+import type { ResultSetHeader } from '../../../utils/db.js';
 
 import { execute } from '../../../utils/db.js';
 import { ServiceError, UsersService } from './users.service.js';

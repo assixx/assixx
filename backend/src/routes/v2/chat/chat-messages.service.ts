@@ -1,10 +1,11 @@
+/* eslint-disable max-lines-per-function */
 /**
  * Chat Messages Service v2
  * Business logic for messages, read receipts, and unread counts
  */
 import { log, error as logError } from 'console';
-import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
+import type { ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
 import { execute } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type {
@@ -27,7 +28,7 @@ async function verifyConversationAccess(
 ): Promise<void> {
   const [participant] = await execute<RowDataPacket[]>(
     `SELECT 1 FROM conversation_participants
-     WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
+     WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
     [conversationId, userId, tenantId],
   );
 
@@ -48,21 +49,24 @@ function buildMessagesWhereClause(
   conversationId: number,
   tenantId: number,
 ): { whereClause: string; params: unknown[] } {
-  let whereClause = 'WHERE m.conversation_id = ? AND m.tenant_id = ?';
+  let whereClause = 'WHERE m.conversation_id = $1 AND m.tenant_id = $2';
   const params: unknown[] = [conversationId, tenantId];
 
   if (filters.search !== undefined && filters.search !== '') {
-    whereClause += ' AND m.content LIKE ?';
+    const nextIndex = params.length + 1;
+    whereClause += ` AND m.content LIKE $${nextIndex}`;
     params.push(`%${filters.search}%`);
   }
 
   if (filters.startDate) {
-    whereClause += ' AND m.created_at >= ?';
+    const nextIndex = params.length + 1;
+    whereClause += ` AND m.created_at >= $${nextIndex}`;
     params.push(filters.startDate);
   }
 
   if (filters.endDate) {
-    whereClause += ' AND m.created_at <= ?';
+    const nextIndex = params.length + 1;
+    whereClause += ` AND m.created_at <= $${nextIndex}`;
     params.push(filters.endDate);
   }
 
@@ -156,7 +160,7 @@ async function insertMessage(
   const [result] = await execute<ResultSetHeader>(
     `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
        attachment_path, attachment_name, attachment_type, attachment_size, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
     [
       tenantId,
       conversationId,
@@ -176,7 +180,7 @@ async function insertMessage(
  */
 async function getSenderInfo(senderId: number, tenantId: number): Promise<SenderRow> {
   const [rows] = await execute<SenderRow[]>(
-    `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = ? AND tenant_id = ?`,
+    `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2`,
     [senderId, tenantId],
   );
   const sender = rows[0];
@@ -311,7 +315,7 @@ export async function sendMessage(
 
     // Insert message and update conversation
     const messageId = await insertMessage(tenantId, conversationId, senderId, data);
-    await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = ?`, [conversationId]);
+    await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = $1`, [conversationId]);
 
     // Build response with sender info
     const sender = await getSenderInfo(senderId, tenantId);
@@ -339,16 +343,17 @@ export async function getUnreadCount(
   try {
     // Get unread messages grouped by conversation
     // Using conversation_participants.last_read_message_id for tracking
+    // PostgreSQL: Can't use column alias in HAVING clause - repeat the COUNT expression
     const query = `
       SELECT
-        c.id as conversationId,
-        c.name as conversationName,
+        c.id as "conversationId",
+        c.name as "conversationName",
         COUNT(CASE
           WHEN m.id > COALESCE(cp.last_read_message_id, 0)
           AND m.sender_id != ${userId}
           THEN 1
-        END) as unreadCount,
-        MAX(m.created_at) as lastMessageTime
+        END) as "unreadCount",
+        MAX(m.created_at) as "lastMessageTime"
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
       LEFT JOIN messages m ON m.conversation_id = c.id
@@ -356,8 +361,12 @@ export async function getUnreadCount(
       AND cp.user_id = ${userId}
       AND cp.tenant_id = ${tenantId}
       GROUP BY c.id, c.name
-      HAVING unreadCount > 0
-      ORDER BY lastMessageTime DESC
+      HAVING COUNT(CASE
+        WHEN m.id > COALESCE(cp.last_read_message_id, 0)
+        AND m.sender_id != ${userId}
+        THEN 1
+      END) > 0
+      ORDER BY MAX(m.created_at) DESC
     `;
 
     interface UnreadRow extends RowDataPacket {
@@ -444,8 +453,8 @@ export async function markConversationAsRead(
     // Update last_read_message_id in conversation_participants
     await execute(
       `UPDATE conversation_participants
-       SET last_read_message_id = ?, last_read_at = NOW()
-       WHERE conversation_id = ? AND user_id = ?`,
+       SET last_read_message_id = $1, last_read_at = NOW()
+       WHERE conversation_id = $2 AND user_id = $3`,
       [lastMessageId, conversationId, userId],
     );
 

@@ -34,17 +34,18 @@ class AvailabilityService {
         FROM employee_availability ea
         LEFT JOIN users u ON ea.employee_id = u.id
         LEFT JOIN users creator ON ea.created_by = creator.id
-        WHERE ea.tenant_id = ?
+        WHERE ea.tenant_id = $1
       `;
       const params: unknown[] = [filter.tenant_id];
+      let paramIndex = 2;
 
       if (filter.employeeId != null && filter.employeeId !== 0) {
-        query += ' AND ea.employee_id = ?';
+        query += ` AND ea.employee_id = $${paramIndex++}`;
         params.push(filter.employeeId);
       }
 
       if (filter.status != null && filter.status !== '') {
-        query += ' AND ea.status = ?';
+        query += ` AND ea.status = $${paramIndex++}`;
         params.push(filter.status);
       }
 
@@ -54,8 +55,8 @@ class AvailabilityService {
         filter.endDate != null &&
         filter.endDate !== ''
       ) {
-        query +=
-          ' AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?) OR (ea.start_date <= ? AND ea.end_date >= ?))';
+        query += ` AND ((ea.start_date BETWEEN $${paramIndex} AND $${paramIndex + 1}) OR (ea.end_date BETWEEN $${paramIndex + 2} AND $${paramIndex + 3}) OR (ea.start_date <= $${paramIndex + 4} AND ea.end_date >= $${paramIndex + 5}))`;
+        paramIndex += 6;
         params.push(
           filter.startDate,
           filter.endDate,
@@ -96,7 +97,7 @@ class AvailabilityService {
              FROM employee_availability ea
              WHERE ea.employee_id = u.id
              AND ea.tenant_id = u.tenant_id
-             AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+             AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
              ORDER BY ea.created_at DESC
              LIMIT 1),
             'available'
@@ -105,19 +106,19 @@ class AvailabilityService {
            FROM employee_availability ea
            WHERE ea.employee_id = u.id
            AND ea.tenant_id = u.tenant_id
-           AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+           AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
            ORDER BY ea.created_at DESC
            LIMIT 1) as reason,
-          (SELECT DATE_ADD(ea.end_date, INTERVAL 1 DAY)
+          (SELECT ea.end_date + INTERVAL '1 day'
            FROM employee_availability ea
            WHERE ea.employee_id = u.id
            AND ea.tenant_id = u.tenant_id
-           AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+           AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
            ORDER BY ea.created_at DESC
            LIMIT 1) as available_from
         FROM users u
-        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
-        WHERE u.tenant_id = ? AND u.role = 'employee' AND u.is_active = 1
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+        WHERE u.tenant_id = $1 AND u.role = 'employee' AND u.is_active = true
         ORDER BY u.first_name, u.last_name
       `;
 
@@ -138,7 +139,7 @@ class AvailabilityService {
     try {
       const query = `
         SELECT * FROM employee_availability
-        WHERE id = ? AND tenant_id = ?
+        WHERE id = $1 AND tenant_id = $2
       `;
       const [rows] = await execute<RowDataPacket[]>(query, [id, tenantId]);
 
@@ -164,7 +165,7 @@ class AvailabilityService {
       const query = `
         INSERT INTO employee_availability
         (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `;
 
       const [result] = await execute<ResultSetHeader>(query, [
@@ -202,27 +203,28 @@ class AvailabilityService {
     try {
       const dbData = camelToSnake(data) as Record<string, unknown>;
 
-      const fields = [];
-      const values = [];
+      const fields: string[] = [];
+      const values: unknown[] = [];
+      let paramIndex = 1;
 
       if (dbData['status'] !== undefined) {
-        fields.push('status = ?');
+        fields.push(`status = $${paramIndex++}`);
         values.push(dbData['status']);
       }
       if (dbData['start_date'] !== undefined) {
-        fields.push('start_date = ?');
+        fields.push(`start_date = $${paramIndex++}`);
         values.push(dbData['start_date']);
       }
       if (dbData['end_date'] !== undefined) {
-        fields.push('end_date = ?');
+        fields.push(`end_date = $${paramIndex++}`);
         values.push(dbData['end_date']);
       }
       if (dbData['reason'] !== undefined) {
-        fields.push('reason = ?');
+        fields.push(`reason = $${paramIndex++}`);
         values.push(dbData['reason']);
       }
       if (dbData['notes'] !== undefined) {
-        fields.push('notes = ?');
+        fields.push(`notes = $${paramIndex++}`);
         values.push(dbData['notes']);
       }
 
@@ -230,12 +232,14 @@ class AvailabilityService {
         return false;
       }
 
+      const idParamIndex = paramIndex++;
+      const tenantIdParamIndex = paramIndex;
       values.push(id, tenantId);
 
       const query = `
         UPDATE employee_availability
         SET ${fields.join(', ')}
-        WHERE id = ? AND tenant_id = ?
+        WHERE id = $${idParamIndex} AND tenant_id = $${tenantIdParamIndex}
       `;
 
       const [result] = await execute<ResultSetHeader>(query, values);
@@ -262,7 +266,7 @@ class AvailabilityService {
     try {
       const query = `
         DELETE FROM employee_availability
-        WHERE id = ? AND tenant_id = ?
+        WHERE id = $1 AND tenant_id = $2
       `;
       const [result] = await execute<ResultSetHeader>(query, [id, tenantId]);
 
@@ -307,12 +311,12 @@ class AvailabilityService {
         SELECT
           ea.status,
           COUNT(DISTINCT ea.employee_id) as employee_count,
-          GROUP_CONCAT(DISTINCT CONCAT(u.first_name, ' ', u.last_name) SEPARATOR ', ') as employees
+          STRING_AGG(DISTINCT CONCAT(u.first_name, ' ', u.last_name), ', ') as employees
         FROM employee_availability ea
         JOIN users u ON ea.employee_id = u.id
-        WHERE ea.tenant_id = ?
-          AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?)
-               OR (ea.start_date <= ? AND ea.end_date >= ?))
+        WHERE ea.tenant_id = $1
+          AND ((ea.start_date BETWEEN $2 AND $3) OR (ea.end_date BETWEEN $4 AND $5)
+               OR (ea.start_date <= $6 AND ea.end_date >= $7))
         GROUP BY ea.status
       `;
 

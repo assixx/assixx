@@ -19,7 +19,7 @@
  * import { UsersRow } from './database-rows.types.js';
  *
  * const [rows] = await connection.execute<UsersRow[]>(
- *   'SELECT * FROM users WHERE id = ?',
+ *   'SELECT * FROM users WHERE id = $1',
  *   [userId]
  * );
  * const user = rows[0]; //  Fully typed!
@@ -29,7 +29,7 @@
  * Best Practice 2025: Always specify Row type instead of RowDataPacket
  * This eliminates 99% of implicit any types in our codebase!
  */
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket } from '../utils/db.js';
 
 // ============================================================================
 // USERS & AUTHENTICATION
@@ -46,7 +46,7 @@ export interface UsersRow extends RowDataPacket {
   email: string;
   password: string;
   role: 'root' | 'admin' | 'employee';
-  has_full_access: number; // tinyint(1) - 0 or 1, Full tenant access without individual assignments
+  has_full_access: boolean; // tinyint(1) - 0 or 1, Full tenant access without individual assignments
   first_name: string | null;
   last_name: string | null;
   age: number | null;
@@ -193,7 +193,7 @@ export interface DocumentsRow extends RowDataPacket {
   year: number | null;
   month: string | null;
   tags: object | null;
-  is_public: number; // tinyint(1)
+  is_public: boolean; // tinyint(1)
   is_archived: number; // tinyint(1)
   uploaded_at: Date | string;
   archived_at: Date | string | null;
@@ -495,7 +495,7 @@ export interface ConversationsRow extends RowDataPacket {
   id: number;
   tenant_id: number;
   name: string | null;
-  is_group: number; // tinyint(1)
+  is_group: boolean; // tinyint(1)
   created_at: Date | string;
   updated_at: Date | string;
 }
@@ -510,7 +510,7 @@ export interface ConversationParticipantsRow extends RowDataPacket {
   conversation_id: number;
   user_id: number;
   joined_at: Date | string;
-  is_admin: number; // tinyint(1)
+  is_admin: boolean; // tinyint(1)
   last_read_message_id: number | null;
   last_read_at: Date | string | null;
 }
@@ -857,9 +857,9 @@ export interface AdminDepartmentPermissionsRow extends RowDataPacket {
   tenant_id: number;
   admin_user_id: number;
   department_id: number;
-  can_read: number; // tinyint(1)
-  can_write: number; // tinyint(1)
-  can_delete: number; // tinyint(1)
+  can_read: boolean; // tinyint(1)
+  can_write: boolean; // tinyint(1)
+  can_delete: boolean; // tinyint(1)
   assigned_by: number;
   assigned_at: Date | string;
 }
@@ -873,9 +873,9 @@ export interface AdminGroupPermissionsRow extends RowDataPacket {
   tenant_id: number;
   admin_user_id: number;
   group_id: number;
-  can_read: number; // tinyint(1)
-  can_write: number; // tinyint(1)
-  can_delete: number; // tinyint(1)
+  can_read: boolean; // tinyint(1)
+  can_write: boolean; // tinyint(1)
+  can_delete: boolean; // tinyint(1)
   assigned_by: number;
   assigned_at: Date | string;
 }
@@ -890,9 +890,9 @@ export interface UserAreaPermissionsRow extends RowDataPacket {
   tenant_id: number;
   user_id: number;
   area_id: number;
-  can_read: number; // tinyint(1)
-  can_write: number; // tinyint(1)
-  can_delete: number; // tinyint(1)
+  can_read: boolean; // tinyint(1)
+  can_write: boolean; // tinyint(1)
+  can_delete: boolean; // tinyint(1)
   assigned_by: number;
   assigned_at: Date | string;
 }

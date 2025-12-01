@@ -162,19 +162,20 @@ CREATE TABLE IF NOT EXISTS machine_metrics (
 );
 
 -- 5. Insert sample machine types for categories
-CREATE TABLE IF NOT EXISTS machine_categories (
+-- NOTE: This table is in the 'global' database (shared across all tenants)
+CREATE TABLE IF NOT EXISTS global.machine_categories (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     icon VARCHAR(50),
     sort_order INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
-    
+
     UNIQUE KEY unique_category_name (name)
 );
 
 -- Insert default categories
-INSERT INTO machine_categories (name, description, icon, sort_order) VALUES
+INSERT INTO global.machine_categories (name, description, icon, sort_order) VALUES
 ('CNC-Maschinen', 'Computer Numerical Control Maschinen', 'fa-cogs', 1),
 ('Spritzgussmaschinen', 'Kunststoff-Spritzgussmaschinen', 'fa-industry', 2),
 ('Pressen', 'Hydraulische und mechanische Pressen', 'fa-compress', 3),

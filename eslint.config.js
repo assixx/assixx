@@ -1,3 +1,4 @@
+// ESLint Configuration - PostgreSQL 17 + pg (Raw SQL) + TypeScript
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
@@ -77,13 +78,15 @@ export default [
   js.configs.recommended, // Prettier configuration
   prettierConfig, // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
 
-  // TypeScript configuration for backend
+  // =============================================================================
+  // PostgreSQL 17 + pg (Raw SQL) - Backend TypeScript Configuration
+  // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx'],
     languageOptions: {
       parser: typescript,
       parserOptions: {
-        ecmaVersion: 2021,
+        ecmaVersion: 2022, // ES2022 für BigInt (PostgreSQL BIGINT/BIGSERIAL)
         sourceType: 'module',
         project: './backend/tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
@@ -106,6 +109,7 @@ export default [
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
         Express: 'readonly',
+        BigInt: 'readonly', // PostgreSQL BIGINT/BIGSERIAL Support
       },
     },
     plugins: {
@@ -135,6 +139,27 @@ export default [
 
       'prettier/prettier': 'error',
       'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
+
+      // =======================================================================
+      // PostgreSQL SQL Injection Prevention
+      // =======================================================================
+      'no-restricted-syntax': [
+        'error',
+        // Verbiete String-Konkatenation als erstes Argument in query()
+        {
+          selector: 'CallExpression[callee.property.name="query"] > BinaryExpression:first-child',
+          message:
+            '⚠️ SQL INJECTION: Keine String-Konkatenation in query()! Nutze parameterisierte Queries: pool.query("SELECT * FROM x WHERE id = $1", [id])',
+        },
+        // Verbiete eval() komplett
+        {
+          selector: 'CallExpression[callee.name="eval"]',
+          message: '⚠️ SECURITY: eval() ist verboten - Code Injection Risiko',
+        },
+      ],
+
+      // PostgreSQL BigInt Precision (BIGINT/BIGSERIAL)
+      '@typescript-eslint/no-loss-of-precision': 'error',
 
       // Enterprise Code Quality Standards
       // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
@@ -429,11 +454,53 @@ export default [
           additionalRegexes: {
             'German Password': '(passwort|kennwort)\\s*[:=]\\s*[\'"]?.+[\'"]?',
             'JWT Token': 'eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*',
+            // PostgreSQL Connection Strings (nur env vars, nicht generische password strings)
+            'PostgreSQL Env Hardcoded':
+              '(PG_PASSWORD|POSTGRES_PASSWORD|DATABASE_URL)\\s*[:=]\\s*[\'"][^$\\{][^\'"]{8,}[\'"]',
           },
         },
       ],
     },
-  }, // TypeScript configuration for frontend
+  },
+
+  // =============================================================================
+  // PostgreSQL Database Layer - Spezielle Regeln für DB-Code
+  // =============================================================================
+  {
+    files: [
+      'backend/src/database/**/*.ts',
+      'backend/src/config/database*.ts',
+      'backend/src/utils/db*.ts',
+    ],
+    rules: {
+      // Längere Dateien für komplexe DB-Queries erlauben
+      'max-lines': ['error', { max: 1000, skipBlankLines: true, skipComments: true }],
+      // Längere Funktionen für komplexe DB-Operationen
+      'max-lines-per-function': [
+        'error',
+        { max: 80, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+      // Duplicate Strings OK in SQL (Spaltennamen wiederholen sich)
+      'sonarjs/no-duplicate-string': ['error', { threshold: 8 }],
+    },
+  },
+
+  // =============================================================================
+  // PostgreSQL Migrations
+  // =============================================================================
+  {
+    files: ['backend/src/database/migrations/**/*.ts', 'migration/**/*.ts'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'no-console': 'off',
+      'sonarjs/no-duplicate-string': 'off',
+      'security/detect-object-injection': 'off',
+      'tsdoc/syntax': 'off',
+    },
+  },
+
+  // TypeScript configuration for frontend
   {
     files: ['frontend/**/*.ts', 'frontend/**/*.tsx'],
     languageOptions: {
