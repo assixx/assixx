@@ -158,15 +158,17 @@ class MachineModel {
 
   // Create new machine
   async create(data: Partial<Machine>): Promise<number> {
+    // POSTGRESQL: RETURNING id required to get insertId
     const query = `
       INSERT INTO machines (
         tenant_id, name, model, manufacturer, serial_number, asset_number,
         department_id, area_id, location, machine_type, status,
-        purchase_date, installation_date, warranty_until, 
+        purchase_date, installation_date, warranty_until,
         last_maintenance, next_maintenance, operating_hours,
-        production_capacity, energy_consumption, manual_url, 
+        production_capacity, energy_consumption, manual_url,
         qr_code, notes, created_by, updated_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+      RETURNING id
     `;
 
     const params = [
@@ -314,6 +316,7 @@ class MachineModel {
 
   // Add maintenance record
   async addMaintenanceRecord(data: Partial<MachineMaintenanceHistory>): Promise<number> {
+    // POSTGRESQL: RETURNING id required to get insertId
     const query = `
       INSERT INTO machine_maintenance_history (
         tenant_id, machine_id, maintenance_type, performed_date,
@@ -321,6 +324,7 @@ class MachineModel {
         cost, duration_hours, status_after, next_maintenance_date,
         report_url, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING id
     `;
 
     const params = [

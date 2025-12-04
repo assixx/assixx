@@ -110,6 +110,43 @@ interface CountResult extends RowDataPacket {
 }
 
 /**
+ * Build admin access control SQL fragment with dynamic parameter indices
+ * Extracted to reduce applyAccessControl line count
+ */
+function buildAdminAccessSQL(baseIndex: number): string {
+  const p1 = baseIndex;
+  const p2 = baseIndex + 1;
+  const p3 = baseIndex + 2;
+  const p4 = baseIndex + 3;
+  const p5 = baseIndex + 4;
+  return ` AND (
+    (e.org_level = 'company' AND NOT EXISTS (
+      SELECT 1 FROM blackboard_entry_organizations beo WHERE beo.entry_id = e.id
+    ))
+    OR EXISTS (
+      SELECT 1 FROM blackboard_entry_organizations beo
+      JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
+      WHERE beo.entry_id = e.id AND aap.admin_user_id = $${p1}
+    )
+    OR EXISTS (
+      SELECT 1 FROM blackboard_entry_organizations beo
+      JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
+      LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $${p2}
+      LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $${p3}
+      WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+    )
+    OR EXISTS (
+      SELECT 1 FROM blackboard_entry_organizations beo
+      JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
+      JOIN departments d ON t.department_id = d.id
+      LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $${p4}
+      LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $${p5}
+      WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+    )
+  )`;
+}
+
+/**
  * Apply access control filters based on user role and permissions
  * VISIBILITY-FIX: Now also filters for admins based on their area/department permissions
  */
@@ -129,54 +166,22 @@ function applyAccessControl(
 
   // Admin users: Filter by their area/department permissions
   if (role === 'admin' && userId !== undefined) {
-    query += ` AND (
-      -- Company-wide entries without specific org assignments
-      (e.org_level = 'company' AND NOT EXISTS (
-        SELECT 1 FROM blackboard_entry_organizations beo WHERE beo.entry_id = e.id
-      ))
-      OR
-      -- Entries assigned to areas the admin has access to
-      EXISTS (
-        SELECT 1 FROM blackboard_entry_organizations beo
-        JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
-        WHERE beo.entry_id = e.id AND aap.admin_user_id = $1
-      )
-      OR
-      -- Entries assigned to departments the admin has access to (direct or via area)
-      EXISTS (
-        SELECT 1 FROM blackboard_entry_organizations beo
-        JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
-        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $2
-        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $3
-        WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
-      )
-      OR
-      -- Entries assigned to teams in departments the admin has access to
-      EXISTS (
-        SELECT 1 FROM blackboard_entry_organizations beo
-        JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
-        JOIN departments d ON t.department_id = d.id
-        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $4
-        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $5
-        WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
-      )
-    )`;
+    const adminSQL = buildAdminAccessSQL(params.length + 1);
     params.push(userId, userId, userId, userId, userId);
-    return { query, params };
+    return { query: query + adminSQL, params };
   }
 
   // Employee users: Filter by their department/team
-  // PostgreSQL: Dynamic $N parameter numbering
-  const deptParamIndex = params.length + 1;
-  const teamParamIndex = params.length + 2;
-  query += ` AND (
+  const deptIdx = params.length + 1;
+  const teamIdx = params.length + 2;
+  const employeeSQL = ` AND (
     e.org_level = 'company' OR
-    (e.org_level = 'department' AND e.org_id = $${deptParamIndex}) OR
-    (e.org_level = 'team' AND e.org_id = $${teamParamIndex})
+    (e.org_level = 'department' AND e.org_id = $${deptIdx}) OR
+    (e.org_level = 'team' AND e.org_id = $${teamIdx})
   )`;
   params.push(departmentId ?? 0, teamId ?? 0);
 
-  return { query, params };
+  return { query: query + employeeSQL, params };
 }
 
 /**
@@ -763,10 +768,12 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
     const uuid = uuidv7();
 
     // Insert new entry with area_id support
+    // POSTGRESQL: RETURNING id required to get insertId
     const query = `
         INSERT INTO blackboard_entries
         (uuid, tenant_id, title, content, org_level, org_id, area_id, author_id, expires_at, priority, color)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING id
       `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -1079,37 +1086,46 @@ const DASHBOARD_BASE_QUERY = `
 `;
 
 /**
- * Admin visibility filter SQL fragment
- * Checks area, department, and team permissions for admin users
+ * Build admin visibility filter SQL fragment with dynamic parameter offset
+ * POSTGRESQL FIX: Parameters must be offset by baseParams count (2)
+ * @param offset - The starting parameter index (1-based)
  */
-const ADMIN_VISIBILITY_FILTER = ` AND (
+function buildAdminVisibilityFilter(offset: number): string {
+  const p1 = offset;
+  const p2 = offset + 1;
+  const p3 = offset + 2;
+  const p4 = offset + 3;
+  const p5 = offset + 4;
+  return ` AND (
   (e.org_level = 'company' AND NOT EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo WHERE beo.entry_id = e.id
   ))
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
-    WHERE beo.entry_id = e.id AND aap.admin_user_id = $1
+    WHERE beo.entry_id = e.id AND aap.admin_user_id = $${p1}
   )
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
-    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $2
-    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $3
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $${p2}
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $${p3}
     WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
   )
   OR EXISTS (
     SELECT 1 FROM blackboard_entry_organizations beo
     JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
     JOIN departments d ON t.department_id = d.id
-    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $4
-    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $5
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $${p4}
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = $${p5}
     WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
   )
 )`;
+}
 
 /**
  * Build visibility filter based on user role
+ * POSTGRESQL FIX: baseParamsCount is used to offset parameter numbering
  * @returns SQL fragment and parameters for the visibility filter
  */
 function buildVisibilityFilter(
@@ -1118,6 +1134,7 @@ function buildVisibilityFilter(
   departmentId: number | null,
   teamId: number | null,
   hasFullAccess: boolean,
+  baseParamsCount: number = 2,
 ): { sql: string; params: unknown[] } {
   // Root users or users with full access see everything
   if (role === 'root' || hasFullAccess) {
@@ -1125,23 +1142,23 @@ function buildVisibilityFilter(
   }
 
   // Admin users: complex permission-based filter
+  // POSTGRESQL FIX: Offset starts after baseParams
   if (role === 'admin') {
     return {
-      sql: ADMIN_VISIBILITY_FILTER,
+      sql: buildAdminVisibilityFilter(baseParamsCount + 1),
       params: [userId, userId, userId, userId, userId],
     };
   }
 
   // Employee users: simple department/team filter
-  // Note: These will be appended after baseParams, so we use relative indexing
-  // Since buildDashboardQuery adds userId and tenant_id first ($1, $2), these become $3 and $4
-  // However, if admin filter is applied, it uses 5 params, so we need to calculate dynamically
-  // For simplicity, employee filter adds 2 params - they will be added at the end
+  // POSTGRESQL FIX: Offset starts after baseParams
+  const p1 = baseParamsCount + 1;
+  const p2 = baseParamsCount + 2;
   return {
     sql: ` AND (
       e.org_level = 'company' OR
-      (e.org_level = 'department' AND e.org_id = $3) OR
-      (e.org_level = 'team' AND e.org_id = $4)
+      (e.org_level = 'department' AND e.org_id = $${p1}) OR
+      (e.org_level = 'team' AND e.org_id = $${p2})
     )`,
     params: [departmentId ?? 0, teamId ?? 0],
   };
@@ -1309,9 +1326,11 @@ export async function addComment(
     }
     logger.info(`[addComment] Final numericId=${numericId}`);
 
+    // POSTGRESQL: RETURNING id required to get insertId
     const [result] = await executeQuery<ResultSetHeader>(
       `INSERT INTO blackboard_comments (tenant_id, entry_id, user_id, comment, is_internal)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
       [tenantId, numericId, userId, comment, isInternal ? 1 : 0],
     );
 

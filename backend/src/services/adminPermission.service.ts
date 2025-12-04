@@ -45,10 +45,11 @@ class AdminPermissionService {
   ): Promise<boolean> {
     try {
       // First check direct department permissions
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const [directPermissions] = await execute<PermissionCheckResult[]>(
         `SELECT can_read, can_write, can_delete
          FROM admin_department_permissions
-         WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3`,
+         WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 
@@ -59,23 +60,8 @@ class AdminPermissionService {
         }
       }
 
-      // Check group permissions
-      const [groupPermissions] = await execute<PermissionCheckResult[]>(
-        `SELECT agp.can_read, agp.can_write, agp.can_delete
-         FROM admin_group_permissions agp
-         JOIN department_group_members dgm ON agp.group_id = dgm.group_id
-         WHERE agp.admin_user_id = $1
-         AND dgm.department_id = $2
-         AND agp.tenant_id = $3`,
-        [adminId, departmentId, tenantId],
-      );
-
-      if (groupPermissions.length > 0) {
-        // Check if any group grants the required permission
-        return groupPermissions.some((perm: PermissionCheckResult) =>
-          this.checkPermissionLevel(perm, requiredPermission),
-        );
-      }
+      // DEPRECATED 2025-12-02: Group permissions removed (admin_group_permissions, department_group_members tables dropped)
+      // Only direct department permissions are checked now
 
       return false;
     } catch (error: unknown) {
@@ -117,23 +103,6 @@ class AdminPermissionService {
     };
   }
 
-  /** Merge department permissions into map (takes maximum permissions) */
-  private mergeDeptPermissions(
-    map: Map<number, DepartmentWithPermission>,
-    depts: DepartmentWithPermissionResult[],
-  ): void {
-    for (const dept of depts) {
-      const existing = map.get(dept.id);
-      if (existing !== undefined) {
-        existing.can_read = existing.can_read || dept.can_read;
-        existing.can_write = existing.can_write || dept.can_write;
-        existing.can_delete = existing.can_delete || dept.can_delete;
-      } else {
-        map.set(dept.id, this.toDeptWithPermission(dept));
-      }
-    }
-  }
-
   /**
    * Get all departments an admin has access to (direct + via groups)
    * @param adminId - The adminId parameter
@@ -165,18 +134,12 @@ class AdminPermissionService {
          WHERE adp.admin_user_id = $1 AND adp.tenant_id = $2`,
         [adminId, tenantId],
       );
-      const [groupDepts] = await execute<DepartmentWithPermissionResult[]>(
-        `SELECT DISTINCT d.id, d.name, d.description,
-                MAX(agp.can_read) as can_read, MAX(agp.can_write) as can_write, MAX(agp.can_delete) as can_delete
-         FROM departments d JOIN department_group_members dgm ON d.id = dgm.department_id
-         JOIN admin_group_permissions agp ON dgm.group_id = agp.group_id
-         WHERE agp.admin_user_id = $1 AND agp.tenant_id = $2 GROUP BY d.id, d.name, d.description`,
-        [adminId, tenantId],
-      );
+
+      // DEPRECATED 2025-12-02: Group permissions removed (admin_group_permissions, department_group_members tables dropped)
+      // Only direct department permissions are returned now
 
       const departmentMap = new Map<number, DepartmentWithPermission>();
       for (const dept of directDepts) departmentMap.set(dept.id, this.toDeptWithPermission(dept));
-      this.mergeDeptPermissions(departmentMap, groupDepts);
 
       return { departments: [...departmentMap.values()], hasAllAccess };
     } catch (error: unknown) {
@@ -312,13 +275,14 @@ class AdminPermissionService {
 
   /**
    * Set group permissions for an admin
+   * DEPRECATED 2025-12-02: admin_group_permissions table was dropped
    * @param adminId - The adminId parameter
    * @param groupIds - The groupIds parameter
    * @param assignedBy - The assignedBy parameter
    * @param tenantId - The tenant ID
    * @param permissions - The permissions parameter
    */
-  async setGroupPermissions(
+  setGroupPermissions(
     adminId: number,
     groupIds: number[],
     assignedBy: number,
@@ -329,49 +293,13 @@ class AdminPermissionService {
       can_delete: false,
     },
   ): Promise<boolean> {
-    const connection = await getConnection();
-
-    try {
-      await connection.beginTransaction();
-
-      // Remove all existing group permissions
-      await connection.execute(
-        `DELETE FROM admin_group_permissions
-         WHERE admin_user_id = $1 AND tenant_id = $2`,
-        [adminId, tenantId],
-      );
-
-      // Add new permissions
-      if (groupIds.length > 0) {
-        const values = groupIds.map((groupId: number) => [
-          tenantId,
-          adminId,
-          groupId,
-          permissions.can_read,
-          permissions.can_write,
-          permissions.can_delete,
-          assignedBy,
-        ]);
-
-        const placeholders = groupIds.map(() => '($1, $2, $3, $4, $5, $6, $7)').join(', ');
-
-        await connection.execute(
-          `INSERT INTO admin_group_permissions
-           (tenant_id, admin_user_id, group_id, can_read, can_write, can_delete, assigned_by)
-           VALUES ${placeholders}`,
-          values.flat(),
-        );
-      }
-
-      await connection.commit();
-      return true;
-    } catch (error: unknown) {
-      await connection.rollback();
-      logger.error('Error setting admin group permissions:', error);
-      return false;
-    } finally {
-      connection.release();
-    }
+    // DEPRECATED 2025-12-02: Group permissions system was removed
+    // admin_group_permissions, department_groups, department_group_members tables were dropped
+    logger.warn(
+      '[DEPRECATED] setGroupPermissions called but group permissions system was removed. Use setPermissions for direct department permissions.',
+      { adminId, groupIds, assignedBy, tenantId, permissions },
+    );
+    return Promise.resolve(false);
   }
 
   /**
@@ -386,9 +314,10 @@ class AdminPermissionService {
     tenantId: number,
   ): Promise<boolean> {
     try {
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_department_permissions
-         WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3`,
+         WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 
@@ -401,27 +330,19 @@ class AdminPermissionService {
 
   /**
    * Remove specific group permission
+   * DEPRECATED 2025-12-02: admin_group_permissions table was dropped
    * @param adminId - The adminId parameter
    * @param groupId - The groupId parameter
    * @param tenantId - The tenant ID
    */
-  async removeGroupPermission(
-    adminId: number,
-    groupId: number,
-    tenantId: number,
-  ): Promise<boolean> {
-    try {
-      const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM admin_group_permissions
-         WHERE admin_user_id = $4 AND group_id = $2 AND tenant_id = $3`,
-        [adminId, groupId, tenantId],
-      );
-
-      return result.affectedRows > 0;
-    } catch (error: unknown) {
-      logger.error('Error removing admin group permission:', error);
-      return false;
-    }
+  removeGroupPermission(adminId: number, groupId: number, tenantId: number): Promise<boolean> {
+    // DEPRECATED 2025-12-02: Group permissions system was removed
+    // admin_group_permissions table was dropped
+    logger.warn(
+      '[DEPRECATED] removeGroupPermission called but group permissions system was removed.',
+      { adminId, groupId, tenantId },
+    );
+    return Promise.resolve(false);
   }
 
   /**

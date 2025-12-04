@@ -78,6 +78,8 @@ export interface Tenant {
  * Form data for admin creation/update
  * N:M REFACTORING: Added areaIds, departmentIds, hasFullAccess
  * NOTE: teamIds removed - Admins get teams via inheritance
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export interface AdminFormData {
   firstName: string;
@@ -88,8 +90,7 @@ export interface AdminFormData {
   position: string;
   notes: string;
   role: string;
-  isActive?: boolean;
-  isArchived?: boolean;
+  isActive?: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeNumber?: string;
   // N:M REFACTORING: Organization assignment fields
   areaIds?: number[];

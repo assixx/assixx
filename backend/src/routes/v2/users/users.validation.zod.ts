@@ -61,23 +61,15 @@ const AvailabilityStatusSchema = z.enum(['available', 'vacation', 'sick', 'train
 /**
  * List users query parameters
  * Extends base pagination with user-specific filters
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export const UsersListQuerySchema = PaginationSchema.extend({
   search: z.string().trim().optional(),
   role: RoleSchema.optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   isActive: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
-  ),
-  isArchived: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    z.number().int().min(0).max(4).optional(),
   ),
   sortBy: z.enum(['firstName', 'lastName', 'email', 'createdAt', 'lastLogin']).optional(),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),

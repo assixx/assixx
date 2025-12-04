@@ -10,7 +10,7 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
@@ -98,7 +98,7 @@ function generateFileMetadata(file: Express.Multer.File): {
   checksum: string;
   extension: string;
 } {
-  const uuid = uuidv4();
+  const uuid = uuidv7();
   const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
   const extension = path.extname(file.originalname).toLowerCase();
 
@@ -184,11 +184,12 @@ function buildStoragePath(
  *           maximum: 12
  *         description: Filter by month (for salary documents)
  *       - in: query
- *         name: isArchived
+ *         name: isActive
  *         schema:
- *           type: boolean
- *           default: false
- *         description: Filter archived documents
+ *           type: integer
+ *           enum: [0, 1, 3, 4]
+ *           default: 1
+ *         description: Filter by status (0=inactive, 1=active, 3=archived, 4=deleted)
  *       - in: query
  *         name: search
  *         schema:
@@ -220,9 +221,11 @@ function buildStoragePath(
  *         description: Server error
  */
 // NEW: Parse filters with clean structure (refactored 2025-01-10)
+// UPDATED: isArchived removed, using isActive status (2025-12-02)
 function parseDocumentFilters(query: AuthenticatedRequest['query']): DocumentFilters {
   const filters: DocumentFilters = {
-    isArchived: query['isArchived'] === 'true',
+    // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+    isActive: parseQueryInt(query['isActive'], 1),
     page: parseQueryInt(query['page'], 1),
     limit: parseQueryInt(query['limit'], 20),
   };
@@ -1103,6 +1106,64 @@ export async function getDocumentStats(req: AuthenticatedRequest, res: Response)
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get document stats'));
+    }
+  }
+}
+
+/**
+ * GET /api/v2/documents/chat-folders
+ * Get chat folders for document explorer
+ * Returns conversations where user is participant AND has attachments
+ * NEW 2025-12-04: Chat attachment folders for document explorer
+ */
+export async function getChatFolders(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    logger.info('Documents v2: getChatFolders called', {
+      userId: req.user.id,
+      tenantId: req.user.tenant_id,
+    });
+
+    const folders = await documentsService.getChatFolders(req.user.id, req.user.tenant_id);
+
+    res.json(
+      successResponse({
+        folders,
+        total: folders.length,
+      }),
+    );
+  } catch (error: unknown) {
+    logger.error(`Get chat folders error: ${(error as Error).message}`);
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get chat folders'));
+    }
+  }
+}
+
+/**
+ * POST /api/v2/documents/:id/read
+ * Mark a document as read by the current user
+ * Updates document_read_status table
+ * NEW 2025-12-04: Endpoint for tracking read status
+ */
+export async function markDocumentAsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const documentId = Number.parseInt(req.params['id'] ?? '0', 10);
+    if (documentId === 0 || Number.isNaN(documentId)) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+
+    await documentsService.markDocumentAsRead(documentId, req.user.id, req.user.tenant_id);
+
+    res.json(successResponse({ success: true }));
+  } catch (error: unknown) {
+    logger.error(`Mark document as read error: ${(error as Error).message}`);
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to mark document as read'));
     }
   }
 }

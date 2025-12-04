@@ -86,10 +86,10 @@ export async function getEmployeeMetrics(
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
       COUNT(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as new_this_month,
-      (SELECT COUNT(*) FROM departments WHERE tenant_id = $1 AND is_active = true) as department_count,
+      (SELECT COUNT(*) FROM departments WHERE tenant_id = $1 AND is_active = 1) as department_count,
       CASE
-        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = $2 AND is_active = true) > 0
-        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = $3 AND is_active = true)
+        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = $2 AND is_active = 1) > 0
+        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = $3 AND is_active = 1)
         ELSE 0
       END as avg_per_department
     FROM users
@@ -242,6 +242,7 @@ export async function getSurveyMetrics(
   dateFrom: string,
   dateTo: string,
 ): Promise<SurveyMetrics> {
+  // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
   const [surveyResultRows] = await executeQuery(
     `
     SELECT
@@ -253,16 +254,16 @@ export async function getSurveyMetrics(
         survey_id,
         COUNT(DISTINCT user_id) / (
           SELECT COUNT(*) FROM users
-          WHERE tenant_id = $3 AND role = 'employee'
+          WHERE tenant_id = $1 AND role = 'employee'
         ) as response_rate
       FROM survey_responses
-      WHERE started_at BETWEEN $4 AND $2
+      WHERE started_at BETWEEN $2 AND $3
       GROUP BY survey_id
     ) r ON r.survey_id = s.id
-    WHERE s.tenant_id = $5
+    WHERE s.tenant_id = $1
       AND s.status = 'active'
   `,
-    [tenantId, dateFrom, dateTo, tenantId],
+    [tenantId, dateFrom, dateTo],
   );
 
   const metrics = (surveyResultRows as Record<string, unknown>[])[0] ?? {};

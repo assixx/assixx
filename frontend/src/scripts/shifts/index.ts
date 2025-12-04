@@ -4407,12 +4407,13 @@ class ShiftPlanningSystem {
   }
 
   // Helper function to create employee element
+  // UPDATED: isActive now uses unified status (0=inactive, 1=active, 3=archived, 4=deleted)
   private createEmployeeElement(
     employee: {
       id: number;
       firstName?: string | undefined;
       lastName?: string | undefined;
-      isActive?: boolean | undefined;
+      isActive?: 0 | 1 | 3 | 4 | undefined;
     },
     draggable: boolean = true,
   ): HTMLDivElement {
@@ -4441,7 +4442,8 @@ class ShiftPlanningSystem {
     // Filter employees by selected team (Multi-tenant isolation)
     const teamEmployees = this.employees.filter((e) => {
       // Only show active employees from the selected team
-      if (!e.isActive) return false;
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+      if (e.isActive !== 1) return false;
 
       // Check if employee belongs to selected team
       if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
@@ -5385,8 +5387,7 @@ class ShiftPlanningSystem {
       tenantId: 0,
       createdAt: '',
       updatedAt: '',
-      isActive: true,
-      isArchived: false,
+      isActive: 1, // Active status
     };
   }
 

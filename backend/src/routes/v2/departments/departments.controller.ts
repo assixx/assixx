@@ -20,13 +20,13 @@ interface Department {
 }
 
 /**
- * Convert boolean to TINYINT(1) for database
- * @param value - Optional boolean value
- * @returns 1 for true, 0 for false, 1 for undefined (default active)
+ * Convert status to TINYINT for database (legacy support)
+ * @param value - Optional number value (status)
+ * @returns Status value or 1 for undefined (default active)
  */
-function booleanToTinyInt(value: boolean | undefined): 0 | 1 {
+function statusToTinyInt(value: number | undefined): number {
   if (value === undefined) return 1;
-  return value ? 1 : 0;
+  return value;
 }
 
 /**
@@ -39,13 +39,16 @@ function getErrorCode(errorObj: { code?: number; message?: string }): string {
   return `DEPT_${errorObj.code ?? 500}`;
 }
 
-/** Department create/update body type */
+/** Department create/update body type
+ * UPDATED: isActive now integer status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+ */
 interface DepartmentBody {
   name: string;
   description?: string | undefined;
   departmentLeadId?: number | undefined;
   areaId?: number | undefined;
-  isActive?: boolean | undefined;
+  isActive?: number | undefined;
 }
 
 /** Build department data from request body */
@@ -58,13 +61,16 @@ function buildDepartmentData(body: DepartmentBody): DepartmentBody {
   return data;
 }
 
-/** Department update body (all optional) */
+/** Department update body (all optional)
+ * UPDATED: isActive now integer status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+ */
 interface DepartmentUpdateBody {
   name?: string | undefined;
   description?: string | undefined;
   departmentLeadId?: number | undefined;
   areaId?: number | undefined;
-  isActive?: boolean | undefined;
+  isActive?: number | undefined;
 }
 
 /** Build department update data from request body */
@@ -265,7 +271,7 @@ class DepartmentController {
           name: body.name,
           description: body.description,
           department_lead_id: body.departmentLeadId,
-          is_active: booleanToTinyInt(body.isActive),
+          is_active: statusToTinyInt(body.isActive),
           created_by: req.user.email,
         },
       );
@@ -306,12 +312,7 @@ class DepartmentController {
         name: body.name,
         description: body.description,
         department_lead_id: body.departmentLeadId,
-        is_active:
-          body.isActive !== undefined ?
-            body.isActive ?
-              1
-            : 0
-          : undefined,
+        is_active: body.isActive, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
         updated_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,

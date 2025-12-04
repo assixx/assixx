@@ -19,14 +19,20 @@ interface CurrentUserPermissions extends RowDataPacket {
  * Build chat users query based on user role and permissions
  * Admins/Root can see all users in tenant
  * Employees can see users in their department + all admins/root
- * N:M REFACTORING: Uses user_departments table instead of users.department_id
+ *
+ * ASSIGNMENT LOGIC (Priority Order):
+ * 1. admin_area_permissions → areas (explicit admin permission)
+ * 2. areas.area_lead_id = user.id (user is area leader)
+ * 3. admin_department_permissions → departments → areas
+ * 4. departments.department_lead_id = user.id (user is dept leader)
+ * 5. user_departments → departments → areas (employee path)
  */
 function buildChatUsersQuery(
   currentUser: CurrentUserPermissions,
   tenantId: number,
   currentUserId: number,
 ): { query: string; params: unknown[] } {
-  // N:M REFACTORING: JOIN via user_departments table
+  // Complex query with ALL assignment paths including lead_id
   const baseQuery = `
     SELECT
       u.id,
@@ -34,13 +40,30 @@ function buildChatUsersQuery(
       u.email,
       u.first_name,
       u.last_name,
+      u.employee_number,
       u.profile_picture,
-      ud.department_id,
-      d.name as department_name,
+      COALESCE(adp.department_id, dept_lead.id, ud.department_id) as department_id,
+      COALESCE(dep_admin.name, dept_lead.name, d.name) as department_name,
+      COALESCE(aap.area_id, area_lead.id, dep_admin.area_id, dept_lead.area_id, d.area_id) as area_id,
+      COALESCE(area_admin.name, area_lead.name, area_via_dep.name, area_via_dept_lead.name, a.name) as area_name,
       u.role
     FROM users u
+    -- Employee path: user_departments → departments → areas
     LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
     LEFT JOIN departments d ON ud.department_id = d.id
+    LEFT JOIN areas a ON d.area_id = a.id
+    -- Admin path 1: admin_area_permissions → areas (explicit permission)
+    LEFT JOIN admin_area_permissions aap ON u.id = aap.admin_user_id AND aap.tenant_id = u.tenant_id
+    LEFT JOIN areas area_admin ON aap.area_id = area_admin.id
+    -- Admin path 2: admin_department_permissions → departments → areas
+    LEFT JOIN admin_department_permissions adp ON u.id = adp.admin_user_id AND adp.tenant_id = u.tenant_id
+    LEFT JOIN departments dep_admin ON adp.department_id = dep_admin.id
+    LEFT JOIN areas area_via_dep ON dep_admin.area_id = area_via_dep.id
+    -- Lead path 1: areas.area_lead_id (user is area leader)
+    LEFT JOIN areas area_lead ON u.id = area_lead.area_lead_id AND area_lead.tenant_id = u.tenant_id
+    -- Lead path 2: departments.department_lead_id (user is dept leader)
+    LEFT JOIN departments dept_lead ON u.id = dept_lead.department_lead_id AND dept_lead.tenant_id = u.tenant_id
+    LEFT JOIN areas area_via_dept_lead ON dept_lead.area_id = area_via_dept_lead.id
   `;
 
   if (currentUser.role === 'admin' || currentUser.role === 'root') {
@@ -75,20 +98,25 @@ function filterUsersBySearch(users: ChatUserRow[], search?: string): ChatUserRow
 
 /**
  * Transform database user row to ChatUser API format
+ * NOTE: Outputs camelCase for frontend compatibility
+ * INHERITANCE: area_id/area_name → teamAreaId/teamAreaName
  */
 function transformToChatUser(user: ChatUserRow): ChatUser {
   return {
     id: user.id,
     username: user.username,
     email: user.email,
-    first_name: user.first_name ?? '',
-    last_name: user.last_name ?? '',
-    profile_picture: user.profile_picture,
-    department_id: user.department_id,
-    department: user.department_name,
+    firstName: user.first_name ?? '',
+    lastName: user.last_name ?? '',
+    employeeNumber: user.employee_number,
+    profilePicture: user.profile_picture,
+    departmentId: user.department_id,
+    departmentName: user.department_name,
+    teamAreaId: user.area_id,
+    teamAreaName: user.area_name,
     role: user.role,
     status: 'offline', // noTODO: Implement online status tracking
-    last_seen: null, // noTODO: Implement last seen tracking
+    lastSeen: null, // noTODO: Implement last seen tracking
   };
 }
 

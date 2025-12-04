@@ -55,20 +55,21 @@ export class SSEClient {
       return;
     }
 
-    // BUGFIX: Use 'accessToken' not 'token' (TokenManager uses 'accessToken')
+    // Check if user is authenticated before attempting SSE connection
+    // (Cookie will be sent automatically, but we verify auth state first)
     const token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
     if (token === null || token === '' || token === 'test-mode') {
-      console.warn('[SSE] No valid token available');
+      console.warn('[SSE] No valid token available - skipping SSE connection');
       return;
     }
 
     this.isConnecting = true;
 
-    // Add token as query parameter (SSE doesn't support headers easily)
-    const urlWithToken = `${this.url}?token=${encodeURIComponent(token)}`;
-
+    // SECURITY FIX: Use cookies instead of URL parameter
+    // Cookies are set on login (auth/index.ts line 60) and sent automatically
+    // withCredentials: true ensures cookies are included (required for cross-origin, harmless for same-origin)
     console.info('[SSE] Connecting to:', this.url);
-    this.eventSource = new EventSource(urlWithToken);
+    this.eventSource = new EventSource(this.url, { withCredentials: true });
 
     this.eventSource.onopen = () => {
       console.info('[SSE] Connection established');

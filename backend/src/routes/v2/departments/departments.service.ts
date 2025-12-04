@@ -12,8 +12,7 @@ export interface DepartmentV2 {
   description?: string;
   departmentLeadId?: number;
   areaId?: number; // Add areaId field (camelCase)
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenantId: number;
   createdAt?: string;
   updatedAt?: string;
@@ -31,8 +30,7 @@ export interface CreateDepartmentData {
   description?: string | undefined;
   departmentLeadId?: number | undefined;
   areaId?: number | undefined;
-  isActive?: boolean | undefined;
-  isArchived?: boolean | undefined;
+  isActive?: number | undefined; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 export interface UpdateDepartmentData {
@@ -40,8 +38,7 @@ export interface UpdateDepartmentData {
   description?: string | undefined;
   departmentLeadId?: number | undefined;
   areaId?: number | undefined;
-  isActive?: boolean | undefined;
-  isArchived?: boolean | undefined;
+  isActive?: number | undefined; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 export interface DepartmentMember {
@@ -57,19 +54,21 @@ export interface DepartmentMember {
 }
 
 /** Department foreign key dependency counts */
+/**
+ * Department dependencies for deletion check
+ * UPDATED 2025-12-02: N:M refactoring - users/documents no longer have department_id
+ */
 interface DepartmentDependencies {
-  users: number;
+  userDepartments: number; // N:M junction (replaces users)
   teams: number;
   machines: number;
   shifts: number;
   shiftPlans: number;
   shiftFavorites: number;
   kvpSuggestions: number;
-  documents: number;
   calendarEvents: number;
   surveyAssignments: number;
   adminPermissions: number;
-  departmentGroupMembers: number;
   documentPermissions: number;
   total: number;
 }
@@ -107,16 +106,16 @@ class DepartmentService {
     const result: DepartmentV2 = {
       id: dept.id,
       name: dept.name,
-      isActive: Boolean(dept.is_active ?? 1),
-      isArchived: Boolean(dept.is_archived ?? 0),
+      isActive: dept.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       tenantId: dept.tenant_id,
     };
 
-    if (dept.description !== undefined) result.description = dept.description;
-    if (dept.department_lead_id !== undefined) result.departmentLeadId = dept.department_lead_id;
-    if (dept.area_id !== undefined) result.areaId = dept.area_id;
-    if (dept.created_at !== undefined) result.createdAt = dept.created_at.toISOString();
-    if (dept.updated_at !== undefined) result.updatedAt = dept.updated_at.toISOString();
+    if (dept.description != null) result.description = dept.description;
+    if (dept.department_lead_id != null) result.departmentLeadId = dept.department_lead_id;
+    if (dept.area_id != null) result.areaId = dept.area_id;
+    // Use != null to check for both null and undefined
+    if (dept.created_at != null) result.createdAt = dept.created_at.toISOString();
+    if (dept.updated_at != null) result.updatedAt = dept.updated_at.toISOString();
 
     return result;
   }
@@ -196,14 +195,12 @@ class DepartmentService {
     department_lead_id?: number;
     area_id?: number;
     is_active: number;
-    is_archived: number;
     tenant_id: number;
   } {
     const createData: ReturnType<typeof this.buildCreateDataForDepartment> = {
       name: data.name,
       tenant_id: tenantId,
-      is_active: data.isActive === false ? 0 : 1, // Default active
-      is_archived: data.isArchived === true ? 1 : 0, // Default not archived
+      is_active: data.isActive ?? 1, // Default active (Status: 0=inactive, 1=active, 3=archived, 4=deleted)
     };
 
     if (data.description !== undefined) createData.description = data.description;
@@ -278,7 +275,6 @@ class DepartmentService {
     department_lead_id: number;
     area_id: number;
     is_active: number;
-    is_archived: number;
   }> {
     const updateData: ReturnType<typeof this.buildUpdateData> = {};
 
@@ -295,10 +291,7 @@ class DepartmentService {
       updateData.area_id = data.areaId;
     }
     if (data.isActive !== undefined) {
-      updateData.is_active = data.isActive ? 1 : 0; // Convert boolean to TINYINT
-    }
-    if (data.isArchived !== undefined) {
-      updateData.is_archived = data.isArchived ? 1 : 0; // Convert boolean to TINYINT
+      updateData.is_active = data.isActive; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     }
 
     return updateData;
@@ -359,27 +352,32 @@ class DepartmentService {
     return rows.length;
   }
 
-  /** Tables to check for department dependencies */
+  /**
+   * Tables to check for department dependencies
+   * UPDATED 2025-12-02: N:M refactoring - users/documents no longer have department_id
+   * - users: now uses user_departments junction table
+   * - documents: department_id column removed
+   * - department_group_members: table doesn't exist
+   */
   private getDependencyTables(): string[] {
     return [
-      'users',
+      'user_departments', // N:M junction table (replaces users.department_id)
       'teams',
       'machines',
       'shifts',
       'shift_plans',
       'shift_favorites',
       'kvp_suggestions',
-      'documents',
       'calendar_events',
       'survey_assignments',
       'admin_department_permissions',
-      'department_group_members',
       'document_permissions',
     ];
   }
 
   /**
    * Check all foreign key dependencies for a department
+   * UPDATED 2025-12-02: Matches new getDependencyTables() order after N:M refactoring
    * @param id - Department ID
    * @param tenantId - Tenant ID
    */
@@ -393,19 +391,17 @@ class DepartmentService {
     );
 
     return {
-      users: counts[0] ?? 0,
+      userDepartments: counts[0] ?? 0, // N:M junction table
       teams: counts[1] ?? 0,
       machines: counts[2] ?? 0,
       shifts: counts[3] ?? 0,
       shiftPlans: counts[4] ?? 0,
       shiftFavorites: counts[5] ?? 0,
       kvpSuggestions: counts[6] ?? 0,
-      documents: counts[7] ?? 0,
-      calendarEvents: counts[8] ?? 0,
-      surveyAssignments: counts[9] ?? 0,
-      adminPermissions: counts[10] ?? 0,
-      departmentGroupMembers: counts[11] ?? 0,
-      documentPermissions: counts[12] ?? 0,
+      calendarEvents: counts[7] ?? 0,
+      surveyAssignments: counts[8] ?? 0,
+      adminPermissions: counts[9] ?? 0,
+      documentPermissions: counts[10] ?? 0,
       total: counts.reduce((sum: number, c: number): number => sum + c, 0),
     };
   }
@@ -476,23 +472,18 @@ class DepartmentService {
     deps: Awaited<ReturnType<DepartmentService['checkDepartmentDependencies']>>,
   ): Promise<void> {
     // Define table cleanup strategy: 'UPDATE' preserves data, 'DELETE' removes completely
+    // UPDATED 2025-12-02: N:M refactoring - users/documents no longer have department_id
     const cleanupStrategies: { table: string; operation: 'UPDATE' | 'DELETE'; count: number }[] = [
-      { table: 'users', operation: 'UPDATE', count: deps.users },
+      { table: 'user_departments', operation: 'DELETE', count: deps.userDepartments }, // N:M junction
       { table: 'teams', operation: 'UPDATE', count: deps.teams },
       { table: 'machines', operation: 'UPDATE', count: deps.machines },
       { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
       { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
       { table: 'shift_favorites', operation: 'DELETE', count: deps.shiftFavorites },
       { table: 'kvp_suggestions', operation: 'UPDATE', count: deps.kvpSuggestions },
-      { table: 'documents', operation: 'UPDATE', count: deps.documents },
       { table: 'calendar_events', operation: 'UPDATE', count: deps.calendarEvents },
       { table: 'survey_assignments', operation: 'DELETE', count: deps.surveyAssignments },
       { table: 'admin_department_permissions', operation: 'DELETE', count: deps.adminPermissions },
-      {
-        table: 'department_group_members',
-        operation: 'DELETE',
-        count: deps.departmentGroupMembers,
-      },
       { table: 'document_permissions', operation: 'DELETE', count: deps.documentPermissions },
     ];
 

@@ -87,10 +87,11 @@ class AdminPermissionsService {
   ): Promise<PermissionCheckResult> {
     try {
       // Check direct department permissions
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const directQuery = `
         SELECT can_read, can_write, can_delete
         FROM admin_department_permissions
-        WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3
+        WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3
       `;
       const [directPermissions] = await execute<PermissionResult[]>(directQuery, [
         adminId,
@@ -199,6 +200,7 @@ class AdminPermissionsService {
     adminId: number,
     tenantId: number,
   ): Promise<AdminDepartment[]> {
+    // POSTGRESQL FIX: Parameters must be $1, $2 in order they appear in array
     const query = `
       SELECT
         d.id,
@@ -209,9 +211,9 @@ class AdminPermissionsService {
         adp.can_delete
       FROM admin_department_permissions adp
       JOIN departments d ON adp.department_id = d.id
-      WHERE adp.admin_user_id = $3
+      WHERE adp.admin_user_id = $1
       AND adp.tenant_id = $2
-      AND d.is_active = true
+      AND d.is_active = 1
       ORDER BY d.name
     `;
     const [rows] = await execute<DepartmentPermissionRow[]>(query, [adminId, tenantId]);
@@ -244,7 +246,7 @@ class AdminPermissionsService {
 
   private async getTotalDepartments(tenantId: number): Promise<number> {
     const [countResult] = await execute<RowDataPacket[]>(
-      'SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = true',
+      'SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = 1',
       [tenantId],
     );
     return (countResult[0] as { total: number }).total;
@@ -394,9 +396,10 @@ class AdminPermissionsService {
     tenantId: number,
   ): Promise<void> {
     try {
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_area_permissions
-         WHERE admin_user_id = $4 AND area_id = $2 AND tenant_id = $3`,
+         WHERE admin_user_id = $1 AND area_id = $2 AND tenant_id = $3`,
         [userId, areaId, tenantId],
       );
 
@@ -427,8 +430,9 @@ class AdminPermissionsService {
     tenantId: number,
   ): Promise<void> {
     try {
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const [result] = await execute<ResultSetHeader>(
-        'UPDATE users SET has_full_access = $4 WHERE id = $2 AND tenant_id = $3',
+        'UPDATE users SET has_full_access = $1 WHERE id = $2 AND tenant_id = $3',
         [hasFullAccess, userId, tenantId],
       );
 
@@ -516,9 +520,10 @@ class AdminPermissionsService {
     tenantId: number,
   ): Promise<void> {
     try {
+      // POSTGRESQL FIX: Parameters must be $1, $2, $3 in order they appear in array
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_department_permissions
-        WHERE admin_user_id = $4 AND department_id = $2 AND tenant_id = $3`,
+        WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
         [adminId, departmentId, tenantId],
       );
 

@@ -5,6 +5,8 @@
 
 /**
  * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
+ * UPDATED: is_archived removed, using unified is_active status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export interface Area {
   id: number;
@@ -15,8 +17,7 @@ export interface Area {
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number | null;
   address?: string | null;
-  is_active: 0 | 1;
-  is_archived: 0 | 1;
+  is_active: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employee_count?: number;
   department_count?: number;
   department_names?: string | null;

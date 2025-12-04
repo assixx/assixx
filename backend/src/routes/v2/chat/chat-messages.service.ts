@@ -5,8 +5,8 @@
  */
 import { log, error as logError } from 'console';
 
-import type { ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
-import { execute } from '../../../utils/db.js';
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
+import { execute, transaction } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type {
   CountResult,
@@ -218,6 +218,7 @@ function buildMessageResponse(
           size: data.attachment.size,
         }
       : null,
+    attachments: [], // New attachments are linked via WebSocket
     isRead: false,
     readAt: null,
     createdAt: new Date(),
@@ -247,11 +248,71 @@ function transformMessage(msg: MessageRow): Message {
           size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
         }
       : null,
+    attachments: [], // Will be populated after query
     isRead: msg.is_read !== undefined && msg.is_read !== 0,
     readAt: msg.read_at ? new Date(msg.read_at) : null,
     createdAt: new Date(msg.created_at),
     updatedAt: new Date(msg.created_at), // Messages don't have updated_at
   };
+}
+
+/**
+ * Document attachment row from database
+ */
+interface DocumentAttachmentRow extends RowDataPacket {
+  id: number;
+  message_id: number;
+  file_uuid: string;
+  filename: string;
+  original_name: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: Date | null;
+}
+
+/**
+ * Load attachments using existing connection (for RLS context)
+ */
+async function loadAttachmentsWithConn(
+  conn: PoolConnection,
+  messageIds: number[],
+  tenantId: number,
+): Promise<Map<number, Message['attachments']>> {
+  const attachmentMap = new Map<number, Message['attachments']>();
+
+  if (messageIds.length === 0) return attachmentMap;
+
+  for (const id of messageIds) {
+    attachmentMap.set(id, []);
+  }
+
+  const placeholders = messageIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+  const [rows] = await conn.execute<DocumentAttachmentRow[]>(
+    `SELECT id, message_id, file_uuid, filename, original_name, file_size, mime_type, uploaded_at
+     FROM documents
+     WHERE message_id IN (${placeholders})
+     AND tenant_id = $1
+     AND is_active = 1
+     ORDER BY id ASC`,
+    [tenantId, ...messageIds],
+  );
+
+  for (const row of rows) {
+    const attachments = attachmentMap.get(row.message_id) ?? [];
+    attachments.push({
+      id: row.id,
+      fileUuid: row.file_uuid,
+      fileName: row.filename,
+      originalName: row.original_name,
+      fileSize: row.file_size,
+      mimeType: row.mime_type,
+      downloadUrl: `/api/v2/documents/${row.id}/download`,
+      ...(row.uploaded_at !== null ? { createdAt: new Date(row.uploaded_at).toISOString() } : {}),
+    });
+    attachmentMap.set(row.message_id, attachments);
+  }
+
+  return attachmentMap;
 }
 
 /**
@@ -271,22 +332,40 @@ export async function getMessages(
 ): Promise<{ data: Message[]; pagination: PaginationMeta }> {
   try {
     const { page, limit, offset } = calculatePagination(filters);
+
+    // App-level participant check (runs before transaction)
     await verifyConversationAccess(conversationId, userId, tenantId);
 
-    // Get total count
-    const { whereClause, params } = buildMessagesWhereClause(filters, conversationId, tenantId);
-    const [countResult] = await execute<CountResult[]>(
-      `SELECT COUNT(*) as total FROM messages m ${whereClause}`,
-      params,
+    // Execute message queries with RLS context (tenantId + userId)
+    // IMPORTANT: Sets app.user_id for participant_isolation RESTRICTIVE policy
+    return await transaction(
+      async (conn: PoolConnection) => {
+        // Get total count with RLS enforced
+        const { whereClause, params } = buildMessagesWhereClause(filters, conversationId, tenantId);
+        const [countResult] = await conn.execute<CountResult[]>(
+          `SELECT COUNT(*) as total FROM messages m ${whereClause}`,
+          params,
+        );
+        const totalItems = countResult[0]?.total ?? 0;
+
+        // Fetch and transform messages with RLS enforced
+        const messagesQuery = buildMessagesQuery(conversationId, tenantId, userId, limit, offset);
+        const [messages] = await conn.execute<MessageRow[]>(messagesQuery);
+        const data = messages.map((msg: MessageRow) => transformMessage(msg));
+
+        // Load attachments (documents table has tenant RLS)
+        const messageIds = data.map((m: Message) => m.id);
+        const attachmentMap = await loadAttachmentsWithConn(conn, messageIds, tenantId);
+
+        // Assign attachments to messages
+        for (const message of data) {
+          message.attachments = attachmentMap.get(message.id) ?? [];
+        }
+
+        return { data, pagination: buildPaginationMeta(page, limit, totalItems) };
+      },
+      { tenantId, userId }, // RLS context - enables participant_isolation
     );
-    const totalItems = countResult[0]?.total ?? 0;
-
-    // Fetch and transform messages
-    const query = buildMessagesQuery(conversationId, tenantId, userId, limit, offset);
-    const [messages] = await execute<MessageRow[]>(query);
-    const data = messages.map((msg: MessageRow) => transformMessage(msg));
-
-    return { data, pagination: buildPaginationMeta(page, limit, totalItems) };
   } catch (error: unknown) {
     throw error instanceof ServiceError ? error : (
         new ServiceError('GET_MESSAGES_ERROR', 'Failed to fetch messages', 500)
@@ -313,9 +392,12 @@ export async function sendMessage(
     // Verify sender is participant
     await verifyConversationAccess(conversationId, senderId, tenantId);
 
-    // Insert message and update conversation
+    // Insert message and update conversation (with tenant isolation)
     const messageId = await insertMessage(tenantId, conversationId, senderId, data);
-    await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = $1`, [conversationId]);
+    await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`, [
+      conversationId,
+      tenantId,
+    ]);
 
     // Build response with sender info
     const sender = await getSenderInfo(senderId, tenantId);
@@ -358,6 +440,7 @@ export async function getUnreadCount(
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
       LEFT JOIN messages m ON m.conversation_id = c.id
       WHERE c.tenant_id = ${tenantId}
+      AND c.is_active = 1
       AND cp.user_id = ${userId}
       AND cp.tenant_id = ${tenantId}
       GROUP BY c.id, c.name
@@ -410,22 +493,25 @@ export async function getUnreadCount(
 
 /**
  * Mark all messages in a conversation as read
+ * @param tenantId - The tenant ID for multi-tenant isolation
  * @param conversationId - The conversation ID to mark as read
  * @param userId - The user marking messages as read
  * @returns Count of messages marked as read
  * @throws ServiceError if user not participant or update fails
  */
 export async function markConversationAsRead(
+  tenantId: number,
   conversationId: number,
   userId: number,
 ): Promise<{ markedCount: number }> {
   try {
-    log('[Chat Service] markConversationAsRead:', { conversationId, userId });
+    log('[Chat Service] markConversationAsRead:', { tenantId, conversationId, userId });
 
-    // First check if user is participant
+    // First check if user is participant (with tenant isolation)
     const [participant] = await execute<RowDataPacket[]>(
       `SELECT 1 FROM conversation_participants
-       WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+      [conversationId, userId, tenantId],
     );
 
     if (participant.length === 0) {
@@ -438,42 +524,32 @@ export async function markConversationAsRead(
 
     log('[Chat Service] User is participant, updating last read message');
 
-    // Get the latest message id in the conversation
+    // Get the latest message id in the conversation (with tenant isolation)
     interface LatestMessageRow extends RowDataPacket {
       lastMessageId: number | null;
     }
     const [latestMessage] = await execute<LatestMessageRow[]>(
-      `SELECT MAX(id) as lastMessageId
+      `SELECT MAX(id) as "lastMessageId"
        FROM messages
-       WHERE conversation_id = ${conversationId}`,
+       WHERE conversation_id = $1 AND tenant_id = $2`,
+      [conversationId, tenantId],
     );
 
     const lastMessageId = latestMessage[0]?.lastMessageId ?? 0;
+    log('[Chat Service] Latest message ID:', lastMessageId);
 
-    // Update last_read_message_id in conversation_participants
+    // Update last_read_message_id in conversation_participants (with tenant isolation)
     await execute(
       `UPDATE conversation_participants
        SET last_read_message_id = $1, last_read_at = NOW()
-       WHERE conversation_id = $2 AND user_id = $3`,
-      [lastMessageId, conversationId, userId],
+       WHERE conversation_id = $2 AND user_id = $3 AND tenant_id = $4`,
+      [lastMessageId, conversationId, userId, tenantId],
     );
 
-    // Count how many messages were marked as read
-    interface CountRow extends RowDataPacket {
-      count: number;
-    }
+    log('[Chat Service] Updated last_read_message_id to:', lastMessageId);
 
-    const [unreadCount] = await execute<CountRow[]>(
-      `SELECT COUNT(*) as count
-       FROM messages m
-       JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id
-       WHERE m.conversation_id = ${conversationId}
-       AND m.sender_id != ${userId}
-       AND m.id > COALESCE(cp.last_read_message_id, 0)
-       AND cp.user_id = ${userId}`,
-    );
-
-    return { markedCount: unreadCount[0]?.count ?? 0 };
+    // Return the message ID that was marked as last read
+    return { markedCount: lastMessageId };
   } catch (error: unknown) {
     logError('[Chat Service] markConversationAsRead error:', error);
     throw error instanceof ServiceError ? error : (

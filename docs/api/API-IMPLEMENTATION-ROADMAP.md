@@ -60,7 +60,7 @@ app.use(deprecationMiddleware('v1', '2025-12-31'));
 **Datei:** `backend/src/utils/apiResponse.ts`
 
 ```typescript
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -109,7 +109,7 @@ export function errorResponse(code: string, message: string, details?: any[]): A
     },
     meta: {
       timestamp: new Date().toISOString(),
-      requestId: uuidv4(),
+      requestId: uuidv7(),
     },
   };
 }

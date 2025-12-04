@@ -100,32 +100,37 @@ export function showDeleteModal(id: number, name: string): void {
 
 /**
  * Close Delete Modal
+ * @param clearId - Whether to clear the stored area ID (default: true)
+ *                  Set to false when transitioning to step 2 modal
  */
-export function closeDeleteModal(): void {
+export function closeDeleteModal(clearId: boolean = true): void {
   const modal = $$id('delete-area-modal');
-  const deleteIdInput = $$id('delete-area-id') as HTMLInputElement | null;
 
   if (modal !== null) {
     modal.classList.remove(MODAL_ACTIVE_CLASS);
   }
 
-  if (deleteIdInput !== null) {
-    deleteIdInput.value = '';
+  // Only clear ID when fully closing (not when transitioning to step 2)
+  if (clearId) {
+    const deleteIdInput = $$id('delete-area-id') as HTMLInputElement | null;
+    if (deleteIdInput !== null) {
+      deleteIdInput.value = '';
+    }
   }
 }
 
 /**
  * Initialize status dropdown (custom dropdown with badges)
- * Maps UI values (active/inactive/archived) to DB fields (isActive + isArchived)
+ * UPDATED: Maps UI values to unified is_active status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function initStatusDropdown(): void {
   const trigger = document.querySelector('#status-trigger');
   const menu = document.querySelector('#status-menu');
   const isActiveInput = document.querySelector<HTMLInputElement>('#area-is-active');
-  const isArchivedInput = document.querySelector<HTMLInputElement>('#area-is-archived');
   const options = document.querySelectorAll('#status-menu .dropdown__option');
 
-  if (trigger === null || menu === null || isActiveInput === null || isArchivedInput === null) return;
+  if (trigger === null || menu === null || isActiveInput === null) return;
 
   // Toggle dropdown
   trigger.addEventListener('click', (e) => {
@@ -140,19 +145,17 @@ export function initStatusDropdown(): void {
       const value = option.getAttribute('data-value');
       const badgeClone = option.querySelector('.badge')?.cloneNode(true) as HTMLElement | undefined;
 
-      // Map UI value to DB fields (isActive + isArchived)
+      // Map UI value to unified is_active status
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       switch (value) {
         case 'active':
           isActiveInput.value = '1';
-          isArchivedInput.value = '0';
           break;
         case 'inactive':
           isActiveInput.value = '0';
-          isArchivedInput.value = '0';
           break;
         case 'archived':
-          isActiveInput.value = '0';
-          isArchivedInput.value = '1';
+          isActiveInput.value = '3';
           break;
       }
 

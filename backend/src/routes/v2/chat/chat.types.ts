@@ -23,27 +23,33 @@ export interface PaginationMeta {
 
 /**
  * Chat user with profile and department info
+ * NOTE: API response uses camelCase (frontend standard)
+ * INHERITANCE: Area → Department (teamAreaName = area.name)
  */
 export interface ChatUser {
   id: number;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  profile_picture: string | null;
-  department_id: number | null;
-  department: string | null;
+  firstName: string;
+  lastName: string;
+  employeeNumber: string | null;
+  profilePicture: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
+  teamAreaId: number | null;
+  teamAreaName: string | null;
   role: string;
   status: string;
-  last_seen: Date | null;
+  lastSeen: Date | null;
 }
 
 /**
  * Last message preview in conversation list
+ * NOTE: Uses camelCase to match frontend expectations
  */
 export interface ConversationLastMessage {
   content: string;
-  created_at: Date;
+  createdAt: string;
 }
 
 /**
@@ -51,6 +57,7 @@ export interface ConversationLastMessage {
  */
 export interface Conversation {
   id: number;
+  uuid: string; // UUIDv7 for secure URL routing (/chat/:uuid)
   name: string | null;
   isGroup: boolean;
   createdAt: Date;
@@ -62,20 +69,21 @@ export interface Conversation {
 
 /**
  * Participant in a conversation
+ * NOTE: API response uses camelCase (frontend standard)
  */
 export interface ConversationParticipant {
   id: number;
   userId: number;
   username: string;
-  first_name: string;
-  last_name: string;
-  profile_picture_url: string | null;
+  firstName: string;
+  lastName: string;
+  profilePictureUrl: string | null;
   joinedAt: Date;
   isActive: boolean;
 }
 
 /**
- * Chat message with sender info and optional attachment
+ * Chat message with sender info and attachments
  */
 export interface Message {
   id: number;
@@ -85,7 +93,8 @@ export interface Message {
   senderUsername: string;
   senderProfilePicture: string | null;
   content: string;
-  attachment: MessageAttachment | null;
+  attachment: MessageAttachment | null; // Legacy single attachment
+  attachments: DocumentAttachment[]; // New document-based attachments
   isRead: boolean;
   readAt: Date | null;
   createdAt: Date;
@@ -93,13 +102,27 @@ export interface Message {
 }
 
 /**
- * File attachment metadata
+ * Legacy file attachment metadata (for old messages)
  */
 export interface MessageAttachment {
   url: string;
   filename: string;
   mimeType: string;
   size: number;
+}
+
+/**
+ * Document-based attachment (new system)
+ */
+export interface DocumentAttachment {
+  id: number;
+  fileUuid: string;
+  fileName: string;
+  originalName: string;
+  fileSize: number;
+  mimeType: string;
+  downloadUrl: string;
+  createdAt?: string;
 }
 
 /**
@@ -127,11 +150,14 @@ export interface MessageFilters {
 
 /**
  * Data required to create a new conversation
+ * Supports lazy creation with initialMessage
  */
 export interface CreateConversationData {
   participantIds: number[];
   name?: string;
   isGroup?: boolean;
+  /** Initial message content for lazy creation - if provided, message is created with conversation */
+  initialMessage?: string;
 }
 
 /**
@@ -174,9 +200,12 @@ export interface ChatUserRow extends RowDataPacket {
   email: string;
   first_name: string | null;
   last_name: string | null;
+  employee_number: string | null;
   profile_picture: string | null;
   department_id: number | null;
   department_name: string | null;
+  area_id: number | null;
+  area_name: string | null;
   role: string;
 }
 
@@ -194,6 +223,7 @@ export interface CountResult extends RowDataPacket {
  */
 export interface ConversationRow extends RowDataPacket {
   id: number;
+  uuid: string; // UUIDv7 for URL routing
   name: string | null;
   is_group: boolean;
   created_at: Date;

@@ -129,7 +129,7 @@ async function getUserDetails(userId: number, tenantId: number): Promise<UserDet
       LEFT JOIN tenants t ON u.tenant_id = t.id
       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
       LEFT JOIN departments d ON ud.department_id = d.id
-      WHERE u.id = $1 AND u.tenant_id = $2 AND u.is_active = true`,
+      WHERE u.id = $1 AND u.tenant_id = $2 AND u.is_active = 1`,
       [userId, tenantId],
     );
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // Logs page functionality
 import { showError, showSuccess } from '../auth/index';
 import { ApiClient } from '../../utils/api-client';
@@ -239,7 +240,8 @@ function formatLogEntry(entry: LogEntry): string {
   });
 
   const entityInfo = formatEntityInfo(entry);
-  const roleClass = `role-${entry.userRole.toLowerCase()}`;
+  const roleLower = entry.userRole.toLowerCase();
+  const badgeVariant = roleLower === 'root' ? 'badge--danger' : roleLower === 'admin' ? 'badge--warning' : 'badge--info';
   const roleLabel = getRoleLabel(entry.userRole);
   const detailsSummary = buildDetailsSummary(details);
 
@@ -249,7 +251,7 @@ function formatLogEntry(entry: LogEntry): string {
       <td>
         <div class="user-info">
           <span class="user-name">${entry.userName}</span>
-          <span class="role-badge ${roleClass}">${roleLabel}</span>
+          <span class="badge badge--sm ${badgeVariant}">${roleLabel}</span>
         </div>
       </td>
       <td>
@@ -497,7 +499,7 @@ function formatDetailsForModal(details: LogDetails): string {
 
 // Show full details in modal
 function showFullDetails(encodedDetails: string) {
-  // eslint-disable-next-line max-lines
+
   try {
     const detailsStr = decodeURIComponent(encodedDetails);
     const details = JSON.parse(detailsStr) as LogDetails;

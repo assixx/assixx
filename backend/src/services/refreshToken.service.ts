@@ -147,7 +147,7 @@ export async function findValidRefreshToken(tokenHash: string): Promise<StoredRe
   const [rows] = await execute<RefreshTokenRow[]>(
     `SELECT * FROM refresh_tokens
      WHERE token_hash = $1
-     AND is_revoked = 0
+     AND is_revoked = false
      AND expires_at > NOW()`,
     [tokenHash],
   );
@@ -202,7 +202,7 @@ export async function markTokenAsUsed(tokenHash: string, replacementHash: string
     `UPDATE refresh_tokens
      SET used_at = NOW(), replaced_by_hash = $2
      WHERE token_hash = $1`,
-    [replacementHash, tokenHash],
+    [tokenHash, replacementHash],
   );
 
   logger.debug(
@@ -301,9 +301,9 @@ export async function getUserTokenStats(
   const [rows] = await execute<RowDataPacket[]>(
     `SELECT
        COUNT(*) as total,
-       SUM(CASE WHEN is_revoked = 0 AND expires_at > NOW() THEN 1 ELSE 0 END) as active,
+       SUM(CASE WHEN is_revoked = false AND expires_at > NOW() THEN 1 ELSE 0 END) as active,
        SUM(CASE WHEN is_revoked = true THEN 1 ELSE 0 END) as revoked,
-       SUM(CASE WHEN expires_at <= NOW() AND is_revoked = 0 THEN 1 ELSE 0 END) as expired
+       SUM(CASE WHEN expires_at <= NOW() AND is_revoked = false THEN 1 ELSE 0 END) as expired
      FROM refresh_tokens
      WHERE user_id = $1 AND tenant_id = $2`,
     [userId, tenantId],

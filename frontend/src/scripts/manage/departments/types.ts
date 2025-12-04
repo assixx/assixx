@@ -2,6 +2,10 @@
  * Department Management - Type Definitions
  */
 
+/**
+ * UPDATED: isArchived removed, using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+ */
 export interface Department {
   id: number;
   name: string;
@@ -12,8 +16,7 @@ export interface Department {
   areaName?: string | null;
   parentId?: number | null;
   parentName?: string | null;
-  isActive: boolean;
-  isArchived?: boolean;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeCount?: number;
   employeeNames?: string;
   teamCount?: number;

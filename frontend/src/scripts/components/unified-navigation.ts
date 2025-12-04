@@ -1536,7 +1536,7 @@ class UnifiedNavigation {
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
                         <div class="user-position" id="sidebar-user-position" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; display: none;"></div>
                         <div class="user-employee-number" id="sidebar-employee-number" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-                        <span id="role-indicator" class="role-badge ${this.currentRole ?? ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
+                        <span id="role-indicator" class="badge badge--sm ${this.currentRole === 'root' ? 'badge--danger' : this.currentRole === 'admin' ? 'badge--warning' : 'badge--info'}">${this.currentRole === 'root' ? 'Root' : this.currentRole === 'admin' ? 'Admin' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
 
@@ -1798,31 +1798,25 @@ class UnifiedNavigation {
     const toggleBtn = $$('#sidebar-toggle');
     const sidebar = $$('.layout-container .sidebar') ?? $$('.sidebar');
     const mainContent = $$('.main-content');
-    const chatMain = $$('.chat-main');
-    const chatSidebar = $$('.chat-sidebar');
+    // Use chat-page-main instead of chat-main/chat-sidebar for proper positioning
+    const chatPageMain = $$('.chat-page-main');
 
     if (!toggleBtn || !sidebar) {
       return;
     }
 
-    this.applySavedCollapsedState(sidebar, mainContent, chatMain, chatSidebar);
-    this.setupToggleClickHandler(toggleBtn, sidebar, mainContent, chatMain, chatSidebar);
+    this.applySavedCollapsedState(sidebar, mainContent, chatPageMain);
+    this.setupToggleClickHandler(toggleBtn, sidebar, mainContent, chatPageMain);
     this.setupHoverEffects(toggleBtn, sidebar);
     this.addCollapsedTooltips();
   }
 
-  private applySavedCollapsedState(
-    sidebar: Element,
-    mainContent: Element | null,
-    chatMain: Element | null,
-    chatSidebar: Element | null,
-  ): void {
+  private applySavedCollapsedState(sidebar: Element, mainContent: Element | null, chatPageMain: Element | null): void {
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add(SIDEBAR_COLLAPSED_CLASS);
-      chatMain?.classList.add(SIDEBAR_COLLAPSED_CLASS);
-      chatSidebar?.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      chatPageMain?.classList.add(SIDEBAR_COLLAPSED_CLASS);
       this.updateToggleIcon();
     }
   }
@@ -1831,8 +1825,7 @@ class UnifiedNavigation {
     toggleBtn: Element,
     sidebar: Element,
     mainContent: Element | null,
-    chatMain: Element | null,
-    chatSidebar: Element | null,
+    chatPageMain: Element | null,
   ): void {
     toggleBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1846,8 +1839,7 @@ class UnifiedNavigation {
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
-      chatMain?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
-      chatSidebar?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
+      chatPageMain?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
 
       // Force browser to recalculate styles
       void (sidebar as HTMLElement).offsetWidth;

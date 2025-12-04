@@ -67,8 +67,7 @@ export interface TeamUpdateInput {
   description?: string;
   departmentId?: number | null;
   leaderId?: number | null;
-  status?: 'active' | 'inactive';
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 /**
@@ -119,14 +118,12 @@ class TeamsService {
           delete apiTeam['teamLeadName'];
         }
 
-        // Convert isActive/isArchived to boolean early (like departments.service.ts)
-        const isActive = Boolean(apiTeam['isActive'] ?? 1);
-        const isArchived = Boolean(apiTeam['isArchived'] ?? 0);
-        apiTeam['isActive'] = isActive;
-        apiTeam['isArchived'] = isArchived;
+        // Convert isActive to number (Status: 0=inactive, 1=active, 3=archived, 4=deleted)
+        const isActiveValue = Number(apiTeam['isActive'] ?? 1);
+        apiTeam['isActive'] = isActiveValue;
 
-        // Derive status from boolean isActive
-        apiTeam['status'] = isActive ? 'active' : 'inactive';
+        // Derive status from isActive value (0=inactive, 1=active)
+        apiTeam['status'] = isActiveValue === 1 ? 'active' : 'inactive';
 
         // Convert empty strings to null for optional fields
         if (apiTeam['description'] === '') {
@@ -158,18 +155,16 @@ class TeamsService {
   }
 
   /**
-   * Convert isActive/isArchived to boolean and derive status
-   * Follows same pattern as departments.service.ts
+   * Convert isActive to number and derive status
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
    */
   private normalizeTeamFields(apiTeam: Record<string, unknown>): void {
-    // Convert isActive/isArchived to boolean early (like departments.service.ts)
-    const isActive = Boolean(apiTeam['isActive'] ?? 1);
-    const isArchived = Boolean(apiTeam['isArchived'] ?? 0);
-    apiTeam['isActive'] = isActive;
-    apiTeam['isArchived'] = isArchived;
+    // Convert isActive to number (Status: 0=inactive, 1=active, 3=archived, 4=deleted)
+    const isActiveValue = Number(apiTeam['isActive'] ?? 1);
+    apiTeam['isActive'] = isActiveValue;
 
-    // Derive status from boolean isActive
-    apiTeam['status'] = isActive ? 'active' : 'inactive';
+    // Derive status from isActive value (0=inactive, 1=active)
+    apiTeam['status'] = isActiveValue === 1 ? 'active' : 'inactive';
 
     // Convert empty strings to null for optional fields
     if (apiTeam['description'] === '') {
@@ -350,14 +345,9 @@ class TeamsService {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.departmentId !== undefined) updateData.department_id = data.departmentId;
     if (data.leaderId !== undefined) updateData.team_lead_id = data.leaderId;
-    if (data.status !== undefined) {
-      updateData.is_active = data.status === 'active' ? 1 : 0;
-      logger.info(
-        `[DEBUG] Setting is_active to ${updateData.is_active} from status: ${data.status}`,
-      );
-    }
-    if (data.isArchived !== undefined) {
-      updateData.is_archived = data.isArchived ? 1 : 0;
+    if (data.isActive !== undefined) {
+      updateData.is_active = data.isActive; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+      logger.info(`[DEBUG] Setting is_active to ${updateData.is_active}`);
     }
 
     logger.info(`[DEBUG] buildUpdateData result: ${JSON.stringify(updateData)}`);

@@ -197,8 +197,8 @@ class AreasManager {
   private initDeleteConfirmation(): void {
     // Step 1: Proceed to second confirmation
     document.querySelector('#proceed-delete-area')?.addEventListener('click', () => {
-      // Close first modal, show second modal
-      closeDeleteModal();
+      // Close first modal (keep ID!), show second modal
+      closeDeleteModal(false); // Don't clear ID - needed for step 2
       const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
       confirmModal?.classList.add(MODAL_ACTIVE_CLASS);
     });
@@ -207,16 +207,23 @@ class AreasManager {
     document.querySelector('#cancel-delete-confirm')?.addEventListener('click', () => {
       const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
       confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
+      // Clear stored ID on cancel
+      const deleteIdInput = document.querySelector<HTMLInputElement>('#delete-area-id');
+      if (deleteIdInput !== null) {
+        deleteIdInput.value = '';
+      }
     });
 
     // Step 2: Final confirmation - actually delete
     document.querySelector('#confirm-delete-area-final')?.addEventListener('click', () => {
       const deleteIdInput = document.querySelector<HTMLInputElement>('#delete-area-id');
       if (deleteIdInput !== null && deleteIdInput.value !== '') {
-        // Close second modal first
+        const areaId = Number.parseInt(deleteIdInput.value, 10);
+        // Close second modal and clear ID
         const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
         confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
-        void this.deleteArea(Number.parseInt(deleteIdInput.value, 10));
+        deleteIdInput.value = '';
+        void this.deleteArea(areaId);
       }
     });
   }
@@ -370,9 +377,10 @@ class AreasManager {
       const capacityValue = formData.get('capacity') as string;
       const areaLeadIdValue = formData.get('areaLeadId') as string;
 
-      // Read isActive and isArchived from hidden inputs (set by status dropdown)
+      // Read isActive from hidden input (set by status dropdown)
+      // UPDATED: Using unified is_active status (2025-12-02)
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       const isActiveValue = formData.get('isActive') as string;
-      const isArchivedValue = formData.get('isArchived') as string;
 
       // Build area data for API (uses camelCase isActive as expected by backend)
       const areaData = {
@@ -382,9 +390,8 @@ class AreasManager {
         type: formData.get('type') as Area['type'],
         capacity: capacityValue !== '' ? Number.parseInt(capacityValue, 10) : undefined,
         address: addressValue !== '' ? addressValue : undefined,
-        isActive: isActiveValue === '1',
-        isArchived: isArchivedValue === '1',
-      } as Partial<Area> & { isActive?: boolean; isArchived?: boolean; areaLeadId?: number | null };
+        isActive: isActiveValue !== '' ? Number.parseInt(isActiveValue, 10) : 1,
+      } as Partial<Area> & { isActive?: number; areaLeadId?: number | null };
 
       let savedAreaId: number;
 
@@ -472,6 +479,8 @@ class AreasManager {
 
   /**
    * Filter areas by status
+   * UPDATED: Using unified is_active status (2025-12-02)
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
    */
   private filterByStatus(status: 'active' | 'inactive' | 'archived' | 'all'): void {
     console.log('[AREAS] filterByStatus called with status:', status);
@@ -481,20 +490,21 @@ class AreasManager {
 
     switch (status) {
       case 'active':
-        // Show only active AND not archived
-        filtered = this.areas.filter((area) => area.is_active === 1 && area.is_archived !== 1);
+        // Show only active (is_active === 1)
+        filtered = this.areas.filter((area) => area.is_active === 1);
         break;
       case 'inactive':
-        // Show only inactive AND not archived
-        filtered = this.areas.filter((area) => area.is_active === 0 && area.is_archived !== 1);
+        // Show only inactive (is_active === 0)
+        filtered = this.areas.filter((area) => area.is_active === 0);
         break;
       case 'archived':
-        // Show only archived (regardless of is_active)
-        filtered = this.areas.filter((area) => area.is_archived === 1);
+        // Show only archived (is_active === 3)
+        filtered = this.areas.filter((area) => area.is_active === 3);
         break;
       case 'all':
       default:
-        filtered = this.areas;
+        // Show all except deleted (is_active !== 4)
+        filtered = this.areas.filter((area) => area.is_active !== 4);
     }
 
     console.log('[AREAS] Filtered areas count:', filtered.length);

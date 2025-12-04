@@ -10,7 +10,8 @@ interface DbDocument extends RowDataPacket {
   id: number;
   // NEW: Clean access control fields (refactored 2025-01-10)
   // Updated 2025-11-24: Added 'blackboard' access_scope
-  access_scope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  // Updated 2025-12-03: Added 'chat' access_scope
+  access_scope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   owner_user_id?: number | null;
   target_team_id?: number | null;
   target_department_id?: number | null;
@@ -30,9 +31,11 @@ interface DbDocument extends RowDataPacket {
   salary_month?: number;
   // NEW: Blackboard reference (2025-11-24)
   blackboard_entry_id?: number | null;
+  // NEW: Chat/Conversation reference (2025-12-03)
+  conversation_id?: number | null;
   upload_date: Date;
   uploaded_at?: string;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   download_count?: number;
   last_downloaded?: Date;
   tenant_id: number;
@@ -49,7 +52,8 @@ interface DbDocument extends RowDataPacket {
 interface DocumentCreateData {
   // NEW: Clean access control (refactored 2025-01-10)
   // Updated 2025-11-24: Added 'blackboard' access scope
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  // Updated 2025-12-03: Added 'chat' access scope
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   ownerUserId?: number | null;
   targetTeamId?: number | null;
   targetDepartmentId?: number | null;
@@ -64,12 +68,14 @@ interface DocumentCreateData {
   salaryMonth?: number;
   // NEW: Blackboard reference (2025-11-24)
   blackboardEntryId?: number | null;
+  // NEW: Chat/Conversation reference (2025-12-03)
+  conversationId?: number | null;
   tenant_id: number;
   createdBy?: number; // The user who uploads the document
   tags?: string[]; // Tags for the document
   mimeType?: string; // MIME type of the document
   // UUID-based storage
-  fileUuid?: string; // UUID v4 for unique filename
+  fileUuid?: string; // UUIDv7 for unique filename (time-sortable)
   fileChecksum?: string; // SHA-256 hash for integrity
   storageType?: 'database' | 'filesystem' | 's3'; // Where file is stored
   version?: number; // Version number
@@ -83,7 +89,7 @@ interface DocumentUpdateData {
   description?: string;
   year?: number;
   month?: string;
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   // v2 API specific fields
   filename?: string;
   tags?: string[] | null;
@@ -98,13 +104,16 @@ interface DocumentFilters {
   salaryMonth?: number;
   // NEW: Blackboard filter (2025-11-24)
   blackboardEntryId?: number;
-  isArchived?: boolean;
+  // NEW: Chat/Conversation filter (2025-12-03)
+  conversationId?: number;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   searchTerm?: string;
   uploadDateFrom?: Date;
   uploadDateTo?: Date;
   // NEW: Access scope filter instead of recipientType
   // Updated 2025-11-24: Added 'blackboard'
-  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  // Updated 2025-12-03: Added 'chat'
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   orderBy?: string;
   orderDirection?: 'ASC' | 'DESC';
   limit?: number;
@@ -114,7 +123,7 @@ interface DocumentFilters {
 interface DocumentCountFilter {
   userId?: number;
   category?: string;
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 interface CountResult extends RowDataPacket {
@@ -137,6 +146,7 @@ function buildCreateParams(data: DocumentCreateData, documentUuid: string): unkn
     data.salaryYear ?? null,
     data.salaryMonth ?? null,
     data.blackboardEntryId ?? null,
+    data.conversationId ?? null, // NEW 2025-12-03: Chat attachment support
     data.fileName,
     data.originalName ?? data.fileName,
     `/uploads/documents/${data.fileName}`,
@@ -152,11 +162,20 @@ function buildCreateParams(data: DocumentCreateData, documentUuid: string): unkn
     data.storageType ?? 'filesystem',
     data.version ?? 1,
     data.parentVersionId ?? null,
+    new Date(), // uploaded_at - FIX 2025-12-04
   ];
 }
 
+// POSTGRESQL: RETURNING id required to get insertId
+// Updated 2025-12-03: Added conversation_id for chat attachments
+// Updated 2025-12-04: Added uploaded_at timestamp
 const CREATE_DOCUMENT_SQL =
-  'INSERT INTO documents (uuid, tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, blackboard_entry_id, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)';
+  'INSERT INTO documents (uuid, tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, blackboard_entry_id, conversation_id, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id, uploaded_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) RETURNING id';
+
+// Interface for RETURNING id result
+interface InsertResult {
+  id: number;
+}
 
 export async function createDocument(data: DocumentCreateData): Promise<number> {
   logger.info(
@@ -168,9 +187,14 @@ export async function createDocument(data: DocumentCreateData): Promise<number> 
   const params = buildCreateParams(data, documentUuid);
 
   try {
-    const [result] = await executeQuery<ResultSetHeader>(CREATE_DOCUMENT_SQL, params);
-    logger.info(`Document created with ID ${result.insertId}`);
-    return result.insertId;
+    // PostgreSQL RETURNING returns rows, not ResultSetHeader
+    const [rows] = await executeQuery<InsertResult[]>(CREATE_DOCUMENT_SQL, params);
+    const documentId = rows[0]?.id;
+    if (documentId === undefined) {
+      throw new Error('Failed to get document ID after insert');
+    }
+    logger.info(`Document created with ID ${documentId}`);
+    return documentId;
   } catch (error: unknown) {
     logger.error(`Error creating document: ${(error as Error).message}`);
     throw error;
@@ -186,7 +210,7 @@ export async function findDocumentsByUserId(
   // NEW: Query by owner_user_id for personal/payroll documents (refactored 2025-01-10)
   // PostgreSQL: Use single quotes for string literals
   const query =
-    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, is_archived, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND access_scope IN ('personal', 'payroll') ORDER BY uploaded_at DESC";
+    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, is_active, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND access_scope IN ('personal', 'payroll') ORDER BY uploaded_at DESC";
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [userId, tenantId]);
     return rows;
@@ -206,21 +230,22 @@ export async function findDocumentsByUserIdAndCategory(
   category: string,
   archived?: boolean,
 ): Promise<DbDocument[]> {
-  const resolvedArchived = archived ?? false;
+  // Convert boolean archived to is_active: archived=true → 3, archived=false → 1
+  const isActiveValue = archived === true ? 3 : 1;
 
   logger.info(
-    `Fetching ${category} owner documents for user ${userId} in tenant ${tenantId} (archived: ${resolvedArchived})`,
+    `Fetching ${category} owner documents for user ${userId} in tenant ${tenantId} (is_active: ${isActiveValue})`,
   );
   // NEW: Query by owner_user_id with salary_month ordering (refactored 2025-01-10)
   // PostgreSQL: Use single quotes for string literals
   const query =
-    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND category = $3 AND is_archived = $4 AND access_scope IN ('personal', 'payroll') ORDER BY salary_year DESC, salary_month DESC";
+    "SELECT id, file_name, upload_date, category, description, salary_year, salary_month, access_scope FROM documents WHERE owner_user_id = $1 AND tenant_id = $2 AND category = $3 AND is_active = $4 AND access_scope IN ('personal', 'payroll') ORDER BY salary_year DESC, salary_month DESC";
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
       tenantId,
       category,
-      resolvedArchived,
+      isActiveValue,
     ]);
     return rows;
   } catch (error: unknown) {
@@ -251,7 +276,7 @@ export async function findDocumentById(id: number, tenantId: number): Promise<Db
 /**
  * Find document by file_uuid (secure download URL)
  * Used by blackboard and other systems that use UUID-based URLs
- * @param fileUuid - The file UUID (UUIDv4)
+ * @param fileUuid - The file UUID (UUIDv7)
  * @param tenantId - The tenant ID for isolation
  */
 export async function findDocumentByFileUuid(
@@ -307,7 +332,7 @@ function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params
     description: 'description',
     year: 'year',
     month: 'month',
-    isArchived: 'is_archived',
+    isActive: 'is_active', // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     filename: 'filename',
   };
 
@@ -363,11 +388,11 @@ export async function updateDocument(
 }
 
 export async function archiveDocument(id: number, tenantId: number): Promise<boolean> {
-  return await updateDocument(id, { isArchived: true }, tenantId);
+  return await updateDocument(id, { isActive: 3 }, tenantId); // 3 = archived
 }
 
 export async function unarchiveDocument(id: number, tenantId: number): Promise<boolean> {
-  return await updateDocument(id, { isArchived: false }, tenantId);
+  return await updateDocument(id, { isActive: 1 }, tenantId); // 1 = active
 }
 
 export async function deleteDocument(id: number, tenantId: number): Promise<boolean> {
@@ -545,9 +570,9 @@ export async function countDocuments(filters?: DocumentCountFilter): Promise<num
     query += ` AND category = $${paramIndex++}`;
     params.push(filters.category);
   }
-  if (filters.isArchived !== undefined) {
-    query += ` AND is_archived = $${paramIndex++}`;
-    params.push(filters.isArchived);
+  if (filters.isActive !== undefined) {
+    query += ` AND is_active = $${paramIndex++}`;
+    params.push(filters.isActive);
   }
 
   try {
@@ -568,6 +593,7 @@ export async function findDocumentsByUser(userId: number, tenantId: number): Pro
 // Helper: Build access condition SQL for documents
 // NEW: Uses clean access_scope structure (refactored 2025-01-10)
 // UPDATED 2025-11-24: Added blackboard document visibility check
+// UPDATED 2025-12-03: Added chat document visibility (conversation participants only)
 function buildAccessCondition(): string {
   return `(
     -- Personal documents (only owner can access)
@@ -604,6 +630,13 @@ function buildAccessCondition(): string {
           WHERE u.id = $7 AND u.tenant_id = $2))
         OR (be.org_level = 'team' AND be.org_id IN (SELECT team_id FROM user_teams WHERE user_id = $8 AND tenant_id = $2))
       )
+    ))
+    OR
+    -- Chat documents (only conversation participants can access)
+    -- NEW 2025-12-03: Visibility limited to conversation participants
+    (d.access_scope = 'chat' AND d.conversation_id IN (
+      SELECT cp.conversation_id FROM conversation_participants cp
+      WHERE cp.user_id = $9 AND cp.tenant_id = $2
     ))
   )`;
 }
@@ -655,6 +688,8 @@ function applyDocumentFilters(
     { field: 'salaryMonth', condition: ' AND d.salary_month = ?', type: 'number' },
     // NEW: Blackboard filter (2025-11-24)
     { field: 'blackboardEntryId', condition: ' AND d.blackboard_entry_id = ?', type: 'number' },
+    // NEW: Chat/Conversation filter (2025-12-03)
+    { field: 'conversationId', condition: ' AND d.conversation_id = ?', type: 'number' },
     // NEW: Access scope filter instead of recipientType
     { field: 'accessScope', condition: ' AND d.access_scope = ?', type: 'string' },
   ];
@@ -670,10 +705,10 @@ function applyDocumentFilters(
   }
 
   // Handle special cases
-  if (filters.isArchived !== undefined) {
+  if (filters.isActive !== undefined) {
     const paramIndex = updatedParams.length + 1;
-    updatedQuery += ` AND d.is_archived = $${paramIndex}`;
-    updatedParams.push(filters.isArchived);
+    updatedQuery += ` AND d.is_active = $${paramIndex}`;
+    updatedParams.push(filters.isActive);
   }
 
   const searchTerm = filters.searchTerm;
@@ -699,30 +734,34 @@ function addOrdering(query: string, filters?: DocumentFilters): string {
 }
 
 /** Build base params for document access queries */
+// Updated 2025-12-03: Added userId for chat access ($9)
 function buildAccessParams(tenantId: number, userId: number): unknown[] {
   return [
-    tenantId,
-    userId,
-    userId,
-    userId,
-    tenantId,
-    userId,
-    tenantId,
-    userId,
-    tenantId,
-    userId,
-    tenantId,
+    tenantId, // $1 - tenant filter
+    userId, // $2 - used in access condition subqueries
+    userId, // $3 - personal documents
+    userId, // $4 - payroll documents
+    userId, // $5 - team documents
+    tenantId, // - team subquery tenant
+    userId, // $6 - department documents
+    tenantId, // - department subquery tenant
+    userId, // $7 - blackboard department check
+    tenantId, // - blackboard department subquery tenant
+    userId, // $8 - blackboard team check
+    tenantId, // - blackboard team subquery tenant
+    userId, // $9 - chat documents (conversation participants)
   ];
 }
 
 /** Employee document SELECT columns (excludes file_content for performance) */
+// Updated 2025-12-03: Added conversation_id for chat attachments
 const EMPLOYEE_DOC_SELECT = `
   SELECT DISTINCT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
     d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
-    d.salary_year, d.salary_month, d.blackboard_entry_id, d.category,
+    d.salary_year, d.salary_month, d.blackboard_entry_id, d.conversation_id, d.category,
     d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
     d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
-    d.is_archived, d.archived_at, d.storage_type, d.created_by, d.uploaded_at,
+    d.is_active, d.storage_type, d.created_by, d.uploaded_at,
     u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
     uploader.first_name AS uploader_first_name, uploader.last_name AS uploader_last_name,
     CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name,
@@ -742,13 +781,15 @@ const DOC_FROM_JOINS = `
   LEFT JOIN departments dept ON d.target_department_id = dept.id`;
 
 // Helper: Execute count query
+// UPDATED 2025-12-04: Exclude chat documents from general listing
 async function getDocumentCount(
   tenantId: number,
   userId: number,
   filters?: DocumentFilters,
 ): Promise<number> {
+  // NOTE: Chat documents (access_scope='chat') are EXCLUDED from count
   const baseQuery = `SELECT COUNT(DISTINCT d.id) as total ${DOC_FROM_JOINS}
-    WHERE d.tenant_id = $1 AND ${buildAccessCondition()}`;
+    WHERE d.tenant_id = $1 AND d.access_scope != 'chat' AND ${buildAccessCondition()}`;
   const baseParams = buildAccessParams(tenantId, userId);
   const { query, params } = applyDocumentFilters(baseQuery, baseParams, filters);
   const [countResult] = await executeQuery<CountResult[]>(query, params);
@@ -780,6 +821,7 @@ function addPaginationToQuery(
 }
 
 /** Find all documents accessible to an employee */
+// UPDATED 2025-12-04: Exclude chat documents from general listing (only via chat-folders endpoint)
 export async function findDocumentsByEmployeeWithAccess(
   userId: number,
   tenantId: number,
@@ -787,8 +829,10 @@ export async function findDocumentsByEmployeeWithAccess(
 ): Promise<{ documents: DbDocument[]; total: number }> {
   logger.info(`Fetching accessible documents for employee ${userId} in tenant ${tenantId}`);
 
+  // NOTE: Chat documents (access_scope='chat') are EXCLUDED from general listing
+  // They are only accessible via /api/v2/documents/chat-folders and /api/v2/chat/conversations/:id/attachments
   const baseQuery = `${EMPLOYEE_DOC_SELECT} ${DOC_FROM_JOINS}
-    WHERE d.tenant_id = $1 AND ${buildAccessCondition()}`;
+    WHERE d.tenant_id = $1 AND d.access_scope != 'chat' AND ${buildAccessCondition()}`;
   const baseParams = buildAccessParams(tenantId, userId);
 
   try {
@@ -919,20 +963,22 @@ function addPagination(
 }
 
 // Find documents with flexible filters
-
+// UPDATED 2025-12-04: Exclude chat documents from general listing (even for admins!)
+// Chat attachments are PRIVATE and should only be accessible via chat-specific endpoints
 export async function findDocumentsWithFilters(
   tenantId: number,
   filters: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
   // NEW: Join on owner_user_id (refactored 2025-01-10)
   // IMPORTANT: Exclude file_content from SELECT for performance (only load for downloads)
+  // SECURITY: Chat documents are excluded - admins should NOT see private chat attachments
   const baseQuery = `
       SELECT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
              d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
              d.salary_year, d.salary_month, d.blackboard_entry_id, d.category,
              d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
              d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
-             d.is_archived, d.archived_at, d.storage_type,
+             d.is_active, d.storage_type,
              d.created_by, d.uploaded_at,
              u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
@@ -942,13 +988,13 @@ export async function findDocumentsWithFilters(
       FROM documents d
       LEFT JOIN users u ON d.owner_user_id = u.id
       LEFT JOIN users uploader ON d.created_by = uploader.id
-      WHERE 1=1`;
+      WHERE d.access_scope != 'chat'`;
 
   const baseCountQuery = `
       SELECT COUNT(DISTINCT d.id) as total
       FROM documents d
       LEFT JOIN users u ON d.owner_user_id = u.id
-      WHERE 1=1`;
+      WHERE d.access_scope != 'chat'`;
 
   try {
     // Apply filters to both queries
@@ -1071,7 +1117,7 @@ export async function getDocumentCountsByCategory(
       LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = $1
       LEFT JOIN users u ON u.id = $2
       WHERE d.tenant_id = $3
-        AND d.is_archived = false
+        AND d.is_active IN (0, 1)
         AND ${buildAccessCondition()}
       GROUP BY d.category
     `;
@@ -1116,6 +1162,206 @@ export async function getDocumentCountsByCategory(
   return counts;
 }
 
+// ============================================================
+// CHAT ATTACHMENT FUNCTIONS (NEW 2025-12-03)
+// ============================================================
+
+/**
+ * Find all documents (attachments) for a specific conversation
+ * Only returns documents if user is a participant of the conversation
+ * @param conversationId - The conversation ID
+ * @param tenantId - The tenant ID
+ * @param userId - The requesting user ID (for permission check)
+ */
+export async function findDocumentsByConversation(
+  conversationId: number,
+  tenantId: number,
+  userId: number,
+): Promise<DbDocument[]> {
+  logger.info(`Fetching chat attachments for conversation ${conversationId} by user ${userId}`);
+
+  // First, verify user is a participant of this conversation
+  const participantCheckQuery = `
+    SELECT 1 FROM conversation_participants
+    WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3
+    LIMIT 1
+  `;
+
+  try {
+    const [participantCheck] = await executeQuery<RowDataPacket[]>(participantCheckQuery, [
+      conversationId,
+      userId,
+      tenantId,
+    ]);
+
+    if (participantCheck.length === 0) {
+      logger.warn(`User ${userId} is not a participant of conversation ${conversationId}`);
+      return []; // Return empty array instead of throwing - caller can handle authorization
+    }
+
+    // User is a participant - fetch all attachments for this conversation
+    const query = `
+      SELECT d.id, d.file_uuid, d.version, d.tenant_id, d.conversation_id,
+             d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
+             d.mime_type, d.category, d.description, d.is_active, d.storage_type,
+             d.created_by, d.uploaded_at,
+             u.first_name AS uploader_first_name, u.last_name AS uploader_last_name,
+             CONCAT(u.first_name, ' ', u.last_name) AS uploaded_by_name
+      FROM documents d
+      LEFT JOIN users u ON d.created_by = u.id
+      WHERE d.conversation_id = $1
+        AND d.tenant_id = $2
+        AND d.access_scope = 'chat'
+        AND d.is_active = 1
+      ORDER BY d.uploaded_at DESC
+    `;
+
+    const [rows] = await executeQuery<DbDocument[]>(query, [conversationId, tenantId]);
+    logger.info(`Found ${rows.length} attachments for conversation ${conversationId}`);
+    return rows;
+  } catch (error: unknown) {
+    logger.error(
+      `Error fetching chat attachments for conversation ${conversationId}: ${(error as Error).message}`,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Check if user is a participant of a conversation
+ * Helper function for permission checks
+ */
+export async function isConversationParticipant(
+  userId: number,
+  conversationId: number,
+  tenantId: number,
+): Promise<boolean> {
+  const query = `
+    SELECT 1 FROM conversation_participants
+    WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3
+    LIMIT 1
+  `;
+
+  try {
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [conversationId, userId, tenantId]);
+    return rows.length > 0;
+  } catch (error: unknown) {
+    logger.error(`Error checking conversation participation: ${(error as Error).message}`);
+    return false;
+  }
+}
+
+/**
+ * Get conversation UUID for secure path building
+ * @param conversationId - The numeric conversation ID
+ * @param tenantId - The tenant ID
+ */
+export async function getConversationUuid(
+  conversationId: number,
+  tenantId: number,
+): Promise<string | null> {
+  const query = 'SELECT uuid FROM conversations WHERE id = $1 AND tenant_id = $2';
+
+  try {
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [conversationId, tenantId]);
+    if (rows.length === 0) {
+      return null;
+    }
+    return (rows[0] as { uuid: string }).uuid.trim(); // char(36) may have trailing spaces
+  } catch (error: unknown) {
+    logger.error(`Error getting conversation UUID: ${(error as Error).message}`);
+    return null;
+  }
+}
+
+/**
+ * Chat folder result type for document explorer
+ * Note: participant_name/id can be null for group chats or orphaned conversations
+ * Note: PostgreSQL COUNT(*) returns BIGINT which pg library returns as string
+ */
+interface ChatFolderResult extends RowDataPacket {
+  conversation_id: number;
+  conversation_uuid: string;
+  participant_name: string | null;
+  participant_id: number | null;
+  attachment_count: string; // PostgreSQL BIGINT → string (pg library behavior)
+  is_group: boolean;
+  group_name: string | null;
+}
+
+/** SQL query for chat folders - separated to reduce function length */
+const CHAT_FOLDERS_QUERY = `
+  SELECT
+    c.id AS conversation_id,
+    TRIM(c.uuid) AS conversation_uuid,
+    c.is_group,
+    c.name AS group_name,
+    CASE WHEN c.is_group = false THEN (
+      SELECT CONCAT(u2.first_name, ' ', u2.last_name)
+      FROM conversation_participants cp2
+      JOIN users u2 ON cp2.user_id = u2.id
+      WHERE cp2.conversation_id = c.id AND cp2.user_id != $1 AND cp2.tenant_id = $2
+      LIMIT 1
+    ) ELSE c.name END AS participant_name,
+    CASE WHEN c.is_group = false THEN (
+      SELECT cp2.user_id FROM conversation_participants cp2
+      WHERE cp2.conversation_id = c.id AND cp2.user_id != $1 AND cp2.tenant_id = $2
+      LIMIT 1
+    ) ELSE 0 END AS participant_id,
+    (SELECT COUNT(*) FROM documents d
+     WHERE d.conversation_id = c.id AND d.tenant_id = $2
+       AND d.access_scope = 'chat' AND d.is_active = 1) AS attachment_count
+  FROM conversations c
+  INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
+  WHERE cp.user_id = $1 AND cp.tenant_id = $2 AND c.tenant_id = $2
+    AND EXISTS (
+      SELECT 1 FROM documents d
+      WHERE d.conversation_id = c.id AND d.tenant_id = $2
+        AND d.access_scope = 'chat' AND d.is_active = 1
+    )
+  ORDER BY (SELECT MAX(d.uploaded_at) FROM documents d
+            WHERE d.conversation_id = c.id AND d.tenant_id = $2
+              AND d.access_scope = 'chat') DESC
+`;
+
+/** Chat folder response type */
+interface ChatFolderDTO {
+  conversationId: number;
+  conversationUuid: string;
+  participantName: string;
+  participantId: number;
+  attachmentCount: number;
+  isGroup: boolean;
+  groupName: string | null;
+}
+
+/**
+ * Get chat folders for document explorer
+ * Returns conversations where user is participant AND has attachments
+ * NEW 2025-12-04: For chat attachment folders in document explorer
+ */
+export async function getChatFoldersForUser(
+  userId: number,
+  tenantId: number,
+): Promise<ChatFolderDTO[]> {
+  try {
+    const [rows] = await executeQuery<ChatFolderResult[]>(CHAT_FOLDERS_QUERY, [userId, tenantId]);
+    return rows.map((row: ChatFolderResult) => ({
+      conversationId: row.conversation_id,
+      conversationUuid: row.conversation_uuid,
+      participantName: row.participant_name ?? 'Unbekannt',
+      participantId: row.participant_id ?? 0,
+      // PostgreSQL COUNT(*) returns BIGINT as string - convert to number
+      attachmentCount: Number(row.attachment_count),
+      isGroup: row.is_group,
+      groupName: row.group_name,
+    }));
+  } catch (error: unknown) {
+    logger.error(`Error getting chat folders for user ${userId}: ${(error as Error).message}`);
+    return [];
+  }
+}
+
 // Backward compatibility object
 const Document = {
   create: createDocument,
@@ -1141,6 +1387,12 @@ const Document = {
   isReadByUser: isDocumentReadByUser,
   getUnreadCountForUser: getUnreadDocumentCountForUser,
   getCountsByCategory: getDocumentCountsByCategory,
+  // NEW 2025-12-03: Chat attachment functions
+  findByConversation: findDocumentsByConversation,
+  isConversationParticipant,
+  getConversationUuid,
+  // NEW 2025-12-04: Chat folders for document explorer
+  getChatFoldersForUser,
 };
 
 // Export types

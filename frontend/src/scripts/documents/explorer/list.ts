@@ -3,12 +3,14 @@
  *
  * Windows Explorer Details-style table view with sortable columns
  * Default view mode for the Documents Explorer
+ * UPDATED 2025-12-04: Added chat folder view support
  *
  * @module explorer/list
  */
 
-import type { Document } from './types';
+import type { Document, ChatFolder } from './types';
 import { stateManager } from './state';
+import { sidebarManager } from './sidebar';
 import { isAdmin } from '../../../utils/auth-helpers';
 import { tokenManager } from '../../../utils/token-manager';
 
@@ -57,24 +59,47 @@ class ListViewManager {
 
   /**
    * Render list view
+   * UPDATED 2025-12-04: Added chat folder view support
    */
   private render(documents: Document[], isLoading: boolean, error: string | null): void {
     if (!this.listRowsEl) return;
 
-    // Show/hide state containers
-    this.toggleStateContainers(documents.length, isLoading, error);
+    const state = stateManager.getState();
+    const isChatCategory = state.currentCategory === 'chat';
+    const selectedConversationId = sidebarManager.getSelectedConversationId();
+
+    // Debug logging only in development - reduced verbosity
+    if (documents.length > 0) {
+      console.log('[ListView] Rendering', documents.length, 'documents, category:', state.currentCategory);
+    }
 
     // Check for error (error is string | null, so only need null check)
     const hasError = error !== null;
+
+    // Special handling for chat category: show folders when no conversation selected
+    if (isChatCategory && selectedConversationId === null) {
+      this.renderChatFolders(isLoading);
+      return;
+    }
+
+    // Show/hide state containers
+    this.toggleStateContainers(documents.length, isLoading, error);
+
     if (isLoading || hasError) {
       this.listRowsEl.innerHTML = '';
       return;
     }
 
+    // Add "back to folders" row if viewing chat attachments
+    let backRowHTML = '';
+    if (isChatCategory && selectedConversationId !== null) {
+      backRowHTML = this.createBackToFoldersRow();
+    }
+
     // Render document rows
     // Safe: All user data is escaped via escapeHtml() in createDocumentRow()
     // Must use direct innerHTML for table rows (DOMPurify strips <tr>/<td> context)
-    const rowsHTML = documents.map((doc) => this.createDocumentRow(doc)).join('');
+    const rowsHTML = backRowHTML + documents.map((doc) => this.createDocumentRow(doc)).join('');
 
     // Add placeholder rows to fill table (like Windows Explorer)
     // Always show at least 20 rows so stripes are visible even with no files
@@ -86,6 +111,113 @@ class ListViewManager {
 
     // eslint-disable-next-line no-unsanitized/property
     this.listRowsEl.innerHTML = rowsHTML + placeholderHTML;
+  }
+
+  /**
+   * Render chat folders view
+   * NEW 2025-12-04: Shows conversation folders in main list
+   */
+  private renderChatFolders(isLoading: boolean): void {
+    if (!this.listRowsEl) return;
+
+    const chatFolders = sidebarManager.getChatFolders();
+    const foldersLoaded = sidebarManager.isChatFoldersLoaded();
+
+    // Show/hide state containers
+    this.toggleStateContainers(chatFolders.length, isLoading || !foldersLoaded, null);
+
+    if (isLoading || !foldersLoaded) {
+      this.listRowsEl.innerHTML = '';
+      return;
+    }
+
+    // Render folder rows
+    const rowsHTML = chatFolders.map((folder) => this.createChatFolderRow(folder)).join('');
+
+    // Add placeholder rows
+    const MIN_ROWS = 20;
+    const placeholderCount = Math.max(0, MIN_ROWS - chatFolders.length);
+    const placeholderHTML = Array.from({ length: placeholderCount })
+      .map(() => this.createPlaceholderRow())
+      .join('');
+
+    // eslint-disable-next-line no-unsanitized/property
+    this.listRowsEl.innerHTML = rowsHTML + placeholderHTML;
+  }
+
+  /**
+   * Create chat folder row HTML (folder icon style)
+   * NEW 2025-12-04
+   */
+  private createChatFolderRow(folder: ChatFolder): string {
+    const displayName = folder.isGroup ? (folder.groupName ?? 'Gruppenname') : folder.participantName;
+    const icon = folder.isGroup
+      ? '<i class="fas fa-users" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'
+      : '<i class="fas fa-user" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>';
+
+    return `
+      <tr
+        class="chat-folder-row cursor-pointer hover:bg-surface-2"
+        data-conversation-id="${folder.conversationId}"
+      >
+        <!-- Name Column -->
+        <td>
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-medium" title="${this.escapeHtml(displayName)}">
+                ${this.escapeHtml(displayName)}
+              </span>
+              ${icon}
+            </div>
+          </div>
+        </td>
+
+        <!-- Type Column -->
+        <td>Chat-Konversation</td>
+
+        <!-- Size Column (attachment count) -->
+        <td>${folder.attachmentCount} Dateien</td>
+
+        <!-- Date Column -->
+        <td>-</td>
+
+        <!-- Actions Column -->
+        <td></td>
+      </tr>
+    `;
+  }
+
+  /**
+   * Create "back to folders" row for navigation
+   * NEW 2025-12-04: Allows navigation back from attachments to folder view
+   */
+  private createBackToFoldersRow(): string {
+    return `
+      <tr class="back-to-folders-row cursor-pointer hover:bg-surface-2" title="Zurück zur Ordner-Übersicht">
+        <!-- Name Column -->
+        <td>
+          <div class="flex items-center gap-3">
+            <i class="fas fa-level-up-alt" style="font-size: 24px; color: var(--color-content-secondary);"></i>
+            <span class="font-medium text-content-secondary">..</span>
+          </div>
+        </td>
+
+        <!-- Type Column -->
+        <td class="text-content-tertiary">Übergeordneter Ordner</td>
+
+        <!-- Size Column -->
+        <td></td>
+
+        <!-- Date Column -->
+        <td></td>
+
+        <!-- Actions Column -->
+        <td></td>
+      </tr>
+    `;
   }
 
   /**
@@ -163,7 +295,59 @@ class ListViewManager {
   }
 
   /**
+   * Handle action button click
+   */
+  private handleActionButtonClick(target: HTMLElement, e: Event): boolean {
+    const actionBtn = target.closest('.action-menu-btn');
+    if (!actionBtn) return false;
+
+    e.stopPropagation();
+    const documentId = actionBtn.getAttribute('data-document-id');
+    if (documentId !== null && documentId !== '') {
+      this.showActionMenu(documentId, actionBtn as HTMLElement);
+    }
+    return true;
+  }
+
+  /**
+   * Handle chat folder or back navigation click
+   */
+  private handleChatNavigationClick(target: HTMLElement): boolean {
+    // Check if "back to folders" row was clicked
+    if (target.closest('.back-to-folders-row')) {
+      sidebarManager.resetConversationSelection();
+      return true;
+    }
+
+    // Check if chat folder row was clicked
+    const folderRow = target.closest('.chat-folder-row');
+    if (folderRow) {
+      const conversationId = folderRow.getAttribute('data-conversation-id');
+      if (conversationId !== null && conversationId !== '') {
+        void sidebarManager.selectChatConversation(Number(conversationId));
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Handle document row click
+   */
+  private handleDocumentRowClick(target: HTMLElement): void {
+    const row = target.closest('.document-row');
+    if (row) {
+      const documentId = row.getAttribute('data-document-id');
+      if (documentId !== null && documentId !== '') {
+        this.openPreview(documentId);
+      }
+    }
+  }
+
+  /**
    * Attach click handlers to rows using event delegation
+   * UPDATED 2025-12-04: Added chat folder click handlers
    */
   private attachRowClickHandlers(): void {
     if (!this.listRowsEl) {
@@ -175,25 +359,9 @@ class ListViewManager {
     this.listRowsEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 
-      // Check if action button was clicked
-      const actionBtn = target.closest('.action-menu-btn');
-      if (actionBtn) {
-        e.stopPropagation();
-        const documentId = actionBtn.getAttribute('data-document-id');
-        if (documentId !== null && documentId !== '') {
-          this.showActionMenu(documentId, actionBtn as HTMLElement);
-        }
-        return;
-      }
-
-      // Check if row was clicked
-      const row = target.closest('.document-row');
-      if (row) {
-        const documentId = row.getAttribute('data-document-id');
-        if (documentId !== null && documentId !== '') {
-          this.openPreview(documentId);
-        }
-      }
+      if (this.handleActionButtonClick(target, e)) return;
+      if (this.handleChatNavigationClick(target)) return;
+      this.handleDocumentRowClick(target);
     });
   }
 

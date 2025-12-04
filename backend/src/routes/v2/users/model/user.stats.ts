@@ -62,7 +62,7 @@ export async function countActiveUsersByTenant(tenantId: number): Promise<number
       count: number;
     }
     const [rows] = await executeQuery<ActiveCountResult[]>(
-      'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND is_active = true',
+      'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND is_active = 1',
       [tenantId],
     );
     return rows[0]?.count ?? 0;

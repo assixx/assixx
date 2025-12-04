@@ -133,7 +133,8 @@ class PreviewModalManager {
     // Load document preview (PDF in iframe, others show download message)
     this.loadDocument(doc);
 
-    // Show modal using Design System pattern
+    // Show modal using Design System pattern (remove hidden first, then activate)
+    this.modalEl.classList.remove('hidden');
     this.modalEl.classList.add('modal-overlay--active');
 
     // Prevent body scroll
@@ -146,8 +147,9 @@ class PreviewModalManager {
   private hide(): void {
     if (!this.modalEl) return;
 
-    // Hide modal using Design System pattern
+    // Hide modal using Design System pattern (deactivate and add hidden)
     this.modalEl.classList.remove('modal-overlay--active');
+    this.modalEl.classList.add('hidden');
 
     // Clear all preview elements
     if (this.iframeEl) {
@@ -239,17 +241,13 @@ class PreviewModalManager {
     // Append access token as query parameter for auth
     const token = tokenManager.getAccessToken();
     const baseUrl = doc.previewUrl ?? doc.downloadUrl;
-    const urlWithToken = token !== null ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
+    // Use & if URL already has query params, otherwise use ?
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const urlWithToken = token !== null ? `${baseUrl}${separator}token=${encodeURIComponent(token)}` : baseUrl;
 
     if (fileType === 'pdf') {
       // Show iframe for PDF preview
       this.iframeEl.classList.remove('hidden');
-
-      console.log('[Preview Modal] Loading PDF:', {
-        docId: doc.id,
-        filename: doc.filename,
-        url: urlWithToken,
-      });
 
       // Load PDF with viewer
       // Most browsers will use their built-in PDF viewer
@@ -263,13 +261,6 @@ class PreviewModalManager {
       // Show image for JPG/PNG files (base has flex, removing hidden makes it visible)
       this.imageContainerEl.classList.remove('hidden');
 
-      console.log('[Preview Modal] Loading Image:', {
-        docId: doc.id,
-        filename: doc.filename,
-        storedFilename: doc.storedFilename,
-        url: urlWithToken,
-      });
-
       // Load image
       this.imageEl.src = urlWithToken;
       this.imageEl.alt = doc.filename;
@@ -281,14 +272,6 @@ class PreviewModalManager {
     } else {
       // Show "no preview" message for DOCX/XLSX files (base has flex, removing hidden makes it visible)
       this.noPreviewEl.classList.remove('hidden');
-
-      console.log('[Preview Modal] No preview available for document type:', {
-        docId: doc.id,
-        filename: doc.filename,
-        storedFilename: doc.storedFilename,
-        fileType,
-      });
-
       // User can still download via download button in modal footer
     }
   }

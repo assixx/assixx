@@ -602,17 +602,17 @@ class MachinesService {
 
   /**
    * Add date fields to machine response
+   * Use != null to check for both null and undefined (DB can return null)
    */
   private addMachineDateFields(machine: Machine, response: MachineResponse): void {
-    if (machine.purchase_date !== undefined)
-      response.purchaseDate = machine.purchase_date.toISOString();
-    if (machine.installation_date !== undefined)
+    if (machine.purchase_date != null) response.purchaseDate = machine.purchase_date.toISOString();
+    if (machine.installation_date != null)
       response.installationDate = machine.installation_date.toISOString();
-    if (machine.warranty_until !== undefined)
+    if (machine.warranty_until != null)
       response.warrantyUntil = machine.warranty_until.toISOString();
-    if (machine.last_maintenance !== undefined)
+    if (machine.last_maintenance != null)
       response.lastMaintenance = machine.last_maintenance.toISOString();
-    if (machine.next_maintenance !== undefined)
+    if (machine.next_maintenance != null)
       response.nextMaintenance = machine.next_maintenance.toISOString();
   }
 
@@ -679,7 +679,8 @@ class MachinesService {
     if (record.external_company !== undefined) response.externalCompany = record.external_company;
     if (record.description !== undefined) response.description = record.description;
     if (record.parts_replaced !== undefined) response.partsReplaced = record.parts_replaced;
-    if (record.next_maintenance_date !== undefined)
+    // Use != null to check for both null and undefined (DB can return null)
+    if (record.next_maintenance_date != null)
       response.nextMaintenanceDate = record.next_maintenance_date.toISOString();
     if (record.report_url !== undefined) response.reportUrl = record.report_url;
     if (record.created_by !== undefined) response.createdBy = record.created_by;

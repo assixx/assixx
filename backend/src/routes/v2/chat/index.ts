@@ -1,97 +1,23 @@
 /**
  * Chat API v2 Routes
  * Real-time messaging and conversations with improved standards
+ * Updated 2025-12-03: Added document-based attachment system
  */
 import express, { NextFunction, Request, Response, Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
-import {
-  validate,
-  validateBody,
-  validateParams,
-  validateQuery,
-  z,
-} from '../../../middleware/validation.zod.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import chatController from './chat.controller.js';
+import { chatValidation } from './chat.validation.zod.js';
 
 const router: Router = express.Router();
 
 // All routes require authentication
 router.use(authenticateToken);
-
-// Validation schemas (Zod)
-const getUsersValidation = validateQuery(
-  z.object({
-    search: z.string().min(2, 'Search term must be at least 2 characters').optional(),
-  }),
-);
-
-const getConversationsValidation = validateQuery(
-  z.object({
-    page: z.coerce.number().int().min(1, 'Invalid page number').optional(),
-    limit: z.coerce.number().int().min(1).max(100, 'Limit must be between 1 and 100').optional(),
-    search: z.string().optional(),
-    isGroup: z.coerce.boolean().optional(),
-    hasUnread: z.coerce.boolean().optional(),
-  }),
-);
-
-const createConversationValidation = validateBody(
-  z.object({
-    participantIds: z
-      .array(z.number().int().min(1, 'Invalid participant ID'))
-      .min(1, 'At least one participant is required'),
-    name: z
-      .string()
-      .min(1)
-      .max(100, 'Conversation name must be between 1 and 100 characters')
-      .optional(),
-    isGroup: z.boolean().optional(),
-  }),
-);
-
-const getMessagesValidation = validate({
-  params: z.object({
-    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
-  }),
-  query: z.object({
-    page: z.coerce.number().int().min(1, 'Invalid page number').optional(),
-    limit: z.coerce.number().int().min(1).max(100, 'Limit must be between 1 and 100').optional(),
-    search: z.string().optional(),
-    startDate: z.iso.datetime().optional(),
-    endDate: z.iso.datetime().optional(),
-    hasAttachment: z.coerce.boolean().optional(),
-  }),
-});
-
-const sendMessageValidation = validate({
-  params: z.object({
-    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
-  }),
-  body: z.object({
-    message: z.string().max(5000, 'Message cannot exceed 5000 characters').optional(),
-  }),
-});
-
-const conversationIdValidation = validateParams(
-  z.object({
-    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
-  }),
-);
-
-const attachmentValidation = validate({
-  params: z.object({
-    filename: z.string().min(1, 'Filename is required'),
-  }),
-  query: z.object({
-    download: z.coerce.boolean().optional(),
-  }),
-});
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -114,26 +40,44 @@ const storage = multer.diskStorage({
   },
 });
 
+// Allowed MIME types for chat attachments
+const ALLOWED_ATTACHMENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'text/plain',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+// Legacy upload (disk storage) - for backward compatibility
 const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'application/pdf',
-      'text/plain',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
+    if (ALLOWED_ATTACHMENT_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed'));
+    }
+  },
+});
 
-    if (allowedTypes.includes(file.mimetype)) {
+// Document-based upload (memory storage) - for new attachment system
+// Uses buffer to calculate checksum and store via document system
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    if (ALLOWED_ATTACHMENT_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('File type not allowed'));
@@ -165,7 +109,7 @@ const upload = multer({
  */
 router.get(
   '/users',
-  getUsersValidation,
+  chatValidation.getUsers,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getChatUsers(req, res, next);
   }),
@@ -199,7 +143,7 @@ router.get(
  */
 router.get(
   '/conversations',
-  getConversationsValidation,
+  chatValidation.getConversations,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getConversations(req, res, next);
   }),
@@ -239,7 +183,7 @@ router.get(
  */
 router.post(
   '/conversations',
-  createConversationValidation,
+  chatValidation.createConversation,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.createConversation(req, res, next);
   }),
@@ -266,7 +210,7 @@ router.post(
  */
 router.get(
   '/conversations/:id',
-  conversationIdValidation,
+  chatValidation.getConversation,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getConversation(req, res, next);
   }),
@@ -301,7 +245,7 @@ router.get(
  */
 router.put(
   '/conversations/:id',
-  conversationIdValidation,
+  ...chatValidation.updateConversation,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.updateConversation(req, res, next);
   }),
@@ -327,7 +271,7 @@ router.put(
  */
 router.delete(
   '/conversations/:id',
-  conversationIdValidation,
+  chatValidation.deleteConversation,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.deleteConversation(req, res, next);
   }),
@@ -370,7 +314,7 @@ router.delete(
  */
 router.get(
   '/conversations/:id/messages',
-  getMessagesValidation,
+  chatValidation.getMessages,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getMessages(req, res, next);
   }),
@@ -419,7 +363,7 @@ router.get(
 router.post(
   '/conversations/:id/messages',
   upload.single('attachment'),
-  sendMessageValidation,
+  chatValidation.sendMessage,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.sendMessage(req, res, next);
   }),
@@ -456,6 +400,7 @@ router.post(
  */
 router.put(
   '/messages/:id',
+  ...chatValidation.editMessage,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.editMessage(req, res, next);
   }),
@@ -481,6 +426,7 @@ router.put(
  */
 router.delete(
   '/messages/:id',
+  chatValidation.deleteMessage,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.deleteMessage(req, res, next);
   }),
@@ -506,9 +452,34 @@ router.delete(
  */
 router.post(
   '/conversations/:id/read',
-  conversationIdValidation,
+  chatValidation.markAsRead,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.markAsRead(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/conversations/\{id\}/scheduled-messages:
+ *   get:
+ *     summary: Get pending scheduled messages for a conversation
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Scheduled messages retrieved successfully
+ */
+router.get(
+  '/conversations/:id/scheduled-messages',
+  chatValidation.getConversationScheduledMessages,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.getConversationScheduledMessages(req, res, next);
   }),
 );
 
@@ -561,7 +532,7 @@ router.get(
  */
 router.get(
   '/attachments/:filename',
-  attachmentValidation,
+  chatValidation.downloadAttachment,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.downloadAttachment(req, res, next);
   }),
@@ -600,7 +571,7 @@ router.get(
  */
 router.post(
   '/conversations/:id/participants',
-  conversationIdValidation,
+  ...chatValidation.addParticipants,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.addParticipants(req, res, next);
   }),
@@ -631,6 +602,7 @@ router.post(
  */
 router.delete(
   '/conversations/:id/participants/:userId',
+  chatValidation.removeParticipant,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.removeParticipant(req, res, next);
   }),
@@ -656,7 +628,7 @@ router.delete(
  */
 router.post(
   '/conversations/:id/leave',
-  conversationIdValidation,
+  chatValidation.leaveConversation,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.leaveConversation(req, res, next);
   }),
@@ -685,8 +657,250 @@ router.post(
  */
 router.get(
   '/search',
+  chatValidation.searchMessages,
   typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.searchMessages(req, res, next);
+  }),
+);
+
+// =========================================
+// SCHEDULED MESSAGES
+// =========================================
+
+/**
+ * /api/v2/chat/scheduled-messages:
+ *   post:
+ *     summary: Create a scheduled message
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - conversationId
+ *               - content
+ *               - scheduledFor
+ *             properties:
+ *               conversationId:
+ *                 type: integer
+ *               content:
+ *                 type: string
+ *               scheduledFor:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       201:
+ *         description: Message scheduled successfully
+ */
+router.post(
+  '/scheduled-messages',
+  chatValidation.createScheduledMessage,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.createScheduledMessage(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/scheduled-messages:
+ *   get:
+ *     summary: Get all pending scheduled messages for current user
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Scheduled messages retrieved successfully
+ */
+router.get(
+  '/scheduled-messages',
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.getScheduledMessages(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/scheduled-messages/\{id\}:
+ *   get:
+ *     summary: Get a specific scheduled message
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Scheduled message retrieved successfully
+ */
+router.get(
+  '/scheduled-messages/:id',
+  chatValidation.getScheduledMessage,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.getScheduledMessage(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/scheduled-messages/\{id\}:
+ *   delete:
+ *     summary: Cancel a scheduled message
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Scheduled message cancelled successfully
+ */
+router.delete(
+  '/scheduled-messages/:id',
+  chatValidation.cancelScheduledMessage,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.cancelScheduledMessage(req, res, next);
+  }),
+);
+
+// =========================================
+// DOCUMENT-BASED ATTACHMENTS (NEW 2025-12-03)
+// =========================================
+
+/**
+ * /api/v2/chat/conversations/\{id\}/attachments:
+ *   post:
+ *     summary: Upload attachment to conversation
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Conversation ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Attachment uploaded successfully
+ */
+router.post(
+  '/conversations/:id/attachments',
+  documentUpload.single('file'),
+  chatValidation.uploadConversationAttachment,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.uploadConversationAttachment(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/conversations/\{id\}/attachments:
+ *   get:
+ *     summary: Get all attachments for a conversation
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Conversation ID
+ *     responses:
+ *       200:
+ *         description: Attachments retrieved successfully
+ */
+router.get(
+  '/conversations/:id/attachments',
+  chatValidation.getConversationAttachments,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.getConversationAttachments(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/attachments/\{fileUuid\}/download:
+ *   get:
+ *     summary: Download attachment by file UUID
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: fileUuid
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: File UUID
+ *       - in: query
+ *         name: inline
+ *         schema:
+ *           type: boolean
+ *         description: Display inline instead of download
+ *     responses:
+ *       200:
+ *         description: File content
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get(
+  '/attachments/:fileUuid/download',
+  chatValidation.downloadAttachmentByUuid,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.downloadAttachmentByUuid(req, res, next);
+  }),
+);
+
+/**
+ * /api/v2/chat/attachments/\{documentId\}:
+ *   delete:
+ *     summary: Delete attachment by document ID
+ *     tags: [Chat v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: documentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Attachment deleted successfully
+ */
+router.delete(
+  '/attachments/:documentId',
+  chatValidation.deleteConversationAttachment,
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    void chatController.deleteConversationAttachment(req, res, next);
   }),
 );
 

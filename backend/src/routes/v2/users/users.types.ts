@@ -65,23 +65,23 @@ export interface UpdateAvailabilityBody {
 }
 
 // Query Parameter Types
+// UPDATED: isArchived removed, using isActive status (2025-12-02)
 export interface ListUsersQuery {
   page?: string;
   limit?: string;
   search?: string;
   role?: string;
-  isActive?: string;
-  isArchived?: string;
+  isActive?: string; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
 
 // Database field mapping types
+// UPDATED: is_archived removed, using is_active status (2025-12-02)
 export interface UserDbFields {
   tenant_id: number;
   role?: string;
-  is_active?: boolean;
-  is_archived?: boolean;
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   first_name?: string;
   last_name?: string;
   department_id?: number;

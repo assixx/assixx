@@ -5,7 +5,6 @@ import { logger } from '../../../utils/logger.js';
 // Database interfaces
 interface DbTeam extends RowDataPacket {
   id: number;
-
   name: string;
   description?: string;
   department_id?: number;
@@ -13,8 +12,7 @@ interface DbTeam extends RowDataPacket {
   tenant_id: number;
   created_at?: Date;
   updated_at?: Date;
-  is_active?: boolean;
-  is_archived?: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   // Extended fields from joins
   department_name?: string;
   team_lead_name?: string;
@@ -40,8 +38,7 @@ interface TeamCreateData {
   department_id?: number;
   team_lead_id?: number;
   tenant_id: number;
-  is_active?: number; // TINYINT(1) 0 or 1
-  is_archived?: number; // TINYINT(1) 0 or 1
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 interface TeamUpdateData {
@@ -49,8 +46,7 @@ interface TeamUpdateData {
   description?: string | null;
   department_id?: number | null;
   team_lead_id?: number | null;
-  is_active?: boolean | number;
-  is_archived?: boolean | number;
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 interface MysqlError extends Error {
@@ -66,14 +62,15 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
     department_id,
     team_lead_id,
     tenant_id,
-    is_active = true,
-    is_archived = false,
+    is_active = 1, // Default: active
   } = teamData;
   logger.info(`Creating new team: ${name}`);
 
+  // POSTGRESQL: RETURNING id required to get insertId
   const query = `
-      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id, is_active, is_archived)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
     `;
 
   try {
@@ -84,7 +81,6 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
       team_lead_id,
       tenant_id,
       is_active,
-      is_archived,
     ]);
     logger.info(`Team created successfully with ID ${String(result.insertId)}`);
     return result.insertId;
@@ -99,9 +95,10 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
     `Fetching all teams${tenant_id != null && tenant_id !== 0 ? ` for tenant ${String(tenant_id)}` : ''}`,
   );
   // NOTE: Returns ALL teams (active, inactive, archived) - filtering done in frontend
+  // is_active: 0=inactive, 1=active, 3=archived, 4=deleted
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
-             t.tenant_id, t.created_at, t.updated_at, t.is_active, t.is_archived,
+             t.tenant_id, t.created_at, t.updated_at, t.is_active,
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name,
              (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) AS member_count,
@@ -137,9 +134,10 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
 export async function findTeamById(id: number, tenantId: number): Promise<DbTeam | null> {
   logger.info(`Fetching team with ID ${String(id)} for tenant ${String(tenantId)}`);
   // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant data access
+  // is_active: 0=inactive, 1=active, 3=archived, 4=deleted
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
-             t.tenant_id, t.created_at, t.updated_at, t.is_active, t.is_archived,
+             t.tenant_id, t.created_at, t.updated_at, t.is_active,
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name
       FROM teams t
@@ -163,37 +161,39 @@ export async function findTeamById(id: number, tenantId: number): Promise<DbTeam
 }
 
 // Helper function to build update query
+// is_active: 0=inactive, 1=active, 3=archived, 4=deleted
 function buildUpdateQuery(teamData: TeamUpdateData): {
   updateFields: string[];
   values: unknown[];
 } {
   const updateFields: string[] = [];
   const values: unknown[] = [];
-  const { name, description, department_id, team_lead_id, is_active, is_archived } = teamData;
+  const { name, description, department_id, team_lead_id, is_active } = teamData;
 
   if (name !== undefined) {
-    updateFields.push('name = $1');
+    const paramIndex = values.length + 1;
+    updateFields.push(`name = $${paramIndex}`);
     values.push(name);
   }
   if (description !== undefined) {
-    updateFields.push('description = $1');
+    const paramIndex = values.length + 1;
+    updateFields.push(`description = $${paramIndex}`);
     values.push(description);
   }
   if (department_id !== undefined) {
-    updateFields.push('department_id = $1');
+    const paramIndex = values.length + 1;
+    updateFields.push(`department_id = $${paramIndex}`);
     values.push(department_id);
   }
   if (team_lead_id !== undefined) {
-    updateFields.push('team_lead_id = $1');
+    const paramIndex = values.length + 1;
+    updateFields.push(`team_lead_id = $${paramIndex}`);
     values.push(team_lead_id);
   }
   if (is_active !== undefined) {
-    updateFields.push('is_active = $1');
+    const paramIndex = values.length + 1;
+    updateFields.push(`is_active = $${paramIndex}`);
     values.push(is_active);
-  }
-  if (is_archived !== undefined) {
-    updateFields.push('is_archived = $1');
-    values.push(is_archived);
   }
 
   return { updateFields, values };

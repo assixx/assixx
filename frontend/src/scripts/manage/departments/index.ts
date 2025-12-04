@@ -274,7 +274,7 @@ class DepartmentsManager {
     // Initialize all dropdowns (area, department lead, status)
     this.initDropdown('area-dropdown', 'area-trigger', 'area-menu', 'department-area');
     this.initDropdown('department-lead-dropdown', 'department-lead-trigger', 'department-lead-menu', 'department-lead');
-    // Status dropdown uses special mapping (isActive + isArchived)
+    // Status dropdown uses unified isActive mapping
     this.initStatusDropdown();
   }
 
@@ -368,22 +368,22 @@ class DepartmentsManager {
   }
 
   /**
-   * Initialize status dropdown with isActive/isArchived mapping
+   * Initialize status dropdown with unified isActive mapping (2025-12-02)
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
    */
   private initStatusDropdown(): void {
     const trigger = $$id('status-trigger');
     const menu = $$id('status-menu');
     const dropdown = $$id('status-dropdown');
     const isActiveInput = $$id('department-is-active') as HTMLInputElement | null;
-    const isArchivedInput = $$id('department-is-archived') as HTMLInputElement | null;
 
     if (trigger === null || menu === null || dropdown === null) {
       console.warn('[initStatusDropdown] Status dropdown elements not found');
       return;
     }
 
-    if (isActiveInput === null || isArchivedInput === null) {
-      console.warn('[initStatusDropdown] Status hidden inputs not found');
+    if (isActiveInput === null) {
+      console.warn('[initStatusDropdown] Status hidden input not found');
       return;
     }
 
@@ -406,19 +406,17 @@ class DepartmentsManager {
       const value = option.dataset['value'] ?? '';
       const badge = option.querySelector('.badge');
 
-      // Map UI value to DB fields (isActive + isArchived)
+      // Map UI value to unified isActive status
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       switch (value) {
         case 'active':
           isActiveInput.value = '1';
-          isArchivedInput.value = '0';
           break;
         case 'inactive':
           isActiveInput.value = '0';
-          isArchivedInput.value = '0';
           break;
         case 'archived':
-          isActiveInput.value = '0';
-          isArchivedInput.value = '1';
+          isActiveInput.value = '3';
           break;
       }
 
@@ -482,22 +480,20 @@ class DepartmentsManager {
   }
 
   /**
-   * Filter by status
+   * Filter by status (unified isActive: 0=inactive, 1=active, 3=archived, 4=deleted)
    */
   private filterByStatus(departments: Department[]): Department[] {
     switch (this.currentFilter) {
       case 'active':
-        // Show only active AND not archived
-        return departments.filter((dept) => dept.isActive && dept.isArchived !== true);
+        return departments.filter((dept) => dept.isActive === 1);
       case 'inactive':
-        // Show only inactive AND not archived
-        return departments.filter((dept) => !dept.isActive && dept.isArchived !== true);
+        return departments.filter((dept) => dept.isActive === 0);
       case 'archived':
-        // Show only archived (regardless of isActive)
-        return departments.filter((dept) => dept.isArchived === true);
+        return departments.filter((dept) => dept.isActive === 3);
       case 'all':
       default:
-        return departments;
+        // Show all except deleted (isActive !== 4)
+        return departments.filter((dept) => dept.isActive !== 4);
     }
   }
 

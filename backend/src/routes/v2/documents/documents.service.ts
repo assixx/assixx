@@ -57,16 +57,19 @@ export class ServiceError extends Error {
 
 // NEW: Clean filter structure (refactored 2025-01-10)
 // Updated 2025-11-24: Added 'blackboard' accessScope and blackboardEntryId filter
+// Updated 2025-12-02: Unified is_active status (0=inactive, 1=active, 3=archived, 4=deleted)
+// Updated 2025-12-03: Added 'chat' accessScope and conversationId filter
 export interface DocumentFilters {
   category?: string;
-  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   ownerUserId?: number;
   targetTeamId?: number;
   targetDepartmentId?: number;
   salaryYear?: number;
   salaryMonth?: number;
   blackboardEntryId?: number;
-  isArchived?: boolean;
+  conversationId?: number; // NEW 2025-12-03: For chat attachments
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   search?: string;
   page?: number;
   limit?: number;
@@ -75,6 +78,7 @@ export interface DocumentFilters {
 
 // NEW: Clean create input structure (refactored 2025-01-10)
 // Updated 2025-11-24: Added 'blackboard' accessScope and blackboardEntryId
+// Updated 2025-12-03: Added 'chat' accessScope and conversationId
 export interface DocumentCreateInput {
   filename: string;
   originalName: string;
@@ -82,8 +86,8 @@ export interface DocumentCreateInput {
   fileContent: Buffer;
   mimeType: string;
   category: string;
-  // NEW: Clean access control (updated 2025-11-24: added 'blackboard')
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  // NEW: Clean access control (updated 2025-12-03: added 'chat')
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   ownerUserId?: number;
   targetTeamId?: number;
   targetDepartmentId?: number;
@@ -93,6 +97,8 @@ export interface DocumentCreateInput {
   salaryMonth?: number;
   // NEW: Blackboard reference (2025-11-24)
   blackboardEntryId?: number;
+  // NEW: Chat/Conversation reference (2025-12-03)
+  conversationId?: number;
   tags?: string[];
   isPublic?: boolean;
   expiresAt?: Date;
@@ -123,9 +129,10 @@ export interface DocumentListResponse {
 }
 
 /** Interface for document creation data */
+// Updated 2025-12-03: Added 'chat' accessScope and conversationId
 interface DocumentCreateData {
   tenant_id: number;
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   ownerUserId?: number | null;
   targetTeamId?: number | null;
   targetDepartmentId?: number | null;
@@ -137,6 +144,7 @@ interface DocumentCreateData {
   salaryYear?: number;
   salaryMonth?: number;
   blackboardEntryId?: number | null;
+  conversationId?: number | null; // NEW 2025-12-03: Chat attachments
   createdBy?: number;
   tags?: string[];
   mimeType?: string;
@@ -154,6 +162,7 @@ function addOptionalMetadata(documentData: DocumentCreateData, data: DocumentCre
 }
 
 /** Build document creation data from input */
+// Updated 2025-12-03: Added conversationId for chat attachments
 function buildDocumentCreateData(
   data: DocumentCreateInput,
   createdBy: number,
@@ -180,6 +189,8 @@ function buildDocumentCreateData(
   if (data.salaryYear !== undefined) documentData.salaryYear = data.salaryYear;
   if (data.salaryMonth !== undefined) documentData.salaryMonth = data.salaryMonth;
   if (data.blackboardEntryId !== undefined) documentData.blackboardEntryId = data.blackboardEntryId;
+  // NEW 2025-12-03: Chat attachment support
+  if (data.conversationId !== undefined) documentData.conversationId = data.conversationId;
   addOptionalMetadata(documentData, data);
 
   return documentData;
@@ -197,12 +208,14 @@ async function writeFileToDisk(filePath: string, content: Buffer): Promise<void>
 }
 
 /** Build model filters from input filters */
+// Updated 2025-12-03: Added conversationId for chat attachments
 function buildModelFilters(
   filters: DocumentFilters | undefined,
   limit: number,
   offset: number,
 ): DocumentFilters {
-  const modelFilters: DocumentFilters = { isArchived: filters?.isArchived ?? false, limit, offset };
+  // Default: show active and inactive (exclude archived=3 and deleted=4)
+  const modelFilters: DocumentFilters = { isActive: filters?.isActive ?? 1, limit, offset };
   if (filters?.category !== undefined) modelFilters.category = filters.category;
   if (filters?.accessScope !== undefined) modelFilters.accessScope = filters.accessScope;
   if (filters?.ownerUserId !== undefined) modelFilters.ownerUserId = filters.ownerUserId;
@@ -210,6 +223,8 @@ function buildModelFilters(
   if (filters?.salaryMonth !== undefined) modelFilters.salaryMonth = filters.salaryMonth;
   if (filters?.blackboardEntryId !== undefined)
     modelFilters.blackboardEntryId = filters.blackboardEntryId;
+  // NEW 2025-12-03: Chat attachment filter
+  if (filters?.conversationId !== undefined) modelFilters.conversationId = filters.conversationId;
   if (filters?.search !== undefined) modelFilters.search = filters.search;
   return modelFilters;
 }
@@ -601,7 +616,7 @@ class DocumentsService {
       }
 
       const updateData: DocumentUpdateData = {
-        isArchived: archive,
+        isActive: archive ? 3 : 1, // 3 = archived, 1 = active
       };
 
       await Document.update(id, updateData, tenantId);
@@ -698,7 +713,7 @@ class DocumentsService {
   /**
    * Get document content by file UUID (secure download URL)
    * Used by blackboard and other systems that use UUID-based URLs
-   * @param fileUuid - The file UUID (UUIDv4)
+   * @param fileUuid - The file UUID (UUIDv7)
    * @param userId - The user ID
    * @param tenantId - The tenant ID
    */
@@ -835,6 +850,7 @@ class DocumentsService {
    * @param userId - The user ID
    * @param tenantId - The tenant ID
    */
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Inherent complexity due to multiple access_scope cases
   private async checkDocumentAccess(
     document: DbDocument,
     userId: number,
@@ -887,6 +903,17 @@ class DocumentsService {
           // Error accessing entry - deny access
           return false;
         }
+      }
+
+      case 'chat': {
+        // NEW 2025-12-03: Check if user is a participant of the conversation
+        if (document.conversation_id === null || document.conversation_id === undefined) {
+          // No conversation linked - should not happen, deny access
+          return false;
+        }
+
+        // Check conversation participation using model function
+        return await Document.isConversationParticipant(userId, document.conversation_id, tenantId);
       }
 
       default:
@@ -954,6 +981,7 @@ class DocumentsService {
   /**
    * Validate recipient based on access scope
    * NEW: Uses clean access_scope (refactored 2025-01-10)
+   * Updated 2025-12-03: Added 'chat' accessScope validation
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
@@ -979,6 +1007,18 @@ class DocumentsService {
       case 'blackboard':
         // Blackboard documents require entry ID (validated separately)
         // Access is determined by blackboard entry visibility, not document recipients
+        break;
+
+      case 'chat':
+        // Chat documents require conversation ID
+        // Access is determined by conversation participation (validated in controller)
+        if (data.conversationId === undefined || data.conversationId === 0) {
+          throw new ServiceError(
+            ERROR_CODES.BAD_REQUEST,
+            'Conversation ID is required for chat attachments',
+            400,
+          );
+        }
         break;
 
       default:
@@ -1026,6 +1066,94 @@ class DocumentsService {
       return result.documents;
     } catch (error: unknown) {
       logger.error(`Error getting blackboard documents: ${(error as Error).message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get documents (attachments) for a specific conversation
+   * NEW 2025-12-03: For chat attachment integration
+   * @param conversationId - Conversation ID
+   * @param tenantId - Tenant ID
+   * @param userId - User ID for access validation (must be participant)
+   */
+  async getDocumentsByConversation(
+    conversationId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<Record<string, unknown>[]> {
+    try {
+      // First check if user is a participant (permission check)
+      const isParticipant = await Document.isConversationParticipant(
+        userId,
+        conversationId,
+        tenantId,
+      );
+
+      if (!isParticipant) {
+        logger.warn(
+          `User ${userId} attempted to access attachments for conversation ${conversationId} without being a participant`,
+        );
+        throw new ServiceError(
+          ERROR_CODES.FORBIDDEN,
+          'You are not a participant of this conversation',
+          403,
+        );
+      }
+
+      // Get all attachments for this conversation
+      const documents = await Document.findByConversation(conversationId, tenantId, userId);
+
+      // Transform to API format
+      return documents.map((doc: DbDocument) => {
+        const apiDoc = dbToApi(doc);
+        const uuid = doc['file_uuid'];
+        const docId = doc.id;
+        const fileIdentifier: string = typeof uuid === 'string' ? uuid : String(docId);
+        return {
+          ...apiDoc,
+          downloadUrl: `/api/v2/chat/attachments/${fileIdentifier}/download`,
+          // Use download endpoint with inline=true for preview (no separate preview endpoint)
+          previewUrl: `/api/v2/chat/attachments/${fileIdentifier}/download?inline=true`,
+        };
+      });
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(
+        `Error getting chat attachments for conversation ${conversationId}: ${(error as Error).message}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get chat folders for document explorer
+   * Returns conversations where user is participant AND has attachments
+   * NEW 2025-12-04: Chat folders for document explorer
+   * @param userId - Current user ID
+   * @param tenantId - Tenant ID
+   * @returns Array of chat folders with participant info and attachment count
+   */
+  async getChatFolders(
+    userId: number,
+    tenantId: number,
+  ): Promise<
+    {
+      conversationId: number;
+      conversationUuid: string;
+      participantName: string;
+      participantId: number;
+      attachmentCount: number;
+      isGroup: boolean;
+      groupName: string | null;
+    }[]
+  > {
+    try {
+      return await Document.getChatFoldersForUser(userId, tenantId);
+    } catch (error: unknown) {
+      logger.error(`Error getting chat folders for user ${userId}: ${(error as Error).message}`);
       return [];
     }
   }

@@ -279,7 +279,7 @@ class ContentVisibilityService {
    */
   private async getAllTenantUserIds(tenantId: number): Promise<number[]> {
     const [rows] = await execute<{ id: number }[] & RowDataPacket[]>(
-      `SELECT id FROM users WHERE tenant_id = $1 AND is_archived = false`,
+      `SELECT id FROM users WHERE tenant_id = $1 AND is_active IN (0, 1)`,
       [tenantId],
     );
     return rows.map((r: { id: number }) => r.id);
@@ -292,7 +292,7 @@ class ContentVisibilityService {
     const [rows] = await execute<{ id: number }[] & RowDataPacket[]>(
       `SELECT DISTINCT u.id FROM users u
        LEFT JOIN admin_area_permissions aap ON u.id = aap.admin_user_id AND aap.tenant_id = u.tenant_id
-       WHERE u.tenant_id = $1 AND u.is_archived = false
+       WHERE u.tenant_id = $1 AND u.is_active IN (0, 1)
        AND (u.role = 'root' OR u.has_full_access = true OR aap.area_id = $2)`,
       [tenantId, areaId],
     );
@@ -313,7 +313,7 @@ class ContentVisibilityService {
        LEFT JOIN admin_department_permissions adp ON u.id = adp.admin_user_id AND adp.tenant_id = u.tenant_id
        LEFT JOIN departments d ON d.id = $1 AND d.tenant_id = u.tenant_id
        LEFT JOIN admin_area_permissions aap ON u.id = aap.admin_user_id AND aap.area_id = d.area_id AND aap.tenant_id = u.tenant_id
-       WHERE u.tenant_id = $2 AND u.is_archived = false
+       WHERE u.tenant_id = $2 AND u.is_active IN (0, 1)
        AND (u.role = 'root' OR u.has_full_access = true OR adp.department_id = $3 OR aap.area_id IS NOT NULL)`,
       [departmentId, tenantId, departmentId],
     );
@@ -327,7 +327,7 @@ class ContentVisibilityService {
     const [rows] = await execute<{ user_id: number; tenant_id: number }[] & RowDataPacket[]>(
       `SELECT ut.user_id, u.tenant_id FROM user_teams ut
        JOIN users u ON ut.user_id = u.id
-       WHERE ut.team_id = $1 AND u.is_archived = false`,
+       WHERE ut.team_id = $1 AND u.is_active IN (0, 1)`,
       [teamId],
     );
 
@@ -339,7 +339,7 @@ class ContentVisibilityService {
     // Also include root and has_full_access users
     const [adminRows] = await execute<{ id: number }[] & RowDataPacket[]>(
       `SELECT id FROM users
-       WHERE tenant_id = $1 AND is_archived = false AND (role = 'root' OR has_full_access = true)`,
+       WHERE tenant_id = $1 AND is_active IN (0, 1) AND (role = 'root' OR has_full_access = true)`,
       [tenantId],
     );
 

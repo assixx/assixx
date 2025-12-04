@@ -111,6 +111,7 @@ export const CreateAdminSchema = z.object({
  * CRITICAL: When email changes, username is also updated to match (handled in service)
  * Username field is optional and IGNORED - email is the source of truth
  * REMOVED: company column dropped (2025-11-27)
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export const UpdateAdminSchema = z.object({
   // username is optional and IGNORED - will be synced from email in service (username = email always)
@@ -120,8 +121,8 @@ export const UpdateAdminSchema = z.object({
   firstName: OptionalNameSchema,
   lastName: OptionalNameSchema,
   notes: NotesSchema,
-  isActive: z.boolean().optional(),
-  isArchived: z.boolean().optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
   employeeNumber: EmployeeNumberSchema,
   position: PositionSchema,
 });

@@ -202,6 +202,7 @@ function handleDuplicateEntryError(error: unknown): never {
 /**
  * Map DbUser to AdminUser
  * REMOVED: company column dropped (2025-11-27)
+ * UPDATED: isArchived removed, using is_active status (2025-12-02)
  */
 function mapDbUserToAdminUser(admin: DbUser, tenantName?: string, lastLogin?: Date): AdminUser {
   const result: AdminUser = {
@@ -210,8 +211,7 @@ function mapDbUserToAdminUser(admin: DbUser, tenantName?: string, lastLogin?: Da
     email: admin.email,
     firstName: admin.first_name,
     lastName: admin.last_name,
-    isActive: Boolean(admin.is_active),
-    isArchived: admin.is_archived,
+    isActive: admin.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     tenantId: admin.tenant_id ?? 0,
     createdAt: admin.created_at ?? new Date(),
     updatedAt: admin.updated_at ?? new Date(),
@@ -316,7 +316,7 @@ class RootService {
         last_name: data.lastName ?? '',
         role: 'admin',
         tenant_id: tenantId,
-        is_active: true,
+        is_active: 1, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
         employee_number: data.employeeNumber ?? '',
       };
 
@@ -370,10 +370,7 @@ class RootService {
       updateData['notes'] = data.notes;
     }
     if (data.isActive !== undefined) {
-      updateData['is_active'] = data.isActive;
-    }
-    if (data.isArchived !== undefined) {
-      updateData['is_archived'] = data.isArchived;
+      updateData['is_active'] = data.isActive; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     }
     if (data.employeeNumber !== undefined) {
       updateData['employee_number'] = data.employeeNumber;
@@ -763,8 +760,9 @@ class RootService {
       );
 
       // Generate and update employee_id
+      // POSTGRESQL FIX: Parameters must be $1, $2 in order they appear in array
       const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
-      await execute('UPDATE users SET employee_id = $3 WHERE id = $2', [
+      await execute('UPDATE users SET employee_id = $1 WHERE id = $2', [
         employeeId,
         result.insertId,
       ]);
@@ -945,7 +943,7 @@ class RootService {
         `SELECT f.code
          FROM tenant_features tf
          JOIN features f ON tf.feature_id = f.id
-         WHERE tf.tenant_id = $1 AND tf.is_active = true`,
+         WHERE tf.tenant_id = $1 AND tf.is_active = 1`,
         [tenantId],
       );
 

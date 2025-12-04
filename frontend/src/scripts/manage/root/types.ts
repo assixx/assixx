@@ -1,6 +1,8 @@
 /**
  * Root User Management - Type Definitions
  * All interfaces and types for root user management module
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 
 /**
@@ -17,8 +19,7 @@ export interface RootUser {
   employeeId?: string;
   employeeNumber?: string;
   // N:M REFACTORING: Root users have has_full_access=1, no departmentId needed
-  isActive: boolean | number;
-  isArchived?: boolean | number;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
@@ -26,6 +27,7 @@ export interface RootUser {
 
 /**
  * Form data for root user creation/update
+ * UPDATED: Using unified isActive status (2025-12-02)
  */
 export interface FormValues {
   firstName: string;
@@ -38,8 +40,7 @@ export interface FormValues {
   notes: string;
   employeeNumber: string;
   // N:M REFACTORING: Root users have has_full_access=1, no departmentId needed
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 /**

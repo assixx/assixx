@@ -8,8 +8,7 @@ interface DbDepartment extends RowDataPacket {
   description?: string;
   department_lead_id?: number;
   area_id?: number;
-  is_active?: number; // TINYINT(1) from DB
-  is_archived?: number; // TINYINT(1) from DB
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenant_id: number;
   created_at?: Date;
   updated_at?: Date;
@@ -37,8 +36,7 @@ interface DepartmentCreateData {
   description?: string;
   department_lead_id?: number;
   area_id?: number;
-  is_active?: number; // TINYINT(1) 0 or 1
-  is_archived?: number; // TINYINT(1) 0 or 1
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenant_id: number;
 }
 
@@ -47,8 +45,7 @@ interface DepartmentUpdateData {
   description?: string;
   department_lead_id?: number;
   area_id?: number;
-  is_active?: number; // TINYINT(1) 0 or 1
-  is_archived?: number; // TINYINT(1) 0 or 1
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 export async function createDepartment(departmentData: DepartmentCreateData): Promise<number> {
@@ -57,18 +54,19 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
     description,
     department_lead_id: departmentLeadId,
     area_id: areaId,
-    is_active: isActive = true,
-    is_archived: isArchived = false,
+    is_active: isActive = 1, // Default: active
     tenant_id: tenantId,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
 
   try {
+    // POSTGRESQL: RETURNING id required to get insertId
     const query = `
-      INSERT INTO departments (name, description, department_lead_id, area_id, is_active, is_archived, tenant_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO departments (name, description, department_lead_id, area_id, is_active, tenant_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
     `;
-    const params = [name, description, departmentLeadId, areaId, isActive, isArchived, tenantId];
+    const params = [name, description, departmentLeadId, areaId, isActive, tenantId];
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
     logger.info(`Department created successfully with ID ${result.insertId}`);
@@ -87,7 +85,7 @@ const FIND_ALL_DEPARTMENTS_QUERY = `
         E'\n' ORDER BY u.last_name, u.first_name) as names
     FROM user_departments ud
     JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
-    WHERE ud.tenant_id = $1 AND u.is_active = true AND u.is_archived = false
+    WHERE ud.tenant_id = $1 AND u.is_active IN (0, 1)
     GROUP BY ud.department_id
   ),
   team_counts AS (
@@ -103,7 +101,7 @@ const FIND_ALL_DEPARTMENTS_QUERY = `
   LEFT JOIN areas a ON d.area_id = a.id
   LEFT JOIN employee_counts ec ON ec.department_id = d.id
   LEFT JOIN team_counts tc ON tc.department_id = d.id
-  WHERE d.tenant_id = $2 AND d.is_active = true
+  WHERE d.tenant_id = $2 AND d.is_active = 1
   ORDER BY d.name`;
 
 export async function findAllDepartments(tenantId: number): Promise<DbDepartment[]> {
@@ -118,7 +116,7 @@ export async function findAllDepartments(tenantId: number): Promise<DbDepartment
   } catch (error: unknown) {
     logger.warn(`Error with extended query: ${(error as Error).message}, falling back to simple`);
     const [rows] = await executeQuery<DbDepartment[]>(
-      'SELECT * FROM departments WHERE tenant_id = $1 AND is_active = true ORDER BY name',
+      'SELECT * FROM departments WHERE tenant_id = $1 AND is_active = 1 ORDER BY name',
       [tenantId],
     );
     logger.info(`Retrieved ${rows.length} departments with simple query`);

@@ -30,11 +30,6 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
   return val;
 }
 
-/**
- * Boolean coercion for isActive (accepts 1/0 strings from forms)
- */
-const BooleanCoercion = z.preprocess(coerceToBooleanOrPassthrough, z.boolean());
-
 // ============================================================
 // QUERY SCHEMAS
 // ============================================================
@@ -63,6 +58,7 @@ export const DepartmentIdParamSchema = z.object({
 
 /**
  * Create department request body
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export const CreateDepartmentBodySchema = z.object({
   name: z
@@ -71,19 +67,25 @@ export const CreateDepartmentBodySchema = z.object({
     .min(2, 'Department name must be at least 2 characters')
     .max(100, 'Department name must not exceed 100 characters'),
   description: z.string().trim().max(500, 'Description must not exceed 500 characters').optional(),
-  departmentLeadId: z
+  departmentLeadId: z.coerce
     .number()
     .int()
     .positive('Department lead ID must be a positive integer')
     .nullable()
     .optional(),
-  areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
-  isActive: BooleanCoercion.optional(),
-  isArchived: BooleanCoercion.optional(),
+  areaId: z.coerce
+    .number()
+    .int()
+    .positive('Area ID must be a positive integer')
+    .nullable()
+    .optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 
 /**
  * Update department request body (all fields optional)
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export const UpdateDepartmentBodySchema = z.object({
   name: z
@@ -93,15 +95,20 @@ export const UpdateDepartmentBodySchema = z.object({
     .max(100, 'Department name must not exceed 100 characters')
     .optional(),
   description: z.string().trim().max(500, 'Description must not exceed 500 characters').optional(),
-  departmentLeadId: z
+  departmentLeadId: z.coerce
     .number()
     .int()
     .positive('Department lead ID must be a positive integer')
     .nullable()
     .optional(),
-  areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
-  isActive: BooleanCoercion.optional(),
-  isArchived: BooleanCoercion.optional(),
+  areaId: z.coerce
+    .number()
+    .int()
+    .positive('Area ID must be a positive integer')
+    .nullable()
+    .optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 
 // ============================================================

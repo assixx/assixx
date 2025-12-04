@@ -58,10 +58,12 @@ export function getEmployeeDisplayName(employee: Employee): string {
 
 /**
  * Get active status for an employee
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function getEmployeeActiveStatus(employee: Employee): boolean {
-  // API v2: isActive is always boolean
-  return employee.isActive;
+  // Return true only if isActive === 1 (active)
+  return employee.isActive === 1;
 }
 
 /**
@@ -603,12 +605,14 @@ export function fillAvailabilityFields(employee: Employee): void {
 
 /**
  * Set active status and clear passwords
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function setStatusAndClearPasswords(employee: Employee): void {
   const isActiveSelect = $$('select[name="isActive"]') as HTMLSelectElement | null;
   if (isActiveSelect) {
-    console.info('Setting isActive to:', employee.isActive, '-> select value:', employee.isActive ? '1' : '0');
-    isActiveSelect.value = employee.isActive ? '1' : '0';
+    const isActive = employee.isActive === 1;
+    console.info('Setting isActive to:', employee.isActive, '-> select value:', isActive ? '1' : '0');
+    isActiveSelect.value = isActive ? '1' : '0';
   }
 
   const passwordField = $$('input[name="password"]') as HTMLInputElement | null;

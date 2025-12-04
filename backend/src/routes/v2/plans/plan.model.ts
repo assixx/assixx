@@ -73,7 +73,7 @@ export async function findAllPlans(): Promise<DbPlan[]> {
   try {
     const query = `
         SELECT * FROM plans 
-        WHERE is_active = true 
+        WHERE is_active = 1 
         ORDER BY sort_order ASC
       `;
     const [plans] = await executeQuery<DbPlan[]>(query);
@@ -87,7 +87,7 @@ export async function findAllPlans(): Promise<DbPlan[]> {
 // Get plan by code
 export async function findPlanByCode(code: string): Promise<DbPlan | null> {
   try {
-    const query = 'SELECT * FROM plans WHERE code = $1 AND is_active = true';
+    const query = 'SELECT * FROM plans WHERE code = $1 AND is_active = 1';
     const [plans] = await executeQuery<DbPlan[]>(query, [code]);
     return plans.length > 0 ? (plans[0] ?? null) : null;
   } catch (error: unknown) {
@@ -109,7 +109,7 @@ export async function getPlanFeatures(planId: number): Promise<DbPlanFeature[]> 
         FROM plan_features pf
         JOIN features f ON pf.feature_id = f.id
         WHERE pf.plan_id = $1
-        AND f.is_active = true
+        AND f.is_active = 1
         ORDER BY f.category, f.name
       `;
     const [features] = await executeQuery<DbPlanFeature[]>(query, [planId]);

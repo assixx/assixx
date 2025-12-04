@@ -67,7 +67,16 @@ class Router {
    */
   private handleCategoryRoute(category: DocumentCategory): void {
     // Validate category
-    const validCategories: DocumentCategory[] = ['all', 'personal', 'team', 'department', 'company', 'payroll'];
+    const validCategories: DocumentCategory[] = [
+      'all',
+      'personal',
+      'team',
+      'department',
+      'company',
+      'payroll',
+      'blackboard',
+      'chat',
+    ];
 
     if (!validCategories.includes(category)) {
       console.warn(`Invalid category: ${category}, defaulting to "all"`);
@@ -100,6 +109,7 @@ class Router {
       company: 'Firma',
       payroll: 'Gehaltsabrechnungen',
       blackboard: 'Schwarzes Brett',
+      chat: 'Chat Anhänge',
     };
 
     // Safe: category is typed as DocumentCategory union, always returns valid string

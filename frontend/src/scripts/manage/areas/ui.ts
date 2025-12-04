@@ -44,17 +44,42 @@ export function getTypeLabel(type: string): string {
 }
 
 /**
- * Get status label (German)
+ * Get status label from is_active value (German)
+ * UPDATED: Using unified is_active status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-export function getStatusLabel(status: string): string {
-  return status === 'active' ? 'Aktiv' : 'Inaktiv';
+export function getStatusLabel(isActive: number): string {
+  switch (isActive) {
+    case 1:
+      return 'Aktiv';
+    case 0:
+      return 'Inaktiv';
+    case 3:
+      return 'Archiviert';
+    case 4:
+      return 'Gelöscht';
+    default:
+      return 'Unbekannt';
+  }
 }
 
 /**
- * Get status badge class (Design System BEM naming)
+ * Get status badge class from is_active value (Design System BEM naming)
+ * UPDATED: Using unified is_active status (2025-12-02)
  */
-export function getStatusBadgeClass(status: string): string {
-  return status === 'active' ? 'badge--success' : 'badge--warning';
+export function getStatusBadgeClass(isActive: number): string {
+  switch (isActive) {
+    case 1:
+      return 'badge--success';
+    case 0:
+      return 'badge--warning';
+    case 3:
+      return 'badge--secondary';
+    case 4:
+      return 'badge--error';
+    default:
+      return 'badge--secondary';
+  }
 }
 
 /**
@@ -107,10 +132,11 @@ function createAreaActionButtons(area: Area): string {
 
 /**
  * Create a single area table row (Design System with Action Icons)
+ * UPDATED: Using unified is_active status (2025-12-02)
  */
 export function createAreaRow(area: Area): string {
-  const statusBadge = getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive');
-  const statusLabel = getStatusLabel(area.is_active === 1 ? 'active' : 'inactive');
+  const statusBadge = getStatusBadgeClass(area.is_active);
+  const statusLabel = getStatusLabel(area.is_active);
 
   // NOTE: parent_id display removed (2025-11-29) - areas are now flat (non-hierarchical)
   const areaLeadDisplay =
@@ -262,14 +288,17 @@ export function populateAreaForm(area: Area): void {
 
   // NOTE: parent_id removed (2025-11-29) - areas are now flat (non-hierarchical)
 
-  // Status dropdown (custom)
-  const statusValue = area.is_active === 1 ? 'active' : 'inactive';
+  // Status dropdown (custom) - UPDATED for unified is_active (2025-12-02)
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  const statusValue =
+    area.is_active === 1 ? 'active' : area.is_active === 0 ? 'inactive' : area.is_active === 3 ? 'archived' : 'active';
   setInputValue('area-status', statusValue);
+  setInputValue('area-is-active', area.is_active);
 
   const statusTrigger = document.querySelector<HTMLElement>('#status-trigger span');
   if (statusTrigger !== null) {
-    const badgeClass = statusValue === 'active' ? 'badge--success' : 'badge--warning';
-    const badgeText = statusValue === 'active' ? 'Aktiv' : 'Inaktiv';
+    const badgeClass = getStatusBadgeClass(area.is_active);
+    const badgeText = getStatusLabel(area.is_active);
     setSafeHTML(statusTrigger, `<span class="badge ${badgeClass}">${badgeText}</span>`);
   }
 
@@ -385,8 +414,8 @@ export function renderSearchResults(areas: Area[], query: string): void {
   const resultsHTML = limitedResults
     .map((area) => {
       const typeLabel = getTypeLabel(area.type);
-      const statusBadge = getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive');
-      const statusLabel = getStatusLabel(area.is_active === 1 ? 'active' : 'inactive');
+      const statusBadge = getStatusBadgeClass(area.is_active);
+      const statusLabel = getStatusLabel(area.is_active);
 
       return `
         <div class="search-input__result-item" data-area-id="${String(area.id)}" data-action="edit-from-search">

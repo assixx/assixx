@@ -3,6 +3,7 @@ import { DatabaseUser, User } from '../types/models.js';
 
 /**
  * Converts database user format to application user format
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
   return {
@@ -14,8 +15,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     role: dbUser.role,
     tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
-    isActive: dbUser.is_active,
-    isArchived: dbUser.is_archived,
+    isActive: dbUser.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     profilePicture: dbUser.profile_picture,
     phoneNumber: dbUser.phone_number,
     landline: dbUser.landline,

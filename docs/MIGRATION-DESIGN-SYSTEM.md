@@ -186,8 +186,8 @@ export class SignupFormController {
 ### Features and unified-navigation !!!! CRITICAL and biggest
 
 - [x] calendar.html ✅ (2025-11-23) - 100% Design System compliant (toggle-group for filters, ds-modal, form-field, dropdown, confirm-modal for delete events, TypeScript modules split to api/filters/modals/state/types/ui/index layers, FullCalendar integration with Design System theming, Schichten toggle button independent from organization filters, fixed field mapping startTime/endTime from API v2, no inline styles/JS, no Bootstrap)
-- [ ] blackboard.html
-- [ ] chat.html
+- [x] blackboard.html ✅ (2025-12-02) - 100% Design System compliant (card, toggle-group for level filter, dropdown for sort, ds-modal for entry form, confirm-modal--danger for two-step delete, toggle-switch--danger for company-wide toggle, file-upload-zone with drag&drop, color-picker component, TypeScript modules split to 11 files: api/data/filters/forms/modals/types/ui/zoom/widget/sticky-note-component/index layers, navigation to dedicated detail page instead of modal, no inline styles/JS, no Bootstrap)
+- [x] chat.html ✅ (2025-12-02) - 100% Design System compliant (ds-modal for new conversation, toggle-group for employee/admin tabs, dropdown for department/employee/admin selection, form-field for group name, btn-icon for actions, custom chat UI preserved for domain-specific requirements, TypeScript modules split to 11 files: api/emoji-data/index/input/messages/modals/state/types/ui/utils/websocket layers, chat.css reduced 1451→1203 lines -17% by removing redundant modal/button/dropdown/tab styles, no inline styles/JS, no Bootstrap)
 - [ ] shifts.html
 - [ ] logs.html
 - [ ] unified-navigation.ts und css !

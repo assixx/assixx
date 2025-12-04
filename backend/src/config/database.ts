@@ -75,13 +75,51 @@ if (USE_MOCK_DB) {
 }
 
 /**
- * Set tenant context for RLS
+ * Set tenant context for RLS (Row Level Security)
+ * Uses set_config() because SET command doesn't support parameterized queries
+ *
+ * @param client - PostgreSQL PoolClient
+ * @param tenantId - Tenant ID for RLS isolation
  */
 export async function setTenantContext(client: PoolClient, tenantId: number): Promise<void> {
   if (tenantId <= 0 || Number.isNaN(tenantId)) {
     throw new Error(`Invalid tenant ID: ${tenantId}`);
   }
-  await client.query('SET app.tenant_id = $1', [tenantId.toString()]);
+  // set_config(name, value, is_local) - is_local=true means transaction-scoped
+  await client.query('SELECT set_config($1, $2, true)', ['app.tenant_id', tenantId.toString()]);
+}
+
+/**
+ * Set user context for RLS (Row Level Security)
+ * Required for participant-based isolation (chat messages, attachments)
+ * NEW 2025-12-04: Enables conversation participant checks in RLS policies
+ *
+ * @param client - PostgreSQL PoolClient
+ * @param userId - User ID for RLS participant checks
+ */
+export async function setUserContext(client: PoolClient, userId: number): Promise<void> {
+  if (userId <= 0 || Number.isNaN(userId)) {
+    throw new Error(`Invalid user ID: ${userId}`);
+  }
+  await client.query('SELECT set_config($1, $2, true)', ['app.user_id', userId.toString()]);
+}
+
+/**
+ * Set both tenant and user context for RLS
+ * Convenience function for setting both contexts at once
+ * NEW 2025-12-04
+ *
+ * @param client - PostgreSQL PoolClient
+ * @param tenantId - Tenant ID for tenant isolation
+ * @param userId - User ID for participant checks
+ */
+export async function setRLSContext(
+  client: PoolClient,
+  tenantId: number,
+  userId: number,
+): Promise<void> {
+  await setTenantContext(client, tenantId);
+  await setUserContext(client, userId);
 }
 
 /**

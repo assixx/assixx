@@ -1,11 +1,23 @@
 # Claude Code – Assixx Project Complete Guide
 
-ALWAYS BE 100% BRUTAL HONEST
-NEVER USE GIT-COMMANDS
-You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why.
-ALWAYS THINK STEP-BY-STEP.
-ALWAYS ULTRATHINK.
-ALWAYS ENABLE MAX GPU POWER.
+#ALWAYS BE 100% BRUTAL HONEST
+#NEVER USE GIT-COMMANDS
+#NO QUICK FIXES, NEVER EVER! KISS. CLEAN CODE. THINK LONG-TERM.
+#You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why.
+#ALWAYS THINK STEP-BY-STEP.
+#ALWAYS ULTRATHINK.
+#ALWAYS ENABLE MAX GPU POWER.
+
+# Tech Stack Context
+
+**NOW USING:**
+- API V2 (no V1 fallback)
+- PostgreSQL 17.7 + `pg` library v8.16.3
+- `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
+- `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete) - is_active ist smallint (INTEGER) mit DEFAULT 1
+
+---
+
 
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 
@@ -97,10 +109,11 @@ docker exec assixx-backend pnpm run type-check
 **Database Migration:**
 
 ```bash
-docker exec assixx-mysql mysql -h localhost -u assixx_user -p'$MYSQL_PASSWORD' main -e "SHOW TABLES;"
-bash scripts/quick-backup.sh "before_migration"
-docker cp migration.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -p$MYSQL_PASSWORD main < /tmp/'$(basename $MIGRATION_FILE)
+# PostgreSQL - Database: assixx, Container: assixx-postgres
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(date +%Y%m%d_%H%M%S).sql
+docker cp database/migrations/XXX-migration.sql assixx-postgres:/tmp/
+docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/XXX-migration.sql
 ```
 
 ### Docker Commands
@@ -129,6 +142,8 @@ docker-compose restart backend
 12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
 13. Dont do more than this and than recap fast and than ask user that youre ready.
 14. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
+15. change directory to root  Bash(cd /home/scs/projects/Assixx && pwd)
+  ⎿  /home/scs/projects/Assixx
 
 ## 📊 PROGRESS DOCUMENTATION
 

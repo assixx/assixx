@@ -117,22 +117,22 @@ export function initPositionDropdown(): void {
 /**
  * Initialize status custom dropdown
  * Sets up event listeners for the custom dropdown functionality with badge support
- * Maps UI values (active/inactive/archived) to DB fields (isActive + isArchived)
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function initStatusDropdown(): void {
   const trigger = $$('#status-trigger');
   const menu = $$('#status-menu');
   const dropdown = $$('#status-dropdown');
   const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
-  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
 
   if (trigger === null || menu === null || dropdown === null) {
     console.error('Status dropdown elements not found');
     return;
   }
 
-  if (isActiveInput === null || isArchivedInput === null) {
-    console.error('Status hidden inputs not found');
+  if (isActiveInput === null) {
+    console.error('Status hidden input not found');
     return;
   }
 
@@ -156,19 +156,17 @@ export function initStatusDropdown(): void {
     // Get badge element from option
     const badge = option.querySelector('.badge');
 
-    // Map UI value to DB fields (isActive + isArchived)
+    // Map UI value to unified isActive status
+    // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     switch (value) {
       case 'active':
         isActiveInput.value = '1';
-        isArchivedInput.value = '0';
         break;
       case 'inactive':
         isActiveInput.value = '0';
-        isArchivedInput.value = '0';
         break;
       case 'archived':
-        isActiveInput.value = '0';
-        isArchivedInput.value = '1';
+        isActiveInput.value = '3';
         break;
     }
 
@@ -212,37 +210,45 @@ export function getPositionDisplay(position: string): string {
 
 /**
  * Get status badge HTML based on admin status
- * @param admin - Admin object with isActive and isArchived fields
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+ * @param admin - Admin object with unified isActive field
  * @returns HTML string for status badge
  */
 export function getStatusBadge(admin: Admin): string {
-  // Check if admin is archived
-  if (admin.isArchived) {
-    return '<span class="badge badge--error">Archiviert</span>';
+  switch (admin.isActive) {
+    case 1:
+      return '<span class="badge badge--success">Aktiv</span>';
+    case 0:
+      return '<span class="badge badge--warning">Inaktiv</span>';
+    case 3:
+      return '<span class="badge badge--secondary">Archiviert</span>';
+    case 4:
+      return '<span class="badge badge--error">Gelöscht</span>';
+    default:
+      return '<span class="badge badge--secondary">Unbekannt</span>';
   }
-
-  // Check if admin is active
-  if (admin.isActive) {
-    return '<span class="badge badge--success">Aktiv</span>';
-  }
-
-  // Default to inactive
-  return '<span class="badge badge--warning">Inaktiv</span>';
 }
 
 /**
  * Get status value from admin object
+ * UPDATED: Using unified isActive status (2025-12-02)
  * @param admin - Admin object
  * @returns Status value string ('active', 'inactive', or 'archived')
  */
 export function getStatusValue(admin: Admin): string {
-  if (admin.isArchived) {
-    return 'archived';
+  switch (admin.isActive) {
+    case 1:
+      return 'active';
+    case 0:
+      return 'inactive';
+    case 3:
+      return 'archived';
+    case 4:
+      return 'deleted';
+    default:
+      return 'inactive';
   }
-  if (admin.isActive) {
-    return 'active';
-  }
-  return 'inactive';
 }
 
 /** Check if admin has full access (helper to reduce complexity) */
@@ -510,13 +516,15 @@ function getOrganizationFormData(): {
   return { hasFullAccess, areaIds, departmentIds };
 }
 
+/**
+ * Collect form data for admin creation/update
+ * UPDATED: Using unified isActive status (2025-12-02)
+ */
 export function getFormData(): AdminFormData {
   const email = getInputValue(SELECTORS.ADMIN_EMAIL);
-  // Read from hidden inputs (set by status dropdown)
+  // Read from hidden input (set by status dropdown)
   const isActiveEl = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
-  const isArchivedEl = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
   const isActiveValue = isActiveEl?.value ?? '1';
-  const isArchivedValue = isArchivedEl?.value ?? '0';
 
   const formData: AdminFormData = {
     firstName: getInputValue('#admin-first-name'),
@@ -530,8 +538,7 @@ export function getFormData(): AdminFormData {
     notes: ($('#admin-notes') as HTMLTextAreaElement).value,
     role: 'admin',
     employeeNumber: getInputValue(SELECTORS.ADMIN_EMPLOYEE_NUMBER),
-    isActive: isActiveValue === '1',
-    isArchived: isArchivedValue === '1',
+    isActive: Number.parseInt(isActiveValue, 10) as 0 | 1 | 3 | 4,
   };
 
   // N:M REFACTORING: Add organization assignment data
@@ -610,48 +617,41 @@ function getStatusBadgeHtml(statusValue: string): string {
     case 'inactive':
       return '<span class="badge badge--warning">Inaktiv</span>';
     case 'archived':
-      return '<span class="badge badge--error">Archiviert</span>';
+      return '<span class="badge badge--secondary">Archiviert</span>';
     default:
       return '<span class="badge badge--success">Aktiv</span>';
   }
 }
 
 /**
- * Update hidden inputs for status (isActive + isArchived)
+ * Update hidden input for unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-function updateStatusHiddenInputs(
-  statusValue: string,
-  isActiveInput: HTMLInputElement,
-  isArchivedInput: HTMLInputElement,
-): void {
+function updateStatusHiddenInput(statusValue: string, isActiveInput: HTMLInputElement): void {
   switch (statusValue) {
     case 'inactive':
       isActiveInput.value = '0';
-      isArchivedInput.value = '0';
       break;
     case 'archived':
-      isActiveInput.value = '0';
-      isArchivedInput.value = '1';
+      isActiveInput.value = '3';
       break;
     default: // active
       isActiveInput.value = '1';
-      isArchivedInput.value = '0';
   }
 }
 
 /**
  * Set status dropdown value and display
- * Maps UI value to DB fields (isActive + isArchived)
+ * UPDATED: Using unified isActive status (2025-12-02)
  * @param statusValue - Status value ('active', 'inactive', 'archived')
  */
 export function setStatusDropdown(statusValue: string): void {
   const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
-  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
   const statusTrigger = $$('#status-trigger');
 
-  // Map UI value to DB fields
-  if (isActiveInput !== null && isArchivedInput !== null) {
-    updateStatusHiddenInputs(statusValue, isActiveInput, isArchivedInput);
+  // Map UI value to unified isActive
+  if (isActiveInput !== null) {
+    updateStatusHiddenInput(statusValue, isActiveInput);
   }
 
   // Update the display badge
@@ -771,18 +771,15 @@ export function resetPositionDropdown(): void {
 
 /**
  * Reset status dropdown to default (active)
+ * UPDATED: Using unified isActive status (2025-12-02)
  */
 export function resetStatusDropdown(): void {
   const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
-  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
   const statusTrigger = $$('#status-trigger');
 
-  // Reset to active state (isActive=1, isArchived=0)
+  // Reset to active state (isActive=1)
   if (isActiveInput !== null) {
     isActiveInput.value = '1';
-  }
-  if (isArchivedInput !== null) {
-    isArchivedInput.value = '0';
   }
 
   // Reset display badge to active

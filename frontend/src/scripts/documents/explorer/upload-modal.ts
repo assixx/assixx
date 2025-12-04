@@ -611,7 +611,8 @@ class UploadModalManager {
       return;
     }
 
-    // Show modal
+    // Show modal (remove hidden first, then activate)
+    this.modalEl.classList.remove('hidden');
     this.modalEl.classList.add('modal-overlay--active');
 
     // Prevent body scroll
@@ -628,6 +629,7 @@ class UploadModalManager {
     if (!this.modalEl) return;
 
     this.modalEl.classList.remove('modal-overlay--active');
+    this.modalEl.classList.add('hidden');
 
     this.clearFileSelection();
 

@@ -6,6 +6,10 @@
  * - All fields are now camelCase only (backend uses fieldMapping)
  * - Backend delivers: dbToApi() converts snake_case → camelCase
  * - No fallback needed: user.firstName (NOT user.first_name)
+ *
+ * UPDATED: 2025-12-02
+ * - isArchived removed, using unified isActive status
+ * - Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 
 // Base API Response
@@ -17,6 +21,8 @@ export interface ApiResponse<T = unknown> {
 }
 
 // User Types
+// UPDATED: Using unified isActive status (2025-12-02)
+// Status: 0=inactive, 1=active, 3=archived, 4=deleted
 export interface User {
   id: number;
   username: string;
@@ -29,8 +35,7 @@ export interface User {
   phone?: string | undefined;
   position?: string | undefined;
   birthdate?: string | undefined;
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   createdAt: string;
   updatedAt: string;
   // Additional fields that may exist
@@ -143,8 +148,8 @@ export interface Document {
   description?: string | undefined;
   tags?: string[] | undefined;
   isRead?: boolean | undefined;
-  isArchived?: boolean | undefined;
-  isDeleted: boolean;
+  isActive?: 0 | 1 | 3 | 4 | undefined; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  isDeleted?: boolean | undefined; // Legacy - prefer isActive=4
   recipientId?: number | undefined;
   downloadUrl?: string | undefined;
   previewUrl?: string | undefined;

@@ -469,7 +469,7 @@ async function loadActivityLogs(): Promise<void> {
     const logsHTML = logs
       .map(
         (log) => `<tr>
-                <td class="text-sm">${new Date(log.createdAt).toLocaleString('de-DE')}</td>
+                <td class="text-sm">${new Date(log.createdAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
                 <td>${
                   log.userName !== undefined && log.userName !== ''
                     ? `<span class="flex items-center gap-2"><i class="fas fa-user text-xs opacity-60"></i> ${log.userName}</span>`

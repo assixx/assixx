@@ -38,14 +38,10 @@ router.use(rateLimiter.api);
  *           enum: [employee, admin, root]
  *       - name: isActive
  *         in: query
- *         description: Filter by active status
+ *         description: Filter by status (0=inactive, 1=active, 3=archived, 4=deleted)
  *         schema:
- *           type: boolean
- *       - name: isArchived
- *         in: query
- *         description: Filter by archived status
- *         schema:
- *           type: boolean
+ *           type: integer
+ *           enum: [0, 1, 3, 4]
  *       - name: sortBy
  *         in: query
  *         description: Sort field

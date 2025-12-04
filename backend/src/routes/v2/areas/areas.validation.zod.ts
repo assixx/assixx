@@ -27,15 +27,14 @@ const AreaTypeSchema = z.enum(
 
 /**
  * Get areas query parameters
+ * UPDATED: isActive now integer status (2025-12-02)
  */
 export const GetAreasQuerySchema = z.object({
   type: AreaTypeSchema.optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   isActive: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    z.number().int().min(0).max(4).optional(),
   ),
   // NOTE: parentId removed (2025-11-29) - areas are now flat (non-hierarchical)
   search: z
@@ -75,14 +74,14 @@ export const CreateAreaBodySchema = z.object({
     .trim()
     .max(1000, 'Description must not exceed 1000 characters')
     .optional(),
-  areaLeadId: z
+  areaLeadId: z.coerce
     .number()
     .int()
     .positive('Area lead ID must be a positive integer')
     .nullable()
     .optional(),
   type: AreaTypeSchema.default('other'),
-  capacity: z
+  capacity: z.coerce
     .number()
     .int()
     .nonnegative('Capacity must be a non-negative integer')
@@ -94,6 +93,7 @@ export const CreateAreaBodySchema = z.object({
 
 /**
  * Update area request body (all fields optional)
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export const UpdateAreaBodySchema = z.object({
   name: z
@@ -107,14 +107,14 @@ export const UpdateAreaBodySchema = z.object({
     .trim()
     .max(1000, 'Description must not exceed 1000 characters')
     .optional(),
-  areaLeadId: z
+  areaLeadId: z.coerce
     .number()
     .int()
     .positive('Area lead ID must be a positive integer')
     .nullable()
     .optional(),
   type: AreaTypeSchema.optional(),
-  capacity: z
+  capacity: z.coerce
     .number()
     .int()
     .nonnegative('Capacity must be a non-negative integer')
@@ -122,8 +122,8 @@ export const UpdateAreaBodySchema = z.object({
     .optional(),
   // NOTE: parentId removed (2025-11-29) - areas are now flat (non-hierarchical)
   address: z.string().trim().max(500, 'Address must not exceed 500 characters').optional(),
-  isActive: z.boolean().optional(),
-  isArchived: z.boolean().optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 
 // ============================================================

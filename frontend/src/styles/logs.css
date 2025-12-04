@@ -95,34 +95,7 @@
   border: 1px solid rgba(244, 67, 54, 0.3);
 } */
 
-/* Role Badge */
-.role-badge {
-  display: inline-block;
-
-  padding: 2px 8px;
-  border-radius: 8px;
-
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.role-root {
-  border: 1px solid rgb(156 39 176 / 30%);
-  color: #9c27b0;
-  background: rgb(156 39 176 / 15%);
-}
-
-.role-admin {
-  border: 1px solid rgb(3 169 244 / 30%);
-  color: #03a9f4;
-  background: rgb(3 169 244 / 15%);
-}
-
-.role-employee {
-  border: 1px solid rgb(96 125 139 / 30%);
-  color: #607d8b;
-  background: rgb(96 125 139 / 15%);
-}
+/* Role Badge - Now uses Design System: badge badge--sm badge--danger/warning/info */
 
 /* Table Cell Styles */
 .text-muted {

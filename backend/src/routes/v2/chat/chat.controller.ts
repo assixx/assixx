@@ -1,15 +1,21 @@
 /**
  * Chat Controller v2
  * HTTP request handling for real-time messaging API
+ * Updated 2025-12-03: Added document-based attachment system
  */
 import { error as logError } from 'console';
+import crypto from 'crypto';
 import { NextFunction, Response } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { logger } from '../../../utils/logger.js';
 import { getUploadDirectory, validatePath } from '../../../utils/pathSecurity.js';
+import { getConversationUuid, isConversationParticipant } from '../documents/document.model.js';
+import { documentsService } from '../documents/documents.service.js';
 import rootLog from '../logs/logs.service.js';
 import {
   createConversation,
@@ -28,12 +34,21 @@ import type {
   MessageFilters,
   SendMessageData,
 } from './chat.service.js';
+import type { CreateScheduledMessageBody } from './chat.validation.zod.js';
+import {
+  cancelScheduledMessage,
+  createScheduledMessage,
+  getConversationScheduledMessages,
+  getScheduledMessage,
+  getUserScheduledMessages,
+} from './scheduled-messages.service.js';
 
 // Constants
 const NOT_IMPLEMENTED = 'NOT_IMPLEMENTED';
 const NOT_IMPLEMENTED_MESSAGE = 'Feature not yet implemented';
 const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const CONVERSATION_ID_REQUIRED = 'Conversation ID is required';
+const USER_AGENT_HEADER = 'user-agent';
 
 interface ChatConversationResult {
   id: number;
@@ -182,6 +197,7 @@ class ChatController {
         participantIds?: number[];
         name?: string;
         isGroup?: boolean;
+        initialMessage?: string;
       };
       const data: CreateConversationData = {
         participantIds: body.participantIds ?? [],
@@ -193,6 +209,9 @@ class ChatController {
       }
       if (body.isGroup !== undefined) {
         (data as unknown as Record<string, unknown>)['isGroup'] = body.isGroup;
+      }
+      if (body.initialMessage !== undefined) {
+        (data as unknown as Record<string, unknown>)['initialMessage'] = body.initialMessage;
       }
 
       const result = await createConversation(tenantId, userId, data);
@@ -216,7 +235,7 @@ class ChatController {
           created_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -342,7 +361,7 @@ class ChatController {
           sent_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -387,15 +406,23 @@ class ChatController {
       logError('[Chat Controller] markAsRead called');
       const { user } = req;
       const userId = user.id;
+      const tenantId = user.tenant_id;
       const conversationIdParam = req.params['id'];
       if (conversationIdParam === undefined) {
         res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
         return;
       }
       const conversationId = Number.parseInt(conversationIdParam);
-      logError('[Chat Controller] markAsRead - conversationId:', conversationId, 'userId:', userId);
+      logError(
+        '[Chat Controller] markAsRead - tenantId:',
+        tenantId,
+        'conversationId:',
+        conversationId,
+        'userId:',
+        userId,
+      );
 
-      const result = await markConversationAsRead(conversationId, userId);
+      const result = await markConversationAsRead(tenantId, conversationId, userId);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
@@ -418,6 +445,7 @@ class ChatController {
     try {
       const { user } = req;
       const userId = user.id;
+      const tenantId = user.tenant_id;
       const userRole = user.role;
       const conversationIdParam = req.params['id'];
       if (conversationIdParam === undefined) {
@@ -426,7 +454,7 @@ class ChatController {
       }
       const conversationId = Number.parseInt(conversationIdParam);
 
-      await deleteConversation(conversationId, userId, userRole);
+      await deleteConversation(tenantId, conversationId, userId, userRole);
 
       // Log conversation deletion
       await rootLog.create({
@@ -442,7 +470,7 @@ class ChatController {
           deleted_by_role: userRole,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -619,6 +647,410 @@ class ChatController {
   editMessage(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
     // TODO: Implement message editing
     this.notImplemented(res, next);
+  }
+
+  // =========================================
+  // SCHEDULED MESSAGES
+  // =========================================
+
+  /**
+   * Create a scheduled message
+   * POST /api/v2/chat/scheduled-messages
+   */
+  async createScheduledMessage(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      // Request body is already validated by middleware
+      const data = req.body as CreateScheduledMessageBody;
+
+      // Build input object, only including optional properties if they have values
+      const input: {
+        conversationId: number;
+        content: string;
+        scheduledFor: string;
+        attachmentPath?: string;
+        attachmentName?: string;
+        attachmentType?: string;
+        attachmentSize?: number;
+      } = {
+        conversationId: data.conversationId,
+        content: data.content,
+        scheduledFor: data.scheduledFor,
+      };
+
+      // Only add attachment properties if they exist (not undefined)
+      if (data.attachmentPath !== undefined) input.attachmentPath = data.attachmentPath;
+      if (data.attachmentName !== undefined) input.attachmentName = data.attachmentName;
+      if (data.attachmentType !== undefined) input.attachmentType = data.attachmentType;
+      if (data.attachmentSize !== undefined) input.attachmentSize = data.attachmentSize;
+
+      const result = await createScheduledMessage(input, userId, tenantId);
+
+      // Log scheduled message creation
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'schedule_message',
+        entity_type: 'scheduled_message',
+        entity_id: 0, // UUID stored in details
+        details: `Nachricht geplant für ${new Date(result.scheduledFor).toLocaleString('de-DE')} (ID: ${result.id})`,
+        new_values: {
+          scheduled_message_id: result.id,
+          conversation_id: data.conversationId,
+          scheduled_for: result.scheduledFor,
+          content_length: data.content.length,
+          scheduled_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+
+      res.status(201).json(successResponse(result));
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get all pending scheduled messages for the current user
+   * GET /api/v2/chat/scheduled-messages
+   */
+  async getScheduledMessages(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      const messages = await getUserScheduledMessages(userId, tenantId);
+
+      res.json(
+        successResponse({
+          messages,
+          total: messages.length,
+        }),
+      );
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get a specific scheduled message
+   * GET /api/v2/chat/scheduled-messages/:id
+   */
+  async getScheduledMessage(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      // ID parameter is already validated by middleware
+      const messageId = req.params['id'] as string;
+
+      const message = await getScheduledMessage(messageId, userId, tenantId);
+
+      res.json(successResponse({ message }));
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel a scheduled message
+   * DELETE /api/v2/chat/scheduled-messages/:id
+   */
+  async cancelScheduledMessage(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      // ID parameter is already validated by middleware
+      const messageId = req.params['id'] as string;
+
+      const result = await cancelScheduledMessage(messageId, userId, tenantId);
+
+      // Log cancellation
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'cancel_scheduled_message',
+        entity_type: 'scheduled_message',
+        entity_id: 0, // UUID stored in details
+        details: `Geplante Nachricht storniert (ID: ${result.id})`,
+        old_values: {
+          scheduled_message_id: result.id,
+          scheduled_for: result.scheduledFor,
+          cancelled_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+
+      res.json(
+        successResponse({
+          message: 'Geplante Nachricht wurde storniert',
+          scheduledMessage: result,
+        }),
+      );
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get scheduled messages for a specific conversation
+   * GET /api/v2/chat/conversations/:id/scheduled-messages
+   */
+  async getConversationScheduledMessages(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+      const conversationIdParam = req.params['id'];
+
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
+
+      const messages = await getConversationScheduledMessages(conversationId, userId, tenantId);
+
+      res.json(
+        successResponse({
+          scheduledMessages: messages,
+          total: messages.length,
+        }),
+      );
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  // ============================================================================
+  // DOCUMENT-BASED ATTACHMENT SYSTEM (NEW 2025-12-03)
+  // ============================================================================
+
+  /**
+   * Build hierarchical storage path for chat attachment
+   */
+  private buildChatStoragePath(
+    tenantId: number,
+    conversationUuid: string,
+    fileUuid: string,
+    extension: string,
+  ): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return path.join(
+      'uploads',
+      'documents',
+      tenantId.toString(),
+      'chat',
+      conversationUuid.trim(),
+      year.toString(),
+      month,
+      `${fileUuid}${extension}`,
+    );
+  }
+
+  /** POST /api/v2/chat/conversations/:id/attachments - Upload attachment */
+  async uploadConversationAttachment(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { tenant_id: tenantId, id: userId } = req.user;
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
+      if (!req.file) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'No file uploaded'));
+        return;
+      }
+      if (!(await isConversationParticipant(userId, conversationId, tenantId))) {
+        res.status(403).json(errorResponse('FORBIDDEN', 'Not a conversation participant'));
+        return;
+      }
+      const conversationUuid = await getConversationUuid(conversationId, tenantId);
+      if (conversationUuid === null) {
+        res.status(404).json(errorResponse('NOT_FOUND', 'Conversation not found'));
+        return;
+      }
+      const fileUuid = uuidv7();
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const checksum = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+      const document = await documentsService.createDocument(
+        {
+          filename: `${fileUuid}${ext}`,
+          originalName: req.file.originalname,
+          fileSize: req.file.size,
+          fileContent: req.file.buffer,
+          mimeType: req.file.mimetype,
+          category: 'chat',
+          accessScope: 'chat' as const,
+          conversationId,
+          fileUuid,
+          fileChecksum: checksum,
+          filePath: this.buildChatStoragePath(tenantId, conversationUuid, fileUuid, ext),
+          storageType: 'filesystem' as const,
+        },
+        userId,
+        tenantId,
+      );
+      logger.info(`Chat attachment uploaded: ${String(document['id'])} for conv ${conversationId}`);
+      res.status(201).json(successResponse(document));
+    } catch (error: unknown) {
+      logger.error('Error uploading chat attachment:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Get all attachments for a conversation
+   * GET /api/v2/chat/conversations/:id/attachments
+   */
+  async getConversationAttachments(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
+
+      // Permission check happens in service
+      const attachments = await documentsService.getDocumentsByConversation(
+        conversationId,
+        tenantId,
+        userId,
+      );
+
+      res.json(
+        successResponse({
+          attachments,
+          total: attachments.length,
+        }),
+      );
+    } catch (error: unknown) {
+      logger.error('Error getting conversation attachments:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Download attachment by file UUID (secure URL)
+   * GET /api/v2/chat/attachments/:fileUuid/download
+   */
+  async downloadAttachmentByUuid(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      const fileUuid = req.params['fileUuid'];
+      if (fileUuid === undefined || fileUuid === '') {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'File UUID is required'));
+        return;
+      }
+
+      // Get document content (access check happens in service)
+      const documentContent = await documentsService.getDocumentContentByFileUuid(
+        fileUuid,
+        userId,
+        tenantId,
+      );
+
+      // Set headers for download
+      const disposition = req.query['inline'] === 'true' ? 'inline' : 'attachment';
+      res.setHeader('Content-Type', documentContent.mimeType);
+      res.setHeader(
+        'Content-Disposition',
+        `${disposition}; filename="${documentContent.originalName}"`,
+      );
+      res.setHeader('Content-Length', documentContent.fileSize.toString());
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+
+      // Send binary content
+      res.end(documentContent.content);
+    } catch (error: unknown) {
+      logger.error('Error downloading chat attachment:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Delete attachment by document ID
+   * DELETE /api/v2/chat/attachments/:documentId
+   */
+  async deleteConversationAttachment(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { user } = req;
+      const tenantId = user.tenant_id;
+      const userId = user.id;
+
+      const documentIdParam = req.params['documentId'];
+      if (documentIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Document ID is required'));
+        return;
+      }
+      const documentId = Number.parseInt(documentIdParam);
+
+      // Delete via documents service (access check happens there)
+      await documentsService.deleteDocument(documentId, userId, tenantId);
+
+      res.json(successResponse({ message: 'Attachment deleted successfully' }));
+    } catch (error: unknown) {
+      logger.error('Error deleting chat attachment:', error);
+      next(error);
+    }
   }
 }
 

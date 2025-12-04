@@ -26,9 +26,22 @@ function createCountBadge(count: number, names: string, singular: string, plural
 
 /**
  * Helper: Get status badge configuration
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-function getStatusBadge(isActive: boolean): { class: string; text: string } {
-  return isActive ? { class: 'badge--success', text: 'Aktiv' } : { class: 'badge--warning', text: 'Inaktiv' };
+function getStatusBadge(isActive: 0 | 1 | 3 | 4): { class: string; text: string } {
+  switch (isActive) {
+    case 1:
+      return { class: 'badge--success', text: 'Aktiv' };
+    case 0:
+      return { class: 'badge--warning', text: 'Inaktiv' };
+    case 3:
+      return { class: 'badge--secondary', text: 'Archiviert' };
+    case 4:
+      return { class: 'badge--error', text: 'Gelöscht' };
+    default:
+      return { class: 'badge--secondary', text: 'Unbekannt' };
+  }
 }
 
 /**

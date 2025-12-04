@@ -207,11 +207,13 @@ export async function createKvpSuggestion(
     ];
 
     console.info('[KVP Model] SQL VALUES (with UUID):', values);
+    // POSTGRESQL: RETURNING id required to get insertId
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_suggestions
         (uuid, tenant_id, title, description, category_id, department_id, org_level, org_id, is_shared, submitted_by, team_id, priority, expected_benefit, estimated_cost)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, $12, $13)
+        RETURNING id
       `,
       values,
     );
@@ -664,11 +666,13 @@ export async function addKvpAttachment(
     const numericId = suggestionRow.id;
 
     // Insert attachment with UUID provided by controller (uses numeric ID for foreign key)
+    // POSTGRESQL: RETURNING id required to get insertId
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_attachments
         (file_uuid, suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id
       `,
       [
         fileUuid, // Use UUID from controller
@@ -723,11 +727,13 @@ export async function addKvpComment(
 ): Promise<number> {
   const connection = await getDbConnection();
   try {
+    // POSTGRESQL: RETURNING id required to get insertId
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_comments
         (tenant_id, suggestion_id, user_id, comment, is_internal)
         VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
       `,
       [tenantId, suggestionId, userId, comment, isInternal],
     );
@@ -810,11 +816,13 @@ export async function awardKvpPoints(
 ): Promise<number> {
   const connection = await getDbConnection();
   try {
+    // POSTGRESQL: RETURNING id required to get insertId
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_points
         (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
         VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `,
       [tenantId, userId, suggestionId, points, reason, awardedBy],
     );
