@@ -6,7 +6,7 @@ import { Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 // Ensure upload directory exists
 const uploadDir = 'uploads/profile_pictures/';
@@ -28,8 +28,8 @@ const storage = multer.diskStorage({
     file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void,
   ) {
-    // Use UUID v4 for collision-free filenames (same pattern as KVP)
-    const uuid = uuidv4();
+    // Use UUID v7 for collision-free filenames (time-sortable)
+    const uuid = uuidv7();
     const extension = path.extname(file.originalname).toLowerCase();
     cb(null, `${uuid}${extension}`);
   },

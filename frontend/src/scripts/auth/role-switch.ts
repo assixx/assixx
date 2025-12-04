@@ -81,8 +81,8 @@ function updateRoleUI(): void {
   if (currentView === 'employee' && userRole === 'admin') {
     // Admin is viewing as employee
     roleIndicator.textContent = 'Mitarbeiter';
-    roleIndicator.classList.remove('admin');
-    roleIndicator.classList.add('employee');
+    roleIndicator.classList.remove('badge--warning', 'badge--danger');
+    roleIndicator.classList.add('badge--info');
 
     if (switchText) {
       switchText.textContent = 'Als Admin';
@@ -91,8 +91,8 @@ function updateRoleUI(): void {
   } else if (userRole === 'admin') {
     // Normal admin view
     roleIndicator.textContent = 'Admin';
-    roleIndicator.classList.remove('employee');
-    roleIndicator.classList.add('admin');
+    roleIndicator.classList.remove('badge--info', 'badge--danger');
+    roleIndicator.classList.add('badge--warning');
 
     if (switchText) {
       switchText.textContent = 'Als Mitarbeiter';

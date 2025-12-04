@@ -55,6 +55,8 @@ router.get(
 );
 router.get('/settings', rateLimiter.authenticated, authenticateV2, servePage('settings'));
 router.get('/chat', rateLimiter.authenticated, authenticateV2, servePage('chat'));
+// Chat with UUID for direct conversation link (e.g. /chat/018c5f8e-7a1b-7c3d-9e4f-0a1b2c3d4e5f)
+router.get('/chat/:uuid', rateLimiter.authenticated, authenticateV2, servePage('chat'));
 router.get('/blackboard', rateLimiter.authenticated, authenticateV2, servePage('blackboard'));
 router.get('/calendar', rateLimiter.authenticated, authenticateV2, servePage('calendar'));
 router.get('/kvp', rateLimiter.authenticated, authenticateV2, servePage('kvp'));

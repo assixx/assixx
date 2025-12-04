@@ -24,6 +24,8 @@ const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
 /**
  * Reset all hidden form input fields to default values
  * Prevents data contamination when switching from edit to add mode
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 function resetTeamFormInputs(): void {
   const teamIdField = document.querySelector<HTMLInputElement>('#team-id');
@@ -32,16 +34,14 @@ function resetTeamFormInputs(): void {
   const membersField = document.querySelector<HTMLInputElement>('#team-members-select');
   const machinesField = document.querySelector<HTMLInputElement>('#team-machines-select');
   const isActiveField = document.querySelector<HTMLInputElement>('#team-is-active');
-  const isArchivedField = document.querySelector<HTMLInputElement>('#team-is-archived');
 
   if (teamIdField !== null) teamIdField.value = '';
   if (departmentField !== null) departmentField.value = '';
   if (teamLeadField !== null) teamLeadField.value = '';
   if (membersField !== null) membersField.value = '';
   if (machinesField !== null) machinesField.value = '';
-  // Reset to active state (isActive=1, isArchived=0)
+  // Reset to active state (isActive=1)
   if (isActiveField !== null) isActiveField.value = '1';
-  if (isArchivedField !== null) isArchivedField.value = '0';
 }
 
 /**

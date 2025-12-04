@@ -291,7 +291,7 @@ class EmployeesManager {
   private initCustomDropdowns(): void {
     // Initialize all dropdowns (position, status, availability status, department, team)
     this.initDropdown('position-dropdown', 'position-trigger', 'position-menu', 'employee-position');
-    // Status dropdown uses special mapping (isActive + isArchived)
+    // Status dropdown uses unified isActive mapping
     this.initStatusDropdown();
     this.initDropdown(
       'availability-status-dropdown',
@@ -371,22 +371,22 @@ class EmployeesManager {
   }
 
   /**
-   * Initialize status dropdown with isActive/isArchived mapping
+   * Initialize status dropdown with unified isActive mapping (2025-12-02)
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
    */
   private initStatusDropdown(): void {
     const trigger = $$id('status-trigger');
     const menu = $$id('status-menu');
     const dropdown = $$id('status-dropdown');
     const isActiveInput = $$id('employee-is-active') as HTMLInputElement | null;
-    const isArchivedInput = $$id('employee-is-archived') as HTMLInputElement | null;
 
     if (trigger === null || menu === null || dropdown === null) {
       console.warn('[initStatusDropdown] Status dropdown elements not found');
       return;
     }
 
-    if (isActiveInput === null || isArchivedInput === null) {
-      console.warn('[initStatusDropdown] Status hidden inputs not found');
+    if (isActiveInput === null) {
+      console.warn('[initStatusDropdown] Status hidden input not found');
       return;
     }
 
@@ -409,19 +409,17 @@ class EmployeesManager {
       const value = option.dataset['value'] ?? '';
       const badge = option.querySelector('.badge');
 
-      // Map UI value to DB fields (isActive + isArchived)
+      // Map UI value to unified isActive status
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       switch (value) {
         case 'active':
           isActiveInput.value = '1';
-          isArchivedInput.value = '0';
           break;
         case 'inactive':
           isActiveInput.value = '0';
-          isArchivedInput.value = '0';
           break;
         case 'archived':
-          isActiveInput.value = '0';
-          isArchivedInput.value = '1';
+          isActiveInput.value = '3';
           break;
       }
 
@@ -446,20 +444,22 @@ class EmployeesManager {
     });
   }
 
+  /**
+   * Filter employees by unified isActive status (2025-12-02)
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+   */
   private filterByStatus(employees: Employee[]): Employee[] {
     switch (this.currentFilter) {
       case 'active':
-        // Show only active AND not archived
-        return employees.filter((emp) => emp.isActive && !emp.isArchived);
+        return employees.filter((emp) => emp.isActive === 1);
       case 'inactive':
-        // Show only inactive AND not archived
-        return employees.filter((emp) => !emp.isActive && !emp.isArchived);
+        return employees.filter((emp) => emp.isActive === 0);
       case 'archived':
-        // Show only archived (regardless of isActive)
-        return employees.filter((emp) => emp.isArchived);
+        return employees.filter((emp) => emp.isActive === 3);
       case 'all':
       default:
-        return employees;
+        // Show all except deleted (isActive !== 4)
+        return employees.filter((emp) => emp.isActive !== 4);
     }
   }
 
@@ -567,7 +567,6 @@ class EmployeesManager {
           role: user.role,
           tenantId: user.tenantId,
           isActive: user.isActive,
-          isArchived: false, // Default to false
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
 

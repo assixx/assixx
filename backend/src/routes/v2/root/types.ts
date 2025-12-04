@@ -5,6 +5,7 @@
 
 // Admin User Types
 // REMOVED: company column dropped (2025-11-27)
+// UPDATED: isArchived removed, using is_active status (2025-12-02)
 export interface AdminUser {
   id: number;
   username: string;
@@ -14,8 +15,7 @@ export interface AdminUser {
   notes?: string;
   position?: string;
   employeeNumber?: string;
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenantId: number;
   tenantName?: string;
   createdAt: Date;
@@ -43,6 +43,7 @@ export interface CreateAdminRequest {
  * Update Admin Request
  * IMPORTANT: username is optional and IGNORED - when email changes, username is auto-synced
  * REMOVED: company column dropped (2025-11-27)
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export interface UpdateAdminRequest {
   username?: string; // Optional and IGNORED - will be synced from email in service
@@ -51,8 +52,7 @@ export interface UpdateAdminRequest {
   firstName?: string;
   lastName?: string;
   notes?: string;
-  isActive?: boolean;
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeNumber?: string;
   position?: string;
 }

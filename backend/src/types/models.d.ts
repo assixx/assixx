@@ -9,8 +9,7 @@ export interface User {
   role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   departmentId: number | null;
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   profilePicture: string | null;
   phoneNumber: string | null;
   landline: string | null;
@@ -33,8 +32,7 @@ export interface DatabaseUser {
   role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   department_id: number | null;
-  is_active: boolean;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   profile_picture: string | null;
   phone_number: string | null;
   landline: string | null;
@@ -86,7 +84,7 @@ export interface Document {
   mimeType: string;
   description: string | null;
   tags: string | null;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,7 +100,7 @@ export interface DatabaseDocument {
   mime_type: string;
   description: string | null;
   tags: string | null;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   created_at: Date;
   updated_at: Date;
 }
@@ -182,7 +180,7 @@ export interface ChatMessage {
   type: 'text' | 'file' | 'image' | 'system';
   attachmentUrl: string | null;
   isEdited: boolean;
-  isDeleted: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   readBy: string | null;
   createdAt: Date;
   updatedAt: Date;

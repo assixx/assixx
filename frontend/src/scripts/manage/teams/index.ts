@@ -293,27 +293,27 @@ class TeamsManager {
 
   /**
    * Filter teams by status and search term
+   * UPDATED: Using unified isActive status (2025-12-02)
+   * Status: 0=inactive, 1=active, 3=archived, 4=deleted
    */
   private filterTeams(): Team[] {
     let filtered = this.teams;
 
-    // Filter by status
+    // Filter by unified isActive status
     switch (this.currentFilter) {
       case 'active':
-        // Show only active AND not archived
-        filtered = filtered.filter((team) => team.status === 'active' && team.isArchived !== true);
+        filtered = filtered.filter((team) => team.isActive === 1);
         break;
       case 'inactive':
-        // Show only inactive AND not archived
-        filtered = filtered.filter((team) => team.status === 'inactive' && team.isArchived !== true);
+        filtered = filtered.filter((team) => team.isActive === 0);
         break;
       case 'archived':
-        // Show only archived (regardless of status)
-        filtered = filtered.filter((team) => team.isArchived === true);
+        filtered = filtered.filter((team) => team.isActive === 3);
         break;
       case 'all':
       default:
-        // Show all
+        // Show all except deleted (isActive !== 4)
+        filtered = filtered.filter((team) => team.isActive !== 4);
         break;
     }
 

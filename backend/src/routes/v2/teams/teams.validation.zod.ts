@@ -72,13 +72,18 @@ export const CreateTeamBodySchema = z.object({
     .min(2, 'Team name must be at least 2 characters')
     .max(100, 'Team name must not exceed 100 characters'),
   description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
-  departmentId: z.number().int().positive('Department ID must be a positive integer').optional(),
-  leaderId: z.number().int().positive('Leader ID must be a positive integer').optional(),
+  departmentId: z.coerce
+    .number()
+    .int()
+    .positive('Department ID must be a positive integer')
+    .optional(),
+  leaderId: z.coerce.number().int().positive('Leader ID must be a positive integer').optional(),
 });
 
 /**
  * Update team request body (all fields optional)
  * Supports nullable values for departmentId and leaderId
+ * UPDATED: isArchived and status removed, using isActive status (2025-12-02)
  */
 export const UpdateTeamBodySchema = z.object({
   name: z
@@ -93,33 +98,34 @@ export const UpdateTeamBodySchema = z.object({
     .max(500, 'Description must be null or a string with max 500 characters')
     .nullable()
     .optional(),
-  departmentId: z
+  departmentId: z.coerce
     .number()
     .int()
     .positive('Department ID must be a positive integer')
     .nullable()
     .optional(),
-  leaderId: z.number().int().positive('Leader ID must be a positive integer').nullable().optional(),
-  status: z
-    .enum(['active', 'inactive'], {
-      message: 'Status must be either "active" or "inactive"',
-    })
+  leaderId: z.coerce
+    .number()
+    .int()
+    .positive('Leader ID must be a positive integer')
+    .nullable()
     .optional(),
-  isArchived: z.boolean().optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 
 /**
  * Add member request body
  */
 export const AddMemberBodySchema = z.object({
-  userId: z.number().int().positive('User ID must be a positive integer'),
+  userId: z.coerce.number().int().positive('User ID must be a positive integer'),
 });
 
 /**
  * Add machine request body
  */
 export const AddMachineBodySchema = z.object({
-  machineId: z.number().int().positive('Machine ID must be a positive integer'),
+  machineId: z.coerce.number().int().positive('Machine ID must be a positive integer'),
 });
 
 // ============================================================

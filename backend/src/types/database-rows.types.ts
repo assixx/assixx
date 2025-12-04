@@ -66,8 +66,7 @@ export interface UsersRow extends RowDataPacket {
   emergency_contact: string | null;
   editable_fields: object | null;
   notification_preferences: object | null;
-  is_active: number; // tinyint(1) - 0 or 1
-  is_archived: number; // tinyint(1) - 0 or 1
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   last_login: Date | string | null;
   password_reset_token: string | null;
   password_reset_expires: Date | string | null;
@@ -75,7 +74,6 @@ export interface UsersRow extends RowDataPacket {
   two_factor_enabled: number; // tinyint(1) - 0 or 1
   created_at: Date | string;
   updated_at: Date | string;
-  archived_at: Date | string | null;
   created_by: number | null;
   availability_status: 'available' | 'unavailable' | 'vacation' | 'sick';
   availability_start: Date | string | null;
@@ -194,9 +192,8 @@ export interface DocumentsRow extends RowDataPacket {
   month: string | null;
   tags: object | null;
   is_public: boolean; // tinyint(1)
-  is_archived: number; // tinyint(1)
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   uploaded_at: Date | string;
-  archived_at: Date | string | null;
   expires_at: Date | string | null;
   created_by: number | null;
 }
@@ -546,8 +543,7 @@ export interface ChatChannelsRow extends RowDataPacket {
   target_id: number | null;
   created_by: number;
   tenant_id: number;
-  is_archived: number; // tinyint(1)
-  archived_at: Date | string | null;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   created_at: Date | string;
   updated_at: Date | string;
 }
@@ -565,8 +561,7 @@ export interface ChatMessagesRow extends RowDataPacket {
   reply_to_id: number | null;
   is_edited: number; // tinyint(1)
   edited_at: Date | string | null;
-  is_deleted: number; // tinyint(1)
-  deleted_at: Date | string | null;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   is_pinned: number; // tinyint(1)
   tenant_id: number;
   created_at: Date | string;

@@ -97,22 +97,12 @@
                   </div>
                 </div>
 
-                <!-- Quick Stats -->
+                <!-- Quick Stats - populated by JavaScript (toolbar.ts) -->
                 <div id="quick-stats" class="flex items-center gap-6 mt-3 text-sm">
-                  <div class="flex items-center gap-2">
-                    <i class="fas fa-file text-[var(--color-primary)]"></i>
-                    <span class="text-[var(--color-text-secondary)]">Gesamt:</span>
-                    <span class="font-semibold" id="stat-total">0</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <i class="fas fa-bell text-[var(--color-warning)]"></i>
-                    <span class="text-[var(--color-text-secondary)]">Ungelesen:</span>
-                    <span class="font-semibold" id="stat-unread">0</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <i class="fas fa-clock text-[var(--color-info)]"></i>
-                    <span class="text-[var(--color-text-secondary)]">Diese Woche:</span>
-                    <span class="font-semibold" id="stat-recent">0</span>
+                  <!-- Loading placeholder - replaced by JS immediately -->
+                  <div class="animate-pulse flex items-center gap-2">
+                    <div class="w-5 h-5 bg-[var(--background-tertiary)] rounded"></div>
+                    <div class="w-24 h-4 bg-[var(--background-tertiary)] rounded"></div>
                   </div>
                 </div>
               </div>
@@ -122,59 +112,13 @@
               <div class="flex h-[600px]">
                 <!-- Left Sidebar: Folder Navigation -->
                 <div class="w-64 bg-[var(--background-secondary)] border-r border-[var(--border-color)]">
-                  <!-- Folder Tree -->
+                  <!-- Folder Tree - populated by JavaScript (sidebar.ts) -->
                   <nav id="folder-tree" class="p-2">
-                    <!-- Will be populated by JavaScript -->
-                    <!-- Nav Items mit Design System Struktur wie in Unified Navigation -->
-                    <div class="nav-item folder-item" data-category="all">
-                      <div class="nav-item__content">
-                        <i class="fas fa-folder nav-item__icon"></i>
-                        <span class="nav-item__label">Alle Dokumente</span>
-                        <span class="badge badge--primary ml-auto">0</span>
-                      </div>
-                    </div>
-                    <div class="nav-item folder-item" data-category="personal">
-                      <div class="nav-item__content">
-                        <i class="fas fa-user nav-item__icon"></i>
-                        <span class="nav-item__label">Persönlich</span>
-                        <span class="badge badge--error ml-auto">0</span>
-                      </div>
-                    </div>
-                    <div class="nav-item folder-item" data-category="team">
-                      <div class="nav-item__content">
-                        <i class="fas fa-users nav-item__icon"></i>
-                        <span class="nav-item__label">Team</span>
-                        <span class="badge badge--error ml-auto">0</span>
-                      </div>
-                    </div>
-                    <div class="nav-item folder-item" data-category="department">
-                      <div class="nav-item__content">
-                        <i class="fas fa-building nav-item__icon"></i>
-                        <span class="nav-item__label">Abteilung</span>
-                        <span class="badge badge--error ml-auto">0</span>
-                      </div>
-                    </div>
-                    <div class="nav-item folder-item" data-category="company">
-                      <div class="nav-item__content">
-                        <i class="fas fa-briefcase nav-item__icon"></i>
-                        <span class="nav-item__label">Firma</span>
-                        <span class="badge badge--error ml-auto">0</span>
-                      </div>
-                    </div>
-                    <div class="nav-item folder-item" data-category="payroll">
-                      <div class="nav-item__content">
-                        <i class="fas fa-money-bill-wave nav-item__icon"></i>
-                        <span class="nav-item__label">Gehaltsabrechnungen</span>
-                        <span class="badge badge--error ml-auto">0</span>
-                      </div>
-                    </div>
-                    <!-- NEW 2025-11-24: Blackboard attachments folder -->
-                    <div class="nav-item folder-item" data-category="blackboard">
-                      <div class="nav-item__content">
-                        <i class="fas fa-clipboard-list nav-item__icon"></i>
-                        <span class="nav-item__label">Schwarzes Brett</span>
-                        <span class="badge badge--error ml-auto" id="blackboard-count">0</span>
-                      </div>
+                    <!-- Loading placeholder - replaced by JS immediately -->
+                    <div class="animate-pulse space-y-2">
+                      <div class="h-8 bg-[var(--background-tertiary)] rounded"></div>
+                      <div class="h-8 bg-[var(--background-tertiary)] rounded"></div>
+                      <div class="h-8 bg-[var(--background-tertiary)] rounded"></div>
                     </div>
                   </nav>
                 </div>
@@ -233,7 +177,8 @@
     </div>
 
     <!-- Document Preview Modal -->
-    <div id="preview-modal" class="modal-overlay">
+    <!-- hidden by default to prevent FOUC (Flash of Unstyled Content) -->
+    <div id="preview-modal" class="modal-overlay hidden">
       <div class="ds-modal ds-modal--xl">
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">
@@ -294,7 +239,8 @@
     </div>
 
     <!-- Upload Modal (Admin/Root Only) -->
-    <div id="upload-modal" class="modal-overlay">
+    <!-- hidden by default to prevent FOUC (Flash of Unstyled Content) -->
+    <div id="upload-modal" class="modal-overlay hidden">
       <div class="ds-modal ds-modal--lg">
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">

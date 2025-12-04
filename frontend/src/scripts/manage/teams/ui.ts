@@ -28,25 +28,23 @@ function escapeHtml(text: string): string {
 
 /**
  * Update status hidden inputs based on status value
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 function updateTeamStatusInputs(value: string): void {
   const isActiveInput = document.querySelector<HTMLInputElement>('#team-is-active');
-  const isArchivedInput = document.querySelector<HTMLInputElement>('#team-is-archived');
 
-  if (isActiveInput === null || isArchivedInput === null) return;
+  if (isActiveInput === null) return;
 
   switch (value) {
     case 'inactive':
       isActiveInput.value = '0';
-      isArchivedInput.value = '0';
       break;
     case 'archived':
-      isActiveInput.value = '0';
-      isArchivedInput.value = '1';
+      isActiveInput.value = '3';
       break;
     default: // active
       isActiveInput.value = '1';
-      isArchivedInput.value = '0';
   }
 }
 
@@ -155,30 +153,39 @@ export function toggleTableVisibility(
 }
 
 /**
- * Get status badge class (Design System BEM naming)
+ * Get status badge class from unified isActive (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-export function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'active':
+export function getStatusBadgeClass(isActive: 0 | 1 | 3 | 4): string {
+  switch (isActive) {
+    case 1:
       return 'badge--success';
-    case 'inactive':
+    case 0:
       return 'badge--warning';
-    default:
+    case 3:
+      return 'badge--secondary';
+    case 4:
       return 'badge--error';
+    default:
+      return 'badge--secondary';
   }
 }
 
 /**
- * Get status label
+ * Get status label from unified isActive (2025-12-02)
  */
-export function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'active':
+export function getStatusLabel(isActive: 0 | 1 | 3 | 4): string {
+  switch (isActive) {
+    case 1:
       return 'Aktiv';
-    case 'inactive':
+    case 0:
       return 'Inaktiv';
+    case 3:
+      return 'Archiviert';
+    case 4:
+      return 'Gelöscht';
     default:
-      return status;
+      return 'Unbekannt';
   }
 }
 
@@ -218,8 +225,8 @@ function createTeamActionButtons(team: Team): string {
 export function createTeamRow(team: Team): string {
   const memberCount = team.memberCount ?? 0;
   const machineCount = team.machineCount ?? 0;
-  const statusBadge = getStatusBadgeClass(team.status);
-  const statusLabel = getStatusLabel(team.status);
+  const statusBadge = getStatusBadgeClass(team.isActive);
+  const statusLabel = getStatusLabel(team.isActive);
 
   return `
     <tr data-team-id="${team.id}">
@@ -336,7 +343,7 @@ export function populateTeamForm(team: Team): void {
   if (statusTrigger) {
     setSafeHTML(
       statusTrigger,
-      `<span class="badge ${getStatusBadgeClass(team.status)}">${getStatusLabel(team.status)}</span>`,
+      `<span class="badge ${getStatusBadgeClass(team.isActive)}">${getStatusLabel(team.isActive)}</span>`,
     );
   }
 
@@ -674,7 +681,7 @@ export function setupDropdownListeners(): void {
     });
   });
 
-  // Status dropdown - Maps UI values to DB fields (isActive + isArchived)
+  // Status dropdown - Maps UI values to unified isActive (0=inactive, 1=active, 3=archived)
   document.querySelectorAll('#status-menu .dropdown__option').forEach((option) => {
     option.addEventListener('click', () => {
       handleStatusOptionClick(option as HTMLElement);

@@ -49,8 +49,7 @@ function buildUpdateRequest(body: UpdateAreaBody): UpdateAreaRequest {
   if (body.type !== undefined) data.type = body.type;
   if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
   if (body.address !== undefined) data.address = body.address;
-  if (body.isActive !== undefined) data.isActive = body.isActive;
-  if (body.isArchived !== undefined) data.isArchived = body.isArchived;
+  if (body.isActive !== undefined) data.isActive = body.isActive; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   return data;
 }
 

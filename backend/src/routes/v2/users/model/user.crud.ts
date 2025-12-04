@@ -4,7 +4,6 @@
  */
 import { ResultSetHeader, query as executeQuery } from '../../../../utils/db.js';
 import { logger } from '../../../../utils/logger.js';
-import { normalizeMySQLBoolean } from '../../../../utils/typeHelpers.js';
 import { autoResetExpiredAvailability } from './user.availability.js';
 import { DbUser, UserCreateData, UserFilter } from './user.types.js';
 import {
@@ -37,15 +36,17 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   // N:M REFACTORING: department_id removed - departments assigned via user_departments table
   // Root users get has_full_access = true for full tenant access
   // REMOVED: company and iban columns dropped (2025-11-27)
+  // POSTGRESQL: RETURNING id is REQUIRED to get the inserted ID
   const query = `
     INSERT INTO users (
       username, email, password, role, notes,
       first_name, last_name, age, employee_id, employee_number,
       position, phone, address, date_of_birth,
       hire_date, emergency_contact, profile_picture,
-      is_archived, is_active, has_full_access, tenant_id
+      is_active, has_full_access, tenant_id
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+    RETURNING id
   `;
 
   try {
@@ -56,12 +57,17 @@ export async function createUser(userData: UserCreateData): Promise<number> {
       hashedPassword,
       finalEmployeeId,
     );
+    // POSTGRESQL: db.ts extracts insertId from RETURNING id into ResultSetHeader
     const [result] = await executeQuery<ResultSetHeader>(query, queryParams);
-    logger.info(`User created successfully with ID: ${result.insertId}`);
+    const insertedId = result.insertId;
+    if (insertedId === 0) {
+      throw new Error('Failed to get inserted user ID from database');
+    }
+    logger.info(`User created successfully with ID: ${insertedId}`);
 
-    await updateTemporaryEmployeeId(result.insertId, tenantId, role, employeeId, finalEmployeeId);
+    await updateTemporaryEmployeeId(insertedId, tenantId, role, employeeId, finalEmployeeId);
 
-    return result.insertId;
+    return insertedId;
   } catch (error: unknown) {
     logger.error(`Error creating user: ${(error as Error).message}`);
     throw error;
@@ -85,9 +91,6 @@ export async function findUserByUsername(username: string): Promise<DbUser | und
       return undefined;
     }
 
-    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    row.is_active = normalizeMySQLBoolean(row.is_active);
-    row.is_archived = normalizeMySQLBoolean(row.is_archived);
     return row;
   } catch (error: unknown) {
     console.error('[DEBUG] findByUsername error:', error);
@@ -154,9 +157,6 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
       return undefined;
     }
 
-    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    row.is_active = normalizeMySQLBoolean(row.is_active);
-    row.is_archived = normalizeMySQLBoolean(row.is_archived);
     return row;
   } catch (error: unknown) {
     logger.error(`Error finding user by ID: ${(error as Error).message}`);
@@ -188,7 +188,7 @@ export async function findUsersByRole(
         SELECT u.id, u.username, u.email, u.role, u.tenant_id,
         u.first_name, u.last_name, u.created_at,
         ud.department_id as primary_department_id,
-        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.is_archived,
+        u.position, u.phone, u.landline, u.employee_number, u.profile_picture,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
         u.has_full_access,
@@ -212,17 +212,14 @@ export async function findUsersByRole(
     const params: unknown[] = [role, tenantId];
 
     if (!includeArchived) {
-      query += ` AND u.is_archived = false`;
+      // is_active: 0=inactive, 1=active, 3=archived, 4=deleted
+      // Exclude archived (3) and deleted (4) users
+      query += ` AND u.is_active IN (0, 1)`;
     }
 
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
-    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    return rows.map((row: DbUser) => ({
-      ...row,
-      is_active: normalizeMySQLBoolean(row.is_active),
-      is_archived: normalizeMySQLBoolean(row.is_archived),
-    }));
+    return rows;
   } catch (error: unknown) {
     logger.error(`Error finding users by role: ${(error as Error).message}`);
     throw error;
@@ -237,7 +234,9 @@ export async function findUserByEmail(
   tenantId?: number,
 ): Promise<DbUser | undefined> {
   try {
-    let query = 'SELECT * FROM users WHERE email = $1 AND is_archived = false';
+    // is_active: 0=inactive, 1=active, 3=archived, 4=deleted
+    // Only find non-archived, non-deleted users
+    let query = 'SELECT * FROM users WHERE email = $1 AND is_active IN (0, 1)';
     const params: (string | number)[] = [email];
 
     if (tenantId !== undefined) {
@@ -252,9 +251,6 @@ export async function findUserByEmail(
       return undefined;
     }
 
-    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    row.is_active = normalizeMySQLBoolean(row.is_active);
-    row.is_archived = normalizeMySQLBoolean(row.is_archived);
     return row;
   } catch (error: unknown) {
     logger.error(`Error finding user by email: ${(error as Error).message}`);
@@ -291,6 +287,7 @@ export async function updateUser(
     // Define allowed fields for update to prevent SQL injection
     // N:M REFACTORING: department_id removed - departments managed via user_departments table
     // REMOVED: company and iban columns dropped (2025-11-27)
+    // REMOVED: is_archived - now unified into is_active (0=inactive, 1=active, 3=archived, 4=deleted)
     const allowedFields: readonly (keyof UserCreateData)[] = [
       'username',
       'email',
@@ -311,8 +308,7 @@ export async function updateUser(
       'hire_date',
       'emergency_contact',
       'profile_picture',
-      'is_archived',
-      'is_active',
+      'is_active', // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       'last_login', // Track last successful login timestamp
       'availability_status',
       'availability_start',
@@ -368,7 +364,7 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
     const baseQuery = `
         SELECT u.id, u.username, u.email, u.role,
         u.first_name, u.last_name, u.employee_id, u.created_at,
-        ud.department_id as primary_department_id, u.position, u.phone, u.landline, u.employee_number, u.is_archived,
+        ud.department_id as primary_department_id, u.position, u.phone, u.landline, u.employee_number,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
         u.has_full_access,
@@ -401,12 +397,7 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
 
     const [rows] = await executeQuery<DbUser[]>(query, values);
 
-    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    return rows.map((row: DbUser) => ({
-      ...row,
-      is_active: normalizeMySQLBoolean(row.is_active),
-      is_archived: normalizeMySQLBoolean(row.is_archived),
-    }));
+    return rows;
   } catch (error: unknown) {
     logger.error(`Error searching users: ${(error as Error).message}`);
     throw error;
@@ -415,28 +406,31 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
 
 /**
  * Archive a user
+ * Sets is_active = 3 (archived)
  */
 export async function archiveUser(
   userId: number,
   tenantId: number, // SECURITY FIX: Made tenantId mandatory
 ): Promise<boolean> {
   logger.info(`Archiving user ${userId}`);
-  return await updateUser(userId, { is_archived: true }, tenantId);
+  return await updateUser(userId, { is_active: 3 }, tenantId); // 3 = archived
 }
 
 /**
  * Unarchive a user
+ * Sets is_active = 1 (active)
  */
 export async function unarchiveUser(
   userId: number,
   tenantId: number, // SECURITY FIX: Made tenantId mandatory
 ): Promise<boolean> {
   logger.info(`Unarchiving user ${userId}`);
-  return await updateUser(userId, { is_archived: false }, tenantId);
+  return await updateUser(userId, { is_active: 1 }, tenantId); // 1 = active
 }
 
 /**
  * Find all archived users
+ * Finds users with is_active = 3 (archived)
  */
 export async function findArchivedUsers(
   tenantId: number, // SECURITY FIX: Added mandatory tenantId parameter
@@ -454,7 +448,7 @@ export async function findArchivedUsers(
         FROM users u
         LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
         LEFT JOIN departments d ON ud.department_id = d.id
-        WHERE u.is_archived = true AND u.tenant_id = $1
+        WHERE u.is_active = 3 AND u.tenant_id = $1
       `;
 
     const params: unknown[] = [tenantId];
@@ -495,12 +489,7 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
 
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
-    // Normalize boolean fields
-    return rows.map((row: DbUser) => ({
-      ...row,
-      is_active: normalizeMySQLBoolean(row.is_active),
-      is_archived: normalizeMySQLBoolean(row.is_archived),
-    }));
+    return rows;
   } catch (error: unknown) {
     logger.error(`Error finding all users: ${(error as Error).message}`);
     throw error;
@@ -522,12 +511,7 @@ export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> 
       [tenantId],
     );
 
-    // Normalize boolean fields
-    return rows.map((row: DbUser) => ({
-      ...row,
-      is_active: normalizeMySQLBoolean(row.is_active),
-      is_archived: normalizeMySQLBoolean(row.is_archived),
-    }));
+    return rows;
   } catch (error: unknown) {
     logger.error(`Error finding users by tenant: ${(error as Error).message}`);
     throw error;

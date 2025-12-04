@@ -122,7 +122,7 @@ async function createRootUser(
 
 async function assignBasicPlan(connection: PoolConnection, tenantId: number): Promise<void> {
   const [plans] = await connection.query<IdResult[]>(
-    'SELECT id FROM plans WHERE code = $1 AND is_active = true',
+    'SELECT id FROM plans WHERE code = $1 AND is_active = 1',
     ['basic'],
   );
 

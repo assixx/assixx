@@ -199,11 +199,11 @@ function handleSaveError(error: unknown): void {
 
 /**
  * Get form values
+ * UPDATED: Using unified isActive status (2025-12-02)
  */
 function getFormValues(): FormValues {
-  // Read from hidden inputs (set by status dropdown)
+  // Read from hidden input (set by status dropdown)
   const isActiveValue = ($('#root-is-active') as HTMLInputElement).value;
-  const isArchivedValue = ($('#root-is-archived') as HTMLInputElement).value;
 
   return {
     firstName: ($('#root-first-name') as HTMLInputElement).value,
@@ -216,8 +216,7 @@ function getFormValues(): FormValues {
     notes: ($('#root-notes') as HTMLTextAreaElement | null)?.value ?? '',
     employeeNumber: ($$(SELECTORS.ROOT_EMPLOYEE_NUMBER) as HTMLInputElement | null)?.value ?? '',
     // N:M REFACTORING: departmentId removed - Root users have has_full_access=1
-    isActive: isActiveValue === '1',
-    isArchived: isArchivedValue === '1',
+    isActive: Number.parseInt(isActiveValue, 10) as 0 | 1 | 3 | 4,
   };
 }
 
@@ -373,14 +372,14 @@ function generateUsernameFromEmail(email: string): string {
  * Build user data for API request
  */
 function buildUserData(values: FormValues, isEdit: boolean): Record<string, unknown> {
+  // UPDATED: Using unified isActive status (2025-12-02)
   const userData: Record<string, unknown> = {
     firstName: values.firstName,
     lastName: values.lastName,
     email: values.email,
     position: values.position,
     notes: values.notes,
-    isActive: values.isActive,
-    isArchived: values.isArchived,
+    isActive: values.isActive, // Unified status: 0=inactive, 1=active, 3=archived, 4=deleted
   };
 
   if (values.employeeNumber !== '') {
@@ -557,32 +556,34 @@ function setPositionValue(position: string): void {
 
 /**
  * Set status dropdown value and display
+ * UPDATED: Using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-function setStatusDropdownValue(isActive: boolean | number, isArchived: boolean | number | undefined): void {
+function setStatusDropdownValue(isActive: 0 | 1 | 3 | 4): void {
   const isActiveInput = $('#root-is-active') as HTMLInputElement;
-  const isArchivedInput = $('#root-is-archived') as HTMLInputElement;
   const statusTrigger = $('#status-trigger');
   const statusTriggerSpan = statusTrigger.querySelector('span');
 
-  // Determine status: archived takes precedence, then active/inactive
+  // Determine status from unified isActive
   let statusValue: 'active' | 'inactive' | 'archived';
   let badgeHtml: string;
 
-  if (isArchived === true || isArchived === 1) {
-    statusValue = 'archived';
-    badgeHtml = '<span class="badge badge--error">Archiviert</span>';
-    isActiveInput.value = '0';
-    isArchivedInput.value = '1';
-  } else if (isActive === true || isActive === 1) {
-    statusValue = 'active';
-    badgeHtml = '<span class="badge badge--success">Aktiv</span>';
-    isActiveInput.value = '1';
-    isArchivedInput.value = '0';
-  } else {
-    statusValue = 'inactive';
-    badgeHtml = '<span class="badge badge--warning">Inaktiv</span>';
-    isActiveInput.value = '0';
-    isArchivedInput.value = '0';
+  switch (isActive) {
+    case 3:
+      statusValue = 'archived';
+      badgeHtml = '<span class="badge badge--secondary">Archiviert</span>';
+      isActiveInput.value = '3';
+      break;
+    case 1:
+      statusValue = 'active';
+      badgeHtml = '<span class="badge badge--success">Aktiv</span>';
+      isActiveInput.value = '1';
+      break;
+    case 0:
+    default:
+      statusValue = 'inactive';
+      badgeHtml = '<span class="badge badge--warning">Inaktiv</span>';
+      isActiveInput.value = '0';
   }
 
   // Update trigger display
@@ -602,8 +603,9 @@ function setStatusDropdownValue(isActive: boolean | number, isArchived: boolean 
 
 /**
  * Configure form for edit mode
+ * UPDATED: Using unified isActive status (2025-12-02)
  */
-function configureEditMode(isActive: boolean | number, isArchived?: boolean | number): void {
+function configureEditMode(isActive: 0 | 1 | 3 | 4): void {
   // Show email/password fields in edit mode (Root can change them)
   $('#password-group').classList.remove('u-hidden');
   $('#password-confirm-group').classList.remove('u-hidden');
@@ -622,7 +624,7 @@ function configureEditMode(isActive: boolean | number, isArchived?: boolean | nu
   // Show status group and set dropdown value
   const activeStatusGroup = $('#active-status-group');
   activeStatusGroup.classList.remove('u-hidden');
-  setStatusDropdownValue(isActive, isArchived);
+  setStatusDropdownValue(isActive);
 }
 
 /**
@@ -650,7 +652,7 @@ export function editRootUserHandler(userId: number): void {
     setPositionValue(user.position);
   }
 
-  configureEditMode(user.isActive, user.isArchived);
+  configureEditMode(user.isActive);
 
   const modal = $('#root-modal');
   modal.classList.add(CSS_CLASSES.MODAL_ACTIVE);
@@ -696,26 +698,25 @@ function getStatusBadgeHtml(value: string): string {
   }
 }
 
-/** Handle status dropdown option selection */
+/**
+ * Handle status dropdown option selection
+ * UPDATED: Using unified isActive status (2025-12-02)
+ */
 function handleStatusOptionSelect(
   value: string,
   triggerSpan: HTMLElement | null,
   isActiveInput: HTMLInputElement,
-  isArchivedInput: HTMLInputElement,
 ): void {
-  // Map UI value to DB fields
+  // Map UI value to unified isActive status
   switch (value) {
     case 'inactive':
       isActiveInput.value = '0';
-      isArchivedInput.value = '0';
       break;
     case 'archived':
-      isActiveInput.value = '0';
-      isArchivedInput.value = '1';
+      isActiveInput.value = '3';
       break;
     default: // active
       isActiveInput.value = '1';
-      isArchivedInput.value = '0';
   }
 
   if (triggerSpan !== null) {
@@ -724,13 +725,13 @@ function handleStatusOptionSelect(
 }
 
 /**
- * Setup status dropdown with isActive/isArchived mapping
+ * Setup status dropdown with unified isActive mapping (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function setupStatusDropdown(): void {
   const trigger = $('#status-trigger');
   const menu = $('#status-menu');
   const isActiveInput = $('#root-is-active') as HTMLInputElement;
-  const isArchivedInput = $('#root-is-archived') as HTMLInputElement;
 
   trigger.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -743,7 +744,7 @@ export function setupStatusDropdown(): void {
     if (option === null || !(option instanceof HTMLElement)) return;
 
     const value = getData(option, 'value') ?? '';
-    handleStatusOptionSelect(value, trigger.querySelector<HTMLElement>('span'), isActiveInput, isArchivedInput);
+    handleStatusOptionSelect(value, trigger.querySelector<HTMLElement>('span'), isActiveInput);
 
     menu.querySelectorAll('.dropdown__option').forEach((opt) => {
       opt.classList.remove('selected');

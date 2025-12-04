@@ -28,6 +28,10 @@ export interface TeamMember {
   employeeId?: string;
 }
 
+/**
+ * UPDATED: isArchived removed, using unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
+ */
 export interface Team {
   id: number;
   name: string;
@@ -44,14 +48,13 @@ export interface Team {
   machineNames?: string;
   maxMembers?: number;
   teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
-  status: 'active' | 'inactive' | 'restructuring';
-  isArchived?: boolean;
+  status?: 'active' | 'inactive' | 'restructuring'; // Legacy - prefer isActive
   foundedDate?: string;
   costCenter?: string;
   budget?: number;
   performanceScore?: number;
   notes?: string;
-  isActive?: boolean;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   createdAt: string;
   updatedAt: string;
   members?: TeamMember[];

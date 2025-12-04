@@ -80,12 +80,10 @@ export const ListDocumentsQuerySchema = PaginationSchema.extend({
       : val,
     z.number().int().min(1).max(12).optional(),
   ),
-  isArchived: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  isActive: z.preprocess(
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    z.number().int().min(0).max(4).optional(),
   ),
   search: z
     .string()

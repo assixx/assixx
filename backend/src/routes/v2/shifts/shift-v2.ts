@@ -529,8 +529,11 @@ export async function deleteShift(id: number, tenantId: number): Promise<void> {
       throw new Error('Failed to check assignments');
     }
     if (assignment.count > 0) {
-      // Delete assignments first
-      await executeQuery('DELETE FROM shift_assignments WHERE shift_id = $1', [id]);
+      // Delete assignments first (with tenant isolation)
+      await executeQuery('DELETE FROM shift_assignments WHERE shift_id = $1 AND tenant_id = $2', [
+        id,
+        tenantId,
+      ]);
     }
 
     // Delete the shift
@@ -800,8 +803,8 @@ export async function updateSwapRequestStatus(
     // If approved, swap the shifts
     if (status === 'approved') {
       const [request] = await executeQuery<V2SwapRequestResult[]>(
-        'SELECT * FROM shift_swap_requests WHERE id = $1',
-        [id],
+        'SELECT * FROM shift_swap_requests WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId],
       );
 
       if (request.length === 0) {
@@ -812,10 +815,11 @@ export async function updateSwapRequestStatus(
         throw new Error('Swap request is undefined');
       }
       if (swapRequest.requested_with != null && swapRequest.requested_with !== 0) {
-        // Update the shift assignment
-        await executeQuery('UPDATE shifts SET user_id = $1 WHERE id = $2', [
+        // Update the shift assignment (with tenant isolation)
+        await executeQuery('UPDATE shifts SET user_id = $1 WHERE id = $2 AND tenant_id = $3', [
           swapRequest.requested_with,
           swapRequest.shift_id,
+          tenantId,
         ]);
       }
     }

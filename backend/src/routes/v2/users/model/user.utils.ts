@@ -104,14 +104,14 @@ export function buildUserQueryParams(
     hire_date: hireDate,
     emergency_contact: emergencyContact,
     profile_picture: profilePicture,
-    is_archived: isArchived = false,
-    is_active: isActive = true,
+    is_active: isActive = 1, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   } = userData;
 
   // Root users get full tenant access, others don't
   const hasFullAccess = role === 'root' ? 1 : 0;
 
   // REMOVED: company and iban from INSERT (2025-11-27)
+  // REMOVED: is_archived - now unified into is_active (2025-12-02)
   return [
     finalUsername,
     email,
@@ -131,7 +131,6 @@ export function buildUserQueryParams(
     hireDate,
     emergencyContact,
     profilePicture,
-    isArchived,
     isActive,
     hasFullAccess,
     userData.tenant_id,
@@ -158,17 +157,10 @@ export function processUpdateField(
   const paramIndex = values.length + 1;
   fields.push(`${key} = $${paramIndex}`);
 
-  // Special handling for boolean fields
-  if (key === 'is_active' || key === 'is_archived') {
-    logger.info(
-      `Special handling for ${key} field - received value: ${String(value)}, type: ${typeof value}`,
-    );
-    values.push(value === true ? 1 : 0);
-    logger.info(`${key} will be set to: ${value === true ? 1 : 0}`);
-  } else {
-    values.push(value);
-    logger.info(`Updating field ${key} to value: ${String(value)}`);
-  }
+  // is_active is now an INTEGER (0=inactive, 1=active, 3=archived, 4=deleted)
+  // No special boolean handling needed anymore
+  values.push(value);
+  logger.info(`Updating field ${key} to value: ${String(value)}`);
 }
 
 /** Search columns for user queries */
@@ -199,14 +191,20 @@ function isValidFilter(value: unknown): boolean {
  * Build filter conditions for user search query
  * N:M REFACTORING: department_id filter now uses user_departments table
  * PostgreSQL: Dynamic $N parameter numbering
+ * is_active: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export function buildFilterConditions(filters: UserFilter, values: unknown[]): string {
   const conditions: string[] = [];
 
-  // Archived filter (default: not archived)
-  const archivedParamIndex = values.length + 1;
-  conditions.push(`u.is_archived = $${archivedParamIndex}`);
-  values.push(filters.is_archived ?? false);
+  // is_active filter (default: show active and inactive, exclude archived and deleted)
+  if (filters.is_active !== undefined) {
+    const isActiveParamIndex = values.length + 1;
+    conditions.push(`u.is_active = $${isActiveParamIndex}`);
+    values.push(filters.is_active);
+  } else {
+    // Default: exclude archived (3) and deleted (4)
+    conditions.push(`u.is_active IN (0, 1)`);
+  }
 
   // Simple equality filters
   if (isValidFilter(filters.role)) {
@@ -235,7 +233,7 @@ export function buildFilterConditions(filters: UserFilter, values: unknown[]): s
     addSearchFilter(conditions, values, filters.search as string);
   }
 
-  return ` AND ${conditions.join(' AND ')}`;
+  return conditions.length > 0 ? ` AND ${conditions.join(' AND ')}` : '';
 }
 
 /**

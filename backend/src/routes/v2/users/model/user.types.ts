@@ -33,8 +33,7 @@ export interface DbUser extends RowDataPacket {
   hire_date?: Date;
   emergency_contact?: string;
   profile_picture?: string;
-  is_archived: boolean;
-  is_active?: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenant_id?: number;
   last_login?: Date;
   created_at?: Date;
@@ -83,8 +82,7 @@ export interface UserCreateData {
   hire_date?: Date;
   emergency_contact?: string;
   profile_picture?: string;
-  is_archived?: boolean;
-  is_active?: boolean;
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenant_id?: number;
   last_login?: Date; // Track last successful login timestamp
   availability_status?: string;
@@ -108,7 +106,7 @@ export interface UserDepartmentAssignment {
 export interface UserFilter {
   tenant_id: number; // PFLICHT für multi-tenant isolation!
   role?: string;
-  is_archived?: boolean;
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   department_id?: number; // Filters users who belong to this department (via user_departments)
   status?: string;
   search?: string;

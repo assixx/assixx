@@ -13,8 +13,7 @@ export interface Area {
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   address?: string;
-  is_active: boolean;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   created_by: number;
   created_at: Date;
   updated_at: Date;
@@ -41,14 +40,12 @@ export interface UpdateAreaRequest {
   type?: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   address?: string;
-  isActive?: boolean;
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 export interface AreaFilters {
   type?: string;
-  isActive?: boolean;
-  isArchived?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   search?: string;
 }
 

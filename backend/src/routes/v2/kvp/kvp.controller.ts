@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -54,7 +54,7 @@ function generateFileMetadata(file: Express.Multer.File): {
   checksum: string;
   extension: string;
 } {
-  const uuid = uuidv4();
+  const uuid = uuidv7();
   const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
   const extension = path.extname(file.originalname).toLowerCase();
 

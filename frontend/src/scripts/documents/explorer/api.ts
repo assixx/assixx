@@ -18,13 +18,19 @@ const API_BASE = '/api/v2';
 
 /**
  * Map backend response to frontend Document type
- * Backend uses camelCase (fileSize), frontend uses shorter names (size)
+ * Backend field names differ from frontend Document interface
  */
 function mapBackendDocument(backendDoc: Record<string, unknown>): Document {
   return {
     ...backendDoc,
-    // Map fileSize to size (fileSize comes from backend mapping)
+    // Map backend field names to frontend Document interface
+    filename: backendDoc['originalName'] ?? backendDoc['filename'] ?? 'Unknown',
+    storedFilename: backendDoc['filename'] ?? '',
     size: typeof backendDoc['fileSize'] === 'number' ? backendDoc['fileSize'] : 0,
+    uploadedAt: backendDoc['uploadedAt'] ?? backendDoc['createdAt'] ?? new Date().toISOString(),
+    uploaderName: backendDoc['uploaderName'] ?? 'System',
+    isRead: backendDoc['isRead'] ?? false,
+    accessScope: backendDoc['accessScope'] ?? 'chat',
   } as Document;
 }
 
@@ -275,6 +281,63 @@ class DocumentAPI {
       return []; // Return empty array on error
     }
   }
+
+  /**
+   * Fetch chat folders for document explorer
+   * Returns conversations where user is participant AND has attachments
+   * NEW 2025-12-04: For chat attachment folders in document explorer
+   */
+  public async fetchChatFolders(): Promise<ChatFolder[]> {
+    try {
+      // Note: ApiClient.handleV2Response extracts .data, so result IS the data object directly
+      const result = await this.apiClient.request<{ folders?: ChatFolder[]; total?: number }>(
+        '/documents/chat-folders',
+        {
+          method: 'GET',
+        },
+      );
+
+      console.log('[DocumentAPI] fetchChatFolders result:', result);
+      return result.folders ?? [];
+    } catch (error) {
+      console.error('Failed to fetch chat folders:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch attachments for a specific conversation
+   * NEW 2025-12-04: For chat attachment display in document explorer
+   */
+  public async fetchChatAttachments(conversationId: number): Promise<Document[]> {
+    try {
+      // Note: ApiClient.handleV2Response extracts .data, so result IS the data object directly
+      const result = await this.apiClient.request<{ attachments?: Record<string, unknown>[] }>(
+        `/chat/conversations/${conversationId}/attachments`,
+        { method: 'GET' },
+      );
+
+      const rawAttachments = result.attachments ?? [];
+      return rawAttachments.map(mapBackendDocument);
+    } catch (error) {
+      console.error('Failed to fetch chat attachments:', error);
+      return [];
+    }
+  }
+}
+
+/**
+ * Chat folder type for document explorer
+ * NEW 2025-12-04
+ */
+export interface ChatFolder {
+  conversationId: number;
+  conversationUuid: string;
+  participantName: string;
+  participantId: number;
+  attachmentCount: number;
+  isGroup: boolean;
+  groupName: string | null;
 }
 
 // Singleton instance

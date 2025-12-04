@@ -16,8 +16,7 @@ interface AreaRow extends RowDataPacket {
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   address?: string;
-  is_active: boolean;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   created_by: number;
   created_at: Date;
   updated_at: Date;
@@ -126,8 +125,7 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
       tenant_id: row.tenant_id,
       name: row.name,
       type: row.type,
-      is_active: row.is_active,
-      is_archived: row.is_archived,
+      is_active: row.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -185,8 +183,7 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
     tenant_id: row.tenant_id,
     name: row.name,
     type: row.type,
-    is_active: row.is_active,
-    is_archived: row.is_archived,
+    is_active: row.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     created_by: row.created_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -216,11 +213,13 @@ export async function createArea(
   tenantId: number,
   userId: number,
 ): Promise<Area> {
+  // POSTGRESQL: RETURNING id required to get insertId
   const query = `
     INSERT INTO areas (
       tenant_id, name, description, area_lead_id, type, capacity,
-      address, created_by, is_active, is_archived
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      address, created_by, is_active
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    RETURNING id
   `;
 
   const [result] = await execute<ResultSetHeader>(query, [
@@ -232,8 +231,7 @@ export async function createArea(
     data.capacity ?? null,
     data.address ?? null,
     userId,
-    1, // is_active = true for new areas
-    0, // is_archived = false for new areas
+    1, // is_active = 1 (active) - Status: 0=inactive, 1=active, 3=archived, 4=deleted
   ]);
 
   const newArea = await getAreaById(result.insertId, tenantId);
@@ -245,56 +243,41 @@ export async function createArea(
 }
 
 /**
+ * Add a field to the update query if value is defined
+ */
+function addUpdateField(
+  updates: string[],
+  values: (string | number | null)[],
+  column: string,
+  value: string | number | null | undefined,
+): void {
+  if (value === undefined) {
+    return;
+  }
+  const paramIndex = values.length + 1;
+  updates.push(`${column} = $${paramIndex}`);
+  values.push(value);
+}
+
+/**
  * Build update query from data
  */
-// eslint-disable-next-line sonarjs/cognitive-complexity
 function buildUpdateQuery(data: UpdateAreaRequest): {
   updates: string[];
-  values: (string | number | boolean | null)[];
+  values: (string | number | null)[];
 } {
   const updates: string[] = [];
-  const values: (string | number | boolean | null)[] = [];
+  const values: (string | number | null)[] = [];
 
-  if (data.name !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`name = $${paramIndex}`);
-    values.push(data.name);
-  }
-  if (data.description !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`description = $${paramIndex}`);
-    values.push(data.description);
-  }
-  if (data.areaLeadId !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`area_lead_id = $${paramIndex}`);
-    values.push(data.areaLeadId);
-  }
-  if (data.type !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`type = $${paramIndex}`);
-    values.push(data.type);
-  }
-  if (data.capacity !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`capacity = $${paramIndex}`);
-    values.push(data.capacity);
-  }
-  if (data.address !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`address = $${paramIndex}`);
-    values.push(data.address);
-  }
-  if (data.isActive !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`is_active = $${paramIndex}`);
-    values.push(data.isActive ? 1 : 0);
-  }
-  if (data.isArchived !== undefined) {
-    const paramIndex = values.length + 1;
-    updates.push(`is_archived = $${paramIndex}`);
-    values.push(data.isArchived ? 1 : 0);
-  }
+  // Simple field mappings - all use same pattern
+  addUpdateField(updates, values, 'name', data.name);
+  addUpdateField(updates, values, 'description', data.description);
+  addUpdateField(updates, values, 'area_lead_id', data.areaLeadId);
+  addUpdateField(updates, values, 'type', data.type);
+  addUpdateField(updates, values, 'capacity', data.capacity);
+  addUpdateField(updates, values, 'address', data.address);
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  addUpdateField(updates, values, 'is_active', data.isActive);
 
   return { updates, values };
 }
@@ -362,7 +345,7 @@ async function checkAreaDependencies(
   total: number;
 }> {
   const [departments] = await execute<RowDataPacket[]>(
-    'SELECT id FROM departments WHERE area_id = $1 AND tenant_id = $2 AND is_active = true',
+    'SELECT id FROM departments WHERE area_id = $1 AND tenant_id = $2 AND is_active = 1',
     [id, tenantId],
   );
 
@@ -532,7 +515,7 @@ export async function getAreaStats(tenantId: number): Promise<{
     `
     SELECT
       COUNT(*) as total_areas,
-      SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active_areas,
+      SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_areas,
       SUM(capacity) as total_capacity
     FROM areas
     WHERE tenant_id = $1
@@ -544,7 +527,7 @@ export async function getAreaStats(tenantId: number): Promise<{
     `
     SELECT type, COUNT(*) as count
     FROM areas
-    WHERE tenant_id = $1 AND is_active = true
+    WHERE tenant_id = $1 AND is_active = 1
     GROUP BY type
   `,
     [tenantId],

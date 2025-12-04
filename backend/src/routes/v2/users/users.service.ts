@@ -112,21 +112,13 @@ const sanitizeUser = <T extends Record<string, unknown>>(
  * Users Service Class
  */
 export class UsersService {
-  /** Parse string boolean query param */
-  private parseBooleanParam(value: string | undefined): boolean | undefined {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return undefined;
-  }
-
   /** Build search filters object */
   private buildSearchFilters(
     tenantId: number,
     params: {
       search: string | undefined;
       role: string | undefined;
-      isActive: boolean | undefined;
-      isArchived: boolean | undefined;
+      isActive: number | undefined; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
       limit: number;
       page: number;
       sortBy: string;
@@ -144,7 +136,6 @@ export class UsersService {
     if (params.search !== undefined) ext['search'] = params.search;
     if (params.role !== undefined && params.role !== '') ext['role'] = params.role;
     if (params.isActive !== undefined) ext['is_active'] = params.isActive;
-    if (params.isArchived !== undefined) ext['is_archived'] = params.isArchived;
     return filters;
   }
 
@@ -152,13 +143,12 @@ export class UsersService {
   async listUsers(tenantId: number, query: ListUsersQuery): Promise<unknown> {
     const page = Number.parseInt(query.page ?? '1', 10);
     const limit = Number.parseInt(query.limit ?? '20', 10);
-    const isActive = this.parseBooleanParam(query.isActive);
-    const isArchived = this.parseBooleanParam(query.isArchived);
+    // Parse isActive as number (Status: 0=inactive, 1=active, 3=archived, 4=deleted)
+    const isActive = query.isActive !== undefined ? Number.parseInt(query.isActive, 10) : undefined;
 
     const filters: UserDbFields = { tenant_id: tenantId };
     if (query.role !== undefined && query.role !== '') filters.role = query.role;
     if (isActive !== undefined) filters.is_active = isActive;
-    if (isArchived !== undefined) filters.is_archived = isArchived;
 
     const total = await userModel.countWithFilters(filters);
     const sortOrder: 'asc' | 'desc' = query.sortOrder === 'asc' ? 'asc' : 'desc';
@@ -166,7 +156,6 @@ export class UsersService {
       search: query.search,
       role: query.role,
       isActive,
-      isArchived,
       limit,
       page,
       sortBy: query.sortBy ?? 'created_at',
@@ -268,7 +257,7 @@ export class UsersService {
       password: hashedPassword,
       employeeNumber,
       username: userData.email, // Email is used as username
-      isActive: true,
+      isActive: 1, // Status: 0=inactive, 1=active, 3=archived, 4=deleted (smallint)
       // N:M REFACTORING: Set has_full_access flag
       hasFullAccess: hasFullAccess === true ? 1 : 0,
       createdAt: new Date(),

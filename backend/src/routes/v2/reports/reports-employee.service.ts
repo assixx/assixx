@@ -113,7 +113,7 @@ export async function getDepartmentReport(filters: {
       0 as avg_overtime
     FROM departments d
     LEFT JOIN user_departments ud ON ud.department_id = d.id AND ud.tenant_id = d.tenant_id
-    LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = true AND u.is_archived = false
+    LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = 1
     LEFT JOIN teams t ON t.department_id = d.id
     LEFT JOIN kvp_suggestions k ON k.org_id = d.id
       AND k.org_level = 'department'

@@ -252,8 +252,7 @@ function getFallbackUser(): User {
     firstName: 'Benutzer',
     role: (localStorage.getItem('role') ?? 'admin') as User['role'],
     tenantId: 0,
-    isActive: true,
-    isArchived: false,
+    isActive: 1, // Active status
     createdAt: '',
     updatedAt: '',
   } as User;

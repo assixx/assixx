@@ -22,14 +22,18 @@ function updateUsernameFromToken(payload: JWTPayload): void {
 
 /**
  * Update role indicator badge
+ * Uses Design System badge classes: badge--danger (root), badge--warning (admin), badge--info (employee)
  */
 function updateRoleBadge(payload: JWTPayload): void {
   const roleIndicator = document.querySelector('#role-indicator');
   if (!roleIndicator || payload.role === '') return;
 
   const roleText = getRoleDisplayText(payload.role);
+  const badgeVariant =
+    payload.role === 'root' ? 'badge--danger' : payload.role === 'admin' ? 'badge--warning' : 'badge--info';
+
   roleIndicator.textContent = roleText;
-  roleIndicator.className = `role-badge ${payload.role}`;
+  roleIndicator.className = `badge badge--sm ${badgeVariant}`;
 }
 
 /**

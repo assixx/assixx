@@ -246,14 +246,16 @@ class UserService {
 
   /**
    * Archive/Unarchive user
+   * Uses is_active status: 1=active, 3=archived
    * @param userId - The user ID
    * @param tenantId - The tenant ID
-   * @param archived - The archived parameter
+   * @param archived - Whether to archive (true) or unarchive (false)
    */
   // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   async archiveUser(userId: number, tenantId: number, archived = true): Promise<boolean> {
     try {
-      await User.update(userId, { is_archived: archived }, tenantId);
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+      await User.update(userId, { is_active: archived ? 3 : 1 }, tenantId);
       return true;
     } catch (error: unknown) {
       logger.error('Error archiving user:', error);

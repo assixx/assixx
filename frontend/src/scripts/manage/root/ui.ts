@@ -8,12 +8,26 @@ import { $, setHTML } from '../../../utils/dom-utils';
 
 /**
  * Render a single root user table row
+ * UPDATED: Using unified isActive status (2025-12-02)
  */
 export function renderUserRow(user: RootUser): string {
-  const statusBadge =
-    user.isActive === true
-      ? '<span class="badge badge--success">Aktiv</span>'
-      : '<span class="badge badge--warning">Inaktiv</span>';
+  let statusBadge: string;
+  switch (user.isActive) {
+    case 1:
+      statusBadge = '<span class="badge badge--success">Aktiv</span>';
+      break;
+    case 0:
+      statusBadge = '<span class="badge badge--warning">Inaktiv</span>';
+      break;
+    case 3:
+      statusBadge = '<span class="badge badge--secondary">Archiviert</span>';
+      break;
+    case 4:
+      statusBadge = '<span class="badge badge--error">Gelöscht</span>';
+      break;
+    default:
+      statusBadge = '<span class="badge badge--secondary">Unbekannt</span>';
+  }
   const employeeNumber = user.employeeNumber ?? '-';
 
   return `

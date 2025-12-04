@@ -49,7 +49,7 @@ interface FeatureUsageStat extends RowDataPacket {
 export async function findAllFeatures(): Promise<DbFeature[]> {
   try {
     const [features] = await executeQuery<DbFeature[]>(
-      'SELECT * FROM features WHERE is_active = true ORDER BY category, name',
+      'SELECT * FROM features WHERE is_active = 1 ORDER BY category, name',
     );
     return features;
   } catch (error: unknown) {
@@ -83,7 +83,7 @@ export async function checkTenantFeatureAccess(
         JOIN features f ON tf.feature_id = f.id
         WHERE tf.tenant_id = $1
         AND f.code = $2
-        AND tf.is_active = true
+        AND tf.is_active = 1
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `;
 
@@ -172,10 +172,11 @@ export async function deactivateFeatureForTenant(
       throw new Error(`Feature ${featureCode} not found`);
     }
 
+    // POSTGRESQL FIX: Parameters must be $1, $2 in order they appear in array
     const query = `
         UPDATE tenant_features
-        SET is_active = false, updated_at = CURRENT_TIMESTAMP
-        WHERE tenant_id = $3 AND feature_id = $2
+        SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+        WHERE tenant_id = $1 AND feature_id = $2
       `;
 
     await executeQuery(query, [tenant_id, feature.id]);
@@ -235,7 +236,7 @@ export async function getTenantFeatures(tenant_id: number): Promise<DbTenantFeat
           END as is_available
         FROM features f
         LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
-        WHERE f.is_active = true
+        WHERE f.is_active = 1
         ORDER BY f.category, f.name
       `;
 

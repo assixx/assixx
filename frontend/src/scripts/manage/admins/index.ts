@@ -341,23 +341,21 @@ function setupPasswordValidation(): void {
 }
 
 /**
- * Filter admins based on status
+ * Filter admins by unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 function filterByStatus(adminsList: Admin[], status: AdminStatusFilter): Admin[] {
   switch (status) {
     case 'active':
-      // Show only active AND not archived
-      return adminsList.filter((admin) => admin.isActive && !admin.isArchived);
+      return adminsList.filter((admin) => admin.isActive === 1);
     case 'inactive':
-      // Show only inactive AND not archived (exclude archived!)
-      return adminsList.filter((admin) => !admin.isActive && !admin.isArchived);
+      return adminsList.filter((admin) => admin.isActive === 0);
     case 'archived':
-      // Show only archived (regardless of isActive)
-      return adminsList.filter((admin) => admin.isArchived);
+      return adminsList.filter((admin) => admin.isActive === 3);
     case 'all':
-      return adminsList;
     default:
-      return adminsList;
+      // Show all except deleted (isActive !== 4)
+      return adminsList.filter((admin) => admin.isActive !== 4);
   }
 }
 

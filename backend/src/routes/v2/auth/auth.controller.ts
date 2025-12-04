@@ -408,7 +408,7 @@ async function register(req: AuthenticatedRequest, res: Response): Promise<void>
       first_name: firstName,
       last_name: lastName,
       role,
-      is_active: true,
+      is_active: 1, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     });
 
     const newUser = await user.findById(userId, tenantId);

@@ -3,6 +3,7 @@
  *
  * Manages folder tree navigation
  * Subscribes to state changes for reactive updates
+ * NEW 2025-12-04: Added chat subfolder support
  *
  * @module explorer/sidebar
  */
@@ -11,13 +12,18 @@ import type { DocumentCategory, FolderItem } from './types';
 import { stateManager } from './state';
 import { router } from './router';
 import { setHTML } from '../../../utils/dom-utils';
+import { documentAPI, type ChatFolder } from './api';
 
 /**
  * Sidebar Manager
  * Handles folder tree rendering
+ * NEW 2025-12-04: Added chat subfolder support
  */
 class SidebarManager {
   private folderTreeEl: HTMLElement | null = null;
+  private chatFolders: ChatFolder[] = [];
+  private chatFoldersLoaded = false;
+  private selectedConversationId: number | null = null;
 
   /**
    * Folder definitions with icons
@@ -73,10 +79,19 @@ class SidebarManager {
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
       </svg>`,
     },
+    // NEW 2025-12-04: Chat attachments folder
+    {
+      category: 'chat',
+      label: 'Chat Anhänge',
+      icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+      </svg>`,
+    },
   ];
 
   /**
    * Initialize sidebar
+   * NEW 2025-12-04: Pre-loads chat folders for accurate count display
    */
   public init(): void {
     this.folderTreeEl = document.getElementById('folder-tree');
@@ -91,9 +106,29 @@ class SidebarManager {
       this.render(state.currentCategory);
     });
 
+    // Pre-load chat folders for accurate count in sidebar
+    void this.preloadChatFolderCount();
+
     // Initial render
     const state = stateManager.getState();
     this.render(state.currentCategory);
+  }
+
+  /**
+   * Pre-load chat folders to show accurate count in sidebar
+   * NEW 2025-12-04: Runs on init without expanding chat category
+   */
+  private async preloadChatFolderCount(): Promise<void> {
+    try {
+      this.chatFolders = await documentAPI.fetchChatFolders();
+      this.chatFoldersLoaded = true;
+      // Re-render to update chat attachment count
+      const state = stateManager.getState();
+      this.render(state.currentCategory);
+    } catch (error) {
+      console.error('[Sidebar] Failed to preload chat folders:', error);
+      // Don't block UI - count will show 0 until user clicks
+    }
   }
 
   /**
@@ -104,6 +139,9 @@ class SidebarManager {
 
     const state = stateManager.getState();
     const categoryCounts = this.calculateCategoryCounts(state.documents);
+
+    // Override chat count with actual chat folders count (since chat docs are excluded from main fetch)
+    categoryCounts.chat = this.getChatFoldersCount();
 
     const foldersHTML = this.folders
       .map((folder) => {
@@ -136,10 +174,10 @@ class SidebarManager {
 
   /**
    * Create folder item HTML
+   * UPDATED 2025-12-04: Removed chat subfolders - now shown in main list view
    */
   private createFolderItem(folder: FolderItem): string {
     const activeClasses = folder.isActive ? 'bg-surface-3 text-primary-500' : 'text-content-primary hover:bg-surface-3';
-
     const iconColor = folder.isActive ? 'text-primary-500' : 'text-content-secondary';
 
     return `
@@ -158,19 +196,114 @@ class SidebarManager {
 
   /**
    * Attach click handlers to folder items
+   * UPDATED 2025-12-04: Simplified - chat folders now shown in main list view
    */
   private attachFolderClickHandlers(): void {
     if (!this.folderTreeEl) return;
 
+    // Main folder buttons
     const folderButtons = this.folderTreeEl.querySelectorAll('.folder-item');
     folderButtons.forEach((button) => {
       button.addEventListener('click', () => {
         const category = button.getAttribute('data-category') as DocumentCategory;
-        // getAttribute can return null, but TypeScript cast bypasses that
-        // category is always truthy here due to the cast
+
+        // Reset conversation selection when clicking main folder
+        this.selectedConversationId = null;
+
+        // For chat category, ensure folders are loaded (for main list view)
+        if (category === 'chat' && !this.chatFoldersLoaded) {
+          void this.loadChatFolders();
+        }
+
         router.navigateToCategory(category);
       });
     });
+  }
+
+  /**
+   * Load chat folders from API
+   * NEW 2025-12-04
+   */
+  private async loadChatFolders(): Promise<void> {
+    try {
+      this.chatFolders = await documentAPI.fetchChatFolders();
+      this.chatFoldersLoaded = true;
+
+      // Re-render to show loaded folders
+      const state = stateManager.getState();
+      this.render(state.currentCategory);
+    } catch (error) {
+      console.error('[Sidebar] Failed to load chat folders:', error);
+      this.chatFoldersLoaded = true; // Mark as loaded to show "no folders" message
+    }
+  }
+
+  /**
+   * Select a chat conversation and load its attachments
+   * UPDATED 2025-12-04: Made public for ListView access
+   */
+  public async selectChatConversation(conversationId: number): Promise<void> {
+    this.selectedConversationId = conversationId;
+
+    try {
+      // Load attachments for this conversation
+      const attachments = await documentAPI.fetchChatAttachments(conversationId);
+
+      // Update state with chat attachments using individual setters
+      stateManager.setDocuments(attachments);
+      stateManager.setCategory('chat');
+      stateManager.setSelectedDocument(null);
+
+      // Re-render sidebar to update count
+      this.render('chat');
+    } catch (error) {
+      console.error('[Sidebar] Failed to load chat attachments:', error);
+    }
+  }
+
+  /**
+   * Reset conversation selection (back to folder view)
+   * NEW 2025-12-04: For back navigation from attachments to folders
+   */
+  public resetConversationSelection(): void {
+    this.selectedConversationId = null;
+    // Clear documents to show folder view
+    stateManager.setDocuments([]);
+    // Re-render
+    const state = stateManager.getState();
+    this.render(state.currentCategory);
+  }
+
+  /**
+   * Get selected conversation ID
+   * NEW 2025-12-04: For external use
+   */
+  public getSelectedConversationId(): number | null {
+    return this.selectedConversationId;
+  }
+
+  /**
+   * Get chat folders for main list view
+   * NEW 2025-12-04: Returns loaded chat folders for ListView
+   */
+  public getChatFolders(): ChatFolder[] {
+    return this.chatFolders;
+  }
+
+  /**
+   * Check if chat folders are loaded
+   * NEW 2025-12-04
+   */
+  public isChatFoldersLoaded(): boolean {
+    return this.chatFoldersLoaded;
+  }
+
+  /**
+   * Get chat folders count for sidebar display
+   * NEW 2025-12-04
+   */
+  public getChatFoldersCount(): number {
+    return this.chatFolders.reduce((sum, f) => sum + f.attachmentCount, 0);
   }
 
   /**
@@ -189,6 +322,7 @@ class SidebarManager {
       company: 0,
       payroll: 0,
       blackboard: 0,
+      chat: 0,
     };
 
     documents.forEach((doc) => {
@@ -211,6 +345,9 @@ class SidebarManager {
           break;
         case 'blackboard':
           counts.blackboard++;
+          break;
+        case 'chat':
+          counts.chat++;
           break;
       }
     });

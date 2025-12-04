@@ -12,7 +12,15 @@
  * Maps to backend recipient types
  * Updated 2025-11-24: Added 'blackboard' for blackboard attachments
  */
-export type DocumentCategory = 'all' | 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+export type DocumentCategory =
+  | 'all'
+  | 'personal'
+  | 'team'
+  | 'department'
+  | 'company'
+  | 'payroll'
+  | 'blackboard'
+  | 'chat';
 
 /**
  * View mode for document display
@@ -48,7 +56,7 @@ export interface Document {
 
   /** NEW: Access scope - WHO can see this document
    * Updated 2025-11-24: Added 'blackboard' */
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
 
   /** NEW: Owner user ID (for personal/payroll documents) */
   ownerUserId?: number | null;
@@ -261,4 +269,19 @@ export interface FilterOptions {
   /** Date range */
   dateFrom?: string;
   dateTo?: string;
+}
+
+/**
+ * Chat folder for document explorer
+ * Represents a conversation with attachments
+ * NEW 2025-12-04
+ */
+export interface ChatFolder {
+  conversationId: number;
+  conversationUuid: string;
+  participantName: string;
+  participantId: number;
+  attachmentCount: number;
+  isGroup: boolean;
+  groupName: string | null;
 }

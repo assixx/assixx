@@ -28,6 +28,14 @@ router.get('/', documentsValidationZod.list, typed.auth(documentsController.list
 router.get('/stats', typed.auth(documentsController.getDocumentStats));
 
 /**
+ * GET /api/v2/documents/chat-folders
+ * Get chat folders for document explorer
+ * Returns conversations where user is participant AND has attachments
+ * NEW 2025-12-04
+ */
+router.get('/chat-folders', typed.auth(documentsController.getChatFolders));
+
+/**
  * GET /api/v2/documents/:id
  * Get a specific document by ID
  */
@@ -98,6 +106,18 @@ router.get(
   '/:id/preview',
   documentsValidationZod.getById,
   typed.auth(documentsController.previewDocument),
+);
+
+/**
+ * POST /api/v2/documents/:id/read
+ * Mark document as read by current user
+ * Updates document_read_status table for "Neu" badge tracking
+ * NEW 2025-12-04
+ */
+router.post(
+  '/:id/read',
+  documentsValidationZod.getById,
+  typed.auth(documentsController.markDocumentAsRead),
 );
 
 export default router;

@@ -101,13 +101,15 @@ function setStatusDropdown(department: Department): void {
     return;
   }
 
-  // Convert boolean to string for form input
-  statusInput.value = department.isActive ? '1' : '0';
+  // Convert status to string for form input
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  const isActive = department.isActive === 1;
+  statusInput.value = isActive ? '1' : '0';
 
   const statusTriggerSpan = statusTrigger.querySelector('span');
   if (statusTriggerSpan !== null) {
-    const badgeClass = department.isActive ? 'badge--success' : 'badge--warning';
-    const badgeText = department.isActive ? 'Aktiv' : 'Inaktiv';
+    const badgeClass = isActive ? 'badge--success' : 'badge--warning';
+    const badgeText = isActive ? 'Aktiv' : 'Inaktiv';
     setSafeHTML(statusTriggerSpan, `<span class="badge ${badgeClass}">${badgeText}</span>`);
   }
 }

@@ -9,10 +9,11 @@ import DOMPurify from 'dompurify';
 
 /**
  * Escape HTML special characters to prevent XSS
- * @param text - Text to escape
+ * @param text - Text to escape (handles null/undefined)
  * @returns Escaped HTML string
  */
-export function escapeHtml(text: string): string {
+export function escapeHtml(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === '') return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
@@ -179,34 +180,44 @@ export function isButtonElement(element: Element | null): element is HTMLButtonE
 }
 
 /**
- * Safe element show
+ * Safe element show - removes hidden classes (Design System compliant)
+ * Uses class-based visibility instead of inline styles
  */
 export function show(element: HTMLElement | null): void {
   if (element) {
-    element.style.display = '';
+    element.classList.remove('hidden', 'u-hidden');
   }
 }
 
 /**
- * Safe element hide
+ * Safe element hide - adds u-hidden class (Design System compliant)
+ * Uses class-based visibility instead of inline styles
  */
 export function hide(element: HTMLElement | null): void {
   if (element) {
-    element.style.display = 'none';
+    element.classList.add('u-hidden');
   }
 }
 
 /**
- * Safe element toggle
+ * Safe element toggle - uses class-based visibility (Design System compliant)
  */
 export function toggle(element: HTMLElement | null, force?: boolean): void {
   if (!element) return;
 
   if (force !== undefined) {
-    element.style.display = force ? '' : 'none';
+    if (force) {
+      element.classList.remove('hidden', 'u-hidden');
+    } else {
+      element.classList.add('u-hidden');
+    }
   } else {
-    const isHidden = element.style.display === 'none' || window.getComputedStyle(element).display === 'none';
-    element.style.display = isHidden ? '' : 'none';
+    const isHidden = element.classList.contains('hidden') || element.classList.contains('u-hidden');
+    if (isHidden) {
+      element.classList.remove('hidden', 'u-hidden');
+    } else {
+      element.classList.add('u-hidden');
+    }
   }
 }
 

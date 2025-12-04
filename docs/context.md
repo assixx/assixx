@@ -1,3 +1,13 @@
+# Tech Stack Context
+
+**NOW USING:**
+- API V2 (no V1 fallback)
+- PostgreSQL 17.7 + `pg` library v8.16.3
+- `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
+- `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete)
+
+---
+
 just for context
 
 :~/projects/Assixx/docker$ docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"

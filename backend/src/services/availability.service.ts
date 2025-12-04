@@ -118,7 +118,7 @@ class AvailabilityService {
            LIMIT 1) as available_from
         FROM users u
         LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-        WHERE u.tenant_id = $1 AND u.role = 'employee' AND u.is_active = true
+        WHERE u.tenant_id = $1 AND u.role = 'employee' AND u.is_active = 1
         ORDER BY u.first_name, u.last_name
       `;
 

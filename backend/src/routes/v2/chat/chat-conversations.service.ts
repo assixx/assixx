@@ -3,10 +3,11 @@
  * Business logic for conversation management (CRUD operations)
  */
 import { log, error as logError } from 'console';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { CountResult } from '../../../types/query-results.types.js';
-import type { ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
-import { execute } from '../../../utils/db.js';
+import type { PoolConnection, RowDataPacket } from '../../../utils/db.js';
+import { execute, transaction } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type {
   Conversation,
@@ -18,9 +19,27 @@ import type {
   ParticipantRow,
 } from './chat.types.js';
 
+/**
+ * Helper: Check if string is UUIDv7 format
+ * UUIDv7 format: 8-4-4-4-12 hex characters (lowercase or uppercase)
+ * Example: 018c5f8e-7a1b-7c3d-9e4f-0a1b2c3d4e5f
+ */
+function isUuid(value: string | number): boolean {
+  if (typeof value === 'number') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
 // Query result interfaces
 interface ParticipantAdminResult extends RowDataPacket {
   is_admin: boolean; // tinyint(1)
+}
+
+/**
+ * PostgreSQL RETURNING id result
+ */
+interface InsertIdResult extends RowDataPacket {
+  id: number;
 }
 
 /**
@@ -34,6 +53,7 @@ function buildConversationWhereClause(
   let whereClause = `
     WHERE c.tenant_id = $1
     AND cp.user_id = $2
+    AND c.is_active = 1
   `;
   const params: unknown[] = [tenantId, userId];
   let paramIndex = 3;
@@ -141,23 +161,24 @@ function transformConversation(
       id: p.user_id,
       userId: p.user_id,
       username: p.username,
-      first_name: p.first_name ?? '',
-      last_name: p.last_name ?? '',
-      profile_picture_url: p.profile_picture,
+      firstName: p.first_name ?? '',
+      lastName: p.last_name ?? '',
+      profilePictureUrl: p.profile_picture,
       joinedAt: new Date(p.joined_at),
       isActive: true,
     }));
 
-  let lastMessage: { content: string; created_at: Date } | null = null;
+  let lastMessage: { content: string; createdAt: string } | null = null;
   if (conv.last_message_content !== null && conv.last_message_time !== null) {
     lastMessage = {
       content: conv.last_message_content,
-      created_at: new Date(conv.last_message_time),
+      createdAt: new Date(conv.last_message_time).toISOString(),
     };
   }
 
   return {
     id: conv.id,
+    uuid: conv.uuid.trim(), // UUIDv7 for URL routing (trim to remove CHAR(36) padding)
     name: conv.name,
     isGroup: conv.is_group,
     createdAt: new Date(conv.created_at),
@@ -184,7 +205,8 @@ async function findExisting1to1Conversation(
     `SELECT c.id
      FROM conversations c
      WHERE c.tenant_id = $1
-     AND c.is_group = 0
+     AND c.is_group = false
+     AND c.is_active = 1
      AND EXISTS (
        SELECT 1 FROM conversation_participants cp1
        WHERE cp1.conversation_id = c.id AND cp1.user_id = $2
@@ -205,19 +227,31 @@ async function findExisting1to1Conversation(
 
 /**
  * Create conversation record in database
+ * PostgreSQL: Uses RETURNING id to get the inserted ID as row data
+ * Generates UUIDv7 for secure URL routing
  */
 async function insertConversation(
   tenantId: number,
   name: string | null,
   isGroup: boolean,
 ): Promise<number> {
-  const [result] = await execute<ResultSetHeader>(
-    `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
-     VALUES ($1, $2, $3, NOW(), NOW())`,
-    [tenantId, name, isGroup ? 1 : 0],
+  // Generate UUIDv7 for external identifier (secure, time-sortable)
+  const uuid = uuidv7();
+
+  // PostgreSQL RETURNING returns rows, not ResultSetHeader
+  const [rows] = await execute<InsertIdResult[]>(
+    `INSERT INTO conversations (tenant_id, name, is_group, uuid, uuid_created_at, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
+     RETURNING id`,
+    [tenantId, name, isGroup ? 1 : 0, uuid],
   );
-  log('[Chat Service] Created conversation with ID:', result.insertId);
-  return result.insertId;
+
+  const insertedRow = rows[0];
+  if (insertedRow === undefined) {
+    throw new ServiceError('INSERT_FAILED', 'Failed to get inserted conversation ID', 500);
+  }
+
+  return insertedRow.id;
 }
 
 /**
@@ -233,7 +267,7 @@ async function addParticipants(
   // Add creator as admin
   await execute(
     `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-     VALUES ($1, $2, $3, 1, NOW())`,
+     VALUES ($1, $2, $3, true, NOW())`,
     [tenantId, conversationId, creatorId],
   );
 
@@ -241,7 +275,7 @@ async function addParticipants(
   for (const participantId of participantIds) {
     await execute(
       `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-       VALUES ($1, $2, $3, 0, NOW())`,
+       VALUES ($1, $2, $3, false, NOW())`,
       [tenantId, conversationId, participantId],
     );
   }
@@ -326,12 +360,12 @@ export async function getConversations(
     const totalItems = await getConversationCount(whereClause, params);
 
     const query = `
-      SELECT DISTINCT c.id, c.name, c.is_group, c.created_at, c.updated_at,
+      SELECT DISTINCT c.id, c.uuid, c.name, c.is_group, c.created_at, c.updated_at,
         (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_content,
         (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-      WHERE c.tenant_id = ${tenantId} AND cp.user_id = ${userId}
+      WHERE c.tenant_id = ${tenantId} AND cp.user_id = ${userId} AND c.is_active = 1
       ORDER BY c.updated_at DESC LIMIT ${limit} OFFSET ${offset}
     `;
 
@@ -355,10 +389,58 @@ export async function getConversations(
 }
 
 /**
+ * Handle reusing existing 1:1 conversation if found
+ * @returns conversation if existing found, null otherwise
+ */
+async function handleExisting1to1(
+  tenantId: number,
+  creatorId: number,
+  participantId: number,
+  initialMessage: string | undefined,
+): Promise<{ conversation: Conversation } | null> {
+  const existingId = await findExisting1to1Conversation(tenantId, creatorId, participantId);
+
+  if (existingId === null) {
+    return null;
+  }
+
+  // Existing conversation found - if initialMessage provided, add it
+  if (initialMessage !== undefined && initialMessage !== '') {
+    await insertInitialMessage(tenantId, existingId, creatorId, initialMessage);
+  }
+  const conversation = await retrieveConversationById(tenantId, creatorId, existingId);
+  return { conversation };
+}
+
+/**
+ * Create a new conversation record with participants and optional initial message
+ */
+async function createNewConversation(
+  tenantId: number,
+  creatorId: number,
+  data: CreateConversationData,
+  isGroup: boolean,
+): Promise<{ conversation: Conversation }> {
+  log('[Chat Service] Creating new conversation with isGroup:', isGroup);
+  const conversationId = await insertConversation(tenantId, data.name ?? null, isGroup);
+
+  await addParticipants(tenantId, conversationId, creatorId, data.participantIds);
+
+  // LAZY CREATION: If initialMessage provided, insert the first message
+  if (data.initialMessage !== undefined && data.initialMessage !== '') {
+    await insertInitialMessage(tenantId, conversationId, creatorId, data.initialMessage);
+  }
+
+  const conversation = await retrieveConversationById(tenantId, creatorId, conversationId);
+  return { conversation };
+}
+
+/**
  * Create a new conversation (1:1 or group)
+ * Supports lazy creation: if initialMessage is provided, message is created with conversation
  * @param tenantId - The tenant ID for multi-tenant isolation
  * @param creatorId - The user creating the conversation
- * @param data - Conversation data (participant IDs, optional name and group flag)
+ * @param data - Conversation data (participant IDs, optional name, group flag, and initialMessage)
  * @returns The created conversation with full details
  * @throws ServiceError if conversation creation fails or participants invalid
  */
@@ -369,7 +451,6 @@ export async function createConversation(
 ): Promise<{ conversation: Conversation }> {
   try {
     log('[Chat Service] createConversation called with:', { tenantId, creatorId, data });
-    logError('[CRITICAL DEBUG] Creating conversation with tenantId:', tenantId);
 
     const isGroup = data.isGroup ?? data.participantIds.length > 1;
 
@@ -380,34 +461,46 @@ export async function createConversation(
         throw new ServiceError('INVALID_PARTICIPANTS', 'Participant ID is required', 400);
       }
 
-      const existingId = await findExisting1to1Conversation(
+      const existing = await handleExisting1to1(
         tenantId,
         creatorId,
         firstParticipantId,
+        data.initialMessage,
       );
-
-      if (existingId !== null) {
-        const conversation = await retrieveConversationById(tenantId, creatorId, existingId);
-        return { conversation };
+      if (existing !== null) {
+        return existing;
       }
     }
 
-    // Create new conversation
-    log('[Chat Service] Creating new conversation with isGroup:', isGroup);
-    const conversationId = await insertConversation(tenantId, data.name ?? null, isGroup);
-
-    // Add participants
-    await addParticipants(tenantId, conversationId, creatorId, data.participantIds);
-
-    // Retrieve and return the created conversation
-    const conversation = await retrieveConversationById(tenantId, creatorId, conversationId);
-    return { conversation };
+    return await createNewConversation(tenantId, creatorId, data, isGroup);
   } catch (error: unknown) {
     logError('[Chat Service] createConversation error:', error);
     throw error instanceof ServiceError ? error : (
         new ServiceError('CREATE_CONVERSATION_ERROR', 'Failed to create conversation', 500)
       );
   }
+}
+
+/**
+ * Insert initial message when creating conversation with lazy creation
+ * @internal
+ */
+async function insertInitialMessage(
+  tenantId: number,
+  conversationId: number,
+  senderId: number,
+  content: string,
+): Promise<void> {
+  const insertQuery = `
+    INSERT INTO messages (tenant_id, conversation_id, sender_id, content, created_at)
+    VALUES ($1, $2, $3, $4, NOW())
+  `;
+  await execute(insertQuery, [tenantId, conversationId, senderId, content]);
+
+  const updateQuery = `
+    UPDATE conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2
+  `;
+  await execute(updateQuery, [conversationId, tenantId]);
 }
 
 interface ConvParticipantRow extends RowDataPacket {
@@ -425,19 +518,21 @@ interface ConvParticipantRow extends RowDataPacket {
  */
 async function fetchConversationParticipants(
   conversationId: number,
+  tenantId: number,
 ): Promise<ConversationParticipant[]> {
   const [participants] = await execute<ConvParticipantRow[]>(
     `SELECT cp.user_id, cp.is_admin, cp.joined_at, u.username, u.first_name, u.last_name, u.profile_picture
      FROM conversation_participants cp INNER JOIN users u ON cp.user_id = u.id
-     WHERE cp.conversation_id = ${conversationId}`,
+     WHERE cp.conversation_id = $1 AND cp.tenant_id = $2`,
+    [conversationId, tenantId],
   );
   return participants.map((p: ConvParticipantRow) => ({
     id: p.user_id,
     userId: p.user_id,
     username: p.username,
-    first_name: p.first_name ?? '',
-    last_name: p.last_name ?? '',
-    profile_picture_url: p.profile_picture,
+    firstName: p.first_name ?? '',
+    lastName: p.last_name ?? '',
+    profilePictureUrl: p.profile_picture,
     joinedAt: new Date(p.joined_at),
     isActive: true,
   }));
@@ -453,23 +548,27 @@ export async function getConversation(
 ): Promise<Conversation | null> {
   try {
     const [participant] = await execute<RowDataPacket[]>(
-      `SELECT 1 FROM conversation_participants WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
+      `SELECT 1 FROM conversation_participants
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+      [conversationId, userId, tenantId],
     );
     if (participant.length === 0) return null;
 
     const [conversations] = await execute<ConversationRow[]>(
-      `SELECT c.id, c.name, c.is_group, c.created_at, c.updated_at
-       FROM conversations c WHERE c.id = ${conversationId} AND c.tenant_id = ${tenantId}`,
+      `SELECT c.id, c.uuid, c.name, c.is_group, c.created_at, c.updated_at
+       FROM conversations c WHERE c.id = $1 AND c.tenant_id = $2 AND c.is_active = 1`,
+      [conversationId, tenantId],
     );
     if (conversations.length === 0) return null;
 
     const conv = conversations[0];
     if (conv === undefined) return null;
 
-    const participants = await fetchConversationParticipants(conversationId);
+    const participants = await fetchConversationParticipants(conversationId, tenantId);
 
     return {
       id: conv.id,
+      uuid: conv.uuid.trim(), // UUIDv7 for URL routing (trim to remove CHAR(36) padding)
       name: conv.name,
       isGroup: conv.is_group,
       createdAt: new Date(conv.created_at),
@@ -485,71 +584,95 @@ export async function getConversation(
 }
 
 /**
- * Delete a conversation (admin, creator, or last participant only)
+ * Delete a conversation (soft delete: sets is_active = 4)
+ * Preserves messages, attachments, and foreign key references
+ * @param tenantId - The tenant ID for multi-tenant isolation
  * @param conversationId - The conversation ID to delete
  * @param userId - The user requesting deletion
  * @param userRole - The user's role (for permission checking)
  * @throws ServiceError if user lacks permission or conversation not found
  */
 export async function deleteConversation(
+  tenantId: number,
   conversationId: number,
   userId: number,
   userRole: string,
 ): Promise<void> {
   try {
-    // Check if user is participant
-    const [participant] = await execute<ParticipantAdminResult[]>(
-      `SELECT is_admin FROM conversation_participants
-       WHERE conversation_id = $1 AND user_id = $2`,
-      [conversationId, userId],
-    );
-
-    if (participant.length === 0) {
-      throw new ServiceError(
-        'CONVERSATION_ACCESS_DENIED',
-        'You are not a participant of this conversation',
-        403,
+    await transaction(async (conn: PoolConnection) => {
+      // Check if user is participant
+      const [participant] = await conn.execute<ParticipantAdminResult[]>(
+        `SELECT is_admin FROM conversation_participants
+         WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+        [conversationId, userId, tenantId],
       );
-    }
 
-    // Check permissions: must be admin or the only participant
-    const [participantCount] = await execute<CountResult[]>(
-      `SELECT COUNT(*) as count FROM conversation_participants
-       WHERE conversation_id = $1`,
-      [conversationId],
-    );
+      if (participant.length === 0) {
+        throw new ServiceError(
+          'CONVERSATION_ACCESS_DENIED',
+          'You are not a participant of this conversation',
+          403,
+        );
+      }
 
-    const firstParticipant = participant[0];
-    const firstCount = participantCount[0];
-    if (firstParticipant === undefined || firstCount === undefined) {
-      throw new ServiceError('CONVERSATION_ERROR', 'Failed to retrieve conversation details', 500);
-    }
+      // Only root and admin can delete conversations
+      if (userRole !== 'root' && userRole !== 'admin') {
+        throw new ServiceError(
+          'DELETE_CONVERSATION_FORBIDDEN',
+          'Only administrators can delete conversations',
+          403,
+        );
+      }
 
-    const canDelete =
-      userRole === 'root' ||
-      userRole === 'admin' ||
-      firstParticipant.is_admin ||
-      firstCount.count === 1;
-
-    if (!canDelete) {
-      throw new ServiceError(
-        'DELETE_CONVERSATION_FORBIDDEN',
-        "You don't have permission to delete this conversation",
-        403,
+      // Soft delete: Set is_active = 4 (deleted)
+      await conn.execute(
+        `UPDATE conversations SET is_active = 4, updated_at = NOW()
+         WHERE id = $1 AND tenant_id = $2`,
+        [conversationId, tenantId],
       );
-    }
-
-    // Delete in correct order to avoid FK constraints
-    await execute(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
-
-    await execute(`DELETE FROM conversation_participants WHERE conversation_id = $1`, [
-      conversationId,
-    ]);
-
-    await execute(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
+    }, tenantId);
   } catch (error: unknown) {
     throw error instanceof ServiceError ? error : (
         new ServiceError('DELETE_CONVERSATION_ERROR', 'Failed to delete conversation', 500)
       );
   }
 }
+
+/**
+ * Get conversation by UUID
+ * Used for URL-based routing (/chat/:uuid)
+ * @param tenantId - The tenant ID for multi-tenant isolation
+ * @param uuid - The conversation UUID (UUIDv7)
+ * @param userId - The user requesting the conversation
+ * @returns The conversation if found and user is participant, null otherwise
+ */
+export async function getConversationByUuid(
+  tenantId: number,
+  uuid: string,
+  userId: number,
+): Promise<Conversation | null> {
+  try {
+    // First get the conversation ID from UUID
+    interface ConversationIdRow extends RowDataPacket {
+      id: number;
+    }
+
+    const [convRows] = await execute<ConversationIdRow[]>(
+      `SELECT id FROM conversations WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      [uuid, tenantId],
+    );
+
+    if (convRows.length === 0) return null;
+    const convRow = convRows[0];
+    if (convRow === undefined) return null;
+
+    // Use existing getConversation with the ID
+    return await getConversation(tenantId, convRow.id, userId);
+  } catch (error: unknown) {
+    logError('[Chat Service] getConversationByUuid error:', error);
+    throw new ServiceError('CONVERSATION_ERROR', 'Failed to get conversation by UUID', 500);
+  }
+}
+
+// Export isUuid helper for use in controller
+export { isUuid };

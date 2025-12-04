@@ -50,27 +50,21 @@ async function loadRootUsers(): Promise<void> {
 }
 
 /**
- * Filter root users by status
+ * Filter root users by unified isActive status (2025-12-02)
+ * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 function filterByStatus(users: RootUser[], status: RootStatusFilter): RootUser[] {
   switch (status) {
     case 'active':
-      // Show only active AND not archived
-      return users.filter(
-        (user) => (user.isActive === true || user.isActive === 1) && user.isArchived !== true && user.isArchived !== 1,
-      );
+      return users.filter((user) => user.isActive === 1);
     case 'inactive':
-      // Show only inactive AND not archived
-      return users.filter(
-        (user) => (user.isActive === false || user.isActive === 0) && user.isArchived !== true && user.isArchived !== 1,
-      );
+      return users.filter((user) => user.isActive === 0);
     case 'archived':
-      // Show only archived (regardless of isActive)
-      return users.filter((user) => user.isArchived === true || user.isArchived === 1);
+      return users.filter((user) => user.isActive === 3);
     case 'all':
-      return users;
     default:
-      return users;
+      // Show all except deleted (isActive !== 4)
+      return users.filter((user) => user.isActive !== 4);
   }
 }
 

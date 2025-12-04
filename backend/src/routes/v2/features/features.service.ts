@@ -109,7 +109,7 @@ export class FeaturesService {
   // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
-      const whereClause = includeInactive ? '' : 'WHERE is_active = true';
+      const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
       const [rows] = await query<DbFeature[]>(
         `SELECT * FROM features ${whereClause} ORDER BY category, sort_order, name`,
       );
@@ -227,7 +227,7 @@ export class FeaturesService {
           END as status
         FROM features f
         LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
-        WHERE f.is_active = true
+        WHERE f.is_active = 1
         ORDER BY f.category, f.sort_order, f.name
       `,
         [tenantId],
@@ -250,10 +250,11 @@ export class FeaturesService {
   ): Promise<void> {
     const customConfig =
       options.customConfig !== undefined ? JSON.stringify(options.customConfig) : null;
+    // POSTGRESQL FIX: Parameters must be $1, $2, $3, $4, $5 in order they appear in array
     await execute(
-      `UPDATE tenant_features SET is_active = true, activated_at = NOW(), expires_at = $1,
-       activated_by = $1, custom_config = $2, updated_at = NOW()
-       WHERE tenant_id = $3 AND feature_id = $2`,
+      `UPDATE tenant_features SET is_active = 1, activated_at = NOW(), expires_at = $1,
+       activated_by = $2, custom_config = $3, updated_at = NOW()
+       WHERE tenant_id = $4 AND feature_id = $5`,
       [options.expiresAt ?? null, options.activatedBy, customConfig, tenantId, featureId],
     );
   }
@@ -338,7 +339,7 @@ export class FeaturesService {
       const [result] = await execute<ResultSetHeader>(
         `
         UPDATE tenant_features
-        SET is_active = false, updated_at = NOW()
+        SET is_active = 0, updated_at = NOW()
         WHERE tenant_id = $1 AND feature_id = $2
       `,
         [tenantId, feature.id],
@@ -475,7 +476,7 @@ export class FeaturesService {
         JOIN features f ON tf.feature_id = f.id
         WHERE tf.tenant_id = $1
         AND f.code = $2
-        AND tf.is_active = true
+        AND tf.is_active = 1
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `,
         [tenantId, featureCode],

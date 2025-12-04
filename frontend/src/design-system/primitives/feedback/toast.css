@@ -110,6 +110,7 @@
 
   /* Appearance */
   border: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: none; /* Progress bar replaces bottom border */
   border-radius: var(--radius-xl);
 
   /* Typography */
@@ -119,6 +120,9 @@
 
   /* Glassmorphism */
   background: linear-gradient(135deg, rgb(30 30 40 / 95%) 0%, rgb(20 20 30 / 95%) 100%);
+
+  /* Clip EVERYTHING (borders + content) to rounded corners - makes progress bar smooth */
+  clip-path: inset(0 round var(--radius-xl));
   backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
 
@@ -208,15 +212,11 @@
   bottom: 0;
   left: 0;
 
-  overflow: hidden;
-
   /* Size */
   width: 100%;
   height: 3px;
 
-  /* Appearance */
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-
+  /* Appearance - no border-radius needed, parent clip-path handles it */
   background: rgb(255 255 255 / 10%);
 }
 
@@ -326,6 +326,17 @@
 
 .toast--info .toast__progress-bar {
   background: var(--color-primary);
+}
+
+/* Progress bar extension for variants with border-left */
+/* Extends under the 4px border so clip-path clips it at the outer rounded corner */
+.toast--success .toast__progress,
+.toast--warning .toast__progress,
+.toast--error .toast__progress,
+.toast--danger .toast__progress,
+.toast--info .toast__progress {
+  left: -4px;
+  width: calc(100% + 4px);
 }
 
 /* ========== ANIMATION STATES ========== */

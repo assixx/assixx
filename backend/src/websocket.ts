@@ -22,12 +22,7 @@ interface WebSocketMessage {
 interface SendMessageData {
   conversationId: number;
   content: string;
-  attachments?: {
-    filename: string;
-    content?: string | Buffer;
-    path?: string;
-    contentType?: string;
-  }[];
+  attachments?: number[]; // Document IDs from frontend upload
 }
 
 interface TypingData {
@@ -61,35 +56,6 @@ interface UserInfoResult extends RowDataPacket {
 interface MessageInfoResult extends RowDataPacket {
   sender_id: number;
   conversation_id: number;
-}
-
-interface MessageDetailsResult extends RowDataPacket {
-  id: number;
-  conversation_id: number;
-  content: string;
-  sender_id: number;
-  created_at: Date | string;
-  tenant_id: number;
-}
-
-interface MessageWithSenderResult extends RowDataPacket {
-  queue_id: number; // From message_delivery_queue.id
-  message_id: number;
-  conversation_id: number;
-  content: string;
-  sender_id: number;
-  recipient_id: number; // From message_delivery_queue.recipient_id
-  first_name: string | null;
-  last_name: string | null;
-  profile_picture_url: string | null;
-  created_at: Date | string;
-}
-
-interface NotificationQueueResult extends RowDataPacket {
-  queue_id: number;
-  recipient_id: number;
-  message_id: number;
-  attempts: number;
 }
 
 export class ChatWebSocketServer {
@@ -259,16 +225,96 @@ export class ChatWebSocketServer {
     tenantId: number,
   ): Promise<number> {
     const messageQuery = `
-      INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO messages (conversation_id, sender_id, content, tenant_id, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING id
     `;
-    const [result] = await execute<ResultSetHeader>(messageQuery, [
+    // PostgreSQL RETURNING clause returns rows, not MySQL-style insertId
+    interface InsertResult extends RowDataPacket {
+      id: number;
+    }
+    const [rows] = await query<InsertResult[]>(messageQuery, [
       conversationId,
       senderId,
       content,
       tenantId,
     ]);
-    return result.insertId;
+
+    const insertedRow = rows[0];
+    if (insertedRow === undefined) {
+      throw new Error('Failed to insert message - no row returned');
+    }
+    return insertedRow.id;
+  }
+
+  /**
+   * Link uploaded documents to a message
+   */
+  private async linkAttachmentsToMessage(
+    messageId: number,
+    attachmentIds: number[],
+    tenantId: number,
+  ): Promise<void> {
+    if (attachmentIds.length === 0) return;
+
+    // Update documents to link them to this message
+    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
+    const updateQuery = `
+      UPDATE documents
+      SET message_id = $1
+      WHERE id IN (${placeholders})
+      AND tenant_id = $2
+      AND message_id IS NULL
+    `;
+    await execute(updateQuery, [messageId, tenantId, ...attachmentIds]);
+    logger.info(`Linked ${attachmentIds.length} attachments to message ${messageId}`);
+  }
+
+  /**
+   * Get attachment details for a message
+   */
+  private async getMessageAttachments(
+    attachmentIds: number[],
+    tenantId: number,
+  ): Promise<
+    {
+      id: number;
+      fileUuid: string;
+      fileName: string;
+      originalName: string;
+      fileSize: number;
+      mimeType: string;
+      downloadUrl: string;
+    }[]
+  > {
+    if (attachmentIds.length === 0) return [];
+
+    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+    const attachmentQuery = `
+      SELECT id, file_uuid, filename, original_name, file_size, mime_type
+      FROM documents
+      WHERE id IN (${placeholders})
+      AND tenant_id = $1
+    `;
+    interface AttachmentRow extends RowDataPacket {
+      id: number;
+      file_uuid: string;
+      filename: string;
+      original_name: string;
+      file_size: number;
+      mime_type: string;
+    }
+    const [rows] = await query<AttachmentRow[]>(attachmentQuery, [tenantId, ...attachmentIds]);
+
+    return rows.map((row: AttachmentRow) => ({
+      id: row.id,
+      fileUuid: row.file_uuid,
+      fileName: row.filename,
+      originalName: row.original_name,
+      fileSize: row.file_size,
+      mimeType: row.mime_type,
+      downloadUrl: `/api/v2/documents/${row.id}/download`,
+    }));
   }
 
   private async getSenderInfo(
@@ -374,7 +420,12 @@ export class ChatWebSocketServer {
   }
 
   private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
-    const { conversationId, content, attachments = [] } = data;
+    const { conversationId, content, attachments: attachmentIds = [] } = data;
+
+    // DEBUG: Log incoming data to verify attachments are received
+    logger.info(
+      `[WS] handleSendMessage: convId=${conversationId}, attachmentIds=${JSON.stringify(attachmentIds)}, raw data.attachments=${JSON.stringify(data.attachments)}`,
+    );
 
     if (ws.userId === undefined || ws.tenantId === undefined) {
       this.sendMessage(ws, { type: 'error', data: { message: 'Not authenticated' } });
@@ -392,7 +443,17 @@ export class ChatWebSocketServer {
         return;
       }
 
+      // Save message
       const messageId = await this.saveMessage(conversationId, ws.userId, content, ws.tenantId);
+
+      // Link attachments to message (updates documents.message_id)
+      if (attachmentIds.length > 0) {
+        await this.linkAttachmentsToMessage(messageId, attachmentIds, ws.tenantId);
+      }
+
+      // Get attachment details for broadcast
+      const attachments = await this.getMessageAttachments(attachmentIds, ws.tenantId);
+
       const sender = await this.getSenderInfo(ws.userId, ws.tenantId);
       const messageData = this.buildMessageData(
         messageId,
@@ -630,251 +691,6 @@ export class ChatWebSocketServer {
         ws.ping();
       });
     }, 30000); // Alle 30 Sekunden
-  }
-
-  /**
-   * Process a single scheduled message - mark delivered and broadcast
-   */
-  private async processOneScheduledMessage(message: MessageDetailsResult): Promise<void> {
-    await execute<ResultSetHeader>(
-      "UPDATE messages SET delivery_status = 'delivered', scheduled_delivery = NULL WHERE id = $1",
-      [message.id],
-    );
-
-    const [participants] = await query<ConversationParticipantResult[]>(
-      'SELECT user_id FROM conversation_participants WHERE conversation_id = $1 AND tenant_id = $2',
-      [message.conversation_id, message.tenant_id],
-    );
-
-    const [senderInfo] = await query<UserInfoResult[]>(
-      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = $1 AND tenant_id = $2',
-      [message.sender_id, message.tenant_id],
-    );
-    const sender = senderInfo[0] as
-      | { first_name: string | null; last_name: string | null; profile_picture_url: string | null }
-      | undefined;
-
-    const messageData = {
-      id: message.id,
-      conversation_id: message.conversation_id,
-      content: message.content,
-      sender_id: message.sender_id,
-      sender_name: this.getSenderDisplayName(sender, 'Unbekannter Benutzer'),
-      first_name: sender?.first_name ?? '',
-      last_name: sender?.last_name ?? '',
-      profile_picture_url: sender?.profile_picture_url ?? null,
-      created_at: message.created_at as string,
-      delivery_status: 'delivered',
-      is_read: false,
-      is_scheduled: true,
-      attachments: [] as {
-        filename: string;
-        content?: string | Buffer;
-        path?: string;
-        contentType?: string;
-      }[],
-    };
-
-    const participantIds = participants.map((p: ConversationParticipantResult) => p.user_id);
-    this.broadcastToParticipants(participantIds, 'scheduled_message_delivered', messageData);
-  }
-
-  // Geplante Nachrichten verarbeiten
-  private async processScheduledMessages(): Promise<void> {
-    try {
-      const [scheduledMessages] = await query<MessageDetailsResult[]>(`
-        SELECT m.*, c.id as conversation_id
-        FROM messages m
-        JOIN conversations c ON m.conversation_id = c.id
-        WHERE m.scheduled_delivery IS NOT NULL
-        AND m.scheduled_delivery <= NOW()
-        AND m.delivery_status = 'scheduled'
-      `);
-
-      for (const message of scheduledMessages) {
-        await this.processOneScheduledMessage(message);
-      }
-    } catch (error: unknown) {
-      logger.error('Fehler beim Verarbeiten geplanter Nachrichten:', error);
-    }
-  }
-
-  // Geplante Nachrichten alle Minute prüfen
-  public startScheduledMessageProcessor(): void {
-    setInterval(() => {
-      void this.processScheduledMessages();
-    }, 60000); // Alle 60 Sekunden
-  }
-
-  /**
-   * Get queued messages from database
-   */
-  private async getQueuedMessages(): Promise<MessageWithSenderResult[]> {
-    const queueQuery = `
-      SELECT
-        mdq.id as queue_id,
-        mdq.message_id,
-        mdq.recipient_id,
-        m.conversation_id,
-        m.content,
-        m.sender_id,
-        m.created_at,
-        u.first_name,
-        u.last_name,
-        u.profile_picture as profile_picture_url
-      FROM message_delivery_queue mdq
-      JOIN messages m ON mdq.message_id = m.id
-      JOIN users u ON m.sender_id = u.id
-      WHERE mdq.status = 'pending'
-      AND mdq.attempts < 3
-      LIMIT 50
-    `;
-
-    const [queuedMessages] = await query<MessageWithSenderResult[]>(queueQuery);
-    return queuedMessages;
-  }
-
-  /**
-   * Build message data object from database row
-   */
-  private buildMessageDataFromRow(message: MessageWithSenderResult): {
-    id: number;
-    conversation_id: number;
-    content: string;
-    sender_id: number;
-    sender_name: string;
-    first_name: string;
-    last_name: string;
-    profile_picture_url: string | null;
-    created_at: string;
-    delivery_status: string;
-    is_read: boolean;
-    attachments: {
-      filename: string;
-      content?: string | Buffer;
-      path?: string;
-      contentType?: string;
-    }[];
-  } {
-    return {
-      id: message.message_id,
-      conversation_id: message.conversation_id,
-      content: message.content,
-      sender_id: message.sender_id,
-      sender_name: (() => {
-        const name = `${message.first_name ?? ''} ${message.last_name ?? ''}`.trim();
-        return name !== '' ? name : 'Unbekannter Benutzer';
-      })(),
-      first_name: message.first_name ?? '',
-      last_name: message.last_name ?? '',
-      profile_picture_url: message.profile_picture_url ?? null,
-      created_at:
-        typeof message.created_at === 'string' ?
-          message.created_at
-        : message.created_at.toISOString(),
-      delivery_status: 'delivered',
-      is_read: false,
-      attachments: [],
-    };
-  }
-
-  /**
-   * Deliver message to recipient
-   */
-  private async deliverMessage(message: MessageWithSenderResult): Promise<void> {
-    // Update status to processing
-    await execute<ResultSetHeader>(
-      "UPDATE message_delivery_queue SET status = 'processing', last_attempt = NOW(), attempts = attempts + 1 WHERE id = $1",
-      [message.queue_id],
-    );
-
-    // Build message data
-    const messageData = this.buildMessageDataFromRow(message);
-
-    // Send to recipient if online
-    const recipientId = message.recipient_id;
-    const recipientWs = this.clients.get(recipientId);
-    if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
-      this.sendMessage(recipientWs, {
-        type: 'new_message',
-        data: messageData,
-      });
-    }
-
-    // Mark as delivered
-    await execute<ResultSetHeader>(
-      "UPDATE message_delivery_queue SET status = 'delivered' WHERE id = $1",
-      [message.queue_id],
-    );
-
-    await execute<ResultSetHeader>(
-      "UPDATE messages SET delivery_status = 'delivered' WHERE id = $1",
-      [message.message_id],
-    );
-  }
-
-  /**
-   * Handle message delivery failure
-   */
-  private async handleDeliveryFailure(message: MessageWithSenderResult): Promise<void> {
-    const [result] = await query<NotificationQueueResult[]>(
-      'SELECT attempts FROM message_delivery_queue WHERE id = $1',
-      [message.queue_id],
-    );
-
-    if (result[0] && result[0].attempts >= 3) {
-      // Mark as failed after max attempts
-      await execute<ResultSetHeader>(
-        "UPDATE message_delivery_queue SET status = 'failed' WHERE id = $1",
-        [message.queue_id],
-      );
-      await execute<ResultSetHeader>(
-        "UPDATE messages SET delivery_status = 'failed' WHERE id = $1",
-        [message.message_id],
-      );
-    } else {
-      // Reset to pending for retry
-      await execute<ResultSetHeader>(
-        "UPDATE message_delivery_queue SET status = 'pending' WHERE id = $1",
-        [message.queue_id],
-      );
-    }
-  }
-
-  /**
-   * Process single message from queue
-   */
-  private async processSingleMessage(message: MessageWithSenderResult): Promise<void> {
-    try {
-      await this.deliverMessage(message);
-    } catch (error: unknown) {
-      logger.error(`Fehler beim Zustellen der Nachricht ${String(message.message_id)}:`, error);
-      await this.handleDeliveryFailure(message);
-    }
-  }
-
-  // Message Delivery Queue verarbeiten
-  private async processMessageDeliveryQueue(): Promise<void> {
-    try {
-      const queuedMessages = await this.getQueuedMessages();
-
-      for (const message of queuedMessages) {
-        await this.processSingleMessage(message);
-      }
-    } catch (error: unknown) {
-      logger.error('Fehler beim Verarbeiten der Message Delivery Queue:', error);
-    }
-  }
-
-  // Message Delivery Queue Processor starten
-  public startMessageDeliveryProcessor(): void {
-    // Initial ausführen
-    void this.processMessageDeliveryQueue();
-
-    // Alle 5 Sekunden prüfen
-    setInterval(() => {
-      void this.processMessageDeliveryQueue();
-    }, 5000);
   }
 }
 

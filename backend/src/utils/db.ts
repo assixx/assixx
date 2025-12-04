@@ -7,7 +7,10 @@
  */
 import { Pool, PoolClient, QueryResultRow } from 'pg';
 
-import pool, { setTenantContext } from '../config/database.js';
+import pool, { setTenantContext, setUserContext } from '../config/database.js';
+
+// Re-export context setters for direct access when needed
+export { setTenantContext, setUserContext } from '../config/database.js';
 
 /**
  * Result header for INSERT/UPDATE/DELETE operations
@@ -55,9 +58,19 @@ function processQueryResult<T extends QueryResultRow[] | ResultSetHeader>(
     fields?: { name: string; dataTypeID: number }[];
   },
 ): [T, FieldPacket[]] {
-  const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
+  const sqlUpper = sql.trim().toUpperCase();
+  // Check if query returns rows:
+  // - SELECT, WITH, TABLE, EXPLAIN, VALUES: always return rows
+  // - INSERT/UPDATE/DELETE with RETURNING: return rows
+  const isRowReturning =
+    sqlUpper.startsWith('SELECT') ||
+    sqlUpper.startsWith('WITH') ||
+    sqlUpper.startsWith('TABLE') ||
+    sqlUpper.startsWith('EXPLAIN') ||
+    sqlUpper.startsWith('VALUES') ||
+    sqlUpper.includes('RETURNING');
 
-  if (isSelect) {
+  if (isRowReturning) {
     const fields: FieldPacket[] =
       result.fields?.map((f: { name: string; dataTypeID: number }) => ({
         name: f.name,
@@ -143,14 +156,18 @@ export async function query<T extends QueryResultRow[] | ResultSetHeader>(
     // - EXPLAIN: query plan analysis
     // - VALUES: standalone values list
     const sqlUpper = sql.trim().toUpperCase();
-    const isSelect =
+    // Check if query returns rows:
+    // - SELECT, WITH, TABLE, EXPLAIN, VALUES: always return rows
+    // - INSERT/UPDATE/DELETE with RETURNING: return rows
+    const isRowReturning =
       sqlUpper.startsWith('SELECT') ||
       sqlUpper.startsWith('WITH') ||
       sqlUpper.startsWith('TABLE') ||
       sqlUpper.startsWith('EXPLAIN') ||
-      sqlUpper.startsWith('VALUES');
+      sqlUpper.startsWith('VALUES') ||
+      sqlUpper.includes('RETURNING');
 
-    if (isSelect) {
+    if (isRowReturning) {
       const fields: FieldPacket[] = result.fields.map(
         (f: { name: string; dataTypeID: number }) => ({
           name: f.name,
@@ -191,14 +208,24 @@ export async function getConnection(): Promise<PoolConnection> {
 }
 
 /**
+ * RLS context options for transaction
+ * NEW 2025-12-04: Added userId for participant-based isolation
+ */
+export interface RLSContextOptions {
+  tenantId?: number;
+  userId?: number;
+}
+
+/**
  * Execute callback within a transaction
  *
  * @param callback - Transaction callback
- * @param tenantId - Optional tenant ID for RLS context
+ * @param context - RLS context (tenantId, userId) or just tenantId for backward compatibility
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function transaction<T>(
   callback: (connection: PoolConnection) => Promise<T>,
-  tenantId?: number,
+  context?: number | RLSContextOptions,
 ): Promise<T> {
   const client = await pool.connect();
   const wrapped = wrapClient(client);
@@ -206,8 +233,19 @@ export async function transaction<T>(
   try {
     await client.query('BEGIN');
 
-    if (tenantId !== undefined && tenantId > 0) {
-      await setTenantContext(client, tenantId);
+    // Handle backward compatibility: context can be number (tenantId) or object
+    if (typeof context === 'number') {
+      if (context > 0) {
+        await setTenantContext(client, context);
+      }
+    } else if (context !== undefined) {
+      // New format: { tenantId, userId }
+      if (context.tenantId !== undefined && context.tenantId > 0) {
+        await setTenantContext(client, context.tenantId);
+      }
+      if (context.userId !== undefined && context.userId > 0) {
+        await setUserContext(client, context.userId);
+      }
     }
 
     const result = await callback(wrapped);

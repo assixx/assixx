@@ -8,6 +8,7 @@ import http, { Server } from 'http';
 import path from 'path';
 
 import app from './app.js';
+import { messageScheduler } from './services/messageScheduler.service.js';
 import { logger } from './utils/logger.js';
 import { ChatWebSocketServer } from './websocket.js';
 
@@ -39,6 +40,10 @@ server.listen(PORT, (): void => {
   // Log environment
   logger.info(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
   logger.info('🚀 Live-Reload is working! Changed at: ' + new Date().toISOString());
+
+  // Start Message Scheduler for scheduled chat messages
+  messageScheduler.start();
+  logger.info('📅 Message Scheduler started');
 
   // Create required directories
   createRequiredDirectories();

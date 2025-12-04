@@ -232,12 +232,14 @@ function buildEventInsertParams(eventData: EventCreateData, eventUuid: string): 
   ];
 }
 
+// POSTGRESQL: RETURNING id required to get insertId
 const INSERT_EVENT_QUERY = `
   INSERT INTO calendar_events
   (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
    org_level, department_id, team_id, created_by_role, allow_attendees,
    type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+  RETURNING id
 `;
 
 /**

@@ -125,10 +125,11 @@ CREATE INDEX IF NOT EXISTS idx_table_tenant ON table_name(tenant_id);
 ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
 ALTER TABLE table_name FORCE ROW LEVEL SECURITY;
 
+-- WICHTIG: NULLIF() im ersten Teil ist PFLICHT (Bug-Fix 2025-12-03)
 CREATE POLICY tenant_isolation ON table_name
     FOR ALL
     USING (
-        current_setting('app.tenant_id', true) IS NULL
+        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );
 
@@ -220,11 +221,14 @@ await client.query('SET app.tenant_id = $1', [tenantId.toString()]);
 
 ```sql
 -- Standard RLS Policy für Tenant-Tabellen
+-- WICHTIG: NULLIF() im ersten Teil ist PFLICHT!
+-- Nach set_config() + COMMIT wird app.tenant_id zu '' (empty string), NICHT NULL!
+-- Ohne NULLIF würde '' IS NULL = FALSE → RLS blockiert ALLES!
 CREATE POLICY tenant_isolation ON table_name
     FOR ALL
     USING (
-        -- Root/Admin Zugriff (kein Tenant Context)
-        current_setting('app.tenant_id', true) IS NULL
+        -- Root/Admin Zugriff (kein Tenant Context oder empty string)
+        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
         -- Oder passender Tenant
         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );

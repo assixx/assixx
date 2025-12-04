@@ -171,11 +171,13 @@ export async function createNotification(
   ipAddress?: string,
   userAgent?: string,
 ): Promise<{ notificationId: number }> {
+  // POSTGRESQL: RETURNING id required to get insertId
   const [result] = await executeQuery<ResultSetHeader>(
     `INSERT INTO notifications
     (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
      metadata, scheduled_for, created_by, tenant_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    RETURNING id`,
     [
       data.type,
       data.title,
@@ -254,18 +256,19 @@ export async function markAllAsRead(
   tenantId: number,
 ): Promise<{ updated: number }> {
   // Get all unread notifications for user
+  // POSTGRESQL FIX: $1=tenantId, $2=userId - reused where needed
   const [unreadNotifications] = await executeQuery<IdResult[]>(
     `SELECT n.id FROM notifications n
-     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $3
-     WHERE n.tenant_id = $4
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $5)
+     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
+     WHERE n.tenant_id = $1
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (
             SELECT ud.department_id FROM users u
             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-            WHERE u.id = $6 AND u.tenant_id = $2))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $7 AND tenant_id = $2)))
+            WHERE u.id = $2 AND u.tenant_id = $1))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))
      AND nrs.id IS NULL`,
-    [userId, tenantId, userId, userId, tenantId, userId, tenantId],
+    [tenantId, userId],
   );
 
   let markedCount = 0;
@@ -322,8 +325,11 @@ export async function deleteNotification(
     throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
-  // Delete notification
-  await executeQuery(`DELETE FROM notifications WHERE id = $1`, [notificationId]);
+  // Delete notification (with tenant isolation)
+  await executeQuery(`DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`, [
+    notificationId,
+    tenantId,
+  ]);
 
   // Log the action
   await rootLog.create({
@@ -551,46 +557,48 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
  */
 export async function getPersonalStats(userId: number, tenantId: number): Promise<unknown> {
   // Total notifications for user
-  // Note: department_id is now in user_departments table (many-to-many)
+  // POSTGRESQL FIX: $1=tenantId, $2=userId - reused where needed
   const [[totalResult]] = await executeQuery<TotalCountResult[]>(
     `SELECT COUNT(*) as total FROM notifications n
-     WHERE n.tenant_id = $3
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $4)
+     WHERE n.tenant_id = $1
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (
             SELECT ud.department_id FROM users u
             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-            WHERE u.id = $5 AND u.tenant_id = $2))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $6 AND tenant_id = $2)))`,
-    [tenantId, userId, userId, tenantId, userId, tenantId],
+            WHERE u.id = $2 AND u.tenant_id = $1))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))`,
+    [tenantId, userId],
   );
 
   // Unread count
+  // POSTGRESQL FIX: $1=tenantId, $2=userId - reused where needed
   const [[unreadResult]] = await executeQuery<UnreadCountResult[]>(
     `SELECT COUNT(*) as unread_count FROM notifications n
-     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $3
-     WHERE n.tenant_id = $4
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $5)
+     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
+     WHERE n.tenant_id = $1
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (
             SELECT ud.department_id FROM users u
             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-            WHERE u.id = $6 AND u.tenant_id = $2))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $7 AND tenant_id = $2)))
+            WHERE u.id = $2 AND u.tenant_id = $1))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))
      AND nrs.id IS NULL`,
-    [userId, tenantId, userId, userId, tenantId, userId, tenantId],
+    [tenantId, userId],
   );
 
   // By type
+  // POSTGRESQL FIX: $1=tenantId, $2=userId - reused where needed
   const [byTypeRows] = await executeQuery<TypeCountResult[]>(
     `SELECT n.type, COUNT(*) as count FROM notifications n
-     WHERE n.tenant_id = $3
-     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $4)
+     WHERE n.tenant_id = $1
+     AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (
             SELECT ud.department_id FROM users u
             LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-            WHERE u.id = $5 AND u.tenant_id = $2))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $6 AND tenant_id = $2)))
+            WHERE u.id = $2 AND u.tenant_id = $1))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))
      GROUP BY n.type`,
-    [tenantId, userId, userId, tenantId, userId, tenantId],
+    [tenantId, userId],
   );
 
   const byType: Record<string, number> = {};

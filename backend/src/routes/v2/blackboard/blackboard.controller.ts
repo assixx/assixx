@@ -6,7 +6,7 @@
 import crypto from 'crypto';
 import { Response } from 'express';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -704,7 +704,7 @@ export async function uploadAttachment(req: AuthenticatedRequest, res: Response)
     const numericId = (entry as BlackboardEntry).id; // Documents use numeric entry ID
 
     // Generate UUID and metadata for documents system
-    const fileUuid = uuidv4();
+    const fileUuid = uuidv7();
     const extension = path.extname(req.file.originalname).toLowerCase();
     const checksum = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
 
