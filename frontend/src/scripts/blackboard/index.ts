@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Blackboard Module - Main Entry Point
  * Orchestrates all blackboard functionality following MANAGE pattern
@@ -53,6 +54,40 @@ import {
 } from './forms';
 
 // ============================================================================
+// Admin Controls Rendering (Security: Only render for admin/root)
+// ============================================================================
+
+/**
+ * Render admin-only controls dynamically
+ * Security: Button is not rendered for employees - cannot be manipulated via DevTools
+ * @param isAdmin - Whether user is admin or root
+ */
+function renderAdminControls(isAdmin: boolean): void {
+  const container = document.querySelector('#newEntryBtnContainer');
+  if (!container) {
+    console.warn('[Blackboard] newEntryBtnContainer not found');
+    return;
+  }
+
+  if (!isAdmin) {
+    // Employee: Do not render the button at all
+    container.innerHTML = '';
+    console.info('[Blackboard] Admin controls not rendered (employee role)');
+    return;
+  }
+
+  // Admin/Root: Render the "Neuer Eintrag" button
+  const button = document.createElement('button');
+  button.id = 'newEntryBtn';
+  button.className = 'btn btn-primary m-0';
+  button.setAttribute('data-action', 'new-entry');
+  button.innerHTML = '<i class="fas fa-plus mr-2"></i>Neuer Eintrag';
+
+  container.appendChild(button);
+  console.info('[Blackboard] Admin controls rendered');
+}
+
+// ============================================================================
 // Main Initialization
 // ============================================================================
 
@@ -70,8 +105,10 @@ async function initializeBlackboard(): Promise<void> {
     const userInfo = await loadUserInfo();
     const isAdmin = userInfo.role === 'admin' || userInfo.role === 'root';
 
+    // Security: Render admin controls only for admin/root users
+    renderAdminControls(isAdmin);
+
     // Initialize state with role for permission checks
-    // Note: canEditEntry checks for 'root' role OR author, not admin
     blackboardState.initialize(apiClient, userInfo.id, isAdmin, userInfo.role);
 
     // Load organization data (departments, teams)

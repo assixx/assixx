@@ -11,48 +11,80 @@ import * as rotationService from './rotation.service.js';
 import type {
   AssignRotationRequest,
   CreateRotationPatternRequest,
+  GenerateRotationFromConfigRequest,
   GenerateRotationRequest,
 } from './rotation.types.js';
 
 // Constants
 const INTERNAL_ERROR_MESSAGE = 'An unexpected error occurred';
 
+/**
+ * Handle rotation errors with special DUPLICATE_NAME support
+ * Extracted to reduce cognitive complexity in handlers
+ */
+function handleRotationError(error: unknown, res: Response, logPrefix: string): void {
+  console.error(`[${logPrefix} ERROR] Full error:`, error);
+
+  if (!(error instanceof ServiceError)) {
+    const errorMessage = error instanceof Error ? error.message : INTERNAL_ERROR_MESSAGE;
+    console.error(`[${logPrefix} ERROR] Details:`, errorMessage);
+    res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MESSAGE));
+    return;
+  }
+
+  // Special handling for DUPLICATE_NAME - include existingId for frontend
+  const errorWithId = error as ServiceError & { existingId?: number };
+  if (error.code === 'DUPLICATE_NAME' && errorWithId.existingId !== undefined) {
+    res.status(error.statusCode).json({
+      success: false,
+      error: { code: error.code, message: error.message, existingId: errorWithId.existingId },
+    });
+    return;
+  }
+
+  res.status(error.statusCode).json(errorResponse(error.code, error.message));
+}
+
 // Helper types
 interface RotationHistoryFilters {
   patternId?: number;
   userId?: number;
+  teamId?: number;
   startDate?: string;
   endDate?: string;
   status?: string;
 }
 
 /**
+ * Check if query parameter has a valid non-empty value
+ */
+function isValidQueryParam(value: unknown): value is string {
+  return typeof value === 'string' && value !== '';
+}
+
+/**
  * Parse rotation history query parameters into filters object
- * Extracted to reduce cognitive complexity
  */
 function parseRotationHistoryFilters(query: Record<string, unknown>): RotationHistoryFilters {
   const filters: RotationHistoryFilters = {};
 
-  const patternIdQuery = query['pattern_id'] as string | undefined;
-  const userIdQuery = query['user_id'] as string | undefined;
-  const startDateQuery = query['start_date'] as string | undefined;
-  const endDateQuery = query['end_date'] as string | undefined;
-  const statusQuery = query['status'] as string | undefined;
-
-  if (patternIdQuery !== undefined && patternIdQuery !== '') {
-    filters.patternId = Number(patternIdQuery);
+  if (isValidQueryParam(query['pattern_id'])) {
+    filters.patternId = Number(query['pattern_id']);
   }
-  if (userIdQuery !== undefined && userIdQuery !== '') {
-    filters.userId = Number(userIdQuery);
+  if (isValidQueryParam(query['user_id'])) {
+    filters.userId = Number(query['user_id']);
   }
-  if (startDateQuery !== undefined && startDateQuery !== '') {
-    filters.startDate = startDateQuery;
+  if (isValidQueryParam(query['team_id'])) {
+    filters.teamId = Number(query['team_id']);
   }
-  if (endDateQuery !== undefined && endDateQuery !== '') {
-    filters.endDate = endDateQuery;
+  if (isValidQueryParam(query['start_date'])) {
+    filters.startDate = query['start_date'];
   }
-  if (statusQuery !== undefined && statusQuery !== '') {
-    filters.status = statusQuery;
+  if (isValidQueryParam(query['end_date'])) {
+    filters.endDate = query['end_date'];
+  }
+  if (isValidQueryParam(query['status'])) {
+    filters.status = query['status'];
   }
 
   return filters;
@@ -124,14 +156,7 @@ export const createRotationPattern = async (
 
     res.json(successResponse({ pattern }));
   } catch (error: unknown) {
-    console.error('[ROTATION ERROR] Full error:', error);
-    if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.code, error.message));
-    } else {
-      const errorMessage = error instanceof Error ? error.message : INTERNAL_ERROR_MESSAGE;
-      console.error('[ROTATION ERROR] Details:', errorMessage);
-      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MESSAGE));
-    }
+    handleRotationError(error, res, 'ROTATION');
   }
 };
 
@@ -244,14 +269,7 @@ export const generateRotationShifts = async (
 
     res.json(successResponse({ generatedShifts }));
   } catch (error: unknown) {
-    console.error('[GENERATE ERROR] Full error:', error);
-    if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.code, error.message));
-    } else {
-      const errorMessage = error instanceof Error ? error.message : INTERNAL_ERROR_MESSAGE;
-      console.error('[GENERATE ERROR] Details:', errorMessage);
-      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MESSAGE));
-    }
+    handleRotationError(error, res, 'GENERATE');
   }
 };
 
@@ -299,6 +317,110 @@ export const deleteRotationHistory = async (
         deletedCounts,
       }),
     );
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MESSAGE));
+    }
+  }
+};
+
+/**
+ * Delete rotation history for a specific date range (week)
+ * Query params: team_id, start_date, end_date
+ */
+export const deleteRotationHistoryByDateRange = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const teamIdQuery = req.query['team_id'] as string | undefined;
+    const startDateQuery = req.query['start_date'] as string | undefined;
+    const endDateQuery = req.query['end_date'] as string | undefined;
+
+    if (teamIdQuery === undefined || teamIdQuery === '') {
+      throw new ServiceError('BAD_REQUEST', 'team_id is required', 400);
+    }
+    if (startDateQuery === undefined || startDateQuery === '') {
+      throw new ServiceError('BAD_REQUEST', 'start_date is required', 400);
+    }
+    if (endDateQuery === undefined || endDateQuery === '') {
+      throw new ServiceError('BAD_REQUEST', 'end_date is required', 400);
+    }
+
+    const teamId = Number(teamIdQuery);
+    const deletedCounts = await rotationService.deleteRotationHistoryByDateRange(
+      req.user.tenant_id,
+      teamId,
+      startDateQuery,
+      endDateQuery,
+    );
+
+    res.json(
+      successResponse({
+        message: `Successfully deleted rotation history for team ${teamId} from ${startDateQuery} to ${endDateQuery}`,
+        deletedCounts,
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MESSAGE));
+    }
+  }
+};
+
+/**
+ * Generate rotation shifts from algorithm config + employee assignments
+ * New algorithm-based approach - no pattern lookup needed
+ */
+export const generateRotationFromConfig = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    console.info('[GENERATE-FROM-CONFIG] Starting - User:', req.user.id);
+    console.info('[GENERATE-FROM-CONFIG] Request body:', JSON.stringify(req.body, null, 2));
+
+    if (req.user.role !== 'admin' && req.user.role !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'Only admins can generate rotation shifts', 403);
+    }
+
+    const data = req.body as GenerateRotationFromConfigRequest;
+    const result = await rotationService.generateRotationFromConfig(
+      data,
+      req.user.tenant_id,
+      req.user.id,
+    );
+
+    res.json(successResponse(result));
+  } catch (error: unknown) {
+    handleRotationError(error, res, 'GENERATE-FROM-CONFIG');
+  }
+};
+
+/**
+ * Delete a single rotation history entry by ID
+ */
+export const deleteRotationHistoryEntry = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'Only admins can delete rotation history entries', 403);
+    }
+
+    const historyId = Number(req.params['id']);
+    if (Number.isNaN(historyId) || historyId <= 0) {
+      throw new ServiceError('BAD_REQUEST', 'Invalid history ID', 400);
+    }
+
+    await rotationService.deleteRotationHistoryEntry(historyId, req.user.tenant_id);
+
+    res.json(successResponse({ message: 'Entry deleted successfully' }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));

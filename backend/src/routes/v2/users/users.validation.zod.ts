@@ -133,6 +133,12 @@ export const UpdateUserBodySchema = z.object({
   address: z.string().trim().optional(),
   isActive: z.boolean().optional(),
   employeeNumber: EmployeeNumberSchema,
+  dateOfBirth: z.string().trim().optional(),
+  // Availability fields for employee status tracking
+  availabilityStatus: AvailabilityStatusSchema.optional(),
+  availabilityStart: z.string().nullable().optional(), // Date string YYYY-MM-DD or null
+  availabilityEnd: z.string().nullable().optional(), // Date string YYYY-MM-DD or null
+  availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 
 /**

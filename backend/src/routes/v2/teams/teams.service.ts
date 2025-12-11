@@ -22,6 +22,9 @@ interface TeamMemberResult extends RowDataPacket {
   last_name?: string;
   position?: string;
   employee_id?: string;
+  availability_status?: string;
+  availability_start?: string;
+  availability_end?: string;
 }
 
 /**
@@ -471,6 +474,9 @@ class TeamsService {
         lastName: member.last_name,
         position: member.position,
         employeeId: member.employee_id,
+        availabilityStatus: member.availability_status,
+        availabilityStart: member.availability_start,
+        availabilityEnd: member.availability_end,
       }));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {

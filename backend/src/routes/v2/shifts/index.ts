@@ -17,11 +17,6 @@ import { shiftsValidationZod } from './shifts.validation.zod.js';
 
 const router = Router();
 
-// Route constants
-const ROUTES = {
-  TEMPLATE_BY_ID: '/templates/:id',
-} as const;
-
 // ============= SHIFTS CRUD =============
 
 /**
@@ -98,151 +93,6 @@ router.get(
   authenticateV2,
   shiftsValidationZod.listShifts,
   typed.auth(shiftsController.listShifts),
-);
-
-// ============= TEMPLATES (MUST BE BEFORE /:id) =============
-
-/**
- * /api/v2/shifts/templates:
- *   get:
- *     summary: List shift templates
- *     tags: [Shifts v2]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Templates retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/TemplateListResponseV2'
- */
-router.get('/templates', authenticateV2, typed.auth(shiftsController.listTemplates));
-
-/**
- * /api/v2/shifts/templates/\{id\}:
- *   get:
- *     summary: Get template by ID
- *     tags: [Shifts v2]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Template ID
- *     responses:
- *       200:
- *         description: Template retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/TemplateResponseV2'
- *       404:
- *         description: Template not found
- */
-router.get(
-  ROUTES.TEMPLATE_BY_ID,
-  authenticateV2,
-  shiftsValidationZod.getTemplateById,
-  typed.auth(shiftsController.getTemplateById),
-);
-
-/**
- * /api/v2/shifts/templates:
- *   post:
- *     summary: Create shift template
- *     tags: [Shifts v2]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateTemplateRequestV2'
- *     responses:
- *       201:
- *         description: Template created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/TemplateResponseV2'
- */
-router.post(
-  '/templates',
-  authenticateV2,
-  requireRoleV2(['admin', 'root']),
-  shiftsValidationZod.createTemplate,
-  typed.auth(shiftsController.createTemplate),
-);
-
-/**
- * /api/v2/shifts/templates/\{id\}:
- *   put:
- *     summary: Update shift template
- *     tags: [Shifts v2]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Template ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UpdateTemplateRequestV2'
- *     responses:
- *       200:
- *         description: Template updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/TemplateResponseV2'
- *       404:
- *         description: Template not found
- */
-router.put(
-  ROUTES.TEMPLATE_BY_ID,
-  authenticateV2,
-  requireRoleV2(['admin', 'root']),
-  shiftsValidationZod.updateTemplate,
-  typed.auth(shiftsController.updateTemplate),
-);
-
-/**
- * /api/v2/shifts/templates/\{id\}:
- *   delete:
- *     summary: Delete shift template
- *     tags: [Shifts v2]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Template ID
- *     responses:
- *       200:
- *         description: Template deleted successfully
- *       404:
- *         description: Template not found
- */
-router.delete(
-  ROUTES.TEMPLATE_BY_ID,
-  authenticateV2,
-  requireRoleV2(['admin', 'root']),
-  shiftsValidationZod.deleteTemplate,
-  typed.auth(shiftsController.deleteTemplate),
 );
 
 // ============= SWAP REQUESTS (MUST BE BEFORE /:id) =============
@@ -750,6 +600,18 @@ router.post(
 );
 
 /**
+ * POST /api/v2/shifts/rotation/generate-from-config
+ * Generate rotation shifts from algorithm config and employee assignments.
+ * Requires admin or root role.
+ */
+router.post(
+  '/rotation/generate-from-config',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.generateRotationFromConfig),
+);
+
+/**
  * /api/v2/shifts/rotation/history:
  *   get:
  *     summary: Get rotation history
@@ -802,6 +664,69 @@ router.delete(
   authenticateV2,
   requireRoleV2(['admin', 'root']),
   typed.auth(rotationController.deleteRotationHistory),
+);
+
+/**
+ * /api/v2/shifts/rotation/history/week:
+ *   delete:
+ *     summary: Delete rotation history for a specific date range (week)
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: team_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: start_date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: end_date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Week history deleted successfully
+ */
+router.delete(
+  '/rotation/history/week',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.deleteRotationHistoryByDateRange),
+);
+
+/**
+ * /api/v2/shifts/rotation/history/\{id\}:
+ *   delete:
+ *     summary: Delete a single rotation history entry by ID
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Rotation history entry ID
+ *     responses:
+ *       200:
+ *         description: Entry deleted successfully
+ *       404:
+ *         description: Entry not found
+ */
+router.delete(
+  '/rotation/history/:id',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.deleteRotationHistoryEntry),
 );
 
 // ============= MY CALENDAR SHIFTS (MUST BE BEFORE /:id) =============

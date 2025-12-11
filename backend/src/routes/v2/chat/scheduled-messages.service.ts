@@ -53,6 +53,16 @@ export interface CreateScheduledMessageInput {
 }
 
 /**
+ * Attachment data for scheduled messages
+ */
+export interface ScheduledMessageAttachment {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Scheduled message response format
  */
 export interface ScheduledMessage {
@@ -64,6 +74,7 @@ export interface ScheduledMessage {
   status: 'pending' | 'sent' | 'cancelled';
   createdAt: string;
   sentAt: string | null;
+  attachment: ScheduledMessageAttachment | null;
 }
 
 /**
@@ -130,6 +141,22 @@ function mapRowToScheduledMessage(row: ScheduledMessageRow): ScheduledMessage {
       status = 'pending';
   }
 
+  // Build attachment object if all required fields are present
+  let attachment: ScheduledMessageAttachment | null = null;
+  if (
+    row.attachment_path !== null &&
+    row.attachment_name !== null &&
+    row.attachment_type !== null &&
+    row.attachment_size !== null
+  ) {
+    attachment = {
+      path: row.attachment_path,
+      name: row.attachment_name,
+      type: row.attachment_type,
+      size: row.attachment_size,
+    };
+  }
+
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -139,6 +166,7 @@ function mapRowToScheduledMessage(row: ScheduledMessageRow): ScheduledMessage {
     status,
     createdAt: row.created_at.toISOString(),
     sentAt: row.sent_at?.toISOString() ?? null,
+    attachment,
   };
 }
 

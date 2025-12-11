@@ -31,8 +31,9 @@ export class TokenManager {
   private tokenReceivedAt: number | null = null; // Client timestamp when token was received (Clock Skew fix)
   private timerInterval: number | null = null;
   private currentInterval = 60000; // Start with 1 minute interval
-  private debugMode = true; // Enable debug logging for testing
+  private debugMode = false; // Debug logging disabled by default
   private isPageVisible = true;
+  private expiringSoonWarningEmitted = false; // Track if warning was already emitted
   private callbacks: TokenCallbacks = {
     onTimerUpdate: [],
     onTokenRefreshed: [],
@@ -112,6 +113,9 @@ export class TokenManager {
     // Also update cookie for legacy compatibility (some endpoints might still check it)
     // Using 'token' for backward compatibility with backend
     document.cookie = `token=${access}; path=/; max-age=86400; SameSite=Lax`;
+
+    // Reset expiring soon warning flag (new token = new lifecycle)
+    this.expiringSoonWarningEmitted = false;
 
     // Notify all subscribers about new token
     this.callbacks.onTokenRefreshed.forEach((callback) => {
@@ -470,8 +474,9 @@ export class TokenManager {
       return; // Exit immediately after logout
     }
 
-    // Emit warning if token expires soon (< 5 minutes)
-    if (this.isExpiringSoon(300)) {
+    // Emit warning if token expires soon (< 5 minutes) - ONLY ONCE per token lifecycle
+    if (this.isExpiringSoon(300) && !this.expiringSoonWarningEmitted) {
+      this.expiringSoonWarningEmitted = true;
       this.logDebug('⚠️ Token expiring soon (<5 min), emitting warning');
       this.callbacks.onTokenExpiringSoon.forEach((callback) => {
         callback();

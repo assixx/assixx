@@ -23,7 +23,7 @@
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 0 0 2px #000;
+  box-shadow: 0 0 0 2px #00000017;
 }
 
 .logo-container {

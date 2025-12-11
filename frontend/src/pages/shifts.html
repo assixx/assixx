@@ -26,585 +26,765 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Main Content -->
-      <main class="overflow-y-auto w-full h-[calc(100vh-56px)]">
+      <!-- Main Content Area -->
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div class="shift-planning-container">
-            <!-- Info Row - KORREKTE HIERARCHIE: Area → Department → Machine → Team -->
-            <div class="shift-info-row">
-              <!-- 1. AREA Filter (NEU!) -->
-              <div class="info-item">
-                <div class="info-label">Bereich</div>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" id="areaDisplay" data-action="toggle-dropdown" data-dropdown="area">
-                    <span>Bereich wählen...</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
+          <div class="card">
+            <!-- Card Header - Following Base Card Component Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-calendar-alt mr-2"></i>
+                Schichtplanung
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Schichten planen und verwalten</p>
+
+              <!-- Filter Controls - ADMIN ONLY (hidden by default, shown for admin/root) -->
+              <div id="admin-filter-controls" class="shift-info-row mt-4 u-hidden">
+                <!-- 1. AREA Filter (NEU!) -->
+                <div class="info-item">
+                  <div class="info-label">Bereich</div>
+                  <div class="dropdown" data-dropdown="area">
+                    <div class="dropdown__trigger" id="areaDisplay">
+                      <span>Bereich wählen...</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="areaDropdown">
+                      <!-- Options will be populated dynamically -->
+                    </div>
                   </div>
-                  <div class="dropdown-options" id="areaDropdown">
-                    <!-- Options will be populated dynamically -->
+                </div>
+                <!-- 2. DEPARTMENT Filter -->
+                <div class="info-item">
+                  <div class="info-label">Abteilung</div>
+                  <div class="dropdown" data-dropdown="department">
+                    <div class="dropdown__trigger" id="departmentDisplay">
+                      <span>Abteilung wählen...</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="departmentDropdown">
+                      <!-- Options will be populated dynamically -->
+                    </div>
+                  </div>
+                </div>
+                <!-- 3. MACHINE Filter (JETZT VOR TEAM!) -->
+                <div class="info-item">
+                  <div class="info-label">Maschine</div>
+                  <div class="dropdown" data-dropdown="machine">
+                    <div class="dropdown__trigger" id="machineDisplay">
+                      <span>Maschine wählen...</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="machineDropdown">
+                      <!-- Options will be populated dynamically -->
+                    </div>
+                  </div>
+                </div>
+                <!-- 4. TEAM Filter (JETZT NACH MACHINE!) -->
+                <div class="info-item">
+                  <div class="info-label">Team</div>
+                  <div class="dropdown" data-dropdown="team">
+                    <div class="dropdown__trigger" id="teamDisplay">
+                      <span>Team wählen...</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="teamDropdown">
+                      <!-- Options will be populated dynamically -->
+                    </div>
                   </div>
                 </div>
               </div>
-              <!-- 2. DEPARTMENT Filter -->
-              <div class="info-item">
-                <div class="info-label">Abteilung</div>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" id="departmentDisplay" data-action="toggle-dropdown" data-dropdown="department">
-                    <span>Abteilung wählen...</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="dropdown-options" id="departmentDropdown">
-                    <!-- Options will be populated dynamically -->
-                  </div>
+
+              <!-- Employee Info Bar (shown instead of filters for employees) -->
+              <div id="employee-team-info" class="shift-info-row mt-4 u-hidden">
+                <div class="info-item">
+                  <div class="info-label">Dein Team</div>
+                  <span class="badge badge--primary">
+                    <i class="fas fa-users mr-1"></i>
+                    <span id="employee-team-name">-</span>
+                  </span>
                 </div>
-              </div>
-              <!-- 3. MACHINE Filter (JETZT VOR TEAM!) -->
-              <div class="info-item">
-                <div class="info-label">Maschine</div>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" id="machineDisplay" data-action="toggle-dropdown" data-dropdown="machine">
-                    <span>Maschine wählen...</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="dropdown-options" id="machineDropdown">
-                    <!-- Options will be populated dynamically -->
-                  </div>
+                <div class="info-item">
+                  <div class="info-label">Abteilung</div>
+                  <span class="badge badge--info">
+                    <i class="fas fa-building mr-1"></i>
+                    <span id="employee-department-name">-</span>
+                  </span>
                 </div>
-              </div>
-              <!-- 4. TEAM Filter (JETZT NACH MACHINE!) -->
-              <div class="info-item">
-                <div class="info-label">Team</div>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" id="teamDisplay" data-action="toggle-dropdown" data-dropdown="team">
-                    <span>Team wählen...</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="dropdown-options" id="teamDropdown">
-                    <!-- Options will be populated dynamically -->
-                  </div>
+                <div class="info-item">
+                  <div class="info-label">Bereich</div>
+                  <span class="badge badge--secondary">
+                    <i class="fas fa-map-marker-alt mr-1"></i>
+                    <span id="employee-area-name">-</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <!-- Week Navigation -->
-            <div class="week-navigation u-hidden">
-              <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
-              <div class="week-info">
-                <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
-              </div>
-              <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
-            </div>
-
-            <!-- Shift Control Checkboxes -->
-            <div class="shift-controls u-hidden">
-              <div class="controls-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="shift-autofill" />
-                  <span class="checkbox-text">Autofill</span>
-                  <span class="checkbox-hint">Woche automatisch füllen</span>
-                </label>
-
-                <div class="divider"></div>
-
-                <label class="checkbox-label">
-                  <input type="checkbox" id="shift-rotation" />
-                  <span class="checkbox-text">F und S abwechselnd und N bleibt</span>
-                  <span class="checkbox-hint">Automatische Rotation</span>
-                </label>
-
-                <div class="divider"></div>
-
-                <label class="checkbox-label">
-                  <input type="checkbox" id="shift-fallback" />
-                  <span class="checkbox-text">Normale Schichten anzeigen</span>
-                  <span class="checkbox-hint">Falls keine Rotation vorhanden</span>
-                </label>
-
-                <div class="divider"></div>
-
-                <label class="checkbox-label">
-                  <input type="checkbox" id="shift-kontischicht" />
-                  <span class="checkbox-text">Kontischicht Ansicht</span>
-                  <span class="checkbox-hint">2-Wochen-Muster erstellen</span>
-                </label>
-
-                <button id="edit-rotation-btn" type="button" class="btn btn-sm btn-primary rotation-edit-btn" title="Rotation bearbeiten">
-                  <i class="fas fa-edit"></i>
-                  Bearbeiten
+            <!-- Card Body - Main Content -->
+            <div class="card__body">
+              <!-- Week Navigation -->
+              <div class="week-navigation u-hidden">
+                <button class="btn btn-secondary" id="prevWeekBtn">
+                  <i class="fas fa-chevron-left mr-1"></i>
+                  Vorherige Woche
+                </button>
+                <div class="week-info">
+                  <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
+                </div>
+                <button class="btn btn-secondary" id="nextWeekBtn">
+                  Nächste Woche
+                  <i class="fas fa-chevron-right ml-1"></i>
                 </button>
               </div>
-            </div>
 
-            <!-- Team Selection Notice -->
-            <div id="departmentNotice" class="department-notice hidden">
-              <div class="notice-icon">
-                <i class="fas fa-users"></i>
+              <!-- Shift Control Toggles (Design System) -->
+              <div class="shift-controls u-hidden">
+                <div class="controls-group">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="shift-autofill" class="toggle-switch__input" />
+                    <span class="toggle-switch__slider"></span>
+                    <span class="toggle-switch__label">
+                      Autofill
+                      <small class="toggle-hint">Woche automatisch füllen</small>
+                    </span>
+                  </label>
+
+                  <div class="divider"></div>
+
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="shift-rotation" class="toggle-switch__input" />
+                    <span class="toggle-switch__slider"></span>
+                    <span class="toggle-switch__label">
+                      Standard
+                      <small class="toggle-hint">Einfache Rotation</small>
+                    </span>
+                  </label>
+
+                  <div class="divider"></div>
+
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="shift-custom-rotation" class="toggle-switch__input" />
+                    <span class="toggle-switch__slider"></span>
+                    <span class="toggle-switch__label">
+                      Benutzerdefiniert
+                      <small class="toggle-hint">Automatische Mustererkennung</small>
+                    </span>
+                  </label>
+
+                  <button
+                    id="edit-rotation-btn"
+                    type="button"
+                    class="btn btn-manage rotation-edit-btn u-hidden"
+                    title="Rotation bearbeiten"
+                  >
+                    <i class="fas fa-edit"></i>
+                    Bearbeiten
+                  </button>
+                </div>
               </div>
-              <h3>Team auswählen</h3>
-              <p>Bitte wählen Sie die Filter in der richtigen Reihenfolge aus: Bereich → Abteilung → Maschine → Team</p>
-            </div>
 
-            <!-- Main Planning Area -->
-            <div class="main-planning-area u-hidden" id="mainPlanningArea">
-              <!-- Week Schedule -->
-              <div class="week-schedule">
-                <!-- Header -->
-                <div class="schedule-header">
-                  <div class="day-header">Schicht</div>
-                  <div class="day-header">
-                    Montag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">20.05</span>
-                  </div>
-                  <div class="day-header">
-                    Dienstag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">21.05</span>
-                  </div>
-                  <div class="day-header">
-                    Mittwoch
-                    <br />
-                    <span class="u-fs-12 u-fw-400">22.05</span>
-                  </div>
-                  <div class="day-header">
-                    Donnerstag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">23.05</span>
-                  </div>
-                  <div class="day-header">
-                    Freitag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">24.05</span>
-                  </div>
-                  <div class="day-header">
-                    Samstag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">25.05</span>
-                  </div>
-                  <div class="day-header">
-                    Sonntag
-                    <br />
-                    <span class="u-fs-12 u-fw-400">26.05</span>
-                  </div>
+              <!-- Team Selection Notice -->
+              <div id="departmentNotice" class="department-notice hidden">
+                <div class="notice-icon">
+                  <i class="fas fa-users"></i>
                 </div>
+                <h3>Team auswählen</h3>
+                <p>Bitte wählen Sie die Filter in der richtigen Reihenfolge aus: Bereich → Abteilung → Maschine → Team</p>
+              </div>
 
-                <!-- Early Shift Row -->
-                <div class="shift-row">
-                  <div class="shift-label shift-type-early">
-                    Frühschicht
-                    <br />
-                    <span class="u-fs-11">06:00-14:00</span>
-                  </div>
-                  <div class="shift-cell" data-day="monday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
+              <!-- Main Planning Area -->
+              <div class="main-planning-area u-hidden" id="mainPlanningArea">
+                <!-- Week Schedule -->
+                <div class="week-schedule">
+                  <!-- Header -->
+                  <div class="schedule-header">
+                    <div class="day-header">Schicht</div>
+                    <div class="day-header">
+                      Montag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">20.05</span>
+                    </div>
+                    <div class="day-header">
+                      Dienstag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">21.05</span>
+                    </div>
+                    <div class="day-header">
+                      Mittwoch
+                      <br />
+                      <span class="u-fs-12 u-fw-400">22.05</span>
+                    </div>
+                    <div class="day-header">
+                      Donnerstag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">23.05</span>
+                    </div>
+                    <div class="day-header">
+                      Freitag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">24.05</span>
+                    </div>
+                    <div class="day-header">
+                      Samstag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">25.05</span>
+                    </div>
+                    <div class="day-header">
+                      Sonntag
+                      <br />
+                      <span class="u-fs-12 u-fw-400">26.05</span>
                     </div>
                   </div>
-                  <div class="shift-cell" data-day="tuesday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="wednesday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="thursday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="friday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="saturday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="sunday" data-shift="early">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Late Shift Row -->
-                <div class="shift-row">
-                  <div class="shift-label shift-type-late">
-                    Spätschicht
-                    <br />
-                    <span class="u-fs-11">14:00-22:00</span>
-                  </div>
-                  <div class="shift-cell" data-day="monday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
+                  <!-- Early Shift Row -->
+                  <div class="shift-row">
+                    <div class="shift-label shift-type-early">
+                      Frühschicht
+                      <br />
+                      <span class="u-fs-11">06:00-14:00</span>
+                    </div>
+                    <div class="shift-cell" data-day="monday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="tuesday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="wednesday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="thursday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="friday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="saturday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="sunday" data-shift="early">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
                     </div>
                   </div>
-                  <div class="shift-cell" data-day="tuesday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="wednesday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="thursday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="friday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="saturday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="sunday" data-shift="late">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Night Shift Row -->
-                <div class="shift-row">
-                  <div class="shift-label shift-type-night">
-                    Nachtschicht
-                    <br />
-                    <span class="u-fs-11">22:00-06:00</span>
-                  </div>
-                  <div class="shift-cell" data-day="monday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
+                  <!-- Late Shift Row -->
+                  <div class="shift-row">
+                    <div class="shift-label shift-type-late">
+                      Spätschicht
+                      <br />
+                      <span class="u-fs-11">14:00-22:00</span>
+                    </div>
+                    <div class="shift-cell" data-day="monday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="tuesday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="wednesday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="thursday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="friday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="saturday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="sunday" data-shift="late">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
                     </div>
                   </div>
-                  <div class="shift-cell" data-day="tuesday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="wednesday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="thursday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="friday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="saturday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                  <div class="shift-cell" data-day="sunday" data-shift="night">
-                    <div class="employee-assignment">
-                      <div class="empty-slot">+</div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Info/Todo Area Row -->
-                <div class="shift-row">
-                  <div class="shift-label shift-label-night">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z" />
-                    </svg>
-                    Info & Todo
-                    <br />
-                    <span class="u-fs-11">Wochennotizen</span>
+                  <!-- Night Shift Row -->
+                  <div class="shift-row">
+                    <div class="shift-label shift-type-night">
+                      Nachtschicht
+                      <br />
+                      <span class="u-fs-11">22:00-06:00</span>
+                    </div>
+                    <div class="shift-cell" data-day="monday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="tuesday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="wednesday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="thursday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="friday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="saturday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
+                    <div class="shift-cell" data-day="sunday" data-shift="night">
+                      <div class="employee-assignment">
+                        <div class="empty-slot">+</div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="shift-info-area shift-info-area-full">
-                    <div class="shift-info-title">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+
+                  <!-- Info/Todo Area Row -->
+                  <div class="shift-row">
+                    <div class="shift-label shift-label-night">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z" />
                       </svg>
-                      Notizen & Todos für diese Woche
+                      Info & Todo
+                      <br />
+                      <span class="u-fs-11">Wochennotizen</span>
                     </div>
-                    <textarea
-                      class="shift-info-textarea"
-                      id="weeklyNotes"
-                      placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...&#10;&#10;Beispiele:&#10;• Wartung Anlage 01 am Mittwoch geplant&#10;• Neue Sicherheitsbestimmungen beachten&#10;• Team-Meeting Freitag 14:00 Uhr&#10;• Überstunden-Genehmigung für Donnerstag"
-                    ></textarea>
+                    <div class="shift-info-area shift-info-area-full">
+                      <div class="shift-info-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                        </svg>
+                        Notizen & Todos für diese Woche
+                      </div>
+                      <textarea
+                        class="shift-info-textarea"
+                        id="weeklyNotes"
+                        placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...&#10;&#10;Beispiele:&#10;• Wartung Anlage 01 am Mittwoch geplant&#10;• Neue Sicherheitsbestimmungen beachten&#10;• Team-Meeting Freitag 14:00 Uhr&#10;• Überstunden-Genehmigung für Donnerstag"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Employee Sidebar - ADMIN ONLY (hidden by default, shown for admin/root) -->
+                <div class="employee-sidebar u-hidden">
+                  <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+
+                  <div class="employee-list" id="employeeList">
+                    <!-- Employee items will be loaded here dynamically -->
                   </div>
                 </div>
               </div>
 
-              <!-- Employee Sidebar -->
-              <div class="employee-sidebar">
-                <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+              <!-- Admin Actions -->
+              <div class="admin-actions u-hidden flex gap-4 flex-wrap" id="adminActions">
+                <button class="btn btn-cancel" id="resetScheduleBtn">
+                  <i class="fas fa-times mr-2"></i>
+                  Abbrechen
+                </button>
+                <button class="btn btn-manage" id="saveScheduleBtn">
+                  <i class="fas fa-save mr-2"></i>
+                  Schichtplan speichern
+                </button>
 
-                <div class="employee-list" id="employeeList">
-                  <!-- Employee items will be loaded here dynamically -->
-                </div>
+                <button class="btn btn-danger hidden" id="discardWeekBtn" title="Alle Schichten dieser Woche löschen">
+                  <i class="fas fa-calendar-times mr-2"></i>
+                  Woche verwerfen
+                </button>
+                <button class="btn btn-danger hidden" id="discardTeamPlanBtn" title="Kompletten Schichtplan des Teams löschen">
+                  <i class="fas fa-trash-alt mr-2"></i>
+                  Team-Plan verwerfen
+                </button>
               </div>
-            </div>
-
-            <!-- Admin Actions -->
-            <div class="admin-actions u-hidden" id="adminActions">
-              <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
-              <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
             </div>
           </div>
         </div>
       </main>
     </div>
 
-    <script>
-      // Dropdown Functions
-      function toggleDropdown(type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d !== display) d.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d !== dropdown) d.classList.remove('active');
-        });
-
-        display.classList.toggle('active');
-        dropdown.classList.toggle('active');
-      }
-
-      function selectOption(type, value, text) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-        const hiddenInput = document.querySelector(type + 'Select');
-
-        display.querySelector('span').textContent = text;
-        display.classList.remove('active');
-        dropdown.classList.remove('active');
-
-        // Set the hidden input value
-        if (hiddenInput) {
-          hiddenInput.value = value;
-          // Trigger change event
-          const event = new Event('change');
-          hiddenInput.dispatchEvent(event);
-        }
-      }
-
-      // Click outside to close
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Event Delegation for dropdown actions
-      document.addEventListener('click', function (e) {
-        const target = e.target;
-
-        // Handle toggle dropdown
-        const toggleBtn = target.closest('[data-action="toggle-dropdown"]');
-        if (toggleBtn) {
-          e.stopPropagation();
-          const dropdownType = toggleBtn.dataset.dropdown;
-          toggleDropdown('#' + dropdownType);
-        }
-      });
-
-      // Make functions globally available
-      window.toggleDropdown = toggleDropdown;
-      window.selectOption = selectOption;
-    </script>
-
-    <!-- Rotation Setup Modal -->
+    <!-- Rotation Setup Modal (Design System) -->
     <div id="rotation-setup-modal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Schichtrotation einrichten</h2>
-          <button type="button" class="modal-close" data-modal-close="rotation-setup-modal">&times;</button>
+      <div class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h2 class="ds-modal__title">Schichtrotation einrichten</h2>
+          <button type="button" class="ds-modal__close" data-action="close-rotation-modal" aria-label="Schließen">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body">
+        <div class="ds-modal__body">
           <form id="rotation-setup-form">
-            <div class="form-group">
-              <label for="rotation-pattern">Rotationsmuster:</label>
-              <select id="rotation-pattern" name="pattern" class="form-control" required>
-                <option value="">Muster wählen...</option>
-                <option value="weekly">Wöchentlich (Früh → Spät → Nacht / konfigurierbar)</option>
-                <option value="biweekly">Zweiwöchentlich (Früh → Spät → Nacht / konfigurierbar)</option>
-                <option value="monthly">Monatlich (Früh → Spät → Nacht / konfigurierbar)</option>
-                <option value="custom">Benutzerdefiniert</option>
-              </select>
+            <div class="form-field">
+              <label class="form-field__label">
+                Rotationsmuster
+                <span class="text-red-500">*</span>
+              </label>
+              <!-- Hidden input to store the selected value -->
+              <input type="hidden" id="rotation-pattern" name="pattern" required />
+              <!-- Custom Dropdown -->
+              <div class="dropdown" id="rotation-pattern-dropdown">
+                <div class="dropdown__trigger" id="rotation-pattern-trigger">
+                  <span>Muster wählen...</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="rotation-pattern-menu">
+                  <div class="dropdown__option" data-value="weekly">Wöchentlich</div>
+                  <div class="dropdown__option" data-value="biweekly">Alle 2 Wochen</div>
+                  <div class="dropdown__option" data-value="monthly">Alle 4 Wochen</div>
+                </div>
+              </div>
+              <!-- Pattern Info Alert (dynamisch je nach Auswahl) -->
+              <div id="rotation-pattern-info" class="alert alert--info mt-3 u-hidden">
+                <i class="fas fa-info-circle alert__icon"></i>
+                <div class="alert__content">
+                  <span id="rotation-pattern-info-text"></span>
+                </div>
+              </div>
+              <!-- Wochenende Toggles -->
+              <div class="flex gap-4 mt-3">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="rotation-skip-saturday" name="skipSaturday" class="toggle-switch__input" />
+                  <span class="toggle-switch__slider"></span>
+                  <span class="toggle-switch__label">
+                    Samstag überspringen
+                    <small class="toggle-hint">Sa nicht planen</small>
+                  </span>
+                </label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="rotation-skip-sunday" name="skipSunday" class="toggle-switch__input" />
+                  <span class="toggle-switch__slider"></span>
+                  <span class="toggle-switch__label">
+                    Sonntag überspringen
+                    <small class="toggle-hint">So nicht planen</small>
+                  </span>
+                </label>
+              </div>
+              <!-- Nachtschicht Toggle -->
+              <label class="toggle-switch mt-3">
+                <input type="checkbox" id="rotation-night-static" name="nightShiftStatic" class="toggle-switch__input" checked />
+                <span class="toggle-switch__slider"></span>
+                <span class="toggle-switch__label">
+                  Nachtschicht konstant
+                  <small class="toggle-hint">N bleibt N (nur F ↔ S alternieren)</small>
+                </span>
+              </label>
             </div>
 
-            <div class="form-group">
-              <label for="rotation-start-date">Startdatum:</label>
-              <input type="date" id="rotation-start-date" name="startDate" class="form-control" required />
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-field">
+                <label class="form-field__label" for="rotation-start-date">Startdatum</label>
+                <input type="date" id="rotation-start-date" name="startDate" class="form-field__control" required />
+              </div>
+
+              <div class="form-field">
+                <label class="form-field__label" for="rotation-end-date">Enddatum</label>
+                <input type="date" id="rotation-end-date" name="endDate" class="form-field__control" required />
+                <small class="form-field__hint">Max. bis Jahresende</small>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="rotation-end-date">Enddatum:</label>
-              <input type="date" id="rotation-end-date" name="endDate" class="form-control" required />
-              <small class="form-text text-muted">Bis zu diesem Datum werden Schichten generiert (max. bis Jahresende)</small>
-            </div>
-
-            <div class="form-group rotation-assignment-container">
-              <label>Mitarbeiter Schichtzuweisung:</label>
+            <div class="form-field rotation-assignment-container mt-4">
+              <label class="form-field__label mb-3">Mitarbeiter Schichtzuweisung</label>
 
               <!-- Kasten 1: Verfügbare Mitarbeiter -->
-              <div class="rotation-box available-employees-box">
-                <h4>Verfügbare Mitarbeiter</h4>
+              <div class="glass-card p-4 mb-4">
+                <h4 class="text-white/80 font-medium mb-2">Verfügbare Mitarbeiter</h4>
                 <div id="rotation-available-employees" class="employee-list">
                   <!-- Will be populated dynamically with draggable employees -->
                 </div>
               </div>
 
               <!-- Kasten 2: Schichtzuweisung Tabelle -->
-              <div class="rotation-box shift-assignment-box">
-                <h4>Schichtzuweisung (Startschicht)</h4>
-                <div class="shift-assignment-table">
+              <div class="glass-card p-4">
+                <h4 class="text-white/80 font-medium mb-2">Schichtzuweisung (Startschicht)</h4>
+                <div class="shift-assignment-table grid grid-cols-3 gap-4">
                   <div class="shift-column">
-                    <div class="column-header">F (Früh)</div>
-                    <div class="drop-zone" data-shift="F" id="drop-zone-f">
+                    <div class="column-header text-center font-medium text-blue-400 mb-2">F (Früh)</div>
+                    <div class="drop-zone min-h-[100px] border border-dashed border-white/20 rounded p-2" data-shift="F" id="drop-zone-f">
                       <!-- Dragged employees for Frühschicht -->
                     </div>
                   </div>
                   <div class="shift-column">
-                    <div class="column-header">S (Spät)</div>
-                    <div class="drop-zone" data-shift="S" id="drop-zone-s">
+                    <div class="column-header text-center font-medium text-yellow-400 mb-2">S (Spät)</div>
+                    <div class="drop-zone min-h-[100px] border border-dashed border-white/20 rounded p-2" data-shift="S" id="drop-zone-s">
                       <!-- Dragged employees for Spätschicht -->
                     </div>
                   </div>
                   <div class="shift-column">
-                    <div class="column-header">N (Nacht)</div>
-                    <div class="drop-zone" data-shift="N" id="drop-zone-n">
+                    <div class="column-header text-center font-medium text-purple-400 mb-2">N (Nacht)</div>
+                    <div class="drop-zone min-h-[100px] border border-dashed border-white/20 rounded p-2" data-shift="N" id="drop-zone-n">
                       <!-- Dragged employees for Nachtschicht -->
                     </div>
                   </div>
                 </div>
-                <small class="form-text text-muted">
+                <small class="form-field__hint mt-2 block">
                   Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
                 </small>
               </div>
             </div>
-
-            <div id="custom-pattern-config" class="shifts-hidden">
-              <div class="form-group">
-                <label>Benutzerdefiniertes Muster:</label>
-                <div class="pattern-builder">
-                  <div class="pattern-week">
-                    <h4>Woche 1</h4>
-                    <label>
-                      <input type="checkbox" name="week1[]" value="early" />
-                      Frühschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week1[]" value="late" />
-                      Spätschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week1[]" value="night" />
-                      Nachtschicht
-                    </label>
-                  </div>
-                  <div class="pattern-week">
-                    <h4>Woche 2</h4>
-                    <label>
-                      <input type="checkbox" name="week2[]" value="early" />
-                      Frühschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week2[]" value="late" />
-                      Spätschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week2[]" value="night" />
-                      Nachtschicht
-                    </label>
-                  </div>
-                  <div class="pattern-week">
-                    <h4>Woche 3</h4>
-                    <label>
-                      <input type="checkbox" name="week3[]" value="early" />
-                      Frühschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week3[]" value="late" />
-                      Spätschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week3[]" value="night" />
-                      Nachtschicht
-                    </label>
-                  </div>
-                  <div class="pattern-week">
-                    <h4>Woche 4</h4>
-                    <label>
-                      <input type="checkbox" name="week4[]" value="early" />
-                      Frühschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week4[]" value="late" />
-                      Spätschicht
-                    </label>
-                    <label>
-                      <input type="checkbox" name="week4[]" value="night" />
-                      Nachtschicht
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="rotation-skip-weekends" name="skipWeekends" />
-                Wochenenden überspringen
-              </label>
-            </div>
-
-            <div class="form-group shifts-hidden" id="ignore-night-shift-group">
-              <label>
-                <input type="checkbox" id="rotation-ignore-night" name="ignoreNightShift" />
-                Nachtschicht ignorieren (nur Früh ↔ Spät Rotation)
-              </label>
-            </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-cancel" data-modal-close="rotation-setup-modal">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="save-rotation-btn">Rotation speichern</button>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" data-action="close-rotation-modal">Abbrechen</button>
+          <button type="button" class="btn btn-modal" id="save-rotation-btn">Rotation speichern</button>
         </div>
       </div>
     </div>
 
-    <!-- Rotation Drag & Drop Styles -->
+    <!-- Custom Rotation Pattern Modal (Design System) -->
+    <div id="custom-rotation-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Schichtmuster konfigurieren</h3>
+          <button type="button" class="ds-modal__close" data-action="close-custom-rotation-modal" aria-label="Schließen">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <p class="text-[var(--color-text-secondary)] mb-4">
+            Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das gewählte Muster wird automatisch für den gewählten
+            Zeitraum wiederholt.
+          </p>
+
+          <!-- Date Range Selection -->
+          <div class="glass-card p-4 mb-4 border border-blue-500/30 bg-blue-500/5">
+            <h4 class="text-blue-400 font-medium mb-3">
+              <i class="fas fa-calendar-alt mr-2"></i>
+              Zeitraum festlegen
+            </h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-field">
+                <label class="form-field__label" for="custom-rotation-start-date">
+                  <i class="fas fa-calendar mr-1"></i>
+                  Startdatum
+                </label>
+                <input type="date" id="custom-rotation-start-date" name="startDate" class="form-field__control" required />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="custom-rotation-end-date">
+                  <i class="fas fa-calendar-check mr-1"></i>
+                  Enddatum (max. 1.5 Jahre)
+                </label>
+                <input type="date" id="custom-rotation-end-date" name="endDate" class="form-field__control" required />
+              </div>
+            </div>
+            <p class="text-[var(--color-text-tertiary)] text-xs mt-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für nahtlosen Übergang.
+            </p>
+          </div>
+
+          <!-- Schichtblock-Konfiguration -->
+          <div class="glass-card p-4 mb-4 border border-emerald-500/30 bg-emerald-500/5">
+            <h4 class="text-emerald-400 font-medium mb-3">
+              <i class="fas fa-cogs mr-2"></i>
+              Schichtblock-Konfiguration
+            </h4>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <!-- Schichtblock-Länge -->
+              <div class="form-field">
+                <label class="form-field__label" for="shift-block-length">
+                  Schichtblock-Länge (Tage)
+                  <span class="ml-1 tooltip">
+                    <i class="cursor-help fa-info-circle fas text-blue-400 text-sm"></i>
+                    <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                      Legt fest, wie viele Tage durchgehend in einer Schicht gearbeitet wird. Beispiel: 10 Tage Frühschicht, dann Freitage.
+                    </span>
+                  </span>
+                </label>
+                <input type="number" id="shift-block-length" min="1" max="14" value="10" class="form-field__control" required />
+                <span class="form-field__hint">Tage in derselben Schicht</span>
+              </div>
+
+              <!-- Freie Tage -->
+              <div class="form-field">
+                <label class="form-field__label" for="free-days-count">Freie Tage zwischen Wechseln</label>
+                <input type="number" id="free-days-count" min="0" max="14" value="2" class="form-field__control" required />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Startschicht -->
+              <div class="form-field">
+                <label class="form-field__label">Startschicht am ersten Tag</label>
+                <input type="hidden" id="start-shift-select" value="early" />
+                <div class="dropdown" id="start-shift-dropdown">
+                  <div class="dropdown__trigger" id="start-shift-trigger">
+                    <span>Frühschicht</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="dropdown__menu" id="start-shift-menu">
+                    <div class="dropdown__option dropdown__option--selected" data-value="early">Frühschicht</div>
+                    <div class="dropdown__option" data-value="late">Spätschicht</div>
+                    <div class="dropdown__option" data-value="night">Nachtschicht</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Schicht-Reihenfolge -->
+              <div class="form-field">
+                <label class="form-field__label">Rotations-Reihenfolge</label>
+                <input type="hidden" id="shift-sequence-select" value="early-late-night" />
+                <div class="dropdown" id="shift-sequence-dropdown">
+                  <div class="dropdown__trigger" id="shift-sequence-trigger">
+                    <span>Früh → Spät → Nacht</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="dropdown__menu" id="shift-sequence-menu">
+                    <div class="dropdown__option dropdown__option--selected" data-value="early-late-night">Früh → Spät → Nacht</div>
+                    <div class="dropdown__option" data-value="night-late-early">Nacht → Spät → Früh (rückwärts)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sonderregeln -->
+          <div class="glass-card p-4 mb-4 border border-amber-500/30 bg-amber-500/5">
+            <h4 class="text-amber-400 font-medium mb-3">
+              <i class="fas fa-star mr-2"></i>
+              Sonderregeln (optional)
+            </h4>
+
+            <div class="flex items-center gap-3 flex-wrap">
+              <label class="choice-card">
+                <input type="checkbox" id="nth-weekday-free-checkbox" class="choice-card__input" name="special-rule" value="nth-weekday" />
+                <span class="choice-card__text">Jeden</span>
+              </label>
+
+              <!-- N-ter Wochentag Dropdown -->
+              <input type="hidden" id="nth-value-select" value="4" />
+              <div class="dropdown dropdown--sm" id="nth-value-dropdown">
+                <div class="dropdown__trigger" id="nth-value-trigger">
+                  <span>4.</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="nth-value-menu">
+                  <div class="dropdown__option" data-value="1">1.</div>
+                  <div class="dropdown__option" data-value="2">2.</div>
+                  <div class="dropdown__option" data-value="3">3.</div>
+                  <div class="dropdown__option dropdown__option--selected" data-value="4">4.</div>
+                  <div class="dropdown__option" data-value="5">5.</div>
+                </div>
+              </div>
+
+              <!-- Wochentag Dropdown -->
+              <input type="hidden" id="weekday-value-select" value="0" />
+              <div class="dropdown dropdown--md" id="weekday-value-dropdown">
+                <div class="dropdown__trigger" id="weekday-value-trigger">
+                  <span>Sonntag</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="weekday-value-menu">
+                  <div class="dropdown__option dropdown__option--selected" data-value="0">Sonntag</div>
+                  <div class="dropdown__option" data-value="1">Montag</div>
+                  <div class="dropdown__option" data-value="2">Dienstag</div>
+                  <div class="dropdown__option" data-value="3">Mittwoch</div>
+                  <div class="dropdown__option" data-value="4">Donnerstag</div>
+                  <div class="dropdown__option" data-value="5">Freitag</div>
+                  <div class="dropdown__option" data-value="6">Samstag</div>
+                </div>
+              </div>
+
+              <span>im Monat frei</span>
+            </div>
+          </div>
+
+          <!-- Drag & Drop Employee Assignment -->
+          <div class="form-field mt-4 custom-rotation-assignment-container">
+            <label class="form-field__label mb-3">Mitarbeiter Schichtzuweisung</label>
+
+            <!-- Available Employees -->
+            <div class="glass-card mb-4 p-4">
+              <h4 class="font-medium mb-2 text-white/80">Verfügbare Mitarbeiter</h4>
+              <div id="custom-available-employees" class="employee-list min-h-[60px]">
+                <div class="text-[var(--color-text-tertiary)] text-sm italic py-2">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Bitte wählen Sie zuerst ein Team aus, um die Mitarbeiter zu laden.
+                </div>
+              </div>
+            </div>
+
+            <!-- Drop Zones for Shift Assignment -->
+            <div class="glass-card p-4">
+              <h4 class="font-medium mb-2 text-white/80">Schichtzuweisung (Startschicht)</h4>
+              <div class="gap-4 grid grid-cols-3 shift-assignment-table">
+                <div class="shift-column">
+                  <div class="column-header font-medium mb-2 text-blue-400 text-center">F (Früh)</div>
+                  <div
+                    class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                    data-shift="F"
+                    id="custom-drop-zone-f"
+                  ></div>
+                </div>
+                <div class="shift-column">
+                  <div class="column-header font-medium mb-2 text-center text-yellow-400">S (Spät)</div>
+                  <div
+                    class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                    data-shift="S"
+                    id="custom-drop-zone-s"
+                  ></div>
+                </div>
+                <div class="shift-column">
+                  <div class="column-header font-medium mb-2 text-center text-purple-400">N (Nacht)</div>
+                  <div
+                    class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                    data-shift="N"
+                    id="custom-drop-zone-n"
+                  ></div>
+                </div>
+              </div>
+              <small class="block form-field__hint mt-2">
+                Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
+              </small>
+            </div>
+          </div>
+        </div>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" data-action="close-custom-rotation-modal">Abbrechen</button>
+          <button type="button" class="btn btn-modal" id="generate-rotation-btn">
+            <i class="fas fa-cogs mr-2"></i>
+            Rotation generieren
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="/scripts/auth/index.ts"></script>
+    <script type="module" src="/scripts/shifts/filters.ts"></script>
     <script type="module" src="/scripts/shifts/index.ts"></script>
-    <script type="module" src="/scripts/shifts/kontischicht.ts"></script>
+    <script type="module" src="/scripts/shifts/custom-rotation.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <!-- Breadcrumb -->

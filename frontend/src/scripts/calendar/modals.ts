@@ -452,10 +452,12 @@ function getLocationTemplate(): string {
 /**
  * Organization level template - Simplified for multi-org
  * Legacy org_level field kept for backwards compatibility
+ * NOTE: Wrapped in admin-only container - hidden for employees via JS
  */
 function getOrgLevelTemplate(): string {
   return `
-    <div class="form-field">
+    <!-- Admin-only: Org level visibility section - hidden for employees -->
+    <div id="adminOnlyOrgLevel" class="form-field">
       <label class="form-field__label">
         <i class="fas fa-users mr-2"></i>
         Sichtbarkeit
@@ -471,83 +473,91 @@ function getOrgLevelTemplate(): string {
  * Department and team selection template - Multi-Select
  * Native multi-select for areas, departments, and teams
  * Hierarchy: Area → Department → Team
+ * NOTE: Wrapped in admin-only container - hidden for employees via JS
  */
 function getDepartmentTeamTemplate(): string {
   return `
-    <!-- Ganze Firma Toggle -->
-    <div class="form-field">
-      <label class="toggle-switch toggle-switch--danger">
-        <input type="checkbox" class="toggle-switch__input" id="event-company-wide" />
-        <span class="toggle-switch__slider"></span>
-        <span class="toggle-switch__label">
-          <i class="fas fa-building mr-2"></i>
-          Ganze Firma (Alle Mitarbeiter)
+    <!-- Admin-only: Organization selects - hidden for employees -->
+    <div id="adminOnlyOrgSelects">
+      <!-- Ganze Firma Toggle -->
+      <div class="form-field">
+        <label class="toggle-switch toggle-switch--danger">
+          <input type="checkbox" class="toggle-switch__input" id="event-company-wide" />
+          <span class="toggle-switch__slider"></span>
+          <span class="toggle-switch__label">
+            <i class="fas fa-building mr-2"></i>
+            Ganze Firma (Alle Mitarbeiter)
+          </span>
+        </label>
+        <span class="form-field__message text-[var(--color-danger)]">
+          <i class="fas fa-exclamation-triangle mr-1"></i>
+          Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Termin
         </span>
-      </label>
-      <span class="form-field__message text-[var(--color-danger)]">
-        <i class="fas fa-exclamation-triangle mr-1"></i>
-        Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Termin
-      </span>
-    </div>
+      </div>
 
-    <!-- Area Selection -->
-    <div class="form-field">
-      <label for="event-area-select" class="form-field__label">
-        <i class="fas fa-map-marked-alt mr-1"></i> Bereiche
-      </label>
-      <select id="event-area-select" multiple class="form-field__control min-h-[100px]">
-        <!-- Populated dynamically -->
-      </select>
-      <span class="form-field__message text-[var(--color-text-secondary)]">
-        Strg/Cmd + Klick für Mehrfachauswahl
-      </span>
-    </div>
+      <!-- Area Selection -->
+      <div class="form-field">
+        <label for="event-area-select" class="form-field__label">
+          <i class="fas fa-map-marked-alt mr-1"></i> Bereiche
+        </label>
+        <select id="event-area-select" multiple class="form-field__control min-h-[100px]">
+          <!-- Populated dynamically -->
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          Strg/Cmd + Klick für Mehrfachauswahl
+        </span>
+      </div>
 
-    <!-- Department Selection -->
-    <div class="form-field">
-      <label for="event-department-select" class="form-field__label">
-        <i class="fas fa-sitemap mr-1"></i> Abteilungen
-      </label>
-      <select id="event-department-select" multiple class="form-field__control min-h-[100px]">
-        <!-- Populated dynamically -->
-      </select>
-      <span class="form-field__message text-[var(--color-text-secondary)]">
-        Strg/Cmd + Klick für Mehrfachauswahl
-      </span>
-    </div>
+      <!-- Department Selection -->
+      <div class="form-field">
+        <label for="event-department-select" class="form-field__label">
+          <i class="fas fa-sitemap mr-1"></i> Abteilungen
+        </label>
+        <select id="event-department-select" multiple class="form-field__control min-h-[100px]">
+          <!-- Populated dynamically -->
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          Strg/Cmd + Klick für Mehrfachauswahl
+        </span>
+      </div>
 
-    <!-- Team Selection -->
-    <div class="form-field">
-      <label for="event-team-select" class="form-field__label">
-        <i class="fas fa-users mr-1"></i> Teams
-      </label>
-      <select id="event-team-select" multiple class="form-field__control min-h-[100px]">
-        <!-- Populated dynamically -->
-      </select>
-      <span class="form-field__message text-[var(--color-text-secondary)]">
-        Strg/Cmd + Klick für Mehrfachauswahl
-      </span>
+      <!-- Team Selection -->
+      <div class="form-field">
+        <label for="event-team-select" class="form-field__label">
+          <i class="fas fa-users mr-1"></i> Teams
+        </label>
+        <select id="event-team-select" multiple class="form-field__control min-h-[100px]">
+          <!-- Populated dynamically -->
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          Strg/Cmd + Klick für Mehrfachauswahl
+        </span>
+      </div>
     </div>
   `;
 }
 
 /**
  * Attendees and response template
+ * NOTE: Wrapped in admin-only container - hidden for employees via JS
  */
 function getAttendeesResponseTemplate(): string {
   return `
-    <div class="form-field" id="attendeesGroup" style="display: block;">
-      <label class="form-field__label">Teilnehmer</label>
-      <div id="attendeesContainer">
-        <p class="text-[var(--color-info)] flex items-center gap-2">
-          <i class="fas fa-info-circle"></i>
-          Alle Mitarbeiter der Firma werden automatisch eingeladen
-        </p>
+    <!-- Admin-only: Attendees section - hidden for employees -->
+    <div id="adminOnlyAttendees">
+      <div class="form-field" id="attendeesGroup" style="display: block;">
+        <label class="form-field__label">Teilnehmer</label>
+        <div id="attendeesContainer">
+          <p class="text-[var(--color-info)] flex items-center gap-2">
+            <i class="fas fa-info-circle"></i>
+            Alle Mitarbeiter der Firma werden automatisch eingeladen
+          </p>
+        </div>
+        <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
+          <i class="fas fa-plus"></i>
+          Teilnehmer hinzufügen
+        </button>
       </div>
-      <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
-        <i class="fas fa-plus"></i>
-        Teilnehmer hinzufügen
-      </button>
     </div>
   `;
 }

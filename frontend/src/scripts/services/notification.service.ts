@@ -49,9 +49,10 @@ export class NotificationService {
    * @param notification
    */
   show(notification: Omit<Notification, 'id'>): string {
-    // KISS: If any notification is active, ignore new ones completely
-    if (this.notifications.size > 0) {
-      console.info('[NOTIFICATION] Notification already active, ignoring new one');
+    // Allow up to 3 notifications at once, stacked vertically
+    const MAX_NOTIFICATIONS = 3;
+    if (this.notifications.size >= MAX_NOTIFICATIONS) {
+      console.info(`[NOTIFICATION] Max ${MAX_NOTIFICATIONS} notifications active, ignoring new one`);
       return '';
     }
 

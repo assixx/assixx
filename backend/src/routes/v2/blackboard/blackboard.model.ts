@@ -776,7 +776,8 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
         RETURNING id
       `;
 
-    const [result] = await executeQuery<ResultSetHeader>(query, [
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, [
       uuid,
       tenant_id,
       title,
@@ -789,9 +790,13 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
       priority,
       color,
     ]);
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to create blackboard entry: No ID returned from database');
+    }
+    const insertedId = rows[0].id;
 
     // Get the created entry
-    return await getEntryById(result.insertId, tenant_id, author_id);
+    return await getEntryById(insertedId, tenant_id, author_id);
   } catch (error: unknown) {
     logger.error('Error in createEntry:', error);
     throw error;
@@ -1326,15 +1331,18 @@ export async function addComment(
     }
     logger.info(`[addComment] Final numericId=${numericId}`);
 
-    // POSTGRESQL: RETURNING id required to get insertId
-    const [result] = await executeQuery<ResultSetHeader>(
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(
       `INSERT INTO blackboard_comments (tenant_id, entry_id, user_id, comment, is_internal)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
       [tenantId, numericId, userId, comment, isInternal ? 1 : 0],
     );
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to add comment: No ID returned from database');
+    }
 
-    return { id: result.insertId };
+    return { id: rows[0].id };
   } catch (error: unknown) {
     logger.error('Error adding comment:', error);
     throw error;

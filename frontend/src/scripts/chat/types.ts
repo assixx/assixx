@@ -25,6 +25,16 @@ export interface ChatUser extends User {
 /**
  * Chat message
  */
+/**
+ * Legacy attachment format (from scheduled messages / old system)
+ */
+export interface LegacyAttachment {
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface Message {
   id: number;
   conversationId: number;
@@ -39,7 +49,7 @@ export interface Message {
   updatedAt?: string;
   sender?: ChatUser;
   attachments?: Attachment[];
-  attachment?: string | null;
+  attachment?: LegacyAttachment | null;
   type?: 'text' | 'file' | 'system';
 }
 
@@ -72,6 +82,16 @@ export interface Attachment {
 }
 
 /**
+ * Attachment info for scheduled messages
+ */
+export interface ScheduledMessageAttachment {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Scheduled message (pending, not yet sent)
  */
 export interface ScheduledMessage {
@@ -83,6 +103,7 @@ export interface ScheduledMessage {
   status: 'pending' | 'sent' | 'cancelled';
   createdAt: string;
   sentAt: string | null;
+  attachment: ScheduledMessageAttachment | null;
 }
 
 // ============================================================================

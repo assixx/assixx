@@ -1,7 +1,7 @@
 // Import all functions for default export
-import * as shiftCore from './shift-core.js';
+import * as shiftCore from './shift-core.model.js';
 import { formatDateForMysql, formatDateOnlyForMysql } from './shift-types.js';
-import * as shiftV2 from './shift-v2.js';
+import * as shiftModel from './shift.model.js';
 
 /**
  * Shift Model
@@ -16,7 +16,6 @@ export {
   formatDateForMysql,
   formatDateOnlyForMysql,
   calculateDurationHours,
-  type DbShiftTemplate,
   type DbShiftPlan,
   type DbShift,
   type DbShiftAssignment,
@@ -26,7 +25,6 @@ export {
   type DbShiftExchangeRequest,
   type ShiftPlanFilters,
   type ShiftExchangeFilters,
-  type ShiftTemplateData,
   type ShiftPlanData,
   type ShiftData,
   type ShiftAssignmentData,
@@ -35,7 +33,6 @@ export {
   type CountResult,
   type V2ShiftFilters,
   type V2ShiftData,
-  type V2TemplateData,
   type V2SwapRequestData,
   type V2SwapRequestFilters,
   type V2SwapRequestResult,
@@ -43,8 +40,6 @@ export {
 
 // Re-export all core functions from shift-core
 export {
-  getShiftTemplates,
-  createShiftTemplate,
   getShiftPlans,
   createShiftPlan,
   getShiftsByPlan,
@@ -58,7 +53,7 @@ export {
   getEmployeeShifts,
   getShiftsForDateRange,
   getWeekNotes,
-} from './shift-core.js';
+} from './shift-core.model.js';
 
 // Re-export all v2 functions from shift-v2
 export {
@@ -67,23 +62,16 @@ export {
   create,
   update,
   deleteShift,
-  getTemplates,
-  getTemplateById,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
   getSwapRequests,
   createSwapRequest,
   getSwapRequestById,
   updateSwapRequestStatus,
   getOvertimeByUser,
-} from './shift-v2.js';
+} from './shift.model.js';
 
 // Default export with all functions (maintains backwards compatibility)
 export default {
   // Core functions
-  getShiftTemplates: shiftCore.getShiftTemplates,
-  createShiftTemplate: shiftCore.createShiftTemplate,
   getShiftPlans: shiftCore.getShiftPlans,
   createShiftPlan: shiftCore.createShiftPlan,
   getShiftsByPlan: shiftCore.getShiftsByPlan,
@@ -100,19 +88,14 @@ export default {
   formatDateForMysql,
   formatDateOnlyForMysql,
   // V2 API methods
-  findAll: shiftV2.findAll,
-  findById: shiftV2.findById,
-  create: shiftV2.create,
-  update: shiftV2.update,
-  delete: shiftV2.deleteShift,
-  getTemplates: shiftV2.getTemplates,
-  getTemplateById: shiftV2.getTemplateById,
-  createTemplate: shiftV2.createTemplate,
-  updateTemplate: shiftV2.updateTemplate,
-  deleteTemplate: shiftV2.deleteTemplate,
-  getSwapRequests: shiftV2.getSwapRequests,
-  createSwapRequest: shiftV2.createSwapRequest,
-  getSwapRequestById: shiftV2.getSwapRequestById,
-  updateSwapRequestStatus: shiftV2.updateSwapRequestStatus,
-  getOvertimeByUser: shiftV2.getOvertimeByUser,
+  findAll: shiftModel.findAll,
+  findById: shiftModel.findById,
+  create: shiftModel.create,
+  update: shiftModel.update,
+  delete: shiftModel.deleteShift,
+  getSwapRequests: shiftModel.getSwapRequests,
+  createSwapRequest: shiftModel.createSwapRequest,
+  getSwapRequestById: shiftModel.getSwapRequestById,
+  updateSwapRequestStatus: shiftModel.updateSwapRequestStatus,
+  getOvertimeByUser: shiftModel.getOvertimeByUser,
 };

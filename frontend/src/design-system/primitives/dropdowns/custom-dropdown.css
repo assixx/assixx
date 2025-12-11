@@ -157,6 +157,15 @@
     color: #fff;
   }
 
+  /* Fix stacking context: When a dropdown is active inside a glass-card,
+     elevate the glass-card above siblings to prevent overlap.
+     backdrop-filter creates a new stacking context, so z-index on dropdown__menu
+     alone is not sufficient when sibling elements also have backdrop-filter. */
+  .glass-card:has(.dropdown__menu.active) {
+    position: relative;
+    z-index: 10;
+  }
+
   /* Max Height with Scroll */
   .dropdown__menu--scrollable {
     overflow-y: auto;

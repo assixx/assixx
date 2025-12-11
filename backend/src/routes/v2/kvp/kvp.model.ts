@@ -207,8 +207,8 @@ export async function createKvpSuggestion(
     ];
 
     console.info('[KVP Model] SQL VALUES (with UUID):', values);
-    // POSTGRESQL: RETURNING id required to get insertId
-    const [result] = await connection.execute<ResultSetHeader>(
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await connection.execute<{ id: number }[]>(
       `
         INSERT INTO kvp_suggestions
         (uuid, tenant_id, title, description, category_id, department_id, org_level, org_id, is_shared, submitted_by, team_id, priority, expected_benefit, estimated_cost)
@@ -217,8 +217,11 @@ export async function createKvpSuggestion(
       `,
       values,
     );
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to create suggestion: No ID returned from database');
+    }
 
-    return { id: result.insertId, uuid, ...data };
+    return { id: rows[0].id, uuid, ...data };
   } catch (error: unknown) {
     console.error('[KVP Model] Database error in createKvpSuggestion:', error);
     throw new Error('Failed to create suggestion in database');
@@ -614,7 +617,7 @@ export async function updateKvpSuggestionStatus(
       `
         UPDATE kvp_suggestions
         SET status = $1, assigned_to = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE ${idColumn} = $3 AND tenant_id = $2
+        WHERE ${idColumn} = $3 AND tenant_id = $4
       `,
       [status, userId, id, tenantId],
     );
@@ -666,8 +669,8 @@ export async function addKvpAttachment(
     const numericId = suggestionRow.id;
 
     // Insert attachment with UUID provided by controller (uses numeric ID for foreign key)
-    // POSTGRESQL: RETURNING id required to get insertId
-    const [result] = await connection.execute<ResultSetHeader>(
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await connection.execute<{ id: number }[]>(
       `
         INSERT INTO kvp_attachments
         (file_uuid, suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
@@ -684,8 +687,11 @@ export async function addKvpAttachment(
         fileData.uploaded_by,
       ],
     );
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to add attachment: No ID returned from database');
+    }
 
-    return { id: result.insertId, file_uuid: fileUuid, ...fileData };
+    return { id: rows[0].id, file_uuid: fileUuid, ...fileData };
   } finally {
     connection.release();
   }
@@ -727,8 +733,8 @@ export async function addKvpComment(
 ): Promise<number> {
   const connection = await getDbConnection();
   try {
-    // POSTGRESQL: RETURNING id required to get insertId
-    const [result] = await connection.execute<ResultSetHeader>(
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await connection.execute<{ id: number }[]>(
       `
         INSERT INTO kvp_comments
         (tenant_id, suggestion_id, user_id, comment, is_internal)
@@ -737,8 +743,11 @@ export async function addKvpComment(
       `,
       [tenantId, suggestionId, userId, comment, isInternal],
     );
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to add comment: No ID returned from database');
+    }
 
-    return result.insertId;
+    return rows[0].id;
   } finally {
     connection.release();
   }
@@ -816,8 +825,8 @@ export async function awardKvpPoints(
 ): Promise<number> {
   const connection = await getDbConnection();
   try {
-    // POSTGRESQL: RETURNING id required to get insertId
-    const [result] = await connection.execute<ResultSetHeader>(
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await connection.execute<{ id: number }[]>(
       `
         INSERT INTO kvp_points
         (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
@@ -826,8 +835,11 @@ export async function awardKvpPoints(
       `,
       [tenantId, userId, suggestionId, points, reason, awardedBy],
     );
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to award points: No ID returned from database');
+    }
 
-    return result.insertId;
+    return rows[0].id;
   } finally {
     connection.release();
   }

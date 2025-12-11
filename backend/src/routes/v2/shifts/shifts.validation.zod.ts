@@ -5,16 +5,25 @@
 import { z } from 'zod';
 
 import { validateBody, validateParams, validateQuery } from '../../../middleware/validation.zod.js';
-import {
-  DateSchema,
-  IdSchema,
-  PaginationSchema,
-  TimeSchema,
-} from '../../../schemas/common.schema.js';
+import { IdSchema, PaginationSchema, TimeSchema } from '../../../schemas/common.schema.js';
 
 // ============================================================
 // CUSTOM SCHEMAS
 // ============================================================
+
+/**
+ * Shift date schema - accepts both YYYY-MM-DD and ISO 8601 formats
+ * Shifts use separate startTime/endTime fields, so date-only format is valid
+ */
+const ShiftDateSchema = z.string().refine(
+  (val: string) => {
+    // Accept YYYY-MM-DD or ISO 8601 format
+    const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
+    const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+    return dateOnlyPattern.test(val) || isoDatePattern.test(val);
+  },
+  { message: 'Invalid date format. Use YYYY-MM-DD or ISO 8601 format' },
+);
 
 /**
  * Shift status enum
@@ -86,6 +95,34 @@ const SortOrderSchema = z.enum(['asc', 'desc'], {
   message: 'Sort order must be asc or desc',
 });
 
+/**
+ * Shift block type enum (for custom rotation algorithm)
+ */
+export const ShiftBlockTypeSchema = z.enum(['early', 'late', 'night'], {
+  message: 'Shift type must be early, late, or night',
+});
+
+/**
+ * Special rule: nth weekday free (e.g., every 4th Sunday free)
+ */
+export const NthWeekdayFreeRuleSchema = z.object({
+  type: z.literal('nth_weekday_free'),
+  name: z.string().min(1, 'Rule name is required').max(100, 'Name cannot exceed 100 characters'),
+  weekday: z.number().int().min(0).max(6), // 0-6 (0 = Sunday)
+  n: z.number().int().min(1).max(5), // 1-5 (e.g., 4 = "every 4th")
+});
+
+/**
+ * Shift block configuration for custom rotation algorithm
+ */
+export const ShiftBlockConfigSchema = z.object({
+  shiftBlockLength: z.number().int().min(1).max(14), // Days per shift block (max 14)
+  freeDays: z.number().int().min(0).max(14), // Free days between shifts
+  startShift: ShiftBlockTypeSchema,
+  shiftSequence: z.array(ShiftBlockTypeSchema).length(3), // Must be exactly 3 shifts
+  specialRules: z.array(NthWeekdayFreeRuleSchema).optional(),
+});
+
 // ============================================================
 // QUERY SCHEMAS
 // ============================================================
@@ -94,9 +131,9 @@ const SortOrderSchema = z.enum(['asc', 'desc'], {
  * List shifts query parameters
  */
 export const ListShiftsQuerySchema = PaginationSchema.extend({
-  date: DateSchema.optional(),
-  startDate: DateSchema.optional(),
-  endDate: DateSchema.optional(),
+  date: ShiftDateSchema.optional(),
+  startDate: ShiftDateSchema.optional(),
+  endDate: ShiftDateSchema.optional(),
   userId: IdSchema.optional(),
   departmentId: IdSchema.optional(),
   teamId: IdSchema.optional(),
@@ -121,16 +158,16 @@ export const ListSwapRequestsQuerySchema = z.object({
  */
 export const GetOvertimeReportQuerySchema = z.object({
   userId: IdSchema.optional(),
-  startDate: DateSchema,
-  endDate: DateSchema,
+  startDate: ShiftDateSchema,
+  endDate: ShiftDateSchema,
 });
 
 /**
  * Export shifts query parameters
  */
 export const ExportShiftsQuerySchema = z.object({
-  startDate: DateSchema,
-  endDate: DateSchema,
+  startDate: ShiftDateSchema,
+  endDate: ShiftDateSchema,
   departmentId: IdSchema.optional(),
   teamId: IdSchema.optional(),
   userId: IdSchema.optional(),
@@ -191,7 +228,7 @@ export const FavoriteIdParamSchema = z.object({
  */
 export const CreateShiftBodySchema = z.object({
   userId: z.number().int().positive('User ID is required'),
-  date: DateSchema,
+  date: ShiftDateSchema,
   startTime: TimeSchema,
   endTime: TimeSchema,
   departmentId: z.number().int().positive('Department ID is required'),
@@ -215,7 +252,7 @@ export const CreateShiftBodySchema = z.object({
  */
 export const UpdateShiftBodySchema = z.object({
   userId: IdSchema.optional(),
-  date: DateSchema.optional(),
+  date: ShiftDateSchema.optional(),
   startTime: TimeSchema.optional(),
   endTime: TimeSchema.optional(),
   actualStart: TimeWithSecondsSchema.optional(),
@@ -332,6 +369,9 @@ export type UpdateTemplateBody = z.infer<typeof UpdateTemplateBodySchema>;
 export type CreateSwapRequestBody = z.infer<typeof CreateSwapRequestBodySchema>;
 export type UpdateSwapRequestStatusBody = z.infer<typeof UpdateSwapRequestStatusBodySchema>;
 export type CreateFavoriteBody = z.infer<typeof CreateFavoriteBodySchema>;
+export type ShiftBlockType = z.infer<typeof ShiftBlockTypeSchema>;
+export type NthWeekdayFreeRule = z.infer<typeof NthWeekdayFreeRuleSchema>;
+export type ShiftBlockConfig = z.infer<typeof ShiftBlockConfigSchema>;
 
 // ============================================================
 // VALIDATION MIDDLEWARE EXPORTS

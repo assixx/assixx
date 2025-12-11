@@ -138,6 +138,23 @@ export function buildUserQueryParams(
 }
 
 /**
+ * Convert is_active value to SMALLINT
+ * Handles boolean, string, and number inputs
+ * is_active: 0=inactive, 1=active, 3=archived, 4=deleted
+ */
+function convertIsActiveValue(value: unknown): number {
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  if (typeof value === 'string') {
+    if (value === 'true') return 1;
+    if (value === 'false') return 0;
+    return Number.parseInt(value, 10);
+  }
+  return value as number;
+}
+
+/**
  * Process a single field for user update query
  * PostgreSQL: No backticks, use dynamic $N parameter numbering
  */
@@ -157,8 +174,16 @@ export function processUpdateField(
   const paramIndex = values.length + 1;
   fields.push(`${key} = $${paramIndex}`);
 
-  // is_active is now an INTEGER (0=inactive, 1=active, 3=archived, 4=deleted)
-  // No special boolean handling needed anymore
+  // is_active is SMALLINT - convert boolean/string to integer
+  if (key === 'is_active') {
+    const numValue = convertIsActiveValue(value);
+    values.push(numValue);
+    logger.info(
+      `Updating field ${key} to value: ${String(numValue)} (converted from ${typeof value}: ${String(value)})`,
+    );
+    return;
+  }
+
   values.push(value);
   logger.info(`Updating field ${key} to value: ${String(value)}`);
 }

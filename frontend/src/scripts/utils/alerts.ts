@@ -9,6 +9,9 @@ import '../../design-system/components/confirm-modal/confirm-modal.css';
 import notificationService from '../services/notification.service';
 import { setHTML, $$ } from '../../utils/dom-utils';
 
+/** CSS class for custom confirm dialog container */
+const CONFIRM_DIALOG_CLASS = 'custom-confirm-dialog';
+
 /**
  * Show an alert message
  * @param message - The message to display
@@ -24,7 +27,7 @@ export function showAlert(message: string): void {
  */
 function createConfirmDialog(message: string): HTMLDivElement {
   const confirmDiv = document.createElement('div');
-  confirmDiv.className = 'custom-confirm-dialog';
+  confirmDiv.className = CONFIRM_DIALOG_CLASS;
   setHTML(
     confirmDiv,
     `
@@ -109,7 +112,7 @@ export function showWarningAlert(message: string): void {
 export async function showConfirmDanger(message: string, title: string = 'Bestätigung erforderlich'): Promise<boolean> {
   return await new Promise((resolve) => {
     const modalDiv = document.createElement('div');
-    modalDiv.className = 'custom-confirm-dialog';
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
     setHTML(
       modalDiv,
       `
@@ -150,6 +153,56 @@ export async function showConfirmDanger(message: string, title: string = 'Bestä
 }
 
 /**
+ * Show a warning confirmation dialog (for non-destructive but important confirmations)
+ * Uses warning styling (yellow/orange) instead of danger styling (red)
+ * @param message - The message to display
+ * @param title - Optional title (default: "Hinweis")
+ * @returns Promise that resolves to true if user confirmed, false otherwise
+ */
+export async function showConfirmWarning(message: string, title: string = 'Hinweis'): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--warning">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--confirm">Ja, wechseln</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const confirmBtn = $$('.confirm-modal__btn--confirm', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    confirmBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(true);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(false);
+    });
+  });
+}
+
+/**
  * Show a prompt dialog with text input
  * @param message - The message to display
  * @param title - Optional title (default: "Eingabe erforderlich")
@@ -163,7 +216,7 @@ export async function showPrompt(
 ): Promise<string | null> {
   return await new Promise((resolve) => {
     const modalDiv = document.createElement('div');
-    modalDiv.className = 'custom-confirm-dialog';
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
     setHTML(
       modalDiv,
       `
@@ -232,7 +285,7 @@ export async function showPrompt(
 export async function showInfoModal(message: string, title: string = 'Hinweis'): Promise<void> {
   await new Promise<void>((resolve) => {
     const modalDiv = document.createElement('div');
-    modalDiv.className = 'custom-confirm-dialog';
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
     setHTML(
       modalDiv,
       `

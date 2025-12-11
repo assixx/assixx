@@ -30,6 +30,9 @@ interface DbTeamMember extends RowDataPacket {
   last_name: string;
   position?: string;
   employee_id?: string;
+  availability_status?: string;
+  availability_start?: string;
+  availability_end?: string;
 }
 
 interface TeamCreateData {
@@ -74,7 +77,8 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
     `;
 
   try {
-    const [result] = await executeQuery<ResultSetHeader>(query, [
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, [
       name,
       description,
       department_id,
@@ -82,8 +86,12 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
       tenant_id,
       is_active,
     ]);
-    logger.info(`Team created successfully with ID ${String(result.insertId)}`);
-    return result.insertId;
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to create team: No ID returned from database');
+    }
+    const insertedId = rows[0].id;
+    logger.info(`Team created successfully with ID ${String(insertedId)}`);
+    return insertedId;
   } catch (error: unknown) {
     logger.error(`Error creating team: ${(error as Error).message}`);
     throw error;
@@ -308,7 +316,8 @@ export async function removeUserFromTeam(userId: number, teamId: number): Promis
 export async function getTeamMembers(teamId: number): Promise<DbTeamMember[]> {
   logger.info(`Fetching members for team ${String(teamId)}`);
   const query = `
-      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
+      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+             u.availability_status, u.availability_start, u.availability_end
       FROM users u
       JOIN user_teams ut ON u.id = ut.user_id
       WHERE ut.team_id = $1
