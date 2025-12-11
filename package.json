@@ -9,7 +9,7 @@
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
   },
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.25.0",
   "pnpm": {
     "overrides": {
       "tmp": "^0.2.4",
@@ -24,7 +24,8 @@
       "esbuild@<0.27.0": ">=0.27.0",
       "tar@<7.5.2": ">=7.5.2",
       "test-exclude": "^7.0.1",
-      "express@>=5.0.0 <5.2.0": ">=5.2.0"
+      "express@>=5.0.0 <5.2.0": ">=5.2.0",
+      "jws@<3.2.3": ">=3.2.3"
     }
   },
   "scripts": {
@@ -66,7 +67,9 @@
     "stylelint:report": "stylelint \"**/*.{css,scss}\" --formatter json > stylelint-report.json",
     "css:analyze": "node scripts/analyze-css.cjs",
     "css:analyze:verbose": "node scripts/analyze-css.cjs --verbose",
-    "css:analyze:file": "node scripts/analyze-css.cjs --file"
+    "css:analyze:file": "node scripts/analyze-css.cjs --file",
+    "test:api": "cd api-tests && bru run auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local",
+    "test:api:auth": "cd api-tests && bru run auth --env local"
   },
   "keywords": [
     "assixx",
@@ -93,7 +96,7 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "lodash": "^4.17.21",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
@@ -101,15 +104,15 @@
     "nodemailer": "^7.0.11",
     "redis": "^5.10.0",
     "uuid": "^13.0.0",
-    "winston": "^3.18.3",
+    "winston": "^3.19.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@storybook/addon-docs": "10.1.4",
-    "@storybook/addon-links": "10.1.4",
-    "@storybook/builder-vite": "10.1.4",
-    "@storybook/html-vite": "10.1.4",
+    "@storybook/addon-docs": "10.1.6",
+    "@storybook/addon-links": "10.1.6",
+    "@storybook/builder-vite": "10.1.6",
+    "@storybook/html-vite": "10.1.6",
     "@swc/core": "^1.15.3",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/vite": "4.1.17",
@@ -123,12 +126,13 @@
     "@types/lodash": "^4.17.21",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "~24",
     "@types/nodemailer": "^7.0.4",
     "@types/supertest": "^6.0.3",
     "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.48.1",
-    "@typescript-eslint/parser": "^8.48.1",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "@usebruno/cli": "2.15.1",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
@@ -144,17 +148,17 @@
     "eslint-plugin-regexp": "^2.10.0",
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-sonarjs": "^3.0.5",
-    "eslint-plugin-storybook": "10.1.4",
+    "eslint-plugin-storybook": "10.1.6",
     "eslint-plugin-tsdoc": "^0.5.0",
     "eslint-plugin-unicorn": "^62.0.0",
     "jest": "^30.2.0",
-    "markdownlint-cli": "^0.46.0",
+    "markdownlint-cli": "^0.47.0",
     "nodemon": "^3.1.11",
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "prettier-plugin-css-order": "^2.1.2",
     "purgecss": "7.0.2",
-    "storybook": "10.1.4",
+    "storybook": "10.1.6",
     "stylelint": "^16.26.1",
     "stylelint-config-clean-order": "^8.0.0",
     "stylelint-config-standard": "^39.0.1",
@@ -167,6 +171,6 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vite": "^7.2.6"
+    "vite": "^7.2.7"
   }
 }

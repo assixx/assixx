@@ -16,7 +16,7 @@ import {
   UnreadCountResult,
 } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
+import { RowDataPacket, query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import rootLog from '../logs/logs.service.js';
 import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
@@ -171,8 +171,8 @@ export async function createNotification(
   ipAddress?: string,
   userAgent?: string,
 ): Promise<{ notificationId: number }> {
-  // POSTGRESQL: RETURNING id required to get insertId
-  const [result] = await executeQuery<ResultSetHeader>(
+  // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+  const [rows] = await executeQuery<{ id: number }[]>(
     `INSERT INTO notifications
     (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
      metadata, scheduled_for, created_by, tenant_id)
@@ -193,6 +193,10 @@ export async function createNotification(
       tenantId,
     ],
   );
+  if (rows.length === 0 || rows[0] === undefined) {
+    throw new Error('Failed to create notification: No ID returned from database');
+  }
+  const insertedId = rows[0].id;
 
   // Log the action
   await rootLog.create({
@@ -200,13 +204,13 @@ export async function createNotification(
     user_id: createdBy,
     action: 'notification_created',
     entity_type: 'notification',
-    entity_id: result.insertId,
+    entity_id: insertedId,
     new_values: data as unknown as Record<string, unknown>,
     ip_address: ipAddress,
     user_agent: userAgent,
   });
 
-  return { notificationId: result.insertId };
+  return { notificationId: insertedId };
 }
 
 /**

@@ -68,9 +68,14 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
     `;
     const params = [name, description, departmentLeadId, areaId, isActive, tenantId];
 
-    const [result] = await executeQuery<ResultSetHeader>(query, params);
-    logger.info(`Department created successfully with ID ${result.insertId}`);
-    return result.insertId;
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, params);
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to create department: No ID returned from database');
+    }
+    const insertedId = rows[0].id;
+    logger.info(`Department created successfully with ID ${insertedId}`);
+    return insertedId;
   } catch (error: unknown) {
     logger.error(`Error creating department: ${(error as Error).message}`);
     throw error;
@@ -93,7 +98,7 @@ const FIND_ALL_DEPARTMENTS_QUERY = `
       STRING_AGG(name, E'\n' ORDER BY name) as names
     FROM teams GROUP BY department_id
   )
-  SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as areaName,
+  SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
     COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
     COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
   FROM departments d

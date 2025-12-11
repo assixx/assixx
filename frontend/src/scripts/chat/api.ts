@@ -371,20 +371,49 @@ interface ScheduledMessageResponse {
 }
 
 /**
+ * Attachment data for scheduled messages
+ */
+export interface ScheduledAttachmentData {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Schedule a message to be sent at a future time
+ * Optionally includes attachment metadata (file must be uploaded first)
  */
 export async function scheduleMessage(
   conversationId: number,
   content: string,
   scheduledFor: string,
+  attachment?: ScheduledAttachmentData,
 ): Promise<ScheduledMessageResponse> {
+  const body: {
+    conversationId: number;
+    content: string;
+    scheduledFor: string;
+    attachmentPath?: string;
+    attachmentName?: string;
+    attachmentType?: string;
+    attachmentSize?: number;
+  } = {
+    conversationId,
+    content,
+    scheduledFor,
+  };
+
+  if (attachment !== undefined) {
+    body.attachmentPath = attachment.path;
+    body.attachmentName = attachment.name;
+    body.attachmentType = attachment.type;
+    body.attachmentSize = attachment.size;
+  }
+
   return await apiClient.request<ScheduledMessageResponse>('/chat/scheduled-messages', {
     method: 'POST',
-    body: JSON.stringify({
-      conversationId,
-      content,
-      scheduledFor,
-    }),
+    body: JSON.stringify(body),
   });
 }
 

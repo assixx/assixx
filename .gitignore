@@ -78,3 +78,6 @@ backups/monthly/
 backups/quick/
 backups/latest_backup.sql.gz
 backups/cron.log
+
+# Bruno API Testing (komplett ignorieren)
+api-tests/

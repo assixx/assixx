@@ -718,15 +718,15 @@
 }
 
 .shift-indicator.shift-F {
-  color: #fff; /* White for Frühschicht */
+  color: var(--color-blue-400); /* Frühschicht */
 }
 
 .shift-indicator.shift-S {
-  color: #ff9800; /* Orange for Spätschicht */
+  color: var(--color-yellow-400); /* Spätschicht */
 }
 
 .shift-indicator.shift-N {
-  color: #3498db; /* Blue for Nachtschicht */
+  color: var(--color-purple-400); /* Nachtschicht */
 }
 
 /* Make day cell position relative for absolute positioning */

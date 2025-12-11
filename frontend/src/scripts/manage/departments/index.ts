@@ -707,6 +707,17 @@ function processFormField(data: Record<string, unknown>, key: string, value: str
     return;
   }
 
+  // Unified isActive status (0=inactive, 1=active, 3=archived, 4=deleted)
+  if (key === 'isActive') {
+    data['isActive'] = Number.parseInt(value, 10);
+    return;
+  }
+
+  // Skip obsolete isArchived field (replaced by unified isActive status)
+  if (key === 'isArchived') {
+    return;
+  }
+
   // Default: use value as-is
   // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
   data[key] = value;

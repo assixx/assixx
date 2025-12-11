@@ -277,14 +277,11 @@ function ensureUserDataLoaded(): void {
 
 /**
  * Check if user has permission to create events
+ * All authenticated users can create events (employees: personal only)
  */
 function checkEventPermission(): boolean {
-  const userRole = localStorage.getItem('userRole');
-  if (userRole !== 'admin' && userRole !== 'root') {
-    console.warn('Calendar: Employees cannot create events');
-    showErrorAlert('Sie haben keine Berechtigung, Termine zu erstellen.');
-    return false;
-  }
+  // All users can create events - employees can create personal events
+  // The modal will be configured to only show personal option for employees
   return true;
 }
 
@@ -328,8 +325,9 @@ function registerModalTemplates(): void {
 
 /**
  * Handle date click (create event on click)
+ * All users can create events (employees: personal only, admins: all types)
  */
-function handleDateClick(info: { date: Date; allDay: boolean }, userRole: string | null): void {
+function handleDateClick(info: { date: Date; allDay: boolean }, _userRole: string | null): void {
   console.info('Calendar: Date clicked:', info);
 
   // Disable date click in fullscreen mode - only allow event detail view
@@ -339,17 +337,15 @@ function handleDateClick(info: { date: Date; allDay: boolean }, userRole: string
     return;
   }
 
-  if (userRole === 'admin' || userRole === 'root') {
-    openEventForm(null, info.date, info.date, info.allDay);
-  } else {
-    console.info('Calendar: Employees cannot create events');
-  }
+  // All users can create events - modal will be configured based on role
+  openEventForm(null, info.date, info.date, info.allDay);
 }
 
 /**
  * Handle date select (create event on drag)
+ * All users can create events (employees: personal only, admins: all types)
  */
-function handleDateSelect(info: DateSelectArg, userRole: string | null): void {
+function handleDateSelect(info: DateSelectArg, _userRole: string | null): void {
   console.info('Calendar: Date range selected:', info);
 
   // Disable date selection in fullscreen mode - only allow event detail view
@@ -359,12 +355,9 @@ function handleDateSelect(info: DateSelectArg, userRole: string | null): void {
     return;
   }
 
-  if (userRole === 'admin' || userRole === 'root') {
-    const allDay = info.allDay && info.view.type === 'dayGridMonth';
-    openEventForm(null, info.start, info.end, allDay);
-  } else {
-    console.info('Calendar: Employees cannot create events');
-  }
+  // All users can create events - modal will be configured based on role
+  const allDay = info.allDay && info.view.type === 'dayGridMonth';
+  openEventForm(null, info.start, info.end, allDay);
 }
 
 /**
@@ -628,6 +621,9 @@ async function initializeEventForm(
 ): Promise<void> {
   // Set form mode
   setFormTitle(eventId);
+
+  // Configure modal based on user role (hide org selects for employees)
+  configureModalForRole();
 
   // Load departments, teams, and areas first
   await api.loadDepartmentsAndTeams();
@@ -1349,6 +1345,11 @@ function handleActionClick(e: MouseEvent, actionElement: HTMLElement): void {
     return;
   }
 
+  // Shift toggle is handled by calendar-integration.ts via direct click handler
+  if (action === 'toggle-shifts') {
+    return;
+  }
+
   // Handle event-related actions
   if (handleEventActions(action, actionElement)) return;
 
@@ -1682,6 +1683,74 @@ async function initializeFullCalendar(): Promise<void> {
  * Setup UI event handlers (badges, buttons)
  * Extracted to reduce complexity of initializeApp
  */
+
+// ============================================================================
+// Event Creation Controls & Role-based Modal Configuration
+// ============================================================================
+
+/**
+ * Render event creation button
+ * All users can create events (employees: personal only, admins: all types)
+ */
+function renderCreateEventButton(): void {
+  const container = $$('#newEventBtnContainer');
+  if (container === null) {
+    console.warn('[CALENDAR] newEventBtnContainer not found');
+    return;
+  }
+
+  // All users can create events (employees can create personal events)
+  const button = document.createElement('button');
+  button.id = 'newEventBtn';
+  button.className = 'btn btn-primary';
+  button.setAttribute('data-action', 'create-event');
+  button.innerHTML = '<i class="fas fa-plus mr-2"></i>Neuer Termin';
+
+  container.appendChild(button);
+  console.info('[CALENDAR] Create event button rendered');
+}
+
+/**
+ * Configure modal for user role
+ * Employees: Hide org selects, auto-set orgLevel to "personal"
+ * Admins: Show all options
+ */
+function configureModalForRole(): void {
+  const userRole = localStorage.getItem('userRole');
+  const isAdmin = userRole === 'admin' || userRole === 'root';
+
+  // Elements to hide for employees
+  const adminOnlyElements = ['#adminOnlyOrgLevel', '#adminOnlyOrgSelects', '#adminOnlyAttendees'];
+
+  if (!isAdmin) {
+    // Employee: Hide org-related sections
+    adminOnlyElements.forEach((selector) => {
+      const element = $$(selector);
+      if (element !== null) {
+        element.style.display = 'none';
+      }
+    });
+
+    // Auto-set orgLevel to "personal" for employees
+    const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
+    if (orgLevelInput !== null) {
+      orgLevelInput.value = 'personal';
+    }
+
+    console.info('[CALENDAR] Modal configured for employee (personal events only)');
+  } else {
+    // Admin/Root: Show all sections
+    adminOnlyElements.forEach((selector) => {
+      const element = $$(selector);
+      if (element !== null) {
+        element.style.display = 'block';
+      }
+    });
+
+    console.info('[CALENDAR] Modal configured for admin (all event types)');
+  }
+}
+
 /**
  * Setup handler for create event button
  */
@@ -1773,6 +1842,8 @@ function setupFullscreenHandlers(): void {
  * Setup all calendar UI event handlers
  */
 function setupCalendarUIHandlers(): void {
+  // Render create event button (all users can create personal events)
+  renderCreateEventButton();
   setupCreateEventHandler();
   setupFullscreenHandlers();
 }

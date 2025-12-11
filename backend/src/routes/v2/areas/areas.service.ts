@@ -4,7 +4,7 @@
  * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
  */
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { Area, AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 
 interface AreaRow extends RowDataPacket {
@@ -222,7 +222,8 @@ export async function createArea(
     RETURNING id
   `;
 
-  const [result] = await execute<ResultSetHeader>(query, [
+  // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+  const [rows] = await execute<{ id: number }[]>(query, [
     tenantId,
     data.name,
     data.description ?? null,
@@ -233,8 +234,12 @@ export async function createArea(
     userId,
     1, // is_active = 1 (active) - Status: 0=inactive, 1=active, 3=archived, 4=deleted
   ]);
+  if (rows.length === 0 || rows[0] === undefined) {
+    throw new ServiceError('CREATE_FAILED', 'No ID returned from database', 500);
+  }
+  const insertedId = rows[0].id;
 
-  const newArea = await getAreaById(result.insertId, tenantId);
+  const newArea = await getAreaById(insertedId, tenantId);
   if (!newArea) {
     throw new ServiceError('CREATE_FAILED', 'Failed to create area', 500);
   }

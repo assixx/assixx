@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Chat Module - Input Handling
  * Message input and file upload
@@ -13,6 +14,7 @@ import {
   type AttachmentResponse,
   type ApiParticipant,
   type ApiConversation,
+  type ScheduledAttachmentData,
 } from './api';
 import { displayMessage } from './messages';
 import { renderConversationList, renderChatHeader } from './ui';
@@ -68,6 +70,65 @@ function clearInputAfterSend(content?: string): void {
 }
 
 /**
+ * Handle sending a scheduled message with optional attachment
+ * Uploads pending files first, then schedules the message
+ */
+async function handleScheduledMessage(state: ReturnType<typeof getChatState>, messageContent: string): Promise<void> {
+  const conversationId = state.currentConversationId;
+  if (conversationId === null) {
+    showNotification('Bitte wählen Sie zuerst eine Unterhaltung', 'error');
+    return;
+  }
+
+  // Upload pending files and get attachment data
+  const attachmentData = await uploadPendingFilesForSchedule(state, conversationId);
+  if (attachmentData === null) {
+    return; // Upload failed, error already shown
+  }
+
+  const success = await sendScheduledMessage(messageContent, attachmentData);
+  if (success) {
+    clearFilePreview();
+  }
+}
+
+/**
+ * Upload pending files for a scheduled message
+ * Returns attachment data or undefined if no files, null if upload failed
+ */
+async function uploadPendingFilesForSchedule(
+  state: ReturnType<typeof getChatState>,
+  conversationId: number,
+): Promise<ScheduledAttachmentData | undefined | null> {
+  if (state.pendingFiles.length === 0) {
+    return undefined;
+  }
+
+  const filesToUpload = [...state.pendingFiles];
+  state.pendingFiles = [];
+
+  try {
+    const uploadedAttachments = await uploadAttachments(filesToUpload, conversationId);
+    const firstAttachment = uploadedAttachments[0];
+
+    if (firstAttachment === undefined) {
+      return undefined;
+    }
+
+    return {
+      path: firstAttachment.downloadUrl,
+      name: firstAttachment.originalName,
+      type: firstAttachment.mimeType,
+      size: firstAttachment.fileSize,
+    };
+  } catch (error) {
+    console.error('Failed to upload attachment for scheduled message:', error);
+    showNotification('Fehler beim Hochladen des Anhangs', 'error');
+    return null;
+  }
+}
+
+/**
  * Send a message (immediate or scheduled)
  * Handles lazy conversation creation: if pending conversation exists,
  * creates conversation with initial message first
@@ -84,11 +145,7 @@ export async function sendMessage(content?: string): Promise<void> {
 
   // If scheduled, use schedule API instead of WebSocket
   if (getScheduledTime() !== null) {
-    const success = await sendScheduledMessage(messageContent);
-    if (success) {
-      state.pendingFiles = [];
-      clearFilePreview();
-    }
+    await handleScheduledMessage(state, messageContent);
     return;
   }
 

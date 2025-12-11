@@ -208,10 +208,9 @@
               Status
               <span class="text-red-500">*</span>
             </label>
-            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <!-- Hidden input: unified isActive status (0=inactive, 1=active, 3=archived, 4=deleted) -->
             <input type="hidden" id="team-is-active" name="isActive" value="1" />
-            <input type="hidden" id="team-is-archived" name="isArchived" value="0" />
-            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
+            <!-- Custom Dropdown maps UI selections to isActive values -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
                 <span>Aktiv</span>

@@ -57,12 +57,13 @@ export async function createUser(userData: UserCreateData): Promise<number> {
       hashedPassword,
       finalEmployeeId,
     );
-    // POSTGRESQL: db.ts extracts insertId from RETURNING id into ResultSetHeader
-    const [result] = await executeQuery<ResultSetHeader>(query, queryParams);
-    const insertedId = result.insertId;
-    if (insertedId === 0) {
+    // POSTGRESQL: RETURNING id returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, queryParams);
+    const firstRow = rows[0];
+    if (firstRow === undefined) {
       throw new Error('Failed to get inserted user ID from database');
     }
+    const insertedId = firstRow.id;
     logger.info(`User created successfully with ID: ${insertedId}`);
 
     await updateTemporaryEmployeeId(insertedId, tenantId, role, employeeId, finalEmployeeId);

@@ -2506,6 +2506,7 @@ class UnifiedNavigation {
   }
 
   // Ungelesene Chat-Nachrichten aktualisieren
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   public async updateUnreadMessages(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
@@ -2535,6 +2536,10 @@ class UnifiedNavigation {
         }
       }
     } catch (error) {
+      // Abort during logout/page navigation is expected - not an error
+      if (error instanceof Error && error.message.toLowerCase().includes('aborted')) {
+        return;
+      }
       console.error('Error updating unread messages:', error);
     }
   }

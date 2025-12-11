@@ -270,13 +270,12 @@ class BlackboardState {
 
   /**
    * Check if user can modify entry (edit or delete)
-   * Only ROOT role or the entry author can modify
+   * Only ADMIN or ROOT role can modify (matches backend requireRoleV2(['admin', 'root']))
+   * Note: Author check removed - employees cannot edit even their own entries per backend rules
    */
-  private canModifyEntry(entry: BlackboardEntry): boolean {
-    // Root can modify any entry
-    if (this.userRole === 'root') return true;
-    // Author can modify their own entry
-    return entry.authorId === this.currentUserId;
+  private canModifyEntry(_entry: BlackboardEntry): boolean {
+    // Only admin or root can modify entries (consistent with backend API)
+    return this.userRole === 'admin' || this.userRole === 'root';
   }
 
   /**

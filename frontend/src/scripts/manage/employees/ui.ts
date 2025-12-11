@@ -559,13 +559,14 @@ export function fillOptionalFormFields(employee: Employee): void {
 /**
  * Fill availability fields
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function fillAvailabilityFields(employee: Employee): void {
   // Update custom dropdown for availability status
   const availabilityStatusInput = $$('#availability-status') as HTMLInputElement | null;
   const availabilityStatusTrigger = $$('#availability-status-trigger');
 
   if (availabilityStatusInput !== null && availabilityStatusTrigger !== null) {
-    const status = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
+    const status = employee.availabilityStatus ?? 'available';
     availabilityStatusInput.value = status;
 
     // Update trigger text based on status
@@ -586,20 +587,21 @@ export function fillAvailabilityFields(employee: Employee): void {
 
   const availabilityStart = $$('input[name="availabilityStart"]') as HTMLInputElement | null;
   if (availabilityStart) {
-    const startDate = employee.availabilityStart ?? employee.availabilityStart ?? '';
-    availabilityStart.value = startDate;
+    const startDate = employee.availabilityStart ?? '';
+    // Convert ISO date (2025-12-01T00:00:00.000Z) to YYYY-MM-DD for date input
+    availabilityStart.value = startDate !== '' ? (startDate.split('T')[0] ?? '') : '';
   }
 
   const availabilityEnd = $$('input[name="availabilityEnd"]') as HTMLInputElement | null;
   if (availabilityEnd) {
-    const endDate = employee.availabilityEnd ?? employee.availabilityEnd ?? '';
-    availabilityEnd.value = endDate;
+    const endDate = employee.availabilityEnd ?? '';
+    // Convert ISO date (2025-12-01T00:00:00.000Z) to YYYY-MM-DD for date input
+    availabilityEnd.value = endDate !== '' ? (endDate.split('T')[0] ?? '') : '';
   }
 
   const availabilityNotes = $$('textarea[name="availabilityNotes"]') as HTMLTextAreaElement | null;
   if (availabilityNotes) {
-    const notes = employee.availabilityNotes ?? employee.availabilityNotes ?? '';
-    availabilityNotes.value = notes;
+    availabilityNotes.value = employee.availabilityNotes ?? '';
   }
 }
 

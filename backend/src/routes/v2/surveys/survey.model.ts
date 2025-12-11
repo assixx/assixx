@@ -217,11 +217,13 @@ async function insertSurveyQuestions(
   const questionIds: number[] = [];
 
   for (const [index, question] of questions.entries()) {
-    const [result] = await connection.query<ResultSetHeader>(
+    // PostgreSQL: Use RETURNING id to get the inserted row ID
+    const [result] = await connection.query<RowDataPacket[]>(
       `
         INSERT INTO survey_questions (
           tenant_id, survey_id, question_text, question_type, is_required, order_index
         ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `,
       [
         tenantId,
@@ -232,7 +234,8 @@ async function insertSurveyQuestions(
         question.order_position ?? index + 1,
       ],
     );
-    questionIds.push(result.insertId);
+    const questionId = (result[0] as { id: number }).id;
+    questionIds.push(questionId);
 
     // Insert options for choice questions into separate table
     if (
@@ -240,7 +243,7 @@ async function insertSurveyQuestions(
       question.options.length > 0 &&
       (question.question_type === 'single_choice' || question.question_type === 'multiple_choice')
     ) {
-      await insertQuestionOptions(connection, result.insertId, tenantId, question.options);
+      await insertQuestionOptions(connection, questionId, tenantId, question.options);
     }
   }
 
@@ -321,13 +324,14 @@ export async function createSurvey(
     // Generate UUID for survey (UUIDv7: time-sortable, like KVP)
     const surveyUuid = uuidv7();
 
-    // Create survey
-    const [surveyResult] = await connection.query<ResultSetHeader>(
+    // Create survey - PostgreSQL: Use RETURNING id
+    const [surveyResult] = await connection.query<RowDataPacket[]>(
       `
         INSERT INTO surveys (
           tenant_id, title, description, created_by, status,
           is_anonymous, is_mandatory, start_date, end_date, uuid
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id
       `,
       [
         tenantId,
@@ -343,7 +347,7 @@ export async function createSurvey(
       ],
     );
 
-    const surveyId = surveyResult.insertId;
+    const surveyId = (surveyResult[0] as { id: number }).id;
 
     // Add questions and assignments
     await insertSurveyQuestions(connection, surveyId, tenantId, surveyData.questions);
@@ -772,11 +776,13 @@ async function updateSurveyQuestions(
 
   // Add new questions (reuse insertSurveyQuestions logic)
   for (const [index, question] of questions.entries()) {
-    const [result] = await connection.query<ResultSetHeader>(
+    // PostgreSQL: Use RETURNING id to get the inserted row ID
+    const [result] = await connection.query<RowDataPacket[]>(
       `
         INSERT INTO survey_questions (
           tenant_id, survey_id, question_text, question_type, is_required, order_index
         ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `,
       [
         tenantId,
@@ -787,6 +793,7 @@ async function updateSurveyQuestions(
         question.order_position ?? index + 1,
       ],
     );
+    const questionId = (result[0] as { id: number }).id;
 
     // Insert options for choice questions into separate table
     if (
@@ -794,7 +801,7 @@ async function updateSurveyQuestions(
       question.options.length > 0 &&
       (question.question_type === 'single_choice' || question.question_type === 'multiple_choice')
     ) {
-      await insertQuestionOptions(connection, result.insertId, tenantId, question.options);
+      await insertQuestionOptions(connection, questionId, tenantId, question.options);
     }
   }
 }

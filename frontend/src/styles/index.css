@@ -7,7 +7,7 @@
  * NOTE: Global resets (* and body) removed - handled by main.css
  */
 
-/* Glassmorphismus Header */
+/* Glassmorphismus Header
 .header {
   position: sticky;
   z-index: 1000;
@@ -23,6 +23,7 @@
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }
+*/
 
 .nav {
   display: flex;

@@ -198,8 +198,12 @@ class MachineModel {
       data.updated_by ?? null,
     ];
 
-    const [result] = await executeQuery<ResultSetHeader>(query, params);
-    return result.insertId;
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, params);
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to create machine: No ID returned from database');
+    }
+    return rows[0].id;
   }
 
   // Update machine
@@ -277,7 +281,7 @@ class MachineModel {
   async deactivate(id: number, tenantId: number): Promise<boolean> {
     const query = `
       UPDATE machines
-      SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+      SET is_active = 0, updated_at = CURRENT_TIMESTAMP
       WHERE id = $1 AND tenant_id = $2
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
@@ -288,7 +292,7 @@ class MachineModel {
   async activate(id: number, tenantId: number): Promise<boolean> {
     const query = `
       UPDATE machines
-      SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP
+      SET is_active = 1, updated_at = CURRENT_TIMESTAMP
       WHERE id = $1 AND tenant_id = $2
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
@@ -344,33 +348,35 @@ class MachineModel {
       data.created_by ?? null,
     ];
 
-    const [result] = await executeQuery<ResultSetHeader>(query, params);
+    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
+    const [rows] = await executeQuery<{ id: number }[]>(query, params);
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new Error('Failed to add maintenance record: No ID returned from database');
+    }
+    const insertedId = rows[0].id;
 
     // Update machine's last_maintenance and next_maintenance dates
-    if (typeof result.insertId === 'number' && result.insertId > 0) {
-      // Update machine's last_maintenance and next_maintenance dates
-      interface MachineUpdateData {
-        last_maintenance?: Date | undefined;
-        next_maintenance?: Date | undefined;
-        status?: Machine['status'] | undefined;
-      }
-      const updateData: MachineUpdateData = {
-        last_maintenance: data.performed_date,
-        next_maintenance: data.next_maintenance_date,
-        status:
-          data.status_after === 'needs_repair' ? 'repair' : (data.status_after ?? 'operational'),
-      };
-      if (
-        data.machine_id != null &&
-        data.machine_id !== 0 &&
-        data.tenant_id != null &&
-        data.tenant_id !== 0
-      ) {
-        await this.update(data.machine_id, data.tenant_id, updateData as Partial<Machine>);
-      }
+    interface MachineUpdateData {
+      last_maintenance?: Date | undefined;
+      next_maintenance?: Date | undefined;
+      status?: Machine['status'] | undefined;
+    }
+    const updateData: MachineUpdateData = {
+      last_maintenance: data.performed_date,
+      next_maintenance: data.next_maintenance_date,
+      status:
+        data.status_after === 'needs_repair' ? 'repair' : (data.status_after ?? 'operational'),
+    };
+    if (
+      data.machine_id != null &&
+      data.machine_id !== 0 &&
+      data.tenant_id != null &&
+      data.tenant_id !== 0
+    ) {
+      await this.update(data.machine_id, data.tenant_id, updateData as Partial<Machine>);
     }
 
-    return result.insertId;
+    return insertedId;
   }
 
   // Get upcoming maintenance
@@ -382,7 +388,7 @@ class MachineModel {
       FROM machines m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
       WHERE m.tenant_id = $1
-        AND m.is_active = TRUE
+        AND m.is_active = 1
         AND m.next_maintenance <= CURRENT_DATE + ($2 * INTERVAL '1 day')
         AND m.status != 'decommissioned'
       ORDER BY m.next_maintenance ASC
@@ -403,7 +409,7 @@ class MachineModel {
         SUM(CASE WHEN status = 'decommissioned' THEN 1 ELSE 0 END) as decommissioned,
         SUM(CASE WHEN next_maintenance <= CURRENT_DATE + INTERVAL '30 days' AND status != 'decommissioned' THEN 1 ELSE 0 END) as needs_maintenance_soon
       FROM machines
-      WHERE tenant_id = $1 AND is_active = TRUE
+      WHERE tenant_id = $1 AND is_active = 1
     `;
     const [rows] = await executeQuery<MachineStatistics[]>(query, [tenantId]);
     const stats = rows[0];
@@ -418,8 +424,8 @@ class MachineModel {
   // Get machine categories (global table - shared across all tenants)
   async getCategories(): Promise<MachineCategory[]> {
     const query = `
-      SELECT * FROM global.machine_categories
-      WHERE is_active = TRUE
+      SELECT * FROM machine_categories
+      WHERE is_active = 1
       ORDER BY sort_order ASC, name ASC
     `;
     const [rows] = await executeQuery<MachineCategory[]>(query);

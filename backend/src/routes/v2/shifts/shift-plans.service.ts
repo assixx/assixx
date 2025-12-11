@@ -2,11 +2,14 @@
  * Shift Plans Service
  * Handles shift plan operations and favorites management
  */
+import { v7 as uuidv7 } from 'uuid';
+
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { RowDataPacket, execute, query } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
-import { kontischichtService } from './kontischicht.service.js';
+import { customRotationService } from './custom-rotation.service.js';
+import { formatDateForMysql } from './shift-types.js';
 
 interface ShiftPlanData {
   startDate: string;
@@ -17,7 +20,7 @@ interface ShiftPlanData {
   machineId?: number;
   name?: string;
   shiftNotes?: string;
-  kontischichtPattern?: string;
+  customRotationPattern?: string;
   shifts: {
     userId: number;
     date: string;
@@ -93,13 +96,17 @@ class ShiftPlansService {
     planName: string,
     dateRange: { planStartDate: string; planEndDate: string },
   ): Promise<number> {
+    const planUuid = uuidv7();
+    // PostgreSQL: Use RETURNING id to get the inserted row's ID
     const [planResult] = await execute(
       `INSERT INTO shift_plans (
-        tenant_id, name, shift_notes,
+        uuid, tenant_id, name, shift_notes,
         department_id, team_id, machine_id, area_id,
         start_date, end_date, status, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft', $10)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft', $11)
+      RETURNING id`,
       [
+        planUuid,
         tenantId,
         planName,
         data.shiftNotes ?? '',
@@ -113,7 +120,15 @@ class ShiftPlansService {
       ],
     );
 
-    return (planResult as { insertId: number }).insertId;
+    // PostgreSQL RETURNING gives us an array of rows
+    const rows = planResult as { id: number }[];
+    if (rows[0]?.id === undefined) {
+      throw new ServiceError(
+        'CREATE_PLAN_ERROR',
+        'Failed to create shift plan record - no ID returned',
+      );
+    }
+    return rows[0].id;
   }
 
   /**
@@ -146,20 +161,32 @@ class ShiftPlansService {
     const shiftIds: number[] = [];
 
     for (const shift of shifts) {
+      // Use UPSERT: If shift already exists (created via drag & drop), update it with plan_id
+      // If it doesn't exist, insert a new record
+      // PostgreSQL: ON CONFLICT based on unique constraint (user_id, date, start_time)
       const [shiftResult] = await execute(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id,
           date, start_time, end_time, type,
           area_id, department_id, team_id, machine_id,
           status, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'planned', $12)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'planned', $12)
+        ON CONFLICT (user_id, date, start_time) DO UPDATE SET
+          plan_id = EXCLUDED.plan_id,
+          area_id = COALESCE(EXCLUDED.area_id, shifts.area_id),
+          department_id = COALESCE(EXCLUDED.department_id, shifts.department_id),
+          team_id = COALESCE(EXCLUDED.team_id, shifts.team_id),
+          machine_id = COALESCE(EXCLUDED.machine_id, shifts.machine_id),
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING id`,
         [
           tenantId,
           planId,
           shift.userId,
           shift.date,
-          `${shift.date} ${shift.startTime}:00`,
-          `${shift.date} ${shift.endTime}:00`,
+          // Use formatDateForMysql for consistent timestamp format with drag & drop shifts
+          formatDateForMysql(`${shift.date} ${shift.startTime}`),
+          formatDateForMysql(`${shift.date} ${shift.endTime}`),
           shift.type,
           data.areaId ?? null,
           data.departmentId,
@@ -168,7 +195,11 @@ class ShiftPlansService {
           userId,
         ],
       );
-      shiftIds.push((shiftResult as { insertId: number }).insertId);
+      // PostgreSQL RETURNING id gives us an array of rows
+      const rows = shiftResult as { id: number }[];
+      if (rows[0]?.id !== undefined) {
+        shiftIds.push(rows[0].id);
+      }
     }
 
     return shiftIds;
@@ -229,18 +260,18 @@ class ShiftPlansService {
         data.name ??
         `Wochenplan KW ${String(weekNumber)}/${String(new Date(data.startDate).getFullYear())}`;
 
-      const isKontischicht = kontischichtService.isKontischichtPlan(
+      const isCustomRotation = customRotationService.isCustomRotationPlan(
         planName,
         data.name,
-        data.kontischichtPattern,
+        data.customRotationPattern,
       );
       const dateRange =
-        isKontischicht ?
-          kontischichtService.calculateKontischichtDateRange(data.startDate, data.endDate)
+        isCustomRotation ?
+          customRotationService.calculateCustomRotationDateRange(data.startDate, data.endDate)
         : { planStartDate: data.startDate, planEndDate: data.endDate };
 
       const planId = await this.createShiftPlanRecord(data, tenantId, userId, planName, dateRange);
-      const shiftsToCreate = kontischichtService.prepareShiftsForCreation(data, isKontischicht);
+      const shiftsToCreate = customRotationService.prepareShiftsForCreation(data, isCustomRotation);
       const shiftIds = await this.createShiftRecords(
         shiftsToCreate,
         planId,
@@ -381,25 +412,36 @@ class ShiftPlansService {
     // Insert new shifts
     const shiftIds: number[] = [];
     for (const shift of shifts) {
+      // Combine date with time to create full timestamp for PostgreSQL
+      // start_time and end_time are "timestamp with time zone" columns
+      const startTimestamp = formatDateForMysql(`${shift.date} ${shift.startTime ?? '06:00:00'}`);
+      const endTimestamp = formatDateForMysql(`${shift.date} ${shift.endTime ?? '14:00:00'}`);
+
+      // PostgreSQL: Use RETURNING id to get the inserted row's ID
       const [result] = await execute(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, type,
           start_time, end_time, department_id, created_by, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+        RETURNING id`,
         [
           tenantId,
           planId,
           shift.userId,
           shift.date,
           shift.type,
-          shift.startTime ?? '06:00:00',
-          shift.endTime ?? '14:00:00',
+          startTimestamp,
+          endTimestamp,
           departmentId,
           userId,
         ],
       );
 
-      shiftIds.push((result as { insertId: number }).insertId);
+      // PostgreSQL RETURNING gives us an array of rows
+      const rows = result as { id: number }[];
+      if (rows[0]?.id !== undefined) {
+        shiftIds.push(rows[0].id);
+      }
     }
 
     return shiftIds;
@@ -616,15 +658,15 @@ class ShiftPlansService {
       `SELECT
         id,
         name,
-        area_id as areaId,
-        area_name as areaName,
-        department_id as departmentId,
-        department_name as departmentName,
-        machine_id as machineId,
-        machine_name as machineName,
-        team_id as teamId,
-        team_name as teamName,
-        created_at as createdAt
+        area_id as "areaId",
+        area_name as "areaName",
+        department_id as "departmentId",
+        department_name as "departmentName",
+        machine_id as "machineId",
+        machine_name as "machineName",
+        team_id as "teamId",
+        team_name as "teamName",
+        created_at as "createdAt"
       FROM shift_favorites
       WHERE tenant_id = $1 AND user_id = $2
       ORDER BY created_at DESC`,
@@ -647,7 +689,7 @@ class ShiftPlansService {
       throw new ServiceError('DUPLICATE', 'Ein Favorit mit diesem Namen existiert bereits');
     }
 
-    // Insert new favorite
+    // Insert new favorite - PostgreSQL: Use RETURNING id
     const [result] = await execute(
       `INSERT INTO shift_favorites (
         tenant_id,
@@ -661,7 +703,8 @@ class ShiftPlansService {
         machine_name,
         team_id,
         team_name
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id`,
       [
         tenantId,
         userId,
@@ -677,7 +720,9 @@ class ShiftPlansService {
       ],
     );
 
-    const insertId = 'insertId' in result ? result.insertId : 0;
+    // PostgreSQL RETURNING gives us an array of rows
+    const rows = result as { id: number }[];
+    const insertId = rows[0]?.id ?? 0;
 
     return {
       id: insertId,

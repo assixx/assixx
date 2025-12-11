@@ -4,7 +4,12 @@
  */
 import { showErrorAlert, showSuccessAlert } from '../utils/alerts';
 import { $$ } from '../../utils/dom-utils';
-import { scheduleMessage, cancelScheduledMessage as apiCancelScheduled, getConversationScheduledMessages } from './api';
+import {
+  scheduleMessage,
+  cancelScheduledMessage as apiCancelScheduled,
+  getConversationScheduledMessages,
+  type ScheduledAttachmentData,
+} from './api';
 import { getChatState } from './state';
 import { displayScheduledMessages } from './messages';
 
@@ -216,8 +221,9 @@ export function confirmSchedule(): void {
 
 /**
  * Send a scheduled message via API
+ * Optionally includes attachment data (file must already be uploaded)
  */
-export async function sendScheduledMessage(content: string): Promise<boolean> {
+export async function sendScheduledMessage(content: string, attachment?: ScheduledAttachmentData): Promise<boolean> {
   const state = getChatState();
 
   if (state.currentConversationId === null) {
@@ -231,7 +237,7 @@ export async function sendScheduledMessage(content: string): Promise<boolean> {
   }
 
   try {
-    await scheduleMessage(state.currentConversationId, content, scheduledFor.toISOString());
+    await scheduleMessage(state.currentConversationId, content, scheduledFor.toISOString(), attachment);
 
     // Clear scheduled time after successful send
     const sentTime = formatScheduleTime(scheduledFor);
@@ -242,7 +248,11 @@ export async function sendScheduledMessage(content: string): Promise<boolean> {
     state.setScheduledMessages(state.currentConversationId, scheduled);
     displayScheduledMessages(scheduled);
 
-    showSuccessAlert(`Nachricht geplant für ${sentTime}`);
+    const hasAttachment = attachment !== undefined;
+    const successMsg = hasAttachment
+      ? `Nachricht mit Anhang geplant für ${sentTime}`
+      : `Nachricht geplant für ${sentTime}`;
+    showSuccessAlert(successMsg);
     return true;
   } catch (error) {
     console.error('[Schedule] Failed to schedule message:', error);

@@ -3,19 +3,16 @@
  * Handles shift planning business logic
  *
  * NOTE: This service wrapper only exposes generic CRUD methods,
- * but the Shift model has many more specific methods like getShiftTemplates,
- * createShiftTemplate, getShiftPlans, createShiftPlan, etc.
+ * but the Shift model has many more specific methods like getShiftPlans, createShiftPlan, etc.
  * This should be refactored to expose the full shift planning functionality.
  */
-import type { DbShift, DbShiftTemplate } from '../routes/v2/shifts/shift-types.js';
+import type { DbShift } from '../routes/v2/shifts/shift-types.js';
 import {
   assignEmployeeToShift,
   createShift,
   createShiftPlan,
-  createShiftTemplate,
   getEmployeeShifts,
   getShiftPlans,
-  getShiftTemplates,
   getShiftsByPlan,
 } from '../routes/v2/shifts/shift.js';
 import { Pool } from '../utils/db.js';
@@ -63,23 +60,6 @@ interface ShiftUpdateData {
   end_time?: string;
   position?: string | null;
   required_employees?: number;
-}
-
-// Additional interfaces for actual Shift functionality
-interface ShiftTemplate {
-  id: number;
-  tenant_id: number;
-  name: string;
-  description?: string | null;
-  start_time: string;
-  end_time: string;
-  durationHours: number;
-  break_minutes: number;
-  color: string;
-  is_active: boolean | number;
-  created_by: number;
-  created_at: Date;
-  updated_at: Date;
 }
 
 interface ShiftPlan {
@@ -191,67 +171,6 @@ class ShiftService {
 
   // Additional methods that expose the actual Shift functionality
   // These should be added in a refactoring step:
-
-  /**
-   * Get all shift templates for a tenant
-   * @param tenantId - The tenant ID
-   * @returns Promise resolving to array of shift templates
-   */
-  async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
-    try {
-      const templates = await getShiftTemplates(tenantId);
-      // Map duration_hours to durationHours for interface compatibility
-      return templates.map((template: DbShiftTemplate) => ({
-        ...template,
-        durationHours: template.duration_hours,
-      }));
-    } catch (error: unknown) {
-      console.error('Error in ShiftService.getShiftTemplates:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a new shift template
-   * @param templateData - The templateData parameter
-   * @returns Promise resolving to the created shift template
-   */
-  async createShiftTemplate(templateData: {
-    tenant_id: number;
-    name: string;
-    description?: string | null;
-    start_time: string;
-    end_time: string;
-    break_minutes?: number;
-    color?: string;
-    created_by: number;
-  }): Promise<ShiftTemplate> {
-    try {
-      // Calculate durationHours from start_time and end_time
-      const start = new Date(`2000-01-01 ${templateData.start_time}`);
-      const end = new Date(`2000-01-01 ${templateData.end_time}`);
-      let durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-      // Handle overnight shifts
-      if (durationHours < 0) {
-        durationHours += 24;
-      }
-
-      const template = await createShiftTemplate({
-        ...templateData,
-        duration_hours: durationHours,
-      });
-
-      // Map duration_hours to durationHours for interface compatibility
-      return {
-        ...template,
-        durationHours: template.duration_hours,
-      };
-    } catch (error: unknown) {
-      console.error('Error in ShiftService.createShiftTemplate:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get all shift plans for a tenant with optional filters

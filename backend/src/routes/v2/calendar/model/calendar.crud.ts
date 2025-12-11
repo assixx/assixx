@@ -267,13 +267,15 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
 
     // Generate UUIDv7 and insert event
     const eventUuid = uuidv7();
-    const [result] = await executeQuery<ResultSetHeader>(
+    // PostgreSQL: Use RETURNING id - result is array of rows, not ResultSetHeader
+    const [result] = await executeQuery<RowDataPacket[]>(
       INSERT_EVENT_QUERY,
       buildEventInsertParams(eventData, eventUuid),
     );
+    const eventId = (result[0] as { id: number }).id;
 
     // Get the created event and add creator as attendee
-    const createdEvent = await getEventById(result.insertId, tenantId, createdBy);
+    const createdEvent = await getEventById(eventId, tenantId, createdBy);
     if (createdEvent) {
       await addEventAttendee(createdEvent.id, createdBy);
       // Generate recurring events if applicable

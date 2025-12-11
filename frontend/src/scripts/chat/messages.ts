@@ -4,7 +4,7 @@
  * Display and process messages
  */
 
-import type { Message, Attachment, MessageWithExtra, ChatUser, ScheduledMessage } from './types';
+import type { Message, Attachment, MessageWithExtra, ChatUser, ScheduledMessage, LegacyAttachment } from './types';
 import { getChatState } from './state';
 import { $$, escapeHtml } from '../../utils/dom-utils';
 import {
@@ -105,10 +105,16 @@ function renderMessageElement(message: Message, messageDate: string, container: 
   messageTextDiv.innerHTML = linkify(messageContent);
   messageContentDiv.append(messageTextDiv);
 
-  // Add attachments
+  // Add attachments (new document-based system)
   if (message.attachments !== undefined && message.attachments.length > 0) {
     const attachmentFragment = renderAttachments(message.attachments);
     messageContentDiv.append(attachmentFragment);
+  }
+
+  // Add legacy attachment (old system - from scheduled messages)
+  if (message.attachment !== undefined && message.attachment !== null) {
+    const legacyAttachmentEl = renderLegacyAttachment(message.attachment);
+    messageContentDiv.append(legacyAttachmentEl);
   }
 
   // Create time element
@@ -474,6 +480,84 @@ function renderFileAttachmentContent(
 }
 
 /**
+ * Render legacy attachment (from scheduled messages / old system)
+ * These have url, filename, mimeType, size instead of the document-based format
+ */
+function renderLegacyAttachment(attachment: LegacyAttachment): HTMLElement {
+  initPreviewModalListeners();
+
+  const isImage = attachment.mimeType.startsWith('image/');
+  const attachmentDiv = document.createElement('div');
+  attachmentDiv.className = `attachment ${isImage ? 'image-attachment' : 'file-attachment'}`;
+
+  // Add token to URL for authenticated access
+  const token = tokenManager.getAccessToken();
+  const downloadUrl = token !== null ? `${attachment.url}?token=${token}` : attachment.url;
+
+  if (isImage) {
+    // Image attachment
+    attachmentDiv.classList.add('image-attachment');
+    attachmentDiv.dataset['attachmentPreview'] = 'true';
+    attachmentDiv.dataset['attachmentData'] = JSON.stringify({
+      url: downloadUrl,
+      filename: attachment.filename,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+    });
+    attachmentDiv.style.cursor = 'pointer';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'attachment-image-wrapper';
+
+    const img = document.createElement('img');
+    img.src = downloadUrl;
+    img.alt = attachment.filename;
+    img.loading = 'lazy';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'attachment-overlay';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-search-plus';
+    overlay.append(icon);
+
+    wrapper.append(img, overlay);
+    attachmentDiv.append(wrapper);
+  } else {
+    // File attachment
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'attachment-file-icon';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-file';
+    iconDiv.append(icon);
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'attachment-file-info';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'attachment-file-name';
+    nameDiv.textContent = attachment.filename;
+
+    const sizeDiv = document.createElement('div');
+    sizeDiv.className = 'attachment-file-size';
+    sizeDiv.textContent = formatFileSize(attachment.size);
+
+    infoDiv.append(nameDiv, sizeDiv);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = downloadUrl;
+    downloadLink.className = 'attachment-download';
+    downloadLink.download = attachment.filename;
+    const downloadIcon = document.createElement('i');
+    downloadIcon.className = 'fas fa-download';
+    downloadLink.append(downloadIcon);
+
+    attachmentDiv.append(iconDiv, infoDiv, downloadLink);
+  }
+
+  return attachmentDiv;
+}
+
+/**
  * Render file attachments with preview modal support
  */
 export function renderAttachments(attachments: Attachment[]): DocumentFragment {
@@ -775,6 +859,61 @@ function formatScheduledTime(scheduledFor: string): string {
 }
 
 /**
+ * Render attachment preview for scheduled message
+ */
+function renderScheduledAttachment(attachment: ScheduledMessage['attachment']): HTMLElement | null {
+  if (attachment === null) return null;
+
+  const isImage = attachment.type.startsWith('image/');
+  const attachmentDiv = document.createElement('div');
+  attachmentDiv.className = `attachment ${isImage ? 'image-attachment' : 'file-attachment'}`;
+  attachmentDiv.classList.add('scheduled-attachment');
+
+  if (isImage) {
+    // Image preview
+    const wrapper = document.createElement('div');
+    wrapper.className = 'attachment-image-wrapper';
+
+    const img = document.createElement('img');
+    img.src = attachment.path;
+    img.alt = attachment.name;
+    img.loading = 'lazy';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'attachment-overlay';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-clock';
+    overlay.append(icon);
+
+    wrapper.append(img, overlay);
+    attachmentDiv.append(wrapper);
+  } else {
+    // File preview
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'attachment-file-icon';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-file';
+    iconDiv.append(icon);
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'attachment-file-info';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'attachment-file-name';
+    nameDiv.textContent = attachment.name;
+
+    const sizeDiv = document.createElement('div');
+    sizeDiv.className = 'attachment-file-size';
+    sizeDiv.textContent = formatFileSize(attachment.size);
+
+    infoDiv.append(nameDiv, sizeDiv);
+    attachmentDiv.append(iconDiv, infoDiv);
+  }
+
+  return attachmentDiv;
+}
+
+/**
  * Render a scheduled message element
  */
 export function renderScheduledMessageElement(scheduledMsg: ScheduledMessage, container: HTMLElement): void {
@@ -795,6 +934,12 @@ export function renderScheduledMessageElement(scheduledMsg: ScheduledMessage, co
   // eslint-disable-next-line no-unsanitized/property -- content sanitized via escapeHtml() before linkify()
   messageTextDiv.innerHTML = linkify(messageContent);
   messageContentDiv.append(messageTextDiv);
+
+  // Render attachment if present
+  const attachmentElement = renderScheduledAttachment(scheduledMsg.attachment);
+  if (attachmentElement !== null) {
+    messageContentDiv.append(attachmentElement);
+  }
 
   // Create scheduled info element
   const scheduledInfoDiv = document.createElement('div');

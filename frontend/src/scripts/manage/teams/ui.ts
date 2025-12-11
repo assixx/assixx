@@ -407,6 +407,12 @@ function processTeamField(teamData: Record<string, string | number | null>, key:
     return true;
   }
 
+  // Unified isActive status (0=inactive, 1=active, 3=archived, 4=deleted)
+  if (key === 'isActive') {
+    teamData['isActive'] = Number.parseInt(value, 10);
+    return true;
+  }
+
   return false;
 }
 

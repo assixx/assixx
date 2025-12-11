@@ -11,7 +11,7 @@ docker-compose --env-file ../.env up -d
 echo "✅ Docker containers started!"
 echo "Frontend: http://localhost:3000"
 echo "Backend API: http://localhost:3000/api"
-echo "MySQL: localhost:3307"
+echo "PostgreSQL: localhost:5432"
 
 # Show container status
 docker-compose --env-file ../.env ps
