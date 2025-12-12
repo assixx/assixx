@@ -97,13 +97,6 @@ export interface CommentData {
   isInternal?: boolean;
 }
 
-export interface PointsData {
-  userId: number;
-  suggestionId: number;
-  points: number;
-  reason: string;
-}
-
 export interface AttachmentData {
   fileName: string;
   filePath: string;
@@ -148,22 +141,6 @@ export interface Attachment {
   fileUuid: string;
   fileChecksum?: string;
   createdAt: string;
-}
-
-export interface PointsAward {
-  id: number;
-  userId: number;
-  suggestionId: number;
-  points: number;
-  reason: string;
-  awardedBy: number;
-  createdAt: Date | string;
-}
-
-export interface UserPoints {
-  totalPoints: number;
-  userId: number;
-  tenantId: number;
 }
 
 export interface DashboardStats {
@@ -665,62 +642,6 @@ class KVPService {
     }
 
     return dbToApi(attachment) as unknown as Attachment;
-  }
-
-  /**
-   * Award points to a user
-   * @param data - The data object
-   * @param tenantId - The tenant ID
-   * @param awardedBy - The awardedBy parameter
-   * @param userRole - The userRole parameter
-   */
-  async awardPoints(
-    data: PointsData,
-    tenantId: number,
-    awardedBy: number,
-    userRole: string,
-  ): Promise<PointsAward> {
-    // Only admins can award points
-    if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ServiceError('FORBIDDEN', 'Only admins can award points');
-    }
-
-    try {
-      const pointId = await kvpModel.awardPoints(
-        tenantId,
-        data.userId,
-        data.suggestionId,
-        data.points,
-        data.reason,
-        awardedBy,
-      );
-
-      return {
-        id: pointId,
-        userId: data.userId,
-        suggestionId: data.suggestionId,
-        points: data.points,
-        reason: data.reason,
-        awardedBy,
-        createdAt: new Date(),
-      };
-    } catch (error: unknown) {
-      throw new ServiceError('SERVER_ERROR', 'Failed to award points', error);
-    }
-  }
-
-  /**
-   * Get user points summary
-   * @param tenantId - The tenant ID
-   * @param userId - The user ID
-   */
-  async getUserPoints(tenantId: number, userId: number): Promise<UserPoints> {
-    try {
-      const points = await kvpModel.getUserPoints(tenantId, userId);
-      return dbToApi(points) as unknown as UserPoints;
-    } catch (error: unknown) {
-      throw new ServiceError('SERVER_ERROR', 'Failed to get user points', error);
-    }
   }
 
   /**

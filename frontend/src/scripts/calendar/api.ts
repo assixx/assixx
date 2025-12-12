@@ -1,8 +1,7 @@
 /* eslint-disable max-lines */
 /**
  * Calendar API Module
- * Handles all HTTP requests to the backend API
- * Normalizes v1/v2 API responses for consistent data handling
+ * Handles all HTTP requests to the backend API (v2 only)
  */
 
 import type { EventInput } from '@fullcalendar/core';
@@ -12,28 +11,17 @@ import { getAuthToken } from '../auth/index';
 import { showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { ApiClient } from '../../utils/api-client';
 import { state } from './state';
-import type {
-  ApiResponse,
-  ApiV2Response,
-  ApiV1Response,
-  LegacyApiResponse,
-  CalendarEvent,
-  Department,
-  Team,
-  UserData,
-} from './types';
+import type { ApiResponse, ApiV2Response, CalendarEvent, Department, Team, UserData } from './types';
 
 // ============================================================================
 // API Response Extraction & Normalization
 // ============================================================================
 
 /**
- * Extract events from V2 API response
+ * Extract events from API v2 response
  * Handles nested data structures from v2 API
  */
-function extractV2Events(
-  data: ApiResponse<CalendarEvent> | LegacyApiResponse<CalendarEvent> | CalendarEvent[],
-): CalendarEvent[] | null {
+function extractV2Events(data: ApiResponse<CalendarEvent> | CalendarEvent[]): CalendarEvent[] | null {
   if (!('success' in data) || !('data' in data) || typeof data.data !== 'object' || Array.isArray(data.data)) {
     return null;
   }
@@ -55,40 +43,15 @@ function extractV2Events(
 }
 
 /**
- * Extract events from legacy v1 API response
+ * Extract events from API v2 response
  */
-function extractLegacyEvents(
-  data: ApiResponse<CalendarEvent> | LegacyApiResponse<CalendarEvent> | CalendarEvent[],
-): CalendarEvent[] | null {
-  const legacyData = data as LegacyApiResponse<CalendarEvent>;
-
-  if ('events' in legacyData && Array.isArray(legacyData.events)) {
-    return legacyData.events;
-  }
-
-  if ('data' in legacyData && Array.isArray(legacyData.data)) {
-    return legacyData.data;
-  }
-
-  return null;
-}
-
-/**
- * Extract events from API response (v1 or v2)
- * Tries v2 first, falls back to v1
- */
-function extractEventsFromResponse(
-  data: ApiResponse<CalendarEvent> | LegacyApiResponse<CalendarEvent> | CalendarEvent[],
-): CalendarEvent[] {
+function extractEventsFromResponse(data: ApiResponse<CalendarEvent> | CalendarEvent[]): CalendarEvent[] {
   if (Array.isArray(data)) {
     return data;
   }
 
   const v2Events = extractV2Events(data);
-  if (v2Events) return v2Events;
-
-  const legacyEvents = extractLegacyEvents(data);
-  if (legacyEvents) return legacyEvents;
+  if (v2Events !== null) return v2Events;
 
   console.error('Calendar API returned unexpected response format:', data);
   showErrorAlert('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
@@ -143,21 +106,15 @@ export function normalizeEventData(data: unknown, alwaysV2: boolean = true): Cal
 }
 
 /**
- * Extract dashboard events from API response
+ * Extract dashboard events from API v2 response
  */
-function extractDashboardEvents(
-  data: CalendarEvent[] | ApiV2Response<CalendarEvent> | ApiV1Response<CalendarEvent>,
-): CalendarEvent[] {
+function extractDashboardEvents(data: CalendarEvent[] | ApiV2Response<CalendarEvent>): CalendarEvent[] {
   if (Array.isArray(data)) {
     return data;
   }
 
-  if ('data' in data && Array.isArray((data as ApiV2Response<CalendarEvent>).data.data)) {
-    return (data as ApiV2Response<CalendarEvent>).data.data;
-  }
-
-  if ('success' in data && 'data' in data) {
-    return (data as ApiV1Response<CalendarEvent>).data ?? [];
+  if ('data' in data && Array.isArray(data.data.data)) {
+    return data.data.data;
   }
 
   console.error('Unexpected response format from dashboard:', data);
@@ -373,10 +330,7 @@ export async function loadCalendarEvents(fetchInfo: {
       throw new Error('Failed to load events');
     }
 
-    const data = (await response.json()) as
-      | ApiResponse<CalendarEvent>
-      | LegacyApiResponse<CalendarEvent>
-      | CalendarEvent[];
+    const data = (await response.json()) as ApiResponse<CalendarEvent> | CalendarEvent[];
 
     console.info('[CALENDAR API] API Response:', data);
 
@@ -419,7 +373,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
     throw new Error('Failed to load upcoming events');
   }
 
-  const data = (await response.json()) as CalendarEvent[] | ApiV2Response<CalendarEvent> | ApiV1Response<CalendarEvent>;
+  const data = (await response.json()) as CalendarEvent[] | ApiV2Response<CalendarEvent>;
   console.info('[CALENDAR API] Dashboard response:', data);
 
   return extractDashboardEvents(data);

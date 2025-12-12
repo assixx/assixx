@@ -8,7 +8,6 @@ import {
   defaultConfig,
   urlMappings,
   sectionMappings,
-  injectStyles,
   generateBreadcrumbDOM,
   // Constants
   ADMIN_DASHBOARD_LABEL,
@@ -352,8 +351,7 @@ function generateBreadcrumbsFromURL() {
 
 // Hauptfunktion zum Initialisieren der Breadcrumbs
 export function initBreadcrumb(customItems = null, customConfig = {}) {
-  // Styles einfügen
-  injectStyles();
+  // Styles are handled by Design System (breadcrumb.css)
 
   // Konfiguration zusammenführen
   const config = { ...defaultConfig, ...customConfig };

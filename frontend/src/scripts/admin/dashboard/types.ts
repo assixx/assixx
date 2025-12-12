@@ -73,10 +73,8 @@ export interface BlackboardEntryExtended extends BlackboardEntry {
   // authorName, authorFirstName, authorLastName, authorFullName, attachmentCount, attachments inherited from BlackboardEntry
 }
 
-// Constants
+// Constants (API v2 only)
 export const API_V2_DEPARTMENTS = '/api/v2/departments';
-export const API_V1_DEPARTMENTS = '/api/departments';
-export const API_V1_TEAMS = '/api/teams';
 
 // Calendar Event type matching actual API v2 response (uses startTime/endTime)
 export interface CalendarEventApi {

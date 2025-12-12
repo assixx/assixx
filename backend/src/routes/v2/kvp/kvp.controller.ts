@@ -15,13 +15,7 @@ import { logger } from '../../../utils/logger.js';
 import { getUploadDirectory } from '../../../utils/pathSecurity.js';
 import rootLog from '../logs/logs.service.js';
 import { kvpService } from './kvp.service.js';
-import type {
-  CommentData,
-  KVPCreateData,
-  KVPSuggestion,
-  KVPUpdateData,
-  PointsData,
-} from './kvp.service.js';
+import type { CommentData, KVPCreateData, KVPSuggestion, KVPUpdateData } from './kvp.service.js';
 
 // Constants
 const USER_AGENT_HEADER = 'user-agent';
@@ -94,13 +88,6 @@ interface UpdateSuggestionBody {
 interface AddCommentBody {
   comment: string;
   isInternal?: boolean;
-}
-
-interface AwardPointsBody {
-  userId: number;
-  suggestionId: number;
-  points: number;
-  reason: string;
 }
 
 /**
@@ -740,91 +727,6 @@ export async function downloadAttachment(req: AuthenticatedRequest, res: Respons
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to download attachment'));
-    }
-  }
-}
-
-/**
- * Award points to a user (Admin only)
- * @param req - The request object
- * @param res - The response object
- */
-export async function awardPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const body = req.body as AwardPointsBody;
-    const data: PointsData = {
-      userId: body.userId,
-      suggestionId: body.suggestionId,
-      points: body.points,
-      reason: body.reason,
-    };
-    const points = await kvpService.awardPoints(
-      data,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
-
-    // Log points awarding
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'award_points',
-      entity_type: 'kvp_points',
-      entity_id: data.suggestionId,
-      details: `Punkte vergeben: ${data.points} Punkte`,
-      new_values: {
-        user_id: data.userId,
-        suggestion_id: data.suggestionId,
-        points: data.points,
-        reason: data.reason,
-        awarded_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get(USER_AGENT_HEADER),
-      was_role_switched: false,
-    });
-
-    res.status(201).json(successResponse(points));
-  } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error) {
-      const serviceError = error as ServiceError;
-      res
-        .status(serviceError.statusCode)
-        .json(errorResponse(serviceError.code, serviceError.message));
-    } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to award points'));
-    }
-  }
-}
-
-/**
- * Get user points summary
- * @param req - The request object
- * @param res - The response object
- */
-export async function getUserPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const userIdParam = req.params['userId'];
-    const hasUserIdParam = userIdParam !== undefined && userIdParam !== '';
-    const userId = hasUserIdParam ? Number.parseInt(userIdParam, 10) : req.user.id;
-
-    // Users can only see their own points, admins can see all
-    if (userId !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('FORBIDDEN', 'You can only view your own points'));
-      return;
-    }
-
-    const points = await kvpService.getUserPoints(req.user.tenant_id, userId);
-    res.json(successResponse(points));
-  } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error) {
-      const serviceError = error as ServiceError;
-      res
-        .status(serviceError.statusCode)
-        .json(errorResponse(serviceError.code, serviceError.message));
-    } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get user points'));
     }
   }
 }

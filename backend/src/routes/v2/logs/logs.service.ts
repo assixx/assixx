@@ -21,6 +21,13 @@ interface DbLogRow extends RowDataPacket {
   user_name?: string;
   user_email?: string;
   user_role?: string;
+  user_first_name?: string;
+  user_last_name?: string;
+  employee_number?: string;
+  // Organization fields for search results
+  department_name?: string;
+  area_name?: string;
+  team_name?: string;
   action: string;
   entity_type?: string;
   entity_id?: number;
@@ -61,6 +68,8 @@ interface TopUserResult extends RowDataPacket {
 class LogsService {
   /**
    * Add search condition to query
+   * Searches: first_name, last_name, full_name, employee_number, username, email,
+   *           department, area, team, action, entity_type
    */
   private addSearchCondition(
     search: string | undefined,
@@ -70,21 +79,48 @@ class LogsService {
     if (search === undefined || search === '') return;
 
     const paramIndex = params.length + 1;
-    conditions.push(
-      `(u.username LIKE $${paramIndex} OR u.email LIKE $${paramIndex + 1} OR rl.action LIKE $${paramIndex + 2} OR rl.entity_type LIKE $${paramIndex + 3})`,
-    );
+    // Search fields with table aliases:
+    // u = users, d = departments, a = areas, t = teams, rl = root_logs
+    const searchFields = [
+      // User fields
+      `u.first_name ILIKE $${paramIndex}`,
+      `u.last_name ILIKE $${paramIndex + 1}`,
+      `CONCAT(u.first_name, ' ', u.last_name) ILIKE $${paramIndex + 2}`, // Full name
+      `u.employee_number ILIKE $${paramIndex + 3}`,
+      `u.username ILIKE $${paramIndex + 4}`,
+      `u.email ILIKE $${paramIndex + 5}`,
+      // Organization fields
+      `d.name ILIKE $${paramIndex + 6}`, // Department name
+      `a.name ILIKE $${paramIndex + 7}`, // Area name
+      `t.name ILIKE $${paramIndex + 8}`, // Team name
+      // Log fields
+      `rl.action ILIKE $${paramIndex + 9}`,
+      `rl.entity_type ILIKE $${paramIndex + 10}`,
+    ];
+    conditions.push(`(${searchFields.join(' OR ')})`);
+
     const searchPattern = `%${search}%`;
-    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    // Push 11 params for 11 search fields
+    params.push(
+      searchPattern, searchPattern, searchPattern, searchPattern,
+      searchPattern, searchPattern, searchPattern, searchPattern,
+      searchPattern, searchPattern, searchPattern,
+    );
   }
 
   /**
    * Build WHERE clause conditions for logs query
+   * Always excludes soft-deleted logs (is_active = 4)
    */
   private buildWhereClause(filters: LogsFilterParams): { whereClause: string; params: unknown[] } {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
     const { userId, tenantId, action, entityType, startDate, endDate, search } = filters;
+
+    // ALWAYS filter out soft-deleted logs (is_active = 4)
+    // NULL = normal/active, 4 = soft deleted
+    conditions.push('(rl.is_active IS NULL OR rl.is_active != 4)');
 
     // Add simple filter conditions with PostgreSQL dynamic $N placeholders
     const filterFields = [
@@ -115,13 +151,23 @@ class LogsService {
 
   /**
    * Get total count of logs matching filters
+   * Includes JOINs to users, departments, areas, teams for search functionality
    */
   private async getLogsCount(whereClause: string, params: unknown[]): Promise<number> {
-    const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
+    // Must include all JOINs since WHERE clause may reference d.*, a.*, t.* fields when searching
+    const countQuery = `SELECT COUNT(DISTINCT rl.id) as total
+      FROM root_logs rl
+      LEFT JOIN users u ON rl.user_id = u.id
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
+      LEFT JOIN departments d ON ud.department_id = d.id
+      LEFT JOIN areas a ON d.area_id = a.id
+      LEFT JOIN user_teams ut ON u.id = ut.user_id
+      LEFT JOIN teams t ON ut.team_id = t.id
+      WHERE ${whereClause}`;
     logger.info(`[Logs v2 Service] Count query: ${countQuery}`);
 
     const [countResult] = await executeQuery<RowDataPacket[]>(countQuery, params);
-    const total = (countResult[0] as { total: number }).total;
+    const total = Number((countResult[0] as { total: string | number }).total);
     logger.info(`[Logs v2 Service] Total count: ${total}`);
 
     return total;
@@ -130,6 +176,7 @@ class LogsService {
   /**
    * Get paginated logs from database
    * PostgreSQL: Dynamic $N parameter numbering based on WHERE clause params
+   * Includes JOINs for department, area, team search
    */
   private async getLogRecords(
     whereClause: string,
@@ -141,17 +188,30 @@ class LogsService {
     const limitParamIndex = params.length + 1;
     const offsetParamIndex = params.length + 2;
 
-    const logsQuery = `SELECT
+    // Use subquery to get distinct log IDs first, then join for full data
+    // This prevents duplicate rows from multiple team memberships
+    const logsQuery = `SELECT DISTINCT ON (rl.id)
         rl.*,
         u.username as user_name,
         u.email as user_email,
         u.role as user_role,
-        t.company_name as tenant_name
+        u.first_name as user_first_name,
+        u.last_name as user_last_name,
+        u.employee_number as employee_number,
+        ten.company_name as tenant_name,
+        d.name as department_name,
+        a.name as area_name,
+        t.name as team_name
        FROM root_logs rl
        LEFT JOIN users u ON rl.user_id = u.id
-       LEFT JOIN tenants t ON rl.tenant_id = t.id
+       LEFT JOIN tenants ten ON rl.tenant_id = ten.id
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
+       LEFT JOIN departments d ON ud.department_id = d.id
+       LEFT JOIN areas a ON d.area_id = a.id
+       LEFT JOIN user_teams ut ON u.id = ut.user_id
+       LEFT JOIN teams t ON ut.team_id = t.id
        WHERE ${whereClause}
-       ORDER BY rl.created_at DESC
+       ORDER BY rl.id DESC, rl.created_at DESC
        LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
 
     logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
@@ -201,25 +261,26 @@ class LogsService {
   }
 
   /**
-   * Get basic stats query result
+   * Get basic stats query result (excludes soft-deleted logs)
    */
   private async getBasicStats(tenantId: number): Promise<StatsRow[]> {
     const [rows] = await executeQuery<StatsRow[]>(
       `SELECT COUNT(*) as total_logs, COUNT(DISTINCT user_id) as unique_users,
        COUNT(DISTINCT tenant_id) as unique_tenants,
        SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as today_logs
-       FROM root_logs WHERE tenant_id = $1`,
+       FROM root_logs WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != 4)`,
       [tenantId],
     );
     return rows;
   }
 
   /**
-   * Get top actions query result
+   * Get top actions query result (excludes soft-deleted logs)
    */
   private async getTopActions(tenantId: number): Promise<TopActionResult[]> {
     const [rows] = await executeQuery<TopActionResult[]>(
-      `SELECT action, COUNT(*) as count FROM root_logs WHERE tenant_id = $1
+      `SELECT action, COUNT(*) as count FROM root_logs
+       WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != 4)
        GROUP BY action ORDER BY count DESC LIMIT 10`,
       [tenantId],
     );
@@ -227,13 +288,14 @@ class LogsService {
   }
 
   /**
-   * Get top users query result
+   * Get top users query result (excludes soft-deleted logs)
    */
   private async getTopUsers(tenantId: number): Promise<TopUserResult[]> {
     const [rows] = await executeQuery<TopUserResult[]>(
       `SELECT rl.user_id, u.username as user_name, COUNT(*) as count
        FROM root_logs rl LEFT JOIN users u ON rl.user_id = u.id
-       WHERE rl.tenant_id = $1 GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
+       WHERE rl.tenant_id = $1 AND (rl.is_active IS NULL OR rl.is_active != 4)
+       GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
       [tenantId],
     );
     return rows;
@@ -304,7 +366,15 @@ class LogsService {
   }
 
   /**
-   * Delete logs with filters (Root only)
+   * Soft delete logs with filters (Root only)
+   * Sets is_active = 4 instead of hard delete (audit logs should NEVER be permanently deleted)
+   *
+   * is_active values:
+   *   NULL = normal/active (default, shown in UI)
+   *   4 = deleted (soft delete, hidden from UI)
+   *
+   * When search is provided, uses subquery with JOINs to find matching logs
+   * across users, departments, areas, teams tables.
    */
   async deleteLogs(filters: {
     userId?: number;
@@ -312,8 +382,16 @@ class LogsService {
     olderThanDays?: number;
     action?: string;
     entityType?: string;
+    search?: string;
   }): Promise<number> {
-    logger.info('[Logs v2 Service] deleteLogs called with filters:', filters);
+    logger.info('[Logs v2 Service] deleteLogs (soft delete) called with filters:', filters);
+
+    // If search is provided, use subquery approach with JOINs
+    if (filters.search !== undefined && filters.search !== '') {
+      return await this.deleteLogsWithSearch(filters);
+    }
+
+    // Standard deletion without search - simple UPDATE without JOINs
     const { conditions, params } = this.buildDeleteConditions(filters);
 
     // Handle olderThanDays: 0 means delete ALL, >0 means older than N days
@@ -327,34 +405,118 @@ class LogsService {
       }
     }
 
+    // Only soft-delete logs that are not already deleted
+    conditions.push('(is_active IS NULL OR is_active != 4)');
+
     if (conditions.length === 0) {
       throw new Error('At least one filter must be provided for deletion');
     }
 
     try {
+      // SOFT DELETE: Set is_active = 4 instead of DELETE
       const [result] = await executeQuery<ResultSetHeader>(
-        `DELETE FROM root_logs WHERE ${conditions.join(' AND ')}`,
+        `UPDATE root_logs SET is_active = 4 WHERE ${conditions.join(' AND ')}`,
         params,
       );
+      logger.info(`[Logs v2 Service] Soft deleted ${result.affectedRows} logs`);
       return result.affectedRows;
     } catch (error: unknown) {
-      logger.error('[Logs v2] Error deleting logs:', error);
+      logger.error('[Logs v2] Error soft deleting logs:', error);
       throw error;
     }
   }
 
   /**
-   * Apply optional string fields from DB row to response
+   * Delete logs with search filter using subquery approach
+   * Required because search spans multiple tables (users, departments, areas, teams)
    */
-  private applyOptionalLogFields(response: LogsResponse, log: DbLogRow): void {
-    if (log.tenant_name !== undefined) response.tenantName = log.tenant_name;
+  private async deleteLogsWithSearch(filters: {
+    userId?: number;
+    tenantId?: number;
+    olderThanDays?: number;
+    action?: string;
+    entityType?: string;
+    search?: string;
+  }): Promise<number> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    // Build search conditions using existing helper
+    if (filters.search !== undefined && filters.search !== '') {
+      this.addSearchCondition(filters.search, conditions, params);
+    }
+
+    // Add basic filters with rl. prefix for subquery (compact pattern)
+    const filterFields = [
+      { value: filters.userId, field: 'rl.user_id' },
+      { value: filters.tenantId, field: 'rl.tenant_id' },
+      { value: filters.action, field: 'rl.action' },
+      { value: filters.entityType, field: 'rl.entity_type' },
+    ];
+    filterFields.forEach(({ value, field }: { value: unknown; field: string }) => {
+      if (value === undefined || value === '') return;
+      const paramIndex = params.length + 1;
+      conditions.push(`${field} = $${paramIndex}`);
+      params.push(value);
+    });
+
+    // Handle olderThanDays (0 = delete all matching, >0 = older than N days)
+    if (filters.olderThanDays !== undefined && filters.olderThanDays > 0) {
+      const paramIndex = params.length + 1;
+      conditions.push(`rl.created_at < NOW() - ($${paramIndex} * INTERVAL '1 day')`);
+      params.push(filters.olderThanDays);
+    }
+
+    // Only soft-delete logs that are not already deleted
+    conditions.push('(rl.is_active IS NULL OR rl.is_active != 4)');
+
+    const whereClause = conditions.join(' AND ');
+    const deleteQuery = `UPDATE root_logs SET is_active = 4 WHERE id IN (
+      SELECT DISTINCT rl.id FROM root_logs rl
+      LEFT JOIN users u ON rl.user_id = u.id
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
+      LEFT JOIN departments d ON ud.department_id = d.id
+      LEFT JOIN areas a ON d.area_id = a.id
+      LEFT JOIN user_teams ut ON u.id = ut.user_id
+      LEFT JOIN teams t ON ut.team_id = t.id
+      WHERE ${whereClause})`;
+    logger.info('[Logs v2 Service] Delete with search:', { query: deleteQuery, params });
+
+    try {
+      const [result] = await executeQuery<ResultSetHeader>(deleteQuery, params);
+      logger.info(`[Logs v2 Service] Soft deleted ${result.affectedRows} logs (with search filter)`);
+      return result.affectedRows;
+    } catch (error: unknown) {
+      logger.error('[Logs v2] Error soft deleting logs with search:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply user-related optional fields from DB row to response
+   */
+  private applyUserFields(response: LogsResponse, log: DbLogRow): void {
     if (log.user_name !== undefined) response.userName = log.user_name;
     if (log.user_email !== undefined) response.userEmail = log.user_email;
     if (log.user_role !== undefined) response.userRole = log.user_role;
+    if (log.user_first_name !== undefined) response.userFirstName = log.user_first_name;
+    if (log.user_last_name !== undefined) response.userLastName = log.user_last_name;
+    if (log.employee_number !== undefined) response.employeeNumber = log.employee_number;
+  }
+
+  /**
+   * Apply context-related optional fields from DB row to response
+   */
+  private applyContextFields(response: LogsResponse, log: DbLogRow): void {
+    if (log.tenant_name !== undefined) response.tenantName = log.tenant_name;
     if (log.entity_type !== undefined) response.entityType = log.entity_type;
     if (log.entity_id !== undefined) response.entityId = log.entity_id;
     if (log.ip_address !== undefined) response.ipAddress = log.ip_address;
     if (log.user_agent !== undefined) response.userAgent = log.user_agent;
+    // Organization context
+    if (log.department_name !== undefined) response.departmentName = log.department_name;
+    if (log.area_name !== undefined) response.areaName = log.area_name;
+    if (log.team_name !== undefined) response.teamName = log.team_name;
   }
 
   /**
@@ -382,7 +544,8 @@ class LogsService {
       createdAt: createdAtValue,
     };
 
-    this.applyOptionalLogFields(response, log);
+    this.applyUserFields(response, log);
+    this.applyContextFields(response, log);
 
     if (log.old_values !== undefined) response.oldValues = this.parseJsonValue(log.old_values);
     if (log.new_values !== undefined) response.newValues = this.parseJsonValue(log.new_values);
@@ -460,14 +623,14 @@ class LogsService {
   }
 
   /**
-   * Get logs by user ID
+   * Get logs by user ID (excludes soft-deleted logs)
    * @param userId - The user ID
    * @param days - Optional: Only get logs from the last X days (0 = all)
    * @returns Array of log entries
    */
   async getLogsByUserId(userId: number, days?: number): Promise<DbRootLog[]> {
     const effectiveDays: number = days ?? 0;
-    let sql = `SELECT * FROM root_logs WHERE user_id = $1`;
+    let sql = `SELECT * FROM root_logs WHERE user_id = $1 AND (is_active IS NULL OR is_active != 4)`;
     const params: unknown[] = [userId];
 
     if (effectiveDays > 0) {
@@ -487,13 +650,13 @@ class LogsService {
   }
 
   /**
-   * Get the last login record for a user
+   * Get the last login record for a user (excludes soft-deleted logs)
    * @param userId - The user ID
    * @returns The last login record or null if not found
    */
   async getLastLogin(userId: number): Promise<DbRootLog | null> {
     const sql = `SELECT * FROM root_logs
-                 WHERE user_id = $1 AND action = 'login'
+                 WHERE user_id = $1 AND action = 'login' AND (is_active IS NULL OR is_active != 4)
                  ORDER BY created_at DESC LIMIT 1`;
 
     try {

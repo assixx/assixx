@@ -3,6 +3,15 @@
 import { showError, showSuccess } from '../auth/index';
 import { ApiClient } from '../../utils/api-client';
 import { $$, setHTML } from '../../utils/dom-utils';
+import {
+  initLogsUI,
+  handleToggleDropdown,
+  handleSelectOption,
+  closeDeleteLogsModal,
+  openDeleteLogsModal,
+  displayActiveFilters,
+  resetDropdownDisplays,
+} from './ui';
 
 // Type definitions
 interface LogEntry {
@@ -10,6 +19,9 @@ interface LogEntry {
   userId: number;
   userName: string;
   userRole: string;
+  userFirstName?: string;
+  userLastName?: string;
+  employeeNumber?: string;
   action: string;
   entityType?: string;
   entityId?: number;
@@ -56,6 +68,7 @@ interface LogsWindow extends Window {
   loadNextPage: typeof loadNextPage;
   showFullDetails: typeof showFullDetails;
   confirmDeleteLogs: typeof confirmDeleteLogs;
+  currentFilters?: Filters;
 }
 
 // Global variables
@@ -63,6 +76,7 @@ const apiClient = ApiClient.getInstance();
 let currentOffset = 0;
 const limit = 50;
 let currentFilters: Filters = {};
+let filtersApplied = false; // Tracks if "Apply Filters" was clicked (enables delete/reset buttons)
 
 // Setup filter listeners
 function setupFilterListeners() {
@@ -112,9 +126,9 @@ function buildQueryParams(): URLSearchParams {
     offset: currentOffset.toString(),
   });
 
-  // Add user filter
+  // Add search filter (searches: first_name, last_name, full_name, employee_number, username, email, department, area, team, action, entity_type)
   if (currentFilters.user !== undefined && currentFilters.user !== '') {
-    params.append('userId', currentFilters.user);
+    params.append('search', currentFilters.user);
   }
 
   // Add action filter
@@ -150,8 +164,10 @@ async function loadLogs() {
     container,
     `
     <div class="loading">
-      <div class="loading-spinner"></div>
-      <p>Logs werden geladen...</p>
+      <div class="spinner spinner--lg mx-auto">
+        <div class="spinner__circle"></div>
+      </div>
+      <p class="mt-4">Logs werden geladen...</p>
     </div>
   `,
   );
@@ -170,9 +186,12 @@ async function loadLogs() {
     setHTML(
       container,
       `
-      <div class="error-state">
-        <p>Fehler beim Laden der Logs</p>
-        <button onclick="location.reload()">Erneut versuchen</button>
+      <div class="empty-state empty-state--sm empty-state--error">
+        <div class="empty-state__icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <p class="empty-state__title">Fehler beim Laden der Logs</p>
+        <div class="empty-state__actions">
+          <button class="btn btn-primary btn--sm" onclick="location.reload()">Erneut versuchen</button>
+        </div>
       </div>
     `,
     );
@@ -180,23 +199,6 @@ async function loadLogs() {
 }
 
 // Helper functions for formatLogEntry
-function parseLogDetails(detailsStr: string | undefined): LogDetails | null {
-  if (detailsStr === undefined || detailsStr === '') {
-    return null;
-  }
-  return JSON.parse(detailsStr) as LogDetails;
-}
-
-function createDetailsButton(detailsStr: string | undefined): string {
-  if (detailsStr === undefined || detailsStr === '') {
-    return '';
-  }
-  const encodedDetails = encodeURIComponent(detailsStr);
-  return `<button class="btn-icon" data-action="show-details" data-details="${encodedDetails}" title="Details anzeigen">
-           <i class="fas fa-info-circle"></i>
-         </button>`;
-}
-
 function formatEntityInfo(entry: LogEntry): string {
   if (entry.entityType === undefined) {
     return '';
@@ -208,28 +210,8 @@ function formatEntityInfo(entry: LogEntry): string {
   return entityInfo;
 }
 
-function buildDetailsSummary(details: LogDetails | null): string {
-  if (details === null) {
-    return '';
-  }
-
-  let summary = '';
-  if (details.title !== undefined && details.title !== '') {
-    summary = ` - ${details.title}`;
-  }
-  if (details.shared_to !== undefined && details.shared_to !== '') {
-    summary += ` (Geteilt mit: ${details.shared_to})`;
-  }
-  if (details.login_method !== undefined && details.login_method !== '') {
-    summary = ` - ${details.login_method}`;
-  }
-  return summary;
-}
-
 // Format log entry for display
 function formatLogEntry(entry: LogEntry): string {
-  const details = parseLogDetails(entry.details);
-  const detailsButton = createDetailsButton(entry.details);
   const formattedDate = new Date(entry.createdAt).toLocaleString('de-DE', {
     year: 'numeric',
     month: '2-digit',
@@ -243,25 +225,28 @@ function formatLogEntry(entry: LogEntry): string {
   const roleLower = entry.userRole.toLowerCase();
   const badgeVariant = roleLower === 'root' ? 'badge--danger' : roleLower === 'admin' ? 'badge--warning' : 'badge--info';
   const roleLabel = getRoleLabel(entry.userRole);
-  const detailsSummary = buildDetailsSummary(details);
+
+  // Build full name from firstName + lastName, fallback to userName
+  const firstName = entry.userFirstName ?? '';
+  const lastName = entry.userLastName ?? '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  const displayName = fullName !== '' ? fullName : entry.userName;
+  const employeeNumber = entry.employeeNumber ?? '-';
 
   return `
     <tr>
       <td class="text-muted">${entry.id}</td>
       <td>
         <div class="user-info">
-          <span class="user-name">${entry.userName}</span>
+          <span class="user-name">${displayName}</span>
           <span class="badge badge--sm ${badgeVariant}">${roleLabel}</span>
         </div>
       </td>
+      <td class="text-muted">${employeeNumber}</td>
       <td>
         <span class="action-label action-${entry.action.toLowerCase()}">${getActionLabel(entry.action)}</span>
       </td>
       <td>${entityInfo}</td>
-      <td class="details-cell">
-        <span class="details-text">${entry.action}${detailsSummary}</span>
-        ${detailsButton}
-      </td>
       <td class="text-muted ip-cell">${entry.ipAddress ?? '-'}</td>
       <td class="text-muted">${formattedDate}</td>
     </tr>
@@ -277,8 +262,10 @@ function displayLogs(logs: LogEntry[]) {
     setHTML(
       container,
       `
-      <div class="no-data">
-        <p>Keine Logs gefunden</p>
+      <div class="empty-state empty-state--sm">
+        <div class="empty-state__icon"><i class="fas fa-search"></i></div>
+        <p class="empty-state__title">Keine Logs gefunden</p>
+        <p class="empty-state__description">Versuche andere Filterkriterien</p>
       </div>
     `,
     );
@@ -295,9 +282,9 @@ function displayLogs(logs: LogEntry[]) {
         <tr>
           <th>ID</th>
           <th>Benutzer</th>
+          <th>Personalnr.</th>
           <th>Aktion</th>
           <th>Objekt</th>
-          <th>Details</th>
           <th>IP-Adresse</th>
           <th>Zeitstempel</th>
         </tr>
@@ -330,6 +317,43 @@ function updatePageInfo(pageInfo: Element | null, pagination: Pagination): void 
   pageInfo.textContent = `Seite ${currentPage} von ${totalPages} (${pagination.total} Einträge)`;
 }
 
+// Helper function to render page number buttons
+function renderPageNumbers(currentPage: number, totalPages: number): void {
+  const pagesContainer = $$('#pagination-pages');
+  if (!pagesContainer) return;
+
+  // Calculate visible page range (max 5 pages)
+  let startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  startPage = Math.max(1, endPage - 4);
+
+  const pages: string[] = [];
+
+  // First page + ellipsis if needed
+  if (startPage > 1) {
+    pages.push(`<button class="pagination__page" data-action="go-to-page" data-page="1">1</button>`);
+    if (startPage > 2) {
+      pages.push(`<span class="pagination__ellipsis">...</span>`);
+    }
+  }
+
+  // Page numbers
+  for (let i = startPage; i <= endPage; i++) {
+    const activeClass = i === currentPage ? ' pagination__page--active' : '';
+    pages.push(`<button class="pagination__page${activeClass}" data-action="go-to-page" data-page="${i}">${i}</button>`);
+  }
+
+  // Last page + ellipsis if needed
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      pages.push(`<span class="pagination__ellipsis">...</span>`);
+    }
+    pages.push(`<button class="pagination__page" data-action="go-to-page" data-page="${totalPages}">${totalPages}</button>`);
+  }
+
+  setHTML(pagesContainer, pages.join(''));
+}
+
 // Update pagination
 function updatePagination(pagination: Pagination) {
   const paginationContainer = $$('#pagination-container');
@@ -337,13 +361,19 @@ function updatePagination(pagination: Pagination) {
   const prevBtn = $$('#prev-btn');
   const nextBtn = $$('#next-btn');
 
+  const currentPage = Math.floor(currentOffset / limit) + 1;
+  const totalPages = Math.ceil(pagination.total / limit);
+
   // Show/hide pagination container based on results
   if (paginationContainer) {
-    paginationContainer.style.display = pagination.total > 0 ? 'flex' : 'none';
+    paginationContainer.classList.toggle('u-hidden', pagination.total === 0);
   }
 
   // Update page info text
   updatePageInfo(pageInfo, pagination);
+
+  // Render page numbers
+  renderPageNumbers(currentPage, totalPages);
 
   // Update button states
   setButtonDisabled(prevBtn, currentOffset === 0);
@@ -364,53 +394,113 @@ function applyFilters() {
     timerange: timerangeFilter,
   };
 
+  // Mark that filters have been applied (enables delete/reset buttons)
+  // Even without explicit filters, "all logs" is a valid filter selection
+  filtersApplied = true;
+
   currentOffset = 0;
+  updateFilterButtonStates();
   void loadLogs();
 }
 
 // Reset filters
 function resetFilters() {
   const userFilter = $$('#filter-user') as HTMLInputElement | null;
-  const actionFilter = $$('#filter-action') as HTMLSelectElement | null;
-  const entityFilter = $$('#filter-entity') as HTMLSelectElement | null;
-  const timerangeFilter = $$('#filter-timerange') as HTMLSelectElement | null;
+  const actionFilter = $$('#filter-action') as HTMLInputElement | null;
+  const entityFilter = $$('#filter-entity') as HTMLInputElement | null;
+  const timerangeFilter = $$('#filter-timerange') as HTMLInputElement | null;
 
   if (userFilter) userFilter.value = '';
   if (actionFilter) actionFilter.value = 'all';
   if (entityFilter) entityFilter.value = 'all';
   if (timerangeFilter) timerangeFilter.value = 'all';
 
+  // Reset dropdown displays
+  resetDropdownDisplays();
+
   currentFilters = {};
+  filtersApplied = false; // Reset the applied state
   currentOffset = 0;
+  updateFilterButtonStates();
   void loadLogs();
 }
 
 // Delete filtered logs
 function deleteFilteredLogs() {
-  const modal = $$('#deleteModal');
-  if (modal) {
-    modal.style.display = 'flex';
+  // Set currentFilters on window for UI module to access
+  (window as unknown as LogsWindow).currentFilters = currentFilters;
+  displayActiveFilters(currentFilters);
+  openDeleteLogsModal();
+}
+
+// Build delete request body from current filters
+function buildDeleteRequestBody(): Record<string, unknown> {
+  const passwordInput = $$('#deleteLogsPassword') as HTMLInputElement | null;
+  const body: Record<string, unknown> = {
+    confirmPassword: passwordInput?.value ?? '',
+  };
+
+  let hasFilters = false;
+
+  // Add search filter (user input field searches across multiple fields in backend)
+  if (currentFilters.user !== undefined && currentFilters.user !== '') {
+    body['search'] = currentFilters.user;
+    hasFilters = true;
   }
+
+  // Add action filter
+  if (shouldIncludeFilter(currentFilters.action)) {
+    body['action'] = currentFilters.action;
+    hasFilters = true;
+  }
+
+  // Add entity type filter
+  if (shouldIncludeFilter(currentFilters.entity_type)) {
+    body['entityType'] = currentFilters.entity_type;
+    hasFilters = true;
+  }
+
+  // Add date range as olderThanDays (convert timerange to days)
+  if (shouldIncludeFilter(currentFilters.timerange)) {
+    const daysMap: Record<string, number> = {
+      today: 0, // 0 means delete all (no age restriction)
+      week: 7,
+      month: 30,
+    };
+    const days = daysMap[currentFilters.timerange ?? ''];
+    if (days !== undefined) {
+      body['olderThanDays'] = days;
+      hasFilters = true;
+    }
+  }
+
+  // If no specific filters set, use olderThanDays: 0 to delete ALL logs
+  // Backend requires at least one filter, and 0 means "no age restriction" = all logs
+  if (!hasFilters) {
+    body['olderThanDays'] = 0;
+  }
+
+  return body;
 }
 
 // Confirm delete logs
 async function confirmDeleteLogs() {
   try {
-    const params = buildQueryParams();
+    const body = buildDeleteRequestBody();
 
-    await apiClient.request(`/logs?${params.toString()}`, {
+    await apiClient.request('/logs', {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
 
     showSuccess('Logs erfolgreich gelöscht');
     currentOffset = 0;
+    filtersApplied = false; // Reset after successful delete
+    closeDeleteLogsModal();
     void loadLogs();
-
-    // Close modal
-    const modal = $$('#deleteModal');
-    if (modal) {
-      modal.style.display = 'none';
-    }
   } catch (error) {
     console.error('Error deleting logs:', error);
     showError('Fehler beim Löschen der Logs');
@@ -428,6 +518,12 @@ function loadPreviousPage() {
 // Load next page
 function loadNextPage() {
   currentOffset += limit;
+  void loadLogs();
+}
+
+// Go to specific page
+function goToPage(page: number) {
+  currentOffset = (page - 1) * limit;
   void loadLogs();
 }
 
@@ -497,75 +593,114 @@ function formatDetailsForModal(details: LogDetails): string {
   return formattedDetails.join('');
 }
 
-// Show full details in modal
+// Show full details in modal (uses Design System: .modal-overlay, .ds-modal)
 function showFullDetails(encodedDetails: string) {
-
   try {
     const detailsStr = decodeURIComponent(encodedDetails);
     const details = JSON.parse(detailsStr) as LogDetails;
 
-    const modal = document.createElement('div');
-    modal.className = 'modal details-modal';
-    modal.onclick = (e) => {
-      if (e.target === modal) {
-        modal.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay modal-overlay--active';
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
       }
     };
 
     const content = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Log-Details</h3>
-          <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+      <div class="ds-modal ds-modal--md">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-info-circle mr-2"></i>
+            Log-Details
+          </h3>
+          <button class="ds-modal__close" onclick="this.closest('.modal-overlay').remove()">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body">
+        <div class="ds-modal__body">
           ${formatDetailsForModal(details)}
         </div>
       </div>
     `;
 
-    setHTML(modal, content);
-    document.body.append(modal);
+    setHTML(overlay, content);
+    document.body.append(overlay);
   } catch (error) {
     console.error('Error parsing details:', error);
     showError('Fehler beim Anzeigen der Details');
   }
 }
 
-// Update delete button state
-function updateDeleteButtonState() {
-  const deleteBtn = $$('#delete-filtered-btn');
-  if (!deleteBtn) return;
-
-  const hasActiveFilters =
+// Check if any filters are active
+function hasActiveFilters(): boolean {
+  return (
     (currentFilters.user !== undefined && currentFilters.user !== '') ||
     (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') ||
     (currentFilters.entity_type !== undefined &&
       currentFilters.entity_type !== '' &&
       currentFilters.entity_type !== 'all') ||
-    (currentFilters.timerange !== undefined && currentFilters.timerange !== '' && currentFilters.timerange !== 'all');
+    (currentFilters.timerange !== undefined && currentFilters.timerange !== '' && currentFilters.timerange !== 'all')
+  );
+}
 
-  if (hasActiveFilters) {
-    deleteBtn.removeAttribute('disabled');
-    deleteBtn.setAttribute('title', 'Gefilterte Logs löschen');
+// Update reset button state (enabled when filters have been applied)
+function updateResetButtonState() {
+  const resetBtn = $$('[data-action="reset-filters"]');
+  if (!resetBtn) return;
+
+  // Reset button enabled when "Apply Filters" was clicked
+  if (filtersApplied) {
+    resetBtn.removeAttribute('disabled');
   } else {
-    deleteBtn.setAttribute('disabled', 'true');
-    deleteBtn.setAttribute('title', 'Bitte Filter setzen um Logs zu löschen');
+    resetBtn.setAttribute('disabled', 'true');
   }
 }
 
-// Initialize on page load
-(() => {
-  // Auth check
+// Update delete button state
+function updateDeleteButtonState() {
+  const deleteBtn = $$('[data-action="delete-filtered-logs"]');
+  if (!deleteBtn) return;
+
+  // Delete button enabled when "Apply Filters" was clicked
+  // This includes "all logs" when no explicit filters are set
+  if (filtersApplied) {
+    deleteBtn.removeAttribute('disabled');
+    const filterInfo = hasActiveFilters() ? 'Gefilterte Logs löschen' : 'Alle Logs löschen';
+    deleteBtn.setAttribute('title', filterInfo);
+  } else {
+    deleteBtn.setAttribute('disabled', 'true');
+    deleteBtn.setAttribute('title', 'Bitte "Filter anwenden" klicken um Logs zu löschen');
+  }
+}
+
+// Update all filter-dependent button states
+function updateFilterButtonStates() {
+  updateResetButtonState();
+  updateDeleteButtonState();
+}
+
+// ============== INITIALIZATION ==============
+
+/**
+ * Check authentication and redirect if not authorized
+ * @returns true if authorized, false if redirecting
+ */
+function checkAuth(): boolean {
   const token = localStorage.getItem('token') ?? localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('userRole');
 
   if (token === null || token === '' || userRole !== 'root') {
     window.location.href = '/login';
-    return;
+    return false;
   }
+  return true;
+}
 
-  // Make functions available globally
+/**
+ * Register functions on window object for legacy compatibility
+ */
+function registerGlobalFunctions(): void {
   (window as unknown as LogsWindow).applyFilters = applyFilters;
   (window as unknown as LogsWindow).resetFilters = resetFilters;
   (window as unknown as LogsWindow).deleteFilteredLogs = deleteFilteredLogs;
@@ -573,61 +708,80 @@ function updateDeleteButtonState() {
   (window as unknown as LogsWindow).loadNextPage = loadNextPage;
   (window as unknown as LogsWindow).showFullDetails = showFullDetails;
   (window as unknown as LogsWindow).confirmDeleteLogs = confirmDeleteLogs;
+}
 
-  // Load logs on page load
+/**
+ * Handle click events via event delegation
+ */
+function handleActionClick(actionElement: HTMLElement): void {
+  const action = actionElement.dataset['action'];
+
+  switch (action) {
+    case 'toggle-dropdown':
+      handleToggleDropdown(actionElement);
+      break;
+    case 'select-option':
+      handleSelectOption(actionElement);
+      break;
+    case 'close-delete-modal':
+      closeDeleteLogsModal();
+      break;
+    case 'show-details': {
+      const details = actionElement.dataset['details'];
+      if (details !== undefined && details !== '') {
+        showFullDetails(details);
+      }
+      break;
+    }
+    case 'delete-filtered-logs':
+      deleteFilteredLogs();
+      break;
+    case 'reset-filters':
+      resetFilters();
+      break;
+    case 'apply-filters':
+      applyFilters();
+      break;
+    case 'load-previous-page':
+      loadPreviousPage();
+      break;
+    case 'load-next-page':
+      loadNextPage();
+      break;
+    case 'go-to-page': {
+      const pageStr = actionElement.dataset['page'];
+      if (pageStr !== undefined && pageStr !== '') {
+        const page = Number.parseInt(pageStr, 10);
+        if (!Number.isNaN(page)) {
+          goToPage(page);
+        }
+      }
+      break;
+    }
+    case 'confirm-delete':
+      void confirmDeleteLogs();
+      break;
+  }
+}
+
+// Initialize on page load
+(() => {
+  if (!checkAuth()) return;
+
+  registerGlobalFunctions();
+
   document.addEventListener('DOMContentLoaded', () => {
+    initLogsUI();
     void loadLogs();
     setupFilterListeners();
-    updateDeleteButtonState();
+    updateFilterButtonStates();
   });
 
-  // Event delegation for dynamically generated content
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-
-    // Handle show details
-    const detailsBtn = target.closest<HTMLElement>('[data-action="show-details"]');
-    if (detailsBtn) {
-      const details = detailsBtn.dataset['details'];
-      if (details !== undefined && details !== '') {
-        (window as unknown as LogsWindow).showFullDetails(details);
-      }
-    }
-
-    // Handle delete filtered logs
-    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-filtered"]');
-    if (deleteBtn) {
-      (window as unknown as LogsWindow).deleteFilteredLogs();
-    }
-
-    // Handle reset filters
-    const resetBtn = target.closest<HTMLElement>('[data-action="reset-filters"]');
-    if (resetBtn) {
-      (window as unknown as LogsWindow).resetFilters();
-    }
-
-    // Handle apply filters
-    const applyBtn = target.closest<HTMLElement>('[data-action="apply-filters"]');
-    if (applyBtn) {
-      (window as unknown as LogsWindow).applyFilters();
-    }
-
-    // Handle load previous page
-    const prevBtn = target.closest<HTMLElement>('[data-action="load-previous-page"]');
-    if (prevBtn) {
-      (window as unknown as LogsWindow).loadPreviousPage();
-    }
-
-    // Handle load next page
-    const nextBtn = target.closest<HTMLElement>('[data-action="load-next-page"]');
-    if (nextBtn) {
-      (window as unknown as LogsWindow).loadNextPage();
-    }
-
-    // Handle confirm delete
-    const confirmBtn = target.closest<HTMLElement>('[data-action="confirm-delete"]');
-    if (confirmBtn) {
-      void (window as unknown as LogsWindow).confirmDeleteLogs();
+    const actionElement = target.closest<HTMLElement>('[data-action]');
+    if (actionElement !== null) {
+      handleActionClick(actionElement);
     }
   });
 })();

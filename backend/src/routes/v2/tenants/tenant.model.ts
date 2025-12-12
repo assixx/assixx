@@ -14,6 +14,7 @@ import {
   getConnection,
 } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
 
 // Extended interface for internal use
 interface TenantTrialStatusComplete extends TenantTrialStatus {
@@ -184,6 +185,23 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
     await connection.commit();
     logger.info(`Neuer Tenant erstellt: ${company_name} (${subdomain})`);
 
+    // Log tenant creation for audit trail
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'create_tenant',
+      entity_type: 'tenant',
+      entity_id: tenantId,
+      details: `Neuer Tenant erstellt: ${company_name} (${subdomain})`,
+      new_values: {
+        company_name,
+        subdomain,
+        email,
+        admin_email,
+        trial_ends_at: trialEndsAt.toISOString(),
+      },
+    });
+
     return {
       tenantId,
       userId,
@@ -321,7 +339,16 @@ export async function upgradeTenantToPlan(
   plan: string,
   stripeCustomerId: string,
   stripeSubscriptionId: string,
+  upgradedByUserId?: number,
 ): Promise<void> {
+  // Get current plan for audit log
+  const [currentTenant] = await executeQuery<DbTenant[]>(
+    'SELECT current_plan, status FROM tenants WHERE id = $1',
+    [tenantId],
+  );
+  const oldPlan = currentTenant[0]?.current_plan ?? 'trial';
+  const oldStatus = currentTenant[0]?.status ?? 'trial';
+
   await executeQuery(
     `UPDATE tenants
        SET status = 'active',
@@ -334,6 +361,27 @@ export async function upgradeTenantToPlan(
 
   // Aktiviere Plan-Features
   await activatePlanFeatures(tenantId, plan);
+
+  // Log plan upgrade for audit trail
+  const userId = upgradedByUserId ?? 0;
+  await rootLog.create({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'upgrade_tenant_plan',
+    entity_type: 'tenant',
+    entity_id: tenantId,
+    details: `Plan-Upgrade: ${oldPlan} → ${plan}`,
+    old_values: {
+      plan: oldPlan,
+      status: oldStatus,
+    },
+    new_values: {
+      plan,
+      status: 'active',
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: stripeSubscriptionId,
+    },
+  });
 }
 
 // Plan-Features aktivieren (private function)
@@ -493,12 +541,19 @@ async function deleteOtherTenantData(
 }
 
 // Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!
-export async function deleteTenant(tenantId: number): Promise<boolean> {
+export async function deleteTenant(tenantId: number, deletedByUserId?: number): Promise<boolean> {
   const connection = await getConnection();
 
   try {
     await connection.beginTransaction();
     logger.warn(`Starting complete deletion of tenant ${tenantId}`);
+
+    // Get tenant info BEFORE deletion for audit log
+    const [tenantInfo] = await connection.query<DbTenant[]>(
+      'SELECT company_name, subdomain, email FROM tenants WHERE id = $1',
+      [tenantId],
+    );
+    const tenant = tenantInfo[0];
 
     // Get all user IDs for this tenant (for file cleanup)
     const [users] = await connection.query<IdResult[]>(
@@ -506,6 +561,9 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
       [tenantId],
     );
     const userIds = users.map((u: IdResult) => u.id);
+
+    // Get root user ID for logging (first user or provided userId)
+    const rootUserId = deletedByUserId ?? userIds[0] ?? 0;
 
     // Delete in correct order to respect foreign key constraints
     await deleteChatData(connection, tenantId, userIds);
@@ -523,6 +581,11 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
 
     await connection.commit();
 
+    // Log tenant deletion for audit trail (after commit, in separate transaction)
+    if (tenant !== undefined) {
+      await logTenantDeletion(tenant, tenantId, rootUserId, userIds);
+    }
+
     // Clean up file system (after successful DB deletion)
     try {
       await cleanupTenantFiles(tenantId, userIds);
@@ -538,6 +601,34 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
     throw error;
   } finally {
     connection.release();
+  }
+}
+
+// Log tenant deletion for audit trail
+async function logTenantDeletion(
+  tenant: DbTenant,
+  tenantId: number,
+  rootUserId: number,
+  userIds: number[],
+): Promise<void> {
+  try {
+    await rootLog.create({
+      tenant_id: 1, // System tenant for audit logs of deleted tenants
+      user_id: rootUserId,
+      action: 'delete_tenant',
+      entity_type: 'tenant',
+      entity_id: tenantId,
+      details: `Tenant gelöscht: ${tenant.company_name} (${tenant.subdomain})`,
+      old_values: {
+        tenant_id: tenantId,
+        company_name: tenant.company_name,
+        subdomain: tenant.subdomain,
+        email: tenant.email,
+        users_deleted: userIds.length,
+      },
+    });
+  } catch (logError: unknown) {
+    logger.error(`Error logging tenant deletion: ${(logError as Error).message}`);
   }
 }
 

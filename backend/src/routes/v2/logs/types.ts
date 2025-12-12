@@ -48,6 +48,13 @@ export interface LogsResponse {
   userName?: string;
   userEmail?: string;
   userRole?: string;
+  userFirstName?: string;
+  userLastName?: string;
+  employeeNumber?: string;
+  // Organization context (for search results display)
+  departmentName?: string;
+  areaName?: string;
+  teamName?: string;
   action: string;
   entityType?: string;
   entityId?: number;
