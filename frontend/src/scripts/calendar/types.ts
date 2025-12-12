@@ -41,23 +41,6 @@ export interface ApiV2Response<T> {
   };
 }
 
-/**
- * Legacy API v1 Response (snake_case fields)
- */
-export interface ApiV1Response<T> {
-  data?: T[];
-  events?: T[];
-  success?: boolean;
-}
-
-/**
- * Legacy API Response (backward compatibility)
- */
-export interface LegacyApiResponse<T = unknown> {
-  data: T[];
-  events?: T[];
-}
-
 // ============================================================================
 // Calendar Event Types
 // ============================================================================

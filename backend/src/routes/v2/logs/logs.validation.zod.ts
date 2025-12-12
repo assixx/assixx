@@ -34,6 +34,7 @@ export const ListLogsQuerySchema = PaginationSchema.extend({
 
 /**
  * Delete logs request body
+ * search: Multi-field search across users, departments, areas, teams
  */
 export const DeleteLogsBodySchema = z.object({
   userId: IdSchema.optional(),
@@ -41,6 +42,7 @@ export const DeleteLogsBodySchema = z.object({
   action: z.string().trim().min(1, 'Action must be a non-empty string').optional(),
   entityType: z.string().trim().min(1, 'Entity type must be a non-empty string').optional(),
   olderThanDays: z.number().int().min(0, 'Days must be a non-negative integer').optional(),
+  search: z.string().trim().optional(),
   confirmPassword: z.string().min(1, 'Password confirmation is required for log deletion'),
 });
 

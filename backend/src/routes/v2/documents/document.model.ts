@@ -734,22 +734,19 @@ function addOrdering(query: string, filters?: DocumentFilters): string {
 }
 
 /** Build base params for document access queries */
-// Updated 2025-12-03: Added userId for chat access ($9)
+// FIX 2025-12-12: Removed extra tenantId params that caused "could not determine data type of parameter $10"
+// SQL buildAccessCondition() uses $1-$9 only, with $2 being tenantId for subquery tenant_id references
 function buildAccessParams(tenantId: number, userId: number): unknown[] {
   return [
-    tenantId, // $1 - tenant filter
-    userId, // $2 - used in access condition subqueries
-    userId, // $3 - personal documents
-    userId, // $4 - payroll documents
-    userId, // $5 - team documents
-    tenantId, // - team subquery tenant
-    userId, // $6 - department documents
-    tenantId, // - department subquery tenant
-    userId, // $7 - blackboard department check
-    tenantId, // - blackboard department subquery tenant
-    userId, // $8 - blackboard team check
-    tenantId, // - blackboard team subquery tenant
-    userId, // $9 - chat documents (conversation participants)
+    tenantId, // $1 - WHERE d.tenant_id
+    tenantId, // $2 - subquery tenant_id references (team, department, blackboard, chat)
+    userId, // $3 - personal documents (owner_user_id)
+    userId, // $4 - payroll documents (owner_user_id)
+    userId, // $5 - team documents (user_id in user_teams)
+    userId, // $6 - department documents (user_id in user_departments)
+    userId, // $7 - blackboard department check (user_id)
+    userId, // $8 - blackboard team check (user_id)
+    userId, // $9 - chat documents (user_id in conversation_participants)
   ];
 }
 

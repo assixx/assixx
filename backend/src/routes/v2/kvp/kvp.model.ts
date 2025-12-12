@@ -88,12 +88,6 @@ interface DbComment extends RowDataPacket {
   role?: string;
 }
 
-interface DbPointsSummary extends RowDataPacket {
-  total_points: number;
-  total_awards: number;
-  suggestions_awarded: number;
-}
-
 // Raw query result from database
 interface DashboardStatsResult extends RowDataPacket {
   total_suggestions: number;
@@ -783,68 +777,6 @@ export async function getKvpComments(
   }
 }
 
-// Get user points summary
-export async function getKvpUserPoints(tenantId: number, userId: number): Promise<DbPointsSummary> {
-  const connection = await getDbConnection();
-  try {
-    const [rows] = await connection.execute<DbPointsSummary[]>(
-      `
-        SELECT
-          COALESCE(SUM(points), 0) as total_points,
-          COUNT(*) as total_awards,
-          COUNT(DISTINCT suggestion_id) as suggestions_awarded
-        FROM kvp_points
-        WHERE tenant_id = $1 AND user_id = $2
-      `,
-      [tenantId, userId],
-    );
-
-    const row = rows[0];
-    if (row === undefined) {
-      return {
-        total_points: 0,
-        total_awards: 0,
-        suggestions_awarded: 0,
-      } as DbPointsSummary;
-    }
-
-    return row;
-  } finally {
-    connection.release();
-  }
-}
-
-// Award points to user
-export async function awardKvpPoints(
-  tenantId: number,
-  userId: number,
-  suggestionId: number,
-  points: number,
-  reason: string,
-  awardedBy: number,
-): Promise<number> {
-  const connection = await getDbConnection();
-  try {
-    // PostgreSQL RETURNING returns rows array, not ResultSetHeader
-    const [rows] = await connection.execute<{ id: number }[]>(
-      `
-        INSERT INTO kvp_points
-        (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id
-      `,
-      [tenantId, userId, suggestionId, points, reason, awardedBy],
-    );
-    if (rows.length === 0 || rows[0] === undefined) {
-      throw new Error('Failed to award points: No ID returned from database');
-    }
-
-    return rows[0].id;
-  } finally {
-    connection.release();
-  }
-}
-
 // Get dashboard statistics
 export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboardStats> {
   const connection = await getDbConnection();
@@ -1187,8 +1119,6 @@ const KVPModel = {
   getAttachments: getKvpAttachments,
   addComment: addKvpComment,
   getComments: getKvpComments,
-  getUserPoints: getKvpUserPoints,
-  awardPoints: awardKvpPoints,
   getDashboardStats: getKvpDashboardStats,
   updateSuggestion: updateKvpSuggestion,
   deleteSuggestion: deleteKvpSuggestion,

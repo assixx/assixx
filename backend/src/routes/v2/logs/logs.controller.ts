@@ -30,6 +30,7 @@ interface DeleteFilterInput {
   olderThanDays?: number | undefined;
   action?: string | undefined;
   entityType?: string | undefined;
+  search?: string | undefined; // Search filter for name, email, department, etc.
 }
 
 // Delete filter output type (matches service parameter)
@@ -39,6 +40,7 @@ interface DeleteFilterOutput {
   olderThanDays?: number;
   action?: string;
   entityType?: string;
+  search?: string;
 }
 
 /**
@@ -50,7 +52,8 @@ function hasAnyDeleteFilter(input: DeleteFilterInput): boolean {
     input.tenantId !== undefined ||
     input.olderThanDays !== undefined ||
     (input.action !== undefined && input.action !== '') ||
-    (input.entityType !== undefined && input.entityType !== '')
+    (input.entityType !== undefined && input.entityType !== '') ||
+    (input.search !== undefined && input.search !== '')
   );
 }
 
@@ -73,6 +76,9 @@ function buildDeleteFilters(input: DeleteFilterInput, enforcedTenantId: number):
   }
   if (input.entityType !== undefined && input.entityType !== '') {
     filters.entityType = input.entityType;
+  }
+  if (input.search !== undefined && input.search !== '') {
+    filters.search = input.search;
   }
 
   return filters;
@@ -205,6 +211,7 @@ export const logsController = {
         olderThanDays: body.olderThanDays,
         action: body.action,
         entityType: body.entityType,
+        search: body.search,
       };
 
       logger.info(`[Logs v2 DELETE] Request body:`, { ...filterInput, confirmPassword: '***' });

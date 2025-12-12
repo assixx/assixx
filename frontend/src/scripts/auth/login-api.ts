@@ -47,36 +47,19 @@ export interface LoginResult {
 }
 
 /**
- * Check if using V2 API (always true now)
- */
-function isUsingV2Api(): boolean {
-  return true; // Feature flags removed - always use v2
-}
-
-/**
- * Prepare API request for login
+ * Prepare API v2 request for login
  */
 function prepareApiRequest(
   username: string,
   password: string,
-  fingerprint: string,
+  _fingerprint: string, // Kept for signature compatibility, not used in v2
 ): {
   url: string;
   body: Record<string, string>;
 } {
-  const useV2 = isUsingV2Api();
-
-  if (useV2) {
-    return {
-      url: '/api/v2/auth/login',
-      body: { email: username, password },
-    };
-  }
-
-  // V1 fallback (should never be used)
   return {
-    url: '/api/auth/login',
-    body: { username, password, fingerprint },
+    url: '/api/v2/auth/login',
+    body: { email: username, password },
   };
 }
 

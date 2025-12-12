@@ -114,6 +114,7 @@ export const urlMappings = {
   '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
   '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
   '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
+  '/logs': { label: 'Logs', icon: 'fa-list-alt' },
 };
 
 // Section Mappings für Admin Dashboard
@@ -139,94 +140,10 @@ export const sectionMappings = {
 };
 
 // ============================================================================
-// STYLE INJECTION
+// STYLE INJECTION - REMOVED
 // ============================================================================
-
-export function injectStyles() {
-  // Prüfen ob Styles bereits eingefügt wurden
-  if (document.querySelector('#breadcrumb-styles')) {
-    return;
-  }
-
-  const styles = `
-    <style id="breadcrumb-styles">
-      #breadcrumb-container,
-      .breadcrumb-container {
-        padding: 0;
-      }
-
-      .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 12px;
-        color: #fff;
-        font-size: 14px;
-        padding: 6px 20px;
-      }
-
-      .breadcrumb-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .breadcrumb-link {
-        color: var(--text-secondary);
-        text-decoration: none;
-        /*  */
-        padding: 4px 8px;
-        border-radius: var(--radius-3xl);
-      }
-
-      .breadcrumb-link:hover {
-        color: var(--primary-color);
-        background: rgba(33, 150, 243, 0.1);
-      }
-
-      .breadcrumb-separator {
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 12px;
-      }
-
-      .breadcrumb-current {
-        border-radius: var(--radius-3xl);
-        color: var(--text-primary);
-        font-weight: 600;
-        padding: 4px 8px;
-      }
-
-      .breadcrumb-icon {
-        font-size: 14px;
-        margin-right: 3px;
-      }
-
-      /* Mobile Anpassungen */
-      @media (max-width: 768px) {
-        .breadcrumb {
-          font-size: 12px;
-          padding: 4px 12px;
-          gap: 4px;
-        }
-
-
-
-        .breadcrumb-link {
-          padding: 2px 6px;
-        }
-
-        /* Verstecke mittlere Items auf sehr kleinen Bildschirmen */
-        @media (max-width: 480px) {
-          .breadcrumb-item:not(:first-child):not(:last-child):not(:nth-last-child(2)) {
-            display: none;
-          }
-        }
-      }
-    </style>
-  `;
-
-  document.head.insertAdjacentHTML('beforeend', styles);
-}
+// Styles are now handled by Design System: design-system/primitives/navigation/breadcrumb.css
+// No inline style injection needed - keeping this comment for migration history
 
 // ============================================================================
 // DOM UTILITIES
@@ -242,50 +159,63 @@ export function escapeHtml(unsafe) {
     .replace(/'/g, '&#039;');
 }
 
-// Breadcrumb DOM sicher generieren
+/**
+ * Breadcrumb DOM sicher generieren (BEM Notation)
+ *
+ * Output structure:
+ * <nav class="breadcrumb">
+ *   <a href="/" class="breadcrumb__item">
+ *     <i class="fas fa-home breadcrumb__icon"></i> Home
+ *   </a>
+ *   <span class="breadcrumb__separator"><i class="fas fa-chevron-right"></i></span>
+ *   <span class="breadcrumb__item breadcrumb__item--active">
+ *     <i class="fas fa-users breadcrumb__icon"></i> Users
+ *   </span>
+ * </nav>
+ */
 export function generateBreadcrumbDOM(items, config) {
   const nav = document.createElement('nav');
   nav.className = 'breadcrumb';
+  nav.setAttribute('aria-label', 'Breadcrumb');
 
   items.forEach((item, index) => {
-    const breadcrumbItem = document.createElement('div');
-    breadcrumbItem.className = 'breadcrumb-item';
-
     if (item.current) {
       // Aktuelle Seite (nicht klickbar)
       const span = document.createElement('span');
-      span.className = 'breadcrumb-current';
+      span.className = 'breadcrumb__item breadcrumb__item--active';
+      span.setAttribute('aria-current', 'page');
 
       if (config.showIcons && item.icon) {
         const icon = document.createElement('i');
-        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
+        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb__icon`;
+        icon.setAttribute('aria-hidden', 'true');
         span.append(icon);
         span.append(document.createTextNode(' '));
       }
       span.append(document.createTextNode(item.label));
-      breadcrumbItem.append(span);
+      nav.append(span);
     } else {
       // Klickbarer Link
       const link = document.createElement('a');
       link.href = item.href || '#';
-      link.className = 'breadcrumb-link';
+      link.className = 'breadcrumb__item';
 
       if (config.showIcons && item.icon) {
         const icon = document.createElement('i');
-        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
+        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb__icon`;
+        icon.setAttribute('aria-hidden', 'true');
         link.append(icon);
         link.append(document.createTextNode(' '));
       }
       link.append(document.createTextNode(item.label));
-      breadcrumbItem.append(link);
+      nav.append(link);
     }
-
-    nav.append(breadcrumbItem);
 
     // Separator (nicht nach dem letzten Item)
     if (index < items.length - 1) {
-      const separator = document.createElement('div');
-      separator.className = 'breadcrumb-separator';
+      const separator = document.createElement('span');
+      separator.className = 'breadcrumb__separator';
+      separator.setAttribute('aria-hidden', 'true');
       const sepIcon = document.createElement('i');
       sepIcon.className = `fas ${escapeHtml(config.separator)}`;
       separator.append(sepIcon);

@@ -1,7 +1,7 @@
 import { tokenManager } from './token-manager';
 
 interface ApiConfig {
-  version?: 'v1' | 'v2' | undefined;
+  version?: 'v2' | undefined; // v1 removed - always use v2
   useAuth?: boolean | undefined;
   contentType?: string | null | undefined;
 }
@@ -57,7 +57,7 @@ export class ApiClient {
     return 'v2';
   }
 
-  private buildHeaders(options: RequestInit, config: ApiConfig, version: 'v1' | 'v2'): Record<string, string> {
+  private buildHeaders(options: RequestInit, config: ApiConfig, _version: 'v2'): Record<string, string> {
     const headers: Record<string, string> = {};
 
     // Copy existing headers if they exist
@@ -76,9 +76,9 @@ export class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    // Add auth header for v2 (get token from TokenManager)
+    // Add auth header (always v2 now, get token from TokenManager)
     const token = tokenManager.getAccessToken();
-    if (version === 'v2' && config.useAuth !== false && token !== null) {
+    if (config.useAuth !== false && token !== null) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
@@ -89,11 +89,11 @@ export class ApiClient {
     url: string,
     options: RequestInit,
     headers: Record<string, string>,
-    version: 'v1' | 'v2',
+    version: 'v2',
     config: ApiConfig,
   ): Promise<T | null> {
     const refreshToken = tokenManager.getRefreshToken();
-    if (version !== 'v2' || config.useAuth === false || refreshToken === null) {
+    if (config.useAuth === false || refreshToken === null) {
       return null;
     }
 
@@ -113,11 +113,6 @@ export class ApiClient {
       credentials: 'omit',
     });
     return await this.handleResponse<T>(retryResponse, version);
-  }
-
-  private shouldFallbackToV1(_error: unknown, _version: 'v1' | 'v2', _config: ApiConfig): boolean {
-    // Feature flags removed - never fallback to v1
-    return false;
   }
 
   /**
@@ -188,13 +183,6 @@ export class ApiClient {
       return await this.handleResponse<T>(response, version);
     } catch (error) {
       console.error(`[API ${version}] Request failed:`, error);
-
-      // Attempt fallback to v1 if applicable
-      if (this.shouldFallbackToV1(error, version, config)) {
-        console.info('[API] v2 failed with server error, falling back to v1...');
-        return await this.request<T>(endpoint, options, { ...config, version: 'v1' });
-      }
-
       throw this.handleError(error);
     }
   }
@@ -299,24 +287,7 @@ export class ApiClient {
     return data;
   }
 
-  private handleV1Response(response: Response, data: Record<string, unknown>): unknown {
-    if (!response.ok) {
-      throw new ApiError(
-        typeof data['message'] === 'string'
-          ? data['message']
-          : typeof data['error'] === 'string'
-            ? data['error']
-            : 'Request failed',
-        'API_ERROR',
-        response.status,
-        data as unknown,
-      );
-    }
-
-    return data;
-  }
-
-  private async handleResponse<T>(response: Response, version: 'v1' | 'v2'): Promise<T> {
+  private async handleResponse<T>(response: Response, _version: 'v2'): Promise<T> {
     const contentType = response.headers.get('content-type');
 
     // Handle non-JSON responses
@@ -336,8 +307,8 @@ export class ApiClient {
       this.handleAuthenticationError(data);
     }
 
-    // Handle version-specific response formats
-    return (version === 'v2' ? this.handleV2Response(response, data) : this.handleV1Response(response, data)) as T;
+    // Always use v2 response format
+    return this.handleV2Response(response, data) as T;
   }
 
   /**

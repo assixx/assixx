@@ -218,24 +218,6 @@ export const AddCommentBodySchema = z.object({
 });
 
 /**
- * Award points request body
- */
-export const AwardPointsBodySchema = z.object({
-  userId: IdSchema,
-  suggestionId: IdSchema,
-  points: z
-    .number()
-    .int()
-    .min(1, 'Points must be at least 1')
-    .max(1000, 'Points must not exceed 1000'),
-  reason: z
-    .string()
-    .trim()
-    .min(3, 'Reason must be at least 3 characters')
-    .max(500, 'Reason must not exceed 500 characters'),
-});
-
-/**
  * Share suggestion request body
  */
 export const ShareSuggestionBodySchema = z.object({
@@ -255,7 +237,6 @@ export type FileUuidParam = z.infer<typeof FileUuidParamSchema>;
 export type CreateSuggestionBody = z.infer<typeof CreateSuggestionBodySchema>;
 export type UpdateSuggestionBody = z.infer<typeof UpdateSuggestionBodySchema>;
 export type AddCommentBody = z.infer<typeof AddCommentBodySchema>;
-export type AwardPointsBody = z.infer<typeof AwardPointsBodySchema>;
 export type ShareSuggestionBody = z.infer<typeof ShareSuggestionBodySchema>;
 
 // ============================================================
@@ -272,8 +253,6 @@ export const kvpValidationZod = {
   update: [validateParams(SuggestionIdParamSchema), validateBody(UpdateSuggestionBodySchema)],
   delete: validateParams(SuggestionIdParamSchema),
   addComment: [validateParams(SuggestionIdParamSchema), validateBody(AddCommentBodySchema)],
-  awardPoints: validateBody(AwardPointsBodySchema),
-  getUserPoints: validateParams(UserIdParamSchema),
   attachmentId: validateParams(AttachmentIdParamSchema),
   fileUuid: validateParams(FileUuidParamSchema),
   share: [validateParams(SuggestionIdParamSchema), validateBody(ShareSuggestionBodySchema)],

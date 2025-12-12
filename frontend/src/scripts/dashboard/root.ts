@@ -450,6 +450,9 @@ async function loadActivityLogs(): Promise<void> {
       createdAt: string;
       userName?: string;
       userRole?: string;
+      userFirstName?: string;
+      userLastName?: string;
+      employeeNumber?: string;
     }
 
     const response = await apiClient.request<{ logs: LogEntry[] }>(`${API_ENDPOINTS.LOGS}?limit=5`);
@@ -460,37 +463,36 @@ async function loadActivityLogs(): Promise<void> {
 
     if (logs.length === 0) {
       // Use innerHTML directly for table content
-
       logsEl.innerHTML =
-        '<tr><td colspan="5" class="text-center text-gray-400 py-8">Keine kürzlichen Aktivitäten</td></tr>';
+        '<tr><td colspan="4" class="text-center text-gray-400 py-8">Keine kürzlichen Aktivitäten</td></tr>';
       return;
     }
 
     const logsHTML = logs
-      .map(
-        (log) => `<tr>
-                <td class="text-sm">${new Date(log.createdAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-                <td>${
-                  log.userName !== undefined && log.userName !== ''
-                    ? `<span class="flex items-center gap-2"><i class="fas fa-user text-xs opacity-60"></i> ${log.userName}</span>`
-                    : '<span class="text-gray-400">-</span>'
-                }
+      .map((log) => {
+        // Build full name from firstName + lastName, fallback to userName
+        const firstName = log.userFirstName ?? '';
+        const lastName = log.userLastName ?? '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        const displayName = fullName !== '' ? fullName : (log.userName ?? '-');
+        const employeeNumber = log.employeeNumber ?? '-';
+
+        // Role badge styling (same as logs.html)
+        const badgeVariant = getRoleBadgeClass(log.userRole ?? '');
+        const roleLabel = getuserRoleLabel(log.userRole ?? '');
+
+        return `<tr>
+                <td class="text-muted">${log.id}</td>
+                <td>
+                  <div class="user-info">
+                    <span class="user-name">${displayName}</span>
+                    <span class="badge badge--sm badge--${badgeVariant}">${roleLabel}</span>
+                  </div>
                 </td>
+                <td class="text-muted">${employeeNumber}</td>
                 <td><span class="badge badge--${getActionBadgeClass(log.action)}">${getActionLabel(log.action)}</span></td>
-                <td class="text-sm text-gray-500">${
-                  log.details !== undefined && log.details !== null
-                    ? `${JSON.stringify(log.details).substring(0, 50)}...`
-                    : '<span class="text-gray-400">-</span>'
-                }
-                </td>
-                <td>${
-                  log.userRole !== undefined && log.userRole !== ''
-                    ? `<span class="badge badge--sm badge--role-${log.userRole.toLowerCase()}">${getuserRoleLabel(log.userRole)}</span>`
-                    : '<span class="badge badge--sm badge--success">OK</span>'
-                }
-                </td>
-            </tr>`,
-      )
+            </tr>`;
+      })
       .join('');
 
     // Use innerHTML directly for table content to preserve TR/TD structure
@@ -548,6 +550,16 @@ function getuserRoleLabel(userRole: string): string {
     ['employee', 'Mitarbeiter'],
   ]);
   return userRoleLabels.get(userRole) ?? userRole;
+}
+
+// Helper function to get badge class for user roles (consistent with logs.html)
+function getRoleBadgeClass(userRole: string): string {
+  const roleClasses = new Map<string, string>([
+    ['root', 'danger'],
+    ['admin', 'warning'],
+    ['employee', 'info'],
+  ]);
+  return roleClasses.get(userRole.toLowerCase()) ?? 'info';
 }
 
 // Initialize on DOM ready

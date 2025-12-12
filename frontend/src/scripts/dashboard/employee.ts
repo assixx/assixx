@@ -6,7 +6,6 @@
 import type { User, Document } from '../../types/api.types';
 import { apiClient } from '../../utils/api-client';
 import { getAuthToken, showError, loadUserInfo } from '../auth/index';
-import { formatDate } from '../../utils/date-helpers';
 import { $$id, setHTML, escapeHtml, createElement } from '../../utils/dom-utils';
 
 interface EmployeeInfo extends User {
@@ -15,6 +14,10 @@ interface EmployeeInfo extends User {
   supervisor?: string;
   documents_count?: number;
   recent_documents?: Document[];
+  // API v2 fields from /users/me
+  teamAreaName?: string;
+  teamDepartmentName?: string;
+  teamName?: string;
 }
 
 // Calendar Event type matching actual API v2 response (uses startTime/endTime)
@@ -70,8 +73,10 @@ function downloadDocument(docId?: string | number): void {
  */
 async function searchDocuments(query: string): Promise<void> {
   try {
-    const documents = await apiClient.get<Document[]>(`/documents/search?query=${encodeURIComponent(query)}`);
-    displayDocuments(documents);
+    const response = await apiClient.get<{ documents: Document[] }>(
+      `/documents/search?query=${encodeURIComponent(query)}`,
+    );
+    displayDocuments(response.documents);
   } catch (error) {
     console.error('Fehler bei der Dokumentensuche:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -147,14 +152,31 @@ function updateEmployeeDetails(info: EmployeeInfo): void {
 }
 
 /**
- * Update document count
+ * Update stat cards with employee info (Area, Department, Team, Position)
  */
-function updateDocumentCount(count: number | undefined): void {
-  if (count === undefined) return;
+function updateStatCards(info: EmployeeInfo): void {
+  // Area card - from teamAreaName
+  const areaEl = $$id('employee-area');
+  if (areaEl !== null) {
+    areaEl.textContent = info.teamAreaName ?? 'Nicht zugewiesen';
+  }
 
-  const docCount = document.querySelector('#doc-count');
-  if (docCount) {
-    docCount.textContent = count.toString();
+  // Department card - from teamDepartmentName (via team assignment)
+  const deptEl = $$id('employee-department');
+  if (deptEl !== null) {
+    deptEl.textContent = info.teamDepartmentName ?? info.department ?? 'Nicht zugewiesen';
+  }
+
+  // Team card - from teamName
+  const teamEl = $$id('employee-team');
+  if (teamEl !== null) {
+    teamEl.textContent = info.teamName ?? info.team ?? 'Nicht zugewiesen';
+  }
+
+  // Position card
+  const posEl = $$id('employee-position');
+  if (posEl !== null) {
+    posEl.textContent = info.position ?? 'Mitarbeiter';
   }
 }
 
@@ -165,7 +187,7 @@ function displayEmployeeInfo(info: EmployeeInfo): void {
   try {
     updateNameElements(info);
     updateEmployeeDetails(info);
-    updateDocumentCount(info.documents_count);
+    updateStatCards(info);
   } catch (error) {
     console.error('Fehler beim Anzeigen der Mitarbeiterinformationen:', error);
   }
@@ -176,67 +198,38 @@ function displayEmployeeInfo(info: EmployeeInfo): void {
  */
 async function loadDocuments(): Promise<void> {
   try {
-    const documents = await apiClient.get<Document[]>('/documents');
-    displayDocuments(documents);
+    const response = await apiClient.get<{ documents: Document[] }>('/documents');
+    displayDocuments(response.documents);
   } catch (error) {
     console.error('Fehler beim Laden der Dokumente:', error);
   }
 }
 
 /**
- * Display documents in table
+ * Display recent documents in compact-item format (like Admin Dashboard)
  */
 function displayDocuments(documents: Document[]): void {
-  const documentTableBody = $$id('recent-documents');
-  if (documentTableBody === null) return;
+  const container = $$id('recent-documents');
+  if (container === null) return;
 
   if (documents.length === 0) {
-    documentTableBody.innerHTML = `
-      <tr>
-        <td colspan="5" class="text-center">Keine Dokumente gefunden.</td>
-      </tr>
-    `;
+    setHTML(container, '<p class="p-2 text-muted">Keine Dokumente vorhanden</p>');
     return;
   }
 
-  setHTML(
-    documentTableBody,
-    documents
-      .map((doc) => {
-        const uploadDate = formatDate(doc.createdAt);
-        const fileSize = formatFileSize(doc.fileSize);
+  // Show only last 5 documents in compact format
+  const items = documents.slice(0, 5).map((doc) => {
+    const item = createElement('div', { className: 'compact-item' });
+    const fileName = doc.filename;
+    const nameSpan = createElement('span', { className: 'compact-item-name', title: fileName }, fileName);
+    item.append(nameSpan);
+    return item;
+  });
 
-        return `
-        <tr>
-          <td>${escapeHtml(doc.filename)}</td>
-          <td>${escapeHtml(doc.category)}</td>
-          <td>${uploadDate}</td>
-          <td>${fileSize}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}">
-              <i class="fas fa-download"></i> Download
-            </button>
-          </td>
-        </tr>
-      `;
-      })
-      .join(''),
-  );
-}
-
-/**
- * Format file size
- */
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const sizeIndex = Math.min(i, sizes.length - 1);
-
-  // eslint-disable-next-line security/detect-object-injection -- sizeIndex ist begrenzt auf 0-3 durch Math.min(), kein User-Input, 100% sicher
-  return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex] ?? 'Bytes'}`;
+  container.innerHTML = '';
+  items.forEach((item) => {
+    container.append(item);
+  });
 }
 
 /**
