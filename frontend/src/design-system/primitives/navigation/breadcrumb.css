@@ -27,7 +27,7 @@
   gap: var(--spacing-2, 8px);
   align-items: center;
 
-  padding: var(--spacing-2, 6px) var(--spacing-5, 20px);
+  padding: var(--spacing-0, 6px) var(--spacing-5, 20px);
 
   font-size: 14px;
   list-style: none;

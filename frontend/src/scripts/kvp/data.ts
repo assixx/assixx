@@ -197,7 +197,7 @@ export class KvpDataManager {
         : '';
 
     return `
-      <div class="custom-glass-card kvp-card" data-id="${suggestion.id}" data-uuid="${suggestion.uuid}">
+      <div class="glass-card kvp-card" data-id="${suggestion.id}" data-uuid="${suggestion.uuid}">
         <span class="badge ${statusBadgeClass} status-badge">${this.getStatusText(suggestion.status)}</span>
         <div class="mb-4">
           <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>

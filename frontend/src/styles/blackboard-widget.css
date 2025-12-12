@@ -126,18 +126,7 @@
   text-align: center;
 }
 
-/* Empty State */
-.card--blackboard__empty {
-  padding: 2rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.card--blackboard__empty i {
-  margin-bottom: 0.5rem;
-  font-size: 2rem;
-  opacity: 50%;
-}
+/* Empty State - Now using Design System empty-state component */
 
 /* ========================================
    RESPONSIVE

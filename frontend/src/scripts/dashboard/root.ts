@@ -267,20 +267,19 @@ async function loadDashboardData(): Promise<void> {
       `
             <div class="stats-grid">
                 <div class="card-stat">
-                    <span class="stat-value">${data.adminCount}</span>
-                    <span class="stat-label">Admins</span>
+                    <div class="card-stat__icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="card-stat__value">${data.adminCount}</div>
+                    <div class="card-stat__label">Admins</div>
                 </div>
                 <div class="card-stat">
-                    <span class="stat-value">${data.employeeCount}</span>
-                    <span class="stat-label">Mitarbeiter</span>
+                    <div class="card-stat__icon"><i class="fas fa-users"></i></div>
+                    <div class="card-stat__value">${data.employeeCount}</div>
+                    <div class="card-stat__label">Mitarbeiter</div>
                 </div>
                 <div class="card-stat">
-                    <span class="stat-value">${data.totalUsers}</span>
-                    <span class="stat-label">Gesamte Benutzer</span>
-                </div>
-                <div class="card-stat">
-                    <span class="stat-value">${data.tenantCount}</span>
-                    <span class="stat-label">Tenants</span>
+                    <div class="card-stat__icon"><i class="fas fa-user-friends"></i></div>
+                    <div class="card-stat__value">${data.totalUsers}</div>
+                    <div class="card-stat__label">Gesamte Benutzer</div>
                 </div>
             </div>
         `,
@@ -418,20 +417,19 @@ async function loadDashboardStats(): Promise<void> {
       statsEl as HTMLElement,
       `
             <div class="card-stat">
-                <h3>👥 Admins</h3>
-                <div class="stat-value">${stats.totalAdmins}</div>
+                <div class="card-stat__icon"><i class="fas fa-user-shield"></i></div>
+                <div class="card-stat__value">${stats.totalAdmins}</div>
+                <div class="card-stat__label">Admins</div>
             </div>
             <div class="card-stat">
-                <h3>👤 Mitarbeiter</h3>
-                <div class="stat-value">${stats.totalEmployees}</div>
+                <div class="card-stat__icon"><i class="fas fa-users"></i></div>
+                <div class="card-stat__value">${stats.totalEmployees}</div>
+                <div class="card-stat__label">Mitarbeiter</div>
             </div>
             <div class="card-stat">
-                <h3>🏢 Mandanten</h3>
-                <div class="stat-value">${stats.totalTenants}</div>
-            </div>
-            <div class="card-stat">
-                <h3>📊 Aktivitäten (24h)</h3>
-                <div class="stat-value">${stats.recentActivity}</div>
+                <div class="card-stat__icon"><i class="fas fa-chart-line"></i></div>
+                <div class="card-stat__value">${stats.recentActivity}</div>
+                <div class="card-stat__label">Aktivitäten (24h)</div>
             </div>
         `,
     );

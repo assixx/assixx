@@ -103,7 +103,7 @@
           </div>
 
           <!-- Controls unter der Filterleiste -->
-          <div class="flex flex-between mb-6">
+          <div class="flex justify-between mb-6">
             <div class="controls-flex">
               <div class="zoom-controls zoom-controls-inline">
                 <button id="zoomInBtn" class="btn btn-icon btn-secondary" title="Vergrößern">
@@ -139,7 +139,7 @@
           </div>
 
           <!-- Pagination -->
-          <div class="flex flex-center mt-4 gap-2" id="paginationContainer" hidden>
+          <div class="flex items-center justify-center mt-4 gap-2" id="paginationContainer" hidden>
             <div class="pagination" id="pagination">
               <!-- Wird dynamisch gefüllt -->
             </div>
@@ -391,7 +391,7 @@
     <!-- Scripts in the same order as calendar.html -->
     <script type="module" src="/scripts/blackboard/index.ts"></script>
     <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
     <!-- Breadcrumb -->

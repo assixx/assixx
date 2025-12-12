@@ -53,7 +53,12 @@
 @import "./lib/fontawesome.min.css";
 
 /* Theme and core styles */
-@import "./dashboard-theme.css";
+/* NOTE: dashboard-theme.css DELETED 2025-12-12 - All styles migrated to:
+   - Tailwind native utilities (mt-*, mb-*, gap-*, flex, text-center)
+   - Design System (card__header, badge--*, glass-card)
+   - bootstrap-tables.css (.table, .table-responsive)
+   - bootstrap-modals.css (.modal-footer)
+   - tailwind/components/container.css (.container) */
 @import "./style.css";
 
 /* ========================================

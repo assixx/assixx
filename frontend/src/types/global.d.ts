@@ -1,7 +1,7 @@
 // Global Type Declarations for Frontend
 
 import type { User, JWTPayload } from './api.types';
-import type { UnifiedNavigation } from '../scripts/components/unified-navigation';
+import type { UnifiedNavigation } from '../scripts/components/navigation/index';
 import type { ApiClient } from '../utils/api-client';
 
 // NOTE: Because this file has imports, it's a TypeScript module

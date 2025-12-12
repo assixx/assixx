@@ -196,12 +196,12 @@ function updateDepartmentBadge(
   const departmentCount = data.departments?.length ?? 0;
 
   if (departmentCount === 0) {
-    badgeSpan.className = 'badge badge-warning';
+    badgeSpan.className = 'badge badge--warning';
     badgeSpan.textContent = 'Keine Abteilungen';
     return;
   }
 
-  badgeSpan.className = 'badge badge-info';
+  badgeSpan.className = 'badge badge--info';
   badgeSpan.textContent = `${departmentCount} Abteilungen`;
   if (data.departments) {
     (badgeSpan as HTMLElement).title = data.departments.map((d) => d.name).join(', ');

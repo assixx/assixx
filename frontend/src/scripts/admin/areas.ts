@@ -157,7 +157,7 @@ class AreasManager {
         <td>${area.capacity != null ? `${String(area.capacity)} Plätze` : '-'}</td>
         <td>${this.escapeHtml(area.address)}</td>
         <td>
-          <span class="badge ${area.isActive !== false ? 'badge-success' : 'badge-error'}">
+          <span class="badge ${area.isActive !== false ? 'badge--success' : 'badge--error'}">
             ${area.isActive !== false ? 'Aktiv' : 'Inaktiv'}
           </span>
         </td>

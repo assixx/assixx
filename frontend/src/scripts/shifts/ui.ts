@@ -46,15 +46,15 @@ export function createAvailabilityIcon(status: string | undefined): HTMLElement 
  */
 export function createAvailabilityBadge(status: string | undefined): HTMLElement {
   const badgeConfig = new Map<string, { badgeClass: string; text: string }>([
-    ['available', { badgeClass: 'badge-success', text: 'Verfügbar' }],
-    ['vacation', { badgeClass: 'badge-warning', text: 'Urlaub' }],
-    ['sick', { badgeClass: 'badge-danger', text: 'Krank' }],
-    ['unavailable', { badgeClass: 'badge-error', text: 'Nicht verfügbar' }],
-    ['training', { badgeClass: 'badge-info', text: 'Schulung' }],
-    ['other', { badgeClass: 'badge-dark', text: 'Sonstiges' }],
+    ['available', { badgeClass: 'badge--success', text: 'Verfügbar' }],
+    ['vacation', { badgeClass: 'badge--warning', text: 'Urlaub' }],
+    ['sick', { badgeClass: 'badge--danger', text: 'Krank' }],
+    ['unavailable', { badgeClass: 'badge--error', text: 'Nicht verfügbar' }],
+    ['training', { badgeClass: 'badge--info', text: 'Schulung' }],
+    ['other', { badgeClass: 'badge--dark', text: 'Sonstiges' }],
   ]);
 
-  const defaultConfig = { badgeClass: 'badge-success', text: 'Verfügbar' };
+  const defaultConfig = { badgeClass: 'badge--success', text: 'Verfügbar' };
   const config = badgeConfig.get(status ?? 'available') ?? defaultConfig;
   const badgeClass = config.badgeClass;
   const text = config.text;

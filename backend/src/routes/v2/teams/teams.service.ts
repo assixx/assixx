@@ -259,6 +259,7 @@ class TeamsService {
    * Create a new team
    * @param data - The data object
    * @param tenantId - The tenant ID
+   * AUTO-JUNCTION: When leaderId is set, automatically adds leader to user_teams with role='lead'
    */
   async createTeam(data: TeamCreateInput, tenantId: number): Promise<Record<string, unknown>> {
     try {
@@ -269,11 +270,84 @@ class TeamsService {
       const teamData = this.buildTeamCreateData(data, tenantId);
       const teamId = await Team.create(teamData);
 
+      // AUTO-JUNCTION: Add leader to user_teams with role='lead'
+      if (data.leaderId !== undefined) {
+        await this.ensureLeaderInTeam(data.leaderId, teamId, tenantId);
+      }
+
       return await this.getTeamById(teamId, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error(`Error creating team: ${(error as Error).message}`);
       throw new ServiceError('SERVER_ERROR', 'Failed to create team', 500);
+    }
+  }
+
+  /**
+   * Ensure leader is in user_teams with role='lead'
+   * If already a member, updates role to 'lead'
+   * If not a member, adds them with role='lead'
+   */
+  private async ensureLeaderInTeam(
+    leaderId: number,
+    teamId: number,
+    tenantId: number,
+  ): Promise<void> {
+    try {
+      const isInTeam = await Team.isUserInTeam(leaderId, teamId);
+      if (isInTeam) {
+        // Already a member - update role to 'lead'
+        await Team.updateUserTeamRole(leaderId, teamId, 'lead');
+        logger.info(`Updated existing member ${leaderId} to lead role in team ${teamId}`);
+      } else {
+        // Not a member - add with 'lead' role
+        await Team.addUserToTeam(leaderId, teamId, tenantId, 'lead');
+        logger.info(`Added leader ${leaderId} to team ${teamId} with lead role`);
+      }
+    } catch (error: unknown) {
+      logger.error(`Error ensuring leader in team: ${(error as Error).message}`);
+      // Don't throw - team creation was successful, this is supplementary
+    }
+  }
+
+  /**
+   * Demote old leader to member role (if still in team)
+   */
+  private async demoteOldLeader(oldLeaderId: number, teamId: number): Promise<void> {
+    try {
+      const isInTeam = await Team.isUserInTeam(oldLeaderId, teamId);
+      if (isInTeam) {
+        await Team.updateUserTeamRole(oldLeaderId, teamId, 'member');
+        logger.info(`Demoted old leader ${oldLeaderId} to member role in team ${teamId}`);
+      }
+    } catch (error: unknown) {
+      logger.error(`Error demoting old leader: ${(error as Error).message}`);
+      // Don't throw - team update was successful, this is supplementary
+    }
+  }
+
+  /**
+   * Handle leader change on team update
+   * Demotes old leader to member, promotes new leader to lead role
+   * @param newLeaderId - null means "clear leader", undefined means "not provided"
+   */
+  private async handleLeaderChangeOnUpdate(
+    oldLeaderId: number | undefined,
+    newLeaderId: number | null | undefined,
+    teamId: number,
+    tenantId: number,
+  ): Promise<void> {
+    // Only process if leaderId was actually provided in the update
+    if (newLeaderId === undefined) return;
+
+    // Demote old leader if they exist and are different from new leader
+    if (oldLeaderId !== undefined && oldLeaderId !== newLeaderId) {
+      await this.demoteOldLeader(oldLeaderId, teamId);
+    }
+
+    // Ensure new leader is in team with 'lead' role (null = clearing leader, skip)
+    if (newLeaderId !== null) {
+      await this.ensureLeaderInTeam(newLeaderId, teamId, tenantId);
     }
   }
 
@@ -357,6 +431,12 @@ class TeamsService {
     return updateData;
   }
 
+  /**
+   * Update a team
+   * AUTO-JUNCTION: When leaderId changes, updates user_teams roles accordingly
+   * - Old leader is demoted to 'member' (if still in team)
+   * - New leader is added with 'lead' role (or promoted if already member)
+   */
   async updateTeam(
     id: number,
     data: TeamUpdateInput,
@@ -381,6 +461,9 @@ class TeamsService {
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to update team', 500);
       }
+
+      // AUTO-JUNCTION: Handle leader change in user_teams
+      await this.handleLeaderChangeOnUpdate(existingTeam.team_lead_id, data.leaderId, id, tenantId);
 
       // Return updated team
       return await this.getTeamById(id, tenantId);

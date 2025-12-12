@@ -100,9 +100,10 @@ class BlackboardWidget {
       console.error('Error loading blackboard entries:', error);
       if (contentElement !== null) {
         contentElement.innerHTML = `
-                <div class="card--blackboard__empty">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Fehler beim Laden der Einträge</p>
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="fas fa-exclamation-circle"></i></div>
+                    <h3 class="empty-state__title">Fehler beim Laden</h3>
+                    <p class="empty-state__description">Die Einträge konnten nicht geladen werden.</p>
                 </div>
             `;
       }
@@ -117,9 +118,10 @@ class BlackboardWidget {
 
     if (this.entries.length === 0) {
       contentElement.innerHTML = `
-                <div class="card--blackboard__empty">
-                    <i class="fas fa-sticky-note"></i>
-                    <p>Keine aktuellen Einträge</p>
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="fas fa-sticky-note"></i></div>
+                    <h3 class="empty-state__title">Keine aktuellen Einträge</h3>
+                    <p class="empty-state__description">Es gibt derzeit keine Neuigkeiten am Schwarzen Brett.</p>
                 </div>
             `;
       return;

@@ -85,6 +85,10 @@
   justify-content: flex-end;
 }
 
+.confirm-modal__actions--centered {
+  justify-content: center;
+}
+
 .confirm-modal__btn {
   cursor: pointer;
 
@@ -101,6 +105,10 @@
 .confirm-modal__btn:disabled {
   cursor: not-allowed;
   opacity: 50%;
+}
+
+.confirm-modal__btn--wide {
+  min-width: 120px;
 }
 
 /* ========== CANCEL BUTTON ========== */
