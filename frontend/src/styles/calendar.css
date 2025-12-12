@@ -699,8 +699,8 @@
 .shift-indicator {
   position: absolute;
   z-index: 10;
-  right: 20px;
-  bottom: 5px;
+  right: 21px;
+  bottom: 6px;
 
   display: flex;
   align-items: center;

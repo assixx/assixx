@@ -225,6 +225,7 @@ class DepartmentService {
    * Create a new department
    * @param data - The data object
    * @param tenantId - The tenant ID
+   * AUTO-JUNCTION: When departmentLeadId is set, automatically adds leader to user_departments
    */
   async createDepartment(data: CreateDepartmentData, tenantId: number): Promise<DepartmentV2> {
     try {
@@ -235,6 +236,11 @@ class DepartmentService {
       const createData = this.buildCreateDataForDepartment(data, tenantId);
       const departmentId = await Department.create(createData);
 
+      // AUTO-JUNCTION: Add leader to user_departments if set
+      if (data.departmentLeadId !== undefined) {
+        await this.ensureLeaderInDepartment(data.departmentLeadId, departmentId, tenantId);
+      }
+
       return await this.getDepartmentById(departmentId, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
@@ -243,6 +249,40 @@ class DepartmentService {
       }
       logger.error('Error creating department:', error);
       throw new ServiceError(500, 'Failed to create department', error);
+    }
+  }
+
+  /**
+   * Ensure leader is in user_departments
+   * If not already assigned, adds them as primary department member
+   */
+  private async ensureLeaderInDepartment(
+    leaderId: number,
+    departmentId: number,
+    tenantId: number,
+  ): Promise<void> {
+    try {
+      // Check if user is already in user_departments for this department
+      const [existing] = await execute<RowDataPacket[]>(
+        'SELECT id FROM user_departments WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3',
+        [leaderId, departmentId, tenantId],
+      );
+
+      if (existing.length > 0) {
+        logger.info(`Leader ${leaderId} already assigned to department ${departmentId}`);
+        return;
+      }
+
+      // Add leader to user_departments
+      await execute(
+        `INSERT INTO user_departments (tenant_id, user_id, department_id, is_primary, assigned_at)
+         VALUES ($1, $2, $3, true, NOW())`,
+        [tenantId, leaderId, departmentId],
+      );
+      logger.info(`Added leader ${leaderId} to department ${departmentId}`);
+    } catch (error: unknown) {
+      logger.error(`Error ensuring leader in department: ${(error as Error).message}`);
+      // Don't throw - department creation was successful, this is supplementary
     }
   }
 
@@ -302,6 +342,7 @@ class DepartmentService {
    * @param id - The resource ID
    * @param data - The data object
    * @param tenantId - The tenant ID
+   * AUTO-JUNCTION: When departmentLeadId changes, ensures new leader is in user_departments
    */
   async updateDepartment(
     id: number,
@@ -323,6 +364,11 @@ class DepartmentService {
 
       if (!success) {
         throw new ServiceError(500, 'Failed to update department');
+      }
+
+      // AUTO-JUNCTION: Ensure new leader is in user_departments if changed
+      if (data.departmentLeadId !== undefined) {
+        await this.ensureLeaderInDepartment(data.departmentLeadId, id, tenantId);
       }
 
       return await this.getDepartmentById(id, tenantId);

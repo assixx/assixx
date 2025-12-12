@@ -269,20 +269,25 @@ export async function addUserToTeam(
   userId: number,
   teamId: number,
   tenantId: number,
+  role: 'member' | 'lead' = 'member',
 ): Promise<boolean> {
   logger.info(
-    `Adding user ${String(userId)} to team ${String(teamId)} for tenant ${String(tenantId)}`,
+    `Adding user ${String(userId)} to team ${String(teamId)} for tenant ${String(tenantId)} with role ${role}`,
   );
-  const query = 'INSERT INTO user_teams (user_id, team_id, tenant_id) VALUES ($1, $2, $3)';
+  const query =
+    'INSERT INTO user_teams (user_id, team_id, tenant_id, role) VALUES ($1, $2, $3, $4)';
 
   try {
-    await executeQuery(query, [userId, teamId, tenantId]);
-    logger.info(`User ${String(userId)} added to team ${String(teamId)} successfully`);
+    await executeQuery(query, [userId, teamId, tenantId, role]);
+    logger.info(
+      `User ${String(userId)} added to team ${String(teamId)} with role ${role} successfully`,
+    );
     return true;
   } catch (error: unknown) {
     const mysqlError = error as MysqlError;
     // Wenn es ein Duplikat ist, werfen wir einen Fehler
-    if (mysqlError.code === 'ER_DUP_ENTRY') {
+    // PostgreSQL uses error code 23505 for unique_violation
+    if (mysqlError.code === 'ER_DUP_ENTRY' || mysqlError.code === '23505') {
       logger.warn(`User ${String(userId)} is already a member of team ${String(teamId)}`);
       throw new Error('User is already a member of this team');
     }
@@ -309,6 +314,50 @@ export async function removeUserFromTeam(userId: number, teamId: number): Promis
     logger.error(
       `Error removing user ${String(userId)} from team ${String(teamId)}: ${(error as Error).message}`,
     );
+    throw error;
+  }
+}
+
+/**
+ * Update user role in a team
+ * Used when changing team leader - demotes old leader to member, promotes new leader
+ */
+export async function updateUserTeamRole(
+  userId: number,
+  teamId: number,
+  role: 'member' | 'lead',
+): Promise<boolean> {
+  logger.info(`Updating user ${String(userId)} role in team ${String(teamId)} to ${role}`);
+  const query = 'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3';
+
+  try {
+    const [result] = await executeQuery<ResultSetHeader>(query, [role, userId, teamId]);
+    if (result.affectedRows === 0) {
+      logger.warn(`User ${String(userId)} is not a member of team ${String(teamId)}`);
+      return false;
+    }
+    logger.info(
+      `User ${String(userId)} role updated to ${role} in team ${String(teamId)} successfully`,
+    );
+    return true;
+  } catch (error: unknown) {
+    logger.error(
+      `Error updating user ${String(userId)} role in team ${String(teamId)}: ${(error as Error).message}`,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Check if user is a member of a team
+ */
+export async function isUserInTeam(userId: number, teamId: number): Promise<boolean> {
+  const query = 'SELECT id FROM user_teams WHERE user_id = $1 AND team_id = $2';
+  try {
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [userId, teamId]);
+    return rows.length > 0;
+  } catch (error: unknown) {
+    logger.error(`Error checking user team membership: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -383,6 +432,8 @@ const Team = {
   delete: deleteTeam,
   addUserToTeam,
   removeUserFromTeam,
+  updateUserTeamRole,
+  isUserInTeam,
   getTeamMembers,
   getUserTeams,
   getTeamMachines,

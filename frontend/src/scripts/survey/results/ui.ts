@@ -163,20 +163,20 @@ export function renderResults(
 
     <div class="stats-grid">
       <div class="card-stat">
-        <h3 class="stat-value">${escapeHtml(totalResponses.toString())}</h3>
-        <p class="stat-label">Antworten</p>
+        <h3 class="text-3xl font-bold text-blue-500 mb-1">${escapeHtml(totalResponses.toString())}</h3>
+        <p class="text-sm text-gray-400">Antworten</p>
       </div>
       <div class="card-stat">
-        <h3 class="stat-value">${escapeHtml(completedResponses.toString())}</h3>
-        <p class="stat-label">Abgeschlossen</p>
+        <h3 class="text-3xl font-bold text-blue-500 mb-1">${escapeHtml(completedResponses.toString())}</h3>
+        <p class="text-sm text-gray-400">Abgeschlossen</p>
       </div>
       <div class="card-stat">
-        <h3 class="stat-value">${escapeHtml(completionRate.toString())}%</h3>
-        <p class="stat-label">Abschlussrate</p>
+        <h3 class="text-3xl font-bold text-blue-500 mb-1">${escapeHtml(completionRate.toString())}%</h3>
+        <p class="text-sm text-gray-400">Abschlussrate</p>
       </div>
       <div class="card-stat">
-        <h3 class="stat-value">${escapeHtml(survey.status === 'active' ? 'Aktiv' : 'Beendet')}</h3>
-        <p class="stat-label">Status</p>
+        <h3 class="text-3xl font-bold text-blue-500 mb-1">${escapeHtml(survey.status === 'active' ? 'Aktiv' : 'Beendet')}</h3>
+        <p class="text-sm text-gray-400">Status</p>
       </div>
     </div>
 

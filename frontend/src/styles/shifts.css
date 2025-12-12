@@ -491,23 +491,8 @@
   font-size: 10px;
 }
 
-/* Generic Modal Overlay Class */
-.modal-overlay {
-  position: fixed;
-  z-index: 9999;
-  inset: 0;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  background: rgb(0 0 0 / 80%);
-  backdrop-filter: blur(5px);
-
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
-}
+/* NOTE: .modal-overlay removed 2025-12-12 - Design System modal.base.css handles this
+   The old definition used display:none without a .show rule, breaking modals */
 
 /* Employee Availability Status Styles */
 .employee-item.unavailable {

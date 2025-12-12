@@ -1,4 +1,26 @@
+/* Import Design System Components needed by navigation */
+@import "../design-system/primitives/modals/modal.base.css";
+@import "../design-system/components/confirm-modal/confirm-modal.css";
+
 /* Header Base Styles */
+
+.header {
+  position: sticky;
+  z-index: 1000;
+  top: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  height: 80px;
+  min-height: 3.5rem;
+  padding: 0.5rem 1rem;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 0 0 2px #00000017;
+}
 
 .header .header-content {
   display: flex;
@@ -147,20 +169,24 @@
 
 /* Base sidebar styles - lowest specificity first */
 .sidebar {
-  position: relative;
-  top: 0;
+  /* STICKY: Sidebar klebt UNTER dem Header (80px vom Viewport-Top) */
+  position: sticky;
+  top: 80px; /* Header-Höhe! Sidebar klebt unter dem Header, nicht dahinter */
   left: 0;
 
   overflow: hidden auto;
+
+  /* Eigener Scrollbereich für Sidebar */
   flex-shrink: 0;
+  align-self: flex-start; /* Wichtig für sticky in Flexbox */
 
   width: 260px !important;
   min-width: 260px;
 
-  /* border-right: 1px solid rgba(255, 255, 255, 0.1); */
-  height: auto;
-  min-height: calc(100vh - 60px);
-  margin-top: 4px;
+  /* Exakte Höhe = Viewport minus Header (80px) */
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+  margin-top: 0; /* Kein margin-top mehr nötig, top: 80px übernimmt */
   margin-left: 10px;
 
   background: rgb(255 255 255 / 0%);
@@ -846,14 +872,17 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .role-switch-banner:not([style*="display: none"]) ~ .layout-container {
-  min-height: calc(100vh - 100px) !important;
-  margin-top: 100px !important;
+  min-height: calc(100vh - 120px) !important;
+  margin-top: 40px !important;
 
-  /* 60px header + 40px banner */
+  /* Banner ist ~40px */
 }
 
+/* Sidebar anpassen wenn Role-Switch-Banner sichtbar (80px header + 40px banner) */
 .role-switch-banner:not([style*="display: none"]) ~ .layout-container .sidebar {
-  min-height: calc(100vh - 100px) !important;
+  top: 120px !important; /* 80px Header + 40px Banner */
+  height: calc(100vh - 120px) !important;
+  max-height: calc(100vh - 120px) !important;
 }
 
 /* .main-content - REMOVED: Migrated to Tailwind utilities in HTML files */
@@ -989,10 +1018,21 @@ body:has(.sidebar.collapsed) .header .logo {
 
 /* Responsive Design */
 @media (width <=768px) {
+  .header {
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
   .sidebar {
+    /* Mobile: Fixed statt Sticky (Overlay-Menü) */
+    position: fixed;
+    z-index: 100;
     top: 60px;
     transform: translateX(-100%);
+
     width: 100%;
+    height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
   }
 
   .sidebar.mobile-open {
@@ -1013,6 +1053,75 @@ body:has(.sidebar.collapsed) .header .logo {
 
     margin-top: var(--spacing-6);
   }
+}
+
+/* ========== Navigation Badges ========== */
+
+.nav-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+
+  display: inline-block;
+
+  min-width: 24px;
+  border-radius: 50px;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+
+  background: linear-gradient(0deg, rgb(243 33 33 / 71%), rgb(243 33 33 / 76%));
+}
+
+.nav-badge-kvp {
+  background: linear-gradient(0deg, rgb(76 175 80 / 71%), rgb(76 175 80 / 76%));
+}
+
+.nav-badge-surveys {
+  right: 15px;
+
+  min-width: 20px;
+  padding: 3px 8px;
+  border: 1px solid rgb(255 152 0 / 30%);
+  border-radius: 12px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ff9800;
+
+  background: rgb(255 152 0 / 15%);
+  backdrop-filter: blur(10px);
+}
+
+.nav-badge-documents {
+  min-width: 18px;
+  border-radius: 10px;
+  color: #fff;
+  background: #2196f3;
+}
+
+.nav-badge-lean-parent {
+  right: 40px;
+
+  font-weight: 600;
+  color: #fff;
+
+  background: rgb(255 153 0 / 70%);
+  backdrop-filter: blur(10px);
+}
+
+.nav-badge-child {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.nav-badge-child-default {
+  min-width: 18px;
+  border-radius: 10px;
+  color: #fff;
+  background: #ff5722;
 }
 
 /* Collapsed sidebar - show badges as dots */
@@ -1039,4 +1148,72 @@ body:has(.sidebar.collapsed) .header .logo {
   top: 50% !important;
   right: 8px !important;
   transform: translateY(-50%) !important;
+}
+
+/* ============================================
+   Phase 1 CSS Cleanup - Inline Style Replacements
+   Added: 2025-12-12
+   ============================================ */
+
+/* Employee Number Styles (replaces inline styles) */
+.employee-number--visible {
+  display: flex;
+  justify-content: center;
+}
+
+.employee-number__text {
+  letter-spacing: 2px;
+}
+
+.employee-number--temp {
+  color: var(--warning-color);
+}
+
+/* User Info Styles (replaces inline template styles) */
+.user-position {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+}
+
+.user-employee-number {
+  overflow: hidden;
+
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Logo Clickable State (replaces style.cursor = 'pointer') */
+.logo-container--clickable {
+  cursor: pointer;
+}
+
+/* Storage Progress Bar - CSS Variables for dynamic values
+   Usage: element.style.setProperty('--storage-progress', '75%');
+          element.style.setProperty('--storage-color', 'var(--success-color)');
+*/
+.storage-progress-bar--dynamic {
+  width: var(--storage-progress, 0%);
+  background-color: var(--storage-color, var(--success-color));
+  transition:
+    width 0.5s ease,
+    background-color 0.3s ease;
+}
+
+/* Submenu Open State (replaces style.display = 'block') */
+.submenu--open {
+  display: block !important;
+}
+
+/* Icon Margin Right (replaces style="margin-right: 8px;") */
+.mr-2 {
+  margin-right: 8px;
+}
+
+/* Sidebar Banner Reset (replaces inline style.top/height) */
+.sidebar--banner-dismissed {
+  top: unset;
+  height: unset;
 }
