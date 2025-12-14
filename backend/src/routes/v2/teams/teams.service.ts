@@ -2,7 +2,7 @@
  * Teams v2 Service Layer
  * Handles all business logic for team management
  */
-import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -718,14 +718,15 @@ class TeamsService {
       }
 
       // Add machine to team
-      const [result] = await execute(
+      const [rows] = await execute<{ id: number }[]>(
         `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, is_primary)
-         VALUES ($1, $2, $3, $4, $5)`,
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
         [tenantId, machineId, teamId, assignedBy, false],
       );
 
       return {
-        id: (result as ResultSetHeader).insertId,
+        id: rows[0]?.id ?? 0,
         message: 'Machine added to team successfully',
       };
     } catch (error: unknown) {

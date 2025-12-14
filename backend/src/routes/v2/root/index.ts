@@ -17,6 +17,7 @@ import { rootController } from './root.controller.js';
 import {
   AdminIdParamSchema,
   CreateAdminSchema,
+  CreateRootUserSchema,
   RootApiFiltersSchema,
   UpdateAdminSchema,
   UpdateRootUserSchema,
@@ -94,20 +95,7 @@ router.get(
 router.post(
   '/users',
   ...security.root(),
-  validateBody(
-    z.object({
-      username: z.string().min(1),
-      email: z.email(),
-      password: z.string().min(6),
-      firstName: z.string().min(1),
-      lastName: z.string().min(1),
-      position: z.string().optional(),
-      notes: z.string().optional(),
-      employeeNumber: z.string().optional(),
-      departmentId: z.number().optional(),
-      isActive: z.boolean().optional(),
-    }),
-  ),
+  validateBody(CreateRootUserSchema),
   typed.body(rootController.createRootUser.bind(rootController)),
 );
 

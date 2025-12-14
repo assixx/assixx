@@ -166,9 +166,10 @@ class AvailabilityService {
         INSERT INTO employee_availability
         (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
       `;
 
-      const [result] = await execute<ResultSetHeader>(query, [
+      const [rows] = await execute<{ id: number }[]>(query, [
         dbData['employee_id'],
         dbData['tenant_id'],
         dbData['status'] ?? 'unavailable',
@@ -182,7 +183,7 @@ class AvailabilityService {
       // Update user's availability status
       await this.updateUserAvailabilityStatus();
 
-      return result.insertId;
+      return rows[0]?.id ?? 0;
     } catch (error: unknown) {
       console.error('Error in AvailabilityService.create:', error);
       throw error;

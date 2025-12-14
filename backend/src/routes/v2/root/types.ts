@@ -58,6 +58,7 @@ export interface UpdateAdminRequest {
 }
 
 // Root User Types
+// UPDATED: isActive changed to number for unified status (2025-12-12)
 export interface RootUser {
   id: number;
   username: string;
@@ -68,7 +69,7 @@ export interface RootUser {
   notes?: string;
   employeeNumber?: string;
   departmentId?: number;
-  isActive: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -78,6 +79,7 @@ export interface RootUser {
  * Create Root User Request
  * IMPORTANT: username is optional and will be set to email (lowercase) in service
  * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ * UPDATED: isActive changed to number for unified status (2025-12-12)
  */
 export interface CreateRootUserRequest {
   username?: string; // Optional - will be set to email (lowercase) in service
@@ -88,13 +90,14 @@ export interface CreateRootUserRequest {
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  isActive?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted (default: 1)
 }
 
 /**
  * Update Root User Request
  * IMPORTANT: When email changes, username is also updated (username = email, lowercase)
  * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ * UPDATED: isActive changed to number for unified status (2025-12-12)
  */
 export interface UpdateRootUserRequest {
   firstName?: string;
@@ -104,7 +107,7 @@ export interface UpdateRootUserRequest {
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  isActive?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 // Tenant Types

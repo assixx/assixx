@@ -11,7 +11,7 @@ import {
   TotalCountResult,
 } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db.js';
+import { PoolConnection, query, transaction } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface SurveyAnswer {
@@ -175,13 +175,15 @@ class ResponsesService {
     }
 
     return await transaction(async (connection: PoolConnection) => {
-      const [result] = await connection.query<ResultSetHeader>(
+      const [rows] = await connection.query<{ id: number }[]>(
         `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status)
-         VALUES ($1, $2, $3, NOW(), NOW(), 'completed')`,
+         VALUES ($1, $2, $3, NOW(), NOW(), 'completed')
+         RETURNING id`,
         [surveyId, userId, tenantId] as unknown[],
       );
-      await insertAnswers(connection, result.insertId, normalizeAnswers(answers), tenantId);
-      return result.insertId;
+      const responseId = rows[0]?.id ?? 0;
+      await insertAnswers(connection, responseId, normalizeAnswers(answers), tenantId);
+      return responseId;
     });
   }
 

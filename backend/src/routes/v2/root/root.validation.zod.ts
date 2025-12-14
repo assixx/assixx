@@ -147,7 +147,8 @@ export const CreateRootUserSchema = z.object({
   notes: NotesSchema,
   employeeNumber: EmployeeNumberSchema,
   // N:M REFACTORING: departmentId removed - root users have has_full_access=1
-  isActive: z.boolean().default(true),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).default(1),
 });
 
 /**
@@ -163,7 +164,8 @@ export const UpdateRootUserSchema = z.object({
   notes: NotesSchema,
   employeeNumber: EmployeeNumberSchema,
   // N:M REFACTORING: departmentId removed - root users have has_full_access=1
-  isActive: z.boolean().optional(),
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted (coerce for string input from forms)
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 
 // ========================================

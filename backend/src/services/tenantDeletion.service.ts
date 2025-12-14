@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * DYNAMIC TENANT DELETION SERVICE - Best Practice Implementation
  * Automatically finds and deletes ALL tables with tenant_id
@@ -19,6 +20,14 @@ import {
 import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
 import emailService from '../utils/emailService.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Grace period before tenant deletion (in minutes)
+ * Default: 43200 (30 days)
+ * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
+ */
+const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
+const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
 
 type ConnectionWrapper = DbConnectionWrapper;
 
@@ -102,48 +111,46 @@ export class TenantDeletionService {
 
   /**
    * Get all tables with tenant_id column
-   * NOTE: Uses PostgreSQL information_schema - DATABASE() is MySQL-specific, use current_database() for PostgreSQL
+   * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
   private async getTablesWithTenantId(conn: ConnectionWrapper): Promise<TableNameRow[]> {
-    const [tables] = (await conn.query<TableNameRow[]>(`
-      SELECT DISTINCT TABLE_NAME
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE COLUMN_NAME = 'tenant_id'
-      AND TABLE_SCHEMA = current_database()
-      AND TABLE_NAME NOT LIKE 'v_%'
-      ORDER BY TABLE_NAME
-    `)) as unknown as [TableNameRow[], unknown];
-    return tables;
+    return await conn.query<TableNameRow[]>(`
+      SELECT DISTINCT table_name AS "TABLE_NAME"
+      FROM information_schema.columns
+      WHERE column_name = 'tenant_id'
+      AND table_schema = 'public'
+      AND table_name NOT LIKE 'v_%'
+      ORDER BY table_name
+    `);
   }
 
   /**
    * Get user-related tables (with user_id FK)
-   * NOTE: Uses PostgreSQL information_schema - DATABASE() is MySQL-specific, use current_database() for PostgreSQL
+   * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
   private async getUserRelatedTables(conn: ConnectionWrapper): Promise<TableNameRow[]> {
     // PostgreSQL: Generate sequential $1, $2, $3... for each table name
     const placeholders = this.CRITICAL_TABLES.map((_: string, idx: number) => `$${idx + 1}`).join(
       ',',
     );
-    const [tables] = (await conn.query<TableNameRow[]>(
-      `SELECT DISTINCT TABLE_NAME
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE COLUMN_NAME = 'user_id'
-      AND TABLE_SCHEMA = current_database()
-      ${placeholders !== '' ? `AND TABLE_NAME NOT IN (${placeholders})` : ''}`,
+    return await conn.query<TableNameRow[]>(
+      `SELECT DISTINCT table_name AS "TABLE_NAME"
+      FROM information_schema.columns
+      WHERE column_name = 'user_id'
+      AND table_schema = 'public'
+      ${placeholders !== '' ? `AND table_name NOT IN (${placeholders})` : ''}`,
       this.CRITICAL_TABLES,
-    )) as unknown as [TableNameRow[], unknown];
-    return tables;
+    );
   }
 
   /**
    * Check for legal holds
    */
   private async checkLegalHolds(tenantId: number, conn: ConnectionWrapper): Promise<void> {
-    const [holds] = (await conn.query<LegalHoldRow[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
+    const holds = await conn.query<LegalHoldRow[]>(
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
-    )) as unknown as [LegalHoldRow[], unknown];
+    );
 
     if (holds.length > 0) {
       const firstHold = holds[0];
@@ -155,53 +162,180 @@ export class TenantDeletionService {
   }
 
   /**
-   * Create GDPR data export before deletion
+   * Sanitize company name for use in file/folder names
    */
-  private async createTenantDataExport(tenantId: number, conn: ConnectionWrapper): Promise<string> {
-    const exportDir = `/tmp/tenant_exports/${tenantId}_${Date.now()}`;
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: tenantId is validated as positive integer, base path is hardcoded, Date.now() is secure
-    await fs.mkdir(exportDir, { recursive: true });
+  private sanitizeCompanyName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9äöüß]/gi, '_') // Replace special chars with underscore
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_|_$/g, '') // Trim underscores
+      .substring(0, 50); // Limit length
+  }
 
-    logger.info(`Creating GDPR data export for tenant ${tenantId} in ${exportDir}`);
+  /**
+   * Generate SQL INSERT statement for a single row
+   */
+  private generateInsertStatement(tableName: string, row: Record<string, unknown>): string {
+    const entries = Object.entries(row);
+    const columns = entries.map(([col]: [string, unknown]) => `"${col}"`);
+    const values = entries.map(([, val]: [string, unknown]) => this.formatSqlValue(val));
+    return `INSERT INTO "${tableName}" (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+  }
 
-    // Export all tenant data to JSON files
+  /**
+   * Format a value for SQL INSERT statement
+   */
+  private formatSqlValue(val: unknown): string {
+    if (val === null) return 'NULL';
+    if (typeof val === 'number') return String(val);
+    if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+    if (val instanceof Date) return `'${val.toISOString()}'`;
+    if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+    // Objects/Arrays → JSON string
+    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+    return 'NULL';
+  }
+
+  /**
+   * Create SQL backup file with INSERT statements for all tenant data
+   */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  private async createSqlBackup(
+    tenantId: number,
+    companyName: string,
+    sqlBackupPath: string,
+    conn: ConnectionWrapper,
+  ): Promise<void> {
     const tables = await this.getTablesWithTenantId(conn);
+    const tableNames = tables.map((t: TableNameRow) => t.TABLE_NAME);
+
+    let sqlContent = `-- Tenant Backup: ${companyName} (ID: ${tenantId})\n`;
+    sqlContent += `-- Created: ${new Date().toISOString()}\n`;
+    sqlContent += `-- Tables: ${tableNames.length}\n\n`;
+
+    for (const tableName of tableNames) {
+      try {
+        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
+          tenantId,
+        ]);
+        if (data.length > 0) {
+          sqlContent += `-- Table: ${tableName} (${data.length} rows)\n`;
+          for (const row of data) {
+            sqlContent += this.generateInsertStatement(tableName, row as Record<string, unknown>);
+          }
+          sqlContent += '\n';
+        }
+      } catch (error) {
+        sqlContent += `-- ERROR exporting ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}\n`;
+      }
+    }
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by caller
+    await fs.writeFile(sqlBackupPath, sqlContent);
+    logger.info(`✅ SQL backup created: ${sqlBackupPath}`);
+  }
+
+  /**
+   * Export tenant data to JSON files
+   */
+  private async exportTablesToJson(
+    tenantId: number,
+    dataDir: string,
+    conn: ConnectionWrapper,
+  ): Promise<{ tables: TableNameRow[]; totalRecords: number }> {
+    const tables = await this.getTablesWithTenantId(conn);
+    let totalRecords = 0;
 
     for (const tableRow of tables) {
       const tableName = tableRow.TABLE_NAME;
-
       try {
-        const [data] = await conn.query(`SELECT * FROM \`${tableName}\` WHERE tenant_id = $1`, [
+        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
           tenantId,
         ]);
-
-        if ((data as unknown[]).length > 0) {
-          const jsonPath = path.join(exportDir, `${tableName}.json`);
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: exportDir is validated, tableName comes from DB schema
+        if (data.length > 0) {
+          const jsonPath = path.join(dataDir, `${tableName}.json`);
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated, tableName from DB schema
           await fs.writeFile(jsonPath, JSON.stringify(data, null, 2));
-          logger.info(`Exported ${(data as unknown[]).length} records from ${tableName}`);
+          totalRecords += data.length;
+          logger.info(`Exported ${data.length} records from ${tableName}`);
         }
       } catch (error) {
         logger.warn(
-          `Could not export ${tableName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Could not export ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
         );
       }
     }
 
-    // Create archive
-    const archivePath = `${exportDir}.tar.gz`;
+    return { tables, totalRecords };
+  }
+
+  /**
+   * Create complete tenant backup before deletion
+   * Includes: SQL dump + JSON exports + metadata
+   */
+  private async createTenantDataExport(tenantId: number, conn: ConnectionWrapper): Promise<string> {
+    // 1. Get tenant info
+    const tenantInfo = await conn.query<TenantInfoRow[]>(
+      'SELECT company_name, subdomain, email, created_at FROM tenants WHERE id = $1',
+      [tenantId],
+    );
+    const tenant = tenantInfo[0];
+    const companyName = tenant?.company_name ?? 'unknown';
+
+    // 2. Setup backup directories
+    const sanitizedName = this.sanitizeCompanyName(companyName);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const backupDirName = `${sanitizedName}_${tenantId}_${timestamp}`;
+    const backupDir = `/backups/tenant_deletions/${backupDirName}`;
+    const dataDir = `${backupDir}/data`;
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: sanitizedName removes special chars
+    await fs.mkdir(dataDir, { recursive: true });
+    logger.info(`📦 Creating tenant backup in ${backupDir}`);
+
+    // 3. Create SQL backup
+    await this.createSqlBackup(tenantId, companyName, `${backupDir}/backup.sql`, conn);
+
+    // 4. Export JSON files
+    const { tables, totalRecords } = await this.exportTablesToJson(tenantId, dataDir, conn);
+
+    // 5. Create metadata
+    const metadata = {
+      tenantId,
+      companyName,
+      subdomain: tenant?.subdomain ?? null,
+      email: tenant?.email ?? null,
+      tenantCreatedAt: tenant?.created_at ?? null,
+      backupCreatedAt: new Date().toISOString(),
+      tablesExported: tables.length,
+      totalRecords,
+      backupType: 'pre_deletion',
+      version: '1.0',
+    };
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
+    await fs.writeFile(`${backupDir}/metadata.json`, JSON.stringify(metadata, null, 2));
+
+    // 6. Create archive and store in DB
+    const archivePath = `${backupDir}.tar.gz`;
     const { exec } = await import('child_process');
     const { promisify } = await import('util');
-    const execAsync = promisify(exec);
-
-    await execAsync(`tar -czf ${archivePath} -C /tmp/tenant_exports ${path.basename(exportDir)}`);
-
-    // Store export path in database
-    await conn.query(
-      'INSERT INTO tenant_data_exports (tenant_id, export_path, created_at) VALUES ($1, $2, NOW())',
-      [tenantId, archivePath],
+    await promisify(exec)(
+      `tar -czf "${archivePath}" -C /backups/tenant_deletions "${backupDirName}"`,
     );
 
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: constructed from sanitized values above
+    const archiveStats = await fs.stat(archivePath);
+    await conn.query(
+      `INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES ($1, $2, $3, 'final')`,
+      [tenantId, archivePath, archiveStats.size],
+    );
+    await conn.query(
+      'INSERT INTO tenant_data_exports (tenant_id, file_path, file_size) VALUES ($1, $2, $3)',
+      [tenantId, archivePath, archiveStats.size],
+    );
+
+    logger.info(`📦 Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`);
     return archivePath;
   }
 
@@ -213,10 +347,17 @@ export class TenantDeletionService {
     tenantId: number,
     conn: ConnectionWrapper,
   ): Promise<DeletionLog | null> {
+    // Use SAVEPOINT to recover from FK constraint violations without aborting the whole transaction
+    const savepointName = `sp_${tableName.replace(/[^a-z0-9]/gi, '_')}`;
+
     try {
-      const result = (await conn.query(`DELETE FROM \`${tableName}\` WHERE tenant_id = $1`, [
+      await conn.query(`SAVEPOINT ${savepointName}`);
+
+      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE tenant_id = $1`, [
         tenantId,
       ])) as unknown as ResultSetHeader;
+
+      await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
 
       const deleted = result.affectedRows;
       if (deleted > 0) {
@@ -224,45 +365,15 @@ export class TenantDeletionService {
       }
       return { table: tableName, deleted };
     } catch (error) {
-      logger.error(`❌ Failed to delete from ${tableName}:`, error);
+      // Rollback to savepoint to recover from error (FK constraint, etc.)
+      try {
+        await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+      } catch {
+        // Savepoint might not exist, ignore
+      }
+      logger.warn(`⚠️ Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`);
       return null;
     }
-  }
-
-  /**
-   * Delete from user-related tables (via JOIN with users table)
-   */
-  private async deleteFromUserRelatedTables(
-    tables: TableNameRow[],
-    tenantId: number,
-    conn: ConnectionWrapper,
-  ): Promise<DeletionLog[]> {
-    const deletionLog: DeletionLog[] = [];
-
-    for (const tableRow of tables) {
-      const tableName = tableRow.TABLE_NAME;
-
-      try {
-        const result = (await conn.query(
-          `DELETE t FROM \`${tableName}\` t
-           INNER JOIN users u ON t.user_id = u.id
-           WHERE u.tenant_id = $1`,
-          [tenantId],
-        )) as unknown as ResultSetHeader;
-
-        const deleted = result.affectedRows;
-        if (deleted > 0) {
-          deletionLog.push({ table: `${tableName} (via users)`, deleted });
-          logger.info(`✅ Deleted ${deleted} rows from ${tableName} (user-related)`);
-        }
-      } catch (error) {
-        logger.debug(
-          `Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
-      }
-    }
-
-    return deletionLog;
   }
 
   /**
@@ -270,7 +381,7 @@ export class TenantDeletionService {
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const [admins] = await query<DbUser[]>(
-      'SELECT * FROM users WHERE tenant_id = $1 AND role IN ("admin", "root")',
+      "SELECT * FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
@@ -305,11 +416,11 @@ export class TenantDeletionService {
     connection?: ConnectionWrapper,
   ): Promise<void> {
     const executeAudit = async (conn: ConnectionWrapper): Promise<void> => {
-      const [tenantResults] = await conn.query<TenantInfoRow[]>(
+      const tenantResults = await conn.query<TenantInfoRow[]>(
         'SELECT * FROM tenants WHERE id = $1',
         [tenantId],
       );
-      const tenantInfo = (tenantResults?.[0] as TenantInfoRow | undefined) ?? undefined;
+      const tenantInfo = tenantResults[0];
 
       const userResults = await conn.query<CountResult[]>(
         'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1',
@@ -347,41 +458,306 @@ export class TenantDeletionService {
     }
   }
 
-  /** Execute core table deletions */
+  /**
+   * Maximum number of deletion passes before giving up
+   * Prevents infinite loops in case of circular FK dependencies
+   */
+  private readonly MAX_DELETION_PASSES = 15;
+
+  /**
+   * Execute core table deletions with multi-pass FK dependency resolution
+   *
+   * Strategy:
+   * 1. Get all tables with tenant_id
+   * 2. Multi-pass deletion: retry failed tables until all deleted or no progress
+   * 3. Handle user-related tables with same multi-pass approach
+   * 4. Clear FK references in critical tables before deleting users
+   * 5. Delete users
+   * 6. Delete tenant
+   */
   private async executeDeletions(
     tenantId: number,
-    wrappedConn: ConnectionWrapper,
+    conn: ConnectionWrapper,
   ): Promise<DeletionLog[]> {
     const deletionLog: DeletionLog[] = [];
-    const tables = await this.getTablesWithTenantId(wrappedConn);
-    logger.info(`Found ${tables.length} tables with tenant_id column`);
 
-    for (const tableRow of tables) {
-      const tableName = tableRow.TABLE_NAME;
-      if (this.CRITICAL_TABLES.includes(tableName)) {
-        logger.info(`⏭️ Skipping critical table: ${tableName}`);
-        continue;
-      }
-      const result = await this.deleteFromTable(tableName, tenantId, wrappedConn);
-      if (result) deletionLog.push(result);
+    // Phase 1: Get all tables with tenant_id column
+    const allTables = await this.getTablesWithTenantId(conn);
+    logger.info(`Found ${allTables.length} tables with tenant_id column`);
+
+    // Separate tables into categories
+    const regularTables = allTables
+      .map((t: TableNameRow) => t.TABLE_NAME)
+      .filter(
+        (name: string) =>
+          !this.CRITICAL_TABLES.includes(name) && name !== 'users' && name !== 'tenants',
+      );
+
+    // Phase 2: Multi-pass deletion of regular tables
+    const regularResults = await this.multiPassDelete(regularTables, tenantId, conn);
+    deletionLog.push(...regularResults.deleted);
+
+    if (regularResults.stuck.length > 0) {
+      logger.warn(
+        `Could not delete ${regularResults.stuck.length} tables after ${this.MAX_DELETION_PASSES} passes: ${regularResults.stuck.join(', ')}`,
+      );
     }
 
-    // Delete user-related tables
-    const userRelatedTables = await this.getUserRelatedTables(wrappedConn);
-    const userDeletions = await this.deleteFromUserRelatedTables(
-      userRelatedTables,
-      tenantId,
-      wrappedConn,
-    );
-    deletionLog.push(...userDeletions);
+    // Phase 3: Delete user-related tables (tables with user_id FK)
+    const userRelatedTables = await this.getUserRelatedTables(conn);
+    const userTableNames = userRelatedTables.map((t: TableNameRow) => t.TABLE_NAME);
+    const userResults = await this.multiPassDeleteUserRelated(userTableNames, tenantId, conn);
+    deletionLog.push(...userResults.deleted);
 
-    // Delete tenant record
-    const tenantResult = (await wrappedConn.query('DELETE FROM tenants WHERE id = $1', [
-      tenantId,
-    ])) as unknown as ResultSetHeader;
-    deletionLog.push({ table: 'tenants', deleted: tenantResult.affectedRows });
+    // Phase 4: Clear FK references in critical tables before deleting users
+    // This allows us to delete users without violating FK constraints
+    await this.clearCriticalTableUserReferences(tenantId, conn);
+
+    // Phase 5: Delete users
+    const usersResult = await this.deleteFromTableDirect('users', tenantId, conn);
+    if (usersResult) {
+      deletionLog.push(usersResult);
+    }
+
+    // Phase 6: Delete tenant record
+    const tenantResult = await this.deleteFromTableDirect('tenants', tenantId, conn, 'id');
+    if (tenantResult) {
+      deletionLog.push(tenantResult);
+    }
 
     return deletionLog;
+  }
+
+  /**
+   * Multi-pass deletion for tables with tenant_id
+   * Keeps retrying failed tables until all succeed or no progress
+   */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  private async multiPassDelete(
+    tableNames: string[],
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<{ deleted: DeletionLog[]; stuck: string[] }> {
+    const deletionLog: DeletionLog[] = [];
+    let pendingTables = [...tableNames];
+
+    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+      logger.info(
+        `🔄 Deletion pass ${pass}/${this.MAX_DELETION_PASSES}: ${pendingTables.length} tables remaining`,
+      );
+
+      const failedTables: string[] = [];
+      let deletedCount = 0;
+
+      for (const tableName of pendingTables) {
+        const result = await this.deleteFromTable(tableName, tenantId, conn);
+
+        if (result !== null) {
+          // Success - table processed (even if 0 rows deleted)
+          deletionLog.push(result);
+          deletedCount++;
+        } else {
+          // Failed due to FK constraint - retry in next pass
+          failedTables.push(tableName);
+        }
+      }
+
+      logger.info(
+        `   Pass ${pass} complete: ${deletedCount} tables processed, ${failedTables.length} deferred`,
+      );
+
+      // Check for progress
+      if (deletedCount === 0 && failedTables.length > 0) {
+        // No progress this pass - likely circular dependency or unresolvable FK
+        logger.warn(`⚠️ No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`);
+        return { deleted: deletionLog, stuck: failedTables };
+      }
+
+      pendingTables = failedTables;
+    }
+
+    return { deleted: deletionLog, stuck: pendingTables };
+  }
+
+  /**
+   * Process a single user-related table deletion
+   * @returns true if processed successfully, false if FK constraint failed (needs retry)
+   */
+  private async processUserRelatedTable(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+    deletionLog: DeletionLog[],
+  ): Promise<boolean> {
+    const result = await this.deleteFromUserRelatedTable(tableName, tenantId, conn);
+
+    if (result === null) {
+      return false;
+    }
+
+    if (result.deleted > 0) {
+      deletionLog.push(result);
+    }
+    return true;
+  }
+
+  /**
+   * Check if deletion pass made no progress (all tables failed)
+   */
+  private hasNoProgress(failedCount: number, pendingCount: number): boolean {
+    return failedCount === pendingCount && failedCount > 0;
+  }
+
+  /**
+   * Multi-pass deletion for user-related tables (via user_id FK)
+   */
+  private async multiPassDeleteUserRelated(
+    tableNames: string[],
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<{ deleted: DeletionLog[]; stuck: string[] }> {
+    const deletionLog: DeletionLog[] = [];
+    let pendingTables = [...tableNames];
+
+    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+      const failedTables: string[] = [];
+
+      for (const tableName of pendingTables) {
+        const success = await this.processUserRelatedTable(tableName, tenantId, conn, deletionLog);
+        if (!success) {
+          failedTables.push(tableName);
+        }
+      }
+
+      if (this.hasNoProgress(failedTables.length, pendingTables.length)) {
+        return { deleted: deletionLog, stuck: failedTables };
+      }
+
+      pendingTables = failedTables;
+    }
+
+    return { deleted: deletionLog, stuck: pendingTables };
+  }
+
+  /**
+   * Delete from a single user-related table using JOIN with users
+   */
+  private async deleteFromUserRelatedTable(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<DeletionLog | null> {
+    const savepointName = `sp_user_${tableName.replace(/[^a-z0-9]/gi, '_')}`;
+
+    try {
+      await conn.query(`SAVEPOINT ${savepointName}`);
+
+      const result = (await conn.query(
+        `DELETE FROM "${tableName}"
+         USING users u
+         WHERE "${tableName}".user_id = u.id AND u.tenant_id = $1`,
+        [tenantId],
+      )) as unknown as ResultSetHeader;
+
+      await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
+
+      return { table: `${tableName} (via users)`, deleted: result.affectedRows };
+    } catch {
+      try {
+        await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+      } catch {
+        // Ignore rollback errors
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Clear FK references to users in critical tables
+   * This allows deleting users without FK violations
+   * Uses SAVEPOINT to prevent transaction abort on NOT NULL constraint violations
+   */
+  private async clearCriticalTableUserReferences(
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<void> {
+    // Helper to safely update with SAVEPOINT (prevents transaction abort)
+    const safeUpdate = async (
+      tableName: string,
+      sql: string,
+      params: unknown[],
+    ): Promise<boolean> => {
+      const savepointName = `sp_clear_${tableName}`;
+      try {
+        await conn.query(`SAVEPOINT ${savepointName}`);
+        await conn.query(sql, params);
+        await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
+        logger.info(`✅ Cleared user references in ${tableName}`);
+        return true;
+      } catch (error) {
+        try {
+          await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+        } catch {
+          // Ignore rollback errors
+        }
+        logger.warn(
+          `⚠️ Could not clear ${tableName} user refs: ${error instanceof Error ? error.message : 'Unknown'}`,
+        );
+        return false;
+      }
+    };
+
+    // tenant_deletion_queue has created_by -> users FK (NULLable)
+    await safeUpdate(
+      'tenant_deletion_queue',
+      `UPDATE tenant_deletion_queue
+       SET created_by = NULL,
+           second_approver_id = NULL,
+           emergency_stopped_by = NULL
+       WHERE tenant_id = $1`,
+      [tenantId],
+    );
+
+    // deletion_audit_trail has deleted_by -> users FK
+    // Note: deleted_by may have NOT NULL constraint, so this might fail
+    await safeUpdate(
+      'deletion_audit_trail',
+      `UPDATE deletion_audit_trail SET deleted_by = NULL WHERE tenant_id = $1`,
+      [tenantId],
+    );
+
+    // legal_holds has created_by and released_by -> users FK
+    await safeUpdate(
+      'legal_holds',
+      `UPDATE legal_holds SET created_by = NULL, released_by = NULL WHERE tenant_id = $1`,
+      [tenantId],
+    );
+  }
+
+  /**
+   * Direct table deletion without SAVEPOINT (for final cleanup)
+   */
+  private async deleteFromTableDirect(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+    idColumn: string = 'tenant_id',
+  ): Promise<DeletionLog | null> {
+    try {
+      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE ${idColumn} = $1`, [
+        tenantId,
+      ])) as unknown as ResultSetHeader;
+
+      if (result.affectedRows > 0) {
+        logger.info(`✅ Deleted ${result.affectedRows} rows from ${tableName}`);
+      }
+      return { table: tableName, deleted: result.affectedRows };
+    } catch (error) {
+      logger.error(
+        `❌ Failed to delete from ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      throw error; // Re-throw for final tables - these must succeed
+    }
   }
 
   /**
@@ -406,13 +782,8 @@ export class TenantDeletionService {
         logger.info(`GDPR export created: ${exportPath}`);
         await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress, wrappedConn);
 
-        await wrappedConn.query('SET FOREIGN_KEY_CHECKS = 0');
-        let deletionLog: DeletionLog[];
-        try {
-          deletionLog = await this.executeDeletions(tenantId, wrappedConn);
-        } finally {
-          await wrappedConn.query('SET FOREIGN_KEY_CHECKS = 1');
-        }
+        // Delete all tenant data (uses SAVEPOINT to handle FK constraint violations gracefully)
+        const deletionLog = await this.executeDeletions(tenantId, wrappedConn);
 
         await wrappedConn.query(
           'UPDATE tenant_deletion_queue SET status = $1, completed_at = NOW() WHERE id = $2',
@@ -422,10 +793,19 @@ export class TenantDeletionService {
         await this.verifyCompleteDeletion(tenantId, wrappedConn);
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error) {
-        await wrappedConn.query(
-          'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
-          ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
-        );
+        // Log the ORIGINAL error before trying any recovery
+        logger.error(`DELETION FAILED for tenant ${tenantId}:`, error);
+
+        // Try to update queue status, but this may fail if transaction is aborted
+        try {
+          await wrappedConn.query(
+            'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
+            ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
+          );
+        } catch (updateError) {
+          // Queue update failed (transaction aborted), original error already logged above
+          logger.debug('Could not update queue status:', updateError);
+        }
         throw error;
       }
     });
@@ -494,7 +874,7 @@ export class TenantDeletionService {
       }
 
       const countResult = await conn.query<CountResult[]>(
-        `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = $1`,
+        `SELECT COUNT(*) as count FROM "${tableName}" WHERE tenant_id = $1`,
         [tenantId],
       );
 
@@ -536,7 +916,7 @@ export class TenantDeletionService {
 
     // Check legal holds
     const [legalHolds] = await query<RowDataPacket[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
 
@@ -546,19 +926,23 @@ export class TenantDeletionService {
 
     // Create queue entry
     const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 days grace period
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
 
-    const [result] = await execute<ResultSetHeader>(
+    const [rows] = await execute<{ id: number }[]>(
       `INSERT INTO tenant_deletion_queue
        (tenant_id, created_by, scheduled_deletion_date, status, approval_status, deletion_reason, ip_address)
-       VALUES ($1, $2, $3, 'pending_approval', 'pending', $4, $5)`,
+       VALUES ($1, $2, $3, 'pending_approval', 'pending', $4, $5)
+       RETURNING id`,
       [tenantId, requestedBy, scheduledDate, reason ?? null, ipAddress ?? null],
     );
 
-    const queueId = result.insertId;
+    const queueId = rows[0]?.id ?? 0;
 
     // Update tenant status
-    await execute('UPDATE tenants SET deletion_status = $1 WHERE id = $2', ['scheduled', tenantId]);
+    await execute('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
+      'marked_for_deletion',
+      tenantId,
+    ]);
 
     // Send warning emails
     await this.sendDeletionWarningEmails(tenantId, scheduledDate);
@@ -572,16 +956,24 @@ export class TenantDeletionService {
   }
 
   /**
-   * Cancel deletion request
+   * Cancel deletion request (supports both pending_approval and queued status)
+   * @param tenantId - The tenant ID
+   * @param cancelledBy - User ID who cancelled
+   * @param isEmergencyStop - If true, sets emergency_stop fields for audit trail
    */
-  async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
+  async cancelDeletion(
+    tenantId: number,
+    cancelledBy: number,
+    isEmergencyStop: boolean = false,
+  ): Promise<void> {
+    // Support both pending_approval AND queued status for emergency stop
     const [queue] = await query<QueueRow[]>(
-      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status = 'pending_approval'",
+      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'queued')",
       [tenantId],
     );
 
     if (queue.length === 0) {
-      throw new Error('No pending deletion found');
+      throw new Error('No active deletion found (must be pending_approval or queued)');
     }
 
     const firstQueueItem = queue[0];
@@ -589,14 +981,29 @@ export class TenantDeletionService {
       throw new Error('No pending deletion found');
     }
 
-    await execute(
-      "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
-      [firstQueueItem.id],
-    );
+    if (isEmergencyStop) {
+      // Emergency stop: set all tracking fields for audit
+      await execute(
+        `UPDATE tenant_deletion_queue
+         SET status = 'cancelled',
+             completed_at = NOW(),
+             emergency_stop = true,
+             emergency_stopped_at = NOW(),
+             emergency_stopped_by = $1
+         WHERE id = $2`,
+        [cancelledBy, firstQueueItem.id],
+      );
+      logger.warn(`EMERGENCY STOP: Tenant ${tenantId} deletion stopped by user ${cancelledBy}`);
+    } else {
+      // Normal cancel
+      await execute(
+        "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
+        [firstQueueItem.id],
+      );
+      logger.info(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
+    }
 
     await execute('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
-
-    logger.info(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
   }
 
   /**
@@ -659,7 +1066,7 @@ export class TenantDeletionService {
 
     // Check blockers
     const [legalHolds] = await query<LegalHoldResult[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = 1',
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
 
@@ -680,7 +1087,7 @@ export class TenantDeletionService {
 
         try {
           const countResult = await wrappedConn.query<CountResult[]>(
-            `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = $1`,
+            `SELECT COUNT(*) as count FROM "${tableName}" WHERE tenant_id = $1`,
             [tenantId],
           );
 
@@ -724,19 +1131,21 @@ export class TenantDeletionService {
   ): Promise<{ queueId: number; scheduledDate: Date }> {
     const queueId = await this.requestDeletion(tenantId, requestedBy, reason, ipAddress);
     const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 days grace period
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
     return { queueId, scheduledDate };
   }
 
   /**
    * Approve a deletion request (process it immediately)
+   * NOTE: approved_by column does not exist in DB schema - using second_approver_id instead
    */
   async approveDeletion(queueId: number, approvedBy: number, _comment?: string): Promise<void> {
     // Update approval status
+    // Using second_approver_id since approved_by column doesn't exist in current schema
     await execute(
       `UPDATE tenant_deletion_queue
        SET approval_status = 'approved',
-           approved_by = $1,
+           second_approver_id = $1,
            approved_at = NOW(),
            status = 'queued'
        WHERE id = $2 AND approval_status = 'pending'`,
@@ -767,9 +1176,10 @@ export class TenantDeletionService {
 
   /**
    * Emergency stop for deletion
+   * Sets emergency_stop = true and tracks who stopped it
    */
   async emergencyStop(tenantId: number, stoppedBy: number): Promise<void> {
-    await this.cancelDeletion(tenantId, stoppedBy);
+    await this.cancelDeletion(tenantId, stoppedBy, true);
   }
 
   /**

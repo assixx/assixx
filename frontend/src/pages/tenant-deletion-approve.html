@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tenant-Löschung genehmigen - Assixx</title>
+    <link rel="stylesheet" href="/styles/main.css" />
+  </head>
+  <body class="min-h-screen flex items-center justify-center p-5">
+    <div class="card w-full max-w-[500px] text-center animate-fade-in-up">
+      <!-- Warning Icon -->
+      <div
+        class="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
+      >
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+
+      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">Tenant-Löschung genehmigen</h1>
+
+      <p class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-6">
+        Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu genehmigen. Nach der Genehmigung beginnt die
+        <strong>30-tägige Grace Period</strong>
+        .
+      </p>
+
+      <!-- Queue Info -->
+      <div id="queueInfo" class="p-4 mb-6 border border-[rgb(33_150_243/20%)] rounded-[var(--radius-lg)] bg-[rgb(33_150_243/5%)]">
+        <div class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]">
+          <span class="text-sm text-[var(--color-text-secondary)]">Queue ID:</span>
+          <span id="queueIdDisplay" class="text-sm font-semibold text-[var(--color-text-primary)]">-</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]">
+          <span class="text-sm text-[var(--color-text-secondary)]">Tenant ID:</span>
+          <span id="tenantIdDisplay" class="text-sm font-semibold text-[var(--color-text-primary)]">-</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-sm text-[var(--color-text-secondary)]">Angefordert von:</span>
+          <span id="requestedByDisplay" class="text-sm font-semibold text-[var(--color-text-primary)]">-</span>
+        </div>
+      </div>
+
+      <!-- Warning Alert -->
+      <div class="alert alert--danger mb-6 text-left">
+        <div class="alert__icon">
+          <i class="fas fa-skull-crossbones"></i>
+        </div>
+        <div class="alert__content">
+          <p class="alert__title">LETZTE WARNUNG!</p>
+          <p class="alert__message">Nach der Genehmigung werden nach 30 Tagen ALLE Daten unwiderruflich gelöscht!</p>
+        </div>
+      </div>
+
+      <!-- Approval Form -->
+      <form id="approvalForm" class="text-left">
+        <!-- Confirmation Input -->
+        <div class="form-field mb-4">
+          <label class="form-field__label">
+            Geben Sie zur Bestätigung
+            <strong class="text-red-500">LÖSCHEN</strong>
+            ein:
+          </label>
+          <input type="text" id="confirmationInput" class="form-field__control" placeholder="LÖSCHEN" autocomplete="off" required />
+        </div>
+
+        <!-- Password Input -->
+        <div class="form-field mb-6">
+          <label for="passwordInput" class="form-field__label">Ihr Root-Passwort zur Verifizierung:</label>
+          <input
+            type="password"
+            id="passwordInput"
+            class="form-field__control"
+            placeholder="Passwort eingeben"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <a href="/tenant-deletion-status" class="btn btn-cancel flex-1">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Abbrechen
+          </a>
+          <button type="submit" id="approveBtn" class="btn btn-danger flex-1" disabled>
+            <i class="fas fa-check mr-2"></i>
+            Genehmigen
+          </button>
+        </div>
+      </form>
+
+      <!-- Error Message -->
+      <div id="errorMessage" class="alert alert--danger mt-4 u-hidden">
+        <div class="alert__content">
+          <p id="errorText" class="alert__message"></p>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div id="successMessage" class="alert alert--success mt-4 u-hidden">
+        <div class="alert__content">
+          <p class="alert__message">Löschung erfolgreich genehmigt! 30 Tage Grace Period beginnt.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approval Controller -->
+    <script type="module" src="/scripts/tenant-deletion-approve/index.ts"></script>
+  </body>
+</html>

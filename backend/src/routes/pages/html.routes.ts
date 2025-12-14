@@ -338,6 +338,13 @@ router.get(
   servePage('tenant-deletion-status'),
 );
 router.get(
+  '/tenant-deletion-approve',
+  rateLimiter.admin,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
+  servePage('tenant-deletion-approve'),
+);
+router.get(
   '/logs',
   rateLimiter.admin,
   authenticateV2,

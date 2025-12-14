@@ -10,7 +10,7 @@ import { UsersRow } from '../../../types/database-rows.types.js';
 import type { DatabaseTenant } from '../../../types/models.js';
 import { CountResult, IdResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { ResultSetHeader, RowDataPacket, execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
 import { logger } from '../../../utils/logger.js';
 import rootLog from '../logs/logs.service.js';
@@ -583,13 +583,14 @@ class RootService {
 
       return users.map((user: UsersRow) => {
         // Build base object (exactOptionalPropertyTypes compliant)
+        // UPDATED: isActive as number (0,1,3,4) not boolean (2025-12-12)
         const result: RootUser = {
           id: user.id,
           username: user.username,
           email: user.email,
           firstName: user.first_name ?? '',
           lastName: user.last_name ?? '',
-          isActive: Boolean(user.is_active),
+          isActive: user.is_active,
           createdAt:
             typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
           updatedAt:
@@ -637,6 +638,7 @@ class RootService {
       }
 
       // Build base object (exactOptionalPropertyTypes compliant)
+      // UPDATED: isActive as number (0,1,3,4) not boolean (2025-12-12)
       const result: RootUser = {
         id: user.id,
         username: user.username,
@@ -644,7 +646,7 @@ class RootService {
         firstName: user.first_name ?? '',
         lastName: user.last_name ?? '',
         employeeNumber: user.employee_number,
-        isActive: Boolean(user.is_active),
+        isActive: user.is_active,
         employeeId: user.employee_id ?? '',
         createdAt:
           typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
@@ -740,11 +742,12 @@ class RootService {
 
       // Create root user (N:M REFACTORING: department_id removed, has_full_access = true for root)
       // CRITICAL: username = email (always lowercase)
-      const [result] = await execute<ResultSetHeader>(
+      const [rows] = await execute<{ id: number }[]>(
         `INSERT INTO users (
           username, email, password, first_name, last_name,
           role, position, notes, employee_number, is_active, has_full_access, tenant_id, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, 1, $10, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, TRUE, $10, NOW(), NOW())
+        RETURNING id`,
         [
           normalizedEmail, // username = email (lowercase)
           normalizedEmail, // email (lowercase)
@@ -759,18 +762,17 @@ class RootService {
         ],
       );
 
+      const userId = rows[0]?.id ?? 0;
+
       // Generate and update employee_id
       // POSTGRESQL FIX: Parameters must be $1, $2 in order they appear in array
-      const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
-      await execute('UPDATE users SET employee_id = $1 WHERE id = $2', [
-        employeeId,
-        result.insertId,
-      ]);
+      const employeeId = generateEmployeeId(subdomain, 'root', userId);
+      await execute('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
 
       // N:M REFACTORING: Root users have has_full_access=1, no individual department assignments needed
 
-      logger.info('[RootService.createRootUser] Created with ID:', result.insertId);
-      return result.insertId;
+      logger.info('[RootService.createRootUser] Created with ID:', userId);
+      return userId;
     } catch (error: unknown) {
       this.logCreationError(error);
       if (error instanceof ServiceError) throw error;
