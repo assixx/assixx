@@ -57,7 +57,6 @@ export default [
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',
-      'backend/src/register-ts.js',
       'backend/src/__tests__/**',
       'backend/**/*.test.ts',
       'backend/**/*.spec.ts',

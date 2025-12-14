@@ -77,7 +77,6 @@
 .text-left {
   border-radius: var(--radius-xl);
   text-align: left !important;
-  background: #8b8b8b1f;
 }
 
 .text-right {

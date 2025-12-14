@@ -9,9 +9,8 @@
  * - index.ts: Event orchestration and business logic
  */
 
-import { showError } from '../auth/index.js';
-import { showErrorAlert } from '../utils/alerts.js';
-import { checkDeletionStatus, deleteTenant, getRootUserCount } from './api.js';
+import { showErrorAlert, showSuccessAlert } from '../utils/alerts.js';
+import { deleteTenant, getDeletionStatus, getRootUserCount } from './api.js';
 import type { ActionHandler } from './types.js';
 import * as ui from './ui.js';
 
@@ -43,13 +42,15 @@ class AccountSettingsController {
 
   /**
    * Check for pending deletion status on page load
-   * Show deletion status button if pending deletion exists
+   * Show prominent banner with deletion status if pending deletion exists
    */
   private checkForPendingDeletion(): void {
-    void checkDeletionStatus()
-      .then((hasPending) => {
-        if (hasPending) {
-          ui.showDeletionStatusButton();
+    void getDeletionStatus()
+      .then((statusData) => {
+        if (statusData !== null) {
+          console.info('[AccountSettings] Pending deletion found:', statusData);
+          ui.showPendingDeletionBanner(statusData);
+          ui.hideDeleteButton(); // Hide "Tenant löschen" button when deletion is pending
         }
         return undefined; // Explicit return for ESLint promise/always-return
       })
@@ -208,6 +209,9 @@ class AccountSettingsController {
       const reason = ui.getDeleteReason();
       const result = await deleteTenant(reason);
 
+      // Show success toast
+      showSuccessAlert('Löschanfrage erfolgreich eingereicht! Genehmigung von zweitem Root-Benutzer erforderlich.');
+
       // Show status modal with data from server response (API v2 camelCase)
       ui.showDeletionStatusModal({
         queueId: result.queueId,
@@ -216,13 +220,10 @@ class AccountSettingsController {
 
       // Close delete confirmation modal
       ui.closeDeleteModal();
-
-      // Show the deletion status button now that there's a pending deletion
-      ui.showDeletionStatusButton();
     } catch (error) {
       console.error('Error deleting tenant:', error);
       const message = error instanceof Error ? error.message : 'Fehler beim Löschen des Tenants';
-      showError(message);
+      showErrorAlert(message);
     } finally {
       ui.setDeleteButtonLoading(false);
     }

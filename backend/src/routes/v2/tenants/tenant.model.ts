@@ -92,7 +92,7 @@ async function createRootUser(
   const employeeNumber = generateTemporaryEmployeeNumber();
 
   // Root users always get has_full_access = true for full tenant access
-  const [userResult] = await connection.query<ResultSetHeader>(
+  const [userRows] = await connection.query<{ id: number }[]>(
     `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access)
        VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true)
        RETURNING id`,
@@ -108,7 +108,7 @@ async function createRootUser(
     ],
   );
 
-  const userId = userResult.insertId;
+  const userId = userRows[0]?.id ?? 0;
 
   // Generate employee_id
   const { generateEmployeeId } = await import('../../../utils/employeeIdGenerator.js');
@@ -164,14 +164,14 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14 Tage Trial
 
-    const [tenantResult] = await connection.query<ResultSetHeader>(
+    const [tenantRows] = await connection.query<{ id: number }[]>(
       `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
       [company_name, subdomain, email, phone, address, trialEndsAt, admin_email],
     );
 
-    const tenantId = tenantResult.insertId;
+    const tenantId = tenantRows[0]?.id ?? 0;
 
     // 3. Erstelle Root-Benutzer
     const userId = await createRootUser(connection, tenantId, tenantData);

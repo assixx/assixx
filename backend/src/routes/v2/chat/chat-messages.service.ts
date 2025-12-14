@@ -5,7 +5,7 @@
  */
 import { log, error as logError } from 'console';
 
-import type { PoolConnection, ResultSetHeader, RowDataPacket } from '../../../utils/db.js';
+import type { PoolConnection, RowDataPacket } from '../../../utils/db.js';
 import { execute, transaction } from '../../../utils/db.js';
 import { ServiceError } from '../users/users.service.js';
 import type {
@@ -157,10 +157,11 @@ async function insertMessage(
   senderId: number,
   data: SendMessageData,
 ): Promise<number> {
-  const [result] = await execute<ResultSetHeader>(
+  const [rows] = await execute<{ id: number }[]>(
     `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
        attachment_path, attachment_name, attachment_type, attachment_size, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+     RETURNING id`,
     [
       tenantId,
       conversationId,
@@ -172,7 +173,7 @@ async function insertMessage(
       data.attachment?.size ?? null,
     ],
   );
-  return result.insertId;
+  return rows[0]?.id ?? 0;
 }
 
 /**

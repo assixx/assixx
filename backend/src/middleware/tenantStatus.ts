@@ -8,6 +8,14 @@ import type { AuthUser, AuthenticatedRequest } from '../types/request.types.js';
 import { RowDataPacket, query } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
+/**
+ * Grace period before tenant deletion (in minutes)
+ * Default: 43200 (30 days)
+ * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
+ */
+const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
+const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
+
 interface TenantStatusRow extends RowDataPacket {
   deletion_status: 'active' | 'marked_for_deletion' | 'suspended' | 'deleting';
   deletion_requested_at?: Date;
@@ -226,7 +234,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
     // Add optional properties only when defined
     if (tenant.deletion_status === 'marked_for_deletion' && tenant.deletion_requested_at) {
       const scheduledDate = new Date(tenant.deletion_requested_at);
-      scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 day grace period
+      scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
 
       result.deletionDate = scheduledDate;
       result.daysRemaining = Math.max(

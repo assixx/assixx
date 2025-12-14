@@ -4,50 +4,70 @@
  */
 
 import { fetchWithAuth } from '../auth/index.js';
-import type { DeletionQueueResponse, RootUsersResponse } from './types.js';
+import type { DeletionQueueResponse, DeletionStatusData, RootUsersResponse } from './types.js';
 
 /**
- * Check if deletion data indicates an active deletion request
- * API v2 format: { success: true, data: [...] } or { success: true, data: { queueId, ... } }
+ * API v2 wrapped response format
  */
-function hasActiveDeletion(data: unknown): boolean {
-  if (data === null || data === undefined) return false;
-
-  // API v2 wrapped response
-  if (typeof data === 'object' && 'data' in data) {
-    const response = data as { data: unknown };
-    const innerData = response.data;
-
-    // Check if data is array with items
-    if (Array.isArray(innerData)) return innerData.length > 0;
-
-    // Check if data has queueId
-    if (typeof innerData === 'object' && innerData !== null && 'queueId' in innerData) {
-      return true;
-    }
-  }
-
-  return false;
+interface ApiV2Response<T> {
+  success: boolean;
+  data: T;
 }
 
 /**
- * Check for pending tenant deletion status
- * @returns Promise<boolean> - True if pending deletion exists
+ * Extract deletion status data from API response
+ * API v2 format: { success: true, data: { queueId, status, ... } }
+ * @returns DeletionStatusData if valid, null otherwise
  */
-export async function checkDeletionStatus(): Promise<boolean> {
+function extractDeletionData(data: unknown): DeletionStatusData | null {
+  if (data === null || data === undefined) return null;
+
+  // Handle API v2 wrapped response
+  if (typeof data === 'object' && 'data' in data) {
+    const response = data as ApiV2Response<unknown>;
+    const innerData = response.data;
+
+    // Check if data has queueId (indicates valid deletion status)
+    if (typeof innerData === 'object' && innerData !== null && 'queueId' in innerData) {
+      return innerData as DeletionStatusData;
+    }
+  }
+
+  // Handle unwrapped response (direct data object)
+  if (typeof data === 'object' && 'queueId' in data) {
+    return data as DeletionStatusData;
+  }
+
+  return null;
+}
+
+/**
+ * Get pending tenant deletion status with full data
+ * @returns Promise<DeletionStatusData | null> - Full status data or null if none
+ */
+export async function getDeletionStatus(): Promise<DeletionStatusData | null> {
   try {
     const endpoint = '/api/v2/root/tenant/deletion-status';
     const response = await fetchWithAuth(endpoint);
 
-    if (!response.ok) return false;
+    if (!response.ok) return null;
 
     const data = (await response.json()) as unknown;
-    return hasActiveDeletion(data);
+    return extractDeletionData(data);
   } catch {
-    // Silent fail - no pending deletion found
-    console.info('No pending deletion found');
-    return false;
+    console.info('[AccountSettings] No pending deletion found');
+    return null;
   }
+}
+
+/**
+ * Check for pending tenant deletion status (legacy boolean version)
+ * @returns Promise<boolean> - True if pending deletion exists
+ * @deprecated Use getDeletionStatus() for full data
+ */
+export async function checkDeletionStatus(): Promise<boolean> {
+  const status = await getDeletionStatus();
+  return status !== null;
 }
 
 /**
@@ -89,8 +109,6 @@ export async function deleteTenant(reason?: string): Promise<DeletionQueueRespon
     throw new Error(error.error ?? 'Fehler beim Löschen des Tenants');
   }
 
-  const result = (await response.json()) as { success: boolean; data: DeletionQueueResponse };
-
-  // API v2 wraps response in { success: true, data: {...} }
-  return result.data;
+  // fetchWithAuth uses apiClient which already unwraps the response
+  return (await response.json()) as DeletionQueueResponse;
 }

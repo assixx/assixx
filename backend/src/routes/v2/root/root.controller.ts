@@ -1158,9 +1158,14 @@ class RootController {
       }
       const queueId = Number.parseInt(queueIdParam);
 
-      await tenantDeletionService.triggerEmergencyStop(queueId, req.user.id);
+      // Use tenant_id from authenticated user (the user's tenant)
+      const tenantId = req.user.tenant_id;
 
-      logger.error(`EMERGENCY STOP: User ${req.user.email} stopped deletion ${queueId}`);
+      await tenantDeletionService.triggerEmergencyStop(tenantId, req.user.id);
+
+      logger.warn(
+        `EMERGENCY STOP: User ${req.user.email} stopped deletion for tenant ${tenantId} (queue ${queueId})`,
+      );
 
       res.json({ message: 'Emergency stop activated' });
     } catch (error: unknown) {

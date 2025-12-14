@@ -18,7 +18,6 @@
       import { setHTML } from '/utils/dom-utils.js';
       window.setHTML = setHTML; // Make available globally
     </script>
-    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/tenant-deletion-status.css" />
   </head>
@@ -36,95 +35,45 @@
         <div class="container">
           <div class="card">
             <div class="card__header">
-              <h2 class="card-title">Tenant Löschstatus</h2>
-              <p class="text-secondary u-mt-text">Übersicht aller Löschanfragen und deren Status</p>
+              <h2 class="card__title">
+                <i class="fas fa-trash-alt mr-2"></i>
+                Tenant Löschstatus
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Löschanfragen und deren Status</p>
             </div>
 
-            <!-- Prozess-Erklärung -->
-            <div
-              class="process-info"
-              style="
-                background: rgba(33, 150, 243, 0.05);
-                border: 1px solid rgba(33, 150, 243, 0.2);
-                border-radius: 8px;
-                padding: 20px;
-                margin: 16px;
-              "
-            >
-              <h3 class="text-primary" style="margin-bottom: 16px">
-                <i class="fas fa-info-circle"></i>
-                Löschprozess & Rechtliche Konformität
-              </h3>
-
-              <div style="display: grid; gap: 16px">
-                <div>
-                  <h4 class="text-primary">📋 Zwei-Personen-Prinzip (DSGVO-konform)</h4>
-                  <ul class="text-secondary" style="margin-left: 20px">
-                    <li>Root-User 1 beantragt Löschung</li>
-                    <li>Root-User 2 muss genehmigen (nicht der Ersteller)</li>
-                    <li>24h Cooling-Off Periode (kann für Entwicklung auf 0 gesetzt werden)</li>
-                    <li>30 Tage Nachfrist nach Genehmigung (Grace Period)</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 class="text-primary">🗑️ Was wird gelöscht?</h4>
-                  <ul class="text-secondary" style="margin-left: 20px">
-                    <li>Alle Benutzerdaten und Profile</li>
-                    <li>Dokumente und Dateien</li>
-                    <li>Abteilungen, Teams, Schichten</li>
-                    <li>KVP-Vorschläge und Umfragen</li>
-                    <li>Chat-Nachrichten und Kalendereinträge</li>
-                    <li>Logs und Audit-Trail</li>
-                    <li>Alle tenant-spezifischen Daten</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 class="text-primary">⏱️ Zeitlicher Ablauf</h4>
-                  <ul class="text-secondary" style="margin-left: 20px">
-                    <li>
-                      <strong>Sofort:</strong>
-                      Tenant wird als "zur Löschung markiert"
-                    </li>
-                    <li>
-                      <strong>24h:</strong>
-                      Cooling-Off (Bedenkzeit) - Genehmigung noch nicht möglich
-                    </li>
-                    <li>
-                      <strong>Nach 24h:</strong>
-                      Zweiter Root-User kann genehmigen
-                    </li>
-                    <li>
-                      <strong>+30 Tage:</strong>
-                      Grace Period - Tenant kann noch reaktiviert werden
-                    </li>
-                    <li>
-                      <strong>Nach 30 Tagen:</strong>
-                      Automatische endgültige Löschung durch Worker
-                    </li>
-                    <li>
-                      <strong>Löschdauer:</strong>
-                      Ca. 5-30 Minuten je nach Datenmenge
-                    </li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 class="text-primary">🔒 Sicherheit & Backup</h4>
-                  <ul class="text-secondary" style="margin-left: 20px">
-                    <li>Vollständiges Backup vor Löschung</li>
-                    <li>30 Tage Aufbewahrung des Backups</li>
-                    <li>Audit-Log aller Aktionen</li>
-                    <li>Emergency Stop möglich während Löschvorgang</li>
-                    <li>DSGVO-konform: Recht auf Löschung</li>
-                  </ul>
+            <div class="card__body">
+              <!-- Prozess-Erklärung (Kompakt) -->
+              <div class="process-info">
+                <h3 class="process-info__title">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  Löschprozess (DSGVO-konform)
+                </h3>
+                <div class="process-info__content">
+                  <span class="process-info__item">
+                    <strong>Zwei-Personen-Prinzip:</strong>
+                    Root 1 beantragt, Root 2 genehmigt
+                  </span>
+                  <span class="process-info__item">
+                    <strong>24h Cooling-Off</strong>
+                    vor Genehmigung
+                  </span>
+                  <span class="process-info__item">
+                    <strong>30 Tage Grace Period</strong>
+                    nach Genehmigung
+                  </span>
+                  <span class="process-info__item">
+                    <strong>Backup</strong>
+                    vor Löschung
+                  </span>
+                  <span class="process-info__item">
+                    <strong>Emergency Stop</strong>
+                    jederzeit möglich
+                  </span>
                 </div>
               </div>
-            </div>
-            <div class="card-body">
               <div id="statusContent" class="status-grid">
-                <!-- Status cards will be inserted here -->
+                <!-- Status cards will be inserted here by TypeScript -->
               </div>
             </div>
           </div>
@@ -134,500 +83,14 @@
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/navigation/index.ts"></script>
-    <script type="module">
-      import { ApiClient } from '/utils/api-client.js';
-      import { showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
-
-      const apiClient = ApiClient.getInstance();
-
-      let statusData = [];
-      let refreshTimer = null;
-
-      async function loadDeletionStatus() {
-        try {
-          const response = await apiClient.request('/root/tenant/deletion-status', {
-            method: 'GET',
-          });
-
-          // Handle both single object and array responses
-          const data = response.data || response || [];
-          console.log('🔍 API Response:', data); // Debug output
-
-          if (Array.isArray(data)) {
-            statusData = data;
-          } else if (data && typeof data === 'object') {
-            // Single object response - wrap in array
-            statusData = [data];
-          } else {
-            statusData = [];
-          }
-          displayStatus();
-
-          // Schedule next refresh only on success
-          scheduleRefresh();
-        } catch (error) {
-          console.error('Error loading status:', error);
-
-          // Check if it's a 404 (no deletion found) - show empty state instead of error
-          if (error.error === 'NOT_FOUND' || error.message?.includes('No active deletion found')) {
-            statusData = [];
-            displayStatus();
-            // Also schedule refresh for 404 (might get new data later)
-            scheduleRefresh();
-          } else {
-            // Only show error for actual errors, not for "no data" scenarios
-            showErrorAlert('Fehler beim Laden des Status');
-            // Don't schedule refresh on real errors to avoid loop
-          }
-        }
-      }
-
-      function scheduleRefresh() {
-        // Clear any existing timer
-        if (refreshTimer) {
-          clearTimeout(refreshTimer);
-        }
-        // Schedule next refresh in 60 seconds (reduced from 10s to avoid excessive API calls)
-        refreshTimer = setTimeout(loadDeletionStatus, 60000);
-      }
-
-      function displayStatus() {
-        const container = document.querySelector('#statusContent');
-
-        if (statusData.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">
-                <i class="fas fa-inbox"></i>
-              </div>
-              <div class="empty-state-text">Keine Löschanfragen vorhanden</div>
-            </div>
-          `;
-          return;
-        }
-
-        // Use dom-utils setHTML for safe sanitization
-        window.setHTML(container, statusData.map((item) => createStatusCard(item)).join(''));
-      }
-
-      // Helper functions for createStatusCard
-      function getTenantInfo(item, currentUserId, createdAt) {
-        const tenantId = item.tenantId || item.tenant_id;
-        const requestedBy = item.requestedBy || item.requested_by || item.created_by;
-        const requestedByName = item.requestedByName || item.requester_name || `ID: ${requestedBy}`;
-
-        return `
-          <div class="tenant-info">
-            <h3>${item.company_name || `Tenant ${tenantId}`}</h3>
-            <p>Tenant ID: ${tenantId}</p>
-            ${item.subdomain ? `<p>Subdomain: ${item.subdomain}</p>` : ''}
-            <p>Beantragt von: ${requestedByName} (User ID: ${requestedBy})</p>
-            <p>Beantragt am: ${createdAt.toLocaleString('de-DE')}</p>
-            <p><strong>Aktueller User ID:</strong> ${currentUserId}</p>
-            <p><strong>Status Info:</strong> canApprove=${item.canApprove}, canCancel=${item.canCancel}</p>
-          </div>
-        `;
-      }
-
-      function getPermissionInfoBox(isCreator, canApprove) {
-        if (isCreator) {
-          return `
-            <div class="info-box" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <i class="fas fa-info-circle text-warning"></i>
-              <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br>
-              Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
-            </div>
-          `;
-        }
-        if (canApprove) {
-          return `
-            <div class="info-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <i class="fas fa-user-shield text-success"></i>
-              <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br>
-              Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
-            </div>
-          `;
-        }
-        return '';
-      }
-
-      function getCoolingOffWarning(item, coolingOffRemaining) {
-        const isPending = item.status === 'pending' || item.approval_status === 'pending';
-        if (isPending && coolingOffRemaining > 0) {
-          return `
-            <div class="cooling-off-warning">
-              <i class="fas fa-clock"></i>
-              <div>
-                <strong>⏰ Cooling-off Periode aktiv</strong><br>
-                Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br>
-                <small>Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small>
-              </div>
-            </div>
-          `;
-        }
-        return '';
-      }
-
-      function getGracePeriodInfo(item) {
-        if (item.status === 'approved' || item.status === 'queued') {
-          const scheduledDate = item.scheduledFor
-            ? new Date(item.scheduledFor).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
-            : '30 Tage ab Genehmigung';
-
-          return `
-            <div class="grace-period-info" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <i class="fas fa-calendar-clock text-info"></i>
-              <div>
-                <strong>🕐 30 Tage Grace Period läuft!</strong><br>
-                <p style="margin: 8px 0;"><strong>Geplante Löschung:</strong> ${scheduledDate}</p>
-                <p style="margin: 8px 0;">Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.</p>
-                <p style="margin: 8px 0;">Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche Löschung.</p>
-                <small>Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small>
-              </div>
-            </div>
-          `;
-        }
-        return '';
-      }
-
-      function createStatusCard(item) {
-        const progress = item.progress || 0;
-        const createdAt = new Date(item.requestedAt || item.created_at || item.requested_at);
-        const coolingOffRemaining = calculateCoolingOff(item);
-        const currentUserId = getCurrentUserId();
-        const isCreator = currentUserId === (item.requestedBy || item.requested_by || item.created_by);
-
-        return `
-          <div class="status-card">
-            <div class="status-header">
-              ${getTenantInfo(item, currentUserId, createdAt)}
-              <span class="status-badge ${item.status || 'pending'}">${getStatusText(item.status || 'pending')}</span>
-            </div>
-
-            ${getPermissionInfoBox(isCreator, item.canApprove)}
-            ${getCoolingOffWarning(item, coolingOffRemaining)}
-            ${getGracePeriodInfo(item)}
-
-            ${
-              item.status === 'processing'
-                ? `
-              <div class="progress-section">
-                <h4>Fortschritt</h4>
-                <div class="progress-bar-container">
-                  <div class="progress-bar" style="width: ${progress}%">
-                    ${progress}%
-                  </div>
-                </div>
-                <p class="text-secondary">${item.current_step || 'Vorbereitung...'}</p>
-              </div>
-            `
-                : ''
-            }
-
-            <div class="timeline">
-              <h4>Status Timeline</h4>
-              ${createTimeline(item)}
-            </div>
-
-            ${
-              // Show approve/reject buttons based on API response
-              item.canApprove || item.canCancel
-                ? `
-              <div class="action-buttons">
-                ${
-                  item.canApprove
-                    ? `
-                  <button class="btn btn-approve" data-action="approve" data-queue-id="${item.queueId || item.id}">
-                    <i class="fas fa-check"></i> Genehmigen
-                  </button>
-                  <button class="btn btn-reject" data-action="reject" data-queue-id="${item.queueId || item.id}">
-                    <i class="fas fa-times"></i> Ablehnen
-                  </button>
-                `
-                    : ''
-                }
-                ${
-                  item.canCancel
-                    ? `
-                  <button class="btn btn-cancel" data-action="cancel" data-queue-id="${item.queueId || item.id}">
-                    <i class="fas fa-ban"></i> Abbrechen (als Ersteller)
-                  </button>
-                `
-                    : ''
-                }
-              </div>
-            `
-                : ''
-            }
-
-            ${
-              // Emergency Stop Button für alle Root-User bei Status queued, approved oder processing
-              item.status === 'queued' || item.status === 'approved' || item.status === 'processing'
-                ? `
-              <div class="action-buttons">
-                <button class="btn btn-emergency" data-action="emergency-stop" data-queue-id="${item.queueId || item.id}">
-                  <i class="fas fa-stop-circle"></i> Emergency Stop
-                </button>
-                ${
-                  item.status === 'queued' || item.status === 'approved'
-                    ? '<small class="text-muted d-block mt-2">Stoppt die geplante Löschung sofort</small>'
-                    : '<small class="text-muted d-block mt-2">Stoppt den laufenden Löschvorgang</small>'
-                }
-              </div>
-            `
-                : ''
-            }
-          </div>
-        `;
-      }
-
-      function getStatusText(status) {
-        const statusMap = {
-          pending: 'Genehmigung ausstehend',
-          pending_approval: 'Genehmigung ausstehend',
-          approved: 'Genehmigt - 30 Tage Grace Period läuft',
-          queued: 'In Warteschlange (30 Tage Grace Period)',
-          processing: 'In Bearbeitung',
-          executing: 'Wird ausgeführt',
-          completed: 'Abgeschlossen',
-          failed: 'Fehlgeschlagen',
-          cancelled: 'Abgebrochen',
-          stopped: 'Gestoppt',
-        };
-        // eslint-disable-next-line security/detect-object-injection -- status is from controlled enum
-        return statusMap[status] || status;
-      }
-
-      function calculateCoolingOff(item) {
-        // For v2 API, use requestedAt instead of approval_requested_at
-        const requestTime = item.requestedAt || item.approval_requested_at || item.created_at;
-        if (!requestTime) return 0;
-
-        const requestedAt = new Date(requestTime);
-        const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
-
-        // Use actual cooling_off_hours from DB (can be 0 for development)
-        const coolingOffHours = item.cooling_off_hours !== undefined ? item.cooling_off_hours : 24;
-
-        console.log('⏰ Cooling-off calculation:', {
-          requestTime,
-          hoursSince: hoursSince.toFixed(2),
-          coolingOffHours,
-          remaining: Math.max(0, coolingOffHours - hoursSince),
-        });
-
-        return Math.max(0, coolingOffHours - hoursSince);
-      }
-
-      function createTimeline(item) {
-        const timeline = [];
-
-        // Request created
-        timeline.push({
-          icon: 'fa-plus-circle',
-          title: 'Löschung beantragt',
-          date: new Date(item.requestedAt || item.created_at || item.requested_at),
-          completed: true,
-        });
-
-        // Approval
-        if (item.approval_status === 'approved') {
-          timeline.push({
-            icon: 'fa-check-circle',
-            title: 'Genehmigt',
-            date: item.approved_at ? new Date(item.approved_at) : null,
-            completed: true,
-          });
-        }
-
-        // Processing
-        if (item.started_at) {
-          timeline.push({
-            icon: 'fa-cog',
-            title: 'Löschvorgang gestartet',
-            date: new Date(item.started_at),
-            completed: true,
-          });
-        }
-
-        // Completed
-        if (item.completed_at) {
-          timeline.push({
-            icon: 'fa-check-double',
-            title: 'Löschung abgeschlossen',
-            date: new Date(item.completed_at),
-            completed: true,
-          });
-        }
-
-        // Scheduled deletion
-        if (item.scheduled_deletion_date && item.status !== 'completed') {
-          timeline.push({
-            icon: 'fa-calendar-check',
-            title: 'Geplante Löschung',
-            date: new Date(item.scheduled_deletion_date),
-            completed: false,
-          });
-        }
-
-        return timeline
-          .map(
-            (item) => `
-          <div class="timeline-item">
-            <div class="timeline-icon ${item.completed ? 'completed' : 'pending'}">
-              <i class="fas ${item.icon}"></i>
-            </div>
-            <div class="timeline-content">
-              <h4>${item.title}</h4>
-              <p>${item.date ? item.date.toLocaleString('de-DE') : 'Ausstehend'}</p>
-            </div>
-          </div>
-        `,
-          )
-          .join('');
-      }
-
-      function getCurrentUserId() {
-        // Get from JWT token
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          return payload.id;
-        } catch {
-          return null;
-        }
-      }
-
-      window.approveDeletion = async function (queueId) {
-        const confirmed = await showConfirm('Möchten Sie diese Löschung wirklich genehmigen?');
-        if (!confirmed) return;
-
-        try {
-          await apiClient.request(`/root/deletion-approvals/${queueId}/approve`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-          });
-
-          showSuccessAlert('Löschung genehmigt! 30 Tage Grace Period beginnt.');
-          await loadDeletionStatus();
-        } catch (error) {
-          console.error('Error approving:', error);
-          showErrorAlert(error.message || 'Fehler bei der Genehmigung');
-        }
-      };
-
-      window.rejectDeletion = async function (queueId) {
-        const reason = prompt('Grund für die Ablehnung:');
-        if (!reason) return;
-
-        try {
-          await apiClient.request(`/root/deletion-approvals/${queueId}/reject`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ reason }),
-          });
-
-          showSuccessAlert('Löschung abgelehnt!');
-          await loadDeletionStatus();
-        } catch (error) {
-          console.error('Error rejecting:', error);
-          showErrorAlert(error.message || 'Fehler beim Ablehnen');
-        }
-      };
-
-      window.cancelDeletion = async function (queueId) {
-        const confirmed = await showConfirm('Möchten Sie Ihre Löschanfrage wirklich abbrechen?');
-        if (!confirmed) return;
-
-        try {
-          await apiClient.request('/root/tenant/cancel-deletion', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-          });
-
-          showSuccessAlert('Löschanfrage abgebrochen!');
-          await loadDeletionStatus();
-        } catch (error) {
-          console.error('Error cancelling:', error);
-          showErrorAlert(error.message || 'Fehler beim Abbrechen');
-        }
-      };
-
-      // EMERGENCY STOP - Für alle Root-User verfügbar!
-      window.emergencyStop = async function (queueId) {
-        const confirmed = await showConfirm(
-          '⚠️ EMERGENCY STOP ⚠️\n\n' +
-            'Dies stoppt die Tenant-Löschung SOFORT!\n\n' +
-            'Der Tenant wird reaktiviert und die Löschung abgebrochen.\n\n' +
-            'Sind Sie sicher?',
-        );
-        if (!confirmed) return;
-
-        try {
-          await apiClient.request(`/root/deletion-queue/${queueId}/emergency-stop`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              reason: 'Emergency Stop durch Root-User aktiviert',
-            }),
-          });
-
-          showSuccessAlert('🛑 EMERGENCY STOP aktiviert! Löschung wurde gestoppt.');
-          await loadDeletionStatus();
-        } catch (error) {
-          console.error('Error during emergency stop:', error);
-          showErrorAlert(error.message || 'Fehler beim Emergency Stop');
-        }
-      };
-
-      // Load status on page load
-      document.addEventListener('DOMContentLoaded', () => {
-        // Initial load will automatically schedule refreshes
-        loadDeletionStatus();
-
-        // Event Delegation for button actions
-        document.addEventListener('click', async (e) => {
-          const btn = e.target.closest('[data-action]');
-          if (!btn) return;
-
-          const action = btn.dataset.action;
-          const queueId = btn.dataset.queueId;
-
-          switch (action) {
-            case 'approve':
-              await window.approveDeletion(parseInt(queueId));
-              break;
-            case 'reject':
-              await window.rejectDeletion(parseInt(queueId));
-              break;
-            case 'cancel':
-              await window.cancelDeletion(parseInt(queueId));
-              break;
-            case 'emergency-stop':
-              await window.emergencyStop(parseInt(queueId));
-              break;
-          }
-        });
-      });
-    </script>
 
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>
+
+    <!-- Page Controller -->
+    <script type="module" src="/scripts/tenant-deletion/index.ts"></script>
   </body>
 </html>

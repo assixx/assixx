@@ -104,8 +104,8 @@ class AuditTrailService {
         throw new ServiceError('USER_NOT_FOUND', 'User data is undefined');
       }
 
-      // POSTGRESQL: RETURNING id required to get insertId
-      const [result] = await connection.execute<ResultSetHeader>(
+      // POSTGRESQL: RETURNING id required to get inserted id
+      const [rows] = await connection.execute<{ id: number }[]>(
         `INSERT INTO audit_trail (
           tenant_id, user_id, user_name, user_role,
           action, resource_type, resource_id, resource_name,
@@ -129,7 +129,8 @@ class AuditTrailService {
         ],
       );
 
-      return await this.getEntryById(result.insertId, tenantId);
+      const insertedId = rows[0]?.id ?? 0;
+      return await this.getEntryById(insertedId, tenantId);
     } finally {
       connection.release();
     }

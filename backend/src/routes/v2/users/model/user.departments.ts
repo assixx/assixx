@@ -78,14 +78,16 @@ export async function assignUserToDepartment(data: UserDepartmentAssignInput): P
     }
 
     // Insert new assignment
-    const [result] = await executeQuery<ResultSetHeader>(
+    const [rows] = await executeQuery<{ id: number }[]>(
       `INSERT INTO user_departments (tenant_id, user_id, department_id, is_primary, assigned_by, assigned_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING id`,
       [tenantId, userId, departmentId, isPrimaryInput ? 1 : 0, assignedBy ?? null],
     );
 
-    logger.info(`User ${userId} assigned to department ${departmentId} with ID ${result.insertId}`);
-    return result.insertId;
+    const assignmentId = rows[0]?.id ?? 0;
+    logger.info(`User ${userId} assigned to department ${departmentId} with ID ${assignmentId}`);
+    return assignmentId;
   } catch (error: unknown) {
     logger.error(`Error assigning user to department: ${(error as Error).message}`);
     throw error;

@@ -576,10 +576,11 @@ class LogsService {
     } = logData;
 
     const sql = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, details, old_values, new_values, ip_address, user_agent, was_role_switched)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                 RETURNING id`;
 
     try {
-      const [result] = await executeQuery<ResultSetHeader>(sql, [
+      const [rows] = await executeQuery<{ id: number }[]>(sql, [
         tenantId,
         userId,
         action,
@@ -592,7 +593,7 @@ class LogsService {
         userAgent ?? null,
         wasRoleSwitched ?? false,
       ]);
-      return result.insertId;
+      return rows[0]?.id ?? 0;
     } catch (error: unknown) {
       logger.error(`[Logs Service] Error creating root log: ${(error as Error).message}`);
       throw error;

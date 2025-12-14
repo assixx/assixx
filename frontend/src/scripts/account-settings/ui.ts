@@ -3,7 +3,103 @@
  * Handles all DOM manipulation and modal interactions
  */
 
-import type { DeletionStatusModalData } from './types.js';
+import { setHTML } from '../../utils/dom-utils.js';
+import type { DeletionStatusData, DeletionStatusModalData } from './types.js';
+
+/**
+ * Status labels for deletion workflow states
+ */
+const STATUS_LABELS: Record<string, string> = {
+  pending_approval: 'Warte auf Genehmigung',
+  approved: 'Genehmigt',
+  cooling_off: 'In Nachfrist',
+  scheduled: 'Geplant',
+  completed: 'Abgeschlossen',
+  cancelled: 'Abgebrochen',
+};
+
+/**
+ * Format ISO date string to German locale
+ */
+function formatDate(isoString: string): string {
+  return new Date(isoString).toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Show pending deletion banner with full status data
+ * Displays a prominent warning banner when a deletion request is pending
+ */
+export function showPendingDeletionBanner(data: DeletionStatusData): void {
+  const container = document.querySelector<HTMLElement>('#pendingDeletionBanner');
+  if (container === null) {
+    console.warn('[AccountSettings] #pendingDeletionBanner container not found');
+    return;
+  }
+
+  const statusLabel = STATUS_LABELS[data.status] ?? data.status;
+  const requestedDate = formatDate(data.requestedAt);
+
+  // Build the banner HTML using safe setHTML - compact inline layout
+  const bannerHtml = `
+    <div class="alert alert--warning mb-6">
+      <div class="alert__icon">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+      <div class="alert__content flex-1">
+        <p class="alert__title">Löschanfrage aktiv</p>
+        <p class="alert__message">
+          <strong>${statusLabel}</strong> · Queue #${String(data.queueId)} · Tenant #${String(data.tenantId)} ·
+          Angefordert von ${data.requestedByName ?? 'Unbekannt'} am ${requestedDate}
+        </p>
+        <a href="/tenant-deletion-status" class="btn btn-warning mt-3">
+          <i class="fas fa-external-link-alt mr-2"></i>
+          Details anzeigen
+        </a>
+      </div>
+    </div>
+  `;
+  setHTML(container, bannerHtml);
+
+  // Make sure container is visible
+  container.classList.remove('u-hidden');
+}
+
+/**
+ * Hide the pending deletion banner
+ */
+export function hidePendingDeletionBanner(): void {
+  const container = document.querySelector<HTMLElement>('#pendingDeletionBanner');
+  if (container === null) return;
+
+  setHTML(container, '');
+  container.classList.add('u-hidden');
+}
+
+/**
+ * Hide the delete tenant button when deletion is already pending
+ */
+export function hideDeleteButton(): void {
+  const button = document.querySelector<HTMLElement>('[data-action="show-delete-modal"]');
+  if (button === null) return;
+
+  button.classList.add('u-hidden');
+}
+
+/**
+ * Show the delete tenant button when no deletion is pending
+ */
+export function showDeleteButton(): void {
+  const button = document.querySelector<HTMLElement>('[data-action="show-delete-modal"]');
+  if (button === null) return;
+
+  button.classList.remove('u-hidden');
+}
 
 /**
  * Show the delete confirmation modal
@@ -87,16 +183,6 @@ export function closeDeletionStatusModal(): void {
   if (modal === null) return;
 
   modal.classList.remove('modal-overlay--active');
-}
-
-/**
- * Show the deletion status button (make visible)
- */
-export function showDeletionStatusButton(): void {
-  const button = document.querySelector('#deletionStatusButton');
-  if (button === null) return;
-
-  button.classList.remove('u-hidden');
 }
 
 /**

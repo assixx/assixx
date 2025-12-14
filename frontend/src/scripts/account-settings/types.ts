@@ -44,3 +44,22 @@ export interface DeletionStatusModalData {
   queueId: number | string;
   tenantId: number | string;
 }
+
+/**
+ * Full deletion status data from API v2
+ * Used for displaying pending deletion banner on page load
+ */
+export interface DeletionStatusData {
+  queueId: number;
+  tenantId: number;
+  status: 'pending_approval' | 'approved' | 'cooling_off' | 'scheduled' | 'completed' | 'cancelled';
+  requestedBy: number;
+  requestedAt: string;
+  coolingOffHours: number;
+  canCancel: boolean;
+  canApprove: boolean;
+  requestedByName?: string;
+  approvedBy?: number;
+  approvedAt?: string;
+  scheduledDeletionDate?: string;
+}
