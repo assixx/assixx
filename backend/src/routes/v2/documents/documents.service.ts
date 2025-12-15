@@ -6,7 +6,6 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { dbToApi } from '../../../utils/fieldMapping.js';
-import { ALLOWED_CATEGORIES, DocumentCategory } from './documents.validation.zod.js';
 import { logger } from '../../../utils/logger.js';
 import { getEntryById as getBlackboardEntry } from '../blackboard/blackboard.model.js';
 // Model classes are exported as PascalCase objects for backward compatibility
@@ -18,6 +17,7 @@ import Team from '../teams/team.model.js';
 import User from '../users/model/index.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Document, { DbDocument, DocumentUpdateData } from './document.model.js';
+import { ALLOWED_CATEGORIES, DocumentCategory } from './documents.validation.zod.js';
 
 // Error constants
 const ERROR_CODES = {
@@ -237,6 +237,33 @@ async function writeFileToDisk(filePath: string, content: Buffer): Promise<void>
   // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
   await fs.writeFile(absolutePath, content);
   logger.info(`File written successfully: ${filePath}`);
+}
+
+/**
+ * Read file content from filesystem with path validation
+ * SECURITY: Validates path stays within base directory before reading
+ * @param filePath - Relative file path from project root
+ * @returns File content as Buffer
+ * @throws ServiceError if path traversal detected or file not found
+ */
+async function readFileFromDisk(filePath: string): Promise<Buffer> {
+  const baseDir = process.cwd();
+
+  // SECURITY: Validate path stays within base directory (defense in depth)
+  if (!isPathWithinBase(filePath, baseDir)) {
+    logger.error(`Path traversal attempt blocked on read: ${filePath}`);
+    throw new ServiceError(ERROR_CODES.FORBIDDEN, 'Invalid file path', 403);
+  }
+
+  const absolutePath = path.join(baseDir, filePath);
+
+  try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
+    return await fs.readFile(absolutePath);
+  } catch (fsError) {
+    logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
+    throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document file not found on filesystem', 404);
+  }
 }
 
 /** Build model filters from input filters */
@@ -705,37 +732,7 @@ class DocumentsService {
       await Document.incrementDownloadCount(id, tenantId);
 
       // Get file content: try DB first, then filesystem
-      let content: Buffer;
-
-      if (document.file_content != null) {
-        // File stored in database (Buffer exists)
-        content = document.file_content;
-      } else if (document.file_path != null) {
-        // File stored on filesystem
-        const baseDir = process.cwd();
-
-        // SECURITY: Validate path stays within base directory (defense in depth)
-        if (!isPathWithinBase(document.file_path, baseDir)) {
-          logger.error(`Path traversal attempt blocked on read: ${document.file_path}`);
-          throw new ServiceError(ERROR_CODES.FORBIDDEN, 'Invalid file path', 403);
-        }
-
-        const absolutePath = path.join(baseDir, document.file_path);
-
-        try {
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
-          content = await fs.readFile(absolutePath);
-        } catch (fsError) {
-          logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
-          throw new ServiceError(
-            ERROR_CODES.NOT_FOUND,
-            'Document file not found on filesystem',
-            404,
-          );
-        }
-      } else {
-        throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document has no content or file path', 404);
-      }
+      const content = await this.resolveFileContent(document);
 
       return {
         content,
@@ -744,9 +741,7 @@ class DocumentsService {
         fileSize: document.file_size ?? 0,
       };
     } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
+      if (error instanceof ServiceError) throw error;
       logger.error(`Error getting document content ${id}: ${(error as Error).message}`);
       throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to get document content', 500);
     }
@@ -791,37 +786,7 @@ class DocumentsService {
       await Document.incrementDownloadCount(document.id, tenantId);
 
       // Get file content: try DB first, then filesystem
-      let content: Buffer;
-
-      if (document.file_content != null) {
-        // File stored in database (Buffer exists)
-        content = document.file_content;
-      } else if (document.file_path != null) {
-        // File stored on filesystem
-        const baseDir = process.cwd();
-
-        // SECURITY: Validate path stays within base directory (defense in depth)
-        if (!isPathWithinBase(document.file_path, baseDir)) {
-          logger.error(`Path traversal attempt blocked on read: ${document.file_path}`);
-          throw new ServiceError(ERROR_CODES.FORBIDDEN, 'Invalid file path', 403);
-        }
-
-        const absolutePath = path.join(baseDir, document.file_path);
-
-        try {
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
-          content = await fs.readFile(absolutePath);
-        } catch (fsError) {
-          logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
-          throw new ServiceError(
-            ERROR_CODES.NOT_FOUND,
-            'Document file not found on filesystem',
-            404,
-          );
-        }
-      } else {
-        throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document has no content or file path', 404);
-      }
+      const content = await this.resolveFileContent(document);
 
       return {
         content,
@@ -830,14 +795,28 @@ class DocumentsService {
         fileSize: document.file_size ?? 0,
       };
     } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
+      if (error instanceof ServiceError) throw error;
       logger.error(
         `Error getting document content by fileUuid ${fileUuid}: ${(error as Error).message}`,
       );
       throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to get document content', 500);
     }
+  }
+
+  /**
+   * Resolve file content from database or filesystem
+   * SECURITY: Uses readFileFromDisk which validates path containment
+   * @param document - The document with file_content or file_path
+   * @returns File content as Buffer
+   */
+  private async resolveFileContent(document: DbDocument): Promise<Buffer> {
+    if (document.file_content != null) {
+      return document.file_content;
+    }
+    if (document.file_path != null) {
+      return await readFileFromDisk(document.file_path);
+    }
+    throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document has no content or file path', 404);
   }
 
   /**
