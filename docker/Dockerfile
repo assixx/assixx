@@ -13,6 +13,7 @@ COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren (für pnpm workspace)
 COPY backend/package.json ./backend/
@@ -50,6 +51,7 @@ COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren
 COPY backend/package.json ./backend/
