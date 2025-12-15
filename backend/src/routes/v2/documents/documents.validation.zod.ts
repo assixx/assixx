@@ -12,9 +12,16 @@ import { DateSchema, IdSchema, PaginationSchema } from '../../../schemas/common.
 // ============================================================
 
 /**
+ * Allowed document categories - exported for reuse in path validation
+ * SECURITY: This allowlist prevents path traversal attacks
+ */
+export const ALLOWED_CATEGORIES = ['personal', 'work', 'training', 'general', 'salary'] as const;
+export type DocumentCategory = (typeof ALLOWED_CATEGORIES)[number];
+
+/**
  * Document category enum
  */
-const CategorySchema = z.enum(['personal', 'work', 'training', 'general', 'salary'], {
+const CategorySchema = z.enum(ALLOWED_CATEGORIES, {
   message: 'Invalid category',
 });
 
