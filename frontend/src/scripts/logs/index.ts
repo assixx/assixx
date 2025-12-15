@@ -277,7 +277,7 @@ function displayLogs(logs: LogEntry[]) {
   setHTML(
     container,
     `
-    <table class="table">
+    <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
           <th>ID</th>

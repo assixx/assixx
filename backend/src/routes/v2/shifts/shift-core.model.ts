@@ -40,7 +40,7 @@ export async function getShiftTemplates(tenantId: number): Promise<DbShiftTempla
   try {
     const query = `
       SELECT * FROM shift_templates
-      WHERE tenant_id = $1 AND is_active = TRUE
+      WHERE tenant_id = $1 AND is_active = 1
       ORDER BY name ASC
     `;
 

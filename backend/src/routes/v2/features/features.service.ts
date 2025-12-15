@@ -220,9 +220,9 @@ export class FeaturesService {
           tf.activated_at,
           tf.expires_at,
           CASE
-            WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
-            WHEN tf.is_active = TRUE AND tf.expires_at < NOW() THEN 'expired'
-            WHEN tf.is_active = FALSE THEN 'disabled'
+            WHEN tf.is_active = 1 AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
+            WHEN tf.is_active = 1 AND tf.expires_at < NOW() THEN 'expired'
+            WHEN tf.is_active = 0 THEN 'disabled'
             ELSE 'not_activated'
           END as status
         FROM features f

@@ -187,7 +187,7 @@ export async function changeTenantPlan(request: PlanChangeRequest): Promise<bool
         .join(',');
       await executeQuery<ResultSetHeader>(
         `UPDATE tenant_features
-           SET is_active = FALSE
+           SET is_active = 0
            WHERE tenant_id = $1
            AND feature_id NOT IN (${featurePlaceholders})`,
         [request.tenantId, ...includedFeatureIds],

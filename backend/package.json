@@ -63,17 +63,17 @@
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "ws": "^8.18.3",
-    "zod": "4.1.13"
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.21",
-    "@types/node": "~24",
+    "@types/node": "~24.10.4",
     "@types/nodemailer": "^7.0.4",
     "@types/pg": "^8.16.0",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.2",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "prettier": "^3.7.4",

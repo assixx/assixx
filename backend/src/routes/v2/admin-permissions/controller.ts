@@ -427,7 +427,7 @@ export const adminPermissionsController = {
       }
       const userId = Number.parseInt(userIdParam);
 
-      const { areaIds = [], permissions = { canRead: true, canWrite: false, canDelete: false } } =
+      const { areaIds, permissions = { canRead: true, canWrite: false, canDelete: false } } =
         req.body as SetAreaPermissionsRequest;
 
       // Get user tenant

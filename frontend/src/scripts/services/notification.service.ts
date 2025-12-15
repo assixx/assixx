@@ -33,7 +33,7 @@ export class NotificationService {
       this.container.className = 'notification-container';
       this.container.style.cssText = `
         position: fixed;
-        top: 93px;
+        top: 87px;
         right: 20px;
         z-index: 10000;
         pointer-events: none;
