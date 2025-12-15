@@ -58,6 +58,9 @@ coverage/
 # Test directories
 **/__tests__/
 
+# Bruno API Tests (lokale Tokens)
+api-tests/
+
 # ESLint
 eslint-report.json
 
