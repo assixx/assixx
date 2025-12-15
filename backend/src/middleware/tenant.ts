@@ -4,23 +4,12 @@
  */
 import { NextFunction, Request, Response } from 'express';
 
-import tenantModel from '../models/tenant';
-import { TenantInfo } from '../types/tenant.types';
-import { logger } from '../utils/logger';
+import tenantModel from '../routes/v2/tenants/tenant.model.js';
+import { DatabaseTenant } from '../types/models.js';
+import { TenantInfo, TenantTrialStatus } from '../types/tenant.types.js';
+import { logger } from '../utils/logger.js';
 
 // Request interface is already extended in types/express-extensions.d.ts
-
-interface RequestWithBody extends Request {
-  body: {
-    subdomain?: string;
-    tenant_id?: number;
-    [key: string]: unknown;
-  };
-  user?: {
-    tenant_id?: number;
-    [key: string]: unknown;
-  };
-}
 
 /**
  * Extrahiert den Tenant aus der Subdomain
@@ -36,10 +25,120 @@ function getTenantFromHost(hostname: string): string | null {
 
   // Produktion: firma.assixx.de -> firma
   if (parts.length >= 3) {
-    return parts[0].toLowerCase();
+    const subdomain = parts[0];
+    if (subdomain !== undefined) {
+      return subdomain.toLowerCase();
+    }
   }
 
   return null;
+}
+
+/**
+ * Helper to safely get request body as unknown
+ * Express types req.body as 'any' - this helper makes it explicit
+ * Note: req.body implicit any is unavoidable due to Express typing
+ */
+function getRequestBody(req: Request): unknown {
+  return req.body;
+}
+
+/**
+ * Extract subdomain from request body (for login/signup)
+ */
+function getSubdomainFromBody(req: Request): string | null {
+  const body = getRequestBody(req);
+
+  if (body === null || body === undefined || typeof body !== 'object' || !('subdomain' in body)) {
+    return null;
+  }
+
+  const bodySubdomain = (body as { subdomain: unknown }).subdomain;
+  return typeof bodySubdomain === 'string' && bodySubdomain !== '' ? bodySubdomain : null;
+}
+
+/**
+ * Extract subdomain from user's tenant_id (from JWT)
+ */
+async function getSubdomainFromUser(req: Request): Promise<string | null> {
+  if (
+    !('user' in req) ||
+    typeof req.user !== 'object' ||
+    !('tenant_id' in req.user) ||
+    typeof req.user.tenant_id !== 'number'
+  ) {
+    return null;
+  }
+
+  const tenant = await tenantModel.findById(req.user.tenant_id);
+  return tenant ? tenant.subdomain : null;
+}
+
+/**
+ * Extract tenant subdomain from various sources
+ */
+async function extractTenantSubdomain(req: Request): Promise<string | null> {
+  // 1. Try hostname first
+  const hostTenant = getTenantFromHost(req.hostname);
+  if (hostTenant !== null) return hostTenant;
+
+  // 2. Try header or query (development fallback)
+  const headerTenant = req.headers['x-tenant-id'];
+  if (typeof headerTenant === 'string' && headerTenant !== '') return headerTenant;
+
+  const queryTenant = req.query['tenant'];
+  if (typeof queryTenant === 'string' && queryTenant !== '') return queryTenant;
+
+  // 3. Try body subdomain (for login/signup)
+  const bodySubdomain = getSubdomainFromBody(req);
+  if (bodySubdomain !== null) return bodySubdomain;
+
+  // 4. Try user's tenant_id from JWT
+  const userSubdomain = await getSubdomainFromUser(req);
+  if (userSubdomain !== null) return userSubdomain;
+
+  return null;
+}
+
+/**
+ * Validate tenant status and trial
+ */
+function validateTenantStatus(
+  tenant: DatabaseTenant,
+  trialStatus: TenantTrialStatus | null,
+  res: Response,
+): boolean {
+  // Check if tenant is active
+  if (tenant.status === 'cancelled' || tenant.status === 'suspended') {
+    res.status(403).json({
+      error: 'Dieser Account ist nicht aktiv. Bitte kontaktieren Sie den Support.',
+    });
+    return false;
+  }
+
+  // Check trial expiration
+  if (trialStatus?.isExpired === true && tenant.status === 'trial') {
+    res.status(402).json({
+      error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
+      trialEndsAt: trialStatus.trialEndsAt,
+    });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check if user belongs to tenant
+ */
+function validateUserTenant(req: Request, tenantId: number): boolean {
+  // If no user in request, allow (will be handled by auth middleware)
+  if (!('user' in req) || typeof req.user !== 'object') return true;
+
+  // Check if user has tenant_id property
+  if (!('tenant_id' in req.user) || typeof req.user.tenant_id !== 'number') return true;
+
+  return req.user.tenant_id === tenantId;
 }
 
 /**
@@ -54,49 +153,17 @@ export async function tenantMiddleware(
   next: NextFunction,
 ): Promise<void> {
   try {
-    // 1. Tenant identifizieren (Priorität: Subdomain > Header > Query)
-    let tenantSubdomain = getTenantFromHost(req.hostname);
+    // 1. Identify tenant
+    const tenantSubdomain = await extractTenantSubdomain(req);
 
-    // Fallback für Entwicklung: X-Tenant-ID Header oder Query Parameter
-    if (tenantSubdomain == null || tenantSubdomain === '') {
-      const headerTenant = req.headers['x-tenant-id'];
-      const queryTenant = req.query.tenant;
-
-      tenantSubdomain =
-        typeof headerTenant === 'string' ? headerTenant
-        : typeof queryTenant === 'string' ? queryTenant
-        : null;
-    }
-
-    // Für Login/Signup: Tenant aus Body
-    const reqWithBody = req as RequestWithBody;
-    if (
-      (tenantSubdomain == null || tenantSubdomain === '') &&
-      reqWithBody.body.subdomain != null &&
-      reqWithBody.body.subdomain !== ''
-    ) {
-      tenantSubdomain = reqWithBody.body.subdomain;
-    }
-
-    // Fallback: Wenn User eingeloggt ist, verwende tenant_id aus JWT
-    if (
-      (tenantSubdomain == null || tenantSubdomain === '') &&
-      reqWithBody.user?.tenant_id != null
-    ) {
-      const tenant = await tenantModel.findById(reqWithBody.user.tenant_id);
-      if (tenant) {
-        tenantSubdomain = tenant.subdomain;
-      }
-    }
-
-    if (tenantSubdomain == null || tenantSubdomain === '') {
+    if (tenantSubdomain === null) {
       res.status(400).json({
         error: 'Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.',
       });
       return;
     }
 
-    // 2. Tenant aus Datenbank laden
+    // 2. Load tenant from database
     const tenant = await tenantModel.findBySubdomain(tenantSubdomain);
 
     if (!tenant) {
@@ -107,58 +174,38 @@ export async function tenantMiddleware(
       return;
     }
 
-    // 3. Prüfe Tenant-Status
-    if (tenant.status === 'cancelled' || tenant.status === 'suspended') {
-      res.status(403).json({
-        error: 'Dieser Account ist nicht aktiv. Bitte kontaktieren Sie den Support.',
-      });
-      return;
-    }
-
-    // 4. Trial-Status prüfen
+    // 3. Validate tenant status
     const trialStatus = await tenantModel.checkTrialStatus(tenant.id);
-    if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
-      res.status(402).json({
-        error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
-        trialEndsAt: trialStatus.trialEndsAt,
-      });
+    if (!validateTenantStatus(tenant, trialStatus, res)) {
       return;
     }
 
-    // 5. Tenant-Informationen an Request anhängen
-    const tenantInfo: TenantInfo = {
-      id: tenant.id,
-      subdomain: tenant.subdomain,
-      name: tenant.company_name,
-      status: tenant.status as 'active' | 'trial' | 'cancelled' | 'suspended',
-      plan: tenant.current_plan,
-      trialStatus: trialStatus ?? undefined,
-    };
-
-    // Safe: req is isolated per request in Express middleware, no race condition possible
-    // eslint-disable-next-line require-atomic-updates
-    req.tenant = tenantInfo;
-    // Wichtig: tenant_id für alle DB-Queries verfügbar machen
-    // Safe: req is isolated per request in Express middleware, no race condition possible
-    // eslint-disable-next-line require-atomic-updates
-    req.tenantId = tenant.id;
-
-    // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört
-    if (
-      'user' in reqWithBody &&
-      reqWithBody.user != null &&
-      'tenant_id' in reqWithBody.user &&
-      typeof reqWithBody.user.tenant_id === 'number' &&
-      reqWithBody.user.tenant_id !== tenant.id
-    ) {
+    // 4. Check user-tenant relationship
+    if (!validateUserTenant(req, tenant.id)) {
       res.status(403).json({
         error: 'Sie haben keinen Zugriff auf diese Firma.',
       });
       return;
     }
 
-    logger.info(`Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`);
+    // 5. Attach tenant info to request (exactOptionalPropertyTypes compliant)
+    const tenantInfo: TenantInfo = {
+      id: tenant.id,
+      subdomain: tenant.subdomain,
+      name: tenant.company_name,
+      status: tenant.status,
+      plan: tenant.current_plan,
+    };
 
+    // Only add trialStatus if defined
+    if (trialStatus !== null) {
+      tenantInfo.trialStatus = trialStatus;
+    }
+
+    req.tenant = tenantInfo;
+    req.tenantId = tenant.id;
+
+    logger.info(`Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`);
     next();
   } catch (error: unknown) {
     logger.error('Tenant middleware error:', error);

@@ -2,9 +2,9 @@ import bcrypt from 'bcryptjs';
 import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { pool } from '../../database';
-import type { PublicRequest } from '../../types/request.types';
-import { authenticateToken } from '../auth-refactored';
+import { pool } from '../../database.js';
+import type { PublicRequest } from '../../types/request.types.js';
+import { authenticateToken } from '../auth-refactored.js';
 
 /**
  * Integration Tests for Authentication Middleware
@@ -13,7 +13,7 @@ import { authenticateToken } from '../auth-refactored';
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL in auth middleware
-process.env.NODE_ENV = 'production';
+process.env['NODE_ENV'] = 'production';
 
 describe('Authentication Middleware - Integration Test', () => {
   let mockRequest: Partial<PublicRequest>;
@@ -58,7 +58,7 @@ describe('Authentication Middleware - Integration Test', () => {
         role: 'admin',
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET ?? 'schneeseekleerehfeedrehzehwehtee',
+      process.env['JWT_SECRET'] ?? 'schneeseekleerehfeedrehzehwehtee',
       { expiresIn: '1h' },
     );
   });
@@ -94,8 +94,8 @@ describe('Authentication Middleware - Integration Test', () => {
       expect(mockNext).toHaveBeenCalled();
       expect(mockResponse.status).not.toHaveBeenCalled();
       expect((mockRequest as any).user).toBeDefined();
-      expect((mockRequest as any).user.id).toBe(testUserId);
-      expect((mockRequest as any).user.tenant_id).toBe(testTenantId);
+      expect((mockRequest as any).user['id']).toBe(testUserId);
+      expect((mockRequest as any).user['tenant_id']).toBe(testTenantId);
     });
 
     it('should authenticate valid cookie token', async () => {
@@ -147,7 +147,7 @@ describe('Authentication Middleware - Integration Test', () => {
           role: 'admin',
           tenant_id: testTenantId,
         },
-        process.env.JWT_SECRET ?? 'schneeseekleerehfeedrehzehwehtee',
+        process.env['JWT_SECRET'] ?? 'schneeseekleerehfeedrehzehwehtee',
         { expiresIn: '0s' },
       );
 
@@ -198,7 +198,7 @@ describe('Authentication Middleware - Integration Test', () => {
           role: 'admin',
           tenant_id: testTenantId,
         },
-        process.env.JWT_SECRET ?? 'schneeseekleerehfeedrehzehwehtee',
+        process.env['JWT_SECRET'] ?? 'schneeseekleerehfeedrehzehwehtee',
         { expiresIn: '1h' },
       );
 

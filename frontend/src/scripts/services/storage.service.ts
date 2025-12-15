@@ -15,7 +15,7 @@ export class StorageService {
    *
    * @param prefix
    */
-  constructor(prefix = 'assixx_') {
+  constructor(prefix: string = 'assixx_') {
     this.prefix = prefix;
   }
 

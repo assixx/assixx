@@ -75,19 +75,19 @@ describe('Notifications API v2', () => {
       email: adminUser.email,
       password: 'AdminPass123!',
     });
-    adminToken = adminLogin.body.data.accessToken;
+    adminToken = adminLogin.body.data['accessToken'];
 
     const employeeLogin = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
       password: 'EmpPass123!',
     });
-    employeeToken = employeeLogin.body.data.accessToken;
+    employeeToken = employeeLogin.body.data['accessToken'];
 
     const otherLogin = await request(app).post('/api/v2/auth/login').send({
       email: otherTenantUser.email,
       password: 'OtherPass123!',
     });
-    otherTenantToken = otherLogin.body.data.accessToken;
+    otherTenantToken = otherLogin.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -135,7 +135,7 @@ describe('Notifications API v2', () => {
 
       // Verify in database
       const [rows] = await testDb.execute('SELECT * FROM notifications WHERE id = ?', [
-        response.body.data.notificationId,
+        response.body.data['notificationId'],
       ]);
       expect(rows).toHaveLength(1);
       expect((rows as any)[0]).toMatchObject({
@@ -290,7 +290,7 @@ describe('Notifications API v2', () => {
         },
       });
 
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -300,7 +300,7 @@ describe('Notifications API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.every((n: any) => n.type === 'task')).toBe(true);
     });
 
@@ -310,7 +310,7 @@ describe('Notifications API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.every((n: any) => n.priority === 'high')).toBe(true);
     });
 
@@ -320,8 +320,8 @@ describe('Notifications API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.notifications.length).toBeLessThanOrEqual(2);
-      expect(response.body.data.pagination.limit).toBe(2);
+      expect(response.body.data['notifications'].length).toBeLessThanOrEqual(2);
+      expect(response.body.data['pagination'].limit).toBe(2);
     });
 
     it('should enforce tenant isolation', async () => {
@@ -330,7 +330,7 @@ describe('Notifications API v2', () => {
         .set('Authorization', `Bearer ${otherTenantToken}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.length).toBe(0);
     });
   });
@@ -431,7 +431,7 @@ describe('Notifications API v2', () => {
         .set('Content-Type', 'application/json');
 
       expect(response.status).toBe(200);
-      expect(response.body.data.markedCount).toBeGreaterThan(0);
+      expect(response.body.data['markedCount']).toBeGreaterThan(0);
 
       // Verify all marked as read
       const [rows] = await testDb.execute(
@@ -505,7 +505,7 @@ describe('Notifications API v2', () => {
           .set('Authorization', `Bearer ${employeeToken}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.preferences).toMatchObject({
+        expect(response.body.data['preferences']).toMatchObject({
           email_notifications: true,
           push_notifications: true,
           sms_notifications: false,
@@ -546,7 +546,7 @@ describe('Notifications API v2', () => {
           .set('Authorization', `Bearer ${employeeToken}`);
 
         expect(getResponse.status).toBe(200);
-        expect(getResponse.body.data.preferences.email_notifications).toBe(false);
+        expect(getResponse.body.data['preferences'].email_notifications).toBe(false);
       });
 
       it('should validate preference structure', async () => {
@@ -637,7 +637,7 @@ describe('Notifications API v2', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.subscriptionId).toBeDefined();
+      expect(response.body.data['subscriptionId']).toBeDefined();
     });
 
     it('should unsubscribe from notifications', async () => {
@@ -656,8 +656,8 @@ describe('Notifications API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.templates).toBeDefined();
-      expect(Array.isArray(response.body.data.templates)).toBe(true);
+      expect(response.body.data['templates']).toBeDefined();
+      expect(Array.isArray(response.body.data['templates'])).toBe(true);
     });
 
     it('should return 404 for non-existent template', async () => {

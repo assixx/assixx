@@ -2,7 +2,7 @@
  * Unit Tests for errorHandler utility
  * Tests error message extraction from various error types
  */
-import { getErrorMessage } from '../errorHandler';
+import { getErrorMessage } from '../errorHandler.js';
 
 describe('errorHandler', () => {
   describe('getErrorMessage', () => {

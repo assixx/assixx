@@ -21,7 +21,7 @@ import {
 /**
  *
  */
-export class RootController {
+class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
@@ -66,10 +66,15 @@ export class RootController {
    */
   async getAdminById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const admin = await rootService.getAdminById(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      const admin = await rootService.getAdminById(Number.parseInt(id), req.user.tenant_id);
 
       if (!admin) {
         res.status(404).json({
@@ -125,7 +130,35 @@ export class RootController {
     } catch (error: unknown) {
       logger.error('Error creating admin:', error);
 
-      if ((error as { code: string }).code === 'DUPLICATE_ENTRY') {
+      const serviceError = error as { code?: string; message?: string };
+
+      // Handle specific duplicate errors
+      if (serviceError.code === 'DUPLICATE_EMPLOYEE_NUMBER') {
+        res.status(409).json({
+          error: 'DUPLICATE_EMPLOYEE_NUMBER',
+          message: 'Employee number already exists',
+        });
+        return;
+      }
+
+      if (serviceError.code === 'DUPLICATE_EMAIL') {
+        res.status(409).json({
+          error: 'DUPLICATE_EMAIL',
+          message: 'Email already exists',
+        });
+        return;
+      }
+
+      if (serviceError.code === 'DUPLICATE_USERNAME') {
+        res.status(409).json({
+          error: 'DUPLICATE_USERNAME',
+          message: 'Username already exists',
+        });
+        return;
+      }
+
+      // Generic duplicate entry
+      if (serviceError.code === 'DUPLICATE_ENTRY') {
         res.status(409).json({
           error: 'DUPLICATE_ENTRY',
           message: 'Username or email already exists',
@@ -170,8 +203,16 @@ export class RootController {
    */
   async updateAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
       const data = req.body as UpdateAdminRequest;
-      await rootService.updateAdmin(Number.parseInt(req.params.id, 10), data, req.user.tenant_id);
+      await rootService.updateAdmin(Number.parseInt(id, 10), data, req.user.tenant_id);
 
       res.json({ message: 'Admin updated successfully' });
     } catch (error: unknown) {
@@ -216,9 +257,17 @@ export class RootController {
    */
   async deleteAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      await rootService.deleteAdmin(Number.parseInt(req.params.id), req.user.tenant_id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      await rootService.deleteAdmin(Number.parseInt(id), req.user.tenant_id);
 
-      logger.info(`Admin deleted: ${req.params.id}`);
+      logger.info(`Admin deleted: ${id}`);
       res.json({ message: 'Admin deleted successfully' });
     } catch (error: unknown) {
       logger.error('Error deleting admin:', error);
@@ -267,13 +316,17 @@ export class RootController {
    */
   async getAdminLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const daysParam = Number.parseInt(req.query.days as string, 10);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      const daysParam = Number.parseInt(req.query['days'] as string, 10);
       const days = Number.isNaN(daysParam) ? 30 : daysParam;
-      const logs = await rootService.getAdminLogs(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-        days,
-      );
+      const logs = await rootService.getAdminLogs(Number.parseInt(id), req.user.tenant_id, days);
 
       res.json({ logs });
     } catch (error: unknown) {
@@ -373,10 +426,15 @@ export class RootController {
    */
   async getRootUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const user = await rootService.getRootUserById(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
+      const user = await rootService.getRootUserById(Number.parseInt(id), req.user.tenant_id);
 
       if (!user) {
         res.status(404).json({
@@ -484,8 +542,16 @@ export class RootController {
    */
   async updateRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
       const data = req.body as UpdateRootUserRequest;
-      await rootService.updateRootUser(Number.parseInt(req.params.id), data, req.user.tenant_id);
+      await rootService.updateRootUser(Number.parseInt(id), data, req.user.tenant_id);
 
       res.json({ message: 'Root user updated successfully' });
     } catch (error: unknown) {
@@ -532,13 +598,17 @@ export class RootController {
    */
   async deleteRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      await rootService.deleteRootUser(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-        req.user.id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
+      await rootService.deleteRootUser(Number.parseInt(id), req.user.tenant_id, req.user.id);
 
-      logger.warn(`Root user ${req.params.id} deleted by ${req.user.email}`);
+      logger.warn(`Root user ${id} deleted by ${req.user.email}`);
       res.json({ message: 'Root user deleted successfully' });
     } catch (error: unknown) {
       logger.error('Error deleting root user:', error);
@@ -636,6 +706,64 @@ export class RootController {
   }
 
   /**
+   * Helper: Validate root users for two-person principle
+   */
+  private async validateRootUsers(tenantId: number, res: Response): Promise<boolean> {
+    const rootUsers = await rootService.getRootUsers(tenantId);
+    if (rootUsers.length < 2) {
+      const errorMessage = this.getRootUserErrorMessage(rootUsers.length);
+      res.status(400).json(errorResponse('INSUFFICIENT_ROOT_USERS', errorMessage));
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Helper: Get error message for insufficient root users
+   */
+  private getRootUserErrorMessage(userCount: number): string {
+    const countMessage =
+      userCount === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer';
+    return `Tenant-Löschung nicht möglich: ${countMessage}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`;
+  }
+
+  /**
+   * Helper: Check if error indicates deletion already scheduled
+   */
+  private isDeletionAlreadyScheduledError(error: unknown): boolean {
+    if (error instanceof ServiceError && error.code === 'ALREADY_SCHEDULED') {
+      return true;
+    }
+
+    const errorMessage = error instanceof Error ? error.message : '';
+    return (
+      errorMessage.includes('already scheduled') ||
+      errorMessage.includes('already marked_for_deletion')
+    );
+  }
+
+  /**
+   * Helper: Handle deletion error responses
+   */
+  private handleDeletionError(error: unknown, res: Response): void {
+    logger.error('Error deleting tenant:', error);
+
+    if (this.isDeletionAlreadyScheduledError(error)) {
+      res
+        .status(409)
+        .json(
+          errorResponse(
+            'ALREADY_SCHEDULED',
+            'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
+          ),
+        );
+      return;
+    }
+
+    res.status(500).json(errorResponse('SERVER_ERROR', 'Fehler beim Löschen des Tenants'));
+  }
+
+  /**
    * DELETE /api/v2/root/tenants/current
    * Delete current tenant (uses JWT token for tenant_id)
    * Compatible with v1 API
@@ -643,35 +771,28 @@ export class RootController {
   async deleteCurrentTenant(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const body = req.body as TenantDeletionRequest | undefined;
-      const reason = body?.reason;
-      const tenantId = req.user.tenant_id; // Always use tenant from JWT
+      const reason = body?.reason ?? 'Keine Angabe';
+      const tenantId = req.user.tenant_id;
 
       logger.warn(
         `🔒 SECURE DELETE: Root user ${req.user.username} (ID: ${req.user.id}) requesting deletion of their own tenant ${tenantId}`,
       );
 
-      // Check if there are at least 2 root users (two-person principle)
-      const rootUsers = await rootService.getRootUsers(tenantId);
-      if (rootUsers.length < 2) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'INSUFFICIENT_ROOT_USERS',
-              `Tenant-Löschung nicht möglich: ${rootUsers.length === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer'}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`,
-            ),
-          );
+      // Validate two-person principle
+      const isValid = await this.validateRootUsers(tenantId, res);
+      if (!isValid) {
         return;
       }
 
-      // Initiate deletion - use requestTenantDeletion from rootService
+      // Initiate deletion
       logger.info(
-        `Calling rootService.requestTenantDeletion with: tenantId=${tenantId}, userId=${req.user.id}, reason=${reason ?? 'none'}, ip=${req.ip ?? 'unknown'}`,
+        `Calling rootService.requestTenantDeletion with: tenantId=${tenantId}, userId=${req.user.id}, reason=${reason}, ip=${req.ip ?? 'unknown'}`,
       );
+
       const queueId = await rootService.requestTenantDeletion(
         tenantId,
         req.user.id,
-        reason ?? 'Keine Angabe',
+        reason,
         req.ip ?? 'unknown',
       );
 
@@ -685,39 +806,7 @@ export class RootController {
         }),
       );
     } catch (error: unknown) {
-      logger.error('Error deleting tenant:', error);
-
-      // Handle ServiceError with specific codes
-      if (error instanceof ServiceError && error.code === 'ALREADY_SCHEDULED') {
-        res
-          .status(409)
-          .json(
-            errorResponse(
-              'ALREADY_SCHEDULED',
-              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
-            ),
-          );
-        return;
-      }
-
-      // Legacy check for error messages
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (
-        errorMessage.includes('already scheduled') ||
-        errorMessage.includes('already marked_for_deletion')
-      ) {
-        res
-          .status(409)
-          .json(
-            errorResponse(
-              'ALREADY_SCHEDULED',
-              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
-            ),
-          );
-        return;
-      }
-
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Fehler beim Löschen des Tenants'));
+      this.handleDeletionError(error, res);
     }
   }
 
@@ -794,18 +883,17 @@ export class RootController {
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: Deletion status
-   *       404:
-   *         description: No active deletion found
+   *         description: Deletion status (null if no active deletion)
    */
   async getDeletionStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const status = await rootService.getDeletionStatus(req.user.tenant_id, req.user.id);
 
       if (!status) {
-        res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'No active deletion found',
+        // No active deletion is a valid state, not an error
+        res.json({
+          data: null,
+          message: 'No active deletion',
         });
         return;
       }
@@ -949,7 +1037,15 @@ export class RootController {
    */
   async approveDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
       const { comment } = req.body as { comment?: string };
 
       await tenantDeletionService.approveDeletion(queueId, req.user.id, comment);
@@ -999,10 +1095,18 @@ export class RootController {
    */
   async rejectDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
       const { reason } = req.body as { reason?: string };
 
-      if (!reason) {
+      if (reason === undefined || reason === '') {
         res.status(400).json({
           error: 'REASON_REQUIRED',
           message: 'Reason for rejection is required',
@@ -1044,11 +1148,24 @@ export class RootController {
    */
   async emergencyStop(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
 
-      await tenantDeletionService.triggerEmergencyStop(queueId, req.user.id);
+      // Use tenant_id from authenticated user (the user's tenant)
+      const tenantId = req.user.tenant_id;
 
-      logger.error(`EMERGENCY STOP: User ${req.user.email} stopped deletion ${queueId}`);
+      await tenantDeletionService.triggerEmergencyStop(tenantId, req.user.id);
+
+      logger.warn(
+        `EMERGENCY STOP: User ${req.user.email} stopped deletion for tenant ${tenantId} (queue ${queueId})`,
+      );
 
       res.json({ message: 'Emergency stop activated' });
     } catch (error: unknown) {

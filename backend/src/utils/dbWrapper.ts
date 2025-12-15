@@ -1,31 +1,37 @@
 /**
- * Database wrapper utilities for proper TypeScript types
+ * Database wrapper utilities for PostgreSQL
+ * Provides a unified interface for database connections
  */
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { QueryResultRow } from 'pg';
+
+import { PoolConnection, ResultSetHeader } from './db.js';
 
 export interface DbConnection {
-  query(sql: string, params?: unknown[]): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
-  execute(sql: string, params?: unknown[]): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
-  beginTransaction(): Promise<void>;
-  commit(): Promise<void>;
-  rollback(): Promise<void>;
+  query(
+    sql: string,
+    params?: unknown[],
+  ): Promise<{ rows: QueryResultRow[]; rowCount: number | null }>;
   release(): void;
 }
 
+/**
+ * ConnectionWrapper provides a consistent interface for database operations
+ * Works with PoolConnection from db.ts
+ */
 export class ConnectionWrapper {
-  constructor(private conn: DbConnection) {}
+  constructor(private conn: PoolConnection) {}
 
-  async query<T extends RowDataPacket[] = RowDataPacket[]>(
+  async query<T extends QueryResultRow[] = QueryResultRow[]>(
     sql: string,
     params?: unknown[],
   ): Promise<T> {
-    const [result] = await this.conn.query(sql, params);
-    return result as T;
+    const [rows] = await this.conn.query<T>(sql, params);
+    return rows;
   }
 
   async execute(sql: string, params?: unknown[]): Promise<ResultSetHeader> {
-    const [result] = await this.conn.execute(sql, params);
-    return result as ResultSetHeader;
+    const [result] = await this.conn.execute<ResultSetHeader>(sql, params);
+    return result;
   }
 
   async beginTransaction(): Promise<void> {
@@ -45,6 +51,6 @@ export class ConnectionWrapper {
   }
 }
 
-export function wrapConnection(conn: DbConnection): ConnectionWrapper {
+export function wrapConnection(conn: PoolConnection): ConnectionWrapper {
   return new ConnectionWrapper(conn);
 }

@@ -5,8 +5,8 @@
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
 import {
   cleanupTestData,
   createTestDatabase,
@@ -15,7 +15,7 @@ import {
   createTestTenant,
   createTestUser,
   getAuthToken,
-} from '../mocks/database';
+} from '../mocks/database.js';
 
 describe('Calendar API Endpoints', () => {
   let testDb: Pool;
@@ -34,7 +34,7 @@ describe('Calendar API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-calendar-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-calendar-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'caltest1', 'Calendar Test Company 1');
@@ -149,11 +149,11 @@ describe('Calendar API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.id).toBeDefined();
+      expect(response.body.data['id']).toBeDefined();
 
       // Verify event was created
       const [rows] = await testDb.execute('SELECT * FROM calendar_events WHERE id = ?', [
-        response.body.data.id,
+        response.body.data['id'],
       ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0]).toMatchObject({
@@ -181,7 +181,7 @@ describe('Calendar API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT all_day FROM calendar_events WHERE id = ?', [
-        response.body.data.id,
+        response.body.data['id'],
       ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0].all_day).toBe(1);
@@ -272,7 +272,7 @@ describe('Calendar API Endpoints', () => {
       // Verify recurring pattern was created
       const [rows] = await testDb.execute(
         'SELECT * FROM calendar_recurring_patterns WHERE event_id = ?',
-        [response.body.data.id],
+        [response.body.data['id']],
       );
       const patterns = asTestRows<unknown>(rows);
       expect(patterns[0]).toMatchObject({
@@ -298,7 +298,7 @@ describe('Calendar API Endpoints', () => {
       // Verify participants were added
       const [rows] = await testDb.execute(
         'SELECT * FROM calendar_event_participants WHERE event_id = ?',
-        [response.body.data.id],
+        [response.body.data['id']],
       );
       const participants = asTestRows<unknown>(rows);
       expect(participants.length).toBe(2);
@@ -316,7 +316,7 @@ describe('Calendar API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT tenant_id FROM calendar_events WHERE id = ?', [
-        response.body.data.id,
+        response.body.data['id'],
       ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0].tenant_id).toBe(tenant1Id);
@@ -387,7 +387,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(adminResponse.status).toBe(200);
-      expect(adminResponse.body.data.events.length).toBe(4);
+      expect(adminResponse.body.data['events'].length).toBe(4);
 
       // Employee1 (dept1, team1) should see company + dept1 + team1
       const emp1Response = await request(app)
@@ -395,8 +395,8 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(emp1Response.status).toBe(200);
-      expect(emp1Response.body.data.events.length).toBe(3);
-      const emp1Ids = emp1Response.body.data.events.map((e) => e.id);
+      expect(emp1Response.body.data['events'].length).toBe(3);
+      const emp1Ids = emp1Response.body.data['events'].map((e) => e.id);
       expect(emp1Ids).toContain(companyEventId);
       expect(emp1Ids).toContain(dept1EventId);
       expect(emp1Ids).toContain(team1EventId);
@@ -408,8 +408,8 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken2}`);
 
       expect(emp2Response.status).toBe(200);
-      expect(emp2Response.body.data.events.length).toBe(2);
-      const emp2Ids = emp2Response.body.data.events.map((e) => e.id);
+      expect(emp2Response.body.data['events'].length).toBe(2);
+      const emp2Ids = emp2Response.body.data['events'].map((e) => e.id);
       expect(emp2Ids).toContain(companyEventId);
       expect(emp2Ids).toContain(dept2EventId);
     });
@@ -423,7 +423,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.events.length).toBe(4);
+      expect(response.body.data['events'].length).toBe(4);
     });
 
     it('should filter by view type', async () => {
@@ -433,7 +433,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.events).toBeDefined();
+      expect(response.body.data['events']).toBeDefined();
     });
 
     it('should include participant info', async () => {
@@ -448,7 +448,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const companyEvent = response.body.data.events.find((e) => e.id === companyEventId);
+      const companyEvent = response.body.data['events'].find((e) => e.id === companyEventId);
       expect(companyEvent.participants).toBeDefined();
       expect(companyEvent.participants.length).toBeGreaterThan(0);
     });
@@ -467,7 +467,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const events = response.body.data.events;
+      const events = response.body.data['events'];
       expect(events.every((e) => e.tenant_id === tenant1Id)).toBe(true);
     });
 
@@ -560,8 +560,8 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.participants).toHaveLength(2);
-      expect(response.body.data.participants[0]).toMatchObject({
+      expect(response.body.data['participants']).toHaveLength(2);
+      expect(response.body.data['participants'][0]).toMatchObject({
         user_id: employeeUser1.id,
         status: 'accepted',
       });
@@ -951,7 +951,7 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.conflicts).toBeDefined();
+      expect(response.body.data['conflicts']).toBeDefined();
     });
 
     it('should find free slots', async () => {
@@ -962,8 +962,8 @@ describe('Calendar API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.freeSlots).toBeDefined();
-      expect(Array.isArray(response.body.data.freeSlots)).toBe(true);
+      expect(response.body.data['freeSlots']).toBeDefined();
+      expect(Array.isArray(response.body.data['freeSlots'])).toBe(true);
     });
   });
 

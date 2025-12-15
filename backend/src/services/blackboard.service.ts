@@ -3,8 +3,6 @@
  * Blackboard Service
  * Handles blackboard business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import {
   type DbBlackboardEntry,
   type EntryQueryOptions,
@@ -14,7 +12,8 @@ import {
   getAllEntries,
   getEntryById,
   updateEntry,
-} from '../models/blackboard';
+} from '../routes/v2/blackboard/blackboard.model.js';
+import { Pool } from '../utils/db.js';
 
 // Service-specific interfaces
 type BlackboardEntry = DbBlackboardEntry;
@@ -41,11 +40,43 @@ interface BlackboardUpdateData {
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
   status?: 'active' | 'archived';
-  requires_confirmation?: boolean;
-  tags?: string[];
   author_id?: number;
   is_pinned?: boolean;
   category?: string | null;
+}
+
+/**
+ * Build update data object, only including defined properties
+ */
+function buildUpdateData(
+  modelData: Omit<BlackboardUpdateData, 'is_pinned' | 'category'>,
+  expiresAt: Date | null,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  const fields: (keyof typeof modelData)[] = [
+    'title',
+    'content',
+    'org_level',
+    'org_id',
+    'priority',
+    'color',
+    'status',
+    'author_id',
+  ];
+
+  for (const field of fields) {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: field comes from hardcoded array, not user input
+    if (modelData[field] !== undefined) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: field comes from hardcoded array, not user input
+      result[field] = modelData[field];
+    }
+  }
+
+  if (expiresAt !== null) {
+    result['expires_at'] = expiresAt;
+  }
+
+  return result;
 }
 
 /**
@@ -105,6 +136,7 @@ class BlackboardService {
   async create(_tenantDb: Pool, data: BlackboardCreateData): Promise<BlackboardEntry> {
     try {
       // Map service data to model data
+      // Build modelData conditionally to satisfy exactOptionalPropertyTypes
       const modelData: ModelEntryCreateData = {
         tenant_id: data.tenant_id,
         title: data.title,
@@ -112,15 +144,17 @@ class BlackboardService {
         org_level: data.org_level,
         org_id: data.org_id,
         author_id: data.author_id,
-        expires_at:
-          data.expires_at instanceof Date ? data.expires_at
-          : data.expires_at != null && data.expires_at !== '' ? new Date(data.expires_at)
-          : undefined,
-        priority: data.priority,
-        color: data.color,
-        tags: data.tags,
-        requires_confirmation: data.requires_confirmation,
       };
+
+      // Conditionally add optional fields only if they have valid values
+      const expiresAt =
+        data.expires_at instanceof Date ? data.expires_at
+        : data.expires_at != null && data.expires_at !== '' ? new Date(data.expires_at)
+        : null;
+
+      if (expiresAt !== null) modelData.expires_at = expiresAt;
+      if (data.priority !== undefined) modelData.priority = data.priority;
+      if (data.color !== undefined) modelData.color = data.color;
 
       const entry = await createEntry(modelData);
       if (!entry) {
@@ -147,21 +181,17 @@ class BlackboardService {
     tenantId: number,
   ): Promise<BlackboardEntry | null> {
     try {
-      // Remove service-specific fields before passing to model
       const { is_pinned: _is_pinned, category: _category, ...modelData } = data;
 
-      // Convert expires_at to Date if it's a string
-      const updateData = {
-        ...modelData,
-        expires_at:
-          modelData.expires_at != null && modelData.expires_at !== '' ?
-            typeof modelData.expires_at === 'string' ?
-              new Date(modelData.expires_at)
-            : modelData.expires_at
-          : undefined,
-      };
+      // Convert expires_at to Date if provided
+      const expiresAt =
+        modelData.expires_at != null && modelData.expires_at !== '' ?
+          typeof modelData.expires_at === 'string' ?
+            new Date(modelData.expires_at)
+          : modelData.expires_at
+        : null;
 
-      return await updateEntry(id, updateData, tenantId);
+      return await updateEntry(id, buildUpdateData(modelData, expiresAt), tenantId);
     } catch (error: unknown) {
       console.error('Error in BlackboardService.update:', error);
       throw error;

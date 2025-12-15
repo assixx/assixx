@@ -1,0 +1,125 @@
+/**
+ * Breadcrumb Navigation (BEM)
+ *
+ * Path navigation showing page hierarchy (Home > Admin > Users)
+ * Source: breadcrumb.js, breadcrumb-config.js
+ *
+ * Usage:
+ * <nav class="breadcrumb" aria-label="Breadcrumb">
+ *   <a href="/" class="breadcrumb__item">
+ *     <i class="fas fa-home breadcrumb__icon" aria-hidden="true"></i> Home
+ *   </a>
+ *   <span class="breadcrumb__separator" aria-hidden="true">
+ *     <i class="fas fa-chevron-right"></i>
+ *   </span>
+ *   <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
+ *     <i class="fas fa-users breadcrumb__icon" aria-hidden="true"></i> Users
+ *   </span>
+ * </nav>
+ */
+
+/* =============================================================================
+   CONTAINER
+   ============================================================================= */
+
+.breadcrumb {
+  display: flex;
+  gap: var(--spacing-2, 8px);
+  align-items: center;
+
+  padding: var(--spacing-0, 6px) var(--spacing-5, 20px);
+
+  font-size: 14px;
+  list-style: none;
+}
+
+/* =============================================================================
+   ITEMS (Links & Active)
+   ============================================================================= */
+
+/* Higher specificity + !important to override @layer base a { color: primary } */
+.breadcrumb .breadcrumb__item,
+.breadcrumb a.breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+
+  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
+  border-radius: var(--radius-3xl, 9999px);
+
+  /* Links are BLUE (primary color) - !important to override @layer base */
+  color: var(--color-icon-primary);
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.breadcrumb .breadcrumb__item:hover,
+.breadcrumb a.breadcrumb__item:hover {
+  /* Lighter blue on hover */
+  color: var(--color-primary-hover, #42a5f5) !important;
+  background: rgb(33 150 243 / 10%);
+}
+
+.breadcrumb .breadcrumb__item--active {
+  pointer-events: none;
+  font-weight: 600;
+  color: var(--text-primary, var(--color-text-primary, #fff)) !important;
+}
+
+.breadcrumb .breadcrumb__item--active:hover {
+  background: transparent;
+}
+
+/* =============================================================================
+   SEPARATOR
+   ============================================================================= */
+
+.breadcrumb .breadcrumb__separator {
+  user-select: none;
+
+  display: flex;
+  align-items: center;
+
+  font-size: 12px;
+
+  /* Separator (arrow) is WHITE */
+  color: rgb(255 255 255 / 100%) !important;
+}
+
+/* =============================================================================
+   ICON
+   ============================================================================= */
+
+.breadcrumb__icon {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (width <= 768px) {
+  .breadcrumb {
+    gap: var(--spacing-1, 4px);
+    padding: var(--spacing-1, 4px) var(--spacing-3, 12px);
+    font-size: 13px;
+  }
+
+  .breadcrumb .breadcrumb__item {
+    padding: 2px 6px;
+  }
+}
+
+/* Hide middle items on very small screens (keep first, last, and second-to-last) */
+@media (width <= 480px) {
+  .breadcrumb .breadcrumb__item:not(:first-of-type, :last-of-type, :nth-last-of-type(2)) {
+    display: none;
+  }
+
+  .breadcrumb .breadcrumb__separator:not(:first-of-type, :last-of-type, :nth-last-of-type(3)) {
+    display: none;
+  }
+}

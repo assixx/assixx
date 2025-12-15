@@ -30,7 +30,7 @@ describe('Users v2 API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-users-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-users-v2-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'usersv2test1', 'Users v2 Test Company 1');
@@ -68,7 +68,7 @@ describe('Users v2 API Endpoints', () => {
       email: adminUser.email,
       password: 'AdminPass123!',
     });
-    adminTokenV2 = adminLoginRes.body.data.accessToken;
+    adminTokenV2 = adminLoginRes.body.data['accessToken'];
 
     const employeeLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
@@ -81,7 +81,7 @@ describe('Users v2 API Endpoints', () => {
       throw new Error('Employee login failed');
     }
 
-    employeeTokenV2 = employeeLoginRes.body.data.accessToken;
+    employeeTokenV2 = employeeLoginRes.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -244,7 +244,7 @@ describe('Users v2 API Endpoints', () => {
         isActive: true,
       });
       expect(response.body.data).toHaveProperty('employeeNumber');
-      expect(response.body.data.employeeNumber).toMatch(/^EMP/);
+      expect(response.body.data['employeeNumber']).toMatch(/^EMP/);
     });
 
     it('should validate required fields', async () => {
@@ -346,7 +346,7 @@ describe('Users v2 API Endpoints', () => {
         first_name: 'Archive',
         last_name: 'Test',
       });
-      archiveUserId = user.id;
+      archiveUserId = user['id'];
     });
 
     it('should archive a user', async () => {
@@ -364,7 +364,7 @@ describe('Users v2 API Endpoints', () => {
         .get(`/api/v2/users/${archiveUserId}`)
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
-      expect(getResponse.body.data.isArchived).toBe(true);
+      expect(getResponse.body.data['isArchived']).toBe(true);
     });
 
     it('should unarchive a user', async () => {
@@ -390,7 +390,7 @@ describe('Users v2 API Endpoints', () => {
         .get(`/api/v2/users/${archiveUserId}`)
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
-      expect(getResponse.body.data.isArchived).toBe(false);
+      expect(getResponse.body.data['isArchived']).toBe(false);
     });
   });
 
@@ -419,8 +419,8 @@ describe('Users v2 API Endpoints', () => {
       // Verify it's the same user
       const meRes = await request(app)
         .get('/api/v2/users/me')
-        .set('Authorization', `Bearer ${loginRes.body.data.accessToken}`);
-      expect(meRes.body.data.id).toBe(employeeUserId);
+        .set('Authorization', `Bearer ${loginRes.body.data['accessToken']}`);
+      expect(meRes.body.data['id']).toBe(employeeUserId);
     });
 
     it('should reject incorrect current password', async () => {
@@ -526,7 +526,7 @@ describe('Users v2 API Endpoints', () => {
         first_name: 'Avail',
         last_name: 'Test',
       });
-      availabilityUserId = user.id;
+      availabilityUserId = user['id'];
     });
 
     it('should update user availability', async () => {
@@ -552,13 +552,13 @@ describe('Users v2 API Endpoints', () => {
       // Extract date part from ISO string (YYYY-MM-DD from YYYY-MM-DDTHH:mm:ss.sssZ)
       console.info(
         'Availability response:',
-        response.body.data.availabilityStart,
-        response.body.data.availabilityEnd,
+        response.body.data['availabilityStart'],
+        response.body.data['availabilityEnd'],
       );
 
       // Handle timezone differences - the date might be off by one day due to timezone conversion
-      const startDate = new Date(response.body.data.availabilityStart);
-      const endDate = new Date(response.body.data.availabilityEnd);
+      const startDate = new Date(response.body.data['availabilityStart']);
+      const endDate = new Date(response.body.data['availabilityEnd']);
 
       // Check if the dates are within reasonable range (accounting for timezone differences)
       const expectedStart = new Date('2024-08-01');
@@ -608,7 +608,7 @@ describe('Users v2 API Endpoints', () => {
         email: tenant2Admin.email,
         password: 'AdminPass123!',
       });
-      tenant2AdminToken = loginRes.body.data.accessToken;
+      tenant2AdminToken = loginRes.body.data['accessToken'];
     });
 
     it('should not allow cross-tenant user access', async () => {

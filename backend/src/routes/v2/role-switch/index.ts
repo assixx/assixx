@@ -5,8 +5,10 @@
 import { Router } from 'express';
 
 import { securityV2 } from '../../../middleware/v2/security.middleware.js';
+import { validateBody } from '../../../middleware/validation.zod.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { RoleSwitchController } from './role-switch.controller.js';
+import { EmptyBodySchema } from './role-switch.validation.zod.js';
 
 const router = Router();
 
@@ -28,6 +30,7 @@ const router = Router();
 router.post(
   '/to-employee',
   ...securityV2.user(), // Any authenticated user, but service checks for admin/root
+  validateBody(EmptyBodySchema), // Security: Ensure no unexpected parameters
   typed.auth(RoleSwitchController.switchToEmployee),
 );
 
@@ -49,6 +52,7 @@ router.post(
 router.post(
   '/to-original',
   ...securityV2.user(),
+  validateBody(EmptyBodySchema), // Security: Ensure no unexpected parameters
   typed.auth(RoleSwitchController.switchToOriginal),
 );
 
@@ -67,7 +71,12 @@ router.post(
  *       403:
  *         description: Only root users can use this endpoint
  */
-router.post('/root-to-admin', ...securityV2.user(), typed.auth(RoleSwitchController.rootToAdmin));
+router.post(
+  '/root-to-admin',
+  ...securityV2.user(),
+  validateBody(EmptyBodySchema), // Security: Ensure no unexpected parameters
+  typed.auth(RoleSwitchController.rootToAdmin),
+);
 
 /**
 

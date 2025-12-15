@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
-import { pool } from '../../database';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
+import { pool } from '../../database.js';
 
 /**
  * Document Upload Test - Mit echter Test-Datenbank
@@ -11,7 +11,7 @@ import { pool } from '../../database';
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL in auth middleware
-process.env.NODE_ENV = 'production';
+process.env['NODE_ENV'] = 'production';
 
 // Nur externe Services mocken
 jest.mock('../../utils/emailService', () => ({
@@ -84,7 +84,7 @@ describe('Document Upload - Integration Test', () => {
         role: 'admin',
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET ?? 'schneeseekleerehfeedrehzehwehtee',
+      process.env['JWT_SECRET'] ?? 'schneeseekleerehfeedrehzehwehtee',
       { expiresIn: '1h' },
     );
   });

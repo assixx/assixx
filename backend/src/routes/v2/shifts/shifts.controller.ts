@@ -4,84 +4,76 @@
  */
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { ServiceError } from '../../../utils/ServiceError';
-import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse';
-import { shiftsService } from './shifts.service';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
+import { shiftsService } from './shifts.service.js';
+import type { ShiftCreateData, ShiftUpdateData, SwapRequestCreateData } from './shifts.types.js';
 
-// Constants
-const ERROR_CODES = {
-  SERVER_ERROR: 'SERVER_ERROR',
-} as const;
-
-const HEADERS = {
-  USER_AGENT: 'user-agent',
-} as const;
-
-// Import types from service for type safety
-interface ShiftCreateData {
-  planId?: number;
-  userId: number;
-  templateId?: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  title?: string;
-  requiredEmployees?: number;
-  breakMinutes?: number;
-  status?: string;
-  type?: string;
-  notes?: string;
-  departmentId: number;
-  teamId?: number;
-}
-
-interface ShiftUpdateData {
-  planId?: number;
-  userId?: number;
-  templateId?: number;
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-  title?: string;
-  requiredEmployees?: number;
-  actualStart?: string;
-  actualEnd?: string;
-  breakMinutes?: number;
-  status?: string;
-  type?: string;
-  notes?: string;
-  departmentId?: number;
-  teamId?: number;
-}
-
-interface TemplateCreateData {
-  name: string;
-  startTime: string;
-  endTime: string;
-  breakMinutes?: number;
-  color?: string;
-  isNightShift?: boolean;
-  isActive?: boolean;
-}
-
-interface TemplateUpdateData {
-  name?: string;
-  startTime?: string;
-  endTime?: string;
-  breakMinutes?: number;
-  color?: string;
-  isNightShift?: boolean;
-  isActive?: boolean;
-}
-
-interface SwapRequestCreateData {
-  shiftId: number;
-  requestedWithUserId?: number;
-  reason?: string;
-}
+const ERROR_CODES = { SERVER_ERROR: 'SERVER_ERROR' } as const;
+const HEADERS = { USER_AGENT: 'user-agent' } as const;
 
 // ============= SHIFTS CRUD =============
+
+/**
+ * Parse query parameter as integer or return undefined
+ */
+function parseIntParam(value: unknown): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return Number.parseInt(value as string);
+}
+
+/**
+ * Parse query parameter with default value
+ */
+function parseParamWithDefault<T>(value: unknown, defaultValue: T): T {
+  return value !== undefined ? (value as T) : defaultValue;
+}
+
+/**
+ * Extract and parse filter parameters from request query
+ */
+function parseShiftFilters(query: AuthenticatedRequest['query']): {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  userId?: number;
+  departmentId?: number;
+  teamId?: number;
+  status?: string;
+  type?: string;
+  templateId?: number;
+  planId?: number;
+  page: number;
+  limit: number;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+} {
+  const userId = parseIntParam(query['userId']);
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const templateId = parseIntParam(query['templateId']);
+  const planId = parseIntParam(query['planId']);
+
+  return {
+    ...(query['date'] !== undefined && { date: query['date'] as string }),
+    ...(query['startDate'] !== undefined && { startDate: query['startDate'] as string }),
+    ...(query['endDate'] !== undefined && { endDate: query['endDate'] as string }),
+    ...(userId !== undefined && { userId }),
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(query['status'] !== undefined && { status: query['status'] as string }),
+    ...(query['type'] !== undefined && { type: query['type'] as string }),
+    ...(templateId !== undefined && { templateId }),
+    ...(planId !== undefined && { planId }),
+    page: parseParamWithDefault(parseIntParam(query['page']), 1),
+    limit: parseParamWithDefault(parseIntParam(query['limit']), 20),
+    sortBy: parseParamWithDefault(query['sortBy'], 'date') as string,
+    sortOrder: parseParamWithDefault(query['sortOrder'], 'desc') as 'asc' | 'desc',
+  };
+}
 
 /**
  * List all shifts with filters
@@ -91,36 +83,9 @@ interface SwapRequestCreateData {
  */
 export async function listShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      date: req.query.date as string,
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      status: req.query.status as string,
-      type: req.query.type as string,
-      templateId:
-        req.query.templateId !== undefined ?
-          Number.parseInt(req.query.templateId as string)
-        : undefined,
-      planId:
-        req.query.planId !== undefined ? Number.parseInt(req.query.planId as string) : undefined,
-      page: req.query.page !== undefined ? Number.parseInt(req.query.page as string) : 1,
-      limit: req.query.limit !== undefined ? Number.parseInt(req.query.limit as string) : 20,
-      sortBy: req.query.sortBy !== undefined ? (req.query.sortBy as string) : 'date',
-      sortOrder:
-        req.query.sortOrder !== undefined ? (req.query.sortOrder as 'asc' | 'desc') : 'desc',
-    };
-
+    const filters = parseShiftFilters(req.query);
     const shifts = await shiftsService.listShifts(req.user.tenant_id, filters);
 
-    // TODO: Implement proper pagination
     res.json(
       paginatedResponse(shifts, {
         currentPage: filters.page,
@@ -149,7 +114,12 @@ export async function listShifts(req: AuthenticatedRequest, res: Response): Prom
  */
 export async function getShiftById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const shift = await shiftsService.getShiftById(id, req.user.tenant_id);
     res.json(successResponse(shift));
   } catch (error: unknown) {
@@ -204,7 +174,12 @@ export async function createShift(req: AuthenticatedRequest, res: Response): Pro
  */
 export async function updateShift(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const shift = await shiftsService.updateShift(
       id,
       req.body as ShiftUpdateData, // Validated by middleware
@@ -238,7 +213,12 @@ export async function updateShift(req: AuthenticatedRequest, res: Response): Pro
  */
 export async function deleteShift(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const result = await shiftsService.deleteShift(
       id,
       req.user.tenant_id,
@@ -263,152 +243,6 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-// ============= TEMPLATES =============
-
-/**
- * List all shifts with filters
- * @param req - The authenticated request
- * @param res - The response object
- * @returns Promise resolving to response
- */
-export async function listTemplates(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const templates = await shiftsService.listTemplates(req.user.tenant_id);
-    res.json(successResponse(templates));
-  } catch (error: unknown) {
-    res
-      .status(500)
-      .json(
-        errorResponse(
-          ERROR_CODES.SERVER_ERROR,
-          error instanceof Error ? error.message : 'Failed to list templates',
-        ),
-      );
-  }
-}
-
-/**
- * List all shifts with filters
- * @param req - The authenticated request
- * @param res - The response object
- * @returns Promise resolving to response
- */
-export async function getTemplateById(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const template = await shiftsService.getTemplateById(id, req.user.tenant_id);
-    res.json(successResponse(template));
-  } catch (error: unknown) {
-    if (error instanceof ServiceError && error.code === 'TEMPLATE_NOT_FOUND') {
-      res.status(404).json(errorResponse('NOT_FOUND', error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to get template',
-          ),
-        );
-    }
-  }
-}
-
-/**
- * List all shifts with filters
- * @param req - The authenticated request
- * @param res - The response object
- * @returns Promise resolving to response
- */
-export async function createTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const template = await shiftsService.createTemplate(
-      req.body as TemplateCreateData, // Validated by middleware
-      req.user.tenant_id,
-      req.user.id,
-      req.ip,
-      req.get(HEADERS.USER_AGENT),
-    );
-    res.status(201).json(successResponse(template));
-  } catch (error: unknown) {
-    res
-      .status(500)
-      .json(
-        errorResponse(
-          ERROR_CODES.SERVER_ERROR,
-          error instanceof Error ? error.message : 'Failed to create template',
-        ),
-      );
-  }
-}
-
-/**
- * List all shifts with filters
- * @param req - The authenticated request
- * @param res - The response object
- * @returns Promise resolving to response
- */
-export async function updateTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const template = await shiftsService.updateTemplate(
-      id,
-      req.body as TemplateUpdateData, // Validated by middleware
-      req.user.tenant_id,
-      req.user.id,
-      req.ip,
-      req.get(HEADERS.USER_AGENT),
-    );
-    res.json(successResponse(template));
-  } catch (error: unknown) {
-    if (error instanceof ServiceError && error.code === 'TEMPLATE_NOT_FOUND') {
-      res.status(404).json(errorResponse('NOT_FOUND', error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to update template',
-          ),
-        );
-    }
-  }
-}
-
-/**
- * List all shifts with filters
- * @param req - The authenticated request
- * @param res - The response object
- * @returns Promise resolving to response
- */
-export async function deleteTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const result = await shiftsService.deleteTemplate(
-      id,
-      req.user.tenant_id,
-      req.user.id,
-      req.ip,
-      req.get(HEADERS.USER_AGENT),
-    );
-    res.json(successResponse(result));
-  } catch (error: unknown) {
-    if (error instanceof ServiceError && error.code === 'TEMPLATE_NOT_FOUND') {
-      res.status(404).json(errorResponse('NOT_FOUND', error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to delete template',
-          ),
-        );
-    }
-  }
-}
-
 // ============= SWAP REQUESTS =============
 
 /**
@@ -419,11 +253,18 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response): 
  */
 export async function listSwapRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-      status: req.query.status as string,
-    };
+    const userId =
+      req.query['userId'] !== undefined ?
+        Number.parseInt(req.query['userId'] as string)
+      : undefined;
+
+    const filters: { userId?: number; status?: string } = {};
+    if (userId !== undefined) {
+      filters.userId = userId;
+    }
+    if (req.query['status'] !== undefined) {
+      filters.status = req.query['status'] as string;
+    }
 
     const requests = await shiftsService.listSwapRequests(req.user.tenant_id, filters);
     res.json(successResponse(requests));
@@ -484,7 +325,12 @@ export async function updateSwapRequestStatus(
   res: Response,
 ): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Swap request ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const { status } = req.body as { status: string };
 
     const result = await shiftsService.updateSwapRequestStatus(
@@ -523,11 +369,13 @@ export async function updateSwapRequestStatus(
 export async function getOvertimeReport(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const userId =
-      req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : req.user.id;
-    const startDate = req.query.startDate as string;
-    const endDate = req.query.endDate as string;
+      req.query['userId'] !== undefined ?
+        Number.parseInt(req.query['userId'] as string)
+      : req.user.id;
+    const startDate = req.query['startDate'] as string | undefined;
+    const endDate = req.query['endDate'] as string | undefined;
 
-    if (!startDate || !endDate) {
+    if (startDate === undefined || startDate === '' || endDate === undefined || endDate === '') {
       res
         .status(400)
         .json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));
@@ -554,6 +402,55 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
 // ============= EXPORT =============
 
 /**
+ * Extract and parse export filter parameters from request query
+ */
+function parseExportFilters(query: AuthenticatedRequest['query']): {
+  startDate: string;
+  endDate: string;
+  departmentId?: number;
+  teamId?: number;
+  userId?: number;
+} {
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const userId = parseIntParam(query['userId']);
+
+  return {
+    startDate: query['startDate'] as string,
+    endDate: query['endDate'] as string,
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(userId !== undefined && { userId }),
+  };
+}
+
+/**
+ * Get export format from query or return default
+ */
+function getExportFormat(query: AuthenticatedRequest['query']): 'csv' | 'excel' {
+  return parseParamWithDefault(query['format'], 'csv') as 'csv' | 'excel';
+}
+
+/**
+ * Handle export error response
+ */
+function handleExportError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError && error.code === 'NOT_IMPLEMENTED') {
+    res.status(501).json(errorResponse('NOT_IMPLEMENTED', error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to export shifts',
+      ),
+    );
+}
+
+/**
  * List all shifts with filters
  * @param req - The authenticated request
  * @param res - The response object
@@ -561,20 +458,8 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
  */
 export async function exportShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-    };
-
-    const format = req.query.format !== undefined ? (req.query.format as 'csv' | 'excel') : 'csv';
+    const filters = parseExportFilters(req.query);
+    const format = getExportFormat(req.query);
     const csvData = await shiftsService.exportShifts(filters, req.user.tenant_id, format);
 
     res.setHeader('Content-Type', 'text/csv');
@@ -584,18 +469,7 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response): Pr
     );
     res.send(csvData);
   } catch (error: unknown) {
-    if (error instanceof ServiceError && error.code === 'NOT_IMPLEMENTED') {
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to export shifts',
-          ),
-        );
-    }
+    handleExportError(error, res);
   }
 }
 
@@ -647,46 +521,103 @@ export async function createShiftPlan(req: AuthenticatedRequest, res: Response):
 }
 
 /**
+ * Extract and parse shift plan filter parameters from request query
+ */
+function parseShiftPlanFilters(query: AuthenticatedRequest['query']): {
+  areaId?: number;
+  departmentId?: number;
+  teamId?: number;
+  machineId?: number;
+  startDate?: string;
+  endDate?: string;
+} {
+  const areaId = parseIntParam(query['areaId']);
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const machineId = parseIntParam(query['machineId']);
+
+  return {
+    ...(areaId !== undefined && { areaId }),
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(machineId !== undefined && { machineId }),
+    ...(query['startDate'] !== undefined && { startDate: query['startDate'] as string }),
+    ...(query['endDate'] !== undefined && { endDate: query['endDate'] as string }),
+  };
+}
+
+/**
+ * Handle shift plan error response
+ */
+function handleShiftPlanError(error: unknown, res: Response, operation: string): void {
+  if (error instanceof ServiceError) {
+    res.status(400).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : `Failed to ${operation}`,
+      ),
+    );
+}
+
+/**
  * Get shift plan with shifts and notes
  * @param req - The authenticated request
  * @param res - The response object
  */
 export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      areaId:
-        req.query.areaId !== undefined ? Number.parseInt(req.query.areaId as string) : undefined,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      machineId:
-        req.query.machineId !== undefined ?
-          Number.parseInt(req.query.machineId as string)
-        : undefined,
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-    };
-
+    const filters = parseShiftPlanFilters(req.query);
     const result = await shiftsService.getShiftPlan(filters, req.user.tenant_id);
-
     res.json(successResponse(result, 'Shift plan retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res.status(400).json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to get shift plan',
-          ),
-        );
-    }
+    handleShiftPlanError(error, res, 'get shift plan');
   }
+}
+
+/**
+ * Validate and parse plan ID from request params
+ */
+function validatePlanId(params: AuthenticatedRequest['params'], res: Response): number | null {
+  const idParam = params['id'];
+  if (idParam === undefined) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Plan ID is required'));
+    return null;
+  }
+
+  const planId = Number.parseInt(idParam);
+
+  if (Number.isNaN(planId)) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
+    return null;
+  }
+
+  return planId;
+}
+
+/**
+ * Handle shift plan update error response
+ */
+function handleShiftPlanUpdateError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 400;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to update shift plan',
+      ),
+    );
 }
 
 /**
@@ -696,10 +627,8 @@ export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function updateShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const planId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(planId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
+    const planId = validatePlanId(req.params, res);
+    if (planId === null) {
       return;
     }
 
@@ -730,20 +659,7 @@ export async function updateShiftPlan(req: AuthenticatedRequest, res: Response):
 
     res.json(successResponse(result, 'Shift plan updated successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 400)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to update shift plan',
-          ),
-        );
-    }
+    handleShiftPlanUpdateError(error, res);
   }
 }
 
@@ -808,36 +724,80 @@ export async function createFavorite(req: AuthenticatedRequest, res: Response): 
 }
 
 /**
+ * Validate and parse favorite ID from request params
+ */
+function validateFavoriteId(params: AuthenticatedRequest['params'], res: Response): number | null {
+  const idParam = params['id'];
+  if (idParam === undefined) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Favorite ID is required'));
+    return null;
+  }
+
+  const favoriteId = Number.parseInt(idParam, 10);
+
+  if (Number.isNaN(favoriteId)) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
+    return null;
+  }
+
+  return favoriteId;
+}
+
+/**
+ * Handle delete operation error response
+ */
+function handleDeleteError(error: unknown, res: Response, resource: string): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 400;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : `Failed to delete ${resource}`,
+      ),
+    );
+}
+
+/**
  * Delete shift planning favorite
  */
 export async function deleteFavorite(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const favoriteId = Number.parseInt(req.params.id, 10);
-
-    if (Number.isNaN(favoriteId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
+    const favoriteId = validateFavoriteId(req.params, res);
+    if (favoriteId === null) {
       return;
     }
 
     await shiftsService.deleteFavorite(favoriteId, req.user.tenant_id, req.user.id);
-
     res.json(successResponse(null, 'Favorite deleted successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 400)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to delete favorite',
-          ),
-        );
-    }
+    handleDeleteError(error, res, 'favorite');
   }
+}
+
+/**
+ * Handle delete shift plan error response (403 for permission errors)
+ */
+function handleDeleteShiftPlanError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 403;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to delete shift plan',
+      ),
+    );
 }
 
 /**
@@ -845,32 +805,15 @@ export async function deleteFavorite(req: AuthenticatedRequest, res: Response): 
  */
 export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const planId = Number(req.params.id);
-
-    if (Number.isNaN(planId)) {
-      res.status(400).json(errorResponse('INVALID_INPUT', 'Invalid plan ID'));
+    const planId = validatePlanId(req.params, res);
+    if (planId === null) {
       return;
     }
 
-    // Delete the shift plan and associated shifts
     await shiftsService.deleteShiftPlan(planId, req.user.tenant_id);
-
     res.json(successResponse(null, 'Shift plan deleted successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 403)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to delete shift plan',
-          ),
-        );
-    }
+    handleDeleteShiftPlanError(error, res);
   }
 }
 
@@ -880,10 +823,10 @@ export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response):
  */
 export async function getMyCalendarShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const startDate = req.query.startDate as string;
-    const endDate = req.query.endDate as string;
+    const startDate = req.query['startDate'] as string | undefined;
+    const endDate = req.query['endDate'] as string | undefined;
 
-    if (!startDate || !endDate) {
+    if (startDate === undefined || startDate === '' || endDate === undefined || endDate === '') {
       res
         .status(400)
         .json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));

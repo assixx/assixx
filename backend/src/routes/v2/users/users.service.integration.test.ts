@@ -3,7 +3,6 @@
  * Tests business logic with real database
  */
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import type { ResultSetHeader } from 'mysql2';
 
 import { execute } from '../../../utils/db.js';
 import { ServiceError, UsersService } from './users.service.js';
@@ -18,8 +17,9 @@ describe('UsersService Integration Tests', () => {
     usersService = new UsersService();
 
     // Create test tenant
-    const [tenantResult] = await execute<ResultSetHeader>(
-      `INSERT INTO tenants (company_name, subdomain, email, status) VALUES (?, ?, ?, ?)`,
+    const [tenantRows] = await execute<{ id: number }[]>(
+      `INSERT INTO tenants (company_name, subdomain, email, status) VALUES ($1, $2, $3, $4)
+       RETURNING id`,
       [
         '__AUTOTEST__UsersServiceInt',
         '__autotest__usersserviceint',
@@ -27,7 +27,7 @@ describe('UsersService Integration Tests', () => {
         'active',
       ],
     );
-    testTenantId = tenantResult.insertId;
+    testTenantId = tenantRows[0]?.id ?? 0;
   });
 
   afterAll(async () => {
@@ -130,10 +130,10 @@ describe('UsersService Integration Tests', () => {
 
   describe('listUsers', () => {
     it('should return paginated users', async () => {
-      const result = await usersService.listUsers(testTenantId, {
+      const result = (await usersService.listUsers(testTenantId, {
         page: '1',
         limit: '10',
-      });
+      })) as { data: unknown[]; pagination: { currentPage: number; pageSize: number } };
 
       expect(result.data).toBeInstanceOf(Array);
       expect(result.data.length).toBeGreaterThan(0);
@@ -144,16 +144,16 @@ describe('UsersService Integration Tests', () => {
     });
 
     it('should filter by search term', async () => {
-      const result = await usersService.listUsers(testTenantId, {
+      const result = (await usersService.listUsers(testTenantId, {
         search: '__AUTOTEST__',
-      });
+      })) as { data: Array<{ username: string; email: string }> };
 
       expect(result.data).toBeInstanceOf(Array);
 
-      // Type assertion for the array
-      const users = result.data as Array<{ username: string; email: string }>;
       expect(
-        users.every((u) => u.username.includes('__AUTOTEST__') || u.email.includes('__AUTOTEST__')),
+        result.data.every(
+          (u) => u.username.includes('__AUTOTEST__') || u.email.includes('__AUTOTEST__'),
+        ),
       ).toBe(true);
     });
   });
@@ -174,9 +174,10 @@ describe('UsersService Integration Tests', () => {
 
     it('should delete user successfully', async () => {
       // Create another user to delete
-      const [userResult] = await execute<ResultSetHeader>(
-        `INSERT INTO users (username, email, password, role, tenant_id, employee_number, first_name, last_name, status) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      const [userRows] = await execute<{ id: number }[]>(
+        `INSERT INTO users (username, email, password, role, tenant_id, employee_number, first_name, last_name, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id`,
         [
           '__AUTOTEST__todelete@test.com',
           '__AUTOTEST__todelete@test.com',
@@ -191,7 +192,7 @@ describe('UsersService Integration Tests', () => {
       );
 
       const result = await usersService.deleteUser(
-        userResult.insertId,
+        userRows[0]?.id ?? 0,
         testUserId, // Different user doing the deletion
         testTenantId,
       );

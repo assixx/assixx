@@ -1,15 +1,104 @@
 # 📋 Assixx TypeScript Code Standards - Der definitive Style Guide
 
-> **Version:** 2.1.0
-> **Aktualisiert:** 14.08.2025
-> **Basiert auf:** ESLint & Prettier Configs
+> **Version:** 3.0.0
+> **Aktualisiert:** 2025-12-08
+> **Basiert auf:** ESLint & Prettier Configs + Power of Ten Rules
 > **Philosophie:** MAXIMUM STRICTNESS - Zero-Tolerance für schlechten Code
+> **Database:** PostgreSQL 17 with `pg` library (NOT MySQL!)
 
 ## 🎯 Executive Summary
 
 Dieses Dokument ist unser **Code of Conduct** - die einzige Wahrheit für TypeScript-Code im Assixx-Projekt. Es basiert direkt auf unseren ESLint und Prettier Konfigurationen und stellt sicher, dass **KEINE** ESLint-Fehler oder Warnungen entstehen.
 
 **Goldene Regel:** Code, der gegen diese Standards verstößt, wird NICHT gemerged.
+
+> **Pflichtlektüre:** [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - 10 Regeln für Safety-Critical Code (NASA/JPL), adaptiert für TypeScript.
+
+---
+
+## ⚙️ tsconfig.base.json - Power of Ten Strict Mode
+
+Unsere TypeScript-Konfiguration basiert auf den **Power of Ten Rules** (NASA/JPL). Diese Einstellungen sind **NICHT verhandelbar**:
+
+```jsonc
+{
+  "compilerOptions": {
+    // === STRICT TYPE CHECKING (P10 Regel 10: Zero Warnings) ===
+    "strict": true,
+    "strictNullChecks": true,           // null/undefined explizit behandeln
+    "strictFunctionTypes": true,         // Contravariant parameter types
+    "strictPropertyInitialization": true, // Klassen müssen initialisiert sein
+    "noImplicitAny": true,               // NIEMALS implizit any
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,  // catch(error) ist unknown, NICHT any
+
+    // === CODE QUALITY (P10 Regel 7: Return-Values prüfen) ===
+    "noUnusedLocals": true,              // Keine ungenutzten Variablen
+    "noUnusedParameters": true,          // Keine ungenutzten Parameter
+    "noImplicitReturns": true,           // Alle Pfade müssen return haben
+    "noFallthroughCasesInSwitch": true,  // switch-case muss break/return haben
+
+    // === ADVANCED STRICTNESS (P10 Regel 10: Höchste Strenge) ===
+    "noUncheckedIndexedAccess": true,    // arr[i] ist T | undefined!
+    "exactOptionalPropertyTypes": true,  // undefined vs "nicht definiert"
+    "noPropertyAccessFromIndexSignature": true, // obj["key"] statt obj.key
+    "noImplicitOverride": true,          // override keyword erzwingen
+
+    // === PREVENT DEAD CODE ===
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false
+  }
+}
+```
+
+### Wichtige Implikationen:
+
+#### `noUncheckedIndexedAccess: true`
+```typescript
+// ❌ FALSCH - arr[0] könnte undefined sein!
+const users: User[] = await getUsers();
+const firstUser = users[0];
+console.log(firstUser.name); // Error: Object is possibly 'undefined'
+
+// ✅ RICHTIG - Explizite Prüfung
+const firstUser = users[0];
+if (firstUser !== undefined) {
+  console.log(firstUser.name);
+}
+
+// ✅ RICHTIG - Mit optionalem Chaining
+console.log(users[0]?.name ?? 'No user');
+```
+
+#### `exactOptionalPropertyTypes: true`
+```typescript
+interface User {
+  name: string;
+  nickname?: string; // kann FEHLEN, aber NICHT undefined sein!
+}
+
+// ❌ FALSCH
+const user: User = { name: 'John', nickname: undefined }; // Error!
+
+// ✅ RICHTIG
+const user: User = { name: 'John' }; // nickname fehlt komplett
+const user2: User = { name: 'Jane', nickname: 'JJ' }; // nickname vorhanden
+```
+
+#### `noPropertyAccessFromIndexSignature: true`
+```typescript
+interface Config {
+  [key: string]: string;
+}
+
+const config: Config = { apiKey: 'secret' };
+
+// ❌ FALSCH - Sieht aus wie bekanntes Property
+console.log(config.apiKey); // Error!
+
+// ✅ RICHTIG - Explizit dynamischer Zugriff
+console.log(config['apiKey']);
+```
 
 ---
 
@@ -842,8 +931,10 @@ interface UserData {
 
 **Dieser Standard ist VERBINDLICH. Code, der diese Standards nicht erfüllt, wird NICHT gemerged.**
 
-**Letzte Aktualisierung:** 14.08.2025
-**Basiert auf:** eslint.config.js (Backend & Frontend) + .prettierrc.json
+**Letzte Aktualisierung:** 2025-12-08
+**Basiert auf:** eslint.config.js + tsconfig.base.json + Power of Ten Rules + .prettierrc.json
+**Database:** PostgreSQL 17 with `pg` library (NOT MySQL!)
+**Validation:** Zod schemas (NOT express-validator!)
 **Maintainer:** Assixx Development Team
 
 ## TypeScript Architecture Guide
@@ -981,33 +1072,53 @@ router.post(
 );
 ```
 
-### Database Queries
+### Database Queries (PostgreSQL 17)
 
-**IMPORTANT**: Due to TypeScript union type issues between mysql2 Pool and MockDatabase, always use the centralized database utilities from `/src/utils/db.ts`:
+**IMPORTANT**: Use the centralized database utilities from `/src/utils/db.ts` with **PostgreSQL `$1, $2, $3` placeholders**:
 
 ```typescript
-import { ResultSetHeader, RowDataPacket, execute, getConnection, query, transaction } from '../utils/db';
+import { ResultSetHeader, RowDataPacket, execute, query, transaction } from '../utils/db';
 
-// SELECT queries - use execute or query
-const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
+// SELECT queries - use $1, $2, $3 placeholders (NOT ?)
+const [rows] = await execute<RowDataPacket[]>(
+  'SELECT * FROM users WHERE id = $1 AND tenant_id = $2',
+  [userId, tenantId]
+);
 
-// INSERT/UPDATE/DELETE queries
-const [result] = await execute<ResultSetHeader>('INSERT INTO users (email, password) VALUES (?, ?)', [
-  email,
-  hashedPassword,
-]);
-const insertId = result.insertId;
+// INSERT with RETURNING (PostgreSQL best practice)
+const [result] = await execute<RowDataPacket[]>(
+  'INSERT INTO users (email, password, tenant_id) VALUES ($1, $2, $3) RETURNING id',
+  [email, hashedPassword, tenantId]
+);
+const insertId = result[0]?.id;
 
-// Transactions
+// UPDATE/DELETE queries
+const [updateResult] = await execute<ResultSetHeader>(
+  'UPDATE users SET name = $1 WHERE id = $2 AND tenant_id = $3',
+  [newName, userId, tenantId]
+);
+
+// Transactions with RLS context
 await transaction(async (connection) => {
-  await connection.execute('INSERT INTO users (email) VALUES (?)', [email]);
-  await connection.execute('INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())', []);
-});
+  await connection.execute(
+    'INSERT INTO users (email, tenant_id) VALUES ($1, $2) RETURNING id',
+    [email, tenantId]
+  );
+  await connection.execute(
+    'INSERT INTO profiles (user_id, tenant_id) VALUES ($1, $2)',
+    [userId, tenantId]
+  );
+}, { tenantId, userId }); // RLS context for Row Level Security
 ```
 
-**Never import pool directly from database.ts or config/database.ts**. The centralized utilities handle the Pool/MockDatabase union type issues automatically.
+**PostgreSQL vs MySQL Syntax:**
+| MySQL | PostgreSQL |
+|-------|------------|
+| `?` placeholder | `$1, $2, $3` |
+| `LAST_INSERT_ID()` | `RETURNING id` |
+| `LIMIT ?, ?` | `LIMIT $1 OFFSET $2` |
 
-📚 **See [TypeScript Database Utilities](./TYPESCRIPT-DB-UTILITIES.md) for detailed documentation and migration guide.**
+**Never import pool directly from database.ts or config/database.ts**.
 
 ### Error Handling
 
@@ -1072,11 +1183,12 @@ backend/src/
 1. Always use the appropriate security stack for your endpoint type
 2. Never bypass type checking with `as any`
 3. Include tenant_id in all multi-tenant queries
-4. Validate all user input using express-validator schemas
-5. Use parameterized queries to prevent SQL injection
+4. Validate all user input using **Zod schemas** (see [ZOD-INTEGRATION-GUIDE.md](../backend/docs/ZOD-INTEGRATION-GUIDE.md))
+5. Use parameterized queries with PostgreSQL `$1, $2` placeholders to prevent SQL injection
 
 ## References
 
+- [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - **PFLICHTLEKTÜRE** - 10 Regeln für Safety-Critical Code (NASA/JPL)
 - [TypeScript Security Best Practices](../../docs/TYPESCRIPT-SECURITY-BEST-PRACTICES.md)
 - [User Update Security Fix](./USER_UPDATE_SECURITY_FIX_SUMMARY.md)
 - [Phase 2 Migration Guide](../../docs/PHASE2-MIGRATION-GUIDE.md)
@@ -1085,15 +1197,16 @@ backend/src/
 
 ## Common Patterns
 
-### Multi-tenant Query Pattern
+### Multi-tenant Query Pattern (PostgreSQL)
 
 ```typescript
 import { RowDataPacket, execute } from '../utils/db';
 
-const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = ? AND role = ?', [
-  req.user.tenant_id,
-  'employee',
-]);
+// PostgreSQL uses $1, $2, $3 placeholders (NOT ?)
+const [users] = await execute<RowDataPacket[]>(
+  'SELECT * FROM users WHERE tenant_id = $1 AND role = $2',
+  [req.user.tenantId, 'employee']
+);
 ```
 
 ### File Upload Pattern

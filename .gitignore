@@ -1,10 +1,13 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment (NEVER commit secrets!)
 .env
 .env.local
 .env.production
+docker/.env
+**/.env
+!**/.env.example
 
 # Logs
 *.log
@@ -66,6 +69,7 @@ eslint-report.json
 
 # Stylelint
 .stylelintcache
+.type-coverage
 
 # Feature flags (local development only)
 frontend/public/feature-flags.js
@@ -77,3 +81,6 @@ backups/monthly/
 backups/quick/
 backups/latest_backup.sql.gz
 backups/cron.log
+
+# Bruno API Testing (komplett ignorieren)
+api-tests/

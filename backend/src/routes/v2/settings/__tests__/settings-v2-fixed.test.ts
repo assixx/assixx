@@ -25,7 +25,7 @@ describe('Settings API v2 - Fixed', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-settings-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-settings-v2-tests';
 
     // Create test tenant
     tenantId = await createTestTenant(testDb, 'settingsfix-test', 'Test Settings Tenant Fixed');
@@ -60,19 +60,19 @@ describe('Settings API v2 - Fixed', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
 
     const rootLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: rootUser.email,
       password: 'TestPass123!',
     });
-    rootToken = rootLoginRes.body.data.accessToken;
+    rootToken = rootLoginRes.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -117,7 +117,7 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.settings).toBeInstanceOf(Array);
+      expect(response.body.data['settings']).toBeInstanceOf(Array);
     }, 10000);
 
     it('should create and get system setting as root', async () => {
@@ -144,8 +144,8 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(getRes.status).toBe(200);
       expect(getRes.body.success).toBe(true);
-      expect(getRes.body.data.settingKey).toBe('test_setting');
-      expect(getRes.body.data.settingValue).toBe('test_value');
+      expect(getRes.body.data['settingKey']).toBe('test_setting');
+      expect(getRes.body.data['settingValue']).toBe('test_value');
     }, 10000);
   });
 
@@ -157,7 +157,7 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.settings).toBeInstanceOf(Array);
+      expect(response.body.data['settings']).toBeInstanceOf(Array);
     }, 10000);
 
     it('should allow admin to create tenant setting', async () => {
@@ -198,7 +198,7 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.settings).toBeInstanceOf(Array);
+      expect(response.body.data['settings']).toBeInstanceOf(Array);
     }, 10000);
 
     it('should create user setting', async () => {
@@ -255,7 +255,7 @@ describe('Settings API v2 - Fixed', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.settings).toHaveLength(3);
+      expect(response.body.data['settings']).toHaveLength(3);
     }, 10000);
   });
 
@@ -267,8 +267,8 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.categories).toBeInstanceOf(Array);
-      expect(response.body.data.categories).toContainEqual(
+      expect(response.body.data['categories']).toBeInstanceOf(Array);
+      expect(response.body.data['categories']).toContainEqual(
         expect.objectContaining({
           key: 'general',
           label: 'General',
@@ -299,9 +299,9 @@ describe('Settings API v2 - Fixed', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.results).toHaveLength(2);
-      expect(response.body.data.results[0].success).toBe(true);
-      expect(response.body.data.results[1].success).toBe(true);
+      expect(response.body.data['results']).toHaveLength(2);
+      expect(response.body.data['results'][0].success).toBe(true);
+      expect(response.body.data['results'][1].success).toBe(true);
     }, 10000);
   });
 });

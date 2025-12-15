@@ -2,8 +2,8 @@
  * Feature Service
  * Handles feature-related business logic
  */
-// import Feature from '../models/feature';
-import { Pool } from 'mysql2/promise';
+// import Feature from '../models/feature.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces
 interface FeatureData {

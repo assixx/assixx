@@ -18,8 +18,8 @@ const setEnvDefault = (key: string, value: string): void => {
 };
 
 setEnvDefault('NODE_ENV', 'test');
-setEnvDefault('DB_HOST', process.env.CI === 'true' ? 'mysql' : 'localhost');
-setEnvDefault('DB_PORT', process.env.CI === 'true' ? '3306' : '3307');
+setEnvDefault('DB_HOST', process.env['CI'] === 'true' ? 'mysql' : 'localhost');
+setEnvDefault('DB_PORT', process.env['CI'] === 'true' ? '3306' : '3307');
 setEnvDefault('DB_USER', 'assixx_user');
 setEnvDefault('DB_PASSWORD', 'AssixxP@ss2025!');
 setEnvDefault('DB_NAME', 'main_test');

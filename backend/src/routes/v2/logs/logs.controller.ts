@@ -1,11 +1,88 @@
 import bcrypt from "bcryptjs";
 import { Response } from "express";
-import user from "../../../models/user.js";
+import user from "../users/model/index.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 import { logsService } from "./logs.service.js";
 import { LogsFilterParams } from "./types.js";
+
+/**
+ * Check if query parameter has a value
+ */
+function hasQueryParam(value: unknown): value is string {
+  return typeof value === 'string' && value !== '';
+}
+
+/**
+ * Parse query parameter as integer with default value
+ */
+function parseQueryInt(value: unknown, defaultValue: number): number {
+  if (!hasQueryParam(value)) return defaultValue;
+  const parsed = Number.parseInt(value);
+  return Number.isNaN(parsed) ? defaultValue : parsed;
+}
+
+// Delete filter input type (with | undefined for exactOptionalPropertyTypes)
+interface DeleteFilterInput {
+  userId?: number | undefined;
+  tenantId?: number | undefined;
+  olderThanDays?: number | undefined;
+  action?: string | undefined;
+  entityType?: string | undefined;
+  search?: string | undefined; // Search filter for name, email, department, etc.
+}
+
+// Delete filter output type (matches service parameter)
+interface DeleteFilterOutput {
+  userId?: number;
+  tenantId?: number;
+  olderThanDays?: number;
+  action?: string;
+  entityType?: string;
+  search?: string;
+}
+
+/**
+ * Check if at least one delete filter is provided
+ */
+function hasAnyDeleteFilter(input: DeleteFilterInput): boolean {
+  return (
+    input.userId !== undefined ||
+    input.tenantId !== undefined ||
+    input.olderThanDays !== undefined ||
+    (input.action !== undefined && input.action !== '') ||
+    (input.entityType !== undefined && input.entityType !== '') ||
+    (input.search !== undefined && input.search !== '')
+  );
+}
+
+/**
+ * Build delete filters with tenant isolation
+ */
+function buildDeleteFilters(input: DeleteFilterInput, enforcedTenantId: number): DeleteFilterOutput {
+  const filters: DeleteFilterOutput = {
+    tenantId: enforcedTenantId, // Always enforce tenant isolation
+  };
+
+  if (input.userId !== undefined) {
+    filters.userId = input.userId;
+  }
+  if (input.olderThanDays !== undefined) {
+    filters.olderThanDays = input.olderThanDays;
+  }
+  if (input.action !== undefined && input.action !== '') {
+    filters.action = input.action;
+  }
+  if (input.entityType !== undefined && input.entityType !== '') {
+    filters.entityType = input.entityType;
+  }
+  if (input.search !== undefined && input.search !== '') {
+    filters.search = input.search;
+  }
+
+  return filters;
+}
 
 
 export const logsController = {
@@ -35,17 +112,17 @@ export const logsController = {
       logger.info("[Logs v2 Controller] User is root, proceeding");
 
       // Support both 'offset' and 'page' parameters for compatibility
-      const limit = req.query.limit ? Number.parseInt(req.query.limit as string) : 50;
+      const limit = parseQueryInt(req.query['limit'], 50);
       let page = 1;
-      
-      if (req.query.offset !== undefined) {
+
+      if (hasQueryParam(req.query['offset'])) {
         // If offset is provided, calculate page from it
-        const offset = Number.parseInt(req.query.offset as string);
+        const offset = Number.parseInt(req.query['offset']);
         page = Math.floor(offset / limit) + 1;
         logger.info(`[Logs v2] Converting offset ${offset} to page ${page} (limit: ${limit})`);
-      } else if (req.query.page) {
+      } else if (hasQueryParam(req.query['page'])) {
         // Otherwise use page directly
-        page = Number.parseInt(req.query.page as string);
+        page = Number.parseInt(req.query['page']);
       }
 
       // KRITISCH: IMMER nach tenant_id des angemeldeten Users filtern!
@@ -53,14 +130,28 @@ export const logsController = {
       const filters: LogsFilterParams = {
         page,
         limit,
-        userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
         tenantId: req.user.tenant_id, // IMMER die tenant_id des angemeldeten Users verwenden!
-        action: req.query.action as string,
-        entityType: req.query.entityType as string,
-        startDate: req.query.startDate as string,
-        endDate: req.query.endDate as string,
-        search: req.query.search as string,
       };
+
+      // Only add optional properties if they are defined
+      if (hasQueryParam(req.query['userId'])) {
+        filters.userId = Number.parseInt(req.query['userId']);
+      }
+      if (hasQueryParam(req.query['action'])) {
+        filters.action = req.query['action'];
+      }
+      if (hasQueryParam(req.query['entityType'])) {
+        filters.entityType = req.query['entityType'];
+      }
+      if (hasQueryParam(req.query['startDate'])) {
+        filters.startDate = req.query['startDate'];
+      }
+      if (hasQueryParam(req.query['endDate'])) {
+        filters.endDate = req.query['endDate'];
+      }
+      if (hasQueryParam(req.query['search'])) {
+        filters.search = req.query['search'];
+      }
 
       logger.info("[Logs v2] Fetching logs with filters (tenant_id enforced):", filters);
       const result = await logsService.getLogs(filters);
@@ -113,56 +204,43 @@ export const logsController = {
         return;
       }
 
-      const { userId, tenantId, olderThanDays, action, entityType, confirmPassword } = req.body as {
-        userId?: number;
-        tenantId?: number;
-        olderThanDays?: number;
-        action?: string;
-        entityType?: string;
-        confirmPassword: string;
+      const body = req.body as DeleteFilterInput & { confirmPassword: string };
+      const filterInput: DeleteFilterInput = {
+        userId: body.userId,
+        tenantId: body.tenantId,
+        olderThanDays: body.olderThanDays,
+        action: body.action,
+        entityType: body.entityType,
+        search: body.search,
       };
 
-      logger.info(`[Logs v2 DELETE] Request body:`, { userId, tenantId, olderThanDays, action, entityType, confirmPassword: '***' });
-      console.log('[Logs v2 DELETE] Filters:', { userId, tenantId, olderThanDays, action, entityType });
+      logger.info(`[Logs v2 DELETE] Request body:`, { ...filterInput, confirmPassword: '***' });
 
       // Verify root password
       const rootUser = await user.findById(req.user.id, req.user.tenant_id);
-      if (!rootUser) {
+      if (rootUser === undefined) {
         res.status(401).json(errorResponse("UNAUTHORIZED", "User not found"));
         return;
       }
 
-      const isValidPassword = await bcrypt.compare(confirmPassword, rootUser.password);
+      const isValidPassword = await bcrypt.compare(body.confirmPassword, rootUser.password);
       if (!isValidPassword) {
         res.status(401).json(errorResponse("UNAUTHORIZED", "Invalid password"));
         return;
       }
 
       // At least one filter must be provided
-      if (!userId && !tenantId && olderThanDays === undefined && !action && !entityType) {
-        res.status(400).json(
-          errorResponse("VALIDATION_ERROR", "At least one filter must be provided")
-        );
+      if (!hasAnyDeleteFilter(filterInput)) {
+        res.status(400).json(errorResponse("VALIDATION_ERROR", "At least one filter must be provided"));
         return;
       }
 
       // KRITISCH: Nur Logs des eigenen Tenants dürfen gelöscht werden!
-      const deletedCount = await logsService.deleteLogs({
-        userId,
-        tenantId: req.user.tenant_id, // IMMER die tenant_id des angemeldeten Users erzwingen!
-        olderThanDays,
-        action,
-        entityType
-      });
+      const deleteFilters = buildDeleteFilters(filterInput, req.user.tenant_id);
+      const deletedCount = await logsService.deleteLogs(deleteFilters);
 
-      logger.info(`[Logs v2] Root user ${req.user.id} deleted ${deletedCount} logs`, {
-        filters: { userId, tenantId, olderThanDays }
-      });
-
-      res.json(successResponse({
-        message: `Successfully deleted ${deletedCount} logs`,
-        deletedCount
-      }));
+      logger.info(`[Logs v2] Root user ${req.user.id} deleted ${deletedCount} logs`, { filters: filterInput });
+      res.json(successResponse({ message: `Successfully deleted ${deletedCount} logs`, deletedCount }));
     } catch (error: unknown) {
       logger.error("[Logs v2] Error deleting logs:", error);
       res.status(500).json(errorResponse("SERVER_ERROR", "Failed to delete logs"));

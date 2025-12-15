@@ -1,9 +1,9 @@
+import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError.js';
+import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db.js';
+import { fieldMapper } from '../../../utils/fieldMapper.js';
+import { logger } from '../../../utils/logger.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog';
-import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError';
-import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db';
-import { fieldMapper } from '../../../utils/fieldMapper';
-import { logger } from '../../../utils/logger';
+import RootLog from '../logs/logs.service.js';
 import {
   ActivationOptions,
   DbFeature,
@@ -17,32 +17,108 @@ import {
   TenantFeature,
   TenantFeaturesSummary,
   TenantWithFeatures,
-} from './types';
+} from './types.js';
 
 /**
  * Features service with static methods
  * DESIGN PATTERN: Service als Klasse mit statischen Methoden für bessere Organisation
  * und Namespace-Gruppierung. Alternative wäre ein Objekt mit Funktionen.
  */
+/** Query result interface for features with tenant status */
+interface FeatureWithTenantStatusRow extends DbFeature {
+  tf_is_active: number | boolean | null;
+  activated_at: Date | null;
+  expires_at: Date | null;
+  status: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class FeaturesService {
+  /**
+   * Map DbTenantFeature row to TenantFeature with parsed config and status
+   */
+  private static mapTenantFeatureRow(row: DbTenantFeature, mapped: TenantFeature): TenantFeature {
+    // Parse custom_config if it's a string
+    if (row.custom_config !== null && typeof row.custom_config === 'string') {
+      try {
+        mapped.customConfig = JSON.parse(row.custom_config) as Record<string, unknown>;
+      } catch {
+        mapped.customConfig = {};
+      }
+    }
+    // Set status based on is_active and expires_at
+    const isActive = row.is_active === true;
+    if (isActive) {
+      const isExpired = row.expires_at !== null && new Date(row.expires_at) < new Date();
+      mapped.status = isExpired ? 'expired' : 'active';
+    } else {
+      mapped.status = 'disabled';
+    }
+    return mapped;
+  }
+
+  /**
+   * Map a FeatureWithTenantStatusRow to FeatureWithTenantInfo
+   */
+  private static mapFeatureWithTenantStatusRow(
+    row: FeatureWithTenantStatusRow,
+  ): FeatureWithTenantInfo {
+    const feature = fieldMapper.dbToApi({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      category: row.category,
+      base_price: row.base_price,
+      is_active: row.is_active,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }) as Feature;
+
+    const result: FeatureWithTenantInfo = {
+      id: feature.id,
+      code: feature.code,
+      name: feature.name,
+      category: feature.category,
+      isActive: feature.isActive,
+      createdAt: feature.createdAt,
+      updatedAt: feature.updatedAt,
+    };
+
+    if (feature.description !== undefined) result.description = feature.description;
+    if (feature.price !== undefined) result.price = feature.price;
+
+    if (row.tf_is_active !== null) {
+      result.tenantFeature = { status: row.status, isActive: Boolean(row.tf_is_active) };
+      if (row.activated_at !== null) {
+        result.tenantFeature.validFrom = new Date(row.activated_at).toISOString();
+      }
+      if (row.expires_at !== null) {
+        result.tenantFeature.validUntil = new Date(row.expires_at).toISOString();
+      }
+    }
+
+    return result;
+  }
+
   // Get all available features
   /**
    *
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
-      const whereClause = includeInactive ? '' : 'WHERE is_active = true';
+      const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
       const [rows] = await query<DbFeature[]>(
         `SELECT * FROM features ${whereClause} ORDER BY category, sort_order, name`,
       );
 
-      return rows.map((row) => {
+      return rows.map((row: DbFeature) => {
         const mapped = fieldMapper.dbToApi(row) as Feature;
-        // Map base_price to price
-        if ('base_price' in row) {
-          mapped.price = row.base_price ? Number.parseFloat(row.base_price as string) : undefined;
+        // Map base_price to price - only add property if value is defined
+        if ('base_price' in row && row.base_price !== null) {
+          mapped.price = Number.parseFloat(row.base_price as string);
         }
         return mapped;
       });
@@ -57,12 +133,13 @@ export class FeaturesService {
    *
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getFeaturesByCategory(includeInactive = false): Promise<FeatureCategory[]> {
     try {
       const features = await this.getAllFeatures(includeInactive);
 
-      return features.reduce<FeatureCategory[]>((acc, feature) => {
-        const category = acc.find((c) => c.category === feature.category);
+      return features.reduce<FeatureCategory[]>((acc: FeatureCategory[], feature: Feature) => {
+        const category = acc.find((c: FeatureCategory) => c.category === feature.category);
         if (category) {
           category.features.push(feature);
         } else {
@@ -86,7 +163,7 @@ export class FeaturesService {
    */
   static async getFeatureByCode(code: string): Promise<Feature | null> {
     try {
-      const [rows] = await query<DbFeature[]>('SELECT * FROM features WHERE code = ?', [code]);
+      const [rows] = await query<DbFeature[]>('SELECT * FROM features WHERE code = $1', [code]);
 
       if (rows.length === 0) return null;
       return fieldMapper.dbToApi(rows[0]) as Feature;
@@ -113,35 +190,15 @@ export class FeaturesService {
           f.base_price as default_price
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ?
+        WHERE tf.tenant_id = $1
         ORDER BY f.category, f.name
       `,
         [tenantId],
       );
 
-      return rows.map((row) => {
-        const mapped = fieldMapper.dbToApi(row) as TenantFeature;
-        // Parse custom_config if it's a string
-        if (row.custom_config && typeof row.custom_config === 'string') {
-          try {
-            mapped.customConfig = JSON.parse(row.custom_config) as Record<string, unknown>;
-          } catch {
-            mapped.customConfig = {};
-          }
-        }
-        // Set status based on is_active and expires_at
-        if (row.is_active) {
-          if (row.expires_at && new Date(row.expires_at) < new Date()) {
-            mapped.status = 'expired';
-          } else {
-            mapped.status = 'active';
-          }
-        } else {
-          mapped.status = 'disabled';
-        }
-        // Price is available through feature reference
-        return mapped;
-      });
+      return rows.map((row: DbTenantFeature) =>
+        FeaturesService.mapTenantFeatureRow(row, fieldMapper.dbToApi(row) as TenantFeature),
+      );
     } catch (error: unknown) {
       logger.error(`Error fetching tenant features: ${String(error)}`);
       throw error;
@@ -155,7 +212,7 @@ export class FeaturesService {
    */
   static async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
     try {
-      const [rows] = await query<(DbFeature & Partial<DbTenantFeature> & { status: string })[]>(
+      const [rows] = await query<FeatureWithTenantStatusRow[]>(
         `
         SELECT
           f.*,
@@ -163,64 +220,63 @@ export class FeaturesService {
           tf.activated_at,
           tf.expires_at,
           CASE
-            WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
-            WHEN tf.is_active = TRUE AND tf.expires_at < NOW() THEN 'expired'
-            WHEN tf.is_active = FALSE THEN 'disabled'
+            WHEN tf.is_active = 1 AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
+            WHEN tf.is_active = 1 AND tf.expires_at < NOW() THEN 'expired'
+            WHEN tf.is_active = 0 THEN 'disabled'
             ELSE 'not_activated'
           END as status
         FROM features f
-        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = ?
-        WHERE f.is_active = true
+        LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
+        WHERE f.is_active = 1
         ORDER BY f.category, f.sort_order, f.name
       `,
         [tenantId],
       );
 
-      return rows.map((row) => {
-        const feature = fieldMapper.dbToApi({
-          id: row.id,
-          code: row.code,
-          name: row.name,
-          description: row.description,
-          category: row.category,
-          price: row.price,
-          is_active: row.is_active,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        }) as Feature;
-
-        const result: FeatureWithTenantInfo = {
-          id: feature.id,
-          code: feature.code,
-          name: feature.name,
-          description: feature.description,
-          category: feature.category,
-          price: feature.price,
-          isActive: feature.isActive,
-          createdAt: feature.createdAt,
-          updatedAt: feature.updatedAt,
-        };
-
-        if (row.tf_is_active !== null && row.tf_is_active !== undefined) {
-          result.tenantFeature = {
-            status: row.status,
-            isActive: Boolean(row.tf_is_active),
-            validFrom: row.activated_at ? new Date(row.activated_at).toISOString() : undefined,
-            validUntil: row.expires_at ? new Date(row.expires_at).toISOString() : undefined,
-          };
-        }
-
-        return result;
-      });
+      return rows.map((row: FeatureWithTenantStatusRow) =>
+        FeaturesService.mapFeatureWithTenantStatusRow(row),
+      );
     } catch (error: unknown) {
       logger.error(`Error fetching features with tenant info: ${String(error)}`);
       throw error;
     }
   }
 
+  /** Update existing tenant feature record */
+  private static async updateTenantFeature(
+    tenantId: number,
+    featureId: number,
+    options: ActivationOptions,
+  ): Promise<void> {
+    const customConfig =
+      options.customConfig !== undefined ? JSON.stringify(options.customConfig) : null;
+    // POSTGRESQL FIX: Parameters must be $1, $2, $3, $4, $5 in order they appear in array
+    await execute(
+      `UPDATE tenant_features SET is_active = 1, activated_at = NOW(), expires_at = $1,
+       activated_by = $2, custom_config = $3, updated_at = NOW()
+       WHERE tenant_id = $4 AND feature_id = $5`,
+      [options.expiresAt ?? null, options.activatedBy, customConfig, tenantId, featureId],
+    );
+  }
+
+  /** Insert new tenant feature record */
+  private static async insertTenantFeature(
+    tenantId: number,
+    featureId: number,
+    options: ActivationOptions,
+  ): Promise<void> {
+    const customConfig =
+      options.customConfig !== undefined ? JSON.stringify(options.customConfig) : null;
+    await execute(
+      `INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at, expires_at,
+       activated_by, custom_config, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), $4, $5, $6, NOW(), NOW())`,
+      [tenantId, featureId, true, options.expiresAt ?? null, options.activatedBy, customConfig],
+    );
+  }
+
   // Activate feature for tenant
   /**
-   *
    * @param request - The request parameter
    * @param activatedBy - The activatedBy parameter
    */
@@ -229,73 +285,29 @@ export class FeaturesService {
     activatedBy: number,
   ): Promise<void> {
     try {
-      // Get feature by code
       const feature = await this.getFeatureByCode(request.featureCode);
       if (!feature) {
         throw new ServiceErrorClass('NOT_FOUND', `Feature ${request.featureCode} not found`);
       }
 
-      const options: ActivationOptions = {
-        ...request.options,
-        activatedBy,
-      };
+      const options: ActivationOptions = { ...request.options, activatedBy };
 
-      // Check if already activated
       const [existing] = await query<RowDataPacket[]>(
-        'SELECT id FROM tenant_features WHERE tenant_id = ? AND feature_id = ?',
+        'SELECT id FROM tenant_features WHERE tenant_id = $1 AND feature_id = $2',
         [request.tenantId, feature.id],
       );
 
       if (existing.length > 0) {
-        // Update existing
-        await execute(
-          `
-          UPDATE tenant_features SET
-            is_active = true,
-            activated_at = NOW(),
-            expires_at = ?,
-            activated_by = ?,
-            custom_config = ?,
-            updated_at = NOW()
-          WHERE tenant_id = ? AND feature_id = ?
-        `,
-          [
-            options.expiresAt ?? null,
-            options.activatedBy,
-            options.customConfig ? JSON.stringify(options.customConfig) : null,
-            request.tenantId,
-            feature.id,
-          ],
-        );
+        await FeaturesService.updateTenantFeature(request.tenantId, feature.id, options);
       } else {
-        // Insert new
-        await execute(
-          `
-          INSERT INTO tenant_features (
-            tenant_id, feature_id, is_active, activated_at, expires_at,
-            activated_by, custom_config, created_at, updated_at
-          ) VALUES (?, ?, ?, NOW(), ?, ?, ?, NOW(), NOW())
-        `,
-          [
-            request.tenantId,
-            feature.id,
-            true,
-            options.expiresAt ?? null,
-            options.activatedBy,
-            options.customConfig ? JSON.stringify(options.customConfig) : null,
-          ],
-        );
+        await FeaturesService.insertTenantFeature(request.tenantId, feature.id, options);
       }
 
-      // Log the activation
       await RootLog.log(
         'feature_activated',
         activatedBy,
         request.tenantId,
-        JSON.stringify({
-          featureCode: request.featureCode,
-          options: options,
-        }),
+        JSON.stringify({ featureCode: request.featureCode, options }),
       );
 
       logger.info(`Feature ${request.featureCode} activated for tenant ${request.tenantId}`);
@@ -327,8 +339,8 @@ export class FeaturesService {
       const [result] = await execute<ResultSetHeader>(
         `
         UPDATE tenant_features
-        SET is_active = false, updated_at = NOW()
-        WHERE tenant_id = ? AND feature_id = ?
+        SET is_active = 0, updated_at = NOW()
+        WHERE tenant_id = $1 AND feature_id = $2
       `,
         [tenantId, feature.id],
       );
@@ -380,21 +392,28 @@ export class FeaturesService {
           COUNT(*) as usage_count,
           COUNT(DISTINCT user_id) as unique_users
         FROM feature_usage_logs
-        WHERE tenant_id = ?
-        AND feature_id = ?
-        AND DATE(created_at) BETWEEN ? AND ?
+        WHERE tenant_id = $1
+        AND feature_id = $2
+        AND DATE(created_at) BETWEEN $3 AND $4
         GROUP BY DATE(created_at)
         ORDER BY date
       `,
         [tenantId, feature.id, startDate, endDate],
       );
 
-      return rows.map((row) => ({
-        date: new Date(row.date).toISOString().split('T')[0],
-        featureCode,
-        usageCount: row.usage_count,
-        uniqueUsers: row.unique_users,
-      }));
+      return rows.map((row: DbFeatureUsageStats): FeatureUsageStats => {
+        const dateStr = new Date(row.date).toISOString().split('T')[0];
+        // dateStr is guaranteed to be a string (non-undefined) from toISOString().split()
+        if (dateStr === undefined) {
+          throw new Error('Date conversion failed for usage stats');
+        }
+        return {
+          date: dateStr,
+          featureCode,
+          usageCount: row.usage_count,
+          uniqueUsers: row.unique_users,
+        };
+      });
     } catch (error: unknown) {
       logger.error(`Error fetching usage stats: ${String(error)}`);
       throw error;
@@ -419,7 +438,7 @@ export class FeaturesService {
         features,
       };
 
-      features.forEach((feature) => {
+      features.forEach((feature: TenantFeature) => {
         switch (feature.status) {
           case 'active':
             summary.activeFeatures++;
@@ -455,8 +474,8 @@ export class FeaturesService {
         SELECT tf.*
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ?
-        AND f.code = ?
+        WHERE tf.tenant_id = $1
+        AND f.code = $2
         AND tf.is_active = 1
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `,
@@ -495,7 +514,7 @@ export class FeaturesService {
       await execute(
         `
         INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, action, metadata)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
       `,
         [tenantId, feature.id, userId ?? 0, 'usage', JSON.stringify(metadata)],
       );
@@ -528,7 +547,7 @@ export class FeaturesService {
 
       // Get features for each tenant
       return await Promise.all(
-        tenants.map(async (tenant) => {
+        tenants.map(async (tenant: TenantRow) => {
           const summary = await this.getTenantFeaturesSummary(tenant.id);
           return {
             id: tenant.id,

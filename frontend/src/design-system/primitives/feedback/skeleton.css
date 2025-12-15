@@ -1,0 +1,376 @@
+/**
+ * Design System - Skeleton Loaders
+ *
+ * Purpose: Loading placeholders for content
+ * Usage: <div class="skeleton skeleton--text"></div>
+ *
+ * Variants:
+ * - Text lines
+ * - Avatar/Circle
+ * - Rectangle/Card
+ * - Custom shapes
+ *
+ * Best Practice: Use while content is loading to prevent layout shift
+ */
+
+/* ========== BASE SKELETON ========== */
+
+.skeleton {
+  pointer-events: none;
+  user-select: none;
+
+  border-radius: var(--radius-md);
+
+  /* Prevent content from showing */
+  color: transparent !important;
+
+  /* Appearance */
+  background: linear-gradient(90deg, rgb(255 255 255 / 5%) 0%, rgb(255 255 255 / 10%) 50%, rgb(255 255 255 / 5%) 100%);
+  background-size: 200% 100%;
+
+  /* Animation */
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ========== TEXT VARIANTS ========== */
+
+/* Single line of text */
+.skeleton--text {
+  width: 100%;
+  height: 16px;
+  margin-bottom: var(--spacing-2);
+}
+
+/* Text line variants */
+.skeleton--text-sm {
+  height: 12px;
+}
+
+.skeleton--text-md {
+  height: 16px;
+}
+
+.skeleton--text-lg {
+  height: 20px;
+}
+
+.skeleton--text-xl {
+  height: 24px;
+}
+
+/* Width variants for text */
+.skeleton--w-full {
+  width: 100%;
+}
+
+.skeleton--w-75 {
+  width: 75%;
+}
+
+.skeleton--w-50 {
+  width: 50%;
+}
+
+.skeleton--w-25 {
+  width: 25%;
+}
+
+/* Heading skeleton */
+.skeleton--heading {
+  width: 60%;
+  height: 32px;
+  margin-bottom: var(--spacing-3);
+  border-radius: var(--radius-xl);
+}
+
+/* Paragraph skeleton (multiple lines) */
+.skeleton--paragraph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.skeleton--paragraph .skeleton--text:last-child {
+  width: 80%;
+}
+
+/* ========== AVATAR/CIRCLE VARIANTS ========== */
+
+.skeleton--avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton--avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.skeleton--avatar-md {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton--avatar-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+.skeleton--avatar-xl {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+/* ========== RECTANGLE/CARD VARIANTS ========== */
+
+.skeleton--rect {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-xl);
+}
+
+.skeleton--rect-sm {
+  height: 100px;
+}
+
+.skeleton--rect-md {
+  height: 200px;
+}
+
+.skeleton--rect-lg {
+  height: 300px;
+}
+
+.skeleton--rect-xl {
+  height: 400px;
+}
+
+/* Square variant */
+.skeleton--square {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-xl);
+}
+
+/* ========== BUTTON SKELETON ========== */
+
+.skeleton--button {
+  display: inline-block;
+  width: 100px;
+  height: 40px;
+  border-radius: var(--radius-xl);
+}
+
+.skeleton--button-sm {
+  width: 80px;
+  height: 32px;
+}
+
+.skeleton--button-lg {
+  width: 120px;
+  height: 48px;
+}
+
+/* ========== INPUT SKELETON ========== */
+
+.skeleton--input {
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-xl);
+}
+
+/* ========== ICON SKELETON ========== */
+
+.skeleton--icon {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.skeleton--icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ========== COMPOSITE PATTERNS ========== */
+
+/* User card skeleton */
+.skeleton-user-card {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: center;
+  padding: var(--spacing-4);
+}
+
+.skeleton-user-card__avatar {
+  flex-shrink: 0;
+}
+
+.skeleton-user-card__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Table row skeleton */
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--spacing-4);
+
+  padding: var(--spacing-3);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+}
+
+/* Card skeleton */
+.skeleton-card {
+  padding: var(--spacing-5);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 2%);
+}
+
+.skeleton-card__header {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.skeleton-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* ========== ANIMATION VARIANTS ========== */
+
+/* Pulse animation (alternative to shimmer) */
+.skeleton--pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 50%;
+  }
+}
+
+/* Wave animation */
+.skeleton--wave {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton--wave::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 10%), transparent);
+
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ========== NO ANIMATION (STATIC) ========== */
+
+.skeleton--static {
+  animation: none;
+}
+
+.skeleton--static::after {
+  display: none;
+}
+
+/* ========== THEME VARIANTS ========== */
+
+/* Light skeleton (for dark backgrounds) */
+.skeleton--light {
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 10%) 0%,
+    rgb(255 255 255 / 20%) 50%,
+    rgb(255 255 255 / 10%) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Dark skeleton (for light backgrounds) */
+.skeleton--dark {
+  background: linear-gradient(90deg, rgb(0 0 0 / 5%) 0%, rgb(0 0 0 / 10%) 50%, rgb(0 0 0 / 5%) 100%);
+  background-size: 200% 100%;
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+
+  .skeleton--pulse {
+    opacity: 100%;
+    animation: none;
+  }
+
+  .skeleton--wave::after {
+    animation: none;
+  }
+}
+
+/* ARIA attributes for screen readers */
+.skeleton[aria-busy="true"]::before {
+  content: attr(aria-label);
+
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(50%);
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Base Configuration - Shared TypeScript Rules",
+  "compilerOptions": {
+    // ============================================================
+    // STRICT TYPE CHECKING
+    // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
+    // See: docs/POWER-OF-TEN-RULES.md - Regel 10: Zero Warnings
+    // ============================================================
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true, // Power of Ten: Klassen müssen initialisiert sein
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "useUnknownInCatchVariables": true, // Power of Ten: catch(error) ist unknown, nicht any
+    "allowUnusedLabels": false, // Power of Ten Regel 10: Prevent dead code (unused labels)
+    "allowUnreachableCode": false, // Power of Ten Regel 10: Prevent dead code (unreachable statements)
+
+    // ============================================================
+    // CODE QUALITY & UNUSED CODE DETECTION
+    // Power of Ten Regel 7: Return-Values prüfen, Parameter validieren
+    // ============================================================
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true, // Power of Ten: override keyword erzwingen
+    // Power of Ten Regel 10: undefined vs "not defined" unterscheiden
+    // See: https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true, // Power of Ten: arr[i] ist T | undefined - WICHTIG für Runtime-Safety
+    // Power of Ten Regel 10: Force bracket notation for index signatures
+    // Ensures explicit awareness when accessing dynamic keys
+    "noPropertyAccessFromIndexSignature": true,
+
+    // ============================================================
+    // TARGET & LIBRARY
+    // ES2022 for modern JavaScript features
+    // Note: Individual projects add DOM for browser targets
+    // ============================================================
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "downlevelIteration": true, // Ermöglicht Iteration über NodeList, HTMLCollection, etc.
+
+    // ============================================================
+    // MODULE SYSTEM
+    // Note: 'module' and 'moduleResolution' are set per-project
+    // Backend uses NodeNext, Frontend uses ESNext/bundler
+    // ============================================================
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // ============================================================
+    // FILE SYSTEM & CASING
+    // Critical for cross-platform development (Windows/Mac/Linux)
+    // ============================================================
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    // ============================================================
+    // OUTPUT CONFIGURATION
+    // Source maps for debugging
+    // ============================================================
+    "sourceMap": true,
+    "removeComments": true,
+
+    // ============================================================
+    // JAVASCRIPT SUPPORT
+    // Allow .js files in TypeScript projects
+    // ============================================================
+    "allowJs": true,
+    "checkJs": false
+  }
+}

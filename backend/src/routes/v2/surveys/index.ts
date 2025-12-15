@@ -12,9 +12,9 @@ import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import { typed } from '../../../utils/routeHandlers.js';
 // Survey Response Endpoints
 import * as responsesController from './responses.controller.js';
-import * as responsesValidation from './responses.validation.js';
+import { responsesValidationZod } from './responses.validation.zod.js';
 import * as surveysController from './surveys.controller.js';
-import { surveysValidation } from './surveys.validation.js';
+import { surveysValidationZod } from './surveys.validation.zod.js';
 
 const router = Router();
 
@@ -75,7 +75,7 @@ const router = Router();
 router.get(
   '/',
   authenticateV2,
-  surveysValidation.listSurveys,
+  surveysValidationZod.listSurveys,
   typed.auth(surveysController.listSurveys),
 );
 
@@ -108,7 +108,7 @@ router.get(
 router.get(
   '/templates',
   authenticateV2,
-  surveysValidation.getTemplates,
+  surveysValidationZod.getTemplates,
   typed.auth(surveysController.getTemplates),
 );
 
@@ -154,7 +154,7 @@ router.get(
 router.post(
   '/templates/:templateId',
   authenticateV2,
-  surveysValidation.createFromTemplate,
+  surveysValidationZod.createFromTemplate,
   typed.auth(surveysController.createFromTemplate),
 );
 
@@ -196,7 +196,7 @@ router.post(
 router.get(
   '/:id',
   authenticateV2,
-  surveysValidation.getSurveyById,
+  surveysValidationZod.getSurveyById,
   typed.auth(surveysController.getSurveyById),
 );
 
@@ -237,7 +237,7 @@ router.get(
 router.post(
   '/',
   authenticateV2,
-  surveysValidation.createSurvey,
+  surveysValidationZod.createSurvey,
   typed.auth(surveysController.createSurvey),
 );
 
@@ -293,7 +293,7 @@ router.post(
 router.put(
   '/:id',
   authenticateV2,
-  surveysValidation.updateSurvey,
+  surveysValidationZod.updateSurvey,
   typed.auth(surveysController.updateSurvey),
 );
 
@@ -344,7 +344,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateV2,
-  surveysValidation.deleteSurvey,
+  surveysValidationZod.deleteSurvey,
   typed.auth(surveysController.deleteSurvey),
 );
 
@@ -386,7 +386,7 @@ router.delete(
 router.get(
   '/:id/statistics',
   authenticateV2,
-  surveysValidation.getStatistics,
+  surveysValidationZod.getStatistics,
   typed.auth(surveysController.getStatistics),
 );
 
@@ -396,7 +396,7 @@ router.get(
 router.post(
   '/:id/responses',
   authenticateV2,
-  responsesValidation.submitResponseValidation,
+  responsesValidationZod.submitResponse,
   typed.auth(responsesController.submitResponse),
 );
 
@@ -406,7 +406,7 @@ router.post(
 router.get(
   '/:id/responses',
   authenticateV2,
-  responsesValidation.getAllResponsesValidation,
+  responsesValidationZod.getAllResponses,
   typed.auth(responsesController.getAllResponses),
 );
 
@@ -416,7 +416,7 @@ router.get(
 router.get(
   '/:id/my-response',
   authenticateV2,
-  responsesValidation.getMyResponseValidation,
+  responsesValidationZod.getMyResponse,
   typed.auth(responsesController.getMyResponse),
 );
 
@@ -426,7 +426,7 @@ router.get(
 router.get(
   '/:id/export',
   authenticateV2,
-  responsesValidation.exportResponsesValidation,
+  responsesValidationZod.exportResponses,
   typed.auth(responsesController.exportResponses),
 );
 
@@ -436,7 +436,7 @@ router.get(
 router.get(
   '/:id/responses/:responseId',
   authenticateV2,
-  responsesValidation.getResponseByIdValidation,
+  responsesValidationZod.getResponseById,
   typed.auth(responsesController.getResponseById),
 );
 
@@ -446,7 +446,7 @@ router.get(
 router.put(
   '/:id/responses/:responseId',
   authenticateV2,
-  responsesValidation.updateResponseValidation,
+  responsesValidationZod.updateResponse,
   typed.auth(responsesController.updateResponse),
 );
 

@@ -11,7 +11,7 @@ import { Router } from 'express';
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as reportsController from './reports.controller.js';
-import { reportsValidation } from './reports.validation.js';
+import { reportsValidationZod } from './reports.validation.zod.js';
 
 const router = Router();
 
@@ -101,7 +101,7 @@ const router = Router();
 router.get(
   '/overview',
   authenticateV2,
-  reportsValidation.dateRange,
+  reportsValidationZod.dateRange,
   typed.auth(reportsController.getOverviewReport),
 );
 
@@ -180,7 +180,7 @@ router.get(
 router.get(
   '/employees',
   authenticateV2,
-  reportsValidation.employeeReport,
+  reportsValidationZod.employeeReport,
   typed.auth(reportsController.getEmployeeReport),
 );
 
@@ -242,7 +242,7 @@ router.get(
 router.get(
   '/departments',
   authenticateV2,
-  reportsValidation.dateRange,
+  reportsValidationZod.dateRange,
   typed.auth(reportsController.getDepartmentReport),
 );
 
@@ -324,7 +324,7 @@ router.get(
 router.get(
   '/shifts',
   authenticateV2,
-  reportsValidation.shiftReport,
+  reportsValidationZod.shiftReport,
   typed.auth(reportsController.getShiftReport),
 );
 
@@ -413,7 +413,7 @@ router.get(
 router.get(
   '/kvp',
   authenticateV2,
-  reportsValidation.kvpReport,
+  reportsValidationZod.kvpReport,
   typed.auth(reportsController.getKvpReport),
 );
 
@@ -504,7 +504,7 @@ router.get(
 router.get(
   '/attendance',
   authenticateV2,
-  reportsValidation.attendanceReport,
+  reportsValidationZod.attendanceReport,
   typed.auth(reportsController.getAttendanceReport),
 );
 
@@ -584,7 +584,7 @@ router.get(
 router.get(
   '/compliance',
   authenticateV2,
-  reportsValidation.attendanceReport, // Same validation as attendance
+  reportsValidationZod.attendanceReport, // Same validation as attendance
   typed.auth(reportsController.getComplianceReport),
 );
 
@@ -673,7 +673,7 @@ router.get(
 router.post(
   '/custom',
   authenticateV2,
-  reportsValidation.customReport,
+  reportsValidationZod.customReport,
   typed.auth(reportsController.generateCustomReport),
 );
 
@@ -739,7 +739,7 @@ router.post(
 router.get(
   '/export/:type',
   authenticateV2,
-  reportsValidation.exportReport,
+  reportsValidationZod.exportReport,
   typed.auth(reportsController.exportReport),
 );
 

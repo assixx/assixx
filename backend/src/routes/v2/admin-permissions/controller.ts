@@ -3,28 +3,33 @@
  * Handles HTTP requests for admin permissions management
  */
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
-import { RowDataPacket } from 'mysql2/promise';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
-import { execute } from '../../../utils/db.js';
+// Removed express-validator - using Zod validation in routes
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
-import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
+import {
+  BulkPermissionsRequest,
+  PermissionLevel,
+  SetAreaPermissionsRequest,
+  SetPermissionsRequest,
+} from './types.js';
+
+// Validation helper removed - using Zod validation in routes
 
 // Constants for error messages
-const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const FORBIDDEN_ERROR = 'FORBIDDEN';
 const NOT_FOUND_ERROR = 'NOT_FOUND';
 const SERVER_ERROR = 'SERVER_ERROR';
 const ROOT_ACCESS_REQUIRED = 'Root access required';
 const ADMIN_NOT_FOUND = 'Admin not found';
-const INVALID_INPUT = 'Invalid input';
 
 // SQL Queries
-const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'";
+const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = $1 AND role = 'admin'";
+const GET_USER_TENANT_QUERY = 'SELECT tenant_id FROM users WHERE id = $1';
 
 export const adminPermissionsController = {
   /**
@@ -46,16 +51,7 @@ export const adminPermissionsController = {
       logger.info('[Admin Permissions v2] User id:', req.user.id);
       logger.info('[Admin Permissions v2] User tenantId:', req.user.tenant_id);
 
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -64,7 +60,12 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
+      const adminIdParam = req.params['adminId'];
+      if (adminIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Admin ID is required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
       logger.info('[Admin Permissions v2] Admin ID:', adminId);
 
       // Get the admin's tenant ID
@@ -99,17 +100,18 @@ export const adminPermissionsController = {
    */
   async getMyPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantId) {
+      if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
         return;
       }
 
       // Only admins need permission info
       if (req.user.role !== 'admin') {
+        // Root users always have full access (has_full_access = true in DB)
         const response = {
           departments: [],
           groups: [],
-          hasAllAccess: req.user.role === 'root',
+          hasFullAccess: req.user.role === 'root',
           totalDepartments: 0,
           assignedDepartments: 0,
         };
@@ -141,16 +143,7 @@ export const adminPermissionsController = {
    */
   async setPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -214,16 +207,7 @@ export const adminPermissionsController = {
    */
   async removeDepartmentPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -231,8 +215,16 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const departmentId = Number.parseInt(req.params.departmentId);
+      const adminIdParam = req.params['adminId'];
+      const departmentIdParam = req.params['departmentId'];
+      if (adminIdParam === undefined || departmentIdParam === undefined) {
+        res
+          .status(400)
+          .json(errorResponse('BAD_REQUEST', 'Admin ID and Department ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const departmentId = Number.parseInt(departmentIdParam);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
@@ -270,16 +262,7 @@ export const adminPermissionsController = {
    */
   async removeGroupPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -287,8 +270,14 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const groupId = Number.parseInt(req.params.groupId);
+      const adminIdParam = req.params['adminId'];
+      const groupIdParam = req.params['groupId'];
+      if (adminIdParam === undefined || groupIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Admin ID and Group ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const groupId = Number.parseInt(groupIdParam);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
@@ -326,19 +315,10 @@ export const adminPermissionsController = {
    */
   async bulkUpdatePermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
-      if (req.user.role !== 'root' || !req.tenantId) {
+      if (req.user.role !== 'root' || req.tenantId === undefined) {
         res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
@@ -378,16 +358,7 @@ export const adminPermissionsController = {
    */
   async checkAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
-        }));
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -395,10 +366,20 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const departmentId = Number.parseInt(req.params.departmentId);
+      const adminIdParam = req.params['adminId'];
+      const departmentIdParam = req.params['departmentId'];
+      if (adminIdParam === undefined || departmentIdParam === undefined) {
+        res
+          .status(400)
+          .json(errorResponse('BAD_REQUEST', 'Admin ID and Department ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const departmentId = Number.parseInt(departmentIdParam);
       const permissionLevel: PermissionLevel =
-        req.params.permissionLevel ? (req.params.permissionLevel as PermissionLevel) : 'read';
+        req.params['permissionLevel'] !== undefined ?
+          (req.params['permissionLevel'] as PermissionLevel)
+        : 'read';
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
@@ -424,6 +405,153 @@ export const adminPermissionsController = {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
         res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to check access'));
+      }
+    }
+  },
+
+  /**
+   * Set Area permissions for a user
+   * Root only
+   */
+  async setAreaPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      if (userIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID is required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+
+      const { areaIds, permissions = { canRead: true, canWrite: false, canDelete: false } } =
+        req.body as SetAreaPermissionsRequest;
+
+      // Get user tenant
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.setAreaPermissions(
+        userId,
+        areaIds,
+        permissions,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(successResponse(null, 'Area permissions updated successfully'));
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Set area permissions error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to set area permissions'));
+      }
+    }
+  },
+
+  /**
+   * Remove specific Area permission
+   * Root only
+   */
+  async removeAreaPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      const areaIdParam = req.params['areaId'];
+      if (userIdParam === undefined || areaIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID and Area ID are required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+      const areaId = Number.parseInt(areaIdParam);
+
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.removeAreaPermission(
+        userId,
+        areaId,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(successResponse(null, 'Area permission removed successfully'));
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Remove area permission error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to remove area permission'));
+      }
+    }
+  },
+
+  /**
+   * Set has_full_access flag for a user
+   * Root only
+   */
+  async setFullAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
+        return;
+      }
+
+      const userIdParam = req.params['userId'];
+      if (userIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID is required'));
+        return;
+      }
+      const userId = Number.parseInt(userIdParam);
+
+      const { hasFullAccess } = req.body as { hasFullAccess: boolean };
+      if (typeof hasFullAccess !== 'boolean') {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'hasFullAccess must be a boolean'));
+        return;
+      }
+
+      const [userRows] = await execute<RowDataPacket[]>(GET_USER_TENANT_QUERY, [userId]);
+      if (userRows.length === 0) {
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, 'User not found'));
+        return;
+      }
+
+      const targetTenantId = (userRows[0] as { tenant_id: number }).tenant_id;
+
+      await adminPermissionsService.setHasFullAccess(
+        userId,
+        hasFullAccess,
+        req.user.id,
+        targetTenantId,
+      );
+
+      res.json(
+        successResponse(null, hasFullAccess ? 'Full access granted' : 'Full access revoked'),
+      );
+    } catch (error: unknown) {
+      logger.error('[Admin Permissions v2] Set full access error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update full access'));
       }
     }
   },

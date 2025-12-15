@@ -7,25 +7,16 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/chat.css" />
+    <!-- Modal Base + Confirm Modal (Design System) -->
+    <link rel="stylesheet" href="/design-system/primitives/modals/modal.base.css" />
+    <link rel="stylesheet" href="/design-system/components/confirm-modal/confirm-modal.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -34,8 +25,8 @@
 
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
-      <!-- Chat Container -->
-      <main class="main-content" class="u-p-0">
+      <!-- Chat Container - Uses chat-page-main for sidebar-collapse aware positioning -->
+      <main class="chat-page-main">
         <div class="chat-container">
           <!-- Chat Sidebar -->
           <div class="chat-sidebar">
@@ -44,9 +35,26 @@
                 <i class="fas fa-comments"></i>
                 Nachrichten
               </h2>
-              <button class="new-chat-btn" id="newConversationBtn" title="Neue Unterhaltung starten">
+              <!-- New Chat Button - shown only for root/admin via JS -->
+              <button class="btn btn-icon btn-secondary" id="newConversationBtn" title="Neue Unterhaltung starten" hidden>
                 <i class="fas fa-plus"></i>
               </button>
+            </div>
+
+            <!-- User Search - Only visible for root/admin (hidden for employees) -->
+            <div class="search-input-wrapper" id="chatUserSearchWrapper" hidden>
+              <div class="search-input" id="chat-user-search-container">
+                <i class="search-input__icon fas fa-search"></i>
+                <input type="search" id="chatUserSearch" class="search-input__field" placeholder="Benutzer suchen..." autocomplete="off" />
+                <button class="search-input__clear" type="button" aria-label="Suche löschen" id="chatUserSearchClear">
+                  <i class="fas fa-times"></i>
+                </button>
+                <div class="search-input__spinner"></div>
+              </div>
+              <!-- Search Results Dropdown -->
+              <div class="search-input__results" id="chatUserSearchResults">
+                <!-- Results populated dynamically -->
+              </div>
             </div>
             <div class="conversations-list" id="conversationsList">
               <!-- Conversations werden hier dynamisch geladen -->
@@ -56,23 +64,41 @@
           <!-- Main Chat Area -->
           <div class="chat-main u-hidden">
             <!-- Chat Header -->
-            <div class="chat-header" id="chat-header" class="u-hidden">
+            <div class="chat-header u-hidden" id="chat-header">
               <div class="chat-header-info">
-                <div class="chat-header-avatar" id="chat-avatar"></div>
+                <div id="chat-avatar"></div>
                 <div class="chat-header-details">
                   <h3 id="chat-partner-name"></h3>
                   <div class="status" id="chat-partner-status"></div>
                 </div>
               </div>
               <div class="chat-actions">
-                <button class="chat-action-btn" title="Suchen">
+                <button class="btn btn-icon btn-secondary" id="searchMessagesBtn" title="Suchen (Strg+F)">
                   <i class="fas fa-search"></i>
                 </button>
-                <button class="chat-action-btn" id="deleteConversationBtn" title="Chat löschen">
+                <button class="btn btn-icon btn-danger hidden" id="deleteConversationBtn" title="Chat löschen">
                   <i class="fas fa-trash"></i>
                 </button>
-                <button class="chat-action-btn" title="Mehr Optionen">
+                <button class="btn btn-icon btn-secondary" title="Mehr Optionen">
                   <i class="fas fa-ellipsis-v"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Search Bar (hidden by default) -->
+            <div class="chat-search-bar hidden" id="chatSearchBar">
+              <div class="chat-search-input-wrapper">
+                <i class="fas fa-search chat-search-icon"></i>
+                <input type="search" id="chatSearchInput" class="chat-search-input" placeholder="Im Chat suchen..." autocomplete="off" />
+                <span class="chat-search-counter" id="chatSearchCounter"></span>
+                <button class="btn btn-icon btn-sm" id="chatSearchPrev" title="Vorheriger Treffer">
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button class="btn btn-icon btn-sm" id="chatSearchNext" title="Nächster Treffer">
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <button class="btn btn-icon btn-sm" id="chatSearchClose" title="Suche schließen (Esc)">
+                  <i class="fas fa-times"></i>
                 </button>
               </div>
             </div>
@@ -89,60 +115,28 @@
             </div>
 
             <!-- Message Input -->
-            <div class="message-input-container" id="chatArea" class="u-hidden">
-              <div class="delivery-options">
-                <div class="custom-delivery-select">
-                  <div class="delivery-display" data-action="toggle-delivery-dropdown">
-                    <span class="delivery-icon">⚡</span>
-                    <span class="delivery-text">Sofort senden</span>
-                    <span class="dropdown-arrow">▼</span>
-                  </div>
-                  <div class="delivery-dropdown" id="deliveryDropdown">
-                    <div
-                      class="delivery-dropdown-option"
-                      data-value="immediate"
-                      data-action="select-delivery"
-                      data-icon="⚡"
-                      data-text="Sofort senden"
-                    >
-                      <span class="option-icon">⚡</span>
-                      <span class="option-text">Sofort senden</span>
-                    </div>
-                    <div
-                      class="delivery-dropdown-option"
-                      data-value="break_time"
-                      data-action="select-delivery"
-                      data-icon="☕"
-                      data-text="In der Pause"
-                    >
-                      <span class="option-icon">☕</span>
-                      <span class="option-text">In der Pause</span>
-                    </div>
-                    <div
-                      class="delivery-dropdown-option"
-                      data-value="after_work"
-                      data-action="select-delivery"
-                      data-icon="🏠"
-                      data-text="Nach Feierabend"
-                    >
-                      <span class="option-icon">🏠</span>
-                      <span class="option-text">Nach Feierabend</span>
-                    </div>
-                  </div>
-                  <input type="hidden" id="messageScheduling" value="immediate" />
-                </div>
-              </div>
-
+            <div class="message-input-container u-hidden" id="chatArea">
+              <!-- File Preview (shown when files are selected) -->
+              <div id="filePreview" class="file-preview hidden"></div>
               <div class="message-input-wrapper">
                 <textarea id="messageInput" class="message-input" placeholder="Nachricht eingeben..." rows="1"></textarea>
                 <div class="input-actions">
-                  <button class="input-action-btn" id="attachmentBtn" title="Datei anhängen">
+                  <!-- Schedule Message Button -->
+                  <button class="btn btn-icon btn-secondary" id="scheduleBtn" title="Nachricht planen" data-action="open-schedule-modal">
+                    <i class="far fa-clock"></i>
+                  </button>
+                  <!-- Schedule Badge (shown when scheduled) -->
+                  <div class="schedule-badge u-hidden" id="scheduleBadge">
+                    <i class="far fa-clock"></i>
+                    <span class="schedule-badge__time" id="scheduleBadgeTime"></span>
+                    <button type="button" class="schedule-badge__clear" data-action="clear-schedule" title="Planung aufheben">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                  <button class="btn btn-icon btn-secondary" id="attachmentBtn" title="Datei anhängen">
                     <i class="fas fa-paperclip"></i>
                   </button>
-                  <button class="input-action-btn" id="emojiBtn" title="Emoji hinzufügen">
-                    <i class="fas fa-smile"></i>
-                  </button>
-                  <button class="send-btn" id="sendButton">
+                  <button class="btn btn-icon btn-upload" id="sendButton">
                     <i class="fas fa-paper-plane"></i>
                   </button>
                 </div>
@@ -153,268 +147,60 @@
       </main>
     </div>
 
-    <!-- New Chat Modal -->
-    <div id="newConversationModal" class="modal u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Neue Unterhaltung starten</h3>
-          <button class="modal-close close" id="closeModalBtn">
+    <!-- File Upload Input (hidden, triggered by attachment button) -->
+    <input type="file" id="fileInput" class="hidden" multiple />
+
+    <!-- Typing Indicator -->
+    <div id="typingIndicator" class="typing-indicator hidden"></div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification hidden"></div>
+
+    <!-- Schedule Message Modal (Design System) -->
+    <div class="modal-overlay" id="scheduleOverlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h2 class="ds-modal__title">
+            <i class="far fa-clock"></i>
+            Nachricht planen
+          </h2>
+          <button class="ds-modal__close" data-action="close-schedule-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div class="modal-body">
-          <!-- Tab Selection -->
-          <div class="chat-type-tabs">
-            <button class="chat-type-tab active" data-type="employee" id="employeeTab">
-              <i class="fas fa-users"></i>
-              Mitarbeiter
-            </button>
-            <button class="chat-type-tab" data-type="admin" id="adminTab">
-              <i class="fas fa-user-tie"></i>
-              Administratoren
-            </button>
-          </div>
-
-          <!-- Employee Selection -->
-          <div id="employeeSelection" class="recipient-selection active">
-            <!-- Department Dropdown -->
-            <div class="form-group">
-              <label class="form-label">Abteilung auswählen</label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="departmentDisplay" data-action="toggle-chat-dropdown" data-dropdown="department">
-                  <span>Abteilung wählen</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="departmentDropdown">
-                  <!-- Departments werden dynamisch geladen -->
-                </div>
-                <input type="hidden" id="selectedDepartment" />
-              </div>
+        <div class="ds-modal__body">
+          <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4)">
+            Wählen Sie Datum und Uhrzeit, wann die Nachricht gesendet werden soll.
+          </p>
+          <!-- Date & Time Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-4)">
+            <div class="form-field">
+              <label class="form-field__label form-field__label--required" for="scheduleDate">Datum</label>
+              <input type="date" id="scheduleDate" class="form-field__control" required />
             </div>
-
-            <!-- Employee Dropdown -->
-            <div class="form-group" id="employeeDropdownGroup" class="u-hidden">
-              <label class="form-label">Mitarbeiter auswählen</label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="employeeDisplay" data-action="toggle-chat-dropdown" data-dropdown="employee">
-                  <span>Mitarbeiter wählen</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="employeeDropdown">
-                  <!-- Employees werden dynamisch geladen -->
-                </div>
-                <input type="hidden" id="selectedEmployee" />
-              </div>
+            <div class="form-field">
+              <label class="form-field__label form-field__label--required" for="scheduleTime">Uhrzeit</label>
+              <input type="time" id="scheduleTime" class="form-field__control" required />
             </div>
           </div>
-
-          <!-- Admin Selection -->
-          <div id="adminSelection" class="recipient-selection" class="u-hidden">
-            <div class="form-group">
-              <label class="form-label">Administrator auswählen</label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="adminDisplay" data-action="toggle-chat-dropdown" data-dropdown="admin">
-                  <span>Administrator wählen</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="adminDropdown">
-                  <!-- Admins werden dynamisch geladen -->
-                </div>
-                <input type="hidden" id="selectedAdmin" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Multiple Selection for Groups -->
-          <div class="form-group" id="multipleSelectionHint" style="display: none; margin-top: 15px">
-            <p class="text-muted" class="u-fs-09rem">
-              <i class="fas fa-info-circle"></i>
-              Für Gruppenchats wählen Sie mehrere Empfänger aus
-            </p>
-          </div>
-
-          <!-- Selected Recipients -->
-          <div class="form-group" id="selectedRecipientsGroup" style="display: none; margin-top: 20px">
-            <label class="form-label">Ausgewählte Empfänger</label>
-            <div id="selectedRecipientsList" class="selected-recipients-list">
-              <!-- Selected recipients will be shown here -->
-            </div>
-          </div>
-
-          <!-- Group Name (for group chats) -->
-          <div class="form-group" id="groupChatOptions" style="display: none; margin-top: 20px">
-            <label class="form-label">Gruppenname (optional)</label>
-            <input type="text" id="groupChatName" class="form-control" placeholder="z.B. Projekt-Team, Abteilung Marketing..." />
-          </div>
+          <small class="form-field__message" style="margin-top: var(--spacing-3)">
+            <i class="fas fa-info-circle"></i>
+            Mindestens 5 Minuten in der Zukunft, maximal 30 Tage.
+          </small>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" id="cancelModalBtn">Abbrechen</button>
-          <button class="btn-primary" id="createConversationBtn">
-            <i class="fas fa-paper-plane"></i>
-            Unterhaltung starten
+        <div class="ds-modal__footer ds-modal__footer--spaced">
+          <button class="btn btn-cancel" data-action="cancel-schedule-modal">Abbrechen</button>
+          <button class="btn btn-modal" data-action="confirm-schedule">
+            <i class="far fa-clock"></i>
+            Planen
           </button>
         </div>
       </div>
     </div>
 
-    <!-- File Upload Input -->
-    <input type="file" id="fileInput" class="u-hidden" multiple />
-
-    <!-- Emoji Picker Modal -->
-    <div id="emojiPicker" class="emoji-picker u-hidden">
-      <div class="emoji-picker-header">
-        <button class="emoji-category active" data-category="smileys">😊</button>
-        <button class="emoji-category" data-category="gestures">👍</button>
-        <button class="emoji-category" data-category="hearts">❤️</button>
-        <button class="emoji-category" data-category="animals">🐶</button>
-        <button class="emoji-category" data-category="food">🍕</button>
-        <button class="emoji-category" data-category="activities">⚽</button>
-        <button class="emoji-category" data-category="objects">💡</button>
-        <button class="emoji-category" data-category="symbols">✨</button>
-      </div>
-      <div class="emoji-picker-content" id="emojiContent">
-        <!-- Emojis werden hier dynamisch eingefügt -->
-      </div>
-    </div>
-
-    <!-- Scripts -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
-    <script type="module" src="/scripts/chat.ts"></script>
-    <script type="module">
-      document.addEventListener('DOMContentLoaded', function () {
-        console.info('🚀 Chat-Seite wird initialisiert...');
-
-        // Navigation wird automatisch durch unified-navigation.ts initialisiert
-        console.info('Navigation wird automatisch geladen...');
-        // UnifiedNavigation wird bereits automatisch in unified-navigation.ts initialisiert
-        // Keine zusätzliche Instanz erstellen!
-
-        // Event-Listener werden bereits in chat.ts hinzugefügt
-        console.info('🎯 Event-Listener werden durch chat.ts verwaltet');
-      });
-
-      // Custom Delivery Select Functions
-      function toggleDeliveryDropdown() {
-        const select = document.querySelector('.custom-delivery-select');
-        select.classList.toggle('active');
-
-        // Close on outside click
-        if (select.classList.contains('active')) {
-          document.addEventListener('click', function closeDropdown(e) {
-            if (!e.target.closest('.custom-delivery-select')) {
-              select.classList.remove('active');
-              document.removeEventListener('click', closeDropdown);
-            }
-          });
-        }
-      }
-
-      function selectDeliveryOption(value, icon, text) {
-        // Update display
-        document.querySelector('.delivery-icon').textContent = icon;
-        document.querySelector('.delivery-text').textContent = text;
-
-        // Update hidden input
-        document.querySelector('#messageScheduling').value = value;
-
-        // Close dropdown
-        document.querySelector('.custom-delivery-select').classList.remove('active');
-
-        // Log selection
-        console.info('📅 Delivery option selected:', value);
-      }
-
-      // Toggle Chat Dropdown
-      window.toggleChatDropdown = function (type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d !== display) d.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d !== dropdown) d.classList.remove('active');
-        });
-
-        display.classList.toggle('active');
-        dropdown.classList.toggle('active');
-      };
-
-      // Select Chat Dropdown Option
-      window.selectChatDropdownOption = function (type, value, text, meta = '') {
-        const display = document.querySelector(type + 'Display');
-        const input = document.querySelector('selected' + type.charAt(0).toUpperCase() + type.slice(1));
-
-        // Update display text
-        display.querySelector('span').textContent = text;
-
-        // Update hidden input
-        input.value = value;
-
-        // Close dropdown
-        display.classList.remove('active');
-        document.querySelector(type + 'Dropdown').classList.remove('active');
-
-        console.info(`✅ ${type} selected:`, { value, text, meta });
-
-        // Handle specific dropdown types
-        if (type === 'department' && value) {
-          // Department selected, show employee dropdown
-          document.querySelector('#employeeDropdownGroup').style.display = 'block';
-          // Load employees for this department
-          if (window.chatClient) {
-            window.chatClient.loadEmployeesForDepartment(value);
-          }
-        }
-      };
-
-      // Event Delegation for all actions
-      document.addEventListener('click', function (e) {
-        const target = e.target;
-
-        // Handle toggle delivery dropdown
-        const toggleDeliveryBtn = target.closest('[data-action="toggle-delivery-dropdown"]');
-        if (toggleDeliveryBtn) {
-          toggleDeliveryDropdown();
-          return;
-        }
-
-        // Handle select delivery option
-        const selectDeliveryBtn = target.closest('[data-action="select-delivery"]');
-        if (selectDeliveryBtn) {
-          const value = selectDeliveryBtn.dataset.value;
-          const icon = selectDeliveryBtn.dataset.icon;
-          const text = selectDeliveryBtn.dataset.text;
-          selectDeliveryOption(value, icon, text);
-          return;
-        }
-
-        // Handle toggle chat dropdown
-        const toggleChatBtn = target.closest('[data-action="toggle-chat-dropdown"]');
-        if (toggleChatBtn) {
-          const dropdown = toggleChatBtn.dataset.dropdown;
-          if (window.toggleChatDropdown) {
-            window.toggleChatDropdown('#' + dropdown);
-          }
-          return;
-        }
-      });
-
-      // Click outside to close dropdowns
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-    </script>
+    <!-- Scripts (TypeScript modules only) -->
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <script type="module" src="/scripts/chat/index.ts"></script>
   </body>
 </html>

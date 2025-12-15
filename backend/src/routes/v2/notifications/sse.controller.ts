@@ -29,21 +29,18 @@ interface NotificationData {
  * @param req - The request object
  * @param res - The response object
  */
-export function stream(req: AuthenticatedRequest, res: Response): void {
-  const { tenant_id: tenantId, role, id: userId } = req.user;
-
-  logger.info(`[SSE] Establishing connection for user ${userId} (${role}) in tenant ${tenantId}`);
-
-  // Setup SSE headers
+/**
+ * Setup SSE headers and send initial connection
+ */
+function setupSSEConnection(res: Response, userId: number, role: string, tenantId: number): void {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
-    'X-Accel-Buffering': 'no', // Disable Nginx buffering
+    'X-Accel-Buffering': 'no',
     'Access-Control-Allow-Origin': '*',
   });
 
-  // Send initial connection event
   res.write(
     `data: ${JSON.stringify({
       type: 'CONNECTED',
@@ -51,18 +48,18 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
       user: { id: userId, role, tenantId },
     })}\n\n`,
   );
+}
 
-  // Heartbeat to keep connection alive (every 30 seconds)
-  const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
-  }, 30000);
-
-  // Event handlers based on role
-  const handlers: Record<string, (data: NotificationData) => void> = {};
-
-  // Survey notifications for employees
-  if (role === 'employee') {
-    handlers['survey.created'] = (data) => {
+/**
+ * Create survey handlers for employees
+ */
+function createSurveyHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+): Record<string, (data: NotificationData) => void> {
+  return {
+    ['survey.created']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY to user ${userId}`);
         res.write(
@@ -77,46 +74,60 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
           })}\n\n`,
         );
       }
-    };
-
-    handlers['survey.updated'] = (data) => {
+    },
+    ['survey.updated']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending SURVEY_UPDATED to user ${userId}`);
         res.write(
           `data: ${JSON.stringify({
             type: 'SURVEY_UPDATED',
-            survey: {
-              id: data.survey.id,
-              title: data.survey.title,
+            survey: { id: data.survey.id, title: data.survey.title },
+            timestamp: new Date().toISOString(),
+          })}\n\n`,
+        );
+      }
+    },
+  };
+}
+
+/**
+ * Create document handler for all users
+ */
+function createDocumentHandler(
+  res: Response,
+  tenantId: number,
+  userId: number,
+): Record<string, (data: NotificationData) => void> {
+  return {
+    ['document.uploaded']: (data: NotificationData) => {
+      if (data.tenantId === tenantId && data.document) {
+        logger.info(`[SSE] Sending NEW_DOCUMENT to user ${userId}`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'NEW_DOCUMENT',
+            document: {
+              id: data.document.id,
+              filename: data.document.filename,
+              category: data.document.category,
             },
             timestamp: new Date().toISOString(),
           })}\n\n`,
         );
       }
-    };
-  }
-
-  // Document notifications for all users
-  handlers['document.uploaded'] = (data) => {
-    if (data.tenantId === tenantId && data.document) {
-      logger.info(`[SSE] Sending NEW_DOCUMENT to user ${userId}`);
-      res.write(
-        `data: ${JSON.stringify({
-          type: 'NEW_DOCUMENT',
-          document: {
-            id: data.document.id,
-            filename: data.document.filename,
-            category: data.document.category,
-          },
-          timestamp: new Date().toISOString(),
-        })}\n\n`,
-      );
-    }
+    },
   };
+}
 
-  // KVP notifications for admins
-  if (role === 'admin' || role === 'root') {
-    handlers['kvp.submitted'] = (data) => {
+/**
+ * Create admin-specific handlers
+ */
+function createAdminHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+): Record<string, (data: NotificationData) => void> {
+  return {
+    ['kvp.submitted']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.kvp) {
         logger.info(`[SSE] Sending NEW_KVP to user ${userId}`);
         res.write(
@@ -131,10 +142,8 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
           })}\n\n`,
         );
       }
-    };
-
-    // Admins also get notified about new surveys (to see what employees will get)
-    handlers['survey.created'] = (data) => {
+    },
+    ['survey.created']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY_CREATED to admin ${userId}`);
         res.write(
@@ -149,39 +158,95 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
           })}\n\n`,
         );
       }
-    };
+    },
+  };
+}
+
+/**
+ * Create notification handlers based on user role
+ */
+function createNotificationHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+  role: string,
+): Record<string, (data: NotificationData) => void> {
+  const handlers: Record<string, (data: NotificationData) => void> = {};
+
+  // Survey notifications for employees
+  if (role === 'employee') {
+    Object.assign(handlers, createSurveyHandlers(res, tenantId, userId));
   }
 
-  // Register all handlers
-  Object.entries(handlers).forEach(([event, handler]) => {
-    eventBus.on(event, handler);
+  // Document notifications for all users
+  Object.assign(handlers, createDocumentHandler(res, tenantId, userId));
+
+  // KVP and admin notifications
+  if (role === 'admin' || role === 'root') {
+    Object.assign(handlers, createAdminHandlers(res, tenantId, userId));
+  }
+
+  return handlers;
+}
+
+/**
+ * Setup cleanup handlers for connection
+ */
+function setupCleanupHandlers(
+  req: AuthenticatedRequest,
+  heartbeat: ReturnType<typeof setInterval>,
+  handlers: Record<string, (data: NotificationData) => void>,
+  userId: number,
+): void {
+  const cleanup = (): void => {
+    clearInterval(heartbeat);
+    Object.entries(handlers).forEach(
+      ([event, handler]: [string, (data: NotificationData) => void]) => {
+        eventBus.off(event, handler);
+      },
+    );
+  };
+
+  req.on('close', () => {
+    cleanup();
+    logger.info(`[SSE] Connection closed for user ${userId}`);
   });
+
+  req.on('error', (error: Error) => {
+    logger.error(`[SSE] Connection error for user ${userId}:`, error);
+    cleanup();
+  });
+}
+
+export function stream(req: AuthenticatedRequest, res: Response): void {
+  const { tenant_id: tenantId, role, id: userId } = req.user;
+
+  logger.info(`[SSE] Establishing connection for user ${userId} (${role}) in tenant ${tenantId}`);
+
+  // Setup connection
+  setupSSEConnection(res, userId, role, tenantId);
+
+  // Heartbeat to keep connection alive
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  // Create handlers
+  const handlers = createNotificationHandlers(res, tenantId, userId, role);
+
+  // Register handlers
+  Object.entries(handlers).forEach(
+    ([event, handler]: [string, (data: NotificationData) => void]) => {
+      eventBus.on(event, handler);
+    },
+  );
 
   // Log connection stats
   const activeListeners = Object.keys(handlers).length;
   logger.info(`[SSE] User ${userId} listening to ${activeListeners} event types`);
 
-  // Cleanup on client disconnect
-  req.on('close', () => {
-    clearInterval(heartbeat);
-
-    // Remove all handlers
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
-
-    logger.info(`[SSE] Connection closed for user ${userId}`);
-  });
-
-  // Handle connection errors
-  req.on('error', (error: Error) => {
-    logger.error(`[SSE] Connection error for user ${userId}:`, error);
-    clearInterval(heartbeat);
-
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
-  });
+  // Setup cleanup
+  setupCleanupHandlers(req, heartbeat, handlers, userId);
 }
 
 /**

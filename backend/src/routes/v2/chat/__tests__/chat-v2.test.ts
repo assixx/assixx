@@ -73,7 +73,7 @@ describe('Chat API v2', () => {
       logError('Login failed for testUser1:', response.status, response.body);
       throw new Error(`Login failed: ${response.status}`);
     }
-    authToken1 = response.body.data.accessToken;
+    authToken1 = response.body.data['accessToken'];
 
     response = await request(app)
       .post('/api/v2/auth/login')
@@ -83,7 +83,7 @@ describe('Chat API v2', () => {
       logError('Login failed for testUser2:', response.status, response.body);
       throw new Error(`Login failed: ${response.status}`);
     }
-    authToken2 = response.body.data.accessToken;
+    authToken2 = response.body.data['accessToken'];
 
     // Create conversations in the old tables that v1 service uses
     // Create 1:1 conversation
@@ -190,11 +190,11 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.users).toBeInstanceOf(Array);
-      expect(response.body.data.users.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['users']).toBeInstanceOf(Array);
+      expect(response.body.data['users'].length).toBeGreaterThanOrEqual(2);
 
       // Should include basic user info
-      const user = response.body.data.users[0];
+      const user = response.body.data['users'][0];
       expect(user).toHaveProperty('id');
       expect(user).toHaveProperty('firstName');
       expect(user).toHaveProperty('lastName');
@@ -210,7 +210,7 @@ describe('Chat API v2', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.users.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data['users'].length).toBeGreaterThanOrEqual(1);
     });
 
     it('should return 401 without auth', async () => {
@@ -237,13 +237,13 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.conversation).toBeDefined();
-      expect(response.body.data.conversation.id).toBeDefined();
+      expect(response.body.data['conversation']).toBeDefined();
+      expect(response.body.data['conversation'].id).toBeDefined();
 
       // API v2 returns isGroup (boolean) instead of type (string)
-      expect(response.body.data.conversation.isGroup).toBe(false); // 1:1 chat
+      expect(response.body.data['conversation'].isGroup).toBe(false); // 1:1 chat
 
-      expect(response.body.data.conversation.participants).toHaveLength(2);
+      expect(response.body.data['conversation'].participants).toHaveLength(2);
     });
 
     it('should create a group conversation', async () => {
@@ -257,9 +257,9 @@ describe('Chat API v2', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.conversation).toBeDefined();
-      expect(response.body.data.conversation.isGroup).toBe(true); // Changed from type to isGroup
-      expect(response.body.data.conversation.participants).toHaveLength(3);
+      expect(response.body.data['conversation']).toBeDefined();
+      expect(response.body.data['conversation'].isGroup).toBe(true); // Changed from type to isGroup
+      expect(response.body.data['conversation'].participants).toHaveLength(3);
     });
 
     it('should return existing conversation for 1:1 chats', async () => {
@@ -274,7 +274,7 @@ describe('Chat API v2', () => {
         .expect(201);
 
       // Should return the conversation created in beforeAll
-      expect(response.body.data.conversation.id).toBe(conversationId);
+      expect(response.body.data['conversation'].id).toBe(conversationId);
     });
 
     it('should validate participant IDs', async () => {
@@ -299,10 +299,10 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.data).toBeInstanceOf(Array);
-      expect(response.body.data.data.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['data']).toBeInstanceOf(Array);
+      expect(response.body.data['data'].length).toBeGreaterThanOrEqual(2);
 
-      const conversation = response.body.data.data[0];
+      const conversation = response.body.data['data'][0];
       expect(conversation).toHaveProperty('id');
       expect(conversation).toHaveProperty('name');
       expect(conversation).toHaveProperty('isGroup'); // Changed from type to isGroup
@@ -318,7 +318,7 @@ describe('Chat API v2', () => {
         .set('Authorization', `Bearer ${authToken1}`)
         .expect(200);
 
-      expect(response.body.data.pagination).toBeDefined();
+      expect(response.body.data['pagination']).toBeDefined();
     });
 
     it('should filter by search', async () => {
@@ -328,8 +328,8 @@ describe('Chat API v2', () => {
         .set('Authorization', `Bearer ${authToken1}`)
         .expect(200);
 
-      expect(response.body.data.data.length).toBeGreaterThanOrEqual(1);
-      const found = response.body.data.data.find((c: any) => c.id === groupConversationId);
+      expect(response.body.data['data'].length).toBeGreaterThanOrEqual(1);
+      const found = response.body.data['data'].find((c: any) => c.id === groupConversationId);
       expect(found).toBeDefined();
       expect(found.name).toContain('Test Group');
     });
@@ -347,13 +347,13 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.message).toBeDefined();
-      expect(response.body.data.message.id).toBeDefined();
-      expect(response.body.data.message.content).toBe('Hello from test!');
-      expect(response.body.data.message.conversationId).toBe(conversationId);
-      expect(response.body.data.message.senderId).toBe(testUser1.id);
-      expect(response.body.data.message.senderName).toBeDefined();
-      expect(response.body.data.message.createdAt).toBeDefined();
+      expect(response.body.data['message']).toBeDefined();
+      expect(response.body.data['message'].id).toBeDefined();
+      expect(response.body.data['message'].content).toBe('Hello from test!');
+      expect(response.body.data['message'].conversationId).toBe(conversationId);
+      expect(response.body.data['message'].senderId).toBe(testUser1.id);
+      expect(response.body.data['message'].senderName).toBeDefined();
+      expect(response.body.data['message'].createdAt).toBeDefined();
     });
 
     it('should validate message content', async () => {
@@ -422,10 +422,10 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.data).toBeInstanceOf(Array); // Changed from messages to data
-      expect(response.body.data.data.length).toBeGreaterThanOrEqual(3);
+      expect(response.body.data['data']).toBeInstanceOf(Array); // Changed from messages to data
+      expect(response.body.data['data'].length).toBeGreaterThanOrEqual(3);
 
-      const message = response.body.data.data[0];
+      const message = response.body.data['data'][0];
       expect(message).toHaveProperty('id');
       expect(message).toHaveProperty('content'); // Changed from message to content
       expect(message).toHaveProperty('senderId');
@@ -441,7 +441,7 @@ describe('Chat API v2', () => {
         .set('Authorization', `Bearer ${authToken1}`)
         .expect(200);
 
-      expect(response.body.data.data).toHaveLength(1); // Changed from messages to data
+      expect(response.body.data['data']).toHaveLength(1); // Changed from messages to data
     });
   });
 
@@ -486,10 +486,10 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.totalUnread).toBeGreaterThanOrEqual(1); // Changed from unreadCount to totalUnread
-      expect(response.body.data.conversations).toBeInstanceOf(Array);
+      expect(response.body.data['totalUnread']).toBeGreaterThanOrEqual(1); // Changed from unreadCount to totalUnread
+      expect(response.body.data['conversations']).toBeInstanceOf(Array);
 
-      const unreadConv = response.body.data.conversations.find(
+      const unreadConv = response.body.data['conversations'].find(
         (c: any) => c.conversationId === conversationId,
       );
       expect(unreadConv).toBeDefined();
@@ -508,7 +508,7 @@ describe('Chat API v2', () => {
           name: 'To be deleted',
         });
 
-      const deleteConvId = createResponse.body.data.conversation.id;
+      const deleteConvId = createResponse.body.data['conversation'].id;
 
       // Delete it
       const response = await request(app)
@@ -517,7 +517,7 @@ describe('Chat API v2', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Conversation deleted successfully');
+      expect(response.body.data['message']).toBe('Conversation deleted successfully');
 
       // Verify it's gone
       const listResponse = await request(app)
@@ -525,7 +525,7 @@ describe('Chat API v2', () => {
         .set('Authorization', `Bearer ${authToken1}`)
         .expect(200);
 
-      const found = listResponse.body.data.data.find((c: any) => c.id === deleteConvId);
+      const found = listResponse.body.data['data'].find((c: any) => c.id === deleteConvId);
       expect(found).toBeUndefined();
     });
   });
@@ -539,11 +539,11 @@ describe('Chat API v2', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.conversation).toBeDefined();
-      expect(response.body.data.conversation.id).toBe(conversationId);
-      expect(response.body.data.conversation.name).toBeDefined();
-      expect(response.body.data.conversation.isGroup).toBeDefined(); // Changed from type to isGroup
-      expect(response.body.data.conversation.participants).toBeInstanceOf(Array);
+      expect(response.body.data['conversation']).toBeDefined();
+      expect(response.body.data['conversation'].id).toBe(conversationId);
+      expect(response.body.data['conversation'].name).toBeDefined();
+      expect(response.body.data['conversation'].isGroup).toBeDefined(); // Changed from type to isGroup
+      expect(response.body.data['conversation'].participants).toBeInstanceOf(Array);
     });
 
     it('should return 404 for non-existent conversation', async () => {

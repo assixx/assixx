@@ -1,7 +1,7 @@
 // Convenience type for any authenticated handler
 import { NextFunction, Response } from 'express';
 
-import type { AuthenticatedRequest } from './request.types';
+import type { AuthenticatedRequest } from './request.types.js';
 
 /**
  * Central Type Export File
@@ -9,28 +9,28 @@ import type { AuthenticatedRequest } from './request.types';
  */
 
 // Auth Types
-export * from './auth.types';
+export * from './auth.types.js';
 
 // Request Types
-export * from './request.types';
+export * from './request.types.js';
 
 // Response Types
-export * from './response.types';
+export * from './response.types.js';
 
 // Security Types
-export * from './security.types';
+export * from './security.types.js';
 
 // Middleware Types
-export * from './middleware.types';
+export * from './middleware.types.js';
 
 // Database Types
-export * from './database.types';
+export * from './database.types.js';
 
 // Tenant Types
-export * from './tenant.types';
+export * from './tenant.types.js';
 
 // Model Types
-export type * from './models';
+export type * from './models.js';
 
 export type AuthenticatedHandler = (
   req: AuthenticatedRequest,
@@ -46,17 +46,17 @@ export type {
   BodyRequest,
   QueryRequest,
   ParamsRequest,
-} from './request.types';
+} from './request.types.js';
 
 export type {
   ApiResponse,
   PaginatedResponse,
   ErrorResponse,
   ValidationErrorResponse,
-} from './response.types';
+} from './response.types.js';
 
 export type {
   RateLimiterType,
   SecurityEventType,
   SecurityMiddlewareOptions,
-} from './security.types';
+} from './security.types.js';

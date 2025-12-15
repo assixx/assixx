@@ -73,7 +73,7 @@ describe('Documents API v2', () => {
         email: adminUser.email,
         password: 'AdminPass123!',
       });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     // Login regular user
     const userLoginRes = await request(app)
@@ -83,7 +83,7 @@ describe('Documents API v2', () => {
         email: regularUser.email,
         password: 'UserPass123!',
       });
-    userToken = userLoginRes.body.data.accessToken;
+    userToken = userLoginRes.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -157,8 +157,8 @@ describe('Documents API v2', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.recipientType).toBe('team');
-      expect(response.body.data.teamId).toBe(teamId);
+      expect(response.body.data['recipientType']).toBe('team');
+      expect(response.body.data['teamId']).toBe(teamId);
     });
 
     it('should upload salary document with year/month', async () => {
@@ -202,7 +202,7 @@ describe('Documents API v2', () => {
           filename: 'user-doc.pdf',
           contentType: 'application/pdf',
         });
-      userDocId = userDocRes.body.data.id;
+      userDocId = userDocRes.body.data['id'];
 
       const teamDocRes = await request(app)
         .post('/api/v2/documents')
@@ -214,7 +214,7 @@ describe('Documents API v2', () => {
           filename: 'team-doc.pdf',
           contentType: 'application/pdf',
         });
-      teamDocId = teamDocRes.body.data.id;
+      teamDocId = teamDocRes.body.data['id'];
 
       const companyDocRes = await request(app)
         .post('/api/v2/documents')
@@ -225,7 +225,7 @@ describe('Documents API v2', () => {
           filename: 'company-doc.pdf',
           contentType: 'application/pdf',
         });
-      companyDocId = companyDocRes.body.data.id;
+      companyDocId = companyDocRes.body.data['id'];
     });
 
     it('should list all documents for admin', async () => {
@@ -235,9 +235,9 @@ describe('Documents API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.documents).toBeInstanceOf(Array);
-      expect(response.body.data.documents.length).toBeGreaterThanOrEqual(3);
-      expect(response.body.data.pagination).toBeDefined();
+      expect(response.body.data['documents']).toBeInstanceOf(Array);
+      expect(response.body.data['documents'].length).toBeGreaterThanOrEqual(3);
+      expect(response.body.data['pagination']).toBeDefined();
     });
 
     it('should filter documents by category', async () => {
@@ -246,7 +246,7 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      const docs = response.body.data.documents;
+      const docs = response.body.data['documents'];
       expect(docs.every((d: any) => d.category === 'personal')).toBe(true);
     });
 
@@ -256,7 +256,7 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      const docs = response.body.data.documents;
+      const docs = response.body.data['documents'];
 
       // Filter should return at least one team document (the one we created)
       expect(docs.length).toBeGreaterThanOrEqual(1);
@@ -288,7 +288,7 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(response.status).toBe(200);
-      const docs = response.body.data.documents;
+      const docs = response.body.data['documents'];
 
       // User should see: personal docs, team docs (member), company docs
       const docIds = docs.map((d: any) => d.id);
@@ -303,8 +303,8 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.documents.length).toBeLessThanOrEqual(2);
-      expect(response.body.data.pagination).toMatchObject({
+      expect(response.body.data['documents'].length).toBeLessThanOrEqual(2);
+      expect(response.body.data['pagination']).toMatchObject({
         page: 1,
         limit: 2,
       });
@@ -317,7 +317,7 @@ describe('Documents API v2', () => {
 
       expect(response.status).toBe(200);
       // Should find documents with "team" in filename or description
-      expect(response.body.data.documents.length).toBeGreaterThan(0);
+      expect(response.body.data['documents'].length).toBeGreaterThan(0);
     });
   });
 
@@ -337,7 +337,7 @@ describe('Documents API v2', () => {
           filename: 'training.pdf',
           contentType: 'application/pdf',
         });
-      documentId = response.body.data.id;
+      documentId = response.body.data['id'];
     });
 
     it('should get document by ID', async () => {
@@ -389,7 +389,7 @@ describe('Documents API v2', () => {
 
       // Try to access with regular user token
       const response = await request(app)
-        .get(`/api/v2/documents/${docRes.body.data.id}`)
+        .get(`/api/v2/documents/${docRes.body.data['id']}`)
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(response.status).toBe(403);
@@ -410,7 +410,7 @@ describe('Documents API v2', () => {
           filename: 'update-test.pdf',
           contentType: 'application/pdf',
         });
-      documentId = response.body.data.id;
+      documentId = response.body.data['id'];
     });
 
     it('should update document metadata', async () => {
@@ -449,8 +449,8 @@ describe('Documents API v2', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.description).toBeNull();
-      expect(response.body.data.tags).toBeNull();
+      expect(response.body.data['description']).toBeNull();
+      expect(response.body.data['tags']).toBeNull();
     });
 
     it('should require admin role for update', async () => {
@@ -479,7 +479,7 @@ describe('Documents API v2', () => {
           filename: 'delete-test.pdf',
           contentType: 'application/pdf',
         });
-      documentId = response.body.data.id;
+      documentId = response.body.data['id'];
     });
 
     it('should delete document', async () => {
@@ -488,7 +488,7 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.message).toContain('deleted successfully');
+      expect(response.body.data['message']).toContain('deleted successfully');
 
       // Verify it's deleted
       const getResponse = await request(app)
@@ -549,14 +549,14 @@ describe('Documents API v2', () => {
       }
 
       expect(response.status).toBe(200);
-      expect(response.body.data.message).toContain('archived successfully');
+      expect(response.body.data['message']).toContain('archived successfully');
 
       // Verify it's archived
       const listResponse = await request(app)
         .get('/api/v2/documents?isArchived=true')
         .set('Authorization', `Bearer ${adminToken}`);
 
-      const archivedDoc = listResponse.body.data.documents.find((d: any) => d.id === documentId);
+      const archivedDoc = listResponse.body.data['documents'].find((d: any) => d.id === documentId);
       expect(archivedDoc).toBeDefined();
     });
 
@@ -571,7 +571,7 @@ describe('Documents API v2', () => {
       }
 
       expect(response.status).toBe(200);
-      expect(response.body.data.message).toContain('unarchived successfully');
+      expect(response.body.data['message']).toContain('unarchived successfully');
     });
   });
 
@@ -588,7 +588,7 @@ describe('Documents API v2', () => {
           filename: 'download-test.pdf',
           contentType: 'application/pdf',
         });
-      documentId = response.body.data.id;
+      documentId = response.body.data['id'];
     });
 
     it('should download document', async () => {
@@ -648,8 +648,8 @@ describe('Documents API v2', () => {
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.storageUsed).toBe(0);
-      expect(response.body.data.unreadCount).toBeDefined();
+      expect(response.body.data['storageUsed']).toBe(0);
+      expect(response.body.data['unreadCount']).toBeDefined();
     });
   });
 

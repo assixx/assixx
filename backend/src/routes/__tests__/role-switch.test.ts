@@ -124,7 +124,7 @@ describe('Role Switch API v1 Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.user.activeRole).toBe('employee');
+      expect(response.body.user['activeRole']).toBe('employee');
     });
 
     test('Employee cannot switch roles', async () => {
@@ -171,8 +171,8 @@ describe('Role Switch API v1 Tests', () => {
         .set('Content-Type', 'application/json');
 
       expect(response.status).toBe(200);
-      expect(response.body.user.activeRole).toBe('admin');
-      expect(response.body.user.isRoleSwitched).toBe(false);
+      expect(response.body.user['activeRole']).toBe('admin');
+      expect(response.body.user['isRoleSwitched']).toBe(false);
     });
   });
 
@@ -193,7 +193,7 @@ describe('Role Switch API v1 Tests', () => {
         .set('Content-Type', 'application/json');
 
       expect(response.status).toBe(200);
-      expect(response.body.user.activeRole).toBe('root');
+      expect(response.body.user['activeRole']).toBe('root');
       expect(response.body.message).toContain('Root');
     });
 
@@ -215,8 +215,8 @@ describe('Role Switch API v1 Tests', () => {
         .set('Content-Type', 'application/json');
 
       expect(response.status).toBe(200);
-      expect(response.body.user.activeRole).toBe('admin');
-      expect(response.body.user.isRoleSwitched).toBe(true);
+      expect(response.body.user['activeRole']).toBe('admin');
+      expect(response.body.user['isRoleSwitched']).toBe(true);
       // Original role should still be root
       expect(response.body.token).toBeTruthy();
     });

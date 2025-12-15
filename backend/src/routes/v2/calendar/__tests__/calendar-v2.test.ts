@@ -31,7 +31,7 @@ describe('Calendar v2 API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-calendar-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-calendar-v2-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'calendarv2test1', 'Calendar v2 Test Company 1');
@@ -85,7 +85,7 @@ describe('Calendar v2 API Endpoints', () => {
       throw new Error('Failed to login admin user');
     }
 
-    adminTokenV2 = adminLoginRes.body.data.accessToken;
+    adminTokenV2 = adminLoginRes.body.data['accessToken'];
 
     const employeeLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
@@ -98,7 +98,7 @@ describe('Calendar v2 API Endpoints', () => {
       throw new Error('Failed to login employee user');
     }
 
-    employeeTokenV2 = employeeLoginRes.body.data.accessToken;
+    employeeTokenV2 = employeeLoginRes.body.data['accessToken'];
 
     const employee2LoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employee2User.email,
@@ -111,7 +111,7 @@ describe('Calendar v2 API Endpoints', () => {
       throw new Error('Failed to login employee2 user');
     }
 
-    employee2TokenV2 = employee2LoginRes.body.data.accessToken;
+    employee2TokenV2 = employee2LoginRes.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -207,8 +207,8 @@ describe('Calendar v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.data).toHaveLength(2);
-      expect(response.body.data.pagination).toMatchObject({
+      expect(response.body.data['data']).toHaveLength(2);
+      expect(response.body.data['pagination']).toMatchObject({
         currentPage: 1,
         pageSize: 50,
         totalItems: 2,
@@ -221,8 +221,8 @@ describe('Calendar v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.data).toHaveLength(1);
-      expect(response.body.data.pagination).toMatchObject({
+      expect(response.body.data['data']).toHaveLength(1);
+      expect(response.body.data['pagination']).toMatchObject({
         currentPage: 1,
         pageSize: 1,
         totalItems: 2,
@@ -245,8 +245,8 @@ describe('Calendar v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.data).toHaveLength(1);
-      expect(response.body.data.data[0].title).toBe('Cancelled Event');
+      expect(response.body.data['data']).toHaveLength(1);
+      expect(response.body.data['data'][0].title).toBe('Cancelled Event');
     });
 
     it('should support search', async () => {
@@ -255,8 +255,8 @@ describe('Calendar v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.data).toHaveLength(1);
-      expect(response.body.data.data[0].title).toContain('Team');
+      expect(response.body.data['data']).toHaveLength(1);
+      expect(response.body.data['data'][0].title).toContain('Team');
     });
 
     it('should require authentication', async () => {
@@ -290,7 +290,7 @@ describe('Calendar v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.event).toMatchObject({
+      expect(response.body.data['event']).toMatchObject({
         title: eventData.title,
         description: eventData.description,
         location: eventData.location,
@@ -298,8 +298,8 @@ describe('Calendar v2 API Endpoints', () => {
         reminderMinutes: eventData.reminderMinutes,
         color: eventData.color,
       });
-      expect(response.body.data.event.id).toBeDefined();
-      expect(response.body.data.event.createdBy).toBe(adminUser.id);
+      expect(response.body.data['event'].id).toBeDefined();
+      expect(response.body.data['event'].createdBy).toBe(adminUser.id);
     });
 
     it('should create event with attendees', async () => {
@@ -319,7 +319,7 @@ describe('Calendar v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.event.attendees).toHaveLength(3); // Creator + 2 attendees
+      expect(response.body.data['event'].attendees).toHaveLength(3); // Creator + 2 attendees
     });
 
     it('should validate required fields', async () => {
@@ -400,12 +400,12 @@ describe('Calendar v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.event).toMatchObject({
+      expect(response.body.data['event']).toMatchObject({
         id: eventId,
         title: 'Test Event',
         description: 'Test Description',
       });
-      expect(response.body.data.event.attendees).toHaveLength(2); // Creator + 1 attendee
+      expect(response.body.data['event'].attendees).toHaveLength(2); // Creator + 1 attendee
     });
 
     it('should return 404 for non-existent event', async () => {
@@ -472,7 +472,7 @@ describe('Calendar v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.event).toMatchObject({
+      expect(response.body.data['event']).toMatchObject({
         id: eventId,
         title: 'Updated Title',
         description: 'Updated Description',
@@ -488,7 +488,7 @@ describe('Calendar v2 API Endpoints', () => {
         .send({ title: 'Admin Updated' });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.event.title).toBe('Admin Updated');
+      expect(response.body.data['event'].title).toBe('Admin Updated');
     });
 
     it('should not allow non-owner employee to update', async () => {
@@ -598,7 +598,7 @@ describe('Calendar v2 API Endpoints', () => {
         .get(`/api/v2/calendar/events/${eventId}`)
         .set('Authorization', `Bearer ${employeeTokenV2}`);
 
-      const attendee = eventResponse.body.data.event.attendees.find(
+      const attendee = eventResponse.body.data['event'].attendees.find(
         (a: any) => a.userId === employeeUser.id,
       );
       expect(attendee.responseStatus).toBe('accepted');
@@ -631,7 +631,7 @@ describe('Calendar v2 API Endpoints', () => {
         email: newUser.email, // Use the actual email with __AUTOTEST__ prefix
         password: 'NewPass123!',
       });
-      const newUserToken = loginRes.body.data.accessToken;
+      const newUserToken = loginRes.body.data['accessToken'];
 
       const response = await request(app)
         .put(`/api/v2/calendar/events/${eventId}/attendees/response`)
@@ -770,7 +770,7 @@ describe('Calendar v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
       expect(response.status).toBe(200);
-      const eventTitles = response.body.data.data.map((e: any) => e.title);
+      const eventTitles = response.body.data['data'].map((e: any) => e.title);
       expect(eventTitles).not.toContain('Tenant 2 Event');
     });
 

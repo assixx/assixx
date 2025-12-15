@@ -26,7 +26,7 @@ cp .env.example .env
 # JWT_SECRET und SESSION_SECRET in .env anpassen!
 
 # Volumes erstellen (nur beim ersten Mal)
-docker volume create assixx_mysql_data
+docker volume create assixx_postgres_data
 docker volume create assixx_redis_data
 
 # Starten
@@ -36,8 +36,8 @@ cd docker && docker-compose up -d
 ## Zugriff
 
 - App: <http://localhost:3000>
-- phpMyAdmin: <http://localhost:8080>
 - Health: <http://localhost:3000/health>
+- PostgreSQL: `docker exec -it assixx-postgres psql -U assixx_user -d assixx`
 
 ## Wichtige Befehle
 
@@ -74,10 +74,10 @@ lsof -i :3000
 # Oder anderen Port nutzen in docker-compose.yml
 ```
 
-**MySQL Fehler:**
+**PostgreSQL Fehler:**
 
 ```bash
-docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025!
+docker exec -it assixx-postgres psql -U assixx_user -d assixx
 ```
 
 ## Test-Accounts

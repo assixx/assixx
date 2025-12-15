@@ -11,7 +11,7 @@ describe('DEBUG NO CLEANUP: User Creation and Login', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-debug-no-cleanup';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-debug-no-cleanup';
   });
 
   afterAll(async () => {

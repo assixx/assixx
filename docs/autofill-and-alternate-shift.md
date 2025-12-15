@@ -152,7 +152,7 @@ AND us.category = 'shifts';
 }
 
 .checkbox-label:hover {
-  transform: translateY(-1px);
+
   border-color: rgba(33, 150, 243, 0.3);
   background: rgba(255, 255, 255, 0.05);
 }

@@ -1,8 +1,9 @@
 // TypeScript Utility Functions for Type Safety
-import { DatabaseUser, User } from '../types/models';
+import { DatabaseUser, User } from '../types/models.js';
 
 /**
  * Converts database user format to application user format
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
  */
 export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
   return {
@@ -14,8 +15,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     role: dbUser.role,
     tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
-    isActive: dbUser.is_active,
-    isArchived: dbUser.is_archived,
+    isActive: dbUser.is_active, // Status: 0=inactive, 1=active, 3=archived, 4=deleted
     profilePicture: dbUser.profile_picture,
     phoneNumber: dbUser.phone_number,
     landline: dbUser.landline,
@@ -70,14 +70,14 @@ export function createApiResponse<T>(
  * Convert snake_case string to camelCase
  */
 export function snakeToCamelString(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return str.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
 }
 
 /**
  * Convert camelCase string to snake_case
  */
 export function camelToSnakeString(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  return str.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
 }
 
 /**
@@ -89,7 +89,7 @@ export function snakeToCamel(obj: unknown): unknown {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => snakeToCamel(item));
+    return obj.map((item: unknown) => snakeToCamel(item));
   }
 
   if (typeof obj !== 'object' || obj instanceof Date) {
@@ -117,7 +117,7 @@ export function camelToSnake(obj: unknown): unknown {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => camelToSnake(item));
+    return obj.map((item: unknown) => camelToSnake(item));
   }
 
   if (typeof obj !== 'object' || obj instanceof Date) {

@@ -138,22 +138,32 @@ export interface ListResponse<T> extends ApiResponse<T[]> {
 
 // Response Helper Functions
 export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
-  return {
+  const response: ApiResponse<T> = {
     success: true,
     data,
-    message,
     timestamp: new Date().toISOString(),
   };
+
+  if (message !== undefined) {
+    response.message = message;
+  }
+
+  return response;
 }
 
-export function errorResponse(error: string, statusCode = 500, code?: string): ErrorResponse {
-  return {
+export function errorResponse(error: string, statusCode?: number, code?: string): ErrorResponse {
+  const response: ErrorResponse = {
     success: false,
     error,
-    code,
-    statusCode,
+    statusCode: statusCode ?? 500,
     timestamp: new Date().toISOString(),
   };
+
+  if (code !== undefined) {
+    response.code = code;
+  }
+
+  return response;
 }
 
 export function paginatedResponse<T>(

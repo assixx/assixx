@@ -5,7 +5,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-import { query } from '../config/database';
+import { query } from '../config/database.js';
 
 export interface TestUser {
   id: number;
@@ -52,7 +52,7 @@ export async function createTestUser(userData: {
   );
 
   return {
-    id: result.insertId,
+    id: result['insertId'],
     email,
     tenant_id,
     is_admin,
@@ -65,13 +65,13 @@ export async function createTestUser(userData: {
  */
 export function generateAuthToken(user: TestUser): string {
   const payload = {
-    id: user.id,
-    email: user.email,
-    tenant_id: user.tenant_id,
-    is_admin: user.is_admin,
+    id: user['id'],
+    email: user['email'],
+    tenant_id: user['tenant_id'],
+    is_admin: user['is_admin'],
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET ?? 'test-secret-key-for-testing', {
+  return jwt.sign(payload, process.env['JWT_SECRET'] ?? 'test-secret-key-for-testing', {
     expiresIn: '24h',
   });
 }
@@ -99,7 +99,7 @@ export async function createTestTenant(name = 'Test Tenant'): Promise<number> {
      VALUES (?, 'active', NOW(), NOW())`,
     [name],
   );
-  return result.insertId;
+  return result['insertId'];
 }
 
 /**

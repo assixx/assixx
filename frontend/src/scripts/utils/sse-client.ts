@@ -3,8 +3,6 @@
  * Replaces polling with push-based updates
  */
 
-import type unifiedNavigation from '../components/unified-navigation';
-
 // SSE Message types
 interface SSEMessage {
   type: string;
@@ -22,10 +20,9 @@ interface SSEMessage {
 }
 
 // Extend the Window interface with additional properties
-// unifiedNav is already declared in unified-navigation.ts
+// NOTE: unifiedNav is declared in unified-navigation.ts to avoid circular dependency
 declare global {
   interface Window {
-    unifiedNav?: unifiedNavigation;
     showErrorAlert?: (message: string) => void;
     showSuccessAlert?: (message: string) => void;
     showInfoAlert?: (message: string) => void;
@@ -41,6 +38,14 @@ export class SSEClient {
 
   constructor(private url: string) {
     console.info('[SSE] Client initialized');
+
+    // Ensure clean disconnection on page unload
+    window.addEventListener('beforeunload', () => {
+      if (this.isConnected()) {
+        console.info('[SSE] Page unloading - disconnecting SSE');
+        this.disconnect();
+      }
+    });
   }
 
   connect(): void {
@@ -50,19 +55,21 @@ export class SSEClient {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    // Check if user is authenticated before attempting SSE connection
+    // (Cookie will be sent automatically, but we verify auth state first)
+    const token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
     if (token === null || token === '' || token === 'test-mode') {
-      console.warn('[SSE] No valid token available');
+      console.warn('[SSE] No valid token available - skipping SSE connection');
       return;
     }
 
     this.isConnecting = true;
 
-    // Add token as query parameter (SSE doesn't support headers easily)
-    const urlWithToken = `${this.url}?token=${encodeURIComponent(token)}`;
-
+    // SECURITY FIX: Use cookies instead of URL parameter
+    // Cookies are set on login (auth/index.ts line 60) and sent automatically
+    // withCredentials: true ensures cookies are included (required for cross-origin, harmless for same-origin)
     console.info('[SSE] Connecting to:', this.url);
-    this.eventSource = new EventSource(urlWithToken);
+    this.eventSource = new EventSource(this.url, { withCredentials: true });
 
     this.eventSource.onopen = () => {
       console.info('[SSE] Connection established');
@@ -81,7 +88,17 @@ export class SSEClient {
     };
 
     this.eventSource.onerror = (error) => {
-      console.error('[SSE] Connection error:', error);
+      // During page unload, SSE will throw errors - this is expected
+      // The beforeunload handler in unified-navigation.ts handles clean disconnection
+      // Here we only handle real connection errors
+
+      // If the error source is closed, it's likely due to page navigation
+      const isClosedConnection = this.eventSource?.readyState === EventSource.CLOSED;
+
+      if (!isClosedConnection) {
+        console.error('[SSE] Connection error:', error);
+      }
+
       this.isConnecting = false;
 
       // Close the connection
@@ -90,9 +107,68 @@ export class SSEClient {
         this.eventSource = null;
       }
 
-      // Try to reconnect
-      this.handleReconnect();
+      // Only try to reconnect if connection wasn't intentionally closed
+      if (!isClosedConnection) {
+        this.handleReconnect();
+      }
     };
+  }
+
+  private updateSurveyBadge(): void {
+    // Call updatePendingSurveys if unifiedNav is available
+    // Type is defined in global.d.ts as UnifiedNavigation
+    window.unifiedNav?.updatePendingSurveys();
+  }
+
+  private handleConnected(data: SSEMessage): void {
+    console.info('[SSE] Successfully connected to notification stream');
+    console.info('[SSE] User info:', data.user);
+  }
+
+  private handleNewSurvey(data: SSEMessage): void {
+    console.info('[SSE] New survey notification received');
+    this.updateSurveyBadge();
+
+    if (data.survey?.title !== undefined && data.survey.title !== '') {
+      this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
+    }
+  }
+
+  private handleSurveyUpdated(): void {
+    console.info('[SSE] Survey updated notification received');
+    this.updateSurveyBadge();
+  }
+
+  private handleNewSurveyCreated(data: SSEMessage): void {
+    console.info('[SSE] Admin: New survey created');
+
+    if (data.survey?.title !== undefined && data.survey.title !== '') {
+      this.showToast(`Umfrage erstellt: ${data.survey.title}`, 'success');
+    }
+  }
+
+  private handleNewDocument(data: SSEMessage): void {
+    console.info('[SSE] New document notification received');
+
+    if (window.unifiedNav?.updateUnreadDocuments) {
+      window.unifiedNav.updateUnreadDocuments();
+    }
+
+    if (data.document?.filename !== undefined && data.document.filename !== '') {
+      this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
+    }
+  }
+
+  private handleNewKvp(data: SSEMessage): void {
+    console.info('[SSE] New KVP notification received');
+
+    if (window.unifiedNav?.updateNewKvpSuggestions) {
+      window.unifiedNav.updateNewKvpSuggestions();
+    }
+
+    if (data.kvp?.title !== undefined && data.kvp.title !== '') {
+      this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
+    }
   }
 
   private handleMessage(data: SSEMessage): void {
@@ -100,70 +176,23 @@ export class SSEClient {
 
     switch (data.type) {
       case 'CONNECTED':
-        console.info('[SSE] Successfully connected to notification stream');
-        console.info('[SSE] User info:', data.user);
+        this.handleConnected(data);
         break;
-
       case 'NEW_SURVEY':
-        console.info('[SSE] New survey notification received');
-
-        // Update survey badge immediately
-        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          void (window.unifiedNav as any).updatePendingSurveys();
-        }
-
-        // Show toast notification
-        if (data.survey?.title !== undefined && data.survey.title !== '') {
-          this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
-        }
+        this.handleNewSurvey(data);
         break;
-
       case 'SURVEY_UPDATED':
-        console.info('[SSE] Survey updated notification received');
-
-        // Refresh survey badge
-        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          void (window.unifiedNav as any).updatePendingSurveys();
-        }
+        this.handleSurveyUpdated();
         break;
-
       case 'NEW_SURVEY_CREATED':
-        // Admin notification when they create a survey
-        console.info('[SSE] Admin: New survey created');
-
-        if (data.survey?.title !== undefined && data.survey.title !== '') {
-          this.showToast(`Umfrage erstellt: ${data.survey.title}`, 'success');
-        }
+        this.handleNewSurveyCreated(data);
         break;
-
       case 'NEW_DOCUMENT':
-        console.info('[SSE] New document notification received');
-
-        // Update document badge
-        if (window.unifiedNav?.updateUnreadDocuments) {
-          void window.unifiedNav.updateUnreadDocuments();
-        }
-
-        if (data.document?.filename !== undefined && data.document.filename !== '') {
-          this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
-        }
+        this.handleNewDocument(data);
         break;
-
       case 'NEW_KVP':
-        console.info('[SSE] New KVP notification received');
-
-        // Update KVP badge for admins
-        if (window.unifiedNav?.updateNewKvpSuggestions) {
-          void window.unifiedNav.updateNewKvpSuggestions();
-        }
-
-        if (data.kvp?.title !== undefined && data.kvp.title !== '') {
-          this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
-        }
+        this.handleNewKvp(data);
         break;
-
       default:
         console.warn('[SSE] Unknown message type:', data.type);
     }
@@ -223,6 +252,24 @@ export class SSEClient {
       this.isConnecting = false;
       console.info('[SSE] Disconnected');
     }
+  }
+
+  /**
+   * Reconnect with new token (e.g., after token refresh)
+   */
+  reconnectWithNewToken(): void {
+    console.info('[SSE] Reconnecting with new token...');
+    // Reset reconnect attempts since this is a manual reconnect
+    this.reconnectAttempts = 0;
+    this.reconnectDelay = 1000;
+
+    // Disconnect existing connection
+    this.disconnect();
+
+    // Small delay to ensure clean disconnect
+    setTimeout(() => {
+      this.connect();
+    }, 100);
   }
 
   isConnected(): boolean {

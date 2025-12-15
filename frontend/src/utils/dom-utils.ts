@@ -9,10 +9,11 @@ import DOMPurify from 'dompurify';
 
 /**
  * Escape HTML special characters to prevent XSS
- * @param text - Text to escape
+ * @param text - Text to escape (handles null/undefined)
  * @returns Escaped HTML string
  */
-export function escapeHtml(text: string): string {
+export function escapeHtml(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === '') return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
@@ -120,7 +121,7 @@ export function isVisible(selector: string): boolean {
  */
 export async function waitForElement<T extends HTMLElement = HTMLElement>(
   selector: string,
-  timeout = 5000,
+  timeout: number = 5000,
 ): Promise<T> {
   return await new Promise((resolve, reject) => {
     const element = $$(selector) as T | null;
@@ -179,34 +180,44 @@ export function isButtonElement(element: Element | null): element is HTMLButtonE
 }
 
 /**
- * Safe element show
+ * Safe element show - removes hidden classes (Design System compliant)
+ * Uses class-based visibility instead of inline styles
  */
 export function show(element: HTMLElement | null): void {
   if (element) {
-    element.style.display = '';
+    element.classList.remove('hidden', 'u-hidden');
   }
 }
 
 /**
- * Safe element hide
+ * Safe element hide - adds u-hidden class (Design System compliant)
+ * Uses class-based visibility instead of inline styles
  */
 export function hide(element: HTMLElement | null): void {
   if (element) {
-    element.style.display = 'none';
+    element.classList.add('u-hidden');
   }
 }
 
 /**
- * Safe element toggle
+ * Safe element toggle - uses class-based visibility (Design System compliant)
  */
 export function toggle(element: HTMLElement | null, force?: boolean): void {
   if (!element) return;
 
   if (force !== undefined) {
-    element.style.display = force ? '' : 'none';
+    if (force) {
+      element.classList.remove('hidden', 'u-hidden');
+    } else {
+      element.classList.add('u-hidden');
+    }
   } else {
-    const isHidden = element.style.display === 'none' || window.getComputedStyle(element).display === 'none';
-    element.style.display = isHidden ? '' : 'none';
+    const isHidden = element.classList.contains('hidden') || element.classList.contains('u-hidden');
+    if (isHidden) {
+      element.classList.remove('hidden', 'u-hidden');
+    } else {
+      element.classList.add('u-hidden');
+    }
   }
 }
 
@@ -227,117 +238,139 @@ export function setText(element: HTMLElement | null, text: string): void {
 }
 
 /**
+ * DOMPurify configuration for safe HTML sanitization
+ */
+const DOMPURIFY_CONFIG = {
+  FORCE_BODY: false,
+  IN_PLACE: false,
+  ALLOWED_TAGS: [
+    'b',
+    'i',
+    'em',
+    'strong',
+    'a',
+    'br',
+    'p',
+    'div',
+    'span',
+    'ul',
+    'ol',
+    'li',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
+    'img',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'button',
+    'input',
+    'textarea',
+    'select',
+    'option',
+    'label',
+    'small',
+    'code',
+    'pre',
+    // Navigation-specific tags
+    'header',
+    'nav',
+    'aside',
+    'main',
+    'footer',
+    'section',
+    'article',
+    // SVG tags for icons
+    'svg',
+    'path',
+    'circle',
+    'rect',
+    'line',
+    'polygon',
+    'polyline',
+    'g',
+    'defs',
+    'use',
+    'symbol',
+    // Style tag for inline styles
+    'style',
+  ],
+  ALLOWED_ATTR: [
+    'href',
+    'title',
+    'class',
+    'id',
+    'data-*',
+    'src',
+    'alt',
+    'width',
+    'height',
+    'type',
+    'value',
+    'name',
+    'for',
+    // 'onclick', // REMOVED for security - use Event Delegation instead!
+    'style',
+    // Form attributes
+    'placeholder',
+    'required',
+    'rows',
+    'cols',
+    'checked',
+    'selected',
+    'disabled',
+    'readonly',
+    'maxlength',
+    'minlength',
+    'min',
+    'max',
+    'step',
+    'pattern',
+    'autocomplete',
+    'autofocus',
+    'multiple',
+    // Accessibility attributes
+    'role',
+    'aria-*',
+    'tabindex',
+    // SVG attributes
+    'viewBox',
+    'fill',
+    'stroke',
+    'stroke-width',
+    'stroke-linecap',
+    'stroke-linejoin',
+    'd',
+    'xmlns',
+    'transform',
+    'cx',
+    'cy',
+    'r',
+    'x',
+    'y',
+    'rx',
+    'ry',
+    'points',
+    'opacity',
+    'fill-opacity',
+    'stroke-opacity',
+  ],
+  ALLOW_DATA_ATTR: true,
+};
+
+/**
  * Safe HTML content setter using DOMPurify
  * Sanitizes HTML to prevent XSS attacks
  */
 export function setHTML(element: HTMLElement | null, html: string): void {
   if (element) {
-    // Sanitize HTML with DOMPurify
-    const sanitized = DOMPurify.sanitize(html, {
-      FORCE_BODY: false,
-      IN_PLACE: false,
-      ALLOWED_TAGS: [
-        'b',
-        'i',
-        'em',
-        'strong',
-        'a',
-        'br',
-        'p',
-        'div',
-        'span',
-        'ul',
-        'ol',
-        'li',
-        'table',
-        'thead',
-        'tbody',
-        'tr',
-        'th',
-        'td',
-        'img',
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'button',
-        'input',
-        'select',
-        'option',
-        'label',
-        'small',
-        'code',
-        'pre',
-        // Navigation-specific tags
-        'header',
-        'nav',
-        'aside',
-        'main',
-        'footer',
-        'section',
-        'article',
-        // SVG tags for icons
-        'svg',
-        'path',
-        'circle',
-        'rect',
-        'line',
-        'polygon',
-        'polyline',
-        'g',
-        'defs',
-        'use',
-        'symbol',
-        // Style tag for inline styles
-        'style',
-      ],
-      ALLOWED_ATTR: [
-        'href',
-        'title',
-        'class',
-        'id',
-        'data-*',
-        'src',
-        'alt',
-        'width',
-        'height',
-        'type',
-        'value',
-        'name',
-        'for',
-        // 'onclick', // REMOVED for security - use Event Delegation instead!
-        'style',
-        // Accessibility attributes
-        'role',
-        'aria-*',
-        'tabindex',
-        // SVG attributes
-        'viewBox',
-        'fill',
-        'stroke',
-        'stroke-width',
-        'stroke-linecap',
-        'stroke-linejoin',
-        'd',
-        'xmlns',
-        'transform',
-        'cx',
-        'cy',
-        'r',
-        'x',
-        'y',
-        'rx',
-        'ry',
-        'points',
-        'opacity',
-        'fill-opacity',
-        'stroke-opacity',
-      ],
-      ALLOW_DATA_ATTR: true,
-    });
-
+    const sanitized = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
     // Safe: Content is sanitized by DOMPurify
     // eslint-disable-next-line no-unsanitized/property
     element.innerHTML = sanitized;

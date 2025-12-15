@@ -2,12 +2,51 @@
  * Settings v2 Service
  * Business logic for system, tenant, and user settings management
  */
-import { RowDataPacket } from 'mysql2';
-
-import rootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { query as executeQuery } from '../../../utils/db.js';
+import { RowDataPacket, query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import rootLog from '../logs/logs.service.js';
+
+// Query result types for type safety
+interface SystemSettingResult extends RowDataPacket {
+  id: number;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  description?: string | null;
+  is_public: boolean | number;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface TenantSettingResult extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface UserSettingResult extends RowDataPacket {
+  id: number;
+  user_id: number;
+  tenant_id: number;
+  team_id?: number | null;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface IdOnlyResult extends RowDataPacket {
+  id: number;
+}
 
 const DEFAULT_CATEGORY = 'other';
 const SETTING_NOT_FOUND_MSG = 'Setting not found';
@@ -65,6 +104,50 @@ function parseSettingValue(
 }
 
 /**
+ * Helper: Serialize boolean value
+ */
+function serializeBooleanValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'string') {
+    const isFalsy = value.toLowerCase() === 'false' || value === '0' || value === '';
+    return isFalsy ? 'false' : 'true';
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  if (typeof value === 'number') {
+    return value !== 0 && !Number.isNaN(value) ? 'true' : 'false';
+  }
+  // Record type - objects are truthy
+  return 'true';
+}
+
+/**
+ * Helper: Serialize number value
+ */
+function serializeNumberValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  return '0';
+}
+
+/**
+ * Helper: Serialize default/string value
+ */
+function serializeDefaultValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'boolean' || typeof value === 'number') {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+/**
  * Serialize setting value for storage
  * @param value - The value parameter
  * @param type - The type parameter
@@ -73,36 +156,19 @@ function serializeSettingValue(
   value: string | number | boolean | Record<string, unknown> | null,
   type: SettingType,
 ): string {
-  if (value === null) return '';
+  if (value === null) {
+    return '';
+  }
 
   switch (type) {
     case 'boolean':
-      // Handle string "false" and "true" properly
-      if (typeof value === 'string') {
-        return value.toLowerCase() === 'false' || value === '0' || value === '' ? 'false' : 'true';
-      }
-      return value ? 'true' : 'false';
+      return serializeBooleanValue(value);
     case 'number':
-      if (typeof value === 'number') {
-        return String(value);
-      }
-      // If it's a string that looks like a number, return it
-      if (typeof value === 'string') {
-        return value;
-      }
-      return '0';
+      return serializeNumberValue(value);
     case 'json':
       return JSON.stringify(value);
     default:
-      // For string type or default
-      if (typeof value === 'string') {
-        return value;
-      }
-      if (typeof value === 'boolean' || typeof value === 'number') {
-        return String(value);
-      }
-      // For objects, stringify them
-      return JSON.stringify(value);
+      return serializeDefaultValue(value);
   }
 }
 
@@ -131,32 +197,32 @@ export async function getSystemSettings(
   const params: (string | number | boolean)[] = [];
 
   // Apply filters
-  if (filters.category) {
-    query += ` AND category = ?`;
+  if (filters.category !== undefined && filters.category !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
   if (filters.is_public !== undefined) {
-    query += ` AND is_public = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND is_public = $${nextIndex}`;
     params.push(filters.is_public ? 1 : 0);
   }
 
-  if (filters.search) {
-    query += ` AND (setting_key LIKE ? OR description LIKE ?)`;
+  if (filters.search !== undefined && filters.search !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND (setting_key LIKE $${nextIndex} OR description LIKE $${nextIndex + 1})`;
     params.push(`%${filters.search}%`, `%${filters.search}%`);
   }
 
   query += ` ORDER BY category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<SystemSettingResult[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: SystemSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
       isPublic: Boolean(row.is_public),
     });
   });
@@ -177,8 +243,8 @@ export async function getSystemSetting(
   }
 > {
   // Check if setting is public or user has permission
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM system_settings WHERE setting_key = ?`,
+  const [rows] = await executeQuery<SystemSettingResult[]>(
+    `SELECT * FROM system_settings WHERE setting_key = $1`,
     [key],
   );
 
@@ -186,18 +252,19 @@ export async function getSystemSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   // Non-admin users can only access public settings
-  if (userRole !== 'root' && userRole !== 'admin' && !setting.is_public) {
+  const isPublic = setting.is_public === true;
+  if (userRole !== 'root' && userRole !== 'admin' && !isPublic) {
     throw new ServiceError('FORBIDDEN', 'Access denied', 403);
   }
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
     isPublic: Boolean(setting.is_public),
   });
 }
@@ -227,8 +294,8 @@ export async function upsertSystemSetting(
   const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM system_settings WHERE setting_key = ?`,
+  const [rows] = await executeQuery<IdOnlyResult[]>(
+    `SELECT id FROM system_settings WHERE setting_key = $1`,
     [data.setting_key],
   );
 
@@ -236,14 +303,14 @@ export async function upsertSystemSetting(
     // Update existing
     await executeQuery(
       `UPDATE system_settings
-       SET setting_value = ?, value_type = ?, category = ?, description = ?, is_public = ?, updated_at = NOW()
-       WHERE setting_key = ?`,
+       SET setting_value = $1, value_type = $2, category = $3, description = $4, is_public = $5, updated_at = NOW()
+       WHERE setting_key = $1`,
       [
         serializedValue,
         data.value_type ?? 'string',
         data.category ?? DEFAULT_CATEGORY,
         data.description ?? null,
-        data.is_public ? 1 : 0,
+        data.is_public === true ? 1 : 0,
         data.setting_key,
       ],
     );
@@ -252,14 +319,14 @@ export async function upsertSystemSetting(
     await executeQuery(
       `INSERT INTO system_settings
        (setting_key, setting_value, value_type, category, description, is_public)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         data.setting_key,
         serializedValue,
         data.value_type ?? 'string',
         data.category ?? DEFAULT_CATEGORY,
         data.description ?? null,
-        data.is_public ? 1 : 0,
+        data.is_public === true ? 1 : 0,
       ],
     );
   }
@@ -300,8 +367,8 @@ export async function deleteSystemSetting(
     throw new ServiceError('FORBIDDEN', 'Only root can delete system settings', 403);
   }
 
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM system_settings WHERE setting_key = ?`,
+  const [rows] = await executeQuery<SystemSettingResult[]>(
+    `SELECT * FROM system_settings WHERE setting_key = $1`,
     [key],
   );
 
@@ -310,7 +377,7 @@ export async function deleteSystemSetting(
   }
   const setting = rows[0];
 
-  await executeQuery(`DELETE FROM system_settings WHERE setting_key = ?`, [key]);
+  await executeQuery(`DELETE FROM system_settings WHERE setting_key = $1`, [key]);
 
   // Log the action for system settings
   await rootLog.create({
@@ -342,30 +409,29 @@ export async function getTenantSettings(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   })[]
 > {
-  let query = `SELECT * FROM tenant_settings WHERE tenant_id = ?`;
+  let query = `SELECT * FROM tenant_settings WHERE tenant_id = $1`;
   const params: (string | number | boolean)[] = [tenantId];
 
-  if (filters.category) {
-    query += ` AND category = ?`;
+  if (filters.category !== undefined && filters.category !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
-  if (filters.search) {
-    query += ` AND setting_key LIKE ?`;
+  if (filters.search !== undefined && filters.search !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND setting_key LIKE $${nextIndex}`;
     params.push(`%${filters.search}%`);
   }
 
   query += ` ORDER BY category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<TenantSettingResult[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: TenantSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
     });
   });
 }
@@ -383,8 +449,8 @@ export async function getTenantSetting(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   }
 > {
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+  const [rows] = await executeQuery<TenantSettingResult[]>(
+    `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [key, tenantId],
   );
 
@@ -392,13 +458,13 @@ export async function getTenantSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
   });
 }
 
@@ -427,8 +493,8 @@ export async function upsertTenantSetting(
   const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+  const [rows] = await executeQuery<IdOnlyResult[]>(
+    `SELECT id FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [data.setting_key, tenantId],
   );
 
@@ -436,8 +502,8 @@ export async function upsertTenantSetting(
     // Update existing
     await executeQuery(
       `UPDATE tenant_settings
-       SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
-       WHERE setting_key = ? AND tenant_id = ?`,
+       SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
+       WHERE setting_key = $4 AND tenant_id = $5`,
       [
         serializedValue,
         data.value_type ?? 'string',
@@ -451,7 +517,7 @@ export async function upsertTenantSetting(
     await executeQuery(
       `INSERT INTO tenant_settings
        (tenant_id, setting_key, setting_value, value_type, category)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [
         tenantId,
         data.setting_key,
@@ -498,8 +564,8 @@ export async function deleteTenantSetting(
     throw new ServiceError('FORBIDDEN', 'Only admins can delete tenant settings', 403);
   }
 
-  const [settingRows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
+  const [settingRows] = await executeQuery<TenantSettingResult[]>(
+    `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
     [key, tenantId],
   );
 
@@ -508,7 +574,7 @@ export async function deleteTenantSetting(
   }
   const setting = settingRows[0];
 
-  await executeQuery(`DELETE FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`, [
+  await executeQuery(`DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`, [
     key,
     tenantId,
   ]);
@@ -547,12 +613,13 @@ export async function getUserSettings(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   })[]
 > {
-  let query = `SELECT * FROM user_settings WHERE user_id = ?`;
+  let query = `SELECT * FROM user_settings WHERE user_id = $1`;
   const params: (string | number | boolean | null)[] = [userId];
 
   // Add tenant_id filter if provided
   if (tenantId !== undefined) {
-    query += ` AND tenant_id = ?`;
+    const nextIndex = params.length + 1;
+    query += ` AND tenant_id = $${nextIndex}`;
     params.push(tenantId);
   }
 
@@ -561,32 +628,32 @@ export async function getUserSettings(
     if (teamId === null) {
       query += ` AND team_id IS NULL`;
     } else {
-      query += ` AND (team_id = ? OR team_id IS NULL)`;
+      const nextIndex = params.length + 1;
+      query += ` AND (team_id = $${nextIndex} OR team_id IS NULL)`;
       params.push(teamId);
     }
   }
 
-  if (filters.category) {
-    query += ` AND category = ?`;
+  if (filters.category !== undefined && filters.category !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND category = $${nextIndex}`;
     params.push(filters.category);
   }
 
-  if (filters.search) {
-    query += ` AND setting_key LIKE ?`;
+  if (filters.search !== undefined && filters.search !== '') {
+    const nextIndex = params.length + 1;
+    query += ` AND setting_key LIKE $${nextIndex}`;
     params.push(`%${filters.search}%`);
   }
 
   query += ` ORDER BY team_id DESC, category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<UserSettingResult[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: UserSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
     });
   });
 }
@@ -604,8 +671,8 @@ export async function getUserSetting(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   }
 > {
-  const [rows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
+  const [rows] = await executeQuery<UserSettingResult[]>(
+    `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
     [key, userId],
   );
 
@@ -613,13 +680,13 @@ export async function getUserSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
   });
 }
 
@@ -646,20 +713,20 @@ export async function upsertUserSetting(
   const settingTeamId = data.team_id !== undefined ? data.team_id : teamId;
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM user_settings
-     WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
-     AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
-    [data.setting_key, userId, tenantId, settingTeamId, settingTeamId],
+     WHERE setting_key = $1 AND user_id = $2 AND tenant_id = $3
+     AND (team_id = $4 OR (team_id IS NULL AND $4 IS NULL))`,
+    [data.setting_key, userId, tenantId, settingTeamId],
   );
 
   if (rows.length > 0) {
     // Update existing
     await executeQuery(
       `UPDATE user_settings
-       SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
-       WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
-       AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
+       SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
+       WHERE setting_key = $4 AND user_id = $5 AND tenant_id = $6
+       AND (team_id = $7 OR (team_id IS NULL AND $7 IS NULL))`,
       [
         serializedValue,
         data.value_type ?? 'string',
@@ -668,7 +735,6 @@ export async function upsertUserSetting(
         userId,
         tenantId,
         settingTeamId,
-        settingTeamId,
       ],
     );
   } else {
@@ -676,7 +742,7 @@ export async function upsertUserSetting(
     await executeQuery(
       `INSERT INTO user_settings
        (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         userId,
         tenantId,
@@ -701,8 +767,8 @@ export async function deleteUserSetting(
   key: string,
   userId: number,
 ): Promise<{ success: boolean }> {
-  const [settingRows] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
+  const [settingRows] = await executeQuery<UserSettingResult[]>(
+    `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
     [key, userId],
   );
 
@@ -710,7 +776,7 @@ export async function deleteUserSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
 
-  await executeQuery(`DELETE FROM user_settings WHERE setting_key = ? AND user_id = ?`, [
+  await executeQuery(`DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`, [
     key,
     userId,
   ]);
@@ -738,8 +804,8 @@ export async function getAdminUserSettings(
   }
 
   // Verify user belongs to same tenant
-  const [userRows] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM users WHERE id = ? AND tenant_id = ?`,
+  const [userRows] = await executeQuery<IdOnlyResult[]>(
+    `SELECT id FROM users WHERE id = $1 AND tenant_id = $2`,
     [targetUserId, tenantId],
   );
 
