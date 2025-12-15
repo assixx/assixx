@@ -7,27 +7,14 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <!-- CSS Styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/survey-results.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -38,13 +25,13 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+            <div class="card__header flex justify-between items-center">
               <div>
                 <h2 class="card-title">Umfrage-Ergebnisse</h2>
                 <p class="text-secondary">Auswertung und Statistiken der Umfrage</p>
@@ -52,7 +39,7 @@
             </div>
             <div class="card-body" id="content-area">
               <div class="loading">
-                <div class="spinner"></div>
+                <div class="spinner-ring spinner-ring--md"></div>
                 <p>Lade Umfrage-Ergebnisse...</p>
               </div>
             </div>
@@ -62,9 +49,9 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="/scripts/auth.ts"></script>
-    <script type="module" src="/scripts/survey-results.ts"></script>
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/auth/index.ts"></script>
+    <script type="module" src="/scripts/survey/results/index.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

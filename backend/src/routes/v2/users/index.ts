@@ -2,13 +2,15 @@
  * Users API v2 Routes
  * Implements standardized user management endpoints with camelCase responses
  */
-import express, { RequestHandler, Router } from 'express';
+import express, { RequestHandler, Response, Router } from 'express';
 
-import { rateLimiter } from '../../../middleware/rateLimiter';
-import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
-import { typed } from '../../../utils/routeHandlers';
-import { usersController } from './users.controller';
-import { usersValidation } from './users.validation';
+import { filterDepartmentResults } from '../../../middleware/departmentAccess.js';
+import { rateLimiter } from '../../../middleware/rateLimiter.js';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { usersController } from './users.controller.js';
+import { usersValidationZod } from './users.validation.zod.js';
 
 const router: Router = express.Router();
 
@@ -36,14 +38,10 @@ router.use(rateLimiter.api);
  *           enum: [employee, admin, root]
  *       - name: isActive
  *         in: query
- *         description: Filter by active status
+ *         description: Filter by status (0=inactive, 1=active, 3=archived, 4=deleted)
  *         schema:
- *           type: boolean
- *       - name: isArchived
- *         in: query
- *         description: Filter by archived status
- *         schema:
- *           type: boolean
+ *           type: integer
+ *           enum: [0, 1, 3, 4]
  *       - name: sortBy
  *         in: query
  *         description: Sort field
@@ -77,13 +75,14 @@ router.use(rateLimiter.api);
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-// List all users (admin only)
+// List all users (admin only) - filtered by accessible departments
 router.get(
   '/',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.list,
-  typed.auth((req, res) => usersController.listUsers(req, res)),
+  filterDepartmentResults as RequestHandler, // Filter results by user's department access
+  usersValidationZod.list,
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.listUsers(req, res)),
 );
 
 /**
@@ -153,7 +152,7 @@ router.get(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.getById,
+  usersValidationZod.getById,
   typed.auth(usersController.getUserById),
 );
 
@@ -264,7 +263,7 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   rateLimiter.auth, // Stricter rate limiting for user creation
-  usersValidation.create,
+  usersValidationZod.create,
   typed.auth(usersController.createUser),
 );
 
@@ -343,7 +342,7 @@ router.put(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.update,
+  usersValidationZod.update,
   typed.auth(usersController.updateUser),
 );
 
@@ -404,7 +403,7 @@ router.put(
 router.put(
   '/me/profile',
   authenticateV2 as RequestHandler,
-  usersValidation.updateProfile,
+  usersValidationZod.updateProfile,
   typed.auth(usersController.updateCurrentUserProfile),
 );
 
@@ -513,7 +512,7 @@ router.put(
   '/me/password',
   authenticateV2 as RequestHandler,
   rateLimiter.auth, // Very strict for password changes
-  usersValidation.changePassword,
+  usersValidationZod.changePassword,
   typed.auth(usersController.changePassword),
 );
 
@@ -566,7 +565,7 @@ router.delete(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.getById,
+  usersValidationZod.getById,
   typed.auth(usersController.deleteUser),
 );
 
@@ -613,7 +612,7 @@ router.post(
   '/:id/archive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth((req, res) => usersController.archiveUser(req, res)),
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.archiveUser(req, res)),
 );
 
 /**
@@ -659,7 +658,7 @@ router.post(
   '/:id/unarchive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth((req, res) => usersController.unarchiveUser(req, res)),
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.unarchiveUser(req, res)),
 );
 
 /**
@@ -746,7 +745,7 @@ router.post(
   '/me/profile-picture',
   authenticateV2 as RequestHandler,
   rateLimiter.upload, // Limit uploads
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await usersController.uploadProfilePicture(req, res);
   }),
 );
@@ -861,7 +860,7 @@ router.put(
   '/:id/availability',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.updateAvailability,
+  usersValidationZod.updateAvailability,
   typed.auth(usersController.updateAvailability),
 );
 

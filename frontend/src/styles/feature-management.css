@@ -9,29 +9,7 @@
 
 /* Glassmorphismus Design-Standards */
 
-/* Dramatischer Hintergrund-Gradient */
-body {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background: #000;
-}
-
-body::after {
-  pointer-events: none;
-  content: "";
-
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
-}
-
 /* Align first container with sidebar user-info-card */
-.container {
-  margin-top: -30px !important;
-}
 
 /* Glassmorphismus für Cards */
 .card {
@@ -43,34 +21,7 @@ body::after {
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
-/* Form Controls mit Glassmorphismus */
-.form-control {
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  color: #fff;
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.form-control:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
-/* Buttons mit Glassmorphismus und Shine-Effekt */
-.btn {
-  position: relative;
-
-  overflow: hidden;
-
-  border: 1px solid rgb(255 255 255 / 20%);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
+/* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
 
 .btn-primary {
   border-color: rgb(0 142 255 / 30%);
@@ -114,6 +65,7 @@ body::after {
 
 /* Table mit Glassmorphismus */
 .table {
+  font-size: 12px; /* Best Practice 2025: data tables */
   background: transparent;
 }
 
@@ -148,17 +100,6 @@ body::after {
 }
 
 /* Animationen */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
 
 /* Notification Styles */
 .notification {
@@ -192,36 +133,6 @@ body::after {
   transform: translateX(0);
 }
 
-.notification.notification-error {
-  border-left: 4px solid #f44;
-  color: #d32f2f;
-}
-
-.notification.notification-error i {
-  font-size: 16px;
-  color: #f44;
-}
-
-.notification.notification-success {
-  border-left: 4px solid #4caf50;
-  color: #2e7d32;
-}
-
-.notification.notification-success i {
-  font-size: 16px;
-  color: #4caf50;
-}
-
-.notification.notification-info {
-  border-left: 4px solid #2196f3;
-  color: #1976d2;
-}
-
-.notification.notification-info i {
-  font-size: 16px;
-  color: #2196f3;
-}
-
 /* ========================================
    Second Style Block - Status Categories
    ======================================== */
@@ -243,25 +154,4 @@ body::after {
 
 .status-disabled {
   color: #6c757d;
-}
-
-.category-basic {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #1976d2;
-  background-color: #e3f2fd;
-}
-
-.category-premium {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #7b1fa2;
-  background-color: #f3e5f5;
-}
-
-.category-enterprise {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #c2185b;
-  background-color: #fce4ec;
 }

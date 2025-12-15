@@ -8,18 +8,52 @@
  */
 import { NextFunction, Response } from 'express';
 
-import type { CalendarEvent } from '../../../models/calendar.js';
-import calendarModel from '../../../models/calendar.js';
-import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import rootLog from '../logs/logs.service.js';
 import { ServiceError } from '../users/users.service.js';
 import { calendarService } from './calendar.service.js';
 import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
+import type { CalendarEvent } from './model/index.js';
+import calendarModel from './model/index.js';
 
 // Constants
 const INTERNAL_SERVER_ERROR = 'Internal server error';
 const USER_AGENT_HEADER = 'user-agent';
+
+/** Log calendar event deletion */
+async function logEventDeletion(
+  req: AuthenticatedRequest,
+  eventId: number,
+  deletedEvent: CalendarEvent | null,
+): Promise<void> {
+  const { user } = req;
+  const oldValues =
+    deletedEvent ?
+      {
+        title: deletedEvent.title,
+        start_time: deletedEvent.start_time,
+        end_time: deletedEvent.end_time,
+        location: deletedEvent.location,
+        org_level: deletedEvent.org_level,
+        status: deletedEvent.status,
+        deleted_by: user.email,
+      }
+    : { deleted_by: user.email };
+
+  await rootLog.create({
+    tenant_id: user.tenant_id,
+    user_id: user.id,
+    action: 'delete',
+    entity_type: 'calendar_event',
+    entity_id: eventId,
+    details: deletedEvent ? `Gelöscht: ${deletedEvent.title}` : `Gelöscht: Event ID ${eventId}`,
+    old_values: oldValues,
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get(USER_AGENT_HEADER),
+    was_role_switched: false,
+  });
+}
 
 /**
  * @param req - The request object
@@ -43,7 +77,7 @@ const USER_AGENT_HEADER = 'user-agent';
  *         name: filter
  *         schema:
  *           type: string
- *           enum: [all, company, department, team, personal]
+ *           enum: [all, company, department, team, area, personal]
  *         description: Filter by visibility scope
  *       - in: query
  *         name: search
@@ -160,7 +194,12 @@ export async function getEvent(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Event ID is required'));
+      return;
+    }
+    const eventId = Number.parseInt(idParam, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -218,7 +257,7 @@ export async function getEvent(
  *                 type: boolean
  *               orgLevel:
  *                 type: string
- *                 enum: [company, department, team, personal]
+ *                 enum: [company, department, team, area, personal]
  *               orgId:
  *                 type: integer
  *               reminderMinutes:
@@ -276,6 +315,7 @@ export async function createEvent(
         org_level: eventData.orgLevel,
         department_id: eventData.departmentId,
         team_id: eventData.teamId,
+        area_id: eventData.areaId,
         all_day: eventData.allDay,
         created_by: user.email,
       },
@@ -336,7 +376,7 @@ export async function createEvent(
  *                 type: boolean
  *               orgLevel:
  *                 type: string
- *                 enum: [company, department, team, personal]
+ *                 enum: [company, department, team, area, personal]
  *               orgId:
  *                 type: integer
  *               reminderMinutes:
@@ -356,13 +396,67 @@ export async function createEvent(
  *       404:
  *         description: Event not found
  */
+async function logEventUpdate(
+  req: AuthenticatedRequest,
+  eventId: number,
+  updateData: CalendarEventUpdateData,
+  oldEvent: CalendarEvent | null,
+): Promise<void> {
+  const { user } = req;
+  const baseLogData = {
+    tenant_id: user.tenant_id,
+    user_id: user.id,
+    action: 'update',
+    entity_type: 'calendar_event',
+    entity_id: eventId,
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get(USER_AGENT_HEADER),
+    was_role_switched: false,
+  };
+
+  const newValues = {
+    title: updateData.title,
+    start_time: updateData.startTime,
+    end_time: updateData.endTime,
+    location: updateData.location,
+    status: updateData.status,
+    updated_by: user.email,
+  };
+
+  if (oldEvent) {
+    await rootLog.create({
+      ...baseLogData,
+      details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
+      old_values: {
+        title: oldEvent.title,
+        start_time: oldEvent.start_time,
+        end_time: oldEvent.end_time,
+        location: oldEvent.location,
+        status: oldEvent.status,
+      },
+      new_values: newValues,
+    });
+  } else {
+    await rootLog.create({
+      ...baseLogData,
+      details: `Aktualisiert: Event ID ${eventId}`,
+      new_values: newValues,
+    });
+  }
+}
+
 export async function updateEvent(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Event ID is required'));
+      return;
+    }
+    const eventId = Number.parseInt(idParam, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -392,56 +486,8 @@ export async function updateEvent(
       userRole,
     );
 
-    // Log calendar event update (only if we have old values)
-    if (oldEvent) {
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'update',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
-        old_values: {
-          title: oldEvent.title,
-          start_time: oldEvent.startTime,
-          end_time: oldEvent.endTime,
-          location: oldEvent.location,
-          status: oldEvent.status,
-        },
-        new_values: {
-          title: updateData.title,
-          start_time: updateData.startTime,
-          end_time: updateData.endTime,
-          location: updateData.location,
-          status: updateData.status,
-          updated_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    } else {
-      // Log without old values if we couldn't access them
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'update',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Aktualisiert: Event ID ${eventId}`,
-        new_values: {
-          title: updateData.title,
-          start_time: updateData.startTime,
-          end_time: updateData.endTime,
-          location: updateData.location,
-          status: updateData.status,
-          updated_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    }
+    // Log calendar event update
+    await logEventUpdate(req, eventId, updateData, oldEvent);
 
     res.json(successResponse({ event }));
   } catch (error: unknown) {
@@ -481,68 +527,29 @@ export async function deleteEvent(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Event ID is required'));
+      return;
+    }
+    const eventId = Number.parseInt(idParam, 10);
     const { user } = req;
-    const tenantId = user.tenant_id;
-    const userId = user.id;
-    const userRole = user.role;
-    const userDepartmentId = user.department_id ?? null;
 
-    // Try to get event data before deletion for logging, but don't fail if user doesn't have permission
+    // Try to get event data before deletion for logging
     let deletedEvent: CalendarEvent | null = null;
     try {
       deletedEvent = (await calendarService.getEventById(
         eventId,
-        tenantId,
-        userId,
-        userDepartmentId,
+        user.tenant_id,
+        user.id,
+        user.department_id ?? null,
       )) as unknown as CalendarEvent;
     } catch {
-      // If we can't get the event (e.g., no permission), that's okay
-      // The deleteEvent method will handle permission checks properly
+      // Permission check handled by deleteEvent
     }
 
-    await calendarService.deleteEvent(eventId, tenantId, userId, userRole);
-
-    // Log calendar event deletion
-    if (deletedEvent) {
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'delete',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Gelöscht: ${deletedEvent.title}`,
-        old_values: {
-          title: deletedEvent.title,
-          start_time: deletedEvent.startTime,
-          end_time: deletedEvent.endTime,
-          location: deletedEvent.location,
-          org_level: deletedEvent.orgLevel,
-          status: deletedEvent.status,
-          deleted_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    } else {
-      // Log without details if we couldn't access the event
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'delete',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Gelöscht: Event ID ${eventId}`,
-        old_values: {
-          deleted_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    }
+    await calendarService.deleteEvent(eventId, user.tenant_id, user.id, user.role);
+    await logEventDeletion(req, eventId, deletedEvent);
 
     res.json(successResponse({ message: 'Event deleted successfully' }));
   } catch (error: unknown) {
@@ -551,90 +558,11 @@ export async function deleteEvent(
 }
 
 /**
+ * Export calendar events
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
-
- * /api/v2/calendar/events/\{id\}/attendees/response:
- *   put:
- *     summary: Update attendee response
- *     tags: [Calendar v2]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Event ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - response
- *             properties:
- *               response:
- *                 type: string
- *                 enum: [accepted, declined, tentative]
- *     responses:
- *       200:
- *         description: Response updated successfully
- *       404:
- *         description: Event not found
- */
-export async function updateAttendeeResponse(
-  req: AuthenticatedRequest,
-  res: Response,
-  _next: NextFunction,
-): Promise<void> {
-  try {
-    const eventId = Number.parseInt(req.params.id, 10);
-    const { user } = req;
-    const tenantId = user.tenant_id;
-    const userId = user.id;
-    const { response } = req.body as {
-      response: 'accepted' | 'declined' | 'tentative';
-    };
-
-    await calendarService.updateAttendeeResponse(eventId, userId, response, tenantId);
-
-    // Log attendee response update
-    await rootLog.create({
-      tenant_id: tenantId,
-      user_id: userId,
-      action: 'update_attendee_response',
-      entity_type: 'calendar_event',
-      entity_id: eventId,
-      details: `Teilnehmer Antwort: ${response}`,
-      new_values: {
-        attendee_response: response,
-        responded_by: user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get(USER_AGENT_HEADER),
-      was_role_switched: false,
-    });
-
-    res.json(successResponse({ message: 'Response updated successfully' }));
-  } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
-      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
-    } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
-    }
-  }
-}
-
-/**
- * @param req - The request object
- * @param res - The response object
- * @param _next - The _next parameter
-
+ *
  * /api/v2/calendar/export:
  *   get:
  *     summary: Export calendar events
@@ -670,7 +598,7 @@ export async function exportEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
-    const format = req.query.format as 'ics' | 'csv';
+    const format = req.query['format'] as 'ics' | 'csv';
 
     const data = await calendarService.exportEvents(tenantId, userId, userDepartmentId, format);
 
@@ -743,8 +671,8 @@ export async function getDashboardEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
 
-    const days = Number.parseInt((req.query.days ?? '7') as string, 10);
-    const limit = Number.parseInt((req.query.limit ?? '5') as string, 10);
+    const days = Number.parseInt((req.query['days'] ?? '7') as string, 10);
+    const limit = Number.parseInt((req.query['limit'] ?? '5') as string, 10);
 
     const events = await calendarModel.getDashboardEvents(tenantId, userId, days, limit);
 
@@ -790,18 +718,14 @@ export async function getDashboardEvents(
  *                       requiresResponse:
  *                         type: boolean
  */
-export async function getUnreadEvents(
-  req: AuthenticatedRequest,
+export function getUnreadEvents(
+  _req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   try {
-    const { user } = req;
-    const tenantId = user.tenant_id;
-    const userId = user.id;
-
-    // Get events where user is invited and hasn't responded yet
-    const result = await calendarService.getUnreadEvents(tenantId, userId);
+    // Get unread events (feature deprecated - returns empty results)
+    const result = calendarService.getUnreadEvents();
 
     res.json(successResponse(result));
   } catch (error: unknown) {

@@ -1,0 +1,84 @@
+/**
+ * Root User Management - Data Layer
+ * API calls, data fetching, and state management
+ */
+
+import { ApiClient } from '../../../utils/api-client';
+import type { RootUser, FormValues } from './types';
+
+// Module-level state
+export let currentEditId: number | null = null;
+export let allRootUsers: RootUser[] = []; // Cache for all root users
+
+// API client instance
+const apiClient = ApiClient.getInstance();
+
+/**
+ * Set current edit ID
+ */
+export function setCurrentEditId(id: number | null): void {
+  currentEditId = id;
+}
+
+/**
+ * Load all root users from API
+ */
+export async function loadRootUsers(): Promise<RootUser[]> {
+  const data = await apiClient.request<{ users: RootUser[] }>('/root/users', { method: 'GET' }, { version: 'v2' });
+
+  // Get current user ID to exclude from list
+  const currentUserId = getCurrentUserId();
+
+  // Cache all users (excluding current user)
+  allRootUsers = data.users.filter((user) => user.id !== currentUserId);
+
+  return allRootUsers;
+}
+
+// N:M REFACTORING: loadDepartments removed - Root users have has_full_access=1, no department assignment needed
+
+/**
+ * Delete root user by ID
+ */
+export async function deleteRootUserAPI(userId: number): Promise<void> {
+  await apiClient.request(`/root/users/${userId}`, { method: 'DELETE' }, { version: 'v2' });
+}
+
+/**
+ * Save root user (create or update)
+ */
+export async function saveRootUser(
+  userData: Partial<FormValues>,
+  isEdit: boolean,
+  editId: number | null,
+): Promise<void> {
+  const endpoint = isEdit && editId !== null ? `/root/users/${editId}` : '/root/users';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  await apiClient.request(endpoint, { method, body: JSON.stringify(userData) }, { version: 'v2' });
+}
+
+/**
+ * Get current user ID from localStorage
+ * Tries userId first, then decodes from token as fallback
+ */
+function getCurrentUserId(): number | null {
+  const userId = localStorage.getItem('userId');
+  if (userId !== null && userId !== '') {
+    return Number.parseInt(userId, 10);
+  }
+
+  // Fallback: decode from token
+  const token = localStorage.getItem('token');
+  if (token !== null && token !== '') {
+    try {
+      const tokenPart = token.split('.')[1];
+      if (tokenPart === undefined) return null;
+      const payload = JSON.parse(atob(tokenPart)) as { id?: number };
+      return payload.id ?? null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}

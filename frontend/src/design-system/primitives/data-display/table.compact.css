@@ -1,0 +1,31 @@
+/**
+ * Table Compact Variant
+ *
+ * Denser layout for large datasets (similar to Bootstrap .table-sm)
+ *
+ * Usage:
+ * <table class="data-table data-table--sm">
+ */
+
+.data-table--sm th,
+.data-table--sm td {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: 13px;
+}
+
+.data-table--sm thead th {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: 12px;
+}
+
+/* Even more compact variant */
+.data-table--xs th,
+.data-table--xs td {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.data-table--xs thead th {
+  padding: 6px 12px;
+  font-size: 11px;
+}

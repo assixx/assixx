@@ -16,7 +16,7 @@ describe('Debug Login Test', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-debug';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-debug';
 
     // Create test tenant
     tenantId = await createTestTenant(testDb, 'debugtenant', 'Debug Test Company');
@@ -55,7 +55,7 @@ describe('Debug Login Test', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.success).toBe(true);
     expect(loginRes.body.data).toBeDefined();
-    expect(loginRes.body.data.accessToken).toBeDefined();
+    expect(loginRes.body.data['accessToken']).toBeDefined();
   });
 
   it('should create and login employee user', async () => {
@@ -84,6 +84,6 @@ describe('Debug Login Test', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.success).toBe(true);
     expect(loginRes.body.data).toBeDefined();
-    expect(loginRes.body.data.accessToken).toBeDefined();
+    expect(loginRes.body.data['accessToken']).toBeDefined();
   });
 });

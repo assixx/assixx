@@ -7,26 +7,11 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
     <link rel="stylesheet" href="/styles/logs.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -37,629 +22,519 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Container -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <!-- Card für die gesamte Logs-Seite -->
+          <!-- Card for Logs Page -->
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">System-Logs</h2>
-              <p class="text-secondary" class="u-mt-text">Übersicht aller Systemaktivitäten</p>
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-list-alt mr-2"></i>
+                System-Logs
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Systemaktivitäten</p>
             </div>
 
-            <!-- Filters -->
-            <div class="filters-section">
-              <div class="filters-grid">
-                <div class="filter-group">
-                  <label class="filter-label">Benutzer</label>
-                  <input type="text" id="filter-user" class="form-control" placeholder="Name oder ID..." />
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">Aktion</label>
-                  <div class="custom-dropdown">
-                    <div class="dropdown-display" id="actionDisplay" data-action="toggle-dropdown" data-dropdown="action">
-                      <span>Alle Aktionen</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="actionDropdown">
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="all"
-                        data-text="Alle Aktionen"
-                      >
-                        Alle Aktionen
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="login" data-text="Anmeldung">
-                        Anmeldung
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="logout" data-text="Abmeldung">
-                        Abmeldung
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="create" data-text="Erstellt">
-                        Erstellt
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="update"
-                        data-text="Aktualisiert"
-                      >
-                        Aktualisiert
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="delete" data-text="Gelöscht">
-                        Gelöscht
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="upload"
-                        data-text="Hochgeladen"
-                      >
-                        Hochgeladen
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="download"
-                        data-text="Heruntergeladen"
-                      >
-                        Heruntergeladen
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="view" data-text="Angesehen">
-                        Angesehen
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="assign"
-                        data-text="Zugewiesen"
-                      >
-                        Zugewiesen
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="unassign"
-                        data-text="Entfernt"
-                      >
-                        Entfernt
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="kvp_created"
-                        data-text="KVP Erstellt"
-                      >
-                        KVP Erstellt
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="kvp_shared"
-                        data-text="KVP Geteilt"
-                      >
-                        KVP Geteilt
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_created"
-                        data-text="Umfrage Erstellt"
-                      >
-                        Umfrage Erstellt
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_updated"
-                        data-text="Umfrage Aktualisiert"
-                      >
-                        Umfrage Aktualisiert
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_deleted"
-                        data-text="Umfrage Gelöscht"
-                      >
-                        Umfrage Gelöscht
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_submitted"
-                        data-text="Umfrage Beantwortet"
-                      >
-                        Umfrage Beantwortet
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_viewed"
-                        data-text="Umfrage Angesehen"
-                      >
-                        Umfrage Angesehen
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="action"
-                        data-value="survey_exported"
-                        data-text="Umfrage Exportiert"
-                      >
-                        Umfrage Exportiert
-                      </div>
-                    </div>
+            <div class="card__body">
+              <!-- Filters Section -->
+              <div class="filters-section">
+                <div class="filters-grid">
+                  <!-- User Filter (searches: first_name, last_name, employee_number, username, email) -->
+                  <div class="form-field">
+                    <label class="form-field__label">Suche</label>
+                    <input
+                      type="search"
+                      id="filter-user"
+                      class="form-field__control"
+                      placeholder="Vorname, Nachname, Personalnr..."
+                      autocomplete="off"
+                    />
                   </div>
-                  <input type="hidden" id="filter-action" value="all" />
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">Entitätstyp</label>
-                  <div class="custom-dropdown">
-                    <div class="dropdown-display" id="entityDisplay" data-action="toggle-dropdown" data-dropdown="entity">
-                      <span>Alle Typen</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="entityDropdown">
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="all" data-text="Alle Typen">
-                        Alle Typen
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="user" data-text="Benutzer">
-                        Benutzer
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="entity"
-                        data-value="admin"
-                        data-text="Administrator"
-                      >
-                        Administrator
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="entity"
-                        data-value="department"
-                        data-text="Abteilung"
-                      >
-                        Abteilung
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="entity"
-                        data-value="document"
-                        data-text="Dokument"
-                      >
-                        Dokument
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="entity"
-                        data-value="blackboard"
-                        data-text="Schwarzes Brett"
-                      >
-                        Schwarzes Brett
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="logs" data-text="Logs">
-                        Logs
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="tenant" data-text="Tenant">
-                        Tenant
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="survey" data-text="Umfrage">
-                        Umfrage
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="team" data-text="Team">
-                        Team
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="task" data-text="Aufgabe">
-                        Aufgabe
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="entity"
-                        data-value="kvp_suggestion"
-                        data-text="KVP-Vorschlag"
-                      >
-                        KVP-Vorschlag
-                      </div>
-                    </div>
-                  </div>
-                  <input type="hidden" id="filter-entity" value="all" />
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">HTTP-Methode</label>
-                  <div class="custom-dropdown">
-                    <div class="dropdown-display" id="methodDisplay" data-action="toggle-dropdown" data-dropdown="method">
-                      <span>Alle Methoden</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="methodDropdown">
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="method"
-                        data-value="all"
-                        data-text="Alle Methoden"
-                      >
-                        Alle Methoden
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="GET" data-text="GET">GET</div>
-                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="POST" data-text="POST">
-                        POST
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="PUT" data-text="PUT">PUT</div>
-                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="DELETE" data-text="DELETE">
-                        DELETE
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="PATCH" data-text="PATCH">
-                        PATCH
-                      </div>
-                    </div>
-                  </div>
-                  <input type="hidden" id="filter-method" value="all" />
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">Zeitraum</label>
-                  <div class="custom-dropdown">
-                    <div class="dropdown-display" id="timerangeDisplay" data-action="toggle-dropdown" data-dropdown="timerange">
-                      <span>Alle Zeit</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="timerangeDropdown">
-                      <div class="dropdown-option" data-action="select-option" data-type="timerange" data-value="all" data-text="Alle Zeit">
-                        Alle Zeit
-                      </div>
-                      <div class="dropdown-option" data-action="select-option" data-type="timerange" data-value="today" data-text="Heute">
-                        Heute
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="yesterday"
-                        data-text="Gestern"
-                      >
-                        Gestern
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="week"
-                        data-text="Letzte 7 Tage"
-                      >
-                        Letzte 7 Tage
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="month"
-                        data-text="Letzter Monat"
-                      >
-                        Letzter Monat
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="3months"
-                        data-text="Letzte 3 Monate"
-                      >
-                        Letzte 3 Monate
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="6months"
-                        data-text="Letzte 6 Monate"
-                      >
-                        Letzte 6 Monate
-                      </div>
-                      <div
-                        class="dropdown-option"
-                        data-action="select-option"
-                        data-type="timerange"
-                        data-value="year"
-                        data-text="Letztes Jahr"
-                      >
-                        Letztes Jahr
-                      </div>
-                    </div>
-                  </div>
-                  <input type="hidden" id="filter-timerange" value="all" />
-                </div>
-              </div>
-              <div class="u-flex-gap-md">
-                <button class="btn btn-primary" data-action="apply-filters">
-                  <i class="fas fa-filter"></i>
-                  Filter anwenden
-                </button>
-                <button class="btn btn-secondary" data-action="reset-filters">
-                  <i class="fas fa-undo"></i>
-                  Zurücksetzen
-                </button>
-                <button class="btn btn-danger" data-action="delete-filtered-logs" title="Wählen Sie zuerst spezifische Filter aus">
-                  <i class="fas fa-trash"></i>
-                  Gefilterte Logs löschen
-                </button>
-              </div>
-            </div>
 
-            <!-- Logs Table -->
-            <div class="table-responsive" id="logs-table-container" class="u-p-container">
-              <div class="loading">
-                <div class="loading-spinner"></div>
-                <p>Logs werden geladen...</p>
-              </div>
-            </div>
+                  <!-- Action Filter -->
+                  <div class="form-field">
+                    <label class="form-field__label">Aktion</label>
+                    <div class="dropdown" id="action-dropdown">
+                      <div class="dropdown__trigger" id="actionDisplay" data-action="toggle-dropdown" data-dropdown="action">
+                        <span>Alle Aktionen</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown__menu" id="actionDropdown">
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="all"
+                          data-text="Alle Aktionen"
+                        >
+                          Alle Aktionen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="login"
+                          data-text="Anmeldung"
+                        >
+                          Anmeldung
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="logout"
+                          data-text="Abmeldung"
+                        >
+                          Abmeldung
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="create"
+                          data-text="Erstellt"
+                        >
+                          Erstellt
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="update"
+                          data-text="Aktualisiert"
+                        >
+                          Aktualisiert
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="delete"
+                          data-text="Gelöscht"
+                        >
+                          Gelöscht
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="upload"
+                          data-text="Hochgeladen"
+                        >
+                          Hochgeladen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="download"
+                          data-text="Heruntergeladen"
+                        >
+                          Heruntergeladen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="view"
+                          data-text="Angesehen"
+                        >
+                          Angesehen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="assign"
+                          data-text="Zugewiesen"
+                        >
+                          Zugewiesen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="unassign"
+                          data-text="Entfernt"
+                        >
+                          Entfernt
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="kvp_created"
+                          data-text="KVP Erstellt"
+                        >
+                          KVP Erstellt
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="kvp_shared"
+                          data-text="KVP Geteilt"
+                        >
+                          KVP Geteilt
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_created"
+                          data-text="Umfrage Erstellt"
+                        >
+                          Umfrage Erstellt
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_updated"
+                          data-text="Umfrage Aktualisiert"
+                        >
+                          Umfrage Aktualisiert
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_deleted"
+                          data-text="Umfrage Gelöscht"
+                        >
+                          Umfrage Gelöscht
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_submitted"
+                          data-text="Umfrage Beantwortet"
+                        >
+                          Umfrage Beantwortet
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_viewed"
+                          data-text="Umfrage Angesehen"
+                        >
+                          Umfrage Angesehen
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="action"
+                          data-value="survey_exported"
+                          data-text="Umfrage Exportiert"
+                        >
+                          Umfrage Exportiert
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="filter-action" value="all" />
+                  </div>
 
-            <!-- Pagination -->
-            <div class="pagination" id="pagination-container" style="display: none; padding: 0 24px 24px">
-              <button class="pagination-btn" id="prev-btn" data-action="load-previous-page">
-                <i class="fas fa-chevron-left"></i>
-                Zurück
-              </button>
-              <span class="pagination-info" id="pagination-info">Seite 1</span>
-              <button class="pagination-btn" id="next-btn" data-action="load-next-page">
-                Weiter
-                <i class="fas fa-chevron-right"></i>
-              </button>
+                  <!-- Entity Type Filter -->
+                  <div class="form-field">
+                    <label class="form-field__label">Entitätstyp</label>
+                    <div class="dropdown" id="entity-dropdown">
+                      <div class="dropdown__trigger" id="entityDisplay" data-action="toggle-dropdown" data-dropdown="entity">
+                        <span>Alle Typen</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown__menu" id="entityDropdown">
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="all"
+                          data-text="Alle Typen"
+                        >
+                          Alle Typen
+                        </div>
+                        <div class="dropdown__option" data-action="select-option" data-type="entity" data-value="user" data-text="Benutzer">
+                          Benutzer
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="admin"
+                          data-text="Administrator"
+                        >
+                          Administrator
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="department"
+                          data-text="Abteilung"
+                        >
+                          Abteilung
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="document"
+                          data-text="Dokument"
+                        >
+                          Dokument
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="blackboard"
+                          data-text="Schwarzes Brett"
+                        >
+                          Schwarzes Brett
+                        </div>
+                        <div class="dropdown__option" data-action="select-option" data-type="entity" data-value="logs" data-text="Logs">
+                          Logs
+                        </div>
+                        <div class="dropdown__option" data-action="select-option" data-type="entity" data-value="tenant" data-text="Tenant">
+                          Tenant
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="survey"
+                          data-text="Umfrage"
+                        >
+                          Umfrage
+                        </div>
+                        <div class="dropdown__option" data-action="select-option" data-type="entity" data-value="team" data-text="Team">
+                          Team
+                        </div>
+                        <div class="dropdown__option" data-action="select-option" data-type="entity" data-value="task" data-text="Aufgabe">
+                          Aufgabe
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="entity"
+                          data-value="kvp_suggestion"
+                          data-text="KVP-Vorschlag"
+                        >
+                          KVP-Vorschlag
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="filter-entity" value="all" />
+                  </div>
+
+                  <!-- Timerange Filter -->
+                  <div class="form-field">
+                    <label class="form-field__label">Zeitraum</label>
+                    <div class="dropdown" id="timerange-dropdown">
+                      <div class="dropdown__trigger" id="timerangeDisplay" data-action="toggle-dropdown" data-dropdown="timerange">
+                        <span>Alle Zeit</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown__menu" id="timerangeDropdown">
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="all"
+                          data-text="Alle Zeit"
+                        >
+                          Alle Zeit
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="today"
+                          data-text="Heute"
+                        >
+                          Heute
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="yesterday"
+                          data-text="Gestern"
+                        >
+                          Gestern
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="week"
+                          data-text="Letzte 7 Tage"
+                        >
+                          Letzte 7 Tage
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="month"
+                          data-text="Letzter Monat"
+                        >
+                          Letzter Monat
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="3months"
+                          data-text="Letzte 3 Monate"
+                        >
+                          Letzte 3 Monate
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="6months"
+                          data-text="Letzte 6 Monate"
+                        >
+                          Letzte 6 Monate
+                        </div>
+                        <div
+                          class="dropdown__option"
+                          data-action="select-option"
+                          data-type="timerange"
+                          data-value="year"
+                          data-text="Letztes Jahr"
+                        >
+                          Letztes Jahr
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="filter-timerange" value="all" />
+                  </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="flex flex-wrap gap-3 mt-4">
+                  <button class="btn btn-primary" data-action="apply-filters">
+                    <i class="fas fa-filter mr-2"></i>
+                    Filter anwenden
+                  </button>
+                  <button class="btn btn-cancel" data-action="reset-filters" disabled>
+                    <i class="fas fa-undo mr-2"></i>
+                    Zurücksetzen
+                  </button>
+                  <button class="btn btn-danger" data-action="delete-filtered-logs" disabled title="Bitte Filter setzen um Logs zu löschen">
+                    <i class="fas fa-trash mr-2"></i>
+                    Gefilterte Logs löschen
+                  </button>
+                </div>
+              </div>
+
+              <!-- Logs Table Container -->
+              <div class="table-responsive" id="logs-table-container">
+                <div class="spinner spinner--lg mx-auto my-8">
+                  <div class="spinner__circle"></div>
+                </div>
+                <p class="text-center text-[var(--color-text-secondary)]">Logs werden geladen...</p>
+              </div>
+
+              <!-- Pagination (Design System) -->
+              <nav class="pagination u-hidden" id="pagination-container">
+                <button class="pagination__btn pagination__btn--prev" id="prev-btn" data-action="load-previous-page" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                  Zurück
+                </button>
+                <div class="pagination__pages" id="pagination-pages">
+                  <!-- Page numbers will be rendered dynamically -->
+                </div>
+                <span class="pagination__info" id="pagination-info">Seite 1 von 1</span>
+                <button class="pagination__btn pagination__btn--next" id="next-btn" data-action="load-next-page">
+                  Weiter
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </nav>
             </div>
           </div>
-          <!-- Ende card -->
         </div>
-        <!-- Ende container -->
       </main>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation Modal (Design System) -->
     <div id="deleteLogsModal" class="modal-overlay">
-      <div class="modal-content" class="u-max-w-modal">
-        <div class="modal-header" style="text-align: center; padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1)">
-          <i class="fas fa-exclamation-triangle fa-2x text-danger" style="display: block; margin-bottom: 16px"></i>
-          <h3 class="text-primary" style="margin: 0; font-size: 24px">Gefilterte Logs löschen</h3>
+      <div class="ds-modal ds-modal--md">
+        <!-- Header -->
+        <div class="ds-modal__header ds-modal__header--danger">
+          <h3 class="ds-modal__title flex items-center gap-3">
+            <i class="fas fa-exclamation-triangle text-[var(--color-danger)]"></i>
+            Gefilterte Logs löschen
+          </h3>
         </div>
 
-        <div class="modal-body" class="u-p-container">
-          <div
-            class="warning-box"
-            style="
-              background: rgba(244, 67, 54, 0.1);
-              border: 1px solid rgba(244, 67, 54, 0.3);
-              border-radius: 8px;
-              padding: 16px;
-              margin-bottom: 20px;
-            "
-          >
-            <p class="text-danger u-mb-12" style="font-weight: bold">
-              <i class="fas fa-skull-crossbones"></i>
-              WARNUNG!
+        <div class="ds-modal__body">
+          <!-- Warning Alert -->
+          <div class="alert alert--danger mb-6">
+            <p class="font-bold">
+              <i class="fas fa-skull-crossbones mr-2"></i>
+              Diese Aktion kann NICHT rückgängig gemacht werden!
             </p>
-            <p class="text-primary u-mb-12">Sie sind dabei, alle Logs zu löschen, die den folgenden Filtern entsprechen:</p>
-            <div
-              id="activeFiltersDisplay"
-              style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px"
-            >
-              <!-- Aktive Filter werden hier angezeigt -->
-            </div>
-            <p class="text-primary" style="font-weight: bold">Diese Aktion kann NICHT rückgängig gemacht werden!</p>
           </div>
 
-          <div class="confirmation-input" style="margin-top: 20px">
-            <p class="text-secondary u-mb-12">
-              Geben Sie zur Bestätigung
-              <strong class="text-danger">LÖSCHEN</strong>
-              ein:
-            </p>
-            <input
-              type="text"
-              id="deleteLogsConfirmation"
-              class="form-control"
-              placeholder="Tippen Sie LÖSCHEN ein"
-              style="width: 100%; margin-bottom: 16px"
-            />
-
-            <!-- Passwort-Feld nur bei "Alle Aktionen" -->
-            <div id="passwordConfirmSection" style="display: none; margin-bottom: 20px">
-              <p class="text-danger u-mb-8" style="font-weight: bold">
-                <i class="fas fa-lock"></i>
-                Zusätzliche Sicherheit erforderlich!
-              </p>
-              <p class="text-secondary u-mb-12">Da Sie ALLE Aktionen löschen möchten, geben Sie bitte Ihr Root-Passwort ein:</p>
-              <input type="password" id="deleteLogsPassword" class="form-control" placeholder="Root-Passwort" class="u-w-full" />
+          <!-- Active Filters Display -->
+          <div class="mb-6">
+            <p class="text-[var(--color-text-secondary)] mb-2">Folgende Filter werden gelöscht:</p>
+            <div id="activeFiltersDisplay" class="bg-[rgba(0,0,0,0.3)] p-4 rounded-lg border border-[rgba(255,255,255,0.1)]">
+              <!-- Active filters will be displayed here -->
             </div>
           </div>
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end">
-            <button class="btn btn-secondary" data-action="close-delete-modal">Abbrechen</button>
-            <button id="confirmDeleteLogsBtn" class="btn btn-danger" data-action="confirm-delete" disabled style="min-width: 120px">
-              <i class="fas fa-trash"></i>
-              Logs löschen
-            </button>
+          <!-- Confirmation Input -->
+          <div class="form-field mb-4">
+            <label class="form-field__label">
+              Geben Sie
+              <strong class="text-[var(--color-danger)]">LÖSCHEN</strong>
+              zur Bestätigung ein:
+            </label>
+            <input type="text" id="deleteLogsConfirmation" class="form-field__control" placeholder="LÖSCHEN" autocomplete="off" />
           </div>
+
+          <!-- Password Section (required for all delete operations) -->
+          <div id="passwordConfirmSection">
+            <div class="form-field">
+              <label class="form-field__label flex items-center gap-2">
+                <i class="fas fa-lock text-[var(--color-danger)]"></i>
+                Root-Passwort zur Bestätigung
+              </label>
+              <input type="password" id="deleteLogsPassword" class="form-field__control" placeholder="Ihr Root-Passwort" />
+              <span class="form-field__message">Erforderlich für Löschung von Audit-Logs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="ds-modal__footer">
+          <button class="btn btn-cancel" data-action="close-delete-modal">Abbrechen</button>
+          <button id="confirmDeleteLogsBtn" class="btn btn-danger" data-action="confirm-delete" disabled>
+            <i class="fas fa-trash mr-2"></i>
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
-    <script type="module" src="/scripts/logs.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <script type="module" src="/scripts/logs/index.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <script>
-      // Custom Dropdown Functions
-      function toggleDropdown(type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d.id !== type + 'Display') d.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d.id !== type + 'Dropdown') d.classList.remove('active');
-        });
-
-        // Toggle current dropdown
-        display.classList.toggle('active');
-        dropdown.classList.toggle('active');
-      }
-
-      function selectOption(type, value, text) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-        const input = document.querySelector('filter-' + type);
-
-        // Update display text
-        display.querySelector('span').textContent = text;
-
-        // Update hidden input value
-        input.value = value;
-
-        // Close dropdown
-        display.classList.remove('active');
-        dropdown.classList.remove('active');
-
-        // Mark selected option
-        dropdown.querySelectorAll('.dropdown-option').forEach((option) => {
-          option.classList.remove('selected');
-          if (option.textContent === text) {
-            option.classList.add('selected');
-          }
-        });
-      }
-
-      // Close dropdowns when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Event Delegation for data-action attributes
-      document.addEventListener('click', function (e) {
-        const target = e.target;
-        const action = target.dataset.action || target.closest('[data-action]')?.dataset.action;
-
-        if (!action) return;
-
-        switch (action) {
-          case 'toggle-dropdown': {
-            const element = target.closest('[data-action="toggle-dropdown"]');
-            if (element) {
-              const dropdown = element.dataset.dropdown;
-              if (dropdown) {
-                toggleDropdown('#' + dropdown);
-              }
-            }
-            break;
-          }
-
-          case 'select-option': {
-            const element = target.closest('[data-action="select-option"]');
-            if (element) {
-              const type = element.dataset.type;
-              const value = element.dataset.value;
-              const text = element.dataset.text;
-              if (type && value && text) {
-                selectOption('#' + type, value, text);
-              }
-            }
-            break;
-          }
-
-          case 'close-delete-modal': {
-            closeDeleteLogsModal();
-            break;
-          }
-
-          // Business logic actions (handled in logs.ts)
-          case 'reset-filters':
-          case 'apply-filters':
-          case 'load-previous-page':
-          case 'load-next-page':
-          case 'confirm-delete': {
-            // These will be handled in logs.ts
-            break;
-          }
-        }
-      });
-
-      // Delete Modal Functions
-      function closeDeleteLogsModal() {
-        const modal = document.querySelector('#deleteLogsModal');
-        const confirmInput = document.querySelector('#deleteLogsConfirmation');
-
-        if (modal && confirmInput) {
-          modal.classList.remove('active');
-          confirmInput.value = '';
-        }
-      }
-
-      // Enable delete button validation
-      document.addEventListener('DOMContentLoaded', () => {
-        const deleteConfirmInput = document.querySelector('#deleteLogsConfirmation');
-        const passwordInput = document.querySelector('#deleteLogsPassword');
-
-        function updateDeleteButtonState() {
-          const confirmBtn = document.querySelector('#confirmDeleteLogsBtn');
-          if (!confirmBtn) return;
-
-          const confirmValue = deleteConfirmInput?.value || '';
-          const passwordValue = passwordInput?.value || '';
-
-          // Check if we need password (when deleting all actions)
-          const needsPassword = window.currentFilters && window.currentFilters.action === 'all';
-
-          if (needsPassword) {
-            // Both "LÖSCHEN" and password required
-            confirmBtn.disabled = confirmValue !== 'LÖSCHEN' || !passwordValue;
-          } else {
-            // Only "LÖSCHEN" required
-            confirmBtn.disabled = confirmValue !== 'LÖSCHEN';
-          }
-        }
-
-        if (deleteConfirmInput) {
-          deleteConfirmInput.addEventListener('input', updateDeleteButtonState);
-        }
-
-        if (passwordInput) {
-          passwordInput.addEventListener('input', updateDeleteButtonState);
-        }
-      });
-    </script>
   </body>
 </html>

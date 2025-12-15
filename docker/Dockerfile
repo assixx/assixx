@@ -1,9 +1,9 @@
 # Multi-stage Dockerfile für Assixx Backend
 # Stage 1: Build TypeScript
-FROM node:20-alpine AS builder
+FROM node:24.11.1-alpine AS builder
 
-# pnpm installieren
-RUN npm install -g pnpm@10.13.1
+# pnpm installieren (pinned version matching packageManager field)
+RUN npm install -g pnpm@10.24.0
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -34,10 +34,15 @@ COPY scripts/fix-esm-imports.js ./scripts/
 RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
 
 # Stage 2: Production Runtime
-FROM node:20-alpine
+FROM node:24.11.1-alpine
 
-# pnpm installieren
-RUN npm install -g pnpm@10.13.1
+# pnpm installieren (pinned version matching packageManager field)
+# Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
+RUN npm install -g pnpm@10.24.0
+
+# Install dumb-init for proper signal handling (SIGTERM, SIGINT)
+# This ensures graceful shutdown when Node.js runs as PID 1
+RUN apk add --no-cache dumb-init
 
 # Security: Non-root user erstellen
 RUN addgroup -g 1001 -S nodejs && \
@@ -79,5 +84,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
 
-# Start Command with tsx for better ESM support
-CMD ["pnpm", "exec", "tsx", "backend/src/server.ts"]
+# Start Command with dumb-init for proper signal handling
+# dumb-init ensures SIGTERM/SIGINT are forwarded to Node.js process
+CMD ["dumb-init", "pnpm", "exec", "tsx", "backend/src/server.ts"]

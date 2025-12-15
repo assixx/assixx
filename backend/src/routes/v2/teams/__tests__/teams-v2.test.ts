@@ -34,7 +34,7 @@ describe('Teams v2 API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-teams-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-teams-v2-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'teamsv2test1', 'Teams v2 Test Company 1');
@@ -100,7 +100,7 @@ describe('Teams v2 API Endpoints', () => {
       throw new Error(`Admin login failed: ${String(JSON.stringify(adminLoginV2.body))}`);
     }
     console.info('Admin login response:', adminLoginV2.body);
-    adminTokenV2 = adminLoginV2.body.data.accessToken || adminLoginV2.body.data.token;
+    adminTokenV2 = adminLoginV2.body.data['accessToken'] || adminLoginV2.body.data['token'];
 
     const employeeLoginV2 = await request(app)
       .post('/api/v2/auth/login')
@@ -110,7 +110,7 @@ describe('Teams v2 API Endpoints', () => {
     if (!employeeLoginV2.body.success) {
       throw new Error(`Employee login failed: ${String(JSON.stringify(employeeLoginV2.body))}`);
     }
-    employeeTokenV2 = employeeLoginV2.body.data.accessToken || employeeLoginV2.body.data.token;
+    employeeTokenV2 = employeeLoginV2.body.data['accessToken'] || employeeLoginV2.body.data['token'];
 
     const rootLoginV2 = await request(app)
       .post('/api/v2/auth/login')
@@ -120,7 +120,7 @@ describe('Teams v2 API Endpoints', () => {
     if (!rootLoginV2.body.success) {
       throw new Error(`Root login failed: ${String(JSON.stringify(rootLoginV2.body))}`);
     }
-    rootTokenV2 = rootLoginV2.body.data.accessToken || rootLoginV2.body.data.token;
+    rootTokenV2 = rootLoginV2.body.data['accessToken'] || rootLoginV2.body.data['token'];
 
     const tenant2LoginV2 = await request(app)
       .post('/api/v2/auth/login')
@@ -130,7 +130,7 @@ describe('Teams v2 API Endpoints', () => {
     if (!tenant2LoginV2.body.success) {
       throw new Error(`Tenant2 login failed: ${String(JSON.stringify(tenant2LoginV2.body))}`);
     }
-    tenant2TokenV2 = tenant2LoginV2.body.data.accessToken || tenant2LoginV2.body.data.token;
+    tenant2TokenV2 = tenant2LoginV2.body.data['accessToken'] || tenant2LoginV2.body.data['token'];
   });
 
   afterAll(async () => {
@@ -152,9 +152,9 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['length']).toBeGreaterThanOrEqual(2);
 
-      const teamNames = response.body.data.map((t: any) => t.name);
+      const teamNames = response.body.data['map']((t: any) => t.name);
       expect(teamNames).toContain('Teams v2 Test Team 1');
       expect(teamNames).toContain('Teams v2 Test Team 2');
     });
@@ -168,7 +168,7 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
 
-      response.body.data.forEach((team: any) => {
+      response.body.data['forEach']((team: any) => {
         expect(team.departmentId).toBe(dept1Id);
       });
     });
@@ -181,7 +181,7 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBe(1);
+      expect(response.body.data['length']).toBe(1);
       expect(response.body.data[0].name).toBe('Teams v2 Test Team 1');
     });
 
@@ -200,7 +200,7 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
 
-      const team1 = response.body.data.find((t: any) => t.id === team1Id);
+      const team1 = response.body.data['find']((t: any) => t.id === team1Id);
       expect(team1).toBeDefined();
       expect(team1).toHaveProperty('memberCount');
     });
@@ -223,7 +223,7 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.body.data).toBeInstanceOf(Array);
 
       // Should not see tenant1's teams
-      const teamNames = response.body.data.map((t: any) => t.name);
+      const teamNames = response.body.data['map']((t: any) => t.name);
       expect(teamNames).not.toContain('Teams v2 Test Team 1');
       expect(teamNames).not.toContain('Teams v2 Test Team 2');
     });
@@ -248,8 +248,8 @@ describe('Teams v2 API Endpoints', () => {
         name: 'Teams v2 Test Team 1',
         departmentId: dept1Id,
       });
-      expect(response.body.data.members).toBeInstanceOf(Array);
-      expect(response.body.data.members.length).toBe(2);
+      expect(response.body.data['members']).toBeInstanceOf(Array);
+      expect(response.body.data['members'].length).toBe(2);
     });
 
     it('should return 404 for non-existent team', async () => {
@@ -279,7 +279,7 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.id).toBe(team1Id);
+      expect(response.body.data['id']).toBe(team1Id);
     });
   });
 
@@ -307,7 +307,7 @@ describe('Teams v2 API Endpoints', () => {
         departmentId: newTeam.departmentId,
         leaderId: newTeam.leaderId,
       });
-      expect(response.body.data.id).toBeDefined();
+      expect(response.body.data['id']).toBeDefined();
     });
 
     it('should prevent duplicate team names', async () => {
@@ -408,7 +408,7 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe(newTeam.name);
+      expect(response.body.data['name']).toBe(newTeam.name);
     });
   });
 
@@ -451,8 +451,8 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.description).toBeNull();
-      expect(response.body.data.leaderId).toBeNull();
+      expect(response.body.data['description']).toBeNull();
+      expect(response.body.data['leaderId']).toBeNull();
     });
 
     it('should prevent duplicate names on update', async () => {
@@ -528,7 +528,7 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Team deleted successfully');
+      expect(response.body.data['message']).toBe('Team deleted successfully');
 
       // Verify team is deleted
       const checkResponse = await request(app)
@@ -601,9 +601,9 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBe(2);
+      expect(response.body.data['length']).toBe(2);
 
-      const memberIds = response.body.data.map((m: any) => m.id);
+      const memberIds = response.body.data['map']((m: any) => m.id);
       expect(memberIds).toContain(employeeUser.id);
       expect(memberIds).toContain(adminUser.id);
     });
@@ -616,7 +616,7 @@ describe('Teams v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBe(0);
+      expect(response.body.data['length']).toBe(0);
     });
 
     it('should allow employees to view team members', async () => {
@@ -649,14 +649,14 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Team member added successfully');
+      expect(response.body.data['message']).toBe('Team member added successfully');
 
       // Verify member was added
       const membersResponse = await request(app)
         .get(`/api/v2/teams/${team1Id}/members`)
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
-      const memberIds = membersResponse.body.data.map((m: any) => m.id);
+      const memberIds = membersResponse.body.data['map']((m: any) => m.id);
       expect(memberIds).toContain(employeeUser.id);
     });
 
@@ -732,14 +732,14 @@ describe('Teams v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Team member removed successfully');
+      expect(response.body.data['message']).toBe('Team member removed successfully');
 
       // Verify member was removed
       const membersResponse = await request(app)
         .get(`/api/v2/teams/${team1Id}/members`)
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
-      const memberIds = membersResponse.body.data.map((m: any) => m.id);
+      const memberIds = membersResponse.body.data['map']((m: any) => m.id);
       expect(memberIds).not.toContain(employeeUser.id);
     });
 

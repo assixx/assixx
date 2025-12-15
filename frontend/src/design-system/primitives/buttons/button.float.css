@@ -1,0 +1,287 @@
+/**
+ * Floating Action Button (FAB)
+ *
+ * Circular button fixed to bottom-right corner
+ * Source: Based on .add-employee-btn from manage-employees.css
+ *
+ * Usage:
+ * <button class="btn-float" aria-label="Add item">
+ *   <i class="fas fa-plus"></i>
+ * </button>
+ *
+ * Use cases:
+ * - Add new items (employees, departments, etc.)
+ * - Quick actions (chat, help, scroll to top)
+ * - Primary action on data tables
+ */
+
+/* ========== BASE FLOATING BUTTON ========== */
+
+.btn-float {
+  /* Reset button styles */
+  cursor: pointer;
+
+  /* Position */
+  position: fixed;
+  z-index: 1000; /* Above most content, below modals */
+  right: 30px;
+  bottom: 30px;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Size */
+  width: 60px;
+  height: 60px;
+  border: none;
+
+  /* Appearance */
+  border: 1px solid rgb(33 150 243 / 30%);
+  border-radius: 50%;
+
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--color-primary);
+
+  /* Glassmorphism with primary color */
+  background: rgb(33 150 243 / 20%);
+  backdrop-filter: blur(20px);
+  outline: none;
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+
+  /* Smooth transitions */
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* ========== HOVER STATE ========== */
+
+.btn-float:hover {
+  transform: scale(1.1);
+  background: rgb(33 150 243 / 30%);
+  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
+}
+
+/* ========== ACTIVE STATE ========== */
+
+.btn-float:active {
+  transform: scale(1.05);
+}
+
+/* ========== FOCUS STATE ========== */
+
+.btn-float:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+/* ========== DISABLED STATE ========== */
+
+.btn-float:disabled {
+  cursor: not-allowed;
+  transform: none;
+  opacity: 50%;
+}
+
+.btn-float:disabled:hover {
+  transform: none;
+  background: rgb(33 150 243 / 20%);
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+}
+
+/* ========== SIZE VARIANTS ========== */
+
+/* Small FAB (48px) */
+.btn-float--sm {
+  right: 20px;
+  bottom: 20px;
+
+  width: 48px;
+  height: 48px;
+
+  font-size: 20px;
+}
+
+/* Large FAB (72px) */
+.btn-float--lg {
+  width: 72px;
+  height: 72px;
+  font-size: 28px;
+}
+
+/* ========== COLOR VARIANTS ========== */
+
+/* Success variant (green) */
+.btn-float--success {
+  border-color: rgb(76 175 80 / 30%);
+  color: var(--color-success);
+  background: rgb(76 175 80 / 20%);
+  box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
+}
+
+.btn-float--success:hover {
+  background: rgb(76 175 80 / 30%);
+  box-shadow: 0 6px 24px rgb(76 175 80 / 40%);
+}
+
+/* Danger variant (red) */
+.btn-float--danger {
+  border-color: rgb(244 67 54 / 30%);
+  color: var(--color-danger);
+  background: rgb(244 67 54 / 20%);
+  box-shadow: 0 4px 16px rgb(244 67 54 / 30%);
+}
+
+.btn-float--danger:hover {
+  background: rgb(244 67 54 / 30%);
+  box-shadow: 0 6px 24px rgb(244 67 54 / 40%);
+}
+
+/* Warning variant (orange) */
+.btn-float--warning {
+  border-color: rgb(255 152 0 / 30%);
+  color: var(--color-warning);
+  background: rgb(255 152 0 / 20%);
+  box-shadow: 0 4px 16px rgb(255 152 0 / 30%);
+}
+
+.btn-float--warning:hover {
+  background: rgb(255 152 0 / 30%);
+  box-shadow: 0 6px 24px rgb(255 152 0 / 40%);
+}
+
+/* ========== POSITION VARIANTS ========== */
+
+/* Bottom-left */
+.btn-float--bottom-left {
+  right: auto;
+  left: 30px;
+}
+
+/* Top-right */
+.btn-float--top-right {
+  top: 30px;
+  bottom: auto;
+}
+
+/* Top-left */
+.btn-float--top-left {
+  inset: 30px auto auto 30px;
+}
+
+/* ========== EXTENDED VARIANT (WITH TEXT) ========== */
+
+/* Extended FAB with text label */
+.btn-float--extended {
+  gap: 8px;
+
+  width: auto;
+  min-width: 60px;
+  padding: 0 24px;
+  border-radius: 28px; /* Pill shape */
+}
+
+.btn-float--extended .btn-float__icon {
+  font-size: 20px;
+}
+
+.btn-float__label {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ========== BADGE/NOTIFICATION ========== */
+
+/* Notification badge on FAB */
+.btn-float__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border: 2px solid #000;
+  border-radius: 10px;
+
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--color-danger);
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .btn-float {
+    right: 20px;
+    bottom: 20px;
+
+    width: 56px;
+    height: 56px;
+
+    font-size: 22px;
+  }
+
+  .btn-float--sm {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .btn-float--lg {
+    width: 64px;
+    height: 64px;
+    font-size: 26px;
+  }
+
+  /* Extended FAB becomes regular FAB on mobile */
+  .btn-float--extended {
+    width: 56px;
+    padding: 0;
+  }
+
+  .btn-float--extended .btn-float__label {
+    display: none;
+  }
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .btn-float {
+    transition: none;
+  }
+
+  .btn-float:hover {
+    transform: none;
+  }
+}
+
+/* Screen reader only text */
+.btn-float .sr-only {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border-width: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(50%);
+}

@@ -4,8 +4,13 @@
  * Uses notification service instead of native alerts
  */
 
+import '../../styles/alerts.css';
+import '../../design-system/components/confirm-modal/confirm-modal.css';
 import notificationService from '../services/notification.service';
 import { setHTML, $$ } from '../../utils/dom-utils';
+
+/** CSS class for custom confirm dialog container */
+const CONFIRM_DIALOG_CLASS = 'custom-confirm-dialog';
 
 /**
  * Show an alert message
@@ -16,116 +21,59 @@ export function showAlert(message: string): void {
 }
 
 /**
+ * Create a confirmation dialog using Design System confirm-modal component
+ * @param message - The message to display
+ * @returns HTMLDivElement containing the dialog
+ */
+function createConfirmDialog(message: string): HTMLDivElement {
+  const confirmDiv = document.createElement('div');
+  confirmDiv.className = CONFIRM_DIALOG_CLASS;
+  setHTML(
+    confirmDiv,
+    `
+    <div class="confirm-overlay">
+      <div class="confirm-modal confirm-modal">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-question-circle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Bestätigung</h3>
+        <p class="confirm-modal__message">${message}</p>
+        <div class="confirm-modal__actions">
+          <button class="confirm-modal__btn confirm-modal__btn--cancel">Nein</button>
+          <button class="confirm-modal__btn confirm-modal__btn--confirm">Ja</button>
+        </div>
+      </div>
+    </div>
+  `,
+  );
+  return confirmDiv;
+}
+
+/**
  * Show a confirmation dialog
  * @param message - The message to display
  * @returns Promise that resolves to true if user clicked OK, false otherwise
- * Note: This uses async notification service instead of native confirm
+ * Note: This uses Design System confirm-modal component
  */
 export async function showConfirm(message: string): Promise<boolean> {
-  // Create a promise that resolves based on user action
   return await new Promise((resolve) => {
-    // Add inline styles for the confirmation dialog
-    const style = document.createElement('style');
-    style.textContent = `
-      .custom-confirm-dialog {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 99999;
-      }
-      .confirm-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .confirm-modal {
-        background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 30px;
-        max-width: 500px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(10px);
-      }
-      .confirm-modal p {
-        color: #ffffff;
-        font-size: 16px;
-        margin: 0 0 25px 0;
-        line-height: 1.5;
-      }
-      .confirm-buttons {
-        display: flex;
-        gap: 15px;
-        justify-content: flex-end;
-      }
-      .confirm-buttons button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: var(--radius-md);
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-
-      }
-      .btn-confirm-yes {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-        color: #ffffff;
-      }
-      .btn-confirm-yes:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
-      }
-      .btn-confirm-no {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-      .btn-confirm-no:hover {
-        background: rgba(255, 255, 255, 0.15);
-      }
-    `;
-    document.head.append(style);
-
-    // Use notification service with action buttons
-    const confirmDiv = document.createElement('div');
-    confirmDiv.className = 'custom-confirm-dialog';
-    setHTML(
-      confirmDiv,
-      `
-      <div class="confirm-overlay">
-        <div class="confirm-modal">
-          <p>${message}</p>
-          <div class="confirm-buttons">
-            <button class="btn-confirm-yes">Ja</button>
-            <button class="btn-confirm-no">Nein</button>
-          </div>
-        </div>
-      </div>
-    `,
-    );
-
+    const confirmDiv = createConfirmDialog(message);
     document.body.append(confirmDiv);
 
-    const yesBtn = $$('.btn-confirm-yes', confirmDiv) as HTMLButtonElement | null;
-    const noBtn = $$('.btn-confirm-no', confirmDiv) as HTMLButtonElement | null;
+    const confirmBtn = $$('.confirm-modal__btn--confirm', confirmDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', confirmDiv) as HTMLButtonElement | null;
 
-    yesBtn?.addEventListener('click', () => {
+    const cleanup = (): void => {
       confirmDiv.remove();
-      style.remove(); // Clean up styles
+    };
+
+    confirmBtn?.addEventListener('click', () => {
+      cleanup();
       resolve(true);
     });
 
-    noBtn?.addEventListener('click', () => {
-      confirmDiv.remove();
-      style.remove(); // Clean up styles
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
       resolve(false);
     });
   });
@@ -145,4 +93,227 @@ export function showErrorAlert(message: string): void {
  */
 export function showSuccessAlert(message: string): void {
   notificationService.success('Erfolg', message);
+}
+
+/**
+ * Show a warning alert
+ * @param message - The warning message to display
+ */
+export function showWarningAlert(message: string): void {
+  notificationService.warning('Warnung', message);
+}
+
+/**
+ * Show a danger confirmation dialog for destructive actions
+ * @param message - The message to display
+ * @param title - Optional title (default: "Bestätigung erforderlich")
+ * @returns Promise that resolves to true if user confirmed, false otherwise
+ */
+export async function showConfirmDanger(message: string, title: string = 'Bestätigung erforderlich'): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--danger">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--danger">Bestätigen</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const dangerBtn = $$('.confirm-modal__btn--danger', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    dangerBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(true);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * Show a warning confirmation dialog (for non-destructive but important confirmations)
+ * Uses warning styling (yellow/orange) instead of danger styling (red)
+ * @param message - The message to display
+ * @param title - Optional title (default: "Hinweis")
+ * @returns Promise that resolves to true if user confirmed, false otherwise
+ */
+export async function showConfirmWarning(message: string, title: string = 'Hinweis'): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--warning">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--confirm">Ja, wechseln</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const confirmBtn = $$('.confirm-modal__btn--confirm', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    confirmBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(true);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * Show a prompt dialog with text input
+ * @param message - The message to display
+ * @param title - Optional title (default: "Eingabe erforderlich")
+ * @param placeholder - Optional input placeholder
+ * @returns Promise that resolves to the input value or null if cancelled
+ */
+export async function showPrompt(
+  message: string,
+  title: string = 'Eingabe erforderlich',
+  placeholder: string = '',
+): Promise<string | null> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--info">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-edit"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__input-group">
+            <textarea
+              class="confirm-modal__input"
+              placeholder="${placeholder}"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--confirm">OK</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const confirmBtn = $$('.confirm-modal__btn--confirm', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+    const inputField = $$('.confirm-modal__input', modalDiv) as HTMLTextAreaElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    // Focus input field
+    inputField?.focus();
+
+    confirmBtn?.addEventListener('click', () => {
+      const value = inputField?.value.trim() ?? '';
+      cleanup();
+      resolve(value === '' ? null : value);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(null);
+    });
+
+    // Submit on Enter (Ctrl+Enter for multiline)
+    inputField?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        confirmBtn?.click();
+      }
+    });
+  });
+}
+
+/**
+ * Show an informational modal dialog with Design System confirm-modal--info
+ * @param message - The message to display
+ * @param title - Optional title (default: "Hinweis")
+ * @returns Promise that resolves when user clicks OK
+ */
+export async function showInfoModal(message: string, title: string = 'Hinweis'): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = CONFIRM_DIALOG_CLASS;
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--info">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-info-circle"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--confirm">OK</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const okBtn = $$('.confirm-modal__btn--confirm', modalDiv) as HTMLButtonElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    okBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve();
+    });
+  });
 }

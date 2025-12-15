@@ -7,7 +7,6 @@ import { Router } from 'express';
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as settingsController from './settings.controller.js';
-import * as validation from './settings.validation.js';
 
 const router = Router();
 
@@ -45,11 +44,7 @@ router.use(authenticateV2);
  *       403:
  *         description: Access denied
  */
-router.get(
-  '/system',
-  validation.getSystemSettingsValidation,
-  typed.auth(settingsController.getSystemSettings),
-);
+router.get('/system', typed.auth(settingsController.getSystemSettings));
 
 /**
 
@@ -72,11 +67,7 @@ router.get(
  *       404:
  *         description: Setting not found
  */
-router.get(
-  '/system/:key',
-  validation.getSystemSettingValidation,
-  typed.auth(settingsController.getSystemSetting),
-);
+router.get('/system/:key', typed.auth(settingsController.getSystemSetting));
 
 /**
 
@@ -116,11 +107,7 @@ router.get(
  *       403:
  *         description: Access denied
  */
-router.post(
-  '/system',
-  validation.createSystemSettingValidation,
-  typed.auth(settingsController.upsertSystemSetting),
-);
+router.post('/system', typed.auth(settingsController.upsertSystemSetting));
 
 /**
 
@@ -163,11 +150,7 @@ router.post(
  *       403:
  *         description: Access denied
  */
-router.put(
-  '/system/:key',
-  validation.updateSystemSettingValidation,
-  typed.auth(settingsController.upsertSystemSetting),
-);
+router.put('/system/:key', typed.auth(settingsController.upsertSystemSetting));
 
 /**
 
@@ -192,11 +175,7 @@ router.put(
  *       404:
  *         description: Setting not found
  */
-router.delete(
-  '/system/:key',
-  validation.deleteSystemSettingValidation,
-  typed.auth(settingsController.deleteSystemSetting),
-);
+router.delete('/system/:key', typed.auth(settingsController.deleteSystemSetting));
 
 // ==================== TENANT SETTINGS ====================
 
@@ -223,11 +202,7 @@ router.delete(
  *       200:
  *         description: Settings retrieved successfully
  */
-router.get(
-  '/tenant',
-  validation.getTenantSettingsValidation,
-  typed.auth(settingsController.getTenantSettings),
-);
+router.get('/tenant', typed.auth(settingsController.getTenantSettings));
 
 /**
 
@@ -250,11 +225,7 @@ router.get(
  *       404:
  *         description: Setting not found
  */
-router.get(
-  '/tenant/:key',
-  validation.getTenantSettingValidation,
-  typed.auth(settingsController.getTenantSetting),
-);
+router.get('/tenant/:key', typed.auth(settingsController.getTenantSetting));
 
 /**
 
@@ -290,11 +261,7 @@ router.get(
  *       403:
  *         description: Access denied
  */
-router.post(
-  '/tenant',
-  validation.createTenantSettingValidation,
-  typed.auth(settingsController.upsertTenantSetting),
-);
+router.post('/tenant', typed.auth(settingsController.upsertTenantSetting));
 
 /**
 
@@ -333,11 +300,7 @@ router.post(
  *       403:
  *         description: Access denied
  */
-router.put(
-  '/tenant/:key',
-  validation.updateTenantSettingValidation,
-  typed.auth(settingsController.upsertTenantSetting),
-);
+router.put('/tenant/:key', typed.auth(settingsController.upsertTenantSetting));
 
 /**
 
@@ -362,11 +325,7 @@ router.put(
  *       404:
  *         description: Setting not found
  */
-router.delete(
-  '/tenant/:key',
-  validation.deleteTenantSettingValidation,
-  typed.auth(settingsController.deleteTenantSetting),
-);
+router.delete('/tenant/:key', typed.auth(settingsController.deleteTenantSetting));
 
 // ==================== USER SETTINGS ====================
 
@@ -393,11 +352,7 @@ router.delete(
  *       200:
  *         description: Settings retrieved successfully
  */
-router.get(
-  '/user',
-  validation.getUserSettingsValidation,
-  typed.auth(settingsController.getUserSettings),
-);
+router.get('/user', typed.auth(settingsController.getUserSettings));
 
 /**
 
@@ -420,11 +375,7 @@ router.get(
  *       404:
  *         description: Setting not found
  */
-router.get(
-  '/user/:key',
-  validation.getUserSettingValidation,
-  typed.auth(settingsController.getUserSetting),
-);
+router.get('/user/:key', typed.auth(settingsController.getUserSetting));
 
 /**
 
@@ -458,11 +409,7 @@ router.get(
  *       200:
  *         description: Setting created successfully
  */
-router.post(
-  '/user',
-  validation.createUserSettingValidation,
-  typed.auth(settingsController.upsertUserSetting),
-);
+router.post('/user', typed.auth(settingsController.upsertUserSetting));
 
 /**
 
@@ -499,11 +446,7 @@ router.post(
  *       200:
  *         description: Setting updated successfully
  */
-router.put(
-  '/user/:key',
-  validation.updateUserSettingValidation,
-  typed.auth(settingsController.upsertUserSetting),
-);
+router.put('/user/:key', typed.auth(settingsController.upsertUserSetting));
 
 /**
 
@@ -526,11 +469,7 @@ router.put(
  *       404:
  *         description: Setting not found
  */
-router.delete(
-  '/user/:key',
-  validation.deleteUserSettingValidation,
-  typed.auth(settingsController.deleteUserSetting),
-);
+router.delete('/user/:key', typed.auth(settingsController.deleteUserSetting));
 
 // ==================== ADMIN USER SETTINGS ====================
 
@@ -557,11 +496,7 @@ router.delete(
  *       404:
  *         description: User not found
  */
-router.get(
-  '/admin/users/:userId',
-  validation.getAdminUserSettingsValidation,
-  typed.auth(settingsController.getAdminUserSettings),
-);
+router.get('/admin/users/:userId', typed.auth(settingsController.getAdminUserSettings));
 
 // ==================== COMMON ====================
 
@@ -623,6 +558,6 @@ router.get('/categories', typed.auth(settingsController.getCategories));
  *       200:
  *         description: Settings updated successfully
  */
-router.put('/bulk', validation.bulkUpdateValidation, typed.auth(settingsController.bulkUpdate));
+router.put('/bulk', typed.auth(settingsController.bulkUpdate));
 
 export default router;

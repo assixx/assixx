@@ -1,32 +1,29 @@
 # Development Dockerfile für Live-Reload
-FROM node:20-alpine
+FROM node:24.11.1-alpine
 
 # Install development tools
-RUN apk add --no-cache curl jq
+# Fix CVE-2025-10966: Upgrade curl to latest available version
+RUN apk add --no-cache curl jq && \
+    apk upgrade --no-cache curl
 
-# Install pnpm and development tools globally
-# Using npm only to bootstrap pnpm, then pnpm handles everything else
-RUN npm install -g pnpm@latest tsx nodemon
+# Install pnpm globally (pinned version matching packageManager field)
+# tsx and nodemon are in devDependencies - no need to install globally!
+# Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
+RUN npm install -g pnpm@10.24.0
 
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Package files kopieren und installieren
+# Package files kopieren - pnpm workspace braucht alle package.json VORHER
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
-# Install with frozen lockfile (onlyBuiltDependencies in package.json handles script blocking)
-RUN pnpm install --frozen-lockfile
-
-# Frontend package files kopieren
-# In einem pnpm workspace gibt es nur einen gemeinsamen Lockfile im Root
 COPY frontend/package.json ./frontend/
-# Der Lockfile ist bereits im Root kopiert, daher nur pnpm install vom Root aus
-RUN pnpm install --frozen-lockfile
+COPY backend/package.json ./backend/
 
-# Scripts directory für ESM support
-COPY scripts/package.json ./scripts/
-COPY scripts/fix-esm-imports.js ./scripts/
+# EINMAL installieren - pnpm findet automatisch alle Workspaces (frontend + backend)
+# onlyBuiltDependencies in package.json verhindert build scripts während Docker build
+RUN pnpm install --frozen-lockfile
 
 # Der Rest wird über Volumes gemountet
 

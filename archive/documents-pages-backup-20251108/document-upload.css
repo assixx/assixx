@@ -1,0 +1,550 @@
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
+
+/* Glassmorphismus Design-Standards - Wie im Admin Dashboard */
+
+/* Glassmorphismus Upload Section - nutzt card Klasse aus dashboard-theme.css */
+.upload-section {
+  position: relative;
+
+  /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
+  /* Erweitert die .card Klasse */
+  margin-bottom: var(--spacing-6);
+  overflow: hidden;
+
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+.upload-section::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  opacity: 0%;
+
+  transition: opacity 0.3s ease;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+
+  height: 3px;
+  content: '';
+}
+
+.upload-section:hover::before {
+  opacity: 100%;
+}
+
+.upload-section:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 3%);
+}
+
+/* Card Header für Upload Title - wie im Dashboard */
+.card-header {
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  background: rgb(255 255 255 / 1%);
+  padding: var(--spacing-4) var(--spacing-6);
+}
+
+.upload-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+
+  font-size: 1.1rem;
+}
+
+.upload-title::before {
+  border-radius: 2px;
+
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+
+  width: 4px;
+  height: 20px;
+  content: '';
+}
+
+.card-body {
+  padding: var(--spacing-6);
+}
+
+.upload-form {
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+/* Custom Glassmorphismus Dropdown - Nach Design Standards */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 3%);
+
+  padding: var(--spacing-3);
+
+  color: #fff;
+}
+
+.dropdown-display:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.dropdown-display.active {
+  box-shadow: 0 0 0 3px rgb(0 142 255 / 15%);
+  border-color: rgb(0 142 255 / 50%);
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-display span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-display svg {
+  transition: transform 0.3s ease;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  visibility: hidden;
+  opacity: 0%;
+  z-index: 1001;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(18 18 18 / 100%);
+
+  max-height: 200px;
+
+  overflow-y: auto;
+}
+
+.dropdown-options.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.dropdown-option {
+  cursor: pointer;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  padding: 10px 12px;
+  color: var(--text-primary);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option.selected {
+  background: rgb(33 150 243 / 15%);
+  font-weight: 500;
+}
+
+/* Placeholder Styling */
+.dropdown-display.placeholder span {
+  color: rgb(255 255 255 / 50%);
+  font-style: italic;
+}
+
+/* Textarea spezifisch */
+textarea.form-control {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Page Header - wie im Dashboard */
+.page-header {
+  margin-bottom: var(--spacing-6);
+}
+
+.page-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+
+  font-size: 1.8rem;
+  text-shadow: 0 0 20px rgb(33 150 243 / 30%);
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -10px;
+}
+
+.form-col {
+  flex: 1;
+  padding: 0 10px;
+  min-width: 200px;
+}
+
+.file-drop-area {
+  position: relative;
+  backdrop-filter: blur(10px);
+
+  transition: all 0.3s;
+
+  margin-bottom: var(--spacing-4);
+  border: 2px dashed rgb(255 255 255 / 15%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+  padding: 30px;
+
+  text-align: center;
+}
+
+.file-drop-area:hover,
+.file-drop-area.drag-over {
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 5%);
+}
+
+.file-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin-bottom: var(--spacing-2);
+
+  color: var(--primary-color);
+}
+
+.file-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.file-message {
+  margin-bottom: var(--spacing-1);
+  color: var(--text-secondary);
+}
+
+.file-restrictions {
+  backdrop-filter: blur(5px);
+  margin-top: var(--spacing-1);
+  margin-bottom: var(--spacing-4);
+  border: 1px solid rgb(33 150 243 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(33 150 243 / 5%);
+  padding: var(--spacing-3);
+  color: rgb(255 255 255 / 70%);
+
+  font-size: 12px;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  opacity: 0%;
+  cursor: pointer;
+
+  width: 100%;
+  height: 100%;
+}
+
+.file-info {
+  display: none;
+  backdrop-filter: blur(10px);
+
+  margin-top: var(--spacing-2);
+  box-shadow: 0 1px 8px rgb(33 150 243 / 15%);
+  border: 1px solid rgb(33 150 243 / 20%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(33 150 243 / 8%);
+  padding: 10px 15px;
+
+  color: var(--text-primary);
+}
+
+.file-info.active {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  /* animation: fadeInUp 0.3s ease-out; */
+}
+
+.pdf-preview-container {
+  display: none;
+  backdrop-filter: blur(20px);
+  margin: var(--spacing-4) 0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.pdf-preview-container.active {
+  display: block;
+
+  /* animation: fadeInUp 0.3s ease-out; */
+}
+
+.pdf-preview {
+  border: none;
+  width: 100%;
+  height: 400px;
+}
+
+.preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
+  background: rgb(255 255 255 / 3%);
+
+  padding: var(--spacing-3);
+}
+
+.preview-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.preview-close {
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-xl);
+
+  background: none;
+
+  padding: 5px;
+  color: var(--text-secondary);
+
+  font-size: 18px;
+}
+
+.preview-close:hover {
+  transform: scale(1.1);
+  background: rgb(255 255 255 / 5%);
+  color: var(--error-color);
+}
+
+.file-name {
+  max-width: 70%;
+  overflow: hidden;
+
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Button Styles - Using Design System base */
+
+/* Second-Level Button für Upload (mit Gradient) */
+.btn-primary {
+  position: relative;
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+
+  overflow: hidden;
+
+  color: #fff;
+}
+
+.btn-primary::before {
+  position: absolute;
+  top: 0;
+  left: -100%;
+
+  transition: left 0.5s ease;
+
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
+
+  width: 100%;
+  height: 100%;
+  content: '';
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgb(33 150 243 / 40%);
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn svg {
+  margin-right: 8px;
+}
+
+/* Alert Styles - wie stat-cards im Dashboard */
+.alert {
+  display: flex;
+  align-items: center;
+
+  backdrop-filter: blur(20px) saturate(180%);
+
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  padding: 15px 20px;
+
+  /* animation: fadeInUp 0.3s ease-out; */
+}
+
+.alert .icon {
+  margin-right: 15px;
+  font-size: 24px;
+}
+
+.alert-success {
+  box-shadow:
+    0 4px 12px rgb(16 185 129 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(16 185 129 / 30%);
+  background: rgb(16 185 129 / 15%);
+  color: #10b981;
+}
+
+.alert-danger {
+  box-shadow:
+    0 4px 12px rgb(244 67 54 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(244 67 54 / 30%);
+  background: rgb(244 67 54 / 15%);
+  color: #f44336;
+}
+
+/* Animationen */
+@keyframes fade-in-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 8px;
+}
+
+/* Recipient Type Selector Styles */
+.recipient-type-selector {
+  /* Grid layout for recipient type buttons */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+
+  padding: 10px 16px;
+}
+
+.radio-option:hover {
+  border-color: rgb(33 150 243 / 30%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.radio-option input[type='radio'] {
+  margin-right: 8px;
+  accent-color: var(--primary-color);
+}
+
+.radio-option input[type='radio']:checked + span {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.radio-option input[type='radio']:checked {
+  transform: scale(1.1);
+}
+
+.radio-option:has(input[type='radio']:checked) {
+  box-shadow: 0 0 0 2px rgb(33 150 243 / 15%);
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 10%);
+}
+
+/* Anpassungen für mobile Geräte */
+@media (width <= 768px) {
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-col {
+    margin-bottom: var(--spacing-4);
+    width: 100%;
+  }
+}

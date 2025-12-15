@@ -1,0 +1,698 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
+import { DatabaseTenant } from '../../../types/models.js';
+import { TenantTrialStatus } from '../../../types/tenant.types.js';
+import {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+  query as executeQuery,
+  getConnection,
+} from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
+
+// Extended interface for internal use
+interface TenantTrialStatusComplete extends TenantTrialStatus {
+  isInTrial: boolean;
+}
+
+// Database interfaces
+interface DbTenant extends RowDataPacket, DatabaseTenant {}
+
+interface DbFeature extends RowDataPacket {
+  id: number;
+  feature_id?: number;
+}
+
+interface IdResult extends RowDataPacket {
+  id: number;
+}
+
+interface TenantCreateData {
+  company_name: string;
+  subdomain: string;
+  email: string;
+  phone?: string | undefined;
+  address?: string | undefined;
+  admin_email: string;
+  admin_password: string;
+  admin_first_name: string;
+  admin_last_name: string;
+}
+
+interface SubdomainValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+interface TenantCreateResult {
+  tenantId: number;
+  userId: number;
+  subdomain: string;
+  trialEndsAt: Date;
+}
+
+// Neuen Tenant erstellen (Self-Service)
+async function checkSubdomainExists(connection: PoolConnection, subdomain: string): Promise<void> {
+  const [existing] = await connection.query<RowDataPacket[]>(
+    'SELECT id FROM tenants WHERE subdomain = $1',
+    [subdomain],
+  );
+
+  if (existing.length > 0) {
+    throw new Error('Diese Subdomain ist bereits vergeben');
+  }
+}
+
+function generateTemporaryEmployeeNumber(): string {
+  const timestamp = Date.now().toString().slice(-6);
+  // Generate cryptographically secure random number between 0-999 without bias
+  let randomInt: number;
+  do {
+    const randomBuffer = randomBytes(2); // 2 bytes = 16 bits (0-65535)
+    randomInt = randomBuffer.readUInt16BE(0);
+    // Reject values >= 65000 to ensure uniform distribution when using % 1000
+  } while (randomInt >= 65000);
+  randomInt = randomInt % 1000; // Now safe to use modulo without bias
+  const random = randomInt.toString().padStart(3, '0');
+  return `TEMP-${timestamp}${random}`;
+}
+
+async function createRootUser(
+  connection: PoolConnection,
+  tenantId: number,
+  tenantData: TenantCreateData,
+): Promise<number> {
+  const hashedPassword = await bcrypt.hash(tenantData.admin_password, 10);
+  const employeeNumber = generateTemporaryEmployeeNumber();
+
+  // Root users always get has_full_access = true for full tenant access
+  const [userRows] = await connection.query<{ id: number }[]>(
+    `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access)
+       VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true)
+       RETURNING id`,
+    [
+      tenantData.admin_email,
+      tenantData.admin_email,
+      hashedPassword,
+      tenantData.admin_first_name,
+      tenantData.admin_last_name,
+      tenantId,
+      tenantData.phone,
+      employeeNumber,
+    ],
+  );
+
+  const userId = userRows[0]?.id ?? 0;
+
+  // Generate employee_id
+  const { generateEmployeeId } = await import('../../../utils/employeeIdGenerator.js');
+  const employeeId = generateEmployeeId(tenantData.subdomain, 'root', userId);
+
+  await connection.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
+
+  // NOTE: tenant_admins table removed (redundant) - users.tenant_id + users.role is the source of truth
+
+  return userId;
+}
+
+async function assignBasicPlan(connection: PoolConnection, tenantId: number): Promise<void> {
+  const [plans] = await connection.query<IdResult[]>(
+    'SELECT id FROM plans WHERE code = $1 AND is_active = 1',
+    ['basic'],
+  );
+
+  if (plans.length > 0) {
+    const plan = plans[0];
+    if (plan === undefined) {
+      throw new Error('Basic plan not found');
+    }
+    const basicPlanId = plan.id;
+
+    await connection.query(
+      `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
+         VALUES ($1, $2, 'trial', NOW())`,
+      [tenantId, basicPlanId],
+    );
+
+    await connection.query('UPDATE tenants SET current_plan_id = $1 WHERE id = $2', [
+      basicPlanId,
+      tenantId,
+    ]);
+  }
+}
+
+export async function createTenant(tenantData: TenantCreateData): Promise<TenantCreateResult> {
+  logger.info('[DEBUG] Starting tenant creation...');
+  const connection = await getConnection();
+  logger.info('[DEBUG] Got database connection');
+
+  try {
+    await connection.beginTransaction();
+
+    const { company_name, subdomain, email, phone, address, admin_email } = tenantData;
+
+    // 1. Prüfe ob Subdomain bereits existiert
+    await checkSubdomainExists(connection, subdomain);
+
+    // 2. Erstelle Tenant
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14 Tage Trial
+
+    const [tenantRows] = await connection.query<{ id: number }[]>(
+      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+      [company_name, subdomain, email, phone, address, trialEndsAt, admin_email],
+    );
+
+    const tenantId = tenantRows[0]?.id ?? 0;
+
+    // 3. Erstelle Root-Benutzer
+    const userId = await createRootUser(connection, tenantId, tenantData);
+
+    // 4. Weise Basic-Plan zu
+    await assignBasicPlan(connection, tenantId);
+
+    // 5. Aktiviere Trial-Features
+    await activateTrialFeatures(tenantId, connection);
+
+    await connection.commit();
+    logger.info(`Neuer Tenant erstellt: ${company_name} (${subdomain})`);
+
+    // Log tenant creation for audit trail
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'create_tenant',
+      entity_type: 'tenant',
+      entity_id: tenantId,
+      details: `Neuer Tenant erstellt: ${company_name} (${subdomain})`,
+      new_values: {
+        company_name,
+        subdomain,
+        email,
+        admin_email,
+        trial_ends_at: trialEndsAt.toISOString(),
+      },
+    });
+
+    return {
+      tenantId,
+      userId,
+      subdomain,
+      trialEndsAt,
+    };
+  } catch (error: unknown) {
+    await connection.rollback();
+    logger.error(`Fehler beim Erstellen des Tenants: ${(error as Error).message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+// Trial-Features aktivieren (private function)
+async function activateTrialFeatures(
+  tenantId: number,
+  connection: PoolConnection | null = null,
+): Promise<void> {
+  const conn = connection ?? (await getConnection());
+
+  // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
+  // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
+  const [features] = await conn.query<IdResult[]>(`SELECT id FROM features`);
+
+  // Aktiviere alle Features für 14 Tage Trial
+  for (const feature of features) {
+    await conn.query(
+      `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
+         VALUES ($1, $2, 1, NOW() + INTERVAL '14 days')`,
+      [tenantId, feature.id],
+    );
+  }
+}
+
+// Subdomain validieren
+export function validateTenantSubdomain(subdomain: string): SubdomainValidationResult {
+  // Nur Buchstaben, Zahlen und Bindestriche
+  const regex = /^[-0-9a-z]+$/;
+
+  if (!regex.test(subdomain)) {
+    return {
+      valid: false,
+      error: 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt',
+    };
+  }
+
+  if (subdomain.length < 3 || subdomain.length > 50) {
+    return {
+      valid: false,
+      error: 'Subdomain muss zwischen 3 und 50 Zeichen lang sein',
+    };
+  }
+
+  // Reservierte Subdomains
+  const reserved = ['www', 'api', 'admin', 'app', 'mail', 'ftp', 'test', 'dev'];
+  if (reserved.includes(subdomain)) {
+    return { valid: false, error: 'Diese Subdomain ist reserviert' };
+  }
+
+  return { valid: true };
+}
+
+// Prüfe ob Subdomain verfügbar ist
+export async function isTenantSubdomainAvailable(subdomain: string): Promise<boolean> {
+  const [result] = await executeQuery<RowDataPacket[]>(
+    'SELECT id FROM tenants WHERE subdomain = $1',
+    [subdomain],
+  );
+  return result.length === 0;
+}
+
+// Finde Tenant by Subdomain
+export async function findTenantBySubdomain(subdomain: string): Promise<DatabaseTenant | null> {
+  const [tenants] = await executeQuery<DbTenant[]>(
+    "SELECT * FROM tenants WHERE subdomain = $1 AND status != 'cancelled'",
+    [subdomain],
+  );
+  return tenants[0] ?? null;
+}
+
+// Finde Tenant by ID
+export async function findTenantById(tenantId: number): Promise<DatabaseTenant | null> {
+  const [tenants] = await executeQuery<DbTenant[]>(
+    "SELECT * FROM tenants WHERE id = $1 AND status != 'cancelled'",
+    [tenantId],
+  );
+  return tenants[0] ?? null;
+}
+
+// Alle Tenants abrufen
+export async function findAllTenants(): Promise<DatabaseTenant[]> {
+  const [tenants] = await executeQuery<DbTenant[]>(
+    "SELECT * FROM tenants WHERE status != 'cancelled' ORDER BY company_name",
+  );
+  return tenants;
+}
+
+// Trial-Status prüfen
+export async function checkTenantTrialStatus(
+  tenantId: number,
+): Promise<TenantTrialStatusComplete | null> {
+  interface TrialResult extends RowDataPacket {
+    trial_ends_at: Date;
+    status: string;
+  }
+
+  const [result] = await executeQuery<TrialResult[]>(
+    'SELECT trial_ends_at, status FROM tenants WHERE id = $1',
+    [tenantId],
+  );
+
+  if (result.length === 0) return null;
+
+  const tenant = result[0];
+  if (tenant === undefined) {
+    return null;
+  }
+
+  const now = new Date();
+  const trialEnd = new Date(tenant.trial_ends_at);
+
+  return {
+    isInTrial: tenant.status === 'trial',
+    trialEndsAt: trialEnd,
+    daysRemaining: Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    isExpired: now > trialEnd,
+  };
+}
+
+// Upgrade auf bezahlten Plan
+export async function upgradeTenantToPlan(
+  tenantId: number,
+  plan: string,
+  stripeCustomerId: string,
+  stripeSubscriptionId: string,
+  upgradedByUserId?: number,
+): Promise<void> {
+  // Get current plan for audit log
+  const [currentTenant] = await executeQuery<DbTenant[]>(
+    'SELECT current_plan, status FROM tenants WHERE id = $1',
+    [tenantId],
+  );
+  const oldPlan = currentTenant[0]?.current_plan ?? 'trial';
+  const oldStatus = currentTenant[0]?.status ?? 'trial';
+
+  await executeQuery(
+    `UPDATE tenants
+       SET status = 'active',
+           current_plan = $2,
+           stripe_customer_id = $3,
+           stripe_subscription_id = $4
+       WHERE id = $1`,
+    [tenantId, plan, stripeCustomerId, stripeSubscriptionId],
+  );
+
+  // Aktiviere Plan-Features
+  await activatePlanFeatures(tenantId, plan);
+
+  // Log plan upgrade for audit trail
+  const userId = upgradedByUserId ?? 0;
+  await rootLog.create({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'upgrade_tenant_plan',
+    entity_type: 'tenant',
+    entity_id: tenantId,
+    details: `Plan-Upgrade: ${oldPlan} → ${plan}`,
+    old_values: {
+      plan: oldPlan,
+      status: oldStatus,
+    },
+    new_values: {
+      plan,
+      status: 'active',
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: stripeSubscriptionId,
+    },
+  });
+}
+
+// Plan-Features aktivieren (private function)
+async function activatePlanFeatures(tenantId: number, plan: string): Promise<void> {
+  // Deaktiviere alle aktuellen Features
+  await executeQuery('UPDATE tenant_features SET is_active = 0 WHERE tenant_id = $1', [tenantId]);
+
+  // Hole Features für den Plan
+  const [planFeatures] = await executeQuery<DbFeature[]>(
+    `SELECT feature_id
+       FROM plan_features pf
+       JOIN subscription_plans sp ON pf.plan_id = sp.id
+       WHERE sp.name = $1`,
+    [plan],
+  );
+
+  // Aktiviere neue Features
+  for (const feature of planFeatures) {
+    await executeQuery(
+      `INSERT INTO tenant_features (tenant_id, feature_id, is_active)
+         VALUES ($1, $2, 1)
+         ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1, expires_at = NULL`,
+      [tenantId, feature.feature_id],
+    );
+  }
+}
+
+// Helper function to execute delete queries and ignore missing table errors
+async function safeDelete(
+  connection: PoolConnection,
+  query: string,
+  params: unknown[],
+): Promise<void> {
+  try {
+    await connection.query(query, params);
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error as Error & { code: string }).code === 'ER_NO_SUCH_TABLE'
+    ) {
+      logger.debug(`Table not found, skipping: ${error.message}`);
+    } else {
+      throw error;
+    }
+  }
+}
+
+// Helper: Delete chat-related data
+async function deleteChatData(
+  connection: PoolConnection,
+  tenantId: number,
+  userIds: number[],
+): Promise<void> {
+  const userIdList = userIds.length > 0 ? userIds : [0];
+  await safeDelete(
+    connection,
+    'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN ($1))',
+    [userIdList],
+  );
+  await safeDelete(connection, 'DELETE FROM messages WHERE sender_id IN ($1)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM conversation_participants WHERE user_id IN ($1)', [
+    userIdList,
+  ]);
+  await safeDelete(connection, 'DELETE FROM conversations WHERE tenant_id = $1', [tenantId]);
+}
+
+// Helper: Delete survey-related data
+async function deleteSurveyData(connection: PoolConnection, tenantId: number): Promise<void> {
+  const surveySubquery = 'SELECT id FROM surveys WHERE tenant_id = $1';
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (${surveySubquery}))`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_responses WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (${surveySubquery}))`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_questions WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_assignments WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_reminders WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(connection, 'DELETE FROM survey_templates WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM surveys WHERE tenant_id = $1', [tenantId]);
+}
+
+// Helper: Delete shift-related data
+async function deleteShiftData(connection: PoolConnection, tenantId: number): Promise<void> {
+  const shiftSubquery = 'SELECT id FROM shifts WHERE tenant_id = $1';
+  await safeDelete(connection, `DELETE FROM shift_trades WHERE shift_id IN (${shiftSubquery})`, [
+    tenantId,
+  ]);
+  await safeDelete(
+    connection,
+    `DELETE FROM shift_assignments WHERE shift_id IN (${shiftSubquery})`,
+    [tenantId],
+  );
+  await safeDelete(connection, `DELETE FROM shift_notes WHERE shift_id IN (${shiftSubquery})`, [
+    tenantId,
+  ]);
+  await safeDelete(connection, 'DELETE FROM shifts WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM shift_templates WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM shift_types WHERE tenant_id = $1', [tenantId]);
+}
+
+// Helper: Delete other tenant data
+async function deleteOtherTenantData(
+  connection: PoolConnection,
+  tenantId: number,
+  userIds: number[],
+): Promise<void> {
+  const userIdList = userIds.length > 0 ? userIds : [0];
+
+  // KVP data
+  await safeDelete(
+    connection,
+    'DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = $1)',
+    [tenantId],
+  );
+  await safeDelete(connection, 'DELETE FROM kvp_suggestions WHERE tenant_id = $1', [tenantId]);
+
+  // Other tenant data
+  await safeDelete(connection, 'DELETE FROM calendar_events WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM blackboard_entries WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM documents WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM admin_logs WHERE admin_id IN ($1)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM tenant_features WHERE tenant_id = $1', [tenantId]);
+
+  // User relationships
+  await safeDelete(connection, 'DELETE FROM user_teams WHERE user_id IN ($1)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM user_departments WHERE user_id IN ($1)', [userIdList]);
+
+  // Teams and departments
+  await safeDelete(connection, 'DELETE FROM teams WHERE tenant_id = $1', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM departments WHERE tenant_id = $1', [tenantId]);
+  // NOTE: tenant_admins table removed (redundant) - no cleanup needed
+}
+
+// Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!
+export async function deleteTenant(tenantId: number, deletedByUserId?: number): Promise<boolean> {
+  const connection = await getConnection();
+
+  try {
+    await connection.beginTransaction();
+    logger.warn(`Starting complete deletion of tenant ${tenantId}`);
+
+    // Get tenant info BEFORE deletion for audit log
+    const [tenantInfo] = await connection.query<DbTenant[]>(
+      'SELECT company_name, subdomain, email FROM tenants WHERE id = $1',
+      [tenantId],
+    );
+    const tenant = tenantInfo[0];
+
+    // Get all user IDs for this tenant (for file cleanup)
+    const [users] = await connection.query<IdResult[]>(
+      'SELECT id FROM users WHERE tenant_id = $1',
+      [tenantId],
+    );
+    const userIds = users.map((u: IdResult) => u.id);
+
+    // Get root user ID for logging (first user or provided userId)
+    const rootUserId = deletedByUserId ?? userIds[0] ?? 0;
+
+    // Delete in correct order to respect foreign key constraints
+    await deleteChatData(connection, tenantId, userIds);
+    await deleteSurveyData(connection, tenantId);
+    await deleteShiftData(connection, tenantId);
+    await deleteOtherTenantData(connection, tenantId, userIds);
+
+    // Delete all users
+    await safeDelete(connection, 'DELETE FROM users WHERE tenant_id = $1', [tenantId]);
+
+    // Finally, delete the tenant itself
+    const [result] = await connection.query<ResultSetHeader>('DELETE FROM tenants WHERE id = $1', [
+      tenantId,
+    ]);
+
+    await connection.commit();
+
+    // Log tenant deletion for audit trail (after commit, in separate transaction)
+    if (tenant !== undefined) {
+      await logTenantDeletion(tenant, tenantId, rootUserId, userIds);
+    }
+
+    // Clean up file system (after successful DB deletion)
+    try {
+      await cleanupTenantFiles(tenantId, userIds);
+    } catch (fileError: unknown) {
+      logger.error(`Error cleaning up files for tenant ${tenantId}:`, fileError);
+    }
+
+    logger.warn(`Successfully deleted tenant ${tenantId} and all associated data`);
+    return result.affectedRows > 0;
+  } catch (error: unknown) {
+    await connection.rollback();
+    logger.error(`Error deleting tenant ${tenantId}:`, error);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+// Log tenant deletion for audit trail
+async function logTenantDeletion(
+  tenant: DbTenant,
+  tenantId: number,
+  rootUserId: number,
+  userIds: number[],
+): Promise<void> {
+  try {
+    await rootLog.create({
+      tenant_id: 1, // System tenant for audit logs of deleted tenants
+      user_id: rootUserId,
+      action: 'delete_tenant',
+      entity_type: 'tenant',
+      entity_id: tenantId,
+      details: `Tenant gelöscht: ${tenant.company_name} (${tenant.subdomain})`,
+      old_values: {
+        tenant_id: tenantId,
+        company_name: tenant.company_name,
+        subdomain: tenant.subdomain,
+        email: tenant.email,
+        users_deleted: userIds.length,
+      },
+    });
+  } catch (logError: unknown) {
+    logger.error(`Error logging tenant deletion: ${(logError as Error).message}`);
+  }
+}
+
+// Clean up uploaded files for a tenant
+async function cleanupTenantFiles(tenantId: number, userIds: number[]): Promise<void> {
+  const uploadsDir = path.join(__dirname, '../../../../uploads');
+
+  try {
+    // Clean up document files
+    const documentsDir = path.join(uploadsDir, 'documents', tenantId.toString());
+    await removeDirectory(documentsDir);
+
+    // Clean up profile pictures for all users
+    const profilePicturesDir = path.join(uploadsDir, 'profile-pictures');
+    for (const userId of userIds) {
+      const userProfileDir = path.join(profilePicturesDir, userId.toString());
+      await removeDirectory(userProfileDir);
+    }
+
+    // Clean up chat attachments
+    const chatDir = path.join(uploadsDir, 'chat', tenantId.toString());
+    await removeDirectory(chatDir);
+
+    // Clean up KVP attachments
+    const kvpDir = path.join(uploadsDir, 'kvp', tenantId.toString());
+    await removeDirectory(kvpDir);
+
+    logger.info(`Cleaned up all files for tenant ${tenantId}`);
+  } catch (error: unknown) {
+    logger.error(`Error cleaning up files for tenant ${tenantId}:`, error);
+    throw error;
+  }
+}
+
+// Helper method to remove a directory and its contents
+async function removeDirectory(dirPath: string): Promise<void> {
+  try {
+    await fs.access(dirPath);
+    await fs.rm(dirPath, { recursive: true, force: true });
+    logger.info(`Removed directory: ${dirPath}`);
+  } catch (error: unknown) {
+    if ((error as globalThis.NodeJS.ErrnoException).code !== 'ENOENT') {
+      // Only log if it's not a "directory doesn't exist" error
+      logger.error(`Error removing directory ${dirPath}:`, error);
+    }
+  }
+}
+
+// Export types
+export type { DbTenant, TenantCreateData, TenantCreateResult, SubdomainValidationResult };
+
+// Default export object for backward compatibility
+const Tenant = {
+  create: createTenant,
+  activateTrialFeatures,
+  validateSubdomain: validateTenantSubdomain,
+  isSubdomainAvailable: isTenantSubdomainAvailable,
+  findBySubdomain: findTenantBySubdomain,
+  findById: findTenantById,
+  findAll: findAllTenants,
+  checkTrialStatus: checkTenantTrialStatus,
+  upgradeToPlan: upgradeTenantToPlan,
+  activatePlanFeatures,
+  delete: deleteTenant,
+};
+
+export default Tenant;
+
+// CommonJS compatibility

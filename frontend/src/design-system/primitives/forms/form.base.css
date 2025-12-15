@@ -1,0 +1,197 @@
+/**
+ * Design System – Form Fields
+ *
+ * Basisklassen für Eingabefelder (Input, Textarea, Select) im Glass-Theme.
+ * Nutzt ausschließlich Token aus tokens/forms.css.
+ */
+
+@layer components {
+  /* Wrapper */
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--form-field-gap);
+    margin-bottom: 10px;
+  }
+
+  .form-field--inline {
+    flex-direction: row;
+    gap: var(--spacing-4);
+    align-items: center;
+  }
+
+  /* Label */
+  .form-field__label {
+    display: inline-flex;
+    gap: var(--spacing-1);
+    align-items: center;
+
+    margin-bottom: var(--spacing-1); /* Small spacing below label */
+
+    font-size: var(--form-field-label-size);
+    font-weight: var(--form-field-label-weight);
+    color: var(--color-text-secondary);
+  }
+
+  .form-field__label--required::after {
+    content: "*";
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
+  }
+
+  /* Control Base */
+  .form-field__control {
+    width: 100%;
+    min-height: 44px;
+    padding: var(--form-field-padding-y) var(--form-field-padding-x);
+    border: var(--form-field-border);
+    border-radius: var(--form-field-radius);
+
+    font-size: var(--form-field-font-size);
+    line-height: 1.5;
+    color: var(--form-field-text);
+
+    background: var(--form-field-bg);
+    backdrop-filter: var(--glass-form-backdrop);
+
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
+  }
+
+  .form-field__control:hover {
+    border: var(--form-field-border-hover);
+    background: var(--form-field-bg-hover);
+  }
+
+  .form-field__control:focus {
+    border: var(--form-field-border-focus);
+    background: var(--form-field-bg-focus);
+    outline: none;
+    box-shadow: var(--form-field-focus-ring);
+  }
+
+  /* Browser Autofill Override - Prevent yellow background in Firefox/Chrome */
+  .form-field__control:-webkit-autofill,
+  .form-field__control:-webkit-autofill:hover,
+  .form-field__control:-webkit-autofill:focus,
+  .form-field__control:-webkit-autofill:active {
+    border: var(--form-field-border) !important;
+
+    /* Trick: Use box-shadow to override background (works in Chrome/Safari) */
+    box-shadow: 0 0 0 1000px var(--form-field-bg) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+
+    -webkit-text-fill-color: var(--form-field-text) !important;
+  }
+
+  .form-field__control:-webkit-autofill:focus {
+    border: var(--form-field-border-focus) !important;
+    box-shadow: 0 0 0 1000px var(--form-field-bg-focus) inset !important;
+  }
+
+  /* Firefox Autofill */
+  .form-field__control:-moz-autofill,
+  .form-field__control:-moz-autofill-preview {
+    border: var(--form-field-border) !important;
+    color: var(--form-field-text) !important;
+    background-color: var(--form-field-bg) !important;
+  }
+
+  .form-field__control::placeholder {
+    color: var(--form-field-placeholder);
+    opacity: 100%;
+  }
+
+  .form-field__control:disabled,
+  .form-field__control[readonly] {
+    cursor: not-allowed;
+
+    border: var(--form-field-border);
+
+    color: var(--form-field-disabled-text);
+
+    opacity: 60%;
+    background: var(--form-field-bg-disabled);
+  }
+
+  .form-field__control.is-error {
+    border: var(--form-field-border-error);
+    color: var(--form-field-text-error);
+  }
+
+  /* Native browser validation - only after form submission attempt */
+  .was-validated .form-field__control:invalid {
+    border: var(--form-field-border-error);
+    color: var(--form-field-text-error);
+  }
+
+  .form-field__control.is-success {
+    border: var(--form-field-border-success);
+    color: var(--form-field-text-success);
+  }
+
+  .form-field__control.is-warning {
+    border: 1px solid var(--color-warning);
+    color: var(--form-field-text-warning);
+  }
+
+  /* Textarea */
+  .form-field__control--textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  /* Select */
+  .form-field__control--select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right var(--form-field-padding-x) center;
+    background-size: 1.25rem 1.25rem;
+  }
+
+  /* Input with Icon */
+  .form-field__input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .form-field__icon {
+    pointer-events: none;
+
+    position: absolute;
+    top: 50%;
+    left: var(--form-field-padding-x);
+    transform: translateY(-50%);
+
+    color: var(--form-field-text);
+
+    opacity: 60%;
+  }
+
+  .form-field__control--with-icon {
+    padding-left: calc(var(--form-field-padding-x) * 3.5);
+  }
+
+  /* Helper / Message */
+  .form-field__message {
+    font-size: 0.75rem;
+    color: var(--form-field-helper);
+  }
+
+  /* Hidden state - must come after base for specificity */
+  .form-field__message.u-hidden {
+    display: none;
+  }
+
+  .form-field__message--error {
+    color: var(--form-field-text-error);
+  }
+
+  .form-field__message--success {
+    color: var(--form-field-text-success);
+  }
+
+  .form-field__message--warning {
+    color: var(--form-field-text-warning);
+  }
+}

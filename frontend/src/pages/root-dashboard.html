@@ -7,75 +7,51 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        const root = document.documentElement;
-        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <!-- CSS Styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/root-dashboard.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
-    <!-- Employee Number Modal -->
-    <div id="employeeNumberModal" class="modal" class="u-hidden">
-      <div class="modal-content" style="max-width: 400px">
-        <div class="modal-header">
-          <h2 class="modal-title">Personalnummer eingeben</h2>
+    <!-- Employee Number Modal (Design System) -->
+    <div id="employeeNumberModal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Personalnummer eingeben</h3>
+          <!-- No close button - modal is mandatory -->
         </div>
-        <div class="modal-body">
-          <p style="margin-bottom: 20px">
+        <div class="ds-modal__body">
+          <p class="mb-4 text-[var(--color-text-secondary)]">
             Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu 10 Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche
             enthalten.
           </p>
           <form id="employeeNumberForm">
-            <div class="form-group">
-              <label class="form-label">
-                Personalnummer
-                <span style="color: var(--error-color)">*</span>
-              </label>
+            <div class="form-field">
+              <label class="form-field__label form-field__label--required">Personalnummer</label>
               <input
                 type="text"
                 id="employeeNumberInput"
-                class="form-control"
+                class="form-field__control text-center text-sm tracking-wider"
                 placeholder="z.B. ABC-123 oder 2025-001"
                 maxlength="10"
                 pattern="[A-Za-z0-9\-]{1,10}"
                 required
-                style="text-align: center; font-size: 14px; letter-spacing: 2px"
               />
-              <small class="form-text" class="u-color-text-secondary">
-                Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen
-              </small>
-            </div>
-            <div class="form-actions" style="margin-top: 24px">
-              <button
-                type="submit"
-                class="btn btn-primary btn-block"
-                style="text-align: center; display: flex; align-items: center; justify-content: center"
-              >
-                Personalnummer speichern
-              </button>
+              <span class="form-field__message">Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen</span>
             </div>
           </form>
+        </div>
+        <div class="ds-modal__footer">
+          <button type="submit" form="employeeNumberForm" class="btn btn-primary">Personalnummer speichern</button>
         </div>
       </div>
     </div>
@@ -83,7 +59,7 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
@@ -91,33 +67,34 @@
           <!-- Dashboard Data Container -->
           <div id="dashboard-data"></div>
 
-          <!-- Dashboard Stats Grid -->
-          <div class="dashboard-grid">
-            <div class="stat-card">
-              <div class="stat-value" id="admin-count">0</div>
-              <div class="stat-label">Administratoren</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="user-count">0</div>
-              <div class="stat-label">Gesamtbenutzer</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="tenant-count">0</div>
-              <div class="stat-label">Aktive Firmen</div>
-            </div>
-          </div>
-
-          <!-- Activity Logs Widget -->
-          <div class="logs-widget">
-            <div class="logs-header">
-              <h3 class="logs-title">Aktivitätsverlauf</h3>
-              <a href="/logs" class="view-all-logs">
-                <i class="fas fa-external-link-alt" style="margin-right: 6px"></i>
+          <!-- Activity Logs Card with Data Table (Design System) -->
+          <div class="card">
+            <div class="card__header flex items-center justify-between">
+              <h2 class="card__title">
+                <i class="fas fa-history mr-2"></i>
+                Aktivitätsverlauf
+              </h2>
+              <a href="/logs" class="btn btn-link">
+                <i class="fas fa-external-link-alt mr-1.5"></i>
                 Alle Logs anzeigen
               </a>
             </div>
-            <div class="logs-body" id="activity-logs">
-              <!-- Logs werden hier dynamisch eingefügt -->
+            <div class="card__body">
+              <div class="table-responsive">
+                <table class="data-table data-table--hover data-table--striped" id="activity-logs-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">ID</th>
+                      <th scope="col">Benutzer</th>
+                      <th scope="col">Personalnr.</th>
+                      <th scope="col">Aktion</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activity-logs">
+                    <!-- Logs werden hier dynamisch eingefügt -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -126,135 +103,13 @@
 
     <!-- JavaScript -->
     <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
 
     <!-- Role Switch for Root -->
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
-    <!-- Force dashboard to be active on page load -->
-    <script type="module">
-      // Check if user should be on root dashboard by reading from JWT token
-      const token = localStorage.getItem('token');
-      let activeRole = null;
-      let userRole = localStorage.getItem('userRole');
-
-      // Parse the JWT token to get the actual active role
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          activeRole = payload.activeRole || payload.role;
-          userRole = payload.role;
-
-          // Update localStorage to match token
-          localStorage.setItem('activeRole', activeRole);
-          if (userRole) {
-            localStorage.setItem('userRole', userRole);
-          }
-
-          console.info('[Root Dashboard] Token analysis:', {
-            tokenRole: payload.role,
-            tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole,
-          });
-        } catch (e) {
-          console.error('[Root Dashboard] Error parsing token:', e);
-          activeRole = localStorage.getItem('activeRole') || userRole;
-        }
-      } else {
-        activeRole = localStorage.getItem('activeRole') || userRole;
-      }
-
-      // Only root users can access root dashboard when in root mode
-      if (userRole === 'root' && activeRole === 'root') {
-        // User is correctly on root dashboard
-        console.info('[Root Dashboard] User has root access');
-      } else if (userRole === 'root' && activeRole !== 'root') {
-        // Root user has switched to another role - redirect
-        console.info('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
-        if (activeRole === 'admin') {
-          window.location.replace('/admin-dashboard');
-        } else if (activeRole === 'employee') {
-          window.location.replace('/employee-dashboard');
-        }
-      } else if (userRole !== 'root') {
-        // Non-root user trying to access root dashboard - redirect to login
-        console.info('[Root Dashboard] Non-root user detected - redirecting to login');
-        window.location.replace('/login');
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        // Clear any stored active navigation to ensure dashboard is selected
-        localStorage.removeItem('activeNavigation');
-      });
-    </script>
-    <script type="module" src="/scripts/root-dashboard.ts"></script>
-    <script>
-      // Dashboard neu laden bei Klick auf Logo
-      document.addEventListener('DOMContentLoaded', () => {
-        const logoContainer = document.querySelector('.logo-container');
-        if (logoContainer) {
-          logoContainer.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = '/root-dashboard';
-          });
-        }
-      });
-
-      // Custom Dropdown Functions
-
-      function toggleDropdown(dropdownId) {
-        const display = document.querySelector(dropdownId + 'Display');
-        const options = document.querySelector(dropdownId + 'Dropdown');
-
-        if (display && options) {
-          display.classList.toggle('active');
-          options.classList.toggle('active');
-        }
-
-        // Close other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d.id !== dropdownId + 'Display') {
-            d.classList.remove('active');
-          }
-        });
-        document.querySelectorAll('.dropdown-options').forEach((o) => {
-          if (o.id !== dropdownId + 'Dropdown') {
-            o.classList.remove('active');
-          }
-        });
-      }
-
-      function selectOption(dropdownId, value, text) {
-        const display = document.querySelector(dropdownId + 'Display');
-        const options = document.querySelector(dropdownId + 'Dropdown');
-        const input = document.querySelector(dropdownId + 'Value');
-
-        if (display && input) {
-          display.querySelector('span').textContent = text;
-          input.value = value;
-          display.classList.remove('active');
-          options.classList.remove('active');
-        }
-      }
-
-      // Close dropdowns when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => {
-            d.classList.remove('active');
-          });
-          document.querySelectorAll('.dropdown-options').forEach((o) => {
-            o.classList.remove('active');
-          });
-        }
-      });
-    </script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
+    <!-- Dashboard initialization with session validation and breadcrumb -->
+    <script type="module" src="/scripts/dashboard/root-init.ts"></script>
+    <script type="module" src="/scripts/dashboard/root.ts"></script>
   </body>
 </html>

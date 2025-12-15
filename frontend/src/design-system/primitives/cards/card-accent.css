@@ -1,0 +1,80 @@
+/**
+ * Design System – Accent Card
+ *
+ * Card with colored top indicator bar and header.
+ * Use case: Feature cards, module cards, section cards.
+ *
+ * NOTE: @layer removed for compatibility with legacy dashboard-theme.css
+ */
+
+/* Accent Card (formerly compact-card) */
+.card-accent {
+  cursor: pointer;
+
+  position: relative;
+
+  /* overflow: hidden; */
+
+  padding: var(--spacing-4); /* 32px */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  transition: all 0.2s ease;
+}
+
+/* Top Indicator Bar - REMOVED for cleaner glassmorphism design */
+/* No colored lines at the top of cards anymore */
+
+.card-accent:hover {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(255 255 255 / 3%);
+}
+
+/* Header */
+.card-accent__header {
+  padding: var(--spacing-4) var(--spacing-6);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  border-radius: 10px 10px 0 0;
+
+  background: rgb(255 255 255 / 1%);
+  backdrop-filter: blur(10px);
+}
+
+/* Title - Clean without indicators */
+.card-accent__title {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  margin: 0;
+
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Side indicator removed for cleaner design */
+
+/* Content Area */
+.card-accent__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--spacing-6);
+}
+
+/* Color Variants - All visual indicators removed */
+/* Clean glassmorphism design without colored accents */
+
+/* No Click Variant - Keep hover effect for visual feedback */
+.card-accent--static {
+  cursor: default;
+}
+
+.card-accent--static:hover {
+  border-color: var(--color-icon-primary);
+}

@@ -6,41 +6,24 @@
  *   - name: KVP v2
  *     description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess) API v2
  */
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import multer from 'multer';
-import path from 'path';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
-import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as kvpController from './kvp.controller.js';
-import { kvpValidation } from './kvp.validation.js';
+import { kvpValidationZod } from './kvp.validation.zod.js';
 
 const router = Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
-  destination(_req, _file, cb) {
-    const uploadDir = getUploadDirectory('kvp');
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
-    cb(null, uploadDir);
-  },
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
-  filename(_req, file, cb) {
-    const sanitized = sanitizeFilename(file.originalname);
-    const ext = path.extname(sanitized);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
-    cb(null, uniqueSuffix + ext);
-  },
-});
+// Configure multer for file uploads (using memory storage like document-explorer)
+// Files are stored in memory first, then written to disk with organized directory structure
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = [
       'image/jpeg',
       'image/jpg',
@@ -50,10 +33,8 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (allowedTypes.includes(file.mimetype)) {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(null, true);
     } else {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(new Error('Only JPG, PNG, PDF, DOC and DOCX files are allowed'));
     }
   },
@@ -145,165 +126,6 @@ router.get('/dashboard/stats', authenticateV2, typed.auth(kvpController.getDashb
 
 /**
 
- * /api/v2/kvp/points/award:
- *   post:
- *     summary: Award points to user
- *     description: Award points to a user for their KVP suggestion (admin only)
- *     tags: [KVP v2]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *               - suggestionId
- *               - points
- *               - reason
- *             properties:
- *               userId:
- *                 type: integer
- *                 description: User ID to award points to
- *               suggestionId:
- *                 type: integer
- *                 description: Related suggestion ID
- *               points:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 1000
- *                 description: Number of points to award
- *               reason:
- *                 type: string
- *                 minLength: 1
- *                 maxLength: 500
- *                 description: Reason for awarding points
- *     responses:
- *       201:
- *         description: Points awarded successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiSuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/KvpPointsV2'
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       403:
- *         $ref: '#/components/responses/ForbiddenError'
- */
-// Points endpoints
-router.post(
-  '/points/award',
-  authenticateV2,
-  kvpValidation.awardPoints,
-  typed.auth(kvpController.awardPoints),
-);
-
-/**
-
- * /api/v2/kvp/points/user/\{userId\}:
- *   get:
- *     summary: Get user points summary
- *     description: Get points summary for a specific user
- *     tags: [KVP v2]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
- *         description: User ID
- *     responses:
- *       200:
- *         description: Points summary retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiSuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         totalPoints:
- *                           type: integer
- *                         totalAwards:
- *                           type: integer
- *                         suggestionsAwarded:
- *                           type: integer
- *                         latestAwards:
- *                           type: array
- *                           items:
- *                             $ref: '#/components/schemas/KvpPointsV2'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       403:
- *         $ref: '#/components/responses/ForbiddenError'
- *       404:
- *         $ref: '#/components/responses/NotFoundError'
- */
-router.get(
-  '/points/user/:userId',
-  authenticateV2,
-  kvpValidation.getUserPoints,
-  typed.auth(kvpController.getUserPoints),
-);
-
-/**
-
- * /api/v2/kvp/points/user:
- *   get:
- *     summary: Get current user points summary
- *     description: Get points summary for the authenticated user
- *     tags: [KVP v2]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Points summary retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiSuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         totalPoints:
- *                           type: integer
- *                         totalAwards:
- *                           type: integer
- *                         suggestionsAwarded:
- *                           type: integer
- *                         latestAwards:
- *                           type: array
- *                           items:
- *                             $ref: '#/components/schemas/KvpPointsV2'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- */
-router.get(
-  '/points/user',
-  authenticateV2,
-  kvpValidation.getUserPoints,
-  typed.auth(kvpController.getUserPoints),
-);
-
-/**
-
  * /api/v2/kvp:
  *   get:
  *     summary: List KVP suggestions
@@ -364,7 +186,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Suggestions CRUD endpoints
-router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.listSuggestions));
+router.get('/', authenticateV2, kvpValidationZod.list, typed.auth(kvpController.listSuggestions));
 /**
 
  * /api/v2/kvp/\{id\}:
@@ -401,7 +223,7 @@ router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.lis
 router.get(
   '/:id',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getSuggestionById),
 );
 /**
@@ -468,7 +290,12 @@ router.get(
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.createSuggestion));
+router.post(
+  '/',
+  authenticateV2,
+  kvpValidationZod.create,
+  typed.auth(kvpController.createSuggestion),
+);
 
 /**
 
@@ -551,7 +378,7 @@ router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.
 router.put(
   '/:id',
   authenticateV2,
-  kvpValidation.update,
+  kvpValidationZod.update,
   typed.auth(kvpController.updateSuggestion),
 );
 
@@ -596,7 +423,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateV2,
-  kvpValidation.delete,
+  kvpValidationZod.delete,
   typed.auth(kvpController.deleteSuggestion),
 );
 
@@ -658,7 +485,7 @@ router.delete(
 router.put(
   '/:id/share',
   authenticateV2,
-  kvpValidation.share,
+  kvpValidationZod.share,
   typed.auth(kvpController.shareSuggestion),
 );
 
@@ -703,7 +530,7 @@ router.put(
 router.post(
   '/:id/unshare',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.unshareSuggestion),
 );
 
@@ -746,7 +573,7 @@ router.post(
 router.get(
   '/:id/comments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getComments),
 );
 
@@ -804,7 +631,7 @@ router.get(
 router.post(
   '/:id/comments',
   authenticateV2,
-  kvpValidation.addComment,
+  kvpValidationZod.addComment,
   typed.auth(kvpController.addComment),
 );
 
@@ -847,7 +674,7 @@ router.post(
 router.get(
   '/:id/attachments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getAttachments),
 );
 
@@ -917,27 +744,28 @@ router.get(
 router.post(
   '/:id/attachments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   upload.array('files', 5), // Max 5 files
   typed.auth(kvpController.uploadAttachments),
 );
 
 /**
 
- * /api/v2/kvp/attachments/\{attachmentId\}/download:
+ * /api/v2/kvp/attachments/\{fileUuid\}/download:
  *   get:
  *     summary: Download KVP attachment
- *     description: Download a specific attachment file
+ *     description: Download a specific attachment file using UUID (secure, non-guessable identifier)
  *     tags: [KVP v2]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: attachmentId
+ *         name: fileUuid
  *         required: true
  *         schema:
- *           type: integer
- *         description: Attachment ID
+ *           type: string
+ *           format: uuid
+ *         description: File UUID (prevents enumeration attacks)
  *     responses:
  *       200:
  *         description: File download
@@ -952,9 +780,9 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  '/attachments/:attachmentId/download',
+  '/attachments/:fileUuid/download',
   authenticateV2,
-  kvpValidation.attachmentId,
+  kvpValidationZod.fileUuid,
   typed.auth(kvpController.downloadAttachment),
 );
 

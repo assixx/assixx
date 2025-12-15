@@ -1,137 +1,329 @@
 /**
- * Database utility functions with proper TypeScript support
- * Handles both real Pool and MockDatabase seamlessly
+ * PostgreSQL Database Utilities
+ * Pure PostgreSQL implementation - NO MySQL compatibility layer
+ *
+ * IMPORTANT: All SQL queries MUST use PostgreSQL $1, $2, $3 placeholders
+ * Example: SELECT * FROM users WHERE id = ? AND tenant_id = $2
  */
-import { FieldPacket, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Pool, PoolClient, QueryResultRow } from 'pg';
 
-import pool from '../config/database.js';
+import pool, { setTenantContext, setUserContext } from '../config/database.js';
+
+// Re-export context setters for direct access when needed
+export { setTenantContext, setUserContext } from '../config/database.js';
 
 /**
- * Type-safe database query function
- * @param sql - SQL query string
- * @param params - Query parameters
- * @returns Promise with query result and fields
+ * Result header for INSERT/UPDATE/DELETE operations
  */
-export async function query<T extends RowDataPacket[] | ResultSetHeader>(
+export interface ResultSetHeader {
+  affectedRows: number;
+  insertId: number;
+  rowCount: number;
+}
+
+/**
+ * Field metadata from query result
+ */
+export interface FieldPacket {
+  name: string;
+  dataTypeID: number;
+}
+
+/**
+ * PostgreSQL PoolConnection interface
+ */
+export interface PoolConnection {
+  beginTransaction(): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+  release(): void;
+  execute<T extends QueryResultRow[] | ResultSetHeader>(
+    sql: string,
+    params?: unknown[],
+  ): Promise<[T, FieldPacket[]]>;
+  query<T extends QueryResultRow[] | ResultSetHeader>(
+    sql: string,
+    params?: unknown[],
+  ): Promise<[T, FieldPacket[]]>;
+}
+
+/**
+ * Process query result into standard format
+ */
+function processQueryResult<T extends QueryResultRow[] | ResultSetHeader>(
   sql: string,
-  params?: unknown[],
-): Promise<[T, FieldPacket[]]> {
-  // Handle both Pool and MockDatabase
-  if ('query' in pool && typeof pool.query === 'function') {
-    // codeql[js/sql-injection] - False positive: This is a low-level DB utility function, parameters are properly escaped via mysql2's parameterized queries
-    // SECURITY: Always use parameterized queries with the params array to prevent SQL injection
-    const result = await (pool as unknown as import('mysql2/promise').Pool).query(sql, params);
+  result: {
+    rows: QueryResultRow[];
+    rowCount: number | null;
+    fields?: { name: string; dataTypeID: number }[];
+  },
+): [T, FieldPacket[]] {
+  const sqlUpper = sql.trim().toUpperCase();
+  // Check if query returns rows:
+  // - SELECT, WITH, TABLE, EXPLAIN, VALUES: always return rows
+  // - INSERT/UPDATE/DELETE with RETURNING: return rows
+  const isRowReturning =
+    sqlUpper.startsWith('SELECT') ||
+    sqlUpper.startsWith('WITH') ||
+    sqlUpper.startsWith('TABLE') ||
+    sqlUpper.startsWith('EXPLAIN') ||
+    sqlUpper.startsWith('VALUES') ||
+    sqlUpper.includes('RETURNING');
 
-    // MySQL2 always returns [rows, fields] tuple
-    if (Array.isArray(result)) {
-      return result as [T, FieldPacket[]];
-    }
-
-    // MockDatabase might return data directly, wrap it
-    return [result as unknown as T, []];
+  if (isRowReturning) {
+    const fields: FieldPacket[] =
+      result.fields?.map((f: { name: string; dataTypeID: number }) => ({
+        name: f.name,
+        dataTypeID: f.dataTypeID,
+      })) ?? [];
+    return [result.rows as T, fields];
+  } else {
+    const firstRow = result.rows[0] as { id?: number } | undefined;
+    const header: ResultSetHeader = {
+      affectedRows: result.rowCount ?? 0,
+      insertId: firstRow?.id ?? 0,
+      rowCount: result.rowCount ?? 0,
+    };
+    return [header as T, []];
   }
-
-  throw new Error('Database pool not properly initialized');
 }
 
 /**
- * Type-safe database execute function (for prepared statements)
- * @param sql - SQL query string
- * @param params - Query parameters
- * @returns Promise with query result and fields
+ * Wrap a PoolClient with transaction methods
  */
-export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: unknown[],
-): Promise<[T, FieldPacket[]]> {
-  // Handle both Pool and MockDatabase
-  if ('execute' in pool && typeof pool.execute === 'function') {
-    // codeql[js/sql-injection] - False positive: This is a low-level DB utility function using prepared statements with proper parameter binding
-    // SECURITY: This uses prepared statements which are safe against SQL injection
-    const result = await (pool as unknown as import('mysql2/promise').Pool).execute(sql, params);
-
-    // MySQL2 always returns [rows, fields] tuple
-    if (Array.isArray(result)) {
-      return result as [T, FieldPacket[]];
-    }
-
-    // MockDatabase might return data directly, wrap it
-    return [result as unknown as T, []];
-  }
-
-  // Fallback to query for MockDatabase
-  return await query<T>(sql, params);
-}
-
-/**
- * Get a database connection from the pool
- * @returns Promise with PoolConnection
- */
-export async function getConnection(): Promise<PoolConnection> {
-  if ('getConnection' in pool && typeof pool.getConnection === 'function') {
-    return (await pool.getConnection()) as PoolConnection;
-  }
-
-  throw new Error('Database pool does not support connections');
-}
-
-/**
- * Get a transactional database connection
- * @returns Promise with connection that has transaction methods
- */
-export async function getTransactionConnection(): Promise<{
-  connection: PoolConnection;
-  commit: () => Promise<void>;
-  rollback: () => Promise<void>;
-  release: () => void;
-}> {
-  const connection = await getConnection();
-
-  await connection.beginTransaction();
+function wrapClient(client: PoolClient): PoolConnection {
+  const originalQuery = client.query.bind(client);
 
   return {
-    connection,
+    beginTransaction: async () => {
+      await originalQuery('BEGIN');
+    },
     commit: async () => {
-      await connection.commit();
+      await originalQuery('COMMIT');
     },
     rollback: async () => {
-      await connection.rollback();
+      await originalQuery('ROLLBACK');
     },
     release: () => {
-      connection.release();
+      client.release();
+    },
+    query: async <T extends QueryResultRow[] | ResultSetHeader>(
+      sql: string,
+      params?: unknown[],
+    ): Promise<[T, FieldPacket[]]> => {
+      const result = await originalQuery(sql, params);
+      return processQueryResult<T>(sql, result);
+    },
+    execute: async <T extends QueryResultRow[] | ResultSetHeader>(
+      sql: string,
+      params?: unknown[],
+    ): Promise<[T, FieldPacket[]]> => {
+      const result = await originalQuery(sql, params);
+      return processQueryResult<T>(sql, result);
     },
   };
 }
 
 /**
- * Transaction helper function
- * @param callback - Transaction callback function
- * @returns Promise with transaction result
+ * Execute a SQL query
  *
- * NOTE: The callback pattern is intentional here as it guarantees proper
- * connection handling with automatic rollback on error and release in finally.
- * This is a proven pattern used by many database libraries (Knex, TypeORM, etc.)
+ * @param sql - SQL query with $1, $2, $3 placeholders (PostgreSQL native)
+ * @param params - Query parameters
+ * @returns Promise with [rows, fields] tuple
+ *
+ * @example
+ * // SELECT query
+ * const [users] = await query\<User[]\>('SELECT * FROM users WHERE id = $1', [userId]);
+ *
+ * // INSERT query
+ * const [result] = await query<ResultSetHeader>(
+ *   'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id',
+ *   [name, email]
+ * );
  */
-
-export async function transaction<T>(
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- See function comment
-  callback: (connection: PoolConnection) => Promise<T>,
-): Promise<T> {
-  const connection = await getConnection();
+export async function query<T extends QueryResultRow[] | ResultSetHeader>(
+  sql: string,
+  params?: unknown[],
+): Promise<[T, FieldPacket[]]> {
+  const client = await pool.connect();
 
   try {
-    await connection.beginTransaction();
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Executing the transaction callback
-    const result = await callback(connection);
-    await connection.commit();
-    return result;
-  } catch (error: unknown) {
-    await connection.rollback();
-    throw error;
+    const result = await client.query(sql, params);
+    // Check for queries that return rows:
+    // - SELECT: standard queries
+    // - WITH: Common Table Expressions (CTEs)
+    // - TABLE: PostgreSQL shorthand for SELECT * FROM
+    // - EXPLAIN: query plan analysis
+    // - VALUES: standalone values list
+    const sqlUpper = sql.trim().toUpperCase();
+    // Check if query returns rows:
+    // - SELECT, WITH, TABLE, EXPLAIN, VALUES: always return rows
+    // - INSERT/UPDATE/DELETE with RETURNING: return rows
+    const isRowReturning =
+      sqlUpper.startsWith('SELECT') ||
+      sqlUpper.startsWith('WITH') ||
+      sqlUpper.startsWith('TABLE') ||
+      sqlUpper.startsWith('EXPLAIN') ||
+      sqlUpper.startsWith('VALUES') ||
+      sqlUpper.includes('RETURNING');
+
+    if (isRowReturning) {
+      const fields: FieldPacket[] = result.fields.map(
+        (f: { name: string; dataTypeID: number }) => ({
+          name: f.name,
+          dataTypeID: f.dataTypeID,
+        }),
+      );
+      return [result.rows as T, fields];
+    } else {
+      const firstRow = result.rows[0] as { id?: number } | undefined;
+      const header: ResultSetHeader = {
+        affectedRows: result.rowCount ?? 0,
+        insertId: firstRow?.id ?? 0,
+        rowCount: result.rowCount ?? 0,
+      };
+      return [header as T, []];
+    }
   } finally {
-    connection.release();
+    client.release();
   }
 }
 
-// Export types for convenience
-export type { RowDataPacket, ResultSetHeader, FieldPacket, PoolConnection };
+/**
+ * Execute a SQL statement (alias for query)
+ */
+export async function execute<T extends QueryResultRow[] | ResultSetHeader>(
+  sql: string,
+  params?: unknown[],
+): Promise<[T, FieldPacket[]]> {
+  return await query<T>(sql, params);
+}
+
+/**
+ * Get a database connection from the pool
+ */
+export async function getConnection(): Promise<PoolConnection> {
+  const client = await pool.connect();
+  return wrapClient(client);
+}
+
+/**
+ * RLS context options for transaction
+ * NEW 2025-12-04: Added userId for participant-based isolation
+ */
+export interface RLSContextOptions {
+  tenantId?: number;
+  userId?: number;
+}
+
+/**
+ * Execute callback within a transaction
+ *
+ * @param callback - Transaction callback
+ * @param context - RLS context (tenantId, userId) or just tenantId for backward compatibility
+ */
+// eslint-disable-next-line sonarjs/cognitive-complexity
+export async function transaction<T>(
+  callback: (connection: PoolConnection) => Promise<T>,
+  context?: number | RLSContextOptions,
+): Promise<T> {
+  const client = await pool.connect();
+  const wrapped = wrapClient(client);
+
+  try {
+    await client.query('BEGIN');
+
+    // Handle backward compatibility: context can be number (tenantId) or object
+    if (typeof context === 'number') {
+      if (context > 0) {
+        await setTenantContext(client, context);
+      }
+    } else if (context !== undefined) {
+      // New format: { tenantId, userId }
+      if (context.tenantId !== undefined && context.tenantId > 0) {
+        await setTenantContext(client, context.tenantId);
+      }
+      if (context.userId !== undefined && context.userId > 0) {
+        await setUserContext(client, context.userId);
+      }
+    }
+
+    const result = await callback(wrapped);
+    await client.query('COMMIT');
+    return result;
+  } catch (error: unknown) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Generate PostgreSQL bulk insert placeholders
+ * @param rowCount - Number of rows to insert
+ * @param columnsPerRow - Number of columns per row
+ * @param startIndex - Starting parameter index (default 1)
+ * @returns Object with placeholders string and next param index
+ *
+ * @example
+ * const result = generateBulkPlaceholders(3, 4);
+ * // Returns placeholders: "($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)"
+ */
+export function generateBulkPlaceholders(
+  rowCount: number,
+  columnsPerRow: number,
+  startIndex: number = 1,
+): { placeholders: string; nextIndex: number } {
+  const rows: string[] = [];
+  let paramIndex = startIndex;
+
+  for (let i = 0; i < rowCount; i++) {
+    const cols: string[] = [];
+    for (let j = 0; j < columnsPerRow; j++) {
+      cols.push(`$${paramIndex}`);
+      paramIndex++;
+    }
+    rows.push(`(${cols.join(', ')})`);
+  }
+
+  return {
+    placeholders: rows.join(', '),
+    nextIndex: paramIndex,
+  };
+}
+
+/**
+ * Generate PostgreSQL IN clause placeholders
+ * @param count - Number of values
+ * @param startIndex - Starting parameter index (default 1)
+ * @returns Object with placeholders string and next param index
+ *
+ * @example
+ * const result = generateInPlaceholders(3);
+ * // Returns placeholders: "$1, $2, $3"
+ */
+export function generateInPlaceholders(
+  count: number,
+  startIndex: number = 1,
+): { placeholders: string; nextIndex: number } {
+  const params: string[] = [];
+  for (let i = 0; i < count; i++) {
+    params.push(`$${startIndex + i}`);
+  }
+  return {
+    placeholders: params.join(', '),
+    nextIndex: startIndex + count,
+  };
+}
+
+// Re-export types
+export type { Pool, PoolClient, QueryResultRow };
+
+/**
+ * RowDataPacket type for query results
+ */
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Interface with index signature is needed for intersection types in query results
+export interface RowDataPacket extends QueryResultRow {
+  [key: string]: unknown;
+}

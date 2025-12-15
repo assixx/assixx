@@ -5,7 +5,7 @@
 
 import request from "supertest";
 import { Pool } from "mysql2/promise";
-import app from "../../app";
+import app from "../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
@@ -14,8 +14,8 @@ import {
   createTestDepartment,
   createTestTeam,
   getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+} from "../mocks/database.js";
+import { asTestRows } from "../../__tests__/mocks/db-types.js";
 
 describe("Survey API Endpoints", () => {
   let testDb: Pool;
@@ -33,7 +33,7 @@ describe("Survey API Endpoints", () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = "test-secret-key-for-survey-tests";
+    process.env['JWT_SECRET'] = "test-secret-key-for-survey-tests";
 
     // Create test tenants
     tenant1Id = await createTestTenant(
@@ -177,12 +177,12 @@ describe("Survey API Endpoints", () => {
         success: true,
         message: expect.stringContaining("erfolgreich erstellt"),
       });
-      expect(response.body.data.surveyId).toBeDefined();
+      expect(response.body.data['surveyId']).toBeDefined();
 
       // Verify survey creation
       const [rows] = await testDb.execute(
         "SELECT * FROM surveys WHERE id = ?",
-        [response.body.data.surveyId],
+        [response.body.data['surveyId']],
       );
       const surveys = asTestRows<unknown>(rows);
       expect(surveys[0]).toMatchObject({
@@ -198,7 +198,7 @@ describe("Survey API Endpoints", () => {
       // Verify questions were created
       const [questionRows] = await testDb.execute(
         "SELECT * FROM survey_questions WHERE survey_id = ? ORDER BY order_position",
-        [response.body.data.surveyId],
+        [response.body.data['surveyId']],
       );
       const questions = asTestRows<unknown>(questionRows);
       expect(questions.length).toBe(3);
@@ -219,7 +219,7 @@ describe("Survey API Endpoints", () => {
 
       const [rows] = await testDb.execute(
         "SELECT visibility_scope, target_id FROM surveys WHERE id = ?",
-        [response.body.data.surveyId],
+        [response.body.data['surveyId']],
       );
       const surveys = asTestRows<unknown>(rows);
       expect(surveys[0].visibility_scope).toBe("department");
@@ -496,9 +496,9 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.surveys).toBeDefined();
-      expect(response.body.data.surveys.length).toBeGreaterThanOrEqual(4);
-      expect(response.body.data.pagination).toBeDefined();
+      expect(response.body.data['surveys']).toBeDefined();
+      expect(response.body.data['surveys'].length).toBeGreaterThanOrEqual(4);
+      expect(response.body.data['pagination']).toBeDefined();
     });
 
     it("should list only active surveys for employees", async () => {
@@ -507,7 +507,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const surveys = response.body.data.surveys;
+      const surveys = response.body.data['surveys'];
 
       // Employees should see active surveys they have access to
       expect(surveys.some((s) => s.id === activeSurveyId)).toBe(true);
@@ -521,7 +521,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const surveys = response.body.data.surveys;
+      const surveys = response.body.data['surveys'];
       expect(surveys.every((s) => s.status === "active")).toBe(true);
     });
 
@@ -531,7 +531,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const surveys = response.body.data.surveys;
+      const surveys = response.body.data['surveys'];
       expect(surveys.every((s) => s.type === "feedback")).toBe(true);
     });
 
@@ -556,7 +556,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const activeSurvey = response.body.data.surveys.find(
+      const activeSurvey = response.body.data['surveys'].find(
         (s) => s.id === activeSurveyId,
       );
       expect(activeSurvey.stats).toMatchObject({
@@ -579,7 +579,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const activeSurvey = response.body.data.surveys.find(
+      const activeSurvey = response.body.data['surveys'].find(
         (s) => s.id === activeSurveyId,
       );
       expect(activeSurvey.user_has_responded).toBe(true);
@@ -591,7 +591,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      const surveys = response.body.data.surveys;
+      const surveys = response.body.data['surveys'];
       expect(surveys.every((s) => s.tenant_id !== tenant1Id)).toBe(true);
     });
 
@@ -601,7 +601,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const surveys = response.body.data.surveys;
+      const surveys = response.body.data['surveys'];
       expect(
         surveys.some((s) => s.title.toLowerCase().includes("engineering")),
       ).toBe(true);
@@ -692,7 +692,7 @@ describe("Survey API Endpoints", () => {
           }),
         ]),
       });
-      expect(response.body.data.questions.length).toBe(2);
+      expect(response.body.data['questions'].length).toBe(2);
     });
 
     it("should include user response if exists", async () => {
@@ -719,8 +719,8 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.user_response).toBeDefined();
-      expect(response.body.data.user_response.answers).toBeDefined();
+      expect(response.body.data['user_response']).toBeDefined();
+      expect(response.body.data['user_response'].answers).toBeDefined();
     });
 
     it("should return 404 for non-existent survey", async () => {
@@ -895,12 +895,12 @@ describe("Survey API Endpoints", () => {
         success: true,
         message: expect.stringContaining("erfolgreich abgesendet"),
       });
-      expect(response.body.data.responseId).toBeDefined();
+      expect(response.body.data['responseId']).toBeDefined();
 
       // Verify response was saved
       const [rows] = await testDb.execute(
         "SELECT * FROM survey_responses WHERE id = ?",
-        [response.body.data.responseId],
+        [response.body.data['responseId']],
       );
       const responses = asTestRows<unknown>(rows);
       expect(responses[0]).toMatchObject({
@@ -913,7 +913,7 @@ describe("Survey API Endpoints", () => {
       // Verify answers were saved
       const [rows] = await testDb.execute(
         "SELECT * FROM survey_answers WHERE response_id = ?",
-        [response.body.data.responseId],
+        [response.body.data['responseId']],
       );
       const answers = asTestRows<unknown>(rows);
       expect(answers.length).toBe(3);
@@ -940,7 +940,7 @@ describe("Survey API Endpoints", () => {
       // Verify partial save
       const [rows] = await testDb.execute(
         "SELECT completed_at FROM survey_responses WHERE id = ?",
-        [response.body.data.responseId],
+        [response.body.data['responseId']],
       );
       const responses = asTestRows<unknown>(rows);
       expect(responses[0].completed_at).toBeNull();
@@ -1267,7 +1267,7 @@ describe("Survey API Endpoints", () => {
         .get(`/api/surveys/${surveyId}/results`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
-      const scaleQuestion = response.body.data.questions.find(
+      const scaleQuestion = response.body.data['questions'].find(
         (q) => q.id === scaleQuestionId,
       );
       expect(scaleQuestion.results).toMatchObject({
@@ -1285,7 +1285,7 @@ describe("Survey API Endpoints", () => {
         .get(`/api/surveys/${surveyId}/results`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
-      const choiceQuestion = response.body.data.questions.find(
+      const choiceQuestion = response.body.data['questions'].find(
         (q) => q.id === choiceQuestionId,
       );
       expect(choiceQuestion.results).toMatchObject({
@@ -1308,7 +1308,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.summary.total_responses).toBe(2);
+      expect(response.body.data['summary'].total_responses).toBe(2);
     });
 
     it("should export results as CSV", async () => {
@@ -1355,7 +1355,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const textQuestion = response.body.data.questions.find(
+      const textQuestion = response.body.data['questions'].find(
         (q) => q.id === textQuestionId,
       );
       expect(textQuestion.results.responses).toContain("Great survey!");
@@ -1381,7 +1381,7 @@ describe("Survey API Endpoints", () => {
 
       expect(response.status).toBe(200);
       // Should not include respondent identities
-      expect(response.body.data.respondents).toBeUndefined();
+      expect(response.body.data['respondents']).toBeUndefined();
     });
 
     it("should generate insights", async () => {
@@ -1390,7 +1390,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.insights).toBeDefined();
+      expect(response.body.data['insights']).toBeDefined();
       // Might include trend analysis, correlations, etc.
     });
   });
@@ -1418,7 +1418,7 @@ describe("Survey API Endpoints", () => {
         .send(templateData);
 
       expect(response.status).toBe(201);
-      expect(response.body.data.templateId).toBeDefined();
+      expect(response.body.data['templateId']).toBeDefined();
     });
 
     it("should list available templates", async () => {
@@ -1446,7 +1446,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.templates.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['templates'].length).toBeGreaterThanOrEqual(2);
     });
 
     it("should filter templates by category", async () => {
@@ -1456,7 +1456,7 @@ describe("Survey API Endpoints", () => {
 
       expect(response.status).toBe(200);
       expect(
-        response.body.data.templates.every((t) => t.category === "hr"),
+        response.body.data['templates'].every((t) => t.category === "hr"),
       ).toBe(true);
     });
   });
@@ -1502,7 +1502,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.comparison).toBeDefined();
+      expect(response.body.data['comparison']).toBeDefined();
     });
 
     it("should get department-wise breakdown", async () => {
@@ -1511,7 +1511,7 @@ describe("Survey API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.departments).toBeDefined();
+      expect(response.body.data['departments']).toBeDefined();
     });
   });
 
@@ -1549,7 +1549,7 @@ describe("Survey API Endpoints", () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.sent_to).toBeGreaterThan(0);
+      expect(response.body.data['sent_to']).toBeGreaterThan(0);
     });
 
     it("should schedule automatic reminders", async () => {

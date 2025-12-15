@@ -8,7 +8,7 @@ import app from '../../../../app.js';
 
 describe('Users v2 API - Simple Test', () => {
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'test-secret-key-for-users-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-users-v2-tests';
   });
 
   afterAll(async () => {

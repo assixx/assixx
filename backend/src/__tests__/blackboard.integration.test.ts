@@ -5,14 +5,14 @@
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import app from '../app';
+import app from '../app.js';
 import {
   cleanupTestData,
   createTestDatabase,
   createTestTenant,
   createTestUser,
   getAuthToken,
-} from '../routes/mocks/database';
+} from '../routes/mocks/database.js';
 
 // Jest is available globally
 

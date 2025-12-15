@@ -74,13 +74,18 @@ export function errorResponse(
     message: string;
   }[],
 ): ApiErrorResponse {
+  const error: ApiErrorResponse['error'] = {
+    code,
+    message,
+  };
+
+  if (details !== undefined) {
+    error.details = details;
+  }
+
   return {
     success: false,
-    error: {
-      code,
-      message,
-      details,
-    },
+    error,
     meta: {
       timestamp: new Date().toISOString(),
       requestId: randomUUID(),

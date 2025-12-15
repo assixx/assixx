@@ -1,0 +1,176 @@
+/**
+ * Design System - Multi-Select
+ *
+ * Purpose: Multiple selection from a list of options
+ * Use Case: Department selection, permission management, bulk assignment
+ *
+ * Based on: Native <select multiple> with enhanced styling
+ * Origin: manage-admins.html Abteilungsberechtigungen modal
+ */
+
+.multi-select {
+  scrollbar-color: var(--color-border) transparent;
+
+  /* Remove default scrollbar styling in favor of custom */
+  scrollbar-width: thin;
+
+  /* Base form-field styling */
+  display: block;
+
+  width: 100%;
+  min-height: 150px; /* Minimum 5-6 items visible */
+  padding: var(--spacing-2);
+
+  /* Border */
+  border: 1px solid var(--color-border);
+  border-radius: var(--glass-card-radius);
+
+  /* Typography */
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+
+  /* Colors */
+  color: var(--color-text-primary);
+
+  /* Transition */
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Focus State */
+.multi-select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 20%); /* Primary blue focus ring */
+}
+
+/* Hover State */
+.multi-select:hover:not(:disabled) {
+  border-color: var(--color-border-hover, var(--color-primary));
+}
+
+/* Disabled State */
+.multi-select:disabled {
+  cursor: not-allowed;
+  opacity: 60%;
+  background: var(--color-surface-secondary);
+}
+
+/* Options Styling */
+.multi-select option {
+  cursor: pointer;
+
+  padding: var(--spacing-2);
+  border-radius: var(--glass-card-radius);
+
+  color: var(--color-text-primary);
+
+  background-color: transparent; /* Override browser defaults */
+  background-image: none; /* Remove any browser gradients */
+
+  transition: background-color 0.15s ease;
+}
+
+/* Selected Option */
+.multi-select option:checked {
+  font-weight: 500;
+  color: #0df; /* Cyan blue */
+
+  /* Browser workaround: linear-gradient overrides browser !important defaults */
+  background: rgb(0 221 255 / 10%) linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
+}
+
+/* Selected Option (when select has focus) - Important for browser override */
+.multi-select:focus option:checked {
+  color: #0df;
+  background: rgb(0 221 255 / 10%) linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
+}
+
+/* Hover on option (Firefox/Chrome) */
+.multi-select option:hover {
+  background: rgb(0 221 255 / 10%); /* Cyan hover */
+}
+
+/* Compact Variant - Smaller min-height */
+.multi-select--compact {
+  min-height: 100px;
+}
+
+/* Large Variant - More visible items */
+.multi-select--lg {
+  min-height: 200px;
+}
+
+/* Error State */
+.multi-select.error,
+.multi-select[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.multi-select.error:focus,
+.multi-select[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgb(244 67 54 / 20%); /* Danger red focus ring */
+}
+
+/* Custom Scrollbar for Webkit browsers */
+.multi-select::-webkit-scrollbar {
+  width: 8px;
+}
+
+.multi-select::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.multi-select::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--color-border);
+}
+
+.multi-select::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/**
+ * Helper Text for Multi-Select
+ *
+ * Shows keyboard hint below the multi-select
+ */
+.multi-select__hint {
+  display: block;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.multi-select__hint i {
+  margin-right: var(--spacing-1);
+}
+
+/**
+ * WHY NATIVE <select multiple>?
+ *
+ * - Accessible by default (ARIA, keyboard navigation)
+ * - Works without JavaScript
+ * - Browser-native scrolling and selection
+ * - Familiar UX for users
+ * - Lightweight (no dropdown library needed)
+ *
+ * WHEN TO USE:
+ * ✅ Department selection (5-20 items)
+ * ✅ Permission assignment
+ * ✅ Bulk operations
+ * ✅ Filter combinations
+ *
+ * WHEN NOT TO USE:
+ * ❌ Single selection (use dropdown or radio)
+ * ❌ >50 items (use search + checkboxes)
+ * ❌ Need custom rendering (use choice-cards)
+ * ❌ Mobile-first (consider alternative UI)
+ *
+ * ALTERNATIVES:
+ * - choice-cards: Visual cards with checkboxes
+ * - Checkbox list: Scrollable list with checkboxes
+ * - Transfer list: Two columns with move buttons
+ */

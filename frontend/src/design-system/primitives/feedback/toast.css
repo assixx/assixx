@@ -1,0 +1,464 @@
+/**
+ * Design System - Toast Notifications
+ *
+ * Purpose: Temporary notification messages (Toastify-style)
+ * Usage: Appears in corner, auto-dismisses after timeout
+ *
+ * Features:
+ * - Fixed position (top-right, bottom-right, etc.)
+ * - Auto-dismiss with progress bar
+ * - Stack multiple toasts
+ * - Variants: success, warning, error, info
+ * - Actions (undo, dismiss)
+ */
+
+/* ========== TOAST CONTAINER ========== */
+
+.toast-container {
+  /* Prevent interaction blocking */
+  pointer-events: none;
+
+  /* Position */
+  position: fixed;
+  z-index: 10000;
+
+  /* Default position: top-right */
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+
+  width: 100%;
+
+  /* Size */
+  max-width: 400px;
+  padding: var(--spacing-4);
+}
+
+/* Position variants */
+.toast-container--top-left {
+  top: var(--spacing-4);
+  right: auto;
+  left: var(--spacing-4);
+}
+
+.toast-container--top-center {
+  top: var(--spacing-4);
+  right: 50%;
+  left: auto;
+  transform: translateX(50%);
+}
+
+.toast-container--top-right {
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  left: auto;
+}
+
+.toast-container--bottom-left {
+  inset: auto auto var(--spacing-4) var(--spacing-4);
+}
+
+.toast-container--bottom-center {
+  inset: auto 50% var(--spacing-4) auto;
+  transform: translateX(50%);
+}
+
+.toast-container--bottom-right {
+  inset: auto var(--spacing-4) var(--spacing-4) auto;
+}
+
+/* Mobile responsive */
+@media (width <= 768px) {
+  .toast-container {
+    right: var(--spacing-3);
+    left: var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .toast-container--top-center,
+  .toast-container--bottom-center {
+    right: var(--spacing-3);
+    left: var(--spacing-3);
+    transform: none;
+  }
+}
+
+/* ========== TOAST BASE ========== */
+
+.toast {
+  /* Allow interaction */
+  pointer-events: auto;
+
+  /* Layout */
+  position: relative;
+
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+
+  /* Size */
+  width: 100%;
+  max-width: 400px;
+
+  /* Spacing - consistent gap below toast when used inline (e.g., login form) */
+  margin-bottom: var(--spacing-4); /* 16px */
+  padding: var(--spacing-4) var(--spacing-5);
+
+  /* Appearance */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: none; /* Progress bar replaces bottom border */
+  border-radius: var(--radius-xl);
+
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+
+  /* Glassmorphism */
+  background: linear-gradient(135deg, rgb(30 30 40 / 95%) 0%, rgb(20 20 30 / 95%) 100%);
+
+  /* Clip EVERYTHING (borders + content) to rounded corners - makes progress bar smooth */
+  clip-path: inset(0 round var(--radius-xl));
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+
+  /* Transition */
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    opacity var(--duration-normal) var(--ease-standard);
+}
+
+/* ========== TOAST ICON ========== */
+
+.toast__icon {
+  /* Layout */
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  /* Size */
+  width: 24px;
+  height: 24px;
+
+  /* Typography */
+  font-size: 18px;
+
+  /* Color inherited from variant */
+  color: currentcolor;
+}
+
+/* ========== TOAST CONTENT ========== */
+
+.toast__content {
+  flex: 1;
+  min-width: 0; /* Fix text overflow */
+}
+
+.toast__title {
+  margin: 0 0 var(--spacing-1);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.toast__message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ========== TOAST CLOSE BUTTON ========== */
+
+.toast__close {
+  /* Reset button */
+  cursor: pointer;
+
+  /* Layout */
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  /* Size */
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+
+  /* Appearance */
+  font-size: 16px;
+  color: var(--color-text-secondary);
+
+  background: transparent;
+
+  /* Transition */
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.toast__close:hover {
+  color: var(--color-text-primary);
+}
+
+/* ========== TOAST PROGRESS BAR ========== */
+
+.toast__progress {
+  /* Position */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+
+  /* Size */
+  width: 100%;
+  height: 3px;
+
+  /* Appearance - no border-radius needed, parent clip-path handles it */
+  background: rgb(255 255 255 / 10%);
+}
+
+.toast__progress-bar {
+  width: 100%;
+  height: 100%;
+  background: var(--color-primary);
+
+  /* Animation (set via JavaScript) */
+  animation: toast-progress-shrink linear;
+}
+
+@keyframes toast-progress-shrink {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+/* ========== TOAST ACTIONS ========== */
+
+.toast__actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.toast__action {
+  cursor: pointer;
+
+  padding: 4px 12px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-md);
+
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+
+  background: rgb(255 255 255 / 5%);
+
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.toast__action:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+/* ========== VARIANT STYLES ========== */
+
+/* Success */
+.toast--success {
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(135deg, rgb(76 175 80 / 15%) 0%, rgb(56 142 60 / 10%) 100%);
+}
+
+.toast--success .toast__icon {
+  color: var(--color-success);
+}
+
+.toast--success .toast__progress-bar {
+  background: var(--color-success);
+}
+
+/* Warning */
+.toast--warning {
+  border-left: 4px solid var(--color-warning);
+  background: linear-gradient(135deg, rgb(255 152 0 / 15%) 0%, rgb(245 124 0 / 10%) 100%);
+}
+
+.toast--warning .toast__icon {
+  color: var(--color-warning);
+}
+
+.toast--warning .toast__progress-bar {
+  background: var(--color-warning);
+}
+
+/* Error/Danger */
+.toast--error,
+.toast--danger {
+  border-left: 4px solid var(--color-danger);
+  background: linear-gradient(135deg, rgb(244 67 54 / 15%) 0%, rgb(211 47 47 / 10%) 100%);
+}
+
+.toast--error .toast__icon,
+.toast--danger .toast__icon {
+  color: var(--color-danger);
+}
+
+.toast--error .toast__progress-bar,
+.toast--danger .toast__progress-bar {
+  background: var(--color-danger);
+}
+
+/* Info */
+.toast--info {
+  border-left: 4px solid var(--color-primary);
+  background: linear-gradient(135deg, rgb(33 150 243 / 15%) 0%, rgb(25 118 210 / 10%) 100%);
+}
+
+.toast--info .toast__icon {
+  color: var(--color-primary);
+}
+
+.toast--info .toast__progress-bar {
+  background: var(--color-primary);
+}
+
+/* Progress bar extension for variants with border-left */
+/* Extends under the 4px border so clip-path clips it at the outer rounded corner */
+.toast--success .toast__progress,
+.toast--warning .toast__progress,
+.toast--error .toast__progress,
+.toast--danger .toast__progress,
+.toast--info .toast__progress {
+  left: -4px;
+  width: calc(100% + 4px);
+}
+
+/* ========== ANIMATION STATES ========== */
+
+/* Enter from right */
+.toast--enter-right {
+  transform: translateX(400px);
+  opacity: 0%;
+}
+
+.toast--enter-right-active {
+  transform: translateX(0);
+  opacity: 100%;
+}
+
+/* Enter from left */
+.toast--enter-left {
+  transform: translateX(-400px);
+  opacity: 0%;
+}
+
+.toast--enter-left-active {
+  transform: translateX(0);
+  opacity: 100%;
+}
+
+/* Enter from top */
+.toast--enter-top {
+  transform: translateY(-100px);
+  opacity: 0%;
+}
+
+.toast--enter-top-active {
+  transform: translateY(0);
+  opacity: 100%;
+}
+
+/* Enter from bottom */
+.toast--enter-bottom {
+  transform: translateY(100px);
+  opacity: 0%;
+}
+
+.toast--enter-bottom-active {
+  transform: translateY(0);
+  opacity: 100%;
+}
+
+/* Exit animations */
+.toast--exit {
+  transform: translateX(0);
+  opacity: 100%;
+}
+
+.toast--exit-active {
+  transform: translateX(400px);
+  opacity: 0%;
+}
+
+/* Fade only */
+.toast--fade-enter {
+  opacity: 0%;
+}
+
+.toast--fade-enter-active {
+  opacity: 100%;
+}
+
+.toast--fade-exit {
+  opacity: 100%;
+}
+
+.toast--fade-exit-active {
+  opacity: 0%;
+}
+
+/* ========== SIZE VARIANTS ========== */
+
+.toast--sm {
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: 13px;
+}
+
+.toast--sm .toast__icon {
+  width: 20px;
+  height: 20px;
+  font-size: 16px;
+}
+
+.toast--lg {
+  padding: var(--spacing-5) var(--spacing-6);
+  font-size: 15px;
+}
+
+.toast--lg .toast__icon {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: opacity var(--duration-fast) linear;
+  }
+
+  .toast--enter-right,
+  .toast--enter-left,
+  .toast--enter-top,
+  .toast--enter-bottom {
+    transform: none;
+  }
+
+  .toast--exit-active {
+    transform: none;
+  }
+}
+
+/* Focus management */
+.toast:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

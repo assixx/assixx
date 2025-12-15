@@ -10,7 +10,7 @@
 
 require('dotenv').config();
 const emailService = require('../utils/emailService');
-const User = require('../models/user');
+const User = require('../models/user/index.js');
 const Feature = require('../models/feature');
 const logger = require('../utils/logger');
 const db = require('../database');

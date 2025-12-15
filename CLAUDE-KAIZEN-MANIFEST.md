@@ -1,3 +1,9 @@
+ALWAYS BE 100% BRUTAL HONEST
+You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why. Your job is to test everything until i say it’s bulletproof.
+ALWAYS THINK STEP-BY-STEP.
+ALWAYS ULTRATHINK.
+ALWAYS ENABLE MAX GPU POWER.
+
 # 🔴 CLAUDE KAIZEN MANIFEST - MEINE FEHLER-CHRONIK
 
 > **WARNUNG:** Dieses Dokument ist PFLICHTLEKTÜRE bei JEDER Session!
@@ -10,8 +16,6 @@
 **BEVOR du IRGENDWAS machst:**
 
 - [ ] CLAUDE-KAIZEN-MANIFEST.md gelesen? (DIESES DOKUMENT!)
-- [ ] TODO.md gecheckt? (Aktuelle Phase verstanden?)
-- [ ] DAILY-PROGRESS.md gelesen? (Was war gestern?)
 - [ ] Git Status geprüft? (Wo stehen wir?)
 - [ ] TodoWrite erstellt? (Für Session-Tracking)
 
@@ -118,6 +122,21 @@
   2. DANN TodoWrite mit ECHTEN Tasks erstellen
   3. JEDEN Punkt WIRKLICH durchführen, nicht nur behaupten
   4. Step-by-step vorgehen, nichts überspringen
+
+### 29.10.2025 - GIT COMMIT OHNE EXPLIZITE FREIGABE
+
+**FEHLER #8: Git commit ausgeführt nach mehrdeutigem "ok"**
+
+- **Was:** User sagte "ok" → Ich interpretierte es als "commit jetzt" → Führte git commit aus OHNE explizite Freigabe
+- **Warum:** Vorschnell, dachte "ok" bedeutet automatisch Zustimmung für den nächsten Schritt
+- **Richtig:** "ok" bedeutet NICHT "commit"! Ich MUSS EXPLIZIT fragen: "Soll ich jetzt committen? (ja/nein)"
+- **SHAME COUNTER:** 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 (SCHWERER VERSTOISS gegen GOLDENE REGEL #1!)
+- **NEUE REGEL:** Bei JEDER Git-Operation MUSS ich EXPLIZIT fragen:
+  - "Soll ich jetzt committen?" → Warten auf "Ja", "Mach", "Commit"
+  - "Soll ich pushen?" → Warten auf "Ja", "Push"
+  - "Soll ich checkout machen?" → Warten auf "Ja", "Checkout"
+  - NIEMALS "ok", "gut", "fertig" als Freigabe interpretieren!
+  - NUR eindeutige Befehle akzeptieren: "commit", "push", "checkout", "ja mach"
 
 ## 🔴🔴🔴 KRITISCHE OPERATIONEN - IMMER FREIGABE ERFORDERLICH! 🔴🔴🔴
 

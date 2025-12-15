@@ -1,14 +1,14 @@
 // API Request and Response Type Definitions
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
-  errors?: Array<{
+  errors?: {
     field: string;
     message: string;
-  }>;
+  }[];
 }
 
 export interface PaginatedResponse<T> {
@@ -117,7 +117,7 @@ export interface DocumentSearchParams {
 export interface FeatureToggleRequest {
   featureKey: string;
   enabled: boolean;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 // Department & Team Types
@@ -154,7 +154,14 @@ export interface CreateCalendarEventRequest {
   type?: string;
   departmentId?: number;
   isRecurring?: boolean;
-  recurringPattern?: any;
+  recurringPattern?: {
+    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval?: number;
+    daysOfWeek?: number[];
+    dayOfMonth?: number;
+    endDate?: string;
+    occurrences?: number;
+  };
 }
 
 // Chat Types
@@ -203,22 +210,22 @@ export interface CreateSurveyRequest {
   isAnonymous?: boolean;
   startsAt: string;
   endsAt?: string;
-  questions: Array<{
+  questions: {
     type: 'text' | 'radio' | 'checkbox' | 'rating' | 'scale';
     question: string;
     required?: boolean;
     options?: string[];
     minValue?: number;
     maxValue?: number;
-  }>;
+  }[];
 }
 
 export interface SubmitSurveyResponseRequest {
   surveyId: number;
-  answers: Array<{
+  answers: {
     questionId: string;
-    answer: any;
-  }>;
+    answer: string | number | string[] | boolean;
+  }[];
 }
 
 // Search & Filter Types
@@ -239,7 +246,7 @@ export interface DateRangeParams {
 export interface ValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface ErrorResponse {

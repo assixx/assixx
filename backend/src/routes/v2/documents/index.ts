@@ -4,10 +4,10 @@
  */
 import { Router } from 'express';
 
-import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
-import { typed } from '../../../utils/routeHandlers';
-import * as documentsController from './documents.controller';
-import { documentsValidation } from './documents.validation';
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as documentsController from './documents.controller.js';
+import { documentsValidationZod } from './documents.validation.zod.js';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.use(authenticateV2);
  * GET /api/v2/documents
  * List documents with filters and pagination
  */
-router.get('/', documentsValidation.list, typed.auth(documentsController.listDocuments));
+router.get('/', documentsValidationZod.list, typed.auth(documentsController.listDocuments));
 
 /**
  * GET /api/v2/documents/stats
@@ -28,10 +28,18 @@ router.get('/', documentsValidation.list, typed.auth(documentsController.listDoc
 router.get('/stats', typed.auth(documentsController.getDocumentStats));
 
 /**
+ * GET /api/v2/documents/chat-folders
+ * Get chat folders for document explorer
+ * Returns conversations where user is participant AND has attachments
+ * NEW 2025-12-04
+ */
+router.get('/chat-folders', typed.auth(documentsController.getChatFolders));
+
+/**
  * GET /api/v2/documents/:id
  * Get a specific document by ID
  */
-router.get('/:id', documentsValidation.getById, typed.auth(documentsController.getDocumentById));
+router.get('/:id', documentsValidationZod.getById, typed.auth(documentsController.getDocumentById));
 
 /**
  * POST /api/v2/documents
@@ -40,7 +48,7 @@ router.get('/:id', documentsValidation.getById, typed.auth(documentsController.g
 router.post(
   '/',
   documentsController.uploadMiddleware,
-  documentsValidation.create,
+  documentsValidationZod.create,
   typed.auth(documentsController.createDocument),
 );
 
@@ -48,7 +56,7 @@ router.post(
  * PUT /api/v2/documents/:id
  * Update document metadata
  */
-router.put('/:id', documentsValidation.update, typed.auth(documentsController.updateDocument));
+router.put('/:id', documentsValidationZod.update, typed.auth(documentsController.updateDocument));
 
 /**
  * DELETE /api/v2/documents/:id
@@ -56,7 +64,7 @@ router.put('/:id', documentsValidation.update, typed.auth(documentsController.up
  */
 router.delete(
   '/:id',
-  documentsValidation.documentAction,
+  documentsValidationZod.delete,
   typed.auth(documentsController.deleteDocument),
 );
 
@@ -66,7 +74,7 @@ router.delete(
  */
 router.post(
   '/:id/archive',
-  documentsValidation.documentAction,
+  documentsValidationZod.archive,
   typed.auth(documentsController.archiveDocument),
 );
 
@@ -76,7 +84,7 @@ router.post(
  */
 router.post(
   '/:id/unarchive',
-  documentsValidation.documentAction,
+  documentsValidationZod.unarchive,
   typed.auth(documentsController.unarchiveDocument),
 );
 
@@ -86,7 +94,7 @@ router.post(
  */
 router.get(
   '/:id/download',
-  documentsValidation.getById,
+  documentsValidationZod.getById,
   typed.auth(documentsController.downloadDocument),
 );
 
@@ -96,8 +104,20 @@ router.get(
  */
 router.get(
   '/:id/preview',
-  documentsValidation.getById,
+  documentsValidationZod.getById,
   typed.auth(documentsController.previewDocument),
+);
+
+/**
+ * POST /api/v2/documents/:id/read
+ * Mark document as read by current user
+ * Updates document_read_status table for "Neu" badge tracking
+ * NEW 2025-12-04
+ */
+router.post(
+  '/:id/read',
+  documentsValidationZod.getById,
+  typed.auth(documentsController.markDocumentAsRead),
 );
 
 export default router;

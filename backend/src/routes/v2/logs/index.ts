@@ -8,11 +8,12 @@
  *   description: System audit logs API v2 (Root only)
  */
 
-import express, { Router, RequestHandler } from "express";
+import express, { NextFunction, Request, Response, Router, RequestHandler } from "express";
 import { authenticateV2, requireRoleV2 } from "../../../middleware/v2/auth.middleware.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { typed } from "../../../utils/routeHandlers.js";
 import { logsController } from "./logs.controller.js";
-import { logsValidation } from "./logs.validation.js";
+import { logsValidationZod } from "./logs.validation.zod.js";
 
 const router: Router = express.Router();
 
@@ -91,7 +92,7 @@ const router: Router = express.Router();
  */
 // Temporärer Debug-Wrapper
 const debugWrapper = (handler: RequestHandler): RequestHandler => {
-  return async (req, res, next) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     console.log("[LOGS DEBUG] Request received at /api/v2/logs");
     console.log("[LOGS DEBUG] Query params:", req.query);
     console.log("[LOGS DEBUG] User:", req.user);
@@ -108,8 +109,8 @@ router.get(
   "/",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  logsValidation.listLogs,
-  debugWrapper(typed.auth((req, res) => {
+  logsValidationZod.listLogs,
+  debugWrapper(typed.auth((req: AuthenticatedRequest, res: Response) => {
     void logsController.getLogs(req, res);
   }))
 );
@@ -176,7 +177,7 @@ router.get(
   "/stats",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void logsController.getStats(req, res);
   })
 );
@@ -239,8 +240,8 @@ router.delete(
   "/",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  logsValidation.deleteLogs,
-  typed.auth((req, res) => {
+  logsValidationZod.deleteLogs,
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void logsController.deleteLogs(req, res);
   })
 );

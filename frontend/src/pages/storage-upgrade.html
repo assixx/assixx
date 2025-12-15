@@ -7,26 +7,13 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles/storage-upgrade.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -36,7 +23,7 @@
     <!-- Main Layout -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
@@ -55,14 +42,14 @@
             <div class="usage-progress">
               <div class="usage-progress-bar" id="storage-progress" style="width: 0%"></div>
             </div>
-            <div style="text-align: center; color: var(--text-secondary)">
+            <div class="storage-percentage-text">
               <span id="storage-percentage">0%</span>
               Ihres Speichers wird genutzt
             </div>
           </div>
 
           <!-- Storage Plans -->
-          <h2 class="text-center mb-4">Wählen Sie Ihre neue Speichergröße</h2>
+          <h2 class="text-center mb-6">Wählen Sie Ihre neue Speichergröße</h2>
 
           <div class="storage-plans-grid">
             <!-- Basic Plan -->
@@ -121,12 +108,12 @@
           </div>
 
           <!-- Custom Storage -->
-          <div class="card" style="margin-top: var(--spacing-xl)">
-            <div class="card-header">
+          <div class="card custom-storage-section">
+            <div class="card__header">
               <h3 class="card-title">Individueller Speicherplatz</h3>
             </div>
-            <div style="padding: var(--spacing-xl); text-align: center">
-              <p style="margin-bottom: var(--spacing-lg)">
+            <div class="custom-storage-content">
+              <p class="custom-storage-description">
                 Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles Angebot.
               </p>
               <button class="btn btn-primary" data-action="contact-sales">
@@ -138,7 +125,7 @@
 
           <!-- FAQ Section -->
           <div class="faq-section">
-            <h2 class="text-center mb-4">Häufig gestellte Fragen</h2>
+            <h2 class="text-center mb-6">Häufig gestellte Fragen</h2>
 
             <div class="faq-item">
               <div class="faq-question">Was passiert, wenn ich meinen Speicherplatz überschreite?</div>
@@ -168,241 +155,23 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="/scripts/auth.ts"></script>
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <script type="module" src="/scripts/auth/index.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <!-- Storage Upgrade Controller -->
     <script type="module">
-      // Import apiClient for v2 API support
-      import { apiClient } from '/utils/api-client.js';
+      import { StorageUpgradeController } from '/scripts/storage/storage-upgrade-controller.js';
 
-      // Import auth token from global window object (set by auth.ts)
-      const getAuthToken = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
-
-      // Load current storage info using v2 API
-      async function loadStorageInfo() {
-        try {
-          const token = getAuthToken();
-          if (!token) return;
-
-          // Check if we should use v2 API
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
-
-          if (useV2) {
-            // V2 API: Get current plan and addons for storage info
-            try {
-              // Get current plan info
-              const currentPlan = await apiClient.get('/plans/current');
-
-              // Get addons (includes storage)
-              const addons = await apiClient.get('/plans/addons');
-
-              // Calculate storage usage (might need to get from different endpoint)
-              const storageInfo = {
-                used: 0, // TODO: Get actual used storage from backend
-                total: (addons.storageGb || 5) * 1024 * 1024 * 1024, // Convert GB to bytes
-                percentage: 0,
-                plan: currentPlan.plan?.code || 'basic',
-              };
-
-              // TODO: Replace with actual storage usage endpoint when available
-              // For now, we'll need to get this from another endpoint or calculate it
-
-              updateStorageDisplay(storageInfo);
-              highlightCurrentPlan(storageInfo.plan);
-            } catch (error) {
-              console.error('Error loading storage info from v2 API:', error);
-              // Fallback to v1 if v2 fails
-              await loadStorageInfoV1();
-            }
-          } else {
-            // V1 API fallback
-            await loadStorageInfoV1();
-          }
-        } catch (error) {
-          console.error('Error loading storage info:', error);
-        }
-      }
-
-      // V1 API fallback function
-      async function loadStorageInfoV1() {
-        try {
-          const token = getAuthToken();
-          if (!token) return;
-
-          const response = await fetch('/api/root/storage-info', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            updateStorageDisplay(data);
-            highlightCurrentPlan(data.plan);
-          }
-        } catch (error) {
-          console.error('Error loading storage info from v1 API:', error);
-        }
-      }
-
-      // Update storage display
-      function updateStorageDisplay(data) {
-        const { used, total, percentage } = data;
-
-        // Update text
-        document.querySelector('#used-storage').textContent = formatBytes(used);
-        document.querySelector('#total-storage').textContent = formatBytes(total);
-        document.querySelector('#storage-percentage').textContent = `${percentage}%`;
-
-        // Update progress bar
-        const progressBar = document.querySelector('#storage-progress');
-        progressBar.style.width = `${percentage}%`;
-
-        // Update color based on usage
-        if (percentage >= 90) {
-          progressBar.style.backgroundColor = 'var(--error-color)';
-        } else if (percentage >= 70) {
-          progressBar.style.backgroundColor = 'var(--warning-color)';
-        } else {
-          progressBar.style.backgroundColor = 'var(--success-color)';
-        }
-      }
-
-      // Format bytes to human readable
-      function formatBytes(bytes) {
-        if (bytes === 0) return '0 GB';
-        const k = 1024;
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-        // Use switch statement to avoid object injection warning
-        let sizeUnit;
-        switch (i) {
-          case 0:
-            sizeUnit = 'B';
-            break;
-          case 1:
-            sizeUnit = 'KB';
-            break;
-          case 2:
-            sizeUnit = 'MB';
-            break;
-          case 3:
-            sizeUnit = 'GB';
-            break;
-          case 4:
-            sizeUnit = 'TB';
-            break;
-          default:
-            sizeUnit = i < 0 ? 'B' : 'TB';
-        }
-
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizeUnit;
-      }
-
-      // Highlight current plan
-      function highlightCurrentPlan(plan) {
-        // Remove current class from all
-        document.querySelectorAll('.storage-plan-card').forEach((card) => {
-          card.classList.remove('current');
+      // Initialize controller when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          new StorageUpgradeController().init();
         });
-
-        // Add current class to active plan
-        const currentPlanCard = document.querySelector(`plan-${plan}`);
-        if (currentPlanCard) {
-          currentPlanCard.classList.add('current');
-          const button = currentPlanCard.querySelector('button');
-          if (button) {
-            button.textContent = 'Aktueller Plan';
-            button.disabled = true;
-            button.classList.remove('btn-primary');
-            button.classList.add('btn-secondary');
-          }
-        }
+      } else {
+        new StorageUpgradeController().init();
       }
-
-      // Event delegation for storage actions
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        const button = target.closest('[data-action]');
-
-        if (!button) return;
-
-        const action = button.dataset.action;
-
-        if (action === 'upgrade-storage') {
-          const plan = button.dataset.plan;
-          if (plan) {
-            window.upgradeStorage(plan);
-          }
-        } else if (action === 'contact-sales') {
-          window.contactSales();
-        }
-      });
-
-      // Upgrade storage
-      window.upgradeStorage = async function (plan) {
-        if (confirm(`Möchten Sie wirklich auf den ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan upgraden?`)) {
-          try {
-            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
-
-            if (useV2) {
-              // V2 API: Upgrade plan - Use safe property access
-              let planId;
-              switch (plan) {
-                case 'basic':
-                  planId = 1;
-                  break;
-                case 'professional':
-                  planId = 2;
-                  break;
-                case 'enterprise':
-                  planId = 3;
-                  break;
-                default:
-                  alert('Ungültiger Plan ausgewählt');
-                  return;
-              }
-
-              const result = await apiClient.put('/plans/upgrade', {
-                planId: planId,
-              });
-
-              if (result) {
-                alert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
-                // Reload storage info to reflect changes
-                await loadStorageInfo();
-              }
-            } else {
-              // V1 API or not implemented yet
-              alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
-            }
-          } catch (error) {
-            console.error('Error upgrading plan:', error);
-            alert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
-          }
-        }
-      };
-
-      // Contact sales
-      window.contactSales = function () {
-        window.location.href = 'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
-      };
-
-      // Initialize on load
-      document.addEventListener('DOMContentLoaded', () => {
-        loadStorageInfo();
-
-        // Initialize breadcrumb
-        import('/scripts/components/breadcrumb.js')
-          .then((module) => {
-            module.initBreadcrumb();
-            return undefined;
-          })
-          .catch((error) => {
-            console.error('Failed to load breadcrumb module:', error);
-          });
-      });
     </script>
   </body>
 </html>

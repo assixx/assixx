@@ -2,9 +2,8 @@
  * Survey Service
  * Handles survey business logic
  */
-import { Pool } from 'mysql2/promise';
-
-import survey from '../models/survey';
+import survey, { type SurveyStatistics } from '../routes/v2/surveys/survey.model.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces
 interface SurveyData {
@@ -49,7 +48,8 @@ interface SurveyQuestionOption {
 interface SurveyAssignment {
   id: number;
   survey_id: number;
-  assignment_type: 'all_users' | 'department' | 'team' | 'user';
+  assignment_type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  area_id?: number | null;
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -87,7 +87,8 @@ interface SurveyCreateData {
     options?: string[];
   }[];
   assignments?: {
-    type: 'all_users' | 'department' | 'team' | 'user';
+    type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+    area_id?: number | null;
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;
@@ -111,35 +112,7 @@ interface SurveyUpdateData {
   }[];
 }
 
-interface SurveyStatistics {
-  survey_id: number;
-  total_responses: number;
-  completed_responses: number;
-  completion_rate: number;
-  first_response?: Date | null;
-  last_response?: Date | null;
-  questions: {
-    id: number;
-    question_text: string;
-    question_type: string;
-    responses?: {
-      answer_text?: string;
-      selected_option_id?: number;
-      rating?: number;
-    }[];
-    options?: {
-      option_id: number;
-      option_text: string;
-      count: number;
-    }[];
-    statistics?: {
-      average: number | null;
-      min: number | null;
-      max: number | null;
-      total_responses: number;
-    };
-  }[];
-}
+// SurveyStatistics imported from ../models/survey.js
 
 /**
  *

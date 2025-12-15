@@ -1,21 +1,24 @@
 // Express Request Extensions Type Definitions
-import { TenantInfo } from './tenant.types';
+import { Pool } from '../utils/db.js';
+import { AuthUser } from './request.types.js';
+import { TenantInfo } from './tenant.types.js';
 
 declare global {
   namespace Express {
     interface Request {
       // User Authentication
-      user?: any; // Will be properly typed once User model is migrated
+      user?: AuthUser;
       userId?: number;
 
       // Tenant Information
       tenant?: TenantInfo | null;
       tenantId?: number | null;
+      tenantDb?: Pool;
       subdomain?: string;
 
       // File Upload
       file?: Express.Multer.File;
-      files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
+      files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
 
       // Feature Flags
       features?: string[];
@@ -32,6 +35,13 @@ declare global {
       requestId?: string;
       clientIp?: string;
       userAgent?: string;
+    }
+
+    interface Response {
+      locals: {
+        csrfToken?: string;
+        [key: string]: unknown;
+      };
     }
   }
 }

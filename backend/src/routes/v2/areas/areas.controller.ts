@@ -1,41 +1,97 @@
 /**
  * Areas Controller v2
  * HTTP request handlers for area/location management
+ * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
  */
 import { Response } from 'express';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
-import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
+import rootLog from '../logs/logs.service.js';
 import {
+  assignDepartmentsToArea,
   createArea,
   deleteArea,
   getAreaById,
-  getAreaHierarchy,
   getAreaStats,
   getAreas,
   updateArea,
 } from './areas.service.js';
+import {
+  AreaIdParam,
+  CreateAreaBody,
+  GetAreasQuery,
+  UpdateAreaBody,
+} from './areas.validation.zod.js';
 import { AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
+
+// Constants
+const USER_AGENT_HEADER = 'user-agent';
+
+/** Build create area request from validated body */
+function buildCreateRequest(body: CreateAreaBody): CreateAreaRequest {
+  const data: CreateAreaRequest = { name: body.name, type: body.type };
+  if (body.description !== undefined) data.description = body.description;
+  if (body.areaLeadId !== undefined) data.areaLeadId = body.areaLeadId;
+  if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
+  if (body.address !== undefined) data.address = body.address;
+  return data;
+}
+
+/** Build update area request from validated body */
+function buildUpdateRequest(body: UpdateAreaBody): UpdateAreaRequest {
+  const data: UpdateAreaRequest = {};
+  if (body.name !== undefined) data.name = body.name;
+  if (body.description !== undefined) data.description = body.description;
+  if (body.areaLeadId !== undefined) data.areaLeadId = body.areaLeadId;
+  if (body.type !== undefined) data.type = body.type;
+  if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
+  if (body.address !== undefined) data.address = body.address;
+  if (body.isActive !== undefined) data.isActive = body.isActive; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  return data;
+}
+
+/** Log area action to audit log */
+async function logAreaAction(
+  req: AuthenticatedRequest,
+  action: string,
+  entityId: number,
+  details: string,
+  oldValues?: Record<string, unknown>,
+  newValues?: Record<string, unknown>,
+): Promise<void> {
+  await rootLog.create({
+    tenant_id: req.user.tenant_id,
+    user_id: req.user.id,
+    action,
+    entity_type: 'area',
+    entity_id: entityId,
+    details,
+    old_values: oldValues,
+    new_values: newValues,
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get(USER_AGENT_HEADER),
+    was_role_switched: false,
+  });
+}
 
 /**
  * Get all areas
  * GET /api/v2/areas
- * @param req - The request object
+ * @param req - The request object (with validated query)
  * @param res - The response object
  */
 export async function getAreasController(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
+    // Zod middleware validates and transforms query params at runtime
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const query = req.query as unknown as GetAreasQuery;
     const filters: AreaFilters = {
-      type: req.query.type as string,
-      isActive: req.query.isActive === 'false' ? false : true,
-      parentId:
-        req.query.parentId !== undefined && req.query.parentId !== '' ?
-          Number.parseInt(req.query.parentId as string)
-        : undefined,
-      search: req.query.search as string,
+      ...(query.type !== undefined && { type: query.type }),
+      ...(query.isActive !== undefined && { isActive: query.isActive }),
+      ...(query.search !== undefined && { search: query.search }),
     };
 
     const areas = await getAreas(req.user.tenant_id, filters);
@@ -43,34 +99,14 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
     res.json(successResponse(areas, 'Areas retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
-  }
-}
-
-/**
- * Get area hierarchy
- * GET /api/v2/areas/hierarchy
- * @param req - The request object
- * @param res - The response object
- */
-export async function getAreaHierarchyController(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
-  try {
-    const hierarchy = await getAreaHierarchy(req.user.tenant_id);
-
-    res.json(successResponse(hierarchy, 'Area hierarchy retrieved successfully'));
-  } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
 
 /**
  * Get area by ID
  * GET /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params)
  * @param res - The response object
  */
 export async function getAreaByIdController(
@@ -78,31 +114,27 @@ export async function getAreaByIdController(
   res: Response,
 ): Promise<void> {
   try {
-    const areaId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
-      return;
-    }
-
-    const area = await getAreaById(areaId, req.user.tenant_id);
+    // Zod middleware validates and transforms params at runtime (string → number)
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const params = req.params as unknown as AreaIdParam;
+    const area = await getAreaById(params.id, req.user.tenant_id);
 
     if (!area) {
-      res.status(404).json(errorResponse('Area not found', 404));
+      res.status(404).json(errorResponse('NOT_FOUND', 'Area not found'));
       return;
     }
 
     res.json(successResponse(area, 'Area retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
 
 /**
  * Create new area
  * POST /api/v2/areas
- * @param req - The request object
+ * @param req - The request object (with validated body)
  * @param res - The response object
  */
 export async function createAreaController(
@@ -110,43 +142,38 @@ export async function createAreaController(
   res: Response,
 ): Promise<void> {
   try {
-    // Only admin and root can create areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
-    const data = req.body as CreateAreaRequest;
+    const body = req.body as CreateAreaBody;
+    const data = buildCreateRequest(body);
     const newArea = await createArea(data, req.user.tenant_id, req.user.id);
 
-    // Log area creation
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'create',
-      entity_type: 'area',
-      entity_id: newArea.id,
-      details: `Erstellt: ${data.name}`,
-      new_values: {
-        name: data.name,
-        type: data.type,
-        parent_id: data.parentId,
-        address: data.address,
-        capacity: data.capacity,
-        created_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
+    await logAreaAction(req, 'create', newArea.id, `Erstellt: ${data.name}`, undefined, {
+      name: data.name,
+      type: data.type,
+      address: data.address,
+      capacity: data.capacity,
+      created_by: req.user.email,
     });
 
     res.status(201).json(successResponse(newArea, 'Area created successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -154,7 +181,7 @@ export async function createAreaController(
 /**
  * Update area
  * PUT /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params and body)
  * @param res - The response object
  */
 export async function updateAreaController(
@@ -162,62 +189,55 @@ export async function updateAreaController(
   res: Response,
 ): Promise<void> {
   try {
-    // Only admin and root can update areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
-    const areaId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
-      return;
-    }
-
-    // Get old area data for logging
+    const params = req.params as unknown as AreaIdParam;
+    const body = req.body as UpdateAreaBody;
+    const areaId = params.id;
     const oldArea = await getAreaById(areaId, req.user.tenant_id);
-
-    const data = req.body as UpdateAreaRequest;
+    const data = buildUpdateRequest(body);
     const updatedArea = await updateArea(areaId, data, req.user.tenant_id);
 
-    // Log area update
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'update',
-      entity_type: 'area',
-      entity_id: areaId,
-      details: `Aktualisiert: ${data.name ?? 'Unbekannt'}`,
-      old_values: {
+    await logAreaAction(
+      req,
+      'update',
+      areaId,
+      `Aktualisiert: ${data.name ?? 'Unbekannt'}`,
+      {
         name: oldArea?.name,
         type: oldArea?.type,
-        parent_id: oldArea?.parent_id,
         address: oldArea?.address,
         capacity: oldArea?.capacity,
         is_active: oldArea?.is_active,
       },
-      new_values: {
+      {
         name: data.name,
         type: data.type,
-        parent_id: data.parentId,
         address: data.address,
         capacity: data.capacity,
         is_active: data.isActive,
         updated_by: req.user.email,
       },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
-    });
+    );
 
     res.json(successResponse(updatedArea, 'Area updated successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -225,7 +245,7 @@ export async function updateAreaController(
 /**
  * Delete area
  * DELETE /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params)
  * @param res - The response object
  */
 export async function deleteAreaController(
@@ -235,50 +255,45 @@ export async function deleteAreaController(
   try {
     // Only admin and root can delete areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
-    const areaId = Number.parseInt(req.params.id);
+    // Zod middleware validates and transforms params at runtime (string → number)
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const params = req.params as unknown as AreaIdParam;
+    const areaId = params.id;
 
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
-      return;
-    }
+    // Get force parameter from query string (e.g., /areas/123$1force=true)
+    const force = req.query['force'] === 'true';
 
-    // Get area data before deletion for logging
     const deletedArea = await getAreaById(areaId, req.user.tenant_id);
+    await deleteArea(areaId, req.user.tenant_id, force);
 
-    await deleteArea(areaId, req.user.tenant_id);
-
-    // Log area deletion
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'delete',
-      entity_type: 'area',
-      entity_id: areaId,
-      details: `Gelöscht: ${String(deletedArea?.name)}`,
-      old_values: {
-        name: deletedArea?.name,
-        type: deletedArea?.type,
-        parent_id: deletedArea?.parent_id,
-        address: deletedArea?.address,
-        capacity: deletedArea?.capacity,
-        deleted_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
+    await logAreaAction(req, 'delete', areaId, `Gelöscht: ${String(deletedArea?.name)}`, {
+      name: deletedArea?.name,
+      type: deletedArea?.type,
+      address: deletedArea?.address,
+      capacity: deletedArea?.capacity,
+      deleted_by: req.user.email,
     });
 
     res.json(successResponse(null, 'Area deleted successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      // IMPORTANT: Pass error.details to frontend so warning modal can show dependency counts
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -299,6 +314,54 @@ export async function getAreaStatsController(
     res.json(successResponse(stats, 'Area statistics retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
+  }
+}
+
+/**
+ * Assign departments to an area (bulk update)
+ * POST /api/v2/areas/:id/departments
+ * @param req - The request object with area ID and department IDs
+ * @param res - The response object
+ */
+export async function assignDepartmentsController(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'root') {
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
+      return;
+    }
+
+    const params = req.params as unknown as AreaIdParam;
+    const areaId = params.id;
+    const { departmentIds } = req.body as { departmentIds: number[] };
+
+    // Validate departmentIds is an array
+    if (!Array.isArray(departmentIds)) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'departmentIds must be an array'));
+      return;
+    }
+
+    await assignDepartmentsToArea(areaId, departmentIds, req.user.tenant_id);
+
+    await logAreaAction(
+      req,
+      'assign_departments',
+      areaId,
+      `${departmentIds.length} Abteilungen zugewiesen`,
+      undefined,
+      { departmentIds, assigned_by: req.user.email },
+    );
+
+    res.json(successResponse(null, 'Departments assigned successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
+    } else {
+      const message = getErrorMessage(error);
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
+    }
   }
 }

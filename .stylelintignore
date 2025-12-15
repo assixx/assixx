@@ -58,6 +58,9 @@ docker/volumes/
 *.bak
 *.backup
 
+# Archive directory
+archive/
+
 # Test files
 **/__tests__/**
 **/*.test.css
@@ -75,3 +78,5 @@ migrations/**/*.scss
 *.zip
 *.tar
 *.gz
+
+# 

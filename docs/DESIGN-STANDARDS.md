@@ -512,7 +512,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 /* Second-Level: MIT background-gradient */
-.btn-primary.btn-secondary-action,
+.btn-primary.btn-cancel-action,
 .btn-upload {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   /* Alle anderen Styles bleiben gleich wie First-Level */
@@ -558,7 +558,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 **Secondary Button (Outline Style):**
 
 ```css
-.btn-secondary {
+.btn-cancel {
   backdrop-filter: blur(5px);
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -569,8 +569,8 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-weight: 500;
 }
 
-.btn-secondary:hover {
-  transform: translateY(-1px);
+.btn-cancel:hover {
+
   border-color: var(--primary-color);
   background: rgba(255, 255, 255, 0.08);
 }
@@ -592,7 +592,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-status-active:hover {
-  transform: translateY(-1px);
+
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
   border-color: #ff5722;
   background: rgba(255, 107, 53, 0.1);
@@ -612,7 +612,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-status-inactive:hover {
-  transform: translateY(-1px);
+
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
   border-color: #218838;
   background: rgba(40, 167, 69, 0.1);
@@ -634,7 +634,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-danger:hover {
-  transform: translateY(-1px);
+
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
   background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
 }
@@ -658,7 +658,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
       </div>
       <div class="button-group">
         <button type="submit" class="btn btn-primary">Speichern</button>
-        <button type="button" class="btn btn-secondary" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">
+        <button type="button" class="btn btn-cancel" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">
           Abbrechen
         </button>
       </div>
@@ -783,7 +783,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 #logout-btn:hover {
-  transform: translateY(-1px);
+
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
 }
@@ -1274,7 +1274,7 @@ function showSuccessMessage() {
 }
 
 .btn-role-switch:hover {
-  transform: translateY(-1px);
+
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
   border-color: var(--employee-color);
   background: rgba(255, 255, 255, 0.15);
