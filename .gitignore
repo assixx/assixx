@@ -74,10 +74,12 @@ eslint-report.json
 # Feature flags (local development only)
 frontend/public/feature-flags.js
 
-# Database Backups (NEVER commit - security risk + bloats repo)
+# Database Backups & Archives (NEVER commit - security risk + bloats repo)
 backups/
 database/backups/
 database/archive/
+docs/archive/
+archive/
 *.backup.sql
 *_backup_*.sql
 backup_*.sql
