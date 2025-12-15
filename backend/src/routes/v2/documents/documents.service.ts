@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import { ALLOWED_CATEGORIES, DocumentCategory } from './documents.validation.zod.js';
 import { logger } from '../../../utils/logger.js';
 import { getEntryById as getBlackboardEntry } from '../blackboard/blackboard.model.js';
 // Model classes are exported as PascalCase objects for backward compatibility
@@ -196,13 +197,44 @@ function buildDocumentCreateData(
   return documentData;
 }
 
+/**
+ * SECURITY: Validate that a path stays within the allowed base directory
+ * Prevents path traversal attacks (CWE-22)
+ * @param filePath - The file path to validate (relative)
+ * @param baseDir - The base directory that must contain the path
+ * @returns true if path is safe, false otherwise
+ */
+function isPathWithinBase(filePath: string, baseDir: string): boolean {
+  const absolutePath = path.resolve(baseDir, filePath);
+  const normalizedBase = path.resolve(baseDir);
+  return absolutePath.startsWith(normalizedBase + path.sep);
+}
+
+/**
+ * SECURITY: Validate category is in allowlist
+ * Defense in depth - Zod validates first, this is a second check
+ * @param category - The category to validate
+ * @returns true if category is valid
+ */
+function isValidCategory(category: string): category is DocumentCategory {
+  return ALLOWED_CATEGORIES.includes(category as DocumentCategory);
+}
+
 /** Write file to disk for filesystem storage */
 async function writeFileToDisk(filePath: string, content: Buffer): Promise<void> {
-  const absolutePath = path.join(process.cwd(), filePath);
+  const baseDir = process.cwd();
+  const absolutePath = path.join(baseDir, filePath);
   const directory = path.dirname(absolutePath);
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+
+  // SECURITY: Verify path stays within base directory (defense in depth)
+  if (!isPathWithinBase(filePath, baseDir)) {
+    logger.error(`Path traversal attempt blocked: ${filePath}`);
+    throw new Error('Invalid file path: path traversal detected');
+  }
+
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
   await fs.mkdir(directory, { recursive: true });
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
   await fs.writeFile(absolutePath, content);
   logger.info(`File written successfully: ${filePath}`);
 }
@@ -441,6 +473,12 @@ class DocumentsService {
     tenantId: number,
   ): Promise<Record<string, unknown>> {
     try {
+      // SECURITY: Validate category (defense in depth - Zod validates first)
+      if (!isValidCategory(data.category)) {
+        logger.error(`Invalid category rejected: ${data.category}`);
+        throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid document category', 400);
+      }
+
       await this.validateRecipient(data, tenantId);
 
       if (!this.isAllowedFileType(data.mimeType)) {
@@ -674,14 +712,18 @@ class DocumentsService {
         content = document.file_content;
       } else if (document.file_path != null) {
         // File stored on filesystem
-        const fs = await import('fs/promises');
-        const path = await import('path');
+        const baseDir = process.cwd();
 
-        // Construct absolute path (file_path is relative from project root)
-        // Safe: we already checked file_path != null above
-        const absolutePath = path.join(process.cwd(), document.file_path);
+        // SECURITY: Validate path stays within base directory (defense in depth)
+        if (!isPathWithinBase(document.file_path, baseDir)) {
+          logger.error(`Path traversal attempt blocked on read: ${document.file_path}`);
+          throw new ServiceError(ERROR_CODES.FORBIDDEN, 'Invalid file path', 403);
+        }
+
+        const absolutePath = path.join(baseDir, document.file_path);
 
         try {
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
           content = await fs.readFile(absolutePath);
         } catch (fsError) {
           logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
@@ -756,10 +798,18 @@ class DocumentsService {
         content = document.file_content;
       } else if (document.file_path != null) {
         // File stored on filesystem
-        const absolutePath = path.join(process.cwd(), document.file_path);
+        const baseDir = process.cwd();
+
+        // SECURITY: Validate path stays within base directory (defense in depth)
+        if (!isPathWithinBase(document.file_path, baseDir)) {
+          logger.error(`Path traversal attempt blocked on read: ${document.file_path}`);
+          throw new ServiceError(ERROR_CODES.FORBIDDEN, 'Invalid file path', 403);
+        }
+
+        const absolutePath = path.join(baseDir, document.file_path);
 
         try {
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via isPathWithinBase() above
           content = await fs.readFile(absolutePath);
         } catch (fsError) {
           logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
