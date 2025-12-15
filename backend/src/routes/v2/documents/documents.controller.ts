@@ -23,6 +23,7 @@ import {
   ServiceError,
   documentsService,
 } from './documents.service.js';
+import { ALLOWED_CATEGORIES, type DocumentCategory } from './documents.validation.zod.js';
 
 // NEW: Clean document interface (refactored 2025-01-10)
 interface Document {
@@ -474,6 +475,25 @@ function getUserProvidedName(body: Record<string, string>, originalName: string)
   return originalName;
 }
 
+/**
+ * SECURITY: Validate category against allowlist before path construction
+ * This is the critical sanitization point that prevents path traversal
+ * @param category - User-provided category value
+ * @returns Validated category (type-safe)
+ * @throws Error if category is not in allowlist
+ */
+function validateCategory(category: string | undefined): DocumentCategory {
+  if (category === undefined) {
+    throw new Error('Category is required');
+  }
+  // SECURITY: Explicit allowlist check - only these values can be used in file paths
+  if (!ALLOWED_CATEGORIES.includes(category as DocumentCategory)) {
+    logger.warn(`Invalid category rejected: ${category}`);
+    throw new Error(`Invalid category. Allowed values: ${ALLOWED_CATEGORIES.join(', ')}`);
+  }
+  return category as DocumentCategory;
+}
+
 // NEW: Parse document data with clean structure (refactored 2025-01-10)
 function parseDocumentData(
   file: Express.Multer.File,
@@ -481,12 +501,18 @@ function parseDocumentData(
   tenantId: number,
 ): DocumentCreateInput {
   const metadata = generateFileMetadata(file);
-  const categoryValue = body['category'];
-  if (categoryValue === undefined) {
-    throw new Error('Category is required');
-  }
 
-  const storagePath = buildStoragePath(tenantId, categoryValue, metadata.uuid, metadata.extension);
+  // SECURITY: Validate category BEFORE using in path construction
+  // This ensures only allowlisted values are used in file paths
+  const validatedCategory = validateCategory(body['category']);
+
+  // Safe: validatedCategory is now guaranteed to be from ALLOWED_CATEGORIES
+  const storagePath = buildStoragePath(
+    tenantId,
+    validatedCategory,
+    metadata.uuid,
+    metadata.extension,
+  );
   const userProvidedName = getUserProvidedName(body, file.originalname);
 
   logger.info(
@@ -499,7 +525,7 @@ function parseDocumentData(
     fileSize: file.size,
     fileContent: file.buffer,
     mimeType: file.mimetype,
-    category: categoryValue,
+    category: validatedCategory,
     accessScope: body['accessScope'] as
       | 'personal'
       | 'team'
