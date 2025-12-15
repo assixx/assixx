@@ -59,7 +59,6 @@ Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 | Dokument | Beschreibung |
 | --- | --- |
-| [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md) | Verzeichnisstruktur |
 | [FEATURES.md](./docs/FEATURES.md) | Feature-Übersicht & Preise |
 | [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technische Architektur |
 | [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup |
