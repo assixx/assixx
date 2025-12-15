@@ -74,13 +74,13 @@ eslint-report.json
 # Feature flags (local development only)
 frontend/public/feature-flags.js
 
-# Database Backups
-backups/daily/
-backups/weekly/
-backups/monthly/
-backups/quick/
-backups/latest_backup.sql.gz
-backups/cron.log
+# Database Backups (NEVER commit - security risk + bloats repo)
+backups/
+database/backups/
+database/archive/
+*.backup.sql
+*_backup_*.sql
+backup_*.sql
 
 # Bruno API Testing (komplett ignorieren)
 api-tests/
