@@ -3,7 +3,7 @@
 FROM node:24.11.1-alpine AS builder
 
 # pnpm installieren (pinned version matching packageManager field)
-RUN npm install -g pnpm@10.24.0
+RUN npm install -g pnpm@10.26.0
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -33,7 +33,7 @@ FROM node:24.11.1-alpine
 
 # pnpm installieren (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
-RUN npm install -g pnpm@10.24.0
+RUN npm install -g pnpm@10.26.0
 
 # Install dumb-init for proper signal handling (SIGTERM, SIGINT)
 # This ensures graceful shutdown when Node.js runs as PID 1

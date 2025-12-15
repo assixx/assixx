@@ -9,7 +9,7 @@ RUN apk add --no-cache curl jq && \
 # Install pnpm globally (pinned version matching packageManager field)
 # tsx and nodemon are in devDependencies - no need to install globally!
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
-RUN npm install -g pnpm@10.24.0
+RUN npm install -g pnpm@10.26.0
 
 # Arbeitsverzeichnis
 WORKDIR /app
