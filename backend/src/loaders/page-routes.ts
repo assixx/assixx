@@ -7,29 +7,50 @@ import path from 'path';
 
 import htmlRoutes from '../routes/pages/html.routes.js';
 
+/** Base origin for URL validation (localhost for relative URL parsing) */
+const VALIDATION_BASE_ORIGIN = 'http://localhost';
+
 /**
- * SECURITY: Validate that a redirect path is safe (local only)
+ * SECURITY: Validate that a redirect URL is safe (local only)
  * Prevents open redirect vulnerabilities (CWE-601)
- * @param redirectPath - The path to validate
- * @returns true if path is safe for redirect
+ * Uses URL parsing as recommended by CodeQL to verify redirect stays local
+ * @param redirectUrl - The full redirect URL to validate (path + query string)
+ * @returns true if URL is safe for redirect
  */
-function isSafeRedirectPath(redirectPath: string): boolean {
+function isSafeLocalRedirect(redirectUrl: string): boolean {
   // Must start with single slash (local path)
-  if (!redirectPath.startsWith('/')) {
+  if (!redirectUrl.startsWith('/')) {
     return false;
   }
-  // Must NOT start with // (protocol-relative URL)
-  if (redirectPath.startsWith('//')) {
+  // Must NOT start with // (protocol-relative URL that could redirect externally)
+  if (redirectUrl.startsWith('//')) {
     return false;
   }
-  // Must NOT contain :// (absolute URL)
-  if (redirectPath.includes('://')) {
+  // Must NOT contain :// anywhere (absolute URL injection)
+  if (redirectUrl.includes('://')) {
     return false;
   }
-  // Must NOT contain backslash (Windows path injection)
-  if (redirectPath.includes('\\')) {
+  // Must NOT contain backslash (Windows path injection / URL confusion)
+  if (redirectUrl.includes('\\')) {
     return false;
   }
+
+  // SECURITY: Parse URL to verify it stays on localhost (CodeQL recommended approach)
+  try {
+    const parsedUrl = new globalThis.URL(redirectUrl, VALIDATION_BASE_ORIGIN);
+    // Verify the parsed URL stays on our origin (didn't redirect to external host)
+    if (parsedUrl.origin !== VALIDATION_BASE_ORIGIN) {
+      return false;
+    }
+    // Verify pathname is still what we expect (no URL manipulation)
+    if (!parsedUrl.pathname.startsWith('/')) {
+      return false;
+    }
+  } catch {
+    // URL parsing failed - reject as potentially malicious
+    return false;
+  }
+
   return true;
 }
 
@@ -54,15 +75,16 @@ export function loadPageRoutes(app: Application): void {
 
     // Redirect .html to clean URL
     const cleanPath = req.path.slice(0, -5); // Remove .html
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
 
-    // SECURITY: Validate redirect path is safe (prevents open redirect)
-    if (!isSafeRedirectPath(cleanPath)) {
+    // SECURITY: Build full redirect URL and validate BEFORE redirecting (CWE-601 fix)
+    const redirectUrl = cleanPath + queryString;
+    if (!isSafeLocalRedirect(redirectUrl)) {
       res.status(400).send('Bad Request');
       return;
     }
 
-    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    res.redirect(301, cleanPath + queryString);
+    res.redirect(301, redirectUrl);
   });
 
   // Rate limit page handler

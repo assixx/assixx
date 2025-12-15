@@ -15,6 +15,12 @@ query-filters:
       # Reason: False positive in emailService.ts - HTML content is thoroughly sanitized
       # by custom sanitizeHtml() function that removes dangerous tags, event handlers,
       # malicious URLs, and CSS. Additional post-sanitization validation provides defense in depth
+  - exclude:
+      id: js/sensitive-get-query
+      # Reason: False positive - salaryYear/salaryMonth are NOT sensitive salary amounts,
+      # they are date filter parameters (e.g., year=2024, month=12) for listing payroll documents.
+      # The heuristic triggers on the word "salary" but these contain no PII or financial data.
+      # DB columns: salary_year (INT), salary_month (INT) - simple date range filters.
 
 # Optional: Paths to ignore
 paths-ignore:
