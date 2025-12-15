@@ -3,13 +3,12 @@
  * Team Service
  * Handles team-related business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
-} from '../models/team';
+} from '../routes/v2/teams/team.model.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Team Service
@@ -54,12 +53,17 @@ class TeamService {
     try {
       // Get tenant_id from filters or extract from tenantDb
       const teams = await Team.findAll();
-      return teams.map((team) => ({
-        ...team,
-        team_lead_id: team.team_lead_id,
-        team_lead_name: null as string | null,
-        member_count: 0,
-      }));
+      return teams.map((team: DbTeam) => {
+        const result: TeamData = {
+          ...team,
+          team_lead_name: null as string | null,
+          member_count: 0,
+        };
+        if (team.team_lead_id !== undefined) {
+          result.team_lead_id = team.team_lead_id;
+        }
+        return result;
+      });
     } catch (error: unknown) {
       console.error('Error in TeamService.getAll:', error);
       throw error;
@@ -70,18 +74,22 @@ class TeamService {
    * Holt einen Team Eintrag per ID
    * @param _tenantDb - The _tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async getById(_tenantDb: Pool, id: number): Promise<TeamData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<TeamData | null> {
     try {
-      const team = await Team.findById(id);
+      const team = await Team.findById(id, tenantId);
       if (!team) return null;
 
-      return {
+      const result: TeamData = {
         ...team,
-        team_lead_id: team.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
+      if (team.team_lead_id !== undefined) {
+        result.team_lead_id = team.team_lead_id;
+      }
+      return result;
     } catch (error: unknown) {
       console.error('Error in TeamService.getById:', error);
       throw error;
@@ -96,20 +104,32 @@ class TeamService {
   async create(_tenantDb: Pool, data: TeamCreateData): Promise<TeamData> {
     try {
       const modelData: ModelTeamCreateData = {
-        ...data,
-        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
+        tenant_id: data.tenant_id,
+        name: data.name,
       };
+      if (data.description !== undefined) {
+        modelData.description = data.description;
+      }
+      if (data.department_id !== undefined) {
+        modelData.department_id = data.department_id;
+      }
+      if (data.team_lead_id !== null && data.team_lead_id !== undefined) {
+        modelData.team_lead_id = data.team_lead_id;
+      }
       const id = await Team.create(modelData);
-      const created = await Team.findById(id);
+      const created = await Team.findById(id, data.tenant_id);
       if (!created) {
         throw new Error('Failed to retrieve created team');
       }
-      return {
+      const result: TeamData = {
         ...created,
-        team_lead_id: created.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
+      if (created.team_lead_id !== undefined) {
+        result.team_lead_id = created.team_lead_id;
+      }
+      return result;
     } catch (error: unknown) {
       console.error('Error in TeamService.create:', error);
       throw error;
@@ -120,17 +140,35 @@ class TeamService {
    * Aktualisiert einen Team Eintrag
    * @param tenantDb - The tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    * @param data - The data object
    */
-  async update(tenantDb: Pool, id: number, data: TeamUpdateData): Promise<TeamData | null> {
+  async update(
+    tenantDb: Pool,
+    id: number,
+    tenantId: number,
+    data: TeamUpdateData,
+  ): Promise<TeamData | null> {
     try {
-      const modelData: ModelTeamUpdateData = {
-        ...data,
-        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
-      };
-      const success = await Team.update(id, modelData);
+      const modelData: ModelTeamUpdateData = {};
+      if (data.name !== undefined) {
+        modelData.name = data.name;
+      }
+      if (data.description !== undefined) {
+        modelData.description = data.description;
+      }
+      if (data.department_id !== undefined) {
+        modelData.department_id = data.department_id;
+      }
+      if (data.team_lead_id !== undefined) {
+        modelData.team_lead_id = data.team_lead_id;
+      }
+      if (data.is_active !== undefined) {
+        modelData.is_active = data.is_active;
+      }
+      const success = await Team.update(id, modelData, tenantId);
       if (success) {
-        return await this.getById(tenantDb, id);
+        return await this.getById(tenantDb, id, tenantId);
       }
       return null;
     } catch (error: unknown) {
@@ -143,11 +181,11 @@ class TeamService {
    * Löscht einen Team Eintrag
    * @param _tenantDb - The _tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
+  async delete(_tenantDb: Pool, id: number, tenantId: number): Promise<boolean> {
     try {
-      // TODO: Team.delete expects different parameters
-      return await Team.delete(id);
+      return await Team.delete(id, tenantId);
     } catch (error: unknown) {
       console.error('Error in TeamService.delete:', error);
       throw error;

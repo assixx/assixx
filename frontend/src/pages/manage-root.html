@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Root User Verwaltung - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script src="/scripts/critical/sidebar-init.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
+
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
+    <link rel="stylesheet" href="/styles/manage-root.css" />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/password-strength.css" />
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+
+        <div class="container">
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-shield-alt mr-2"></i>
+                Root User Verwaltung
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Root-Benutzer des Systems</p>
+
+              <!-- Filter & Search Controls -->
+              <div class="flex items-center justify-between gap-4 mt-4">
+                <!-- Status Toggle Group -->
+                <div class="toggle-group" id="root-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Root-Benutzer">
+                    <i class="fas fa-user-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Root-Benutzer">
+                    <i class="fas fa-user-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Root-Benutzer">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Root-Benutzer">
+                    <i class="fas fa-users"></i>
+                    Alle
+                  </button>
+                </div>
+
+                <!-- Search Input -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="root-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="root-search"
+                      class="search-input__field"
+                      placeholder="Root-Benutzer suchen..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="root-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="root-search-results">
+                    <!-- Results populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card__body">
+              <!-- Security Warning -->
+              <div class="alert alert--warning mb-4">
+                <div class="alert__icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="alert__content">
+                  <div class="alert__title">Sicherheitshinweis</div>
+                  <div class="alert__message">Vollzugriff auf System. Kritische Aktionen benötigen Zwei-Personen-Genehmigung.</div>
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div id="root-users-loading" class="spinner-container u-hidden">
+                <div class="spinner-ring spinner-ring--md"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Root-Benutzer werden geladen...</p>
+              </div>
+
+              <!-- Root User Table -->
+              <div id="rootTableContent">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+
+              <!-- Empty State -->
+              <div id="root-users-empty" class="empty-state u-hidden">
+                <div class="empty-state__icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Root-Benutzer gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Root-Benutzer hinzufügen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="btn-float" id="add-root-btn" aria-label="Root-Benutzer hinzufügen">
+      <i class="fas fa-user-shield"></i>
+    </button>
+
+    <!-- Add/Edit Root User Modal -->
+    <div id="root-modal" class="modal-overlay">
+      <form id="root-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="root-modal-title">Root-Benutzer hinzufügen</h3>
+          <button type="button" class="ds-modal__close" id="close-root-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <input type="hidden" id="root-id" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-first-name">
+              Vorname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="root-first-name" name="firstName" class="form-field__control" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-last-name">
+              Nachname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="root-last-name" name="lastName" class="form-field__control" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-email">
+              E-Mail
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="root-email" name="email" class="form-field__control" required />
+            <span class="form-field__message text-[var(--color-text-secondary)]">Wird auch als Benutzername verwendet</span>
+          </div>
+
+          <div class="form-field" id="email-confirm-group">
+            <label class="form-field__label" for="root-email-confirm">
+              E-Mail wiederholen
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="root-email-confirm" name="emailConfirm" class="form-field__control" required />
+            <span class="form-field__message form-field__message--error u-hidden" id="email-error">
+              E-Mail-Adressen stimmen nicht überein
+            </span>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-employee-number">Personalnummer</label>
+            <input
+              type="text"
+              id="root-employee-number"
+              name="employeeNumber"
+              class="form-field__control"
+              placeholder="z.B. ABC-123 oder 2025-001 (optional, max 10 Zeichen)"
+              maxlength="10"
+              pattern="[A-Za-z0-9\-]{1,10}"
+              title="Max 10 Zeichen: Buchstaben, Zahlen, Bindestrich"
+            />
+          </div>
+
+          <div class="form-field" id="password-group">
+            <label class="form-field__label" for="root-password">
+              Passwort
+              <span class="text-red-500">*</span>
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="root-password" name="password" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="root-password-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field" id="password-confirm-group">
+            <label class="form-field__label" for="root-password-confirm">
+              Passwort wiederholen
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="root-password-confirm" name="passwordConfirm" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="root-password-confirm-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <span class="form-field__message form-field__message--error u-hidden" id="password-error">
+              Passwörter stimmen nicht überein
+            </span>
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="root-password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="root-password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="root-password-strength-label"></span>
+              <span class="password-strength-time" id="root-password-strength-time"></span>
+            </div>
+          </div>
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="root-password-feedback">
+            <span class="password-feedback-warning" id="root-password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="root-password-feedback-suggestions"></ul>
+          </div>
+
+          <!-- N:M REFACTORING: Root users have has_full_access=1 (Whole Tenant Access) -->
+          <!-- No department assignment needed - they can access ALL departments -->
+          <div class="form-field">
+            <div class="alert alert--info">
+              <div class="alert__icon">
+                <i class="fas fa-building"></i>
+              </div>
+              <div class="alert__content">
+                <div class="alert__title">Vollzugriff auf alle Bereiche</div>
+                <div class="alert__message">Root-User haben automatisch Zugriff auf alle Abteilungen und Bereiche des Tenants.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-position">
+              Position
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="root-position" name="position" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="position-dropdown">
+              <div class="dropdown__trigger" id="position-trigger">
+                <span>Position auswählen...</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="position-menu">
+                <div class="dropdown__option" data-value="CEO">CEO</div>
+                <div class="dropdown__option" data-value="CTO">CTO</div>
+                <div class="dropdown__option" data-value="CFO">CFO</div>
+                <div class="dropdown__option" data-value="Geschäftsführer">Geschäftsführer</div>
+                <div class="dropdown__option" data-value="IT-Administrator">IT-Administrator</div>
+                <div class="dropdown__option" data-value="Systemadministrator">Systemadministrator</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-notes">Notizen</label>
+            <textarea id="root-notes" name="notes" class="form-field__control" rows="3"></textarea>
+          </div>
+
+          <div class="form-field u-hidden" id="active-status-group">
+            <label class="form-field__label" for="root-status">
+              Status
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="root-is-active" name="isActive" value="1" />
+            <input type="hidden" id="root-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Root-User können sich nicht anmelden
+            </span>
+          </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-root-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
+    <div id="delete-root-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Root-Benutzer löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diesen Root-Benutzer wirklich löschen?</p>
+          <input type="hidden" id="delete-root-id" />
+        </div>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-root">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-root-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Root-Benutzer wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-root-final">
+            Endgültig löschen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <script type="module" src="/scripts/manage/root/index.ts"></script>
+  </body>
+</html>

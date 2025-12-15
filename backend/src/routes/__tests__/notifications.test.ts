@@ -5,8 +5,8 @@
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
 import {
   cleanupTestData,
   createTestDatabase,
@@ -14,7 +14,7 @@ import {
   createTestTenant,
   createTestUser,
   getAuthToken,
-} from '../mocks/database';
+} from '../mocks/database.js';
 
 describe('Notification API Endpoints', () => {
   let testDb: Pool;
@@ -30,7 +30,7 @@ describe('Notification API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-notification-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-notification-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'notifytest1', 'Notification Test Company 1');
@@ -166,7 +166,7 @@ describe('Notification API Endpoints', () => {
         },
       });
 
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       // Should see broadcast and personal notifications
       expect(notifications.length).toBeGreaterThanOrEqual(2);
     });
@@ -177,7 +177,7 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.every((n) => n.type === 'task')).toBe(true);
     });
 
@@ -201,7 +201,7 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.every((n) => !n.isRead)).toBe(true);
     });
 
@@ -211,7 +211,7 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       expect(notifications.every((n) => n.priority === 'high')).toBe(true);
     });
 
@@ -221,8 +221,8 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.notifications.length).toBeLessThanOrEqual(2);
-      expect(response.body.data.pagination.limit).toBe(2);
+      expect(response.body.data['notifications'].length).toBeLessThanOrEqual(2);
+      expect(response.body.data['pagination'].limit).toBe(2);
     });
 
     it('should enforce tenant isolation', async () => {
@@ -231,7 +231,7 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      const notifications = response.body.data.notifications;
+      const notifications = response.body.data['notifications'];
       // Should not see notifications from tenant1
       expect(notifications.length).toBe(0);
     });
@@ -259,11 +259,11 @@ describe('Notification API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.notificationId).toBeDefined();
+      expect(response.body.data['notificationId']).toBeDefined();
 
       // Verify notification was created
       const [rows] = await testDb.execute('SELECT * FROM notifications WHERE id = ?', [
-        response.body.data.notificationId,
+        response.body.data['notificationId'],
       ]);
       const notifications = asTestRows<unknown>(rows);
       expect((notifications as any[])[0]).toMatchObject({
@@ -360,7 +360,7 @@ describe('Notification API Endpoints', () => {
 
       // Verify scheduled
       const [rows] = await testDb.execute('SELECT scheduled_for FROM notifications WHERE id = ?', [
-        response.body.data.notificationId,
+        response.body.data['notificationId'],
       ]);
       const notifications = asTestRows<unknown>(rows);
       expect((notifications as any[])[0].scheduled_for).toBeTruthy();
@@ -479,7 +479,7 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.markedCount).toBeGreaterThan(0);
+      expect(response.body.data['markedCount']).toBeGreaterThan(0);
 
       // Verify all marked as read
       const [rows] = await testDb.execute(
@@ -583,7 +583,7 @@ describe('Notification API Endpoints', () => {
           .set('Authorization', `Bearer ${employeeToken1}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.preferences).toMatchObject({
+        expect(response.body.data['preferences']).toMatchObject({
           email_notifications: expect.any(Boolean),
           push_notifications: expect.any(Boolean),
           sms_notifications: expect.any(Boolean),
@@ -597,7 +597,7 @@ describe('Notification API Endpoints', () => {
           .set('Authorization', `Bearer ${employeeToken2}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.preferences).toMatchObject({
+        expect(response.body.data['preferences']).toMatchObject({
           email_notifications: true,
           push_notifications: true,
           sms_notifications: false,
@@ -720,7 +720,7 @@ describe('Notification API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.subscriptionId).toBeDefined();
+      expect(response.body.data['subscriptionId']).toBeDefined();
     });
 
     it('should unsubscribe from notifications', async () => {
@@ -733,7 +733,7 @@ describe('Notification API Endpoints', () => {
           platform: 'web',
         });
 
-      const subscriptionId = subResponse.body.data.subscriptionId;
+      const subscriptionId = subResponse.body.data['subscriptionId'];
 
       const response = await request(app)
         .delete(`/api/notifications/subscribe/${subscriptionId}`)
@@ -750,8 +750,8 @@ describe('Notification API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.templates).toBeDefined();
-      expect(Array.isArray(response.body.data.templates)).toBe(true);
+      expect(response.body.data['templates']).toBeDefined();
+      expect(Array.isArray(response.body.data['templates'])).toBe(true);
     });
 
     it('should create notification from template', async () => {

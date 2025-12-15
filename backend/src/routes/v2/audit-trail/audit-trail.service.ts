@@ -36,10 +36,41 @@ interface DbAuditEntry extends RowDataPacket {
   created_at: Date;
 }
 
+// Query result types for type safety
+interface UserUsernameRoleResult extends RowDataPacket {
+  username: string;
+  role: string;
+}
+
+interface CountResult extends RowDataPacket {
+  total: number;
+}
+
+interface ActionCountResult extends RowDataPacket {
+  action: string;
+  count: number;
+}
+
+interface ResourceTypeCountResult extends RowDataPacket {
+  resource_type: string;
+  count: number;
+}
+
+interface UserCountResult extends RowDataPacket {
+  user_id: number;
+  user_name: string | null;
+  count: number;
+}
+
+interface StatusCountResult extends RowDataPacket {
+  status: 'success' | 'failure';
+  count: number;
+}
+
 /**
  *
  */
-export class AuditTrailService {
+class AuditTrailService {
   /**
    * Create a new audit entry
    * @param tenantId - The tenant ID
@@ -59,8 +90,8 @@ export class AuditTrailService {
 
     try {
       // Get user details for audit
-      const [userRows] = await connection.execute<RowDataPacket[]>(
-        `SELECT username, role FROM users WHERE id = ? AND tenant_id = ?`,
+      const [userRows] = await connection.execute<UserUsernameRoleResult[]>(
+        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2`,
         [userId, tenantId],
       );
 
@@ -69,13 +100,18 @@ export class AuditTrailService {
       }
 
       const user = userRows[0];
+      if (user === undefined) {
+        throw new ServiceError('USER_NOT_FOUND', 'User data is undefined');
+      }
 
-      const [result] = await connection.execute<ResultSetHeader>(
+      // POSTGRESQL: RETURNING id required to get inserted id
+      const [rows] = await connection.execute<{ id: number }[]>(
         `INSERT INTO audit_trail (
           tenant_id, user_id, user_name, user_role,
           action, resource_type, resource_id, resource_name,
           changes, ip_address, user_agent, status, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING id`,
         [
           tenantId,
           userId,
@@ -93,106 +129,103 @@ export class AuditTrailService {
         ],
       );
 
-      return await this.getEntryById(result.insertId, tenantId);
+      const insertedId = rows[0]?.id ?? 0;
+      return await this.getEntryById(insertedId, tenantId);
     } finally {
       connection.release();
     }
   }
 
   /**
-   * Get audit entries with filters
-   * @param filter - The filter parameter
+   * Build WHERE clause conditions and params from filter
    */
-  async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
-    const {
-      tenantId,
-      userId,
-      action,
-      resourceType,
-      resourceId,
-      status,
-      dateFrom,
-      dateTo,
-      search,
-      page = 1,
-      limit = 50,
-      sortBy = 'created_at',
-      sortOrder = 'desc',
-    } = filter;
+  private buildWhereClause(filter: AuditFilter): {
+    whereClause: string;
+    params: (string | number)[];
+  } {
+    const conditions: string[] = ['tenant_id = $1'];
+    const params: (string | number)[] = [filter.tenantId];
+    let paramIndex = 2;
 
-    const offset = (page - 1) * limit;
-    const conditions: string[] = ['tenant_id = ?'];
-    const params: (string | number | boolean)[] = [tenantId];
-
-    // Build WHERE conditions
-    if (userId) {
-      conditions.push('user_id = ?');
-      params.push(userId);
+    if (filter.userId !== undefined) {
+      conditions.push(`user_id = $${paramIndex++}`);
+      params.push(filter.userId);
     }
-    if (action) {
-      conditions.push('action = ?');
-      params.push(action);
+    if (filter.action !== undefined) {
+      conditions.push(`action = $${paramIndex++}`);
+      params.push(filter.action);
     }
-    if (resourceType) {
-      conditions.push('resource_type = ?');
-      params.push(resourceType);
+    if (filter.resourceType !== undefined) {
+      conditions.push(`resource_type = $${paramIndex++}`);
+      params.push(filter.resourceType);
     }
-    if (resourceId) {
-      conditions.push('resource_id = ?');
-      params.push(resourceId);
+    if (filter.resourceId !== undefined) {
+      conditions.push(`resource_id = $${paramIndex++}`);
+      params.push(filter.resourceId);
     }
-    if (status) {
-      conditions.push('status = ?');
-      params.push(status);
+    if (filter.status !== undefined) {
+      conditions.push(`status = $${paramIndex++}`);
+      params.push(filter.status);
     }
-    if (dateFrom) {
-      conditions.push('created_at >= ?');
-      params.push(dateFrom);
+    if (filter.dateFrom !== undefined) {
+      conditions.push(`created_at >= $${paramIndex++}`);
+      params.push(filter.dateFrom);
     }
-    if (dateTo) {
-      conditions.push('created_at <= ?');
-      params.push(dateTo);
+    if (filter.dateTo !== undefined) {
+      conditions.push(`created_at <= $${paramIndex++}`);
+      params.push(filter.dateTo);
     }
-    if (search) {
-      conditions.push('(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)');
-      const searchPattern = `%${search}%`;
+    if (filter.search !== undefined) {
+      conditions.push(
+        `(user_name LIKE $${paramIndex} OR resource_name LIKE $${paramIndex + 1} OR action LIKE $${paramIndex + 2})`,
+      );
+      const searchPattern = `%${filter.search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
     }
 
-    const whereClause = conditions.join(' AND ');
+    return { whereClause: conditions.join(' AND '), params };
+  }
 
-    // Get total count
-    const [countRows] = await execute<RowDataPacket[]>(
+  /**
+   * Get total count of entries matching filter
+   */
+  private async getEntriesCount(whereClause: string, params: (string | number)[]): Promise<number> {
+    const [countRows] = await execute<CountResult[]>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
-    const total = countRows[0].total as number;
+    const firstCount = countRows[0];
+    if (firstCount === undefined) {
+      throw new ServiceError('DATABASE_ERROR', 'Failed to get count from database');
+    }
+    return firstCount.total;
+  }
 
-    // Get paginated entries
+  /**
+   * Get audit entries with filters
+   */
+  async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 50;
+    const sortBy = filter.sortBy ?? 'created_at';
+    const sortOrder = filter.sortOrder ?? 'desc';
+    const offset = (page - 1) * limit;
+
+    const { whereClause, params } = this.buildWhereClause(filter);
+    const total = await this.getEntriesCount(whereClause, params);
+
     const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
     const orderBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
-    // Debug logging
-    console.info('[Audit Trail Service] Query params:', {
-      whereClause,
-      params,
-      limit,
-      offset,
-      finalParams: [...params, limit, offset],
-    });
-
+    const limitParamIndex = params.length + 1;
+    const offsetParamIndex = params.length + 2;
     const [rows] = await query<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail
-       WHERE ${whereClause}
-       ORDER BY ${orderBy} ${order}
-       LIMIT ? OFFSET ?`,
+      `SELECT * FROM audit_trail WHERE ${whereClause} ORDER BY ${orderBy} ${order} LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
       [...params, limit, offset],
     );
 
-    const entries = rows.map((row) => this.mapToAuditEntry(row));
-
-    return { entries, total };
+    return { entries: rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row)), total };
   }
 
   /**
@@ -202,7 +235,7 @@ export class AuditTrailService {
    */
   async getEntryById(id: number, tenantId: number): Promise<AuditEntry> {
     const [rows] = await execute<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail WHERE id = ? AND tenant_id = ?`,
+      `SELECT * FROM audit_trail WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
 
@@ -210,104 +243,124 @@ export class AuditTrailService {
       throw new ServiceError('NOT_FOUND', 'Audit entry not found');
     }
 
-    return this.mapToAuditEntry(rows[0]);
+    const row = rows[0];
+    if (row === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Audit entry data is undefined');
+    }
+
+    return this.mapToAuditEntry(row);
   }
 
   /**
    * Get audit statistics
    * @param filter - The filter parameter
    */
-  async getStats(filter: AuditFilter): Promise<AuditStats> {
+  private buildStatsWhereClause(filter: AuditFilter): {
+    whereClause: string;
+    params: (string | number | Date)[];
+  } {
     const { tenantId, dateFrom, dateTo } = filter;
-
-    const conditions: string[] = ['tenant_id = ?'];
+    const conditions: string[] = ['tenant_id = $1'];
     const params: (string | number | Date)[] = [tenantId];
+    let paramIndex = 2;
 
-    if (dateFrom) {
-      conditions.push('created_at >= ?');
+    if (dateFrom !== undefined && dateFrom !== '') {
+      conditions.push(`created_at >= $${paramIndex++}`);
       params.push(dateFrom);
     }
-    if (dateTo) {
-      conditions.push('created_at <= ?');
+    if (dateTo !== undefined && dateTo !== '') {
+      conditions.push(`created_at <= $${paramIndex++}`);
       params.push(dateTo);
     }
 
-    const whereClause = conditions.join(' AND ');
+    return { whereClause: conditions.join(' AND '), params };
+  }
 
-    // Get total entries
-    const [totalRows] = await execute<RowDataPacket[]>(
+  private transformStatsResults(
+    actionRows: ActionCountResult[],
+    resourceRows: ResourceTypeCountResult[],
+    userRows: UserCountResult[],
+    statusRows: StatusCountResult[],
+  ): {
+    byAction: Record<string, number>;
+    byResourceType: Record<string, number>;
+    byUser: { userId: number; userName: string; count: number }[];
+    byStatus: { success: number; failure: number };
+  } {
+    const byAction: Record<string, number> = {};
+    actionRows.forEach((row: ActionCountResult) => {
+      byAction[row.action] = row.count;
+    });
+
+    const byResourceType: Record<string, number> = {};
+    resourceRows.forEach((row: ResourceTypeCountResult) => {
+      byResourceType[row.resource_type] = row.count;
+    });
+
+    const byUser = userRows.map((row: UserCountResult) => ({
+      userId: row.user_id,
+      userName: row.user_name ?? 'Unknown',
+      count: row.count,
+    }));
+
+    const byStatus = { success: 0, failure: 0 };
+    statusRows.forEach((row: StatusCountResult) => {
+      if (row.status === 'success') {
+        byStatus.success = row.count;
+      } else {
+        byStatus.failure = row.count;
+      }
+    });
+
+    return { byAction, byResourceType, byUser, byStatus };
+  }
+
+  async getStats(filter: AuditFilter): Promise<AuditStats> {
+    const { dateFrom, dateTo } = filter;
+    const { whereClause, params } = this.buildStatsWhereClause(filter);
+
+    // Get all required data
+    const [totalRows] = await execute<CountResult[]>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
 
-    // Get counts by action
-    const [actionRows] = await execute<RowDataPacket[]>(
-      `SELECT action, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY action`,
+    const [actionRows] = await execute<ActionCountResult[]>(
+      `SELECT action, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY action`,
       params,
     );
 
-    // Get counts by resource type
-    const [resourceRows] = await execute<RowDataPacket[]>(
-      `SELECT resource_type, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY resource_type`,
+    const [resourceRows] = await execute<ResourceTypeCountResult[]>(
+      `SELECT resource_type, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY resource_type`,
       params,
     );
 
-    // Get top users by activity
-    const [userRows] = await execute<RowDataPacket[]>(
+    const [userRows] = await execute<UserCountResult[]>(
       `SELECT user_id, user_name, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY user_id, user_name
-       ORDER BY count DESC
-       LIMIT 10`,
+       FROM audit_trail WHERE ${whereClause}
+       GROUP BY user_id, user_name ORDER BY count DESC LIMIT 10`,
       params,
     );
 
-    // Get counts by status
-    const [statusRows] = await execute<RowDataPacket[]>(
-      `SELECT status, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY status`,
+    const [statusRows] = await execute<StatusCountResult[]>(
+      `SELECT status, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY status`,
       params,
     );
 
-    const byAction: Record<string, number> = {};
-    actionRows.forEach((row) => {
-      byAction[row.action as string] = row.count as number;
-    });
+    const { byAction, byResourceType, byUser, byStatus } = this.transformStatsResults(
+      actionRows,
+      resourceRows,
+      userRows,
+      statusRows,
+    );
 
-    const byResourceType: Record<string, number> = {};
-    resourceRows.forEach((row) => {
-      byResourceType[row.resource_type as string] = row.count as number;
-    });
-
-    const byUser = userRows.map((row) => ({
-      userId: row.user_id as number,
-      userName: row.user_name ? (row.user_name as string) : 'Unknown',
-      count: row.count as number,
-    }));
-
-    const byStatus = {
-      success: 0,
-      failure: 0,
-    };
-    statusRows.forEach((row) => {
-      if (row.status === 'success') {
-        byStatus.success = row.count as number;
-      } else if (row.status === 'failure') {
-        byStatus.failure = row.count as number;
-      }
-    });
+    const firstTotal = totalRows[0];
+    if (firstTotal === undefined) {
+      throw new ServiceError('DATABASE_ERROR', 'Failed to get total count from database');
+    }
 
     return {
-      totalEntries: totalRows[0].total as number,
+      totalEntries: firstTotal.total,
       byAction,
       byResourceType,
       byUser,
@@ -334,7 +387,7 @@ export class AuditTrailService {
     dateTo: string,
     generatedBy: number,
   ): Promise<ComplianceReport> {
-    const conditions: string[] = ['tenant_id = ?', 'created_at >= ?', 'created_at <= ?'];
+    const conditions: string[] = ['tenant_id = $1', 'created_at >= $2', 'created_at <= $3'];
     const params: (string | number)[] = [tenantId, dateFrom, dateTo];
 
     // Add report-specific filters
@@ -369,15 +422,17 @@ export class AuditTrailService {
       params,
     );
 
-    const entries = rows.map((row) => this.mapToAuditEntry(row));
+    const entries = rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row));
 
     // Calculate summary
-    const uniqueUsers = new Set(entries.map((e) => e.userId)).size;
-    const dataAccessCount = entries.filter((e) => ['read', 'export'].includes(e.action)).length;
-    const dataModificationCount = entries.filter((e) =>
+    const uniqueUsers = new Set(entries.map((e: AuditEntry) => e.userId)).size;
+    const dataAccessCount = entries.filter((e: AuditEntry) =>
+      ['read', 'export'].includes(e.action),
+    ).length;
+    const dataModificationCount = entries.filter((e: AuditEntry) =>
       ['create', 'update'].includes(e.action),
     ).length;
-    const dataDeletionCount = entries.filter((e) => e.action === 'delete').length;
+    const dataDeletionCount = entries.filter((e: AuditEntry) => e.action === 'delete').length;
 
     return {
       tenantId,
@@ -404,7 +459,7 @@ export class AuditTrailService {
    */
   async deleteOldEntries(tenantId: number, olderThan: Date): Promise<number> {
     const [result] = await execute<ResultSetHeader>(
-      `DELETE FROM audit_trail WHERE tenant_id = ? AND created_at < ?`,
+      `DELETE FROM audit_trail WHERE tenant_id = $1 AND created_at < $2`,
       [tenantId, olderThan],
     );
 
@@ -412,32 +467,39 @@ export class AuditTrailService {
   }
 
   /**
+   * Apply optional string fields from DB row to entry
+   */
+  private applyOptionalStringFields(entry: AuditEntry, row: DbAuditEntry): void {
+    if (row.user_name !== undefined) entry.userName = row.user_name;
+    if (row.user_role !== undefined) entry.userRole = row.user_role;
+    if (row.resource_name !== undefined) entry.resourceName = row.resource_name;
+    if (row.ip_address !== undefined) entry.ipAddress = row.ip_address;
+    if (row.user_agent !== undefined) entry.userAgent = row.user_agent;
+    if (row.error_message !== undefined) entry.errorMessage = row.error_message;
+  }
+
+  /**
    * Map database row to AuditEntry
-   * @param row - The row parameter
    */
   private mapToAuditEntry(row: DbAuditEntry): AuditEntry {
-    return {
+    const entry: AuditEntry = {
       id: row.id,
       tenantId: row.tenant_id,
       userId: row.user_id,
-      userName: row.user_name,
-      userRole: row.user_role,
       action: row.action,
       resourceType: row.resource_type,
-      resourceId: row.resource_id,
-      resourceName: row.resource_name,
-      changes:
-        row.changes ?
-          typeof row.changes === 'string' ?
-            (JSON.parse(row.changes) as Record<string, unknown>)
-          : (row.changes as Record<string, unknown>)
-        : undefined,
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
       status: row.status,
-      errorMessage: row.error_message,
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     };
+
+    this.applyOptionalStringFields(entry, row);
+
+    if (row.resource_id !== undefined) entry.resourceId = row.resource_id;
+    if (row.changes !== undefined) {
+      entry.changes = JSON.parse(row.changes) as Record<string, unknown>;
+    }
+
+    return entry;
   }
 }
 

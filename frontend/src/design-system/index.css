@@ -1,0 +1,132 @@
+/**
+ * Assixx Design System
+ *
+ * Version: 1.0.0
+ * Philosophy: Best Practice 2025 - Component-Driven Design
+ *
+ * Architecture:
+ * ├── Tokens       → Single source of truth (colors, shadows, etc.)
+ * ├── Primitives   → Atomic components (buttons, inputs, etc.)
+ * └── Utils        → Helper classes and utilities
+ *
+ * Reference:
+ * - Microsoft Fluent Design System
+ * - Google Material Design 3
+ * - Meta Design System
+ * - Apple Human Interface Guidelines
+ *
+ * USAGE:
+ * @import 'design-system';
+ *
+ * That's it! Entire design system is loaded.
+ */
+
+/* ========== MATERIAL SYMBOLS ========== */
+/* Font + CSS class are automatically loaded via Google Fonts (vite.config.js)
+ * No additional CSS needed - Google provides the .material-symbols-outlined class */
+
+/* ========== DESIGN TOKENS ========== */
+/* Single source of truth for all design values */
+@import "./tokens/index.css";
+
+/* ========== PRIMITIVE COMPONENTS ========== */
+/* Atomic, reusable components */
+
+/* Buttons - Complete button system */
+@import "./primitives/buttons/index.css";
+
+/* Forms - Glassmorphism form controls */
+@import "./primitives/forms/index.css";
+
+/* Toggles - Toggle button groups and switches */
+@import "./primitives/toggles/index.css";
+
+/* Dropdowns - Custom dropdowns with icons and complex layouts */
+@import "./primitives/dropdowns/index.css";
+
+/* Cards - Glassmorphism containers */
+@import "./primitives/cards/index.css";
+
+/* Containers - Layout wrappers and grids */
+@import "./primitives/containers/index.css";
+
+/* Modals - Overlay dialogs */
+@import "./primitives/modals/index.css";
+
+/* Choice Cards - Selection controls (radio/checkbox cards) */
+@import "./primitives/choice-cards/index.css";
+
+/* Badges - Status indicators, labels, and tags */
+@import "./primitives/badges/index.css";
+
+/* Navigation - Breadcrumbs, pagination, tabs, stepper, accordion */
+@import "./primitives/navigation/index.css";
+
+/* Data Display - Tables, empty states, data lists */
+@import "./primitives/data-display/index.css";
+
+/* Feedback - Alerts, progress, spinners, skeletons, toasts */
+@import "./primitives/feedback/index.css";
+
+/* Pickers - Date/Time pickers with enhanced native inputs */
+@import "./primitives/pickers/index.css";
+
+/* File Upload - Drag & drop file upload with previews */
+@import "./primitives/file-upload/index.css";
+
+/* Avatar - User profile avatars with initials */
+@import "./primitives/avatar/index.css";
+
+/* Search Input - Enhanced search with icons and clear button */
+@import "./primitives/search-input/index.css";
+
+/* Empty States - "No data" screens with minimal icons */
+@import "./primitives/empty-states/index.css";
+
+/* Tooltip - Hover/focus tooltips with auto-positioning */
+@import "./primitives/tooltip/index.css";
+
+/* Collapse - Standalone expandable sections */
+@import "./primitives/collapse/index.css";
+
+/* ========== COMPOSED COMPONENTS ========== */
+/* Higher-level components composed from primitives */
+
+/* Content Card - Enhanced glassmorphic cards for profile/content pages */
+@import "./components/card/card.css";
+
+/* Confirm Modal - Confirmation dialogs for critical actions */
+@import "./components/confirm-modal/confirm-modal.css";
+
+/* ========== UTILITIES ========== */
+/* Helper classes for layout and common patterns */
+/* Future: Will be added as needed */
+
+/**
+ * DESIGN SYSTEM ROADMAP
+ *
+ * Phase 1: ✅ Buttons (DONE)
+ * Phase 2: ⏳ Inputs & Forms
+ * Phase 3: ⏳ Cards & Containers
+ * Phase 4: ⏳ Modals & Overlays
+ * Phase 5: ⏳ Badges & Status
+ * Phase 6: ⏳ Navigation Components
+ * Phase 7: ⏳ Data Display (Tables, Lists)
+ * Phase 8: ⏳ Feedback (Toasts, Alerts)
+ *
+ * MIGRATION PLAN:
+ * 1. Build new component in design-system/
+ * 2. Test in design-standards.html
+ * 3. Update documentation
+ * 4. Replace bootstrap compat layer
+ * 5. Migrate pages one by one
+ * 6. Remove old CSS
+ *
+ * BEST PRACTICES:
+ * - One component per file
+ * - Token-first (no hardcoded values)
+ * - Base + Variants pattern
+ * - Accessible by default
+ * - React-migration ready
+ * - Comprehensive documentation
+ */

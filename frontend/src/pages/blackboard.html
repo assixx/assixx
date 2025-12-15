@@ -7,99 +7,95 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
-    <link rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
+    <!-- Font Awesome - Must load BEFORE page-specific CSS -->
     <link rel="stylesheet" href="/styles/blackboard.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
   </head>
   <body class="blackboard-page" data-page="blackboard">
-    <div class="auto-refresh-indicator">
-      <i class="fas fa-sync-alt fa-spin"></i>
-      Auto-Refresh: 30s
-    </div>
-
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="main-content">
+      <main class="relative overflow-y-auto w-full h-[calc(100vh-56px)] p-[var(--spacing-4)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <!-- Filterleiste -->
-          <div class="card mb-4">
-            <div class="card-header u-cursor-pointer" id="filterToggle">
-              <div class="filter-header-flex">
-                <h3 class="card-title u-m-0">Filter & Suche</h3>
-                <i class="fas fa-chevron-down chevron-icon" id="filterToggleIcon" data-expanded="false"></i>
+          <div class="card mb-6">
+            <div class="card__header cursor-pointer" id="filterToggle">
+              <div class="flex items-center justify-between">
+                <h3 class="card__title m-0">
+                  <i class="fas fa-filter mr-2"></i>
+                  Filter & Suche
+                </h3>
+                <i class="fas fa-chevron-down transition-transform duration-200" id="filterToggleIcon" data-expanded="false"></i>
               </div>
             </div>
-            <div class="card-body collapsed" id="filterContent">
-              <!-- Moderne Filter-Kontrollen -->
-              <div class="modern-filters">
-                <!-- Floating Search Bar -->
-                <div class="floating-search">
-                  <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-                    />
-                  </svg>
-                  <input type="text" id="searchInput" class="search-field" placeholder="Blackboard durchsuchen..." />
-                  <button type="button" id="searchButton" class="search-trigger">Suchen</button>
+            <div class="card__body collapsed" id="filterContent">
+              <!-- Filter Controls - Design System (Horizontal Layout) -->
+              <div class="flex flex-wrap gap-4 items-end">
+                <!-- Search Bar -->
+                <div class="form-field">
+                  <label class="form-field__label" for="searchInput">Suche</label>
+                  <div class="relative">
+                    <input type="text" id="searchInput" class="form-field__control pl-10" placeholder="Blackboard durchsuchen..." />
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  </div>
                 </div>
 
-                <!-- Filter Pills -->
-                <div class="filter-pills">
-                  <div class="pill-group">
-                    <span class="pill-label">Ebene:</span>
-                    <button class="filter-pill active" data-value="all" id="filterAll">
-                      <span>🌐</span>
+                <!-- Level Filter - Toggle Group -->
+                <div class="form-field">
+                  <label class="form-field__label">Organisationsebene</label>
+                  <div class="toggle-group mt-2" id="levelFilter">
+                    <button class="toggle-group__btn active" data-value="all" id="filterAll" title="Alle Einträge">
+                      <i class="fas fa-globe"></i>
                       Alle
                     </button>
-                    <button class="filter-pill" data-value="company" id="filterCompany">
-                      <span>🏢</span>
+                    <button class="toggle-group__btn" data-value="company" id="filterCompany" title="Firmeneinträge">
+                      <i class="fas fa-building"></i>
                       Firma
                     </button>
-                    <button class="filter-pill" data-value="department" id="filterDepartment">
-                      <span>🏛️</span>
+                    <button class="toggle-group__btn" data-value="department" id="filterDepartment" title="Abteilungseinträge">
+                      <i class="fas fa-sitemap"></i>
                       Abteilung
                     </button>
-                    <button class="filter-pill" data-value="team" id="filterTeam">
-                      <span>👥</span>
+                    <button class="toggle-group__btn" data-value="team" id="filterTeam" title="Teameinträge">
+                      <i class="fas fa-users"></i>
                       Team
                     </button>
+                    <button class="toggle-group__btn" data-value="area" id="filterArea" title="Bereichseinträge">
+                      <i class="fas fa-map-marked-alt"></i>
+                      Bereich
+                    </button>
                   </div>
+                </div>
 
-                  <div class="pill-group">
-                    <span class="pill-label">Sortieren:</span>
-                    <select id="sortFilter" class="modern-select">
-                      <option value="created_at|DESC">🕒 Neueste</option>
-                      <option value="created_at|ASC">⏰ Älteste</option>
-                      <option value="priority|DESC">⚡ Priorität</option>
-                      <option value="title|ASC">🔤 A-Z</option>
-                    </select>
+                <!-- Sort Filter -->
+                <div class="form-field">
+                  <label class="form-field__label" for="sortFilter">Sortierung</label>
+                  <!-- Hidden input to store the selected value -->
+                  <input type="hidden" id="sortFilter" name="sort" value="created_at|DESC" />
+                  <!-- Custom Dropdown -->
+                  <div class="dropdown" id="sort-dropdown">
+                    <div class="dropdown__trigger" id="sort-trigger">
+                      <span>Neueste zuerst</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="sort-menu">
+                      <div class="dropdown__option" data-value="created_at|DESC">Neueste zuerst</div>
+                      <div class="dropdown__option" data-value="created_at|ASC">Älteste zuerst</div>
+                      <div class="dropdown__option" data-value="priority|DESC">Nach Priorität</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -107,73 +103,43 @@
           </div>
 
           <!-- Controls unter der Filterleiste -->
-          <div class="flex flex-between mb-4">
+          <div class="flex justify-between mb-6">
             <div class="controls-flex">
               <div class="zoom-controls zoom-controls-inline">
-                <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                <button id="zoomInBtn" class="btn btn-icon btn-secondary" title="Vergrößern">
                   <i class="fas fa-plus"></i>
                 </button>
-                <span id="zoomLevel" class="zoom-level">100%</span>
-                <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                <span id="zoomLevel" class="zoom-level">70%</span>
+                <button id="zoomOutBtn" class="btn btn-icon btn-secondary" title="Verkleinern">
                   <i class="fas fa-minus"></i>
                 </button>
-                <button id="fullscreenBtn" class="zoom-btn ml-2" title="Vollbild">
+                <button id="fullscreenBtn" class="btn btn-icon btn-secondary ml-2" title="Vollbild">
                   <i class="fas fa-expand"></i>
                 </button>
               </div>
-              <button id="newEntryBtn" class="btn btn-primary u-m-0">
-                <i class="fas fa-plus me-2"></i>
-                Neuer Eintrag
-              </button>
-              <button id="directAttachBtn" class="btn btn-primary u-m-0">
-                <i class="fas fa-paperclip me-2"></i>
-                Bild/PDF anheften
-              </button>
+              <!-- Admin-only button - rendered dynamically via JS for security -->
+              <div id="newEntryBtnContainer"></div>
             </div>
           </div>
 
           <!-- Pinnwand Container -->
           <div class="blackboard-container" id="blackboardContainer">
             <!-- Initial Load Button -->
-            <div class="text-center p-5" id="loadEntriesCard">
-              <h3 class="text-white mb-3">Willkommen am Schwarzen Brett</h3>
-              <p class="text-white opacity-75 mb-4">Klicke auf den Button, um die Einträge zu laden</p>
-              <button id="loadEntriesBtn" class="btn btn-primary btn-lg">
-                <i class="fas fa-thumbtack me-2"></i>
-                Einträge anheften
-              </button>
-            </div>
 
             <!-- Loading Indicator -->
-            <div id="loadingIndicator" class="text-center p-5 d-none">
-              <div class="loading-spinner"></div>
-              <p class="mt-3 text-white">Einträge werden geladen...</p>
-            </div>
-
-            <!-- No Entries Message -->
-            <div id="noEntriesMessage" class="text-center p-5 d-none">
-              <div class="pinboard-item">
-                <div class="pinboard-sticky color-yellow text-center">
-                  <div class="pushpin pushpin-red"></div>
-                  <i class="fas fa-clipboard mb-3 empty-icon"></i>
-                  <h4 class="empty-title">Noch keine Einträge</h4>
-                  <p class="empty-text">Das Schwarze Brett ist noch leer.</p>
-                  <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
-                    <i class="fas fa-redo"></i>
-                    Erneut versuchen
-                  </button>
-                </div>
-              </div>
+            <div id="loadingIndicator" class="text-center p-5" hidden>
+              <div class="spinner-ring spinner-ring--md"></div>
+              <p class="mt-3 text-[var(--color-text-secondary)]">Einträge werden geladen...</p>
             </div>
 
             <!-- Pinboard Grid -->
-            <div id="blackboardEntries" class="pinboard-grid d-none">
+            <div id="blackboardEntries" class="pinboard-grid" hidden>
               <!-- Einträge werden dynamisch eingefügt -->
             </div>
           </div>
 
           <!-- Pagination -->
-          <div class="flex flex-center mt-4 gap-2 d-none" id="paginationContainer">
+          <div class="flex items-center justify-center mt-4 gap-2" id="paginationContainer" hidden>
             <div class="pagination" id="pagination">
               <!-- Wird dynamisch gefüllt -->
             </div>
@@ -183,45 +149,30 @@
     </div>
     <!-- Ende des layout-container -->
 
-    <!-- Entry Detail Modal -->
-    <div class="modal-overlay u-hidden" id="entryDetailModal">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h2 id="entryDetailModalLabel">Eintrag Details</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div id="entryDetailContent" class="fade-in">
-            <!-- Wird dynamisch gefüllt -->
-          </div>
-        </div>
-        <div class="modal-footer" id="entryDetailFooter">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-          <!-- Weitere Buttons werden dynamisch hinzugefügt -->
-        </div>
-      </div>
-    </div>
+    <!-- Entry Detail Modal REMOVED - Now using dedicated /blackboard-detail page -->
 
-    <!-- Entry Form Modal -->
-    <div class="modal u-hidden" id="entryFormModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="entryFormModalLabel">Neuer Eintrag</h3>
-          <button type="button" class="modal-close" data-action="hide-modal" data-modal="entryFormModal">&times;</button>
+    <!-- Entry Form Modal - Design System -->
+    <div class="modal-overlay" id="entryFormModal" hidden>
+      <form id="entryForm" class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="entryFormModalLabel">Neuer Eintrag</h3>
+          <button type="button" class="ds-modal__close" data-action="close-modal" data-modal-id="entryFormModal" aria-label="Schließen">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="entryForm">
+        <div class="ds-modal__body">
           <input type="hidden" id="entryId" name="entry_id" />
 
           <!-- Titel und Inhalt -->
-          <div class="form-group">
-            <label for="entryTitle" class="form-label">Titel</label>
-            <input type="text" class="form-control" id="entryTitle" name="title" required placeholder="Was ist das Thema?" />
+          <div class="form-field">
+            <label for="entryTitle" class="form-field__label">Titel</label>
+            <input type="text" class="form-field__control" id="entryTitle" name="title" required placeholder="Was ist das Thema?" />
           </div>
 
-          <div class="form-group">
-            <label for="entryContent" class="form-label">Inhalt</label>
+          <div class="form-field">
+            <label for="entryContent" class="form-field__label">Inhalt</label>
             <textarea
-              class="form-control"
+              class="form-field__control"
               id="entryContent"
               name="content"
               rows="6"
@@ -232,430 +183,218 @@
           </div>
 
           <!-- Organisationseinheit -->
-          <div class="form-group">
-            <label for="entryOrgLevel" class="form-label">Wer soll den Eintrag sehen?</label>
-            <select class="form-control" id="entryOrgLevel" name="org_level" required>
-              <option value="" disabled selected>-- Bitte wählen --</option>
-              <option value="company">Alle Mitarbeiter</option>
-              <option value="department">Bestimmte Abteilung</option>
-              <option value="team">Bestimmtes Team</option>
-            </select>
+          <!-- Multi-Organization Selection -->
+          <div class="form-field">
+            <label class="form-field__label">Wer soll den Eintrag sehen?</label>
+            <p class="text-sm text-[var(--color-text-secondary)] mb-2">
+              Wählen Sie keine Organisation für firmenweite Einträge oder eine/mehrere spezifische Organisationen.
+            </p>
           </div>
 
-          <div class="form-group u-hidden" id="orgIdContainer">
-            <label for="entryOrgId" class="form-label">Welche Abteilung/Team?</label>
-            <select class="form-control" id="entryOrgId" name="org_id">
-              <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
+          <!-- Ganze Firma Toggle -->
+          <div class="form-field">
+            <label class="toggle-switch toggle-switch--danger">
+              <input type="checkbox" class="toggle-switch__input" id="entry-company-wide" />
+              <span class="toggle-switch__slider"></span>
+              <span class="toggle-switch__label">
+                <i class="fas fa-building mr-2"></i>
+                Ganze Firma (Alle Mitarbeiter)
+              </span>
+            </label>
+            <span class="form-field__message text-[var(--color-danger)]">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Eintrag
+            </span>
+          </div>
+
+          <!-- Area Selection -->
+          <div class="form-field">
+            <label for="entry-area-select" class="form-field__label">
+              <i class="fas fa-map-marked-alt mr-1"></i>
+              Bereiche
+            </label>
+            <select id="entry-area-select" multiple class="form-field__control min-h-[120px]">
+              <!-- Populated dynamically -->
             </select>
+            <span class="form-field__message text-[var(--color-text-secondary)]">Strg/Cmd + Klick für Mehrfachauswahl</span>
+          </div>
+
+          <!-- Department Selection -->
+          <div class="form-field">
+            <label for="entry-department-select" class="form-field__label">
+              <i class="fas fa-sitemap mr-1"></i>
+              Abteilungen
+            </label>
+            <select id="entry-department-select" multiple class="form-field__control min-h-[120px]">
+              <!-- Populated dynamically -->
+            </select>
+            <span class="form-field__message text-[var(--color-text-secondary)]">Strg/Cmd + Klick für Mehrfachauswahl</span>
+          </div>
+
+          <!-- Team Selection -->
+          <div class="form-field">
+            <label for="entry-team-select" class="form-field__label">
+              <i class="fas fa-users mr-1"></i>
+              Teams
+            </label>
+            <select id="entry-team-select" multiple class="form-field__control min-h-[120px]">
+              <!-- Populated dynamically -->
+            </select>
+            <span class="form-field__message text-[var(--color-text-secondary)]">Strg/Cmd + Klick für Mehrfachauswahl</span>
           </div>
 
           <!-- Wichtigkeit und Datum -->
-          <div class="form-group">
-            <label for="entryPriority" class="form-label">Wie wichtig ist der Eintrag?</label>
-            <select class="form-control" id="entryPriority" name="priority_level">
-              <option value="low">Niedrig</option>
-              <option value="medium" selected>Normal</option>
-              <option value="high">Hoch</option>
-              <option value="critical">Dringend</option>
-            </select>
+          <div class="form-field">
+            <label for="entryPriority" class="form-field__label">Wie wichtig ist der Eintrag?</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="entryPriority" name="priority_level" value="medium" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="entry-priority-dropdown">
+              <div class="dropdown__trigger" id="entry-priority-trigger">
+                <span>Normal</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="entry-priority-menu">
+                <div class="dropdown__option" data-value="low">Niedrig</div>
+                <div class="dropdown__option" data-value="medium">Normal</div>
+                <div class="dropdown__option" data-value="high">Hoch</div>
+                <div class="dropdown__option" data-value="urgent">Dringend</div>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="entryExpiresAt" class="form-label">Gültig bis (optional)</label>
-            <input type="date" class="form-control" id="entryExpiresAt" name="expires_at" />
+          <div class="form-field">
+            <label for="entryExpiresAt" class="form-field__label">Gültig bis (optional)</label>
+            <input type="date" class="form-field__control" id="entryExpiresAt" name="expires_at" />
           </div>
 
           <!-- Farbe auswählen -->
-          <div class="form-group">
-            <label class="form-label">Farbe des Eintrags</label>
-            <div class="color-picker">
-              <button type="button" class="color-option active" data-color="yellow">
-                <span>💛</span>
-                Gelb
+          <div class="form-field">
+            <label class="form-field__label">
+              <i class="fas fa-palette mr-2"></i>
+              Farbe des Eintrags
+            </label>
+            <input type="hidden" id="entryColor" name="color" value="yellow" />
+            <div class="color-picker" role="radiogroup" aria-label="Wählen Sie eine Farbe">
+              <button type="button" class="color-option active" data-color="yellow" role="radio" aria-checked="true" aria-label="Gelb">
+                <span class="color-option__swatch" aria-hidden="true"></span>
+                <span class="color-option__label">Gelb</span>
               </button>
-              <button type="button" class="color-option" data-color="pink">
-                <span>💗</span>
-                Pink
+              <button type="button" class="color-option" data-color="pink" role="radio" aria-checked="false" aria-label="Pink">
+                <span class="color-option__swatch" aria-hidden="true"></span>
+                <span class="color-option__label">Pink</span>
               </button>
-              <button type="button" class="color-option" data-color="blue">
-                <span>💙</span>
-                Blau
+              <button type="button" class="color-option" data-color="blue" role="radio" aria-checked="false" aria-label="Blau">
+                <span class="color-option__swatch" aria-hidden="true"></span>
+                <span class="color-option__label">Blau</span>
               </button>
-              <button type="button" class="color-option" data-color="green">
-                <span>💚</span>
-                Grün
+              <button type="button" class="color-option" data-color="green" role="radio" aria-checked="false" aria-label="Grün">
+                <span class="color-option__swatch" aria-hidden="true"></span>
+                <span class="color-option__label">Grün</span>
               </button>
-              <button type="button" class="color-option" data-color="orange">
-                <span>🧡</span>
-                Orange
+              <button type="button" class="color-option" data-color="orange" role="radio" aria-checked="false" aria-label="Orange">
+                <span class="color-option__swatch" aria-hidden="true"></span>
+                <span class="color-option__label">Orange</span>
               </button>
             </div>
+            <span class="form-field__message">Die Farbe hilft beim Organisieren Ihrer Einträge</span>
           </div>
 
-          <!-- Tags hinzufügen -->
-          <div class="form-group">
-            <label for="entryTags" class="form-label">Tags (mit Komma trennen)</label>
-            <input type="text" class="form-control" id="entryTags" name="tags" placeholder="Wichtig, Meeting, Update..." />
-            <div class="form-hint">Beispiele: Wichtig, Meeting, Wartung, Sicherheit</div>
-          </div>
-
-          <!-- Checkbox für Bestätigung -->
-          <div class="form-group">
-            <div class="simple-checkbox">
-              <input type="checkbox" id="entryRequiresConfirmation" name="requires_confirmation" />
-              <label for="entryRequiresConfirmation">Mitarbeiter müssen bestätigen, dass sie diesen Eintrag gelesen haben</label>
-            </div>
-          </div>
-
-          <!-- Anhänge hinzufügen -->
-          <div class="form-group">
-            <label class="form-label">Anhänge (optional)</label>
-            <div class="attachment-upload-zone" id="attachmentDropZone">
-              <div class="upload-icon">
-                <i class="fas fa-cloud-upload-alt"></i>
-              </div>
-              <p class="upload-text">Dateien hierher ziehen oder klicken zum Auswählen</p>
-              <p class="upload-hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</p>
-              <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" class="u-hidden" />
-            </div>
-
-            <!-- Anhang-Vorschau -->
-            <div id="attachmentPreview" class="attachment-preview u-hidden">
-              <h4 class="preview-title">Ausgewählte Dateien:</h4>
-              <div id="attachmentList" class="attachment-list"></div>
-            </div>
-          </div>
-        </form>
-        <div class="button-group">
-          <button type="submit" class="btn btn-primary" id="saveEntryBtn">Speichern</button>
-          <button type="button" class="btn btn-secondary" data-action="hide-modal" data-modal="entryFormModal">Abbrechen</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Direct Attachment Modal -->
-    <div class="modal u-hidden" id="directAttachModal">
-      <div class="modal-content modal-content-medium">
-        <div class="modal-header">
-          <h3 class="modal-title">Bild/PDF direkt anheften</h3>
-          <button type="button" class="modal-close" data-action="hide-modal" data-modal="directAttachModal">&times;</button>
-        </div>
-        <form id="directAttachForm">
-          <div class="modal-body">
-            <!-- File Upload Area -->
-            <div class="form-group">
-              <label class="form-label">Datei auswählen</label>
-              <div id="directAttachDropZone" class="attachment-dropzone text-center p-4" class="attachment-dropzone text-center p-4">
-                <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
-                <p class="mb-2">Datei hier ablegen oder klicken zum Auswählen</p>
-                <p class="text-secondary mb-0 file-size-hint">Unterstützt: JPG, PNG, PDF (max. 10 MB)</p>
-                <input type="file" id="directAttachInput" accept="image/jpeg,image/jpg,image/png,application/pdf" class="u-hidden" />
-              </div>
-            </div>
-
-            <!-- File Preview -->
-            <div id="directAttachPreview" class="form-group d-none">
-              <label class="form-label">Vorschau</label>
-              <div
-                class="attachment-preview d-flex align-items-center gap-3 p-3"
-                class="attachment-preview d-flex align-items-center gap-3 p-3 attachment-preview-box"
-              >
-                <div id="previewImage" class="preview-image-container"></div>
-                <div class="flex-grow-1">
-                  <div id="previewFileName" class="fw-bold"></div>
-                  <div id="previewFileSize" class="text-secondary"></div>
+          <!-- Anhänge hinzufügen - Design System File Upload -->
+          <div class="form-field">
+            <label class="form-field__label">
+              Anhänge (optional)
+              <span class="form-field__hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</span>
+            </label>
+            <div class="file-upload-zone file-upload-zone--compact" id="attachmentDropZone">
+              <input type="file" class="file-upload-zone__input" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" />
+              <label for="attachmentInput" class="file-upload-zone__label">
+                <div class="file-upload-zone__icon">
+                  <i class="fas fa-cloud-upload-alt"></i>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger" data-action="clear-attachment">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
+                <div class="file-upload-zone__text">
+                  <p class="file-upload-zone__title">Dateien hierher ziehen oder klicken</p>
+                  <p class="file-upload-zone__subtitle">PDF, JPG, PNG, GIF</p>
+                </div>
+              </label>
             </div>
-
-            <!-- Title -->
-            <div class="form-group">
-              <label for="directAttachTitle" class="form-label">Titel (optional)</label>
-              <input type="text" class="form-control" id="directAttachTitle" placeholder="z.B. Urlaubsplan 2025" />
-            </div>
-
-            <!-- Organization Level -->
-            <div class="form-group">
-              <label for="directAttachOrgLevel" class="form-label">Sichtbarkeit</label>
-              <select class="form-control" id="directAttachOrgLevel">
-                <option value="company">Gesamte Firma</option>
-                <option value="department">Nur meine Abteilung</option>
-                <option value="team">Nur mein Team</option>
-              </select>
-            </div>
-
-            <!-- Priority -->
-            <div class="form-group">
-              <label for="directAttachPriority" class="form-label">Priorität</label>
-              <select class="form-control" id="directAttachPriority">
-                <option value="low">Niedrig</option>
-                <option value="normal" selected>Normal</option>
-                <option value="high">Hoch</option>
-              </select>
-            </div>
-
-            <!-- Size Selection -->
-            <div class="form-group">
-              <label class="form-label">Anzeigegröße</label>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary size-option" data-size="small">
-                  <i class="fas fa-compress"></i>
-                  Klein
-                </button>
-                <button type="button" class="btn btn-outline-secondary size-option active" data-size="medium">
-                  <i class="fas fa-expand-arrows-alt"></i>
-                  Mittel
-                </button>
-                <button type="button" class="btn btn-outline-secondary size-option" data-size="large">
-                  <i class="fas fa-expand"></i>
-                  Groß
-                </button>
-              </div>
-            </div>
+            <!-- File Preview List - Design System -->
+            <div id="attachmentPreview" class="file-upload-list file-upload-list--compact" hidden></div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-action="hide-modal" data-modal="directAttachModal">Abbrechen</button>
-            <button type="button" class="btn btn-primary" id="saveDirectAttachBtn">
-              <i class="fas fa-thumbtack"></i>
-              Anheften
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button type="button" class="btn btn-cancel" data-action="close-modal" data-modal-id="entryFormModal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal" id="saveEntryBtn">Speichern</button>
+        </div>
+      </form>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div class="modal-overlay u-hidden" id="confirmationModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2 id="confirmationModalLabel">Bestätigung</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
+    <div class="modal-overlay" id="deleteEntryModal" hidden>
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Eintrag löschen?
+          </h3>
+          <button type="button" class="ds-modal__close" data-action="close-modal" data-modal-id="deleteEntryModal" aria-label="Schließen">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body">
-          <p id="confirmationMessage" class="mb-0">Möchten Sie diesen Eintrag wirklich löschen?</p>
+        <div class="ds-modal__body">
+          <p id="deleteEntryMessage" class="text-[var(--color-text-secondary)]">Möchten Sie diesen Eintrag wirklich löschen?</p>
+          <input type="hidden" id="deleteEntryId" value="" />
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">Löschen</button>
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button type="button" class="btn btn-cancel" data-action="close-modal" data-modal-id="deleteEntryModal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="proceedDeleteBtn" data-action="proceed-delete">
+            <i class="fas fa-trash-alt mr-2"></i>
+            Löschen
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Confirmation Status Modal -->
-    <!-- TODO: Feature nicht implementiert - Nur UI vorhanden!
-         Benötigt:
-         - Button zum Öffnen des Modals in Entry-Karten
-         - JavaScript Funktion viewConfirmationStatus()
-         - Backend Endpoint GET /api/v2/blackboard/:id/confirmations
-         - Database Tabelle blackboard_confirmations (user_id, entry_id, read_at)
-         - Integration in Entry Detail Modal oder als Icon in Karten-Header
-    -->
-    <div class="modal-overlay u-hidden" id="confirmationStatusModal">
-      <div class="modal-container modal-lg">
-        <div class="modal-header">
-          <h2 id="confirmationStatusModalLabel">Lesebestätigungen</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div class="modal-overlay" id="deleteEntryConfirmModal" hidden>
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" id="confirmationProgress" style="width: 0%">0%</div>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Mitarbeiter</th>
-                  <th>E-Mail</th>
-                  <th>Status</th>
-                  <th>Zeitpunkt</th>
-                </tr>
-              </thead>
-              <tbody id="confirmationStatusList">
-                <!-- Wird dynamisch gefüllt -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Eintrag wird unwiderruflich aus dem Schwarzen Brett entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button
+            type="button"
+            class="confirm-modal__btn confirm-modal__btn--cancel"
+            data-action="close-modal"
+            data-modal-id="deleteEntryConfirmModal"
+          >
+            Abbrechen
+          </button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirmDeleteBtn" data-action="confirm-delete">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
-    <!-- Modal Functions gemäß Design Standards -->
-    <script>
-      // Zoom Functionality
-      let currentZoom = 100; // Start at 100%
-      const zoomStep = 10; // 10% increments
-      const maxZoom = 120;
-      const minZoom = 10;
 
-      function updateZoom(newZoom) {
-        // Clamp zoom between min and max
-        currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+    <!-- Scripts in the same order as calendar.html -->
+    <script type="module" src="/scripts/blackboard/index.ts"></script>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
-        // Update display
-        document.querySelector('#zoomLevel').textContent = currentZoom + '%';
-
-        // Apply CSS zoom property instead of transform
-        const container = document.querySelector('#blackboardContainer');
-        container.style.zoom = currentZoom + '%';
-
-        // Store in localStorage
-        localStorage.setItem('blackboard-zoom', currentZoom.toString());
-      }
-
-      // Filter Toggle Functionality
-      document.addEventListener('DOMContentLoaded', function () {
-        // Initialize zoom from localStorage
-        const savedZoom = localStorage.getItem('blackboard-zoom');
-        if (savedZoom) {
-          updateZoom(parseInt(savedZoom));
-        }
-
-        // Zoom button event listeners
-        document.querySelector('#zoomInBtn').addEventListener('click', function () {
-          updateZoom(currentZoom + zoomStep);
-        });
-
-        document.querySelector('#zoomOutBtn').addEventListener('click', function () {
-          updateZoom(currentZoom - zoomStep);
-        });
-
-        // Keyboard shortcuts for zoom
-        document.addEventListener('keydown', function (e) {
-          if (e.ctrlKey || e.metaKey) {
-            if (e.key === '+' || e.key === '=') {
-              e.preventDefault();
-              updateZoom(currentZoom + zoomStep);
-            } else if (e.key === '-') {
-              e.preventDefault();
-              updateZoom(currentZoom - zoomStep);
-            } else if (e.key === '0') {
-              e.preventDefault();
-              updateZoom(100); // Reset to 100%
-            }
-          }
-        });
-
-        const filterToggle = document.querySelector('#filterToggle');
-        const filterContent = document.querySelector('#filterContent');
-        const filterToggleIcon = document.querySelector('#filterToggleIcon');
-
-        filterToggle.addEventListener('click', function () {
-          if (filterContent.style.display === 'none' || filterContent.style.display === '') {
-            filterContent.style.display = 'block';
-            filterToggleIcon.style.transform = 'rotate(180deg)';
-          } else {
-            filterContent.style.display = 'none';
-            filterToggleIcon.style.transform = 'rotate(0deg)';
-          }
-        });
-      });
-
-      // Modal Functions
-      function showModal(modalId) {
-        const modal = document.querySelector(modalId);
-        if (modal) {
-          modal.style.display = 'flex';
-          setTimeout(() => {
-            modal.classList.add('active');
-          }, 10);
-        }
-      }
-
-      function hideModal(modalId) {
-        const modal = document.querySelector(modalId);
-        if (modal) {
-          modal.classList.remove('active');
-          setTimeout(() => {
-            modal.style.display = 'none';
-          }, 300);
-        }
-      }
-
-      // Event Delegation for modal actions
-      document.addEventListener('click', function (e) {
-        const target = e.target;
-
-        // Handle hide modal
-        const hideModalBtn = target.closest('[data-action="hide-modal"]');
-        if (hideModalBtn) {
-          const modalId = hideModalBtn.dataset.modal;
-          hideModal('#' + modalId);
-          return;
-        }
-
-        // Handle clear attachment
-        const clearBtn = target.closest('[data-action="clear-attachment"]');
-        if (clearBtn) {
-          if (window.clearDirectAttachment) {
-            window.clearDirectAttachment();
-          }
-          return;
-        }
-      });
-
-      // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
-      window.DashboardUI = {
-        openModal: showModal,
-        closeModal: hideModal,
-        showToast: function (message, type) {
-          // Einfache Toast-Implementierung
-          const toast = document.createElement('div');
-          toast.className = 'toast-' + (type || 'info');
-          toast.textContent = message;
-
-          // Toast-Container erstellen
-          let container = document.querySelector('.toast-container');
-          if (!container) {
-            container = document.createElement('div');
-            container.className = 'toast-container';
-            document.body.append(container);
-          }
-
-          container.append(toast);
-
-          // Nach 3 Sekunden ausblenden
-          setTimeout(function () {
-            toast.remove();
-          }, 3000);
-        },
-        formatDate: function (date) {
-          if (!date) return '-';
-          const d = new Date(date);
-          return d.toLocaleDateString('de-DE');
-        },
-      };
-    </script>
-    <!-- Scripts with dynamic loading to prevent race condition -->
-    <script type="module">
-      // Wait for DOM to be ready before loading scripts
-      document.addEventListener('DOMContentLoaded', async () => {
-        // First load auth module
-        await import('/scripts/auth.ts');
-        // Then load unified navigation
-        await import('/scripts/components/unified-navigation.ts');
-        // Load role switch
-        await import('/scripts/role-switch.ts');
-        // Load breadcrumb
-        const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
-        initBreadcrumb();
-        // Finally load blackboard after a small delay
-        setTimeout(() => {
-          import('/scripts/blackboard.ts');
-        }, 100);
-      });
-    </script>
-    <!-- Update Modal to Design Standards -->
-    <script src="/scripts/update-blackboard-modal.js" type="module"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

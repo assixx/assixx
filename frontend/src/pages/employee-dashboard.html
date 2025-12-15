@@ -6,40 +6,19 @@
     <title>Employee Dashboard - Assixx</title>
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        const root = document.documentElement;
-        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
-    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <!-- CSS Styles -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <!-- Dashboard Theme CSS -->
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/employee-dashboard.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- Dom-utils Module für sichere HTML-Sanitization -->
-    <script type="module">
-      import { setHTML } from '/utils/dom-utils.js';
-      // Make setHTML globally available for inline scripts
-      window.setHTML = setHTML;
-    </script>
+    <!-- blackboard-widget.css removed - already imported in main.css -->
 
     <!-- Common Scripts with ApiClient -->
-    <script type="module" src="/scripts/common.js"></script>
     <!-- Employee Dashboard TypeScript Module -->
-    <script type="module" src="/scripts/employee-dashboard.ts"></script>
+    <script type="module" src="/scripts/dashboard/employee.ts"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -48,171 +27,161 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <!-- Welcome Hero Section -->
-          <div class="welcome-hero">
-            <div class="floating-elements">
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-              <div class="floating-dot"></div>
-            </div>
+          <!-- Welcome Hero Section (Hybrid: Tailwind + Custom Glassmorphism) -->
+          <div
+            class="welcome-hero-custom relative flex items-center justify-between min-h-[120px] overflow-hidden rounded-xl px-8 py-6 mb-8 border border-white/10 backdrop-blur-[20px] backdrop-saturate-[180%] shadow-sm text-white"
+          >
+            <!-- Floating dots generated via JS in init.ts -->
+            <div class="floating-elements"></div>
 
-            <div class="welcome-content">
-              <p class="welcome-title">Willkommen zurück!</p>
-              <p class="welcome-subtitle">
-                Schön, dass Sie da sind,
-                <span id="employee-name" class="pulse">Mitarbeiter</span>
+            <!-- Welcome content -->
+            <div class="relative z-10">
+              <h1 class="text-3xl font-bold mb-1">Willkommen zurück!</h1>
+              <p class="text-lg text-white/90">
+                Schön, dass Sie da sind,&nbsp;
+                <span id="employee-name" class="text-[var(--color-primary)] font-semibold">Mitarbeiter</span>
               </p>
             </div>
 
-            <div class="welcome-stats">
+            <!-- Stats -->
+            <div class="relative z-10 flex gap-6">
               <div class="welcome-stat">
-                <span class="welcome-stat-number" id="hero-documents">12</span>
-                <span class="welcome-stat-label">Dokumente</span>
-              </div>
-              <div class="welcome-stat">
-                <span class="welcome-stat-number" id="hero-points">125</span>
-                <span class="welcome-stat-label">KVP Punkte</span>
-              </div>
-              <div class="welcome-stat">
-                <span class="welcome-stat-number" id="hero-alerts">3</span>
-                <span class="welcome-stat-label">Neu</span>
+                <div class="welcome-stat-number" id="hero-alerts">0</div>
+                <div class="welcome-stat-label">Neu</div>
               </div>
             </div>
           </div>
 
-          <!-- Employee Info Grid -->
-          <div class="info-grid">
-            <div class="info-card">
-              <div class="info-label">Abteilung</div>
-              <div class="info-value" id="employee-department">-</div>
+          <!-- Employee Info Grid - Using Design System Stat Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card-stat">
+              <div class="card-stat__icon">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <div class="card-stat__value" id="employee-area">-</div>
+              <div class="card-stat__label">Bereich</div>
             </div>
-            <div class="info-card">
-              <div class="info-label">Team</div>
-              <div class="info-value" id="employee-team">-</div>
+            <div class="card-stat">
+              <div class="card-stat__icon">
+                <i class="fas fa-building"></i>
+              </div>
+              <div class="card-stat__value" id="employee-department">-</div>
+              <div class="card-stat__label">Abteilung</div>
             </div>
-            <div class="info-card">
-              <div class="info-label">Position</div>
-              <div class="info-value" id="employee-position">Mitarbeiter</div>
+            <div class="card-stat">
+              <div class="card-stat__icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="card-stat__value" id="employee-team">-</div>
+              <div class="card-stat__label">Team</div>
             </div>
-            <div class="info-card">
-              <div class="info-label">Dokumente</div>
-              <div class="info-value" id="document-count">-</div>
+            <div class="card-stat">
+              <div class="card-stat__icon">
+                <i class="fas fa-user-tie"></i>
+              </div>
+              <div class="card-stat__value" id="employee-position">Mitarbeiter</div>
+              <div class="card-stat__label">Position</div>
             </div>
           </div>
 
-          <!-- Quick Access Features -->
-          <div class="dashboard-grid">
-            <!-- Documents Card -->
-            <div class="feature-card" data-action="navigate" data-href="/documents">
-              <div class="feature-icon">📄</div>
-              <h3 class="feature-title">Meine Dokumente</h3>
-              <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
-              <span class="feature-badge" id="new-documents-badge">Neue verfügbar</span>
+          <!-- Blackboard Widget - Using Design System Card -->
+          <div id="blackboard-widget-container" class="mt-8 mb-8" data-sidebar-state="loading">
+            <!-- Loading placeholder with EXACT SAME styles as final widget -->
+            <div class="card card--blackboard">
+              <div class="card__header">
+                <h3 class="card__title">
+                  <i class="fas fa-thumbtack"></i>
+                  Schwarzes Brett
+                </h3>
+                <a href="/blackboard" class="card--blackboard__link">
+                  Alle anzeigen
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+              </div>
+              <div id="blackboard-widget-content" class="min-h-[200px] flex items-center justify-center">
+                <div class="card--blackboard__loading">
+                  <div class="spinner-ring spinner-ring--md"></div>
+                  <p>Lade Einträge...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Access Features - Using Design System Accent Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Documents Card - Using Accent Card with Success variant (like Admin) -->
+            <div class="max-w-[350px]">
+              <div class="card-accent card-accent--success card-accent--static">
+                <div class="card-accent__header">
+                  <h3 class="card-accent__title">
+                    <i class="fas fa-file-alt" style="color: var(--color-icon-primary)"></i>
+                    Meine Dokumente
+                  </h3>
+                </div>
+                <div class="card-accent__content">
+                  <button class="btn btn-manage w-4/5 mb-3" data-href="/documents-explorer">Dokumente öffnen</button>
+                  <div class="space-y-2" id="recent-documents">
+                    <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- Calendar Card -->
-            <div class="feature-card" data-action="navigate" data-href="/calendar">
-              <div class="feature-icon">📅</div>
-              <h3 class="feature-title">Firmenkalender</h3>
-              <p class="feature-description">Termine, Events und wichtige Firmentermine im Überblick</p>
-              <span class="feature-badge">Immer aktuell</span>
-            </div>
-
-            <!-- Blackboard Card -->
-            <div class="feature-card" data-action="navigate" data-href="/blackboard">
-              <div class="feature-icon">📋</div>
-              <h3 class="feature-title">Schwarzes Brett</h3>
-              <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
-              <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
+            <!-- Calendar Card - Using Accent Card with Danger variant (like Admin) -->
+            <div class="max-w-[350px]">
+              <div class="card-accent card-accent--danger card-accent--static">
+                <div class="card-accent__header">
+                  <h3 class="card-accent__title">
+                    <i class="fas fa-calendar" style="color: var(--color-icon-primary)"></i>
+                    Kalender
+                  </h3>
+                </div>
+                <div class="card-accent__content">
+                  <button class="btn btn-manage w-4/5 mb-3" data-href="/calendar">Kalender öffnen</button>
+                  <div class="space-y-2" id="calendar-events-list">
+                    <div class="p-2 rounded text-xs">
+                      <strong class="block font-semibold">Nächste Termine</strong>
+                      <p class="text-[var(--color-text-secondary)] mt-1">Lade Termine...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- KVP Card -->
-            <div class="feature-card" data-action="navigate" data-href="/kvp">
-              <div class="feature-icon">💡</div>
-              <h3 class="feature-title">Verbesserungsvorschläge</h3>
-              <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
-              <span class="feature-badge">Belohnung möglich</span>
-            </div>
-
-            <!-- Shifts Card -->
-            <div class="feature-card" data-action="navigate" data-href="/shifts">
-              <div class="feature-icon">🕒</div>
-              <h3 class="feature-title">Schichtplanung</h3>
-              <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
-              <span class="feature-badge">Wöchentlich</span>
+            <div class="max-w-[350px]">
+              <div class="card-accent card-accent--warning card-accent--static">
+                <div class="card-accent__header">
+                  <h3 class="card-accent__title">
+                    <i class="fas fa-lightbulb" style="color: var(--color-icon-primary)"></i>
+                    Verbesserungsvorschläge
+                  </h3>
+                </div>
+                <div class="card-accent__content">
+                  <button class="btn btn-manage w-4/5 mb-3" data-href="/kvp">KVP öffnen</button>
+                  <p class="text-sm text-[var(--color-text-secondary)]">Teilen Sie Ihre Ideen zur Verbesserung</p>
+                </div>
+              </div>
             </div>
 
             <!-- Profile Card -->
-            <div class="feature-card" data-action="navigate" data-href="/employee-profile">
-              <div class="feature-icon">👤</div>
-              <h3 class="feature-title">Mein Profil</h3>
-              <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
-              <span class="feature-badge">Personalisiert</span>
-            </div>
-          </div>
-
-          <!-- Quick Stats -->
-          <div class="quick-stats">
-            <div class="stats-header">
-              <h2 class="stats-title">Auf einen Blick</h2>
-              <button class="stats-refresh" data-action="refresh-dashboard">
-                <i class="fas fa-sync-alt"></i>
-                Aktualisieren
-              </button>
-            </div>
-            <div class="info-grid">
-              <div class="info-card">
-                <div class="info-label">Neue Dokumente</div>
-                <div class="info-value" id="new-documents-count">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Ungelesene Ankündigungen</div>
-                <div class="info-value" id="unread-announcements-count">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Nächster Termin</div>
-                <div class="info-value" id="next-appointment">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Meine KVP Punkte</div>
-                <div class="info-value" id="kvp-points">-</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Activity -->
-          <div class="activity-feed">
-            <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">Letzte Aktivitäten</h2>
-            <div id="activity-list">
-              <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                Lade Aktivitäten...
+            <div class="max-w-[350px]">
+              <div class="card-accent card-accent--purple card-accent--static">
+                <div class="card-accent__header">
+                  <h3 class="card-accent__title">
+                    <i class="fas fa-user-circle" style="color: var(--color-icon-primary)"></i>
+                    Mein Profil
+                  </h3>
+                </div>
+                <div class="card-accent__content">
+                  <button class="btn btn-manage w-4/5 mb-3" data-href="/profile">Profil bearbeiten</button>
+                  <p class="text-sm text-[var(--color-text-secondary)]">Persönliche Einstellungen verwalten</p>
+                </div>
               </div>
             </div>
           </div>
@@ -220,292 +189,14 @@
       </main>
     </div>
 
-    <script>
-      let currentUser = null;
-
-      // Initialize on page load
-      document.addEventListener('DOMContentLoaded', function () {
-        checkAuth();
-        // loadUserInfo() removed - unified-navigation handles this
-        loadDashboardData();
-
-        // Logout wird von unified-navigation behandelt
-      });
-
-      // loadUserInfo() removed - unified-navigation handles user display in header
-
-      function checkAuth() {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          window.location.href = '/login';
-          return;
-        }
-
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          currentUser = payload;
-
-          // User info is handled by unified-navigation
-
-          // Update welcome message
-          document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
-
-          // Redirect if not employee (but allow admins and root viewing as employee)
-          const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
-          const isRootAsEmployee = payload.role === 'root' && payload.activeRole === 'employee';
-          console.info('[Employee Dashboard Auth] Role check:', {
-            role: payload.role,
-            activeRole: payload.activeRole,
-            isRoleSwitched: payload.isRoleSwitched,
-            isAdminAsEmployee,
-            isRootAsEmployee,
-          });
-
-          if (payload.role !== 'employee' && !isAdminAsEmployee && !isRootAsEmployee) {
-            console.info('[Employee Dashboard Auth] Redirecting - not authorized');
-            window.location.href = payload.role === 'admin' ? '/admin-dashboard' : payload.role === 'root' ? '/root-dashboard' : '/login';
-          } else {
-            console.info('[Employee Dashboard Auth] Access granted');
-          }
-        } catch (e) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-      }
-
-      async function loadDashboardData() {
-        try {
-          // Load employee profile data
-          await loadEmployeeProfile();
-
-          // Load document count
-          await loadDocumentCount();
-
-          // Load dashboard stats
-          await loadDashboardStats();
-
-          // Load recent activity
-          await loadRecentActivity();
-        } catch (error) {
-          console.error('Error loading dashboard data:', error);
-        }
-      }
-
-      async function loadEmployeeProfile() {
-        try {
-          const user = await apiClient.get('/users/me');
-
-          // employee-id element was removed, skip it
-          const deptElement = document.querySelector('#employee-department');
-          if (deptElement) {
-            deptElement.textContent = user.departmentName || 'Nicht zugewiesen';
-          }
-
-          const teamElement = document.querySelector('#employee-team');
-          if (teamElement) {
-            teamElement.textContent = user.teamName || user.team_name || 'Kein Team';
-          }
-
-          const posElement = document.querySelector('#employee-position');
-          if (posElement) {
-            posElement.textContent = user.position || 'Mitarbeiter';
-          }
-        } catch (error) {
-          console.error('Error loading profile:', error);
-        }
-      }
-
-      async function loadDocumentCount() {
-        try {
-          // This would be an API call to get document count
-          document.querySelector('#document-count').textContent = '12';
-          document.querySelector('#new-documents-count').textContent = '3';
-
-          // Update badge visibility
-          const newDocsCount = 3;
-          const badge = document.querySelector('#new-documents-badge');
-          if (newDocsCount > 0) {
-            badge.textContent = `${newDocsCount} neue`;
-            badge.style.display = 'inline-block';
-          } else {
-            badge.style.display = 'none';
-          }
-        } catch (error) {
-          console.error('Error loading document count:', error);
-        }
-      }
-
-      async function loadDashboardStats() {
-        try {
-          // Simulated data - replace with actual API calls
-          document.querySelector('#unread-announcements-count').textContent = '2';
-          document.querySelector('#next-appointment').textContent = 'Morgen 14:00';
-          document.querySelector('#kvp-points').textContent = '125';
-
-          // Update badges
-          const unreadCount = 2;
-          const announcementsBadge = document.querySelector('#unread-announcements-badge');
-          if (unreadCount > 0) {
-            announcementsBadge.textContent = `${unreadCount} neue`;
-            announcementsBadge.style.display = 'inline-block';
-          } else {
-            announcementsBadge.style.display = 'none';
-          }
-        } catch (error) {
-          console.error('Error loading dashboard stats:', error);
-        }
-      }
-
-      async function loadRecentActivity() {
-        try {
-          // Simulated activity data
-          const activities = [
-            {
-              type: 'document',
-              title: 'Neue Lohnabrechnung erhalten',
-              time: 'vor 2 Stunden',
-              icon: '📄',
-            },
-            {
-              type: 'calendar',
-              title: 'Termin "Teambesprechung" hinzugefügt',
-              time: 'vor 1 Tag',
-              icon: '📅',
-            },
-            {
-              type: 'kvp',
-              title: 'KVP-Vorschlag eingereicht',
-              time: 'vor 3 Tagen',
-              icon: '💡',
-            },
-            {
-              type: 'document',
-              title: 'Bescheinigung heruntergeladen',
-              time: 'vor 1 Woche',
-              icon: '📄',
-            },
-          ];
-
-          const activityList = document.querySelector('#activity-list');
-          // Safe: HTML is generated from hardcoded data and sanitized with dom-utils
-          const htmlContent = activities
-            .map(
-              (activity) => `
-                  <div class="activity-item">
-                      <div class="activity-icon ${activity.type}">
-                          ${activity.icon}
-                      </div>
-                      <div class="activity-content">
-                          <div class="activity-title">${activity.title}</div>
-                          <div class="activity-time">${activity.time}</div>
-                      </div>
-                  </div>
-              `,
-            )
-            .join('');
-          // Use dom-utils setHTML for safe sanitization
-          if (activityList) {
-            window.setHTML(activityList, htmlContent);
-          }
-        } catch (error) {
-          console.error('Error loading activity:', error);
-          const activityList = document.querySelector('#activity-list');
-          if (activityList) {
-            window.setHTML(activityList, '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>');
-          }
-        }
-      }
-
-      // Event delegation for navigation and actions
-      document.addEventListener('click', function (e) {
-        const target = e.target.closest('[data-action]');
-        if (target) {
-          const action = target.dataset.action;
-
-          switch (action) {
-            case 'navigate': {
-              const href = target.dataset.href;
-              if (href) {
-                window.location.href = href;
-              }
-              break;
-            }
-            case 'refresh-dashboard':
-              if (window.loadDashboardData) {
-                window.loadDashboardData();
-              }
-              break;
-          }
-        }
-      });
-    </script>
-
+    <!-- JavaScript Modules -->
     <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
-    <!-- Force dashboard to be active on page load -->
-    <script type="module">
-      // Check if user should be on employee dashboard by reading from JWT token
-      const token = localStorage.getItem('token');
-      let activeRole = null;
-      let userRole = localStorage.getItem('userRole');
+    <!-- Employee Dashboard Initialization (extracted from inline) -->
+    <script type="module" src="/scripts/employee/dashboard/init.ts"></script>
 
-      // Parse the JWT token to get the actual active role
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          activeRole = payload.activeRole || payload.role;
-          userRole = payload.role;
-
-          // Update localStorage to match token
-          localStorage.setItem('activeRole', activeRole);
-          if (userRole) {
-            localStorage.setItem('userRole', userRole);
-          }
-
-          console.info('[Employee Dashboard] Token analysis:', {
-            tokenRole: payload.role,
-            tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole,
-          });
-        } catch (e) {
-          console.error('[Employee Dashboard] Error parsing token:', e);
-          activeRole = localStorage.getItem('activeRole') || userRole;
-        }
-      } else {
-        activeRole = localStorage.getItem('activeRole') || userRole;
-      }
-
-      // All users can access employee dashboard when in employee mode
-      if (activeRole === 'employee') {
-        // User is correctly on employee dashboard
-        console.info('[Employee Dashboard] User in employee mode');
-      } else if (userRole === 'root' && activeRole === 'root') {
-        // Root user in root mode - redirect to root dashboard
-        console.info('[Employee Dashboard] Root user in root mode - redirecting');
-        window.location.replace('/root-dashboard');
-      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
-        // Admin/Root user in admin mode - redirect to admin dashboard
-        console.info('[Employee Dashboard] User in admin mode - redirecting');
-        window.location.replace('/admin-dashboard');
-      } else if (!userRole) {
-        // No user role - redirect to login
-        console.info('[Employee Dashboard] No user role - redirecting to login');
-        window.location.replace('/login');
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        // Clear any stored active navigation to ensure dashboard is selected
-        localStorage.removeItem('activeNavigation');
-      });
-    </script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
+    <!-- Note: Blackboard widget is loaded via blackboard/index.ts module when needed -->
   </body>
 </html>

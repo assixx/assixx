@@ -168,7 +168,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 1. Backup: bash scripts/quick-backup.sh "before_migration"
 2. Migration kopieren: docker cp migration.sql assixx-mysql:/tmp/
-3. Ausführen: docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
+3. docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/'$(basename $MIGRATION_FILE) ?? siehe database-migration-guide.md
 
 ### TypeScript Fehler beheben
 
@@ -467,7 +467,7 @@ Diese Dokumentation enthält:
 - Common Patterns und Troubleshooting
 
 ## MySQL Password
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SHOW TABLES;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SHOW TABLES;"'
 ```
 
 siehe DATABASE-MIGRATION-GUIDE.md

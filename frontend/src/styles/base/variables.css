@@ -1,9 +1,23 @@
-/* @deprecated - Bitte dashboard-theme.css verwenden */
-/* Diese Datei wird in Version 2.0 entfernt */
-
 /**
- * CSS Variables
- * Central place for all design tokens
+ * 🎨 LEGACY GLOBAL CSS VARIABLES
+ *
+ * ⚠️ ARCHITECTURE UPDATE (2025-09-30):
+ * Design tokens have been migrated to Tailwind v4 @theme (tailwind.css) as single source of truth.
+ *
+ * @theme now defines:
+ * - Colors (all grayscale + brand colors)
+ * - Spacing (--spacing-1 through --spacing-32)
+ * - Typography (fonts, sizes, weights, line-heights, letter-spacing)
+ * - Border Radius (--radius-sm through --radius-xl)
+ * - Shadows (--shadow-sm through --shadow-2xl)
+ *
+ * This file only contains:
+ * - Legacy application-specific variables (--primary-color, --bg-primary, etc.)
+ * - Variables not suitable for @theme (z-index, transitions, etc.)
+ *
+ * ⚠️ Do NOT redefine @theme tokens here - CSS Cascade = Last definition wins!
+ *
+ * Last cleaned: 2025-09-30
  */
 
 :root {
@@ -16,10 +30,7 @@
   --danger-color: #e74c3c;
   --info-color: #3498db;
 
-  /* Glassmorphism Colors */
-  --glass-bg: rgb(255 255 255 / 10%);
-  --glass-border: rgb(255 255 255 / 20%);
-  --glass-shadow: rgb(0 0 0 / 10%);
+  /* Glassmorphism Colors - now defined in variables-dark.css */
 
   /* Text Colors */
   --text-primary: #fff;
@@ -32,26 +43,7 @@
   --bg-secondary: #16213e;
   --bg-light: #f8f9fa;
 
-  /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-xxl: 3rem;
-
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-round: 50%;
-
-  /* Shadows */
-  --shadow-sm: 0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 hsl(0deg 0% 100% / 10%);
-  --shadow-md: 0 4px 6px rgb(0 0 0 / 10%);
-  --shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
-  --shadow-xl: 0 20px 25px rgb(0 0 0 / 15%);
+  /* Spacing, Border Radius, and Shadows now defined in @theme (tailwind.css) */
 
   /* Transitions */
 

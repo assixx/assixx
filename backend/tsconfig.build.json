@@ -7,8 +7,9 @@
     "strictPropertyInitialization": false,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "exactOptionalPropertyTypes": false,
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -22,6 +23,8 @@
     "**/*.spec.ts",
     "src/__tests__/**/*",
     "src/**/*.test.ts",
-    "src/**/*.spec.ts"
+    "src/**/*.spec.ts",
+    "src/routes/v1/**/*",
+    "src/routes/mocks/**/*"
   ]
 }

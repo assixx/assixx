@@ -5,9 +5,9 @@
  */
 import bcrypt from 'bcryptjs';
 
-import User from '../models/user';
-import type { DbUser } from '../models/user';
-import { logger } from '../utils/logger';
+import User from '../routes/v2/users/model/index.js';
+import type { DbUser } from '../routes/v2/users/model/index.js';
+import { logger } from '../utils/logger.js';
 
 // Import types from User model
 
@@ -141,12 +141,17 @@ class UserService {
         throw new Error('Tenant ID is required');
       }
 
-      const users = await User.findAll({
+      // Build filter object conditionally to avoid TS2379
+      const filter: { limit: number; tenant_id: number; role?: string } = {
         limit,
-        // offset, // offset is not part of UserFilter
-        role,
         tenant_id: tenantId,
-      });
+      };
+
+      if (role !== undefined) {
+        filter.role = role;
+      }
+
+      const users = await User.findAll(filter);
 
       // Map to response format
       const total = users.length; // Would need proper count from DB
@@ -192,9 +197,10 @@ class UserService {
       const cleanUpdateData: Record<string, unknown> = { ...updateData };
 
       // These deletions are redundant due to TypeScript types, but kept for runtime safety
-      delete cleanUpdateData.id;
-      delete cleanUpdateData.password;
-      delete cleanUpdateData.role;
+      // Using bracket notation to satisfy TS4111
+      delete cleanUpdateData['id'];
+      delete cleanUpdateData['password'];
+      delete cleanUpdateData['role'];
 
       await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);
@@ -224,11 +230,13 @@ class UserService {
 
   /**
    * Delete user (soft delete)
+   * SECURITY: tenant_id is MANDATORY to prevent cross-tenant user deletion
    * @param userId - The user ID
+   * @param tenantId - The tenant ID for multi-tenant isolation
    */
-  async deleteUser(userId: number): Promise<boolean> {
+  async deleteUser(userId: number, tenantId: number): Promise<boolean> {
     try {
-      await User.delete(userId);
+      await User.delete(userId, tenantId);
       return true;
     } catch (error: unknown) {
       logger.error('Error deleting user:', error);
@@ -238,13 +246,16 @@ class UserService {
 
   /**
    * Archive/Unarchive user
+   * Uses is_active status: 1=active, 3=archived
    * @param userId - The user ID
    * @param tenantId - The tenant ID
-   * @param archived - The archived parameter
+   * @param archived - Whether to archive (true) or unarchive (false)
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   async archiveUser(userId: number, tenantId: number, archived = true): Promise<boolean> {
     try {
-      await User.update(userId, { is_archived: archived }, tenantId);
+      // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+      await User.update(userId, { is_active: archived ? 3 : 1 }, tenantId);
       return true;
     } catch (error: unknown) {
       logger.error('Error archiving user:', error);

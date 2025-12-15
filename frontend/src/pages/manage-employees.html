@@ -5,911 +5,465 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mitarbeiterverwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
-    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <!-- Dashboard Styles -->
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/manage-employees.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/password-strength.css" />
 
     <!-- Common Scripts with ApiClient -->
-    <script type="module" src="/scripts/common.js"></script>
-    <!-- dom-utils for safe HTML rendering -->
-    <script type="module">
-      import { setHTML } from '/utils/dom-utils.js';
-      window.setHTML = setHTML; // Make available globally for inline script
-    </script>
   </head>
   <body>
-    <!-- Notification Container for alerts -->
-    <div
-      id="notification-container"
-      class="notification-container"
-      style="position: fixed; top: 80px; right: 20px; z-index: 10000; pointer-events: none"
-    ></div>
-
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-              <div>
-                <h2 class="card-title">Mitarbeiterübersicht</h2>
-                <p class="text-secondary" class="u-mt-text">Mitarbeiter erstellen und verwalten</p>
+            <!-- Card Header - Following Base Card Component Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-users mr-2"></i>
+                Mitarbeiterverwaltung
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Mitarbeiter erstellen und verwalten</p>
+
+              <!-- Controls Section - Inside header -->
+              <div class="flex gap-4 items-center justify-between mt-4">
+                <!-- Status Filter Toggle -->
+                <div class="toggle-group" id="employee-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Mitarbeiter">
+                    <i class="fas fa-user-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Mitarbeiter">
+                    <i class="fas fa-user-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Mitarbeiter">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Mitarbeiter">
+                    <i class="fas fa-users"></i>
+                    Alle
+                  </button>
+                </div>
+                <!-- Search Input with Results Dropdown -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="employee-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="employee-search"
+                      class="search-input__field"
+                      placeholder="Mitarbeiter suchen..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="employee-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="employee-search-results">
+                    <!-- Results will be populated here dynamically -->
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="table-responsive">
+
+            <div class="card__body">
+              <!-- Loading State -->
+              <div id="employees-loading" class="spinner-container u-hidden">
+                <div class="spinner-ring spinner-ring--md"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Mitarbeiter werden geladen...</p>
+              </div>
+
+              <!-- Table Content -->
               <div id="employeeTableContent">
                 <!-- Tabelle wird hier dynamisch eingefügt -->
               </div>
+
+              <!-- Empty State -->
+              <div id="employees-empty" class="empty-state u-hidden">
+                <div class="empty-state__icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Mitarbeiter gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihren ersten Mitarbeiter</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Mitarbeiter hinzufügen
+                </button>
+              </div>
             </div>
           </div>
+          <!-- End of card -->
         </div>
+        <!-- End of container -->
       </main>
     </div>
 
-    <!-- Employee Modal -->
-    <div id="employee-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Neuer Mitarbeiter</h3>
-          <button class="modal-close" data-action="close-modal">&times;</button>
+    <!-- Add/Edit Employee Modal -->
+    <div id="employee-modal" class="modal-overlay">
+      <form id="employee-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="employee-modal-title">Neuer Mitarbeiter</h3>
+          <button type="button" class="ds-modal__close" id="close-employee-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="employee-form" style="padding: 20px">
-          <div class="form-group">
-            <label class="form-label">Vorname *</label>
-            <input type="text" name="firstName" class="form-control" required />
+        <div class="ds-modal__body">
+          <input type="hidden" id="employee-id" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-first-name">
+              Vorname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="employee-first-name" name="firstName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Nachname *</label>
-            <input type="text" name="lastName" class="form-control" required />
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-last-name">
+              Nachname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="employee-last-name" name="lastName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail *</label>
-            <input type="email" name="email" class="form-control" required />
-            <small class="text-secondary">Wird auch als Benutzername verwendet</small>
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-email">
+              E-Mail
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="employee-email" name="email" class="form-field__control" required />
+            <span class="form-field__message text-[var(--color-text-secondary)]">Wird auch als Benutzername verwendet</span>
           </div>
-          <div class="form-group" id="email-confirm-group">
-            <label class="form-label">E-Mail bestätigen *</label>
-            <input type="email" name="emailConfirm" class="form-control" />
-            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
+
+          <div class="form-field" id="email-confirm-group">
+            <label class="form-field__label" for="employee-email-confirm">
+              E-Mail bestätigen
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="employee-email-confirm" name="emailConfirm" class="form-field__control" required />
+            <span class="form-field__message form-field__message--error u-hidden" id="email-error">
+              E-Mail-Adressen stimmen nicht überein
+            </span>
           </div>
-          <div class="form-group" id="password-group">
-            <label class="form-label">Passwort *</label>
-            <input type="password" name="password" class="form-control" />
+
+          <div class="form-field" id="password-group">
+            <label class="form-field__label" for="employee-password">
+              Passwort
+              <span class="text-red-500">*</span>
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="employee-password" name="password" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="employee-password-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
           </div>
-          <div class="form-group" id="password-confirm-group">
-            <label class="form-label">Passwort bestätigen *</label>
-            <input type="password" name="passwordConfirm" class="form-control" />
-            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
+
+          <div class="form-field" id="password-confirm-group">
+            <label class="form-field__label" for="employee-password-confirm">
+              Passwort bestätigen
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="employee-password-confirm" name="passwordConfirm" class="form-field__control" />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                id="employee-password-confirm-toggle"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <span class="form-field__message form-field__message--error u-hidden" id="password-error">
+              Passwörter stimmen nicht überein
+            </span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Telefon</label>
-            <input type="tel" name="phone" class="form-control" />
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="employee-password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="employee-password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="employee-password-strength-label"></span>
+              <span class="password-strength-time" id="employee-password-strength-time"></span>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Position</label>
-            <input type="text" name="position" class="form-control" />
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="employee-password-feedback">
+            <span class="password-feedback-warning" id="employee-password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="employee-password-feedback-suggestions"></ul>
           </div>
-          <div class="form-group">
-            <label class="form-label">Personalnummer</label>
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-phone">Telefon</label>
+            <input type="tel" id="employee-phone" name="phone" class="form-field__control" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-position">
+              Position
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="employee-position" name="position" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="position-dropdown">
+              <div class="dropdown__trigger" id="position-trigger">
+                <span>Bitte wählen...</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="position-menu">
+                <div class="dropdown__option" data-value="Produktionsmitarbeiter">Produktionsmitarbeiter</div>
+                <div class="dropdown__option" data-value="Maschinenbediener">Maschinenbediener</div>
+                <div class="dropdown__option" data-value="Lagerarbeiter">Lagerarbeiter</div>
+                <div class="dropdown__option" data-value="Qualitätsprüfer">Qualitätsprüfer</div>
+                <div class="dropdown__option" data-value="Schichtleiter">Schichtleiter</div>
+                <div class="dropdown__option" data-value="Wartungstechniker">Wartungstechniker</div>
+                <div class="dropdown__option" data-value="Sonstiges">Sonstiges</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-number">Personalnummer</label>
             <input
               type="text"
+              id="employee-number"
               name="employeeNumber"
-              class="form-control"
+              class="form-field__control"
               placeholder="z.B. EMP001 (optional, max 10 Zeichen)"
               maxlength="10"
               pattern="[A-Za-z0-9\-]{1,10}"
-              title="Max 10 Zeichen: Buchstaben, Zahlen, Bindestrich"
             />
+            <span class="form-field__message text-[var(--color-text-secondary)]">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Geburtsdatum</label>
-            <input type="date" name="birthday" class="form-control" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="employee-dateOfBirth">Geburtsdatum</label>
+            <div class="date-picker">
+              <i class="date-picker__icon fas fa-calendar"></i>
+              <input type="date" id="employee-dateOfBirth" name="dateOfBirth" class="date-picker__input" />
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <select name="departmentId" id="employee-department-select" class="form-control">
-              <option value="">Keine Abteilung</option>
-              <!-- Will be populated dynamically -->
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Team</label>
-            <select name="teamId" id="employee-team-select" class="form-control">
-              <option value="">Kein Team</option>
-              <!-- Will be populated dynamically -->
-            </select>
+
+          <!-- Team Assignment Section (EMPLOYEES ONLY get Teams - Area/Dept inherited) -->
+          <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
+            <h4 class="text-[var(--color-text-primary)] mb-4">
+              <i class="fas fa-users mr-2"></i>
+              Team-Zuweisung
+            </h4>
+
+            <!-- Info Box: Employee Assignment Logic -->
+            <div class="alert alert--info mb-4">
+              <div class="alert__icon">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <div class="alert__content">
+                <div class="alert__message">
+                  Mitarbeiter werden Teams zugewiesen. Abteilung und Bereich werden automatisch vom Team vererbt.
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Multi-Select (ONLY for Employees) -->
+            <div class="form-field" id="team-select-container">
+              <label class="form-field__label" for="employee-teams">
+                <i class="fas fa-users mr-1"></i>
+                Teams
+                <span class="text-red-500">*</span>
+              </label>
+              <select id="employee-teams" name="teamIds" multiple class="form-field__control min-h-[120px]">
+                <!-- Will be populated dynamically -->
+              </select>
+              <span class="form-field__message text-[var(--color-text-secondary)]">
+                <i class="fas fa-info-circle mr-1"></i>
+                Strg/Cmd + Klick fuer Mehrfachauswahl. Mitarbeiter kann mehreren Teams zugewiesen werden.
+              </span>
+            </div>
           </div>
 
           <!-- Availability Section -->
-          <div class="form-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 20px">
-            <h4 class="text-white" style="margin-bottom: 15px">Verfügbarkeit</h4>
-            <div class="form-group">
-              <label class="form-label">Verfügbarkeitsstatus</label>
-              <select name="availabilityStatus" id="availability-status-select" class="form-control">
-                <option value="available">Verfügbar</option>
-                <option value="vacation">Urlaub</option>
-                <option value="sick">Krank</option>
-                <option value="unavailable">Nicht verfügbar</option>
-                <option value="training">Schulung</option>
-                <option value="other">Sonstiges</option>
-              </select>
+          <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
+            <h4 class="text-[var(--color-text-primary)] mb-4">Verfügbarkeit</h4>
+
+            <div class="form-field">
+              <label class="form-field__label" for="availability-status">Verfügbarkeitsstatus</label>
+              <!-- Hidden input to store the selected value -->
+              <input type="hidden" id="availability-status" name="availabilityStatus" value="available" />
+              <!-- Custom Dropdown -->
+              <div class="dropdown" id="availability-status-dropdown">
+                <div class="dropdown__trigger" id="availability-status-trigger">
+                  <span>Verfügbar</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="availability-status-menu">
+                  <div class="dropdown__option" data-value="available">Verfügbar</div>
+                  <div class="dropdown__option" data-value="vacation">Urlaub</div>
+                  <div class="dropdown__option" data-value="sick">Krank</div>
+                  <div class="dropdown__option" data-value="unavailable">Nicht verfügbar</div>
+                  <div class="dropdown__option" data-value="training">Schulung</div>
+                  <div class="dropdown__option" data-value="other">Sonstiges</div>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Von Datum</label>
-              <input type="date" name="availabilityStart" id="availability-start-date" class="form-control" />
+
+            <div class="form-field">
+              <label class="form-field__label" for="availability-start-date">Von Datum</label>
+              <div class="date-picker">
+                <i class="date-picker__icon fas fa-calendar"></i>
+                <input type="date" name="availabilityStart" id="availability-start-date" class="date-picker__input" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Bis Datum</label>
-              <input type="date" name="availabilityEnd" id="availability-end-date" class="form-control" />
+
+            <div class="form-field">
+              <label class="form-field__label" for="availability-end-date">Bis Datum</label>
+              <div class="date-picker">
+                <i class="date-picker__icon fas fa-calendar"></i>
+                <input type="date" name="availabilityEnd" id="availability-end-date" class="date-picker__input" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Notiz (optional)</label>
+
+            <div class="form-field">
+              <label class="form-field__label" for="availability-notes">Notiz (optional)</label>
               <textarea
                 name="availabilityNotes"
                 id="availability-notes"
-                class="form-control"
+                class="form-field__control"
                 rows="3"
                 placeholder="z.B. Familienurlaub, Krankmeldung bis..."
               ></textarea>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Account Status</label>
-            <select name="isActive" class="form-control">
-              <option value="1">Aktiv</option>
-              <option value="0">Inaktiv</option>
-            </select>
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
+            <label class="form-field__label" for="employee-status">
+              Account Status
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="employee-is-active" name="isActive" value="1" />
+            <input type="hidden" id="employee-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Mitarbeiter können sich nicht anmelden
+            </span>
           </div>
-          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
-            <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" data-action="close-modal">Abbrechen</button>
-          </div>
-        </form>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-employee-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
+    <div id="delete-employee-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Mitarbeiter löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diesen Mitarbeiter wirklich löschen?</p>
+          <input type="hidden" id="delete-employee-id" />
+        </div>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-employee">Löschen</button>
+        </div>
       </div>
     </div>
 
-    <!-- Floating Add Button -->
-    <button class="add-employee-btn" data-action="add-employee">+</button>
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-employee-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Mitarbeiter wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-employee-final">
+            Endgültig löschen
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Scripts -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <!-- Floating Action Button -->
+    <button class="btn-float add-employee-btn" aria-label="Mitarbeiter hinzufügen">
+      <i class="fas fa-user-plus"></i>
+    </button>
+
+    <!-- Navigation Components -->
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <!-- Employee Management -->
-    <script type="module" src="/scripts/manage-employees.ts"></script>
-    <script type="module">
-      // Auth check
-      const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('userRole');
 
-      if (!token || (userRole !== 'root' && userRole !== 'admin')) {
-        window.location.href = '/login';
-      }
-
-      // Initialize when DOM is ready
-      document.addEventListener('DOMContentLoaded', () => {
-        // Employee management is handled by manage-employees.ts
-      });
-
-      // Helper function to check if availability dates apply to today
-      function checkAvailabilityAppliesToday(startDate, endDate) {
-        if (!startDate && !endDate) {
-          // If no dates specified, assume it always applies
-          return true;
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
-
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-
-        if (start) {
-          start.setHours(0, 0, 0, 0);
-        }
-        if (end) {
-          end.setHours(23, 59, 59, 999); // End of day
-        }
-
-        // Check if today falls within the range
-        const afterStart = !start || today >= start;
-        const beforeEnd = !end || today <= end;
-
-        return afterStart && beforeEnd;
-      }
-
-      // Helper function to get current availability status (considering dates)
-      function getCurrentAvailabilityStatus(employee) {
-        // Handle both snake_case and camelCase from API
-        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
-
-        // Parse the status (might be "available vacation" format)
-        let status = 'available';
-        if (rawStatus) {
-          const parts = rawStatus.trim().split(/\s+/);
-          if (parts.length > 1) {
-            status = parts[1]; // e.g., "available vacation" -> "vacation"
-          } else {
-            status = parts[0] || 'available';
-          }
-        }
-
-        // If status is already "available", no need to check dates
-        if (status === 'available') {
-          return 'available';
-        }
-
-        // Check if the special status applies to today
-        const startDate = employee.availability_start || employee.availabilityStart;
-        const endDate = employee.availability_end || employee.availabilityEnd;
-
-        if (checkAvailabilityAppliesToday(startDate, endDate)) {
-          return status;
-        }
-
-        // Status doesn't apply to today, return available
-        return 'available';
-      }
-
-      // Helper function to get availability badge
-      function getAvailabilityBadge(employee) {
-        // Get the current (today-aware) status
-        const status = getCurrentAvailabilityStatus(employee);
-
-        const statusConfig = {
-          available: { class: 'badge-success', text: 'Verfügbar' },
-          vacation: { class: 'badge-warning', text: 'Urlaub' },
-          sick: { class: 'badge-danger', text: 'Krank' },
-          unavailable: { class: 'badge-secondary', text: 'Nicht verfügbar' },
-          training: { class: 'badge-info', text: 'Schulung' },
-          other: { class: 'badge-secondary', text: 'Sonstiges' },
-        };
-
-        // eslint-disable-next-line security/detect-object-injection
-        const config = statusConfig[status] || statusConfig.available;
-        return `<span class="badge ${config.class}">${config.text}</span>`;
-      }
-
-      // Helper function to format planned availability period
-      function getPlannedAvailability(employee) {
-        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
-
-        // Parse the status
-        let status = 'available';
-        if (rawStatus) {
-          const parts = rawStatus.trim().split(/\s+/);
-          if (parts.length > 1) {
-            status = parts[1];
-          } else {
-            status = parts[0] || 'available';
-          }
-        }
-
-        // If available, return dash
-        if (status === 'available') {
-          return '-';
-        }
-
-        // Get dates
-        const startDate = employee.availability_start || employee.availabilityStart;
-        const endDate = employee.availability_end || employee.availabilityEnd;
-
-        // Format the status text
-        let statusText = '';
-        switch (status) {
-          case 'vacation':
-            statusText = 'Urlaub';
-            break;
-          case 'sick':
-            statusText = 'Krank';
-            break;
-          case 'training':
-            statusText = 'Schulung';
-            break;
-          case 'unavailable':
-            statusText = 'Nicht verfügbar';
-            break;
-          case 'other':
-            statusText = 'Sonstiges';
-            break;
-          default:
-            statusText = status;
-        }
-
-        // Format dates if available
-        if (startDate || endDate) {
-          const formatDate = (dateStr) => {
-            if (!dateStr) return '?';
-            const date = new Date(dateStr);
-            return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
-          };
-
-          const startFormatted = formatDate(startDate);
-          const endFormatted = formatDate(endDate);
-
-          return `${statusText}: ${startFormatted} - ${endFormatted}`;
-        }
-
-        return statusText;
-      }
-
-      // Legacy functions for backwards compatibility
-      async function loadEmployees() {
-        try {
-          // ApiClient already adds /api/v2 prefix
-          const apiClientInstance = window.ApiClient?.getInstance();
-          const employees = await apiClientInstance.request('/users', { method: 'GET' });
-          const employeeUsers = employees.filter((u) => u.role === 'employee');
-
-          // V2 API already provides availability data in the user objects
-          // No need for additional availability API call
-          console.info('[Inline Script] Using availability data from v2 API');
-          renderEmployees(employeeUsers);
-        } catch (error) {
-          console.error('Error loading employees:', error);
-        }
-      }
-
-      function renderEmployees(employees) {
-        const container = document.querySelector('#employeeTableContent');
-
-        if (employees.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">👥</div>
-              <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
-              <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
-            </div>
-          `;
-          return;
-        }
-
-        const tableHTML = `
-          <table class="employee-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>E-Mail</th>
-                <th>Position</th>
-                <th>Personalnummer</th>
-                <th>Abteilung</th>
-                <th>Team</th>
-                <th>Status</th>
-                <th>Verfügbarkeit</th>
-                <th>Geplant</th>
-                <th>Notizen</th>
-                <th>Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${employees
-                .map((emp) => {
-                  const firstName = emp.first_name || emp.firstName || '';
-                  const lastName = emp.last_name || emp.lastName || '';
-                  const fullName = `${firstName} ${lastName}`.trim() || emp.username;
-                  // Check both snake_case and camelCase fields (API v1 vs v2)
-                  // Priority: Check isActive first (API v2), then is_active (API v1/DB)
-                  let isActive = true; // Default to active
-                  if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
-                    isActive = emp.isActive === true || emp.isActive === 1;
-                  } else if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
-                    isActive = emp.is_active === true || emp.is_active === 1;
-                  }
-
-                  // Get availability notes
-                  const notes = emp.availability_notes || emp.availabilityNotes || '-';
-
-                  return `
-                  <tr>
-                    <td>${fullName}</td>
-                    <td>${emp.email || emp.username || '-'}</td>
-                    <td>${emp.position || '-'}</td>
-                    <td>${emp.employee_number || emp.employeeNumber || '-'}</td>
-                    <td>${emp.department_name || emp.departmentName || '-'}</td>
-                    <td>${emp.team_name || emp.teamName || '-'}</td>
-                    <td>
-                      <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
-                        ${isActive ? 'Aktiv' : 'Inaktiv'}
-                      </span>
-                    </td>
-                    <td>
-                      ${getAvailabilityBadge(emp)}
-                    </td>
-                    <td>
-                      ${getPlannedAvailability(emp)}
-                    </td>
-                    <td title="${notes}">
-                      ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
-                    </td>
-                    <td>
-                      <button class="action-btn edit" data-action="edit-employee" data-id="${emp.id}">Bearbeiten</button>
-                      <button class="action-btn delete" data-action="delete-employee" data-id="${emp.id}">Löschen</button>
-                    </td>
-                  </tr>
-                  `;
-                })
-                .join('')}
-            </tbody>
-          </table>
-        `;
-
-        // Use setHTML from dom-utils for safe rendering
-        window.setHTML(container, tableHTML);
-      }
-
-      // Modal functions
-      async function showEmployeeModal() {
-        document.querySelector('#modalTitle').textContent = 'Neuer Mitarbeiter';
-        const form = document.querySelector('#employee-form');
-        form.reset();
-
-        // Clear any stored employee ID
-        delete form.dataset.employeeId;
-
-        // Clear employee number field explicitly
-        if (form.employeeNumber) {
-          form.employeeNumber.value = '';
-        }
-
-        // Show confirmation fields for new employees
-        document.querySelector('#email-confirm-group').style.display = 'block';
-        document.querySelector('#password-confirm-group').style.display = 'block';
-
-        // Make password and confirmations required for new employees
-        form.password.setAttribute('required', 'required');
-        form.emailConfirm.setAttribute('required', 'required');
-        form.passwordConfirm.setAttribute('required', 'required');
-
-        // Clear any error messages
-        document.querySelector('#email-error').style.display = 'none';
-        document.querySelector('#password-error').style.display = 'none';
-
-        // Load departments and teams
-        await loadDepartments();
-        await loadTeams();
-
-        document.querySelector('#employee-modal').classList.add('active');
-      }
-
-      function closeEmployeeModal() {
-        const modal = document.querySelector('#employee-modal');
-        const form = document.querySelector('#employee-form');
-
-        // Clear form and any stored data
-        form.reset();
-        delete form.dataset.employeeId;
-
-        modal.classList.remove('active');
-      }
-
-      // Helper function to load availability data
-      async function loadAvailabilityData(form, employeeId) {
-        try {
-          const apiClientInstance = window.ApiClient?.getInstance();
-          const response = await apiClientInstance.request(`/availability?employee_id=${employeeId}`, { method: 'GET' });
-          if (response.availability && response.availability.length > 0) {
-            const current = response.availability[0];
-            setFormValue(form, 'availabilityStatus', current.status || 'available');
-            setFormValue(form, 'availabilityStart', current.start_date || '');
-            setFormValue(form, 'availabilityEnd', current.end_date || '');
-            setFormValue(form, 'availabilityNotes', current.notes || '');
-          } else {
-            setAvailabilityDefaults(form);
-          }
-        } catch (error) {
-          console.warn('Could not load availability data:', error);
-          setAvailabilityDefaults(form);
-        }
-      }
-
-      // Helper to set availability defaults
-      function setAvailabilityDefaults(form) {
-        setFormValue(form, 'availabilityStatus', 'available');
-        setFormValue(form, 'availabilityStart', '');
-        setFormValue(form, 'availabilityEnd', '');
-        setFormValue(form, 'availabilityNotes', '');
-      }
-
-      // Helper to safely set form values
-      function setFormValue(form, fieldName, value) {
-        // eslint-disable-next-line security/detect-object-injection
-        if (form[fieldName]) {
-          // eslint-disable-next-line security/detect-object-injection
-          form[fieldName].value = value;
-        }
-      }
-
-      // Helper to populate employee form
-      function populateEmployeeForm(form, emp) {
-        form.firstName.value = emp.first_name || emp.firstName || '';
-        form.lastName.value = emp.last_name || emp.lastName || '';
-        form.email.value = emp.email || emp.username || '';
-        form.phone.value = emp.phone || '';
-        form.position.value = emp.position || '';
-        form.employeeNumber.value = emp.employee_number || emp.employeeNumber || '';
-
-        if (emp.birthday) {
-          form.birthday.value = emp.birthday.split('T')[0];
-        }
-
-        // Set active status
-        const isActive = getActiveStatus(emp);
-        form.isActive.value = isActive ? '1' : '0';
-      }
-
-      // Helper to determine active status
-      function getActiveStatus(emp) {
-        if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
-          return emp.isActive === true || emp.isActive === 1;
-        }
-        if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
-          return emp.is_active === true || emp.is_active === 1;
-        }
-        return true; // Default to active
-      }
-
-      async function editEmployee(id) {
-        try {
-          // ApiClient already adds /api/v2 prefix
-          const apiClientInstance = window.ApiClient?.getInstance();
-          const emp = await apiClientInstance.request(`/users/${id}`, { method: 'GET' });
-          document.querySelector('#modalTitle').textContent = 'Mitarbeiter bearbeiten';
-
-          const form = document.querySelector('#employee-form');
-
-          // Hide confirmation fields for editing
-          document.querySelector('#email-confirm-group').style.display = 'none';
-          document.querySelector('#password-confirm-group').style.display = 'none';
-
-          // Remove required from password and confirmations for editing
-          form.password.removeAttribute('required');
-          form.emailConfirm.removeAttribute('required');
-          form.passwordConfirm.removeAttribute('required');
-
-          // Load availability data
-          await loadAvailabilityData(form, id);
-
-          // Populate form fields
-          populateEmployeeForm(form, emp);
-
-          // Load and select department
-          await loadDepartments();
-          if (emp.department_id || emp.departmentId) {
-            form.departmentId.value = emp.department_id || emp.departmentId;
-          }
-
-          // Load and select team
-          await loadTeams();
-          if (emp.team_id || emp.teamId) {
-            form.teamId.value = emp.team_id || emp.teamId;
-          }
-
-          // Make password optional for editing
-          const passwordInput = document.querySelector('input[name="password"]');
-          if (passwordInput) {
-            passwordInput.removeAttribute('required');
-            passwordInput.value = '';
-          }
-
-          form.dataset.employeeId = id;
-          document.querySelector('#employee-modal').classList.add('active');
-        } catch (error) {
-          console.error('Error loading employee:', error);
-        }
-      }
-
-      async function deleteEmployee(id) {
-        if (!confirm('Möchten Sie diesen Mitarbeiter wirklich löschen?')) {
-          return;
-        }
-
-        try {
-          // ApiClient already adds /api/v2 prefix
-          const apiClientInstance = window.ApiClient?.getInstance();
-          await apiClientInstance.request(`/users/${id}`, { method: 'DELETE' });
-          alert('Mitarbeiter erfolgreich gelöscht');
-          loadEmployees();
-        } catch (error) {
-          console.error('Error deleting employee:', error);
-          alert(error.message || 'Netzwerkfehler beim Löschen');
-        }
-      }
-
-      function viewEmployeeDetails(id) {
-        // Temporär: Zeige Details in Alert
-        // TODO: Implementiere vollständige Detail-Ansicht
-        editEmployee(id); // Vorerst zum Bearbeiten-Modal weiterleiten
-      }
-
-      async function loadDepartments() {
-        try {
-          // ApiClient already adds /api/v2 prefix
-          const apiClientInstance = window.ApiClient?.getInstance();
-          const departments = await apiClientInstance.request('/departments', { method: 'GET' });
-          const select = document.querySelector('#employee-department-select');
-          if (select && departments) {
-            select.innerHTML = '<option value="">Keine Abteilung</option>';
-            departments.forEach((dept) => {
-              const option = document.createElement('option');
-              option.value = dept.id;
-              option.textContent = dept.name;
-              select.append(option);
-            });
-          }
-        } catch (error) {
-          console.error('Error loading departments:', error);
-        }
-      }
-
-      async function loadTeams() {
-        try {
-          // ApiClient already adds /api/v2 prefix
-          const apiClientInstance = window.ApiClient?.getInstance();
-          const teams = await apiClientInstance.request('/teams', { method: 'GET' });
-          const select = document.querySelector('#employee-team-select');
-          if (select && teams) {
-            select.innerHTML = '<option value="">Kein Team</option>';
-            teams.forEach((team) => {
-              const option = document.createElement('option');
-              option.value = team.id;
-              option.textContent = team.name;
-              select.append(option);
-            });
-          }
-        } catch (error) {
-          console.error('Error loading teams:', error);
-        }
-      }
-
-      // DISABLED - Form submit handler is now in manage-employees.ts to avoid duplicate requests
-      // The TypeScript file handles all form submission through the saveEmployee function
-      /*
-      document.querySelector('employee-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-        const employeeId = e.target.dataset.employeeId;
-
-        // Validation for new employees
-        if (!employeeId) {
-          // Check email confirmation
-          if (data.email !== data.emailConfirm) {
-            document.querySelector('email-error').style.display = 'block';
-            return;
-          } else {
-            document.querySelector('email-error').style.display = 'none';
-          }
-
-          // Check password confirmation
-          if (data.password !== data.passwordConfirm) {
-            document.querySelector('password-error').style.display = 'block';
-            return;
-          } else {
-            document.querySelector('password-error').style.display = 'none';
-          }
-        }
-
-        // Remove confirmation fields from data
-        delete data.emailConfirm;
-        delete data.passwordConfirm;
-
-        // username = email
-        data.username = data.email;
-
-        // Convert isActive to boolean
-        data.isActive = data.isActive === '1';
-
-        // Convert IDs to integers if present
-        if (data.departmentId && data.departmentId !== '') {
-          data.departmentId = parseInt(data.departmentId);
-          data.department_id = data.departmentId; // Also set snake_case
-        } else {
-          delete data.departmentId;
-        }
-
-        if (data.teamId && data.teamId !== '') {
-          data.teamId = parseInt(data.teamId);
-          data.team_id = data.teamId; // Also set snake_case
-        } else {
-          delete data.teamId;
-        }
-
-        // API v2 uses camelCase - ensure correct field names
-        // Keep firstName and lastName as is (already camelCase from form)
-
-        // Convert snake_case to camelCase if needed
-        if (data.first_name && !data.firstName) {
-          data.firstName = data.first_name;
-          delete data.first_name;
-        }
-        if (data.last_name && !data.lastName) {
-          data.lastName = data.last_name;
-          delete data.last_name;
-        }
-        if (data.employee_number && !data.employeeNumber) {
-          data.employeeNumber = data.employee_number;
-          delete data.employee_number;
-        }
-        if (data.department_id && !data.departmentId) {
-          data.departmentId = data.department_id;
-          delete data.department_id;
-        }
-
-        // API v2 uses isActive (boolean)
-        if (data.isActive !== undefined) {
-          data.isActive = data.isActive === '1' || data.isActive === true;
-        }
-
-        console.info('Employee form data:', data);
-
-        try {
-          if (employeeId) {
-            // Update existing employee
-            if (!data.password) {
-              delete data.password;
-            }
-
-            // Update employee data first
-            await apiClient.put(`/api/v2/users/${employeeId}`, data);
-
-            // Then update availability if any fields are set
-            if (data.availabilityStatus || data.availabilityStart || data.availabilityEnd) {
-              try {
-                const availabilityData = {
-                  availabilityStatus: data.availabilityStatus || 'available',
-                  availabilityStart: data.availabilityStart || null,
-                  availabilityEnd: data.availabilityEnd || null,
-                  availabilityNotes: data.availabilityNotes || '',
-                };
-
-                // Use v2 API endpoint for availability
-                await apiClient.put(`/api/v2/users/${employeeId}/availability`, availabilityData);
-                console.log('Availability updated successfully');
-              } catch (availErr) {
-                console.error('Error updating availability:', availErr);
-                // Don't fail the whole operation if availability update fails
-              }
-            }
-
-            alert('Mitarbeiter aktualisiert');
-            closeEmployeeModal();
-            loadEmployees(); // Dynamisches Reload wie bei manage-admins!
-          } else {
-            // Create new employee
-            data.role = 'employee';
-
-            // If no employee number provided, generate one
-            if (!data.employeeNumber || data.employeeNumber.trim() === '') {
-              // Generate a unique employee number (max 10 chars)
-              const timestamp = Date.now().toString().slice(-6);
-              data.employeeNumber = `EMP${timestamp}`;
-            }
-
-            await apiClient.post('/api/v2/users', data);
-            alert('Mitarbeiter erstellt');
-            closeEmployeeModal();
-            loadEmployees(); // Dynamisches Reload wie bei manage-admins!
-          }
-        } catch (error) {
-          console.error('Error saving employee (HTML handler):', error);
-          // Check if error has a message
-          if (error && error.message) {
-            const errorMessage = error.message.toLowerCase();
-            if (errorMessage.includes('email already exists') || errorMessage.includes('email existiert bereits')) {
-              alert('Diese E-Mail-Adresse ist bereits vergeben. Bitte verwenden Sie eine andere E-Mail-Adresse.');
-            } else if (errorMessage.includes('username already exists')) {
-              alert('Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen Benutzernamen.');
-            } else {
-              alert(error.message || 'Fehler beim Speichern');
-            }
-          } else {
-            alert('Fehler beim Speichern');
-          }
-        }
-      });
-      */
-
-      // Close modal on outside click
-      window.addEventListener('click', (e) => {
-        const modal = document.querySelector('#employee-modal');
-        if (e.target === modal) {
-          closeEmployeeModal();
-        }
-      });
-
-      // Real-time validation for email confirmation
-      document.querySelector('input[name="emailConfirm"]')?.addEventListener('input', (e) => {
-        const email = document.querySelector('input[name="email"]').value;
-        const emailConfirm = e.target.value;
-
-        if (emailConfirm && email !== emailConfirm) {
-          document.querySelector('#email-error').style.display = 'block';
-        } else {
-          document.querySelector('#email-error').style.display = 'none';
-        }
-      });
-
-      // Real-time validation for password confirmation
-      document.querySelector('input[name="passwordConfirm"]')?.addEventListener('input', (e) => {
-        const password = document.querySelector('input[name="password"]').value;
-        const passwordConfirm = e.target.value;
-
-        if (passwordConfirm && password !== passwordConfirm) {
-          document.querySelector('#password-error').style.display = 'block';
-        } else {
-          document.querySelector('#password-error').style.display = 'none';
-        }
-      });
-
-      // Initialize
-      document.addEventListener('DOMContentLoaded', () => {
-        loadEmployees();
-
-        // Event Delegation for all button actions
-        document.addEventListener('click', (e) => {
-          const target = e.target;
-          const action = target.dataset?.action;
-
-          if (!action) return;
-
-          switch (action) {
-            case 'add-employee':
-              showEmployeeModal();
-              break;
-
-            case 'close-modal':
-              closeEmployeeModal();
-              break;
-
-            case 'edit-employee': {
-              const editId = target.dataset.id;
-              if (editId) {
-                editEmployee(parseInt(editId));
-              }
-              break;
-            }
-
-            case 'delete-employee': {
-              const deleteId = target.dataset.id;
-              if (deleteId) {
-                deleteEmployee(parseInt(deleteId));
-              }
-              break;
-            }
-          }
-        });
-      });
-    </script>
+    <!-- Page Script -->
+    <script type="module" src="/scripts/manage/employees/index.ts"></script>
   </body>
 </html>

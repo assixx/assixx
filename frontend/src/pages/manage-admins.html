@@ -5,24 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin-Verwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        const root = document.documentElement;
-        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-      })();
-    </script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <!-- Dashboard Styles -->
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/manage-admins.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/password-strength.css" />
+
+    <!-- Common Scripts with ApiClient -->
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -31,557 +29,415 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
+        <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
+
         <div class="container">
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Admin-Verwaltung</h2>
-              <p class="text-secondary" class="u-mt-text">Verwalten Sie hier alle Administratoren im System</p>
+            <!-- Card Header - Following Base Card Component Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-users mr-2"></i>
+                Admin-Verwaltung
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Administratoren des Systems</p>
+
+              <!-- Controls Section - Inside header -->
+              <div class="flex gap-4 items-center justify-between mt-4">
+                <!-- Status Filter Toggle -->
+                <div class="toggle-group" id="admin-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Administratoren">
+                    <i class="fas fa-user-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Administratoren">
+                    <i class="fas fa-user-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Administratoren">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Administratoren">
+                    <i class="fas fa-users"></i>
+                    Alle
+                  </button>
+                </div>
+                <!-- Search Input with Results Dropdown -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="admin-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="admin-search"
+                      class="search-input__field"
+                      placeholder="Administratoren suchen..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="admin-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="admin-search-results">
+                    <!-- Results will be populated here dynamically -->
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <!-- Admin Table -->
-              <div id="adminTableContent">
+
+            <div class="card__body">
+              <!-- Loading State -->
+              <div id="admins-loading" class="spinner-container u-hidden">
+                <div class="spinner-ring spinner-ring--md"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Administratoren werden geladen...</p>
+              </div>
+
+              <!-- Table Content -->
+              <div id="admins-table-content">
                 <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+
+              <!-- Empty State -->
+              <div id="admins-empty" class="empty-state u-hidden">
+                <div class="empty-state__icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Administratoren gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Administrator hinzufügen
+                </button>
               </div>
             </div>
           </div>
+          <!-- End of card -->
         </div>
+        <!-- End of container -->
       </main>
     </div>
 
-    <!-- Add Admin Button -->
-    <button class="add-admin-btn" data-action="show-add-admin-modal">+</button>
-
-    <!-- Admin Modal -->
-    <div class="modal" id="adminModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Admin hinzufügen</h3>
-          <button class="modal-close" data-action="close-admin-modal">&times;</button>
+    <!-- Add/Edit Admin Modal -->
+    <div id="admin-modal" class="modal-overlay">
+      <form id="admin-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="admin-modal-title">Neuer Administrator</h3>
+          <button type="button" class="ds-modal__close" id="close-admin-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="adminForm">
-          <div class="form-group">
-            <label class="form-label">Vorname *</label>
-            <input type="text" id="adminFirstName" class="form-control" required />
+        <div class="ds-modal__body">
+          <input type="hidden" id="admin-id" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="admin-first-name">
+              Vorname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="admin-first-name" name="firstName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Nachname *</label>
-            <input type="text" id="adminLastName" class="form-control" required />
+
+          <div class="form-field">
+            <label class="form-field__label" for="admin-last-name">
+              Nachname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="admin-last-name" name="lastName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail *</label>
-            <input type="email" id="adminEmail" class="form-control" required />
+
+          <div class="form-field">
+            <label class="form-field__label" for="admin-email">
+              E-Mail
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="admin-email" name="email" class="form-field__control" required />
           </div>
-          <div class="form-group" id="emailConfirmGroup">
-            <label class="form-label">E-Mail wiederholen *</label>
-            <input type="email" id="adminEmailConfirm" class="form-control" required />
-            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
+
+          <div class="form-field" id="email-confirm-group">
+            <label class="form-field__label" for="admin-email-confirm">
+              E-Mail wiederholen
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="admin-email-confirm" name="emailConfirm" class="form-field__control" required />
+            <span class="form-field__message form-field__message--error u-hidden" id="email-error">
+              E-Mail-Adressen stimmen nicht überein
+            </span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Personalnummer *</label>
+
+          <div class="form-field" id="password-group">
+            <label class="form-field__label" for="admin-password">
+              Passwort
+              <span class="text-red-500">*</span>
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="admin-password" name="password" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="admin-password-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field" id="password-confirm-group">
+            <label class="form-field__label" for="admin-password-confirm">
+              Passwort wiederholen
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="admin-password-confirm" name="passwordConfirm" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="admin-password-confirm-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <span class="form-field__message form-field__message--error u-hidden" id="password-error">
+              Passwörter stimmen nicht überein
+            </span>
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="admin-password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="admin-password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="admin-password-strength-label"></span>
+              <span class="password-strength-time" id="admin-password-strength-time"></span>
+            </div>
+          </div>
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="admin-password-feedback">
+            <span class="password-feedback-warning" id="admin-password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="admin-password-feedback-suggestions"></ul>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="admin-employee-number">
+              Personalnummer
+              <span class="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              id="adminEmployeeNumber"
-              class="form-control"
+              id="admin-employee-number"
+              name="employeeNumber"
+              class="form-field__control"
               placeholder="z.B. ABC-123 oder 2025-001"
               maxlength="10"
               pattern="[A-Za-z0-9\-]{1,10}"
               required
             />
-            <small class="form-text text-secondary" style="font-size: 12px">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</small>
+            <span class="form-field__message text-[var(--color-text-secondary)]">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</span>
           </div>
-          <div class="form-group" id="passwordGroup">
-            <label class="form-label">Passwort *</label>
-            <input type="password" id="adminPassword" class="form-control" />
-          </div>
-          <div class="form-group" id="passwordConfirmGroup">
-            <label class="form-label">Passwort wiederholen *</label>
-            <input type="password" id="adminPasswordConfirm" class="form-control" />
-            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Position *</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="positionDropdownDisplay" data-action="toggle-dropdown" data-dropdown="positionDropdown">
-                <span>Position auswählen...</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+
+          <div class="form-field">
+            <label class="form-field__label" for="admin-position">
+              Position
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="admin-position" name="position" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="position-dropdown">
+              <div class="dropdown__trigger" id="position-trigger">
+                <span>Bitte wählen...</span>
+                <i class="fas fa-chevron-down"></i>
               </div>
-              <div class="dropdown-options" id="positionDropdownDropdown">
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="bereichsleiter"
-                  data-text="Bereichsleiter"
-                >
-                  Bereichsleiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="personalleiter"
-                  data-text="Personalleiter"
-                >
-                  Personalleiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="geschaeftsfuehrer"
-                  data-text="Geschäftsführer"
-                >
-                  Geschäftsführer
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="werksleiter"
-                  data-text="Werksleiter"
-                >
-                  Werksleiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="produktionsleiter"
-                  data-text="Produktionsleiter"
-                >
-                  Produktionsleiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="qualitaetsleiter"
-                  data-text="Qualitätsleiter"
-                >
-                  Qualitätsleiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="it-leiter"
-                  data-text="IT-Leiter"
-                >
-                  IT-Leiter
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="vertriebsleiter"
-                  data-text="Vertriebsleiter"
-                >
-                  Vertriebsleiter
-                </div>
+              <div class="dropdown__menu" id="position-menu">
+                <div class="dropdown__option" data-value="Bereichsleiter">Bereichsleiter</div>
+                <div class="dropdown__option" data-value="Personalleiter">Personalleiter</div>
+                <div class="dropdown__option" data-value="Geschäftsführer">Geschäftsführer</div>
+                <div class="dropdown__option" data-value="Werksleiter">Werksleiter</div>
+                <div class="dropdown__option" data-value="Produktionsleiter">Produktionsleiter</div>
+                <div class="dropdown__option" data-value="Qualitätsleiter">Qualitätsleiter</div>
+                <div class="dropdown__option" data-value="IT-Leiter">IT-Leiter</div>
+                <div class="dropdown__option" data-value="Vertriebsleiter">Vertriebsleiter</div>
+                <div class="dropdown__option" data-value="Mitarbeiter">Mitarbeiter</div>
               </div>
-              <input type="hidden" name="position" id="positionDropdownValue" required />
             </div>
           </div>
 
-          <!-- Department Permissions Section -->
-          <div id="departmentPermissionsSection" class="form-section">
-            <h4>Abteilungszuweisungen</h4>
-            <div
-              class="info-box warning"
-              style="
-                background: rgba(255, 193, 7, 0.1);
-                border: 1px solid rgba(255, 193, 7, 0.3);
-                padding: 12px;
-                border-radius: 8px;
-                margin-top: 8px;
-              "
-            >
-              <i class="fas fa-info-circle text-warning u-mr-8"></i>
-              <span style="color: rgba(255, 255, 255, 0.8); font-size: 14px">
-                Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.
+          <div class="form-field">
+            <label class="form-field__label" for="admin-notes">Notizen</label>
+            <textarea id="admin-notes" name="notes" class="form-field__control" rows="3"></textarea>
+          </div>
+
+          <!-- N:M REFACTORING: Organization Assignment Section -->
+          <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
+            <h4 class="text-[var(--color-text-primary)] font-medium mb-4">
+              <i class="fas fa-sitemap mr-2"></i>
+              Organisationszuweisung
+            </h4>
+
+            <!-- Whole Tenant Toggle (has_full_access) -->
+            <div class="form-field mb-4">
+              <label class="toggle-switch toggle-switch--danger">
+                <input type="checkbox" class="toggle-switch__input" id="admin-full-access" name="hasFullAccess" />
+                <span class="toggle-switch__slider"></span>
+                <span class="toggle-switch__label">
+                  <i class="fas fa-building mr-2"></i>
+                  Zugriff auf alle Bereiche/Abteilungen
+                </span>
+              </label>
+              <span class="form-field__message text-[var(--color-danger)] mt-2 block">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                Wenn aktiviert, hat der Admin Vollzugriff auf ALLE Bereiche und Abteilungen
               </span>
             </div>
 
-            <div class="permission-type-selection">
-              <label class="radio-label">
-                <input type="radio" name="permissionType" value="none" checked />
-                <span class="radio-text">Keine Abteilungen (Standard - Sicher)</span>
+            <!-- Area Multi-Select (N:M) -->
+            <div class="form-field mb-4" id="admin-area-select-container">
+              <label class="form-field__label" for="admin-areas">
+                <i class="fas fa-layer-group mr-1"></i>
+                Bereiche (Areas)
               </label>
-
-              <label class="radio-label">
-                <input type="radio" name="permissionType" value="specific" />
-                <span class="radio-text">Spezifische Abteilungen auswählen</span>
-              </label>
-
-              <label class="radio-label">
-                <input type="radio" name="permissionType" value="groups" />
-                <span class="radio-text">Abteilungsgruppen auswählen</span>
-              </label>
-
-              <label class="radio-label">
-                <input type="radio" name="permissionType" value="all" />
-                <span class="radio-text">Alle Abteilungen (Vollzugriff)</span>
-              </label>
-            </div>
-
-            <div id="departmentSelectContainer" style="display: none; margin-top: 16px">
-              <label class="form-label">Abteilungen auswählen</label>
-              <select id="departmentSelect" multiple class="form-control" style="min-height: 120px">
-                <!-- Dynamisch befüllt -->
+              <select id="admin-areas" name="areaIds" multiple class="form-field__control min-h-[100px]">
+                <!-- Will be populated dynamically -->
               </select>
-              <small class="form-text text-secondary u-mt-4" style="font-size: 12px; display: block">
-                Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl
-              </small>
+              <span class="form-field__message text-[var(--color-text-secondary)]">
+                <i class="fas fa-info-circle mr-1"></i>
+                Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige Abteilungen.
+              </span>
             </div>
 
-            <div id="groupSelectContainer" style="display: none; margin-top: 16px">
-              <label class="form-label">Abteilungsgruppen auswählen</label>
-              <div
-                class="group-tree-view"
-                id="groupTreeView"
-                style="
-                  max-height: 200px;
-                  overflow-y: auto;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  border-radius: 8px;
-                  padding: 12px;
-                  background: rgba(255, 255, 255, 0.02);
-                "
-              >
-                <!-- Hierarchische Darstellung der Gruppen -->
+            <!-- Department Multi-Select (N:M) -->
+            <div class="form-field mb-4" id="admin-department-select-container">
+              <label class="form-field__label" for="admin-departments">
+                <i class="fas fa-sitemap mr-1"></i>
+                Zusätzliche Abteilungen
+              </label>
+              <select id="admin-departments" name="departmentIds" multiple class="form-field__control min-h-[120px]">
+                <!-- Will be populated dynamically -->
+              </select>
+              <span class="form-field__message text-[var(--color-text-secondary)]">
+                <i class="fas fa-info-circle mr-1"></i>
+                Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt sind.
+              </span>
+            </div>
+
+            <!-- Team Info (inherited from Area/Department) -->
+            <div class="form-field" id="admin-team-info-container">
+              <label class="form-field__label">
+                <i class="fas fa-users mr-1"></i>
+                Teams
+              </label>
+              <div class="alert alert--info">
+                <div class="alert__icon">
+                  <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="alert__content">
+                  <div class="alert__message">
+                    Teams werden automatisch vererbt: Admin mit Bereich-/Abteilungs-Berechtigung sieht alle zugehoerigen Teams.
+                  </div>
+                </div>
               </div>
-              <small class="form-text text-secondary u-mt-4" style="font-size: 12px; display: block">
-                Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.
-              </small>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Notizen</label>
-            <textarea id="adminNotes" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="form-group" id="activeStatusGroup" class="u-hidden">
-            <label class="form-label">
-              <input type="checkbox" id="adminIsActive" />
-              <span class="u-ml-8">Aktiv</span>
+          <div class="form-field" id="active-status-group">
+            <label class="form-field__label" for="admin-status">
+              Status
+              <span class="text-red-500">*</span>
             </label>
-            <div class="text-secondary u-mt-4" style="font-size: 12px">Deaktivierte Administratoren können sich nicht anmelden</div>
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="admin-is-active" name="isActive" value="1" />
+            <input type="hidden" id="admin-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Administratoren können sich nicht anmelden
+            </span>
           </div>
-          <div class="button-group">
-            <button type="button" class="btn btn-secondary" data-action="close-admin-modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">Speichern</button>
-          </div>
-        </form>
-      </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-admin-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
     </div>
 
-    <!-- Permissions Modal -->
-    <div class="modal" id="permissionsModal">
-      <div class="modal-content" style="max-width: 600px">
-        <div class="modal-header">
-          <h3 class="modal-title">Abteilungsberechtigungen verwalten</h3>
-          <button class="modal-close" data-action="close-permissions-modal">&times;</button>
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
+    <div id="delete-admin-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Administrator löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-
-        <div class="admin-info" style="padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; margin: 16px">
-          <p style="margin: 0 0 8px 0">
-            <strong>Admin:</strong>
-            <span id="permAdminName"></span>
-          </p>
-          <p class="u-m-0">
-            <strong>E-Mail:</strong>
-            <span id="permAdminEmail"></span>
-          </p>
+        <div class="ds-modal__body">
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diesen Administrator wirklich löschen?</p>
+          <input type="hidden" id="delete-admin-id" />
         </div>
-
-        <div style="padding: 0 16px">
-          <div class="permission-options" style="display: flex; gap: 12px; margin-bottom: 20px">
-            <button data-action="select-all-departments" class="btn btn-secondary" class="u-flex-1">
-              <i class="fas fa-check-square"></i>
-              Alle auswählen
-            </button>
-            <button data-action="select-no-departments" class="btn btn-secondary" class="u-flex-1">
-              <i class="fas fa-square"></i>
-              Keine auswählen
-            </button>
-          </div>
-
-          <div class="tabs" style="margin-bottom: 20px">
-            <div
-              class="tab-headers"
-              style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 16px"
-            >
-              <button
-                class="tab-header active"
-                data-action="switch-perm-tab"
-                data-tab="departments"
-                data-tab="departments"
-                style="
-                  padding: 8px 16px;
-                  background: none;
-                  border: none;
-                  color: var(--text-primary);
-                  cursor: pointer;
-                  border-bottom: 2px solid var(--primary-color);
-                "
-              >
-                Abteilungen
-              </button>
-              <button
-                class="tab-header"
-                data-action="switch-perm-tab"
-                data-tab="groups"
-                data-tab="groups"
-                style="
-                  padding: 8px 16px;
-                  background: none;
-                  border: none;
-                  color: var(--text-secondary);
-                  cursor: pointer;
-                  border-bottom: 2px solid transparent;
-                "
-              >
-                Gruppen
-              </button>
-            </div>
-
-            <div class="tab-content" id="departmentsTab">
-              <div
-                class="department-list"
-                id="permissionDepartmentList"
-                style="
-                  max-height: 300px;
-                  overflow-y: auto;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  border-radius: 8px;
-                  padding: 12px;
-                  background: rgba(255, 255, 255, 0.02);
-                "
-              >
-                <!-- Departments will be loaded here -->
-              </div>
-            </div>
-
-            <div class="tab-content" id="groupsTab" class="u-hidden">
-              <div
-                class="group-list"
-                id="permissionGroupList"
-                style="
-                  max-height: 300px;
-                  overflow-y: auto;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  border-radius: 8px;
-                  padding: 12px;
-                  background: rgba(255, 255, 255, 0.02);
-                "
-              >
-                <!-- Groups will be loaded here -->
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="permission-levels"
-            style="margin-bottom: 20px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px"
-          >
-            <h4 style="margin: 0 0 12px 0; font-size: 14px">Berechtigungsstufen:</h4>
-            <label class="checkbox-label">
-              <input type="checkbox" id="permCanRead" checked disabled />
-              <span class="checkbox-text">Lesen (Standard)</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" id="permCanWrite" />
-              <span class="checkbox-text">Schreiben</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" id="permCanDelete" />
-              <span class="checkbox-text">Löschen</span>
-            </label>
-          </div>
-
-          <div class="modal-actions" style="display: flex; gap: 12px; padding: 16px 0">
-            <button data-action="save-permissions" class="btn btn-primary" class="u-flex-1">
-              <i class="fas fa-save"></i>
-              Speichern
-            </button>
-            <button data-action="close-permissions-modal" class="btn btn-secondary" class="u-flex-1">Abbrechen</button>
-          </div>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-admin">Löschen</button>
         </div>
       </div>
     </div>
 
-    <!-- Scripts -->
-    <!-- Enable v2 API for root users -->
-    <script src="/feature-flags.js"></script>
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-admin-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Administrator wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-admin-final">
+            Endgültig löschen
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
-    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <script>
-      window.FEATURE_FLAGS = window.FEATURE_FLAGS || {};
-      window.FEATURE_FLAGS.USE_API_V2_AUTH = true;
-      window.FEATURE_FLAGS.USE_API_V2_USERS = true;
-      window.FEATURE_FLAGS.USE_API_V2_ROOT = true;
-    </script>
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/manage-admins.ts"></script>
+    <!-- Floating Action Button -->
+    <button class="btn-float" id="add-admin-btn" aria-label="Administrator hinzufügen">
+      <i class="fas fa-user-plus"></i>
+    </button>
 
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
+    <!-- Navigation Components -->
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
 
-    <!-- Custom Dropdown Functions -->
-    <script>
-      // Toggle Dropdown
-      function toggleDropdown(type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d !== display) d.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d !== dropdown) d.classList.remove('active');
-        });
-
-        display.classList.toggle('active');
-        dropdown.classList.toggle('active');
-      }
-
-      // Select Option
-      function selectOption(type, value, text) {
-        document.querySelector(type + 'Display').querySelector('span').textContent = text;
-        document.querySelector(type + 'Value').value = value;
-        document.querySelector(type + 'Display').classList.remove('active');
-        document.querySelector(type + 'Dropdown').classList.remove('active');
-      }
-
-      // Click outside to close
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Event Delegation for data-action
-      document.addEventListener('click', function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) return;
-
-        const action = target.dataset.action;
-
-        switch (action) {
-          case 'show-add-admin-modal':
-            if (window.showAddAdminModal) {
-              window.showAddAdminModal();
-            }
-            break;
-          case 'close-admin-modal':
-            if (window.closeAdminModal) {
-              window.closeAdminModal();
-            }
-            break;
-          case 'toggle-dropdown': {
-            const dropdown = target.dataset.dropdown;
-            if (dropdown) {
-              toggleDropdown('#' + dropdown);
-            }
-            break;
-          }
-          case 'select-option': {
-            const dropdown = target.dataset.dropdown;
-            const value = target.dataset.value;
-            const text = target.dataset.text;
-            if (dropdown && value && text) {
-              selectOption('#' + dropdown, value, text);
-            }
-            break;
-          }
-          case 'close-permissions-modal':
-            closePermissionsModal();
-            break;
-          case 'select-all-departments':
-            selectAllDepartments();
-            break;
-          case 'select-no-departments':
-            selectNoDepartments();
-            break;
-          case 'switch-perm-tab': {
-            const tab = target.dataset.tab;
-            if (tab) {
-              switchPermTab(tab);
-            }
-            break;
-          }
-          case 'save-permissions':
-            savePermissions();
-            break;
-        }
-      });
-
-      // Permissions Modal Functions
-      function closePermissionsModal() {
-        document.querySelector('#permissionsModal').classList.remove('active');
-      }
-
-      function switchPermTab(tab) {
-        // Update tab headers
-        document.querySelectorAll('.tab-header').forEach((h) => {
-          h.classList.remove('active');
-          h.style.borderBottomColor = 'transparent';
-          h.style.color = 'var(--text-secondary)';
-        });
-
-        const activeHeader = document.querySelector(`[data-tab="${tab}"]`);
-        if (activeHeader) {
-          activeHeader.classList.add('active');
-          activeHeader.style.borderBottomColor = 'var(--primary-color)';
-          activeHeader.style.color = 'var(--text-primary)';
-        }
-
-        // Update tab content
-        document.querySelector('#departmentsTab').style.display = tab === 'departments' ? 'block' : 'none';
-        document.querySelector('#groupsTab').style.display = tab === 'groups' ? 'block' : 'none';
-      }
-
-      function selectAllDepartments() {
-        const activeTab = document.querySelector('.tab-header.active').getAttribute('data-tab');
-        if (activeTab === 'departments') {
-          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach((cb) => {
-            cb.checked = true;
-          });
-        } else {
-          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach((cb) => {
-            cb.checked = true;
-          });
-        }
-      }
-
-      function selectNoDepartments() {
-        const activeTab = document.querySelector('.tab-header.active').getAttribute('data-tab');
-        if (activeTab === 'departments') {
-          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach((cb) => {
-            cb.checked = false;
-          });
-        } else {
-          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach((cb) => {
-            cb.checked = false;
-          });
-        }
-      }
-
-      async function savePermissions() {
-        // This will be implemented in TypeScript
-        window.savePermissionsHandler && window.savePermissionsHandler();
-      }
-    </script>
+    <!-- Page Script -->
+    <script type="module" src="/scripts/manage/admins/index.ts"></script>
   </body>
 </html>

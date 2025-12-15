@@ -18,7 +18,7 @@ describe('DEBUG: Users v2 Archive API', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-users-v2-archive-debug';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-users-v2-archive-debug';
 
     // Create test tenant
     tenantId = await createTestTenant(testDb, 'archivetest', 'Archive Test Company');
@@ -40,7 +40,7 @@ describe('DEBUG: Users v2 Archive API', () => {
       password: 'AdminPass123!',
     });
 
-    adminToken = loginRes.body.data.accessToken;
+    adminToken = loginRes.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -59,7 +59,7 @@ describe('DEBUG: Users v2 Archive API', () => {
       first_name: 'Test',
       last_name: 'Archive',
     });
-    userId = user.id;
+    userId = user['id'];
     console.info('Created user with ID:', userId, 'Type:', typeof userId);
   });
 

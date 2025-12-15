@@ -5,25 +5,22 @@
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
-import type { Attachment } from 'nodemailer/lib/mailer';
 import path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Feature from '../models/feature';
-import { logger } from './logger';
+import Feature from '../routes/v2/features/feature.model.js';
+import { logger } from './logger.js';
 
-/**
- * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
- * Entfernt gefährliche Tags und Attribute
- * @param html - Der zu bereinigende HTML-Inhalt
- * @returns Bereinigter HTML-Inhalt
- */
-function sanitizeHtml(html: string): string {
-  if (!html) return '';
+// Type definition for attachment (from nodemailer)
+interface Attachment {
+  filename?: string;
+  content?: string | Buffer;
+  path?: string;
+  contentType?: string;
+  cid?: string;
+}
 
-  let sanitized = html;
-
-  // Schritt 1: Entferne gefährliche Tags mit mehreren Durchgängen
+function removeDangerousTags(html: string): string {
   const dangerousTags = [
     'script',
     'iframe',
@@ -35,59 +32,51 @@ function sanitizeHtml(html: string): string {
     'base',
     'applet',
   ];
-
-  // Mehrere Durchgänge um verschachtelte Tags zu erwischen
+  let sanitized = html;
   for (let i = 0; i < 3; i++) {
-    dangerousTags.forEach((tag) => {
-      // Entferne komplette Tags mit Inhalt (inkl. malformed end tags)
+    dangerousTags.forEach((tag: string) => {
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
-
-      // Entferne self-closing und einzelne Tags
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
-
-      // Entferne closing Tags falls übrig (inkl. malformed tags)
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, '');
     });
   }
+  return sanitized;
+}
 
-  // Schritt 2: Entferne Event-Handler mit mehreren Patterns
+function removeEventHandlers(html: string): string {
   const eventHandlerPatterns = [
     /\bon\w+\s*=\s*["'][^"']*["']/gi,
     /\bon\w+\s*=\s*`[^`]*`/gi,
     /\bon\w+\s*=\s*[^\s>]+/gi,
-    /\son\w+/gi, // Fallback für alleinstehende Handler
+    /\son\w+/gi,
   ];
-
-  // Mehrere Durchgänge für vollständige Entfernung
+  let sanitized = html;
   for (let i = 0; i < 3; i++) {
-    eventHandlerPatterns.forEach((pattern) => {
+    eventHandlerPatterns.forEach((pattern: RegExp) => {
       sanitized = sanitized.replace(pattern, '');
     });
   }
+  return sanitized;
+}
 
-  // Schritt 3: URL-Bereinigung mit verbesserter Erkennung
+function sanitizeUrls(html: string): string {
   const urlPatterns = [
-    // href Attribute
     /href\s*=\s*["']([^"']*)["']/gi,
     /href\s*=\s*([^\s>]+)/gi,
-    // src Attribute
     /src\s*=\s*["']([^"']*)["']/gi,
     /src\s*=\s*([^\s>]+)/gi,
-    // andere URL Attribute
     /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*)["']/gi,
   ];
-
-  urlPatterns.forEach((pattern) => {
+  let sanitized = html;
+  urlPatterns.forEach((pattern: RegExp) => {
     sanitized = sanitized.replace(pattern, (match: string, url: string) => {
       const lowerUrl = url.toLowerCase().trim();
-
-      // Gefährliche Schemas
       if (
         /^(javascript|vbscript|data:text\/html|data:text\/javascript|data:application\/javascript)/i.test(
           lowerUrl,
@@ -95,52 +84,56 @@ function sanitizeHtml(html: string): string {
       ) {
         return match.replace(url, '#');
       }
-
-      // Für data: URLs - nur Bilder erlauben
       if (
         lowerUrl.startsWith('data:') &&
         !/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)
       ) {
         return match.replace(url, '#');
       }
-
       return match;
     });
   });
+  return sanitized;
+}
 
-  // Schritt 4: Style-Bereinigung
-  sanitized = sanitized.replace(
-    /style\s*=\s*["']([^"']*)["']/gi,
-    (_match: string, styleContent: string) => {
-      let cleanedStyle = styleContent;
+function sanitizeStyles(html: string): string {
+  return html.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match: string, styleContent: string) => {
+    let cleanedStyle = styleContent;
+    const dangerousCSS = [
+      /expression\s*\([^)]*\)/gi,
+      /javascript\s*:/gi,
+      /vbscript\s*:/gi,
+      /-moz-binding\s*:/gi,
+      /behavior\s*:/gi,
+      /@import/gi,
+      /import\s*\(/gi,
+    ];
+    dangerousCSS.forEach((pattern: RegExp) => {
+      cleanedStyle = cleanedStyle.replace(pattern, '');
+    });
+    cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
+      if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
+        return '';
+      }
+      return urlMatch;
+    });
+    return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
+  });
+}
 
-      // Gefährliche CSS-Eigenschaften mit globaler Ersetzung
-      const dangerousCSS = [
-        /expression\s*\([^)]*\)/gi,
-        /javascript\s*:/gi,
-        /vbscript\s*:/gi,
-        /-moz-binding\s*:/gi,
-        /behavior\s*:/gi,
-        /@import/gi,
-        /import\s*\(/gi,
-      ];
-
-      dangerousCSS.forEach((pattern) => {
-        cleanedStyle = cleanedStyle.replace(pattern, '');
-      });
-
-      // URL-Funktionen bereinigen
-      cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
-        if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
-          return '';
-        }
-        return urlMatch;
-      });
-
-      return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
-    },
-  );
-
+/**
+ * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
+ * Entfernt gefährliche Tags und Attribute
+ * @param html - Der zu bereinigende HTML-Inhalt
+ * @returns Bereinigter HTML-Inhalt
+ */
+function sanitizeHtml(html: string): string {
+  if (html === '') return '';
+  let sanitized = html;
+  sanitized = removeDangerousTags(sanitized);
+  sanitized = removeEventHandlers(sanitized);
+  sanitized = sanitizeUrls(sanitized);
+  sanitized = sanitizeStyles(sanitized);
   return sanitized.trim();
 }
 
@@ -217,12 +210,12 @@ let transporter: Transporter | null = null;
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
   // Default-Konfiguration für Entwicklung
   const defaultConfig: EmailConfig = {
-    host: process.env.EMAIL_HOST ?? 'smtp.example.com',
-    port: Number.parseInt(process.env.EMAIL_PORT ?? '587', 10),
-    secure: process.env.EMAIL_SECURE === 'true',
+    host: process.env['EMAIL_HOST'] ?? 'smtp.example.com',
+    port: Number.parseInt(process.env['EMAIL_PORT'] ?? '587', 10),
+    secure: process.env['EMAIL_SECURE'] === 'true',
     auth: {
-      user: process.env.EMAIL_USER ?? 'user@example.com',
-      pass: process.env.EMAIL_PASSWORD ?? 'password',
+      user: process.env['EMAIL_USER'] ?? 'user@example.com',
+      pass: process.env['EMAIL_PASSWORD'] ?? 'password',
     },
   };
 
@@ -231,7 +224,6 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   transporter = nodemailer.createTransport(transportConfig);
 
   // Test SMTP-Verbindung
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- nodemailer.verify only supports callback API
   transporter.verify((error: Error | null): void => {
     if (error) {
       logger.error(`E-Mail-Konfiguration fehlgeschlagen: ${error.message}`);
@@ -257,7 +249,7 @@ function escapeHtmlTemplate(str: string): string {
     "'": '&#39;',
   };
   // eslint-disable-next-line security/detect-object-injection -- match is from regex match, always one of the keys
-  return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
+  return str.replace(/["&'<>]/g, (match: string) => htmlEscapes[match] ?? match);
 }
 
 /**
@@ -281,7 +273,9 @@ async function loadTemplate(
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       // Escape replacement values to prevent XSS
       // eslint-disable-next-line security/detect-object-injection -- Key is from Object.keys iteration
-      const safeValue = escapeHtmlTemplate(replacements[key]);
+      const value = replacements[key];
+      if (value === undefined) return;
+      const safeValue = escapeHtmlTemplate(value);
       templateContent = templateContent.replace(regex, safeValue);
     });
 
@@ -291,7 +285,7 @@ async function loadTemplate(
       `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`,
     );
     // Fallback-Template
-    const safeMessage = escapeHtmlTemplate(replacements.message || 'Keine Nachricht verfügbar');
+    const safeMessage = escapeHtmlTemplate(replacements['message'] ?? 'Keine Nachricht verfügbar');
     return `
       <html>
         <body>
@@ -322,7 +316,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
-    const from: string = options.from ?? process.env.EMAIL_FROM ?? 'Assixx <noreply@assixx.de>';
+    const from: string = options.from ?? process.env['EMAIL_FROM'] ?? 'Assixx <noreply@assixx.de>';
 
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;
@@ -333,11 +327,11 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       // Zusätzliche Sicherheitsvalidierung als Backup
       // Pattern das auch malformed end tags erkennt (z.B. </script foo="bar">)
       // codeql[js/bad-tag-filter] - This is a backup check after comprehensive sanitization
-      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script[^>]*>/i;
+      const scriptPattern = /<script\b[^>]*>[\s\S]*$3<\/script[^>]*>/i;
       const eventHandlerPattern = /\bon\w+\s*=/i;
 
       if (
-        sanitizedHtml &&
+        sanitizedHtml !== '' &&
         (scriptPattern.test(sanitizedHtml) || eventHandlerPattern.test(sanitizedHtml))
       ) {
         logger.warn('Potenziell gefährlicher HTML-Inhalt nach Sanitization erkannt');
@@ -433,7 +427,7 @@ async function processQueue(): Promise<void> {
 
       // Kurze Pause zwischen Batches, um SMTP-Limits einzuhalten
       if (emailQueue.length > 0) {
-        await new Promise((resolve) => global.setTimeout(resolve, 1000));
+        await new Promise<void>((resolve: () => void) => global.setTimeout(resolve, 1000));
       }
     }
   } catch (error: unknown) {
@@ -452,7 +446,7 @@ async function processQueue(): Promise<void> {
  */
 async function sendNewDocumentNotification(user: User, document: Document): Promise<EmailResult> {
   try {
-    if (!user.email) {
+    if (user.email === '') {
       return {
         success: false,
         error: 'Keine E-Mail-Adresse für den Benutzer verfügbar',
@@ -462,12 +456,14 @@ async function sendNewDocumentNotification(user: User, document: Document): Prom
     // Unsubscribe-Link generieren
     const unsubscribeUrl: string = generateUnsubscribeLink(user.email, 'documents');
 
+    const userName = `${user.first_name} ${user.last_name}`;
+    const documentName = document.file_name;
     const replacements: TemplateReplacements = {
-      userName: `${user.first_name} ${user.last_name}`,
-      documentName: document.file_name,
+      userName,
+      documentName,
       documentCategory: document.category ?? 'Allgemein',
       documentDate: new Date(document.upload_date).toLocaleDateString('de-DE'),
-      dashboardUrl: `${process.env.APP_URL ?? 'https://app.assixx.de'}/employee-dashboard`,
+      dashboardUrl: `${process.env['APP_URL'] ?? 'https://app.assixx.de'}/employee-dashboard`,
       unsubscribeUrl,
     };
 
@@ -477,7 +473,7 @@ async function sendNewDocumentNotification(user: User, document: Document): Prom
       to: user.email,
       subject: 'Neues Dokument für Sie verfügbar',
       html,
-      text: `Hallo ${replacements.userName},\n\nEin neues Dokument "${replacements.documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
+      text: `Hallo ${userName},\n\nEin neues Dokument "${documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
     logger.error(`Fehler beim Senden der Dokumentenbenachrichtigung: ${(error as Error).message}`);
@@ -492,17 +488,18 @@ async function sendNewDocumentNotification(user: User, document: Document): Prom
  */
 async function sendWelcomeEmail(user: User): Promise<EmailResult> {
   try {
-    if (!user.email) {
+    if (user.email === '') {
       return {
         success: false,
         error: 'Keine E-Mail-Adresse für den Benutzer verfügbar',
       };
     }
 
+    const userName = `${user.first_name} ${user.last_name}`;
     const replacements: TemplateReplacements = {
-      userName: `${user.first_name} ${user.last_name}`,
+      userName,
       companyName: user.company ?? 'Ihr Unternehmen',
-      loginUrl: `${process.env.APP_URL ?? 'https://app.assixx.de'}/login.html`,
+      loginUrl: `${process.env['APP_URL'] ?? 'https://app.assixx.de'}/login.html`,
     };
 
     const html: string = await loadTemplate('welcome', replacements);
@@ -511,7 +508,7 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
       to: user.email,
       subject: 'Willkommen bei Assixx',
       html,
-      text: `Hallo ${replacements.userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
+      text: `Hallo ${userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
     logger.error(`Fehler beim Senden der Willkommens-E-Mail: ${(error as Error).message}`);
@@ -520,85 +517,71 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
 }
 
 /**
+ * Check feature access for bulk emails and log usage
+ */
+async function checkBulkEmailFeature(
+  options: BulkMessageOptions,
+  userCount: number,
+): Promise<EmailResult | null> {
+  if (options.tenantId == null || options.checkFeature !== true) return null;
+
+  const hasAccess = await Feature.checkTenantAccess(options.tenantId, 'email_notifications');
+  if (!hasAccess) {
+    return {
+      success: false,
+      error: 'Keine Berechtigung für Massen-E-Mails. Bitte Feature upgraden.',
+    };
+  }
+
+  await Feature.logUsage(options.tenantId, 'email_notifications', options.userId, {
+    recipients: userCount,
+    subject: options.subject,
+  });
+  return null;
+}
+
+/**
+ * Queue a single user email for bulk send
+ */
+function queueUserEmail(user: User, html: string, options: BulkMessageOptions): void {
+  const unsubscribeUrl = generateUnsubscribeLink(user.email, options.notificationType ?? 'all');
+  const personalizedHtml = html
+    .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
+    .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+  const emailOptions: EmailOptions = {
+    to: user.email,
+    subject: options.subject,
+    html: personalizedHtml,
+  };
+  if (options.text !== undefined) emailOptions.text = options.text;
+  if (options.attachments !== undefined) emailOptions.attachments = options.attachments;
+  addToQueue(emailOptions);
+}
+
+/**
  * Sendet eine Massenbenachrichtigung an mehrere Benutzer
- * @param users - Array von Benutzer-Objekten
- * @param messageOptions - Optionen für die Nachricht
- * @returns Ergebnis des Versands
  */
 async function sendBulkNotification(
   users: User[],
   messageOptions: BulkMessageOptions,
 ): Promise<EmailResult> {
   try {
-    // Feature-Prüfung für Massen-E-Mails (wenn verfügbar)
-    if (messageOptions.tenantId != null && messageOptions.checkFeature === true) {
-      const hasAccess = await Feature.checkTenantAccess(
-        messageOptions.tenantId,
-        'email_notifications',
-      );
+    const featureError = await checkBulkEmailFeature(messageOptions, users.length);
+    if (featureError !== null) return featureError;
 
-      if (!hasAccess) {
-        return {
-          success: false,
-          error: 'Keine Berechtigung für Massen-E-Mails. Bitte Feature upgraden.',
-        };
-      }
-
-      // Nutzung des Features protokollieren
-      await Feature.logUsage(
-        messageOptions.tenantId,
-        'email_notifications',
-        messageOptions.userId,
-        {
-          recipients: users.length,
-          subject: messageOptions.subject,
-        },
-      );
-    }
-
-    // Filtere Benutzer ohne E-Mail
-    const validUsers: User[] = users.filter((user: User) => user.email);
-
+    const validUsers = users.filter((user: User) => user.email !== '');
     if (validUsers.length === 0) {
-      return {
-        success: false,
-        error: 'Keine gültigen E-Mail-Empfänger gefunden',
-      };
+      return { success: false, error: 'Keine gültigen E-Mail-Empfänger gefunden' };
     }
 
-    // HTML aus Template laden, falls nicht direkt angegeben
-    let html: string = messageOptions.html ?? '';
+    let html = messageOptions.html ?? '';
     if (messageOptions.templateName != null && messageOptions.templateName !== '') {
-      // const notificationType: string =
-      //   messageOptions.notificationType || 'notification'; // Unused
-
-      // Replacement-Objekt mit Basis-Werten erstellen
-      const baseReplacements: TemplateReplacements = messageOptions.replacements ?? {};
-
-      html = await loadTemplate(messageOptions.templateName, baseReplacements);
+      html = await loadTemplate(messageOptions.templateName, messageOptions.replacements ?? {});
     }
 
-    // E-Mails zur Queue hinzufügen
     for (const user of validUsers) {
-      // Unsubscribe-Link für jeden Benutzer generieren
-      const unsubscribeUrl: string = generateUnsubscribeLink(
-        user.email,
-        messageOptions.notificationType ?? 'all',
-      );
-
-      // HTML personalisieren
-      const personalizedHtml: string = html
-        .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
-        .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
-
-      // Wichtig: personalizedHtml wird in sendEmail() sanitized
-      addToQueue({
-        to: user.email,
-        subject: messageOptions.subject,
-        html: personalizedHtml,
-        text: messageOptions.text,
-        attachments: messageOptions.attachments,
-      });
+      queueUserEmail(user, html, messageOptions);
     }
 
     return {
@@ -619,29 +602,20 @@ async function sendBulkNotification(
  * @param type - Typ der Benachrichtigung
  * @returns Unsubscribe-Link
  */
-function generateUnsubscribeLink(email: string, type = 'all'): string {
+function generateUnsubscribeLink(email: string, type?: string): string {
+  const resolvedType = type ?? 'all';
+
   // Token generieren (würde normalerweise mit JWT o.ä. implementiert)
   const token: string = jwt.sign(
-    { email, type, purpose: 'unsubscribe' },
-    process.env.JWT_SECRET ?? 'default-secret',
+    { email, type: resolvedType, purpose: 'unsubscribe' },
+    process.env['JWT_SECRET'] ?? 'default-secret',
     { expiresIn: '30d' },
   );
 
-  return `${process.env.APP_URL ?? 'https://app.assixx.de'}/unsubscribe?token=${token}`;
+  return `${process.env['APP_URL'] ?? 'https://app.assixx.de'}/unsubscribe?token=${token}`;
 }
 
 // ES module exports
-export {
-  initializeTransporter,
-  sendEmail,
-  sendNewDocumentNotification,
-  sendWelcomeEmail,
-  sendBulkNotification,
-  addToQueue,
-  processQueue,
-  generateUnsubscribeLink,
-};
-
 // Default export
 export default {
   initializeTransporter,

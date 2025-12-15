@@ -7,9 +7,9 @@ import 'dotenv/config';
 import * as http from 'http';
 import { IncomingMessage, ServerResponse } from 'http';
 
-import pool from '../config/database';
-import { tenantDeletionService } from '../services/tenantDeletion.service';
-import { logger } from '../utils/logger';
+import pool from '../config/database.js';
+import { tenantDeletionService } from '../services/tenantDeletion.service.js';
+import { logger } from '../utils/logger.js';
 
 class DeletionWorker {
   private isRunning = true;
@@ -20,11 +20,11 @@ class DeletionWorker {
     // Setup graceful shutdown handlers
     process.on('SIGTERM', () => void this.shutdown('SIGTERM'));
     process.on('SIGINT', () => void this.shutdown('SIGINT'));
-    process.on('uncaughtException', (error) => {
+    process.on('uncaughtException', (error: Error) => {
       logger.error('Uncaught exception in deletion worker:', error);
       void this.shutdown('uncaughtException');
     });
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
       logger.error('Unhandled rejection in deletion worker:', {
         reason,
         promise,
@@ -34,11 +34,12 @@ class DeletionWorker {
   }
 
   async start(): Promise<void> {
-    logger.info('🚀 Tenant Deletion Worker starting...');
+    logger.info(' Tenant Deletion Worker starting...');
 
     try {
       // Test database connection
-      await pool.getConnection();
+      const client = await pool.connect();
+      client.release();
       logger.info('✅ Database connected');
 
       // Redis connection would be initialized here if needed
@@ -48,9 +49,7 @@ class DeletionWorker {
       this.startHealthCheck();
 
       logger.info('✅ Deletion Worker ready and running');
-      logger.info(
-        `⏰ Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
-      );
+      logger.info(` Checking for queued deletions every ${this.processingInterval / 1000} seconds`);
 
       // Main processing loop
       while (this.isRunning) {
@@ -85,7 +84,7 @@ class DeletionWorker {
 
   private startHealthCheck(): void {
     // Simple HTTP server for health checks
-    const healthPort = process.env.DELETION_WORKER_HEALTH_PORT ?? 3001;
+    const healthPort = process.env['DELETION_WORKER_HEALTH_PORT'] ?? 3001;
 
     const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
       if (req.url === '/health') {
@@ -111,7 +110,7 @@ class DeletionWorker {
   }
 
   private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
+    await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, ms));
   }
 
   private async shutdown(signal: string): Promise<void> {
@@ -150,7 +149,6 @@ class DeletionWorker {
 
 // Start the worker when run directly
 const worker = new DeletionWorker();
-// eslint-disable-next-line promise/prefer-await-to-callbacks -- Top-level error handler for worker startup
 worker.start().catch((error: unknown) => {
   logger.error('Fatal error starting deletion worker:', error);
   process.exit(1);

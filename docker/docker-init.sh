@@ -3,8 +3,8 @@
 # Docker Initialization Script for New Developers
 # This script sets up the required Docker volumes and starts the containers
 
-echo "🚀 Assixx Docker Setup für neue Entwickler"
-echo "=========================================="
+echo "🚀 Assixx Docker Setup"
+echo "======================"
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -29,14 +29,15 @@ fi
 echo ""
 echo "📦 Erstelle Docker Volumes..."
 
-# Check if volumes already exist
-if docker volume inspect assixx_mysql_data &> /dev/null; then
-    echo "✅ Volume 'assixx_mysql_data' existiert bereits"
+# PostgreSQL Data Volume
+if docker volume inspect assixx_postgres_data &> /dev/null; then
+    echo "✅ Volume 'assixx_postgres_data' existiert bereits"
 else
-    docker volume create assixx_mysql_data
-    echo "✅ Volume 'assixx_mysql_data' erstellt"
+    docker volume create assixx_postgres_data
+    echo "✅ Volume 'assixx_postgres_data' erstellt"
 fi
 
+# Redis Data Volume
 if docker volume inspect assixx_redis_data &> /dev/null; then
     echo "✅ Volume 'assixx_redis_data' existiert bereits"
 else
@@ -68,7 +69,7 @@ docker-compose up -d
 # Wait for services to be ready
 echo ""
 echo "⏳ Warte auf Services..."
-sleep 5
+sleep 10
 
 # Check container status
 echo ""
@@ -80,13 +81,14 @@ echo ""
 echo "✨ Setup abgeschlossen!"
 echo ""
 echo "🌐 Zugriff:"
-echo "   - Anwendung: http://localhost:3000"
-echo "   - phpMyAdmin: http://localhost:8080"
+echo "   - Anwendung:    http://localhost:3000"
 echo "   - Health Check: http://localhost:3000/health"
+echo "   - PostgreSQL:   localhost:5432"
 echo ""
 echo "📝 Nützliche Befehle:"
-echo "   - Logs anzeigen: docker-compose logs -f"
-echo "   - Container stoppen: docker-compose down"
+echo "   - Logs anzeigen:       docker-compose logs -f backend"
+echo "   - Container stoppen:   docker-compose down"
 echo "   - Container neustarten: docker-compose restart backend"
+echo "   - DB Console:          docker exec -it assixx-postgres psql -U assixx_user -d assixx"
 echo ""
 echo "🎉 Viel Erfolg mit Assixx!"

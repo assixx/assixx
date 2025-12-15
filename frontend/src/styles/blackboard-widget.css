@@ -1,59 +1,111 @@
-/* Blackboard Widget Styles for Dashboard */
-.blackboard-widget {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+/**
+ * Blackboard Widget Styles for Dashboard
+ *
+ * Extends Design System .card component with blackboard-specific styles.
+ * Base styles (glassmorphism, layout) inherited from design-system/primitives/cards/card-base.css
+ * Sticky note styles from design-system/primitives/sticky-note/sticky-note.css
+ */
 
-  background: hsl(0deg 0% 100% / 2%);
+/* Import unified sticky-note component */
+@import "../design-system/primitives/sticky-note/sticky-note.css";
+
+/* ========================================
+   CARD MODIFIER - Blackboard Widget
+   ======================================== */
+
+/**
+ * Blackboard-specific card variant
+ * Matches .card-stat styles exactly for consistency
+ *
+ * Usage: <div class="card card--blackboard">
+ */
+/*
+.card--blackboard {
+
+  padding: var(--spacing-6);
+  border: 1px solid rgb(255 255 255 / 10.2%);
+  border-radius: var(--radius-xl);
+
+  text-align: center;
+
+  background: #ffffff05;
   backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-md);
 
-  /* Prevent animation on initial load */
+
+  transition: all 0.2s;
+}
+*/
+
+/* Hover state - EXACT match to .card-stat:hover */
+.card--blackboard:hover {
+  border-color: var(--color-icon-primary);
 }
 
 /* After content loads */
-.blackboard-widget.loaded {
-  /* Placeholder for loaded state styles */
+.card--blackboard.loaded {
   opacity: 100%;
 }
 
-.blackboard-widget-header {
+/* ========================================
+   CARD HEADER CUSTOMIZATION
+   ======================================== */
+
+/**
+ * Widget header uses card__header base
+ * Custom styling for blackboard-specific link
+ */
+.card--blackboard .card__header {
+  /* Flex layout for title and link */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+
+  /* Remove default card header styles */
+  margin-bottom: 1rem; /* Custom spacing for widget */
+  padding-bottom: 0; /* No bottom padding */
+  border: none !important; /* No bottom border */
+
+  /* Reset text-align from parent .card--blackboard */
+  text-align: left;
 }
 
-.blackboard-widget-title {
+/* Widget title styling */
+.card--blackboard .card__title {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 
-  font-size: 1.2rem;
+  font-size: 1.2rem !important;
   font-weight: 600;
+  line-height: 1.5;
   color: var(--primary-color);
 }
 
-.blackboard-widget-title i {
+.card--blackboard .card__title i {
   font-size: 1rem;
 }
 
-.blackboard-widget-link {
+/* Widget "View All" link */
+.card--blackboard__link {
   font-size: 0.875rem;
   color: var(--text-muted);
   text-decoration: none;
 }
 
-.blackboard-widget-link:hover {
+.card--blackboard__link:hover {
   color: var(--primary-color);
 }
 
-/* Mini Notes Container */
-.mini-notes-container {
+/* ========================================
+   BLACKBOARD-SPECIFIC COMPONENTS
+   ======================================== */
+
+/* Sticky Notes Container (used by widget) */
+.sticky-notes-container {
   overflow-x: auto;
   display: flex;
   gap: 1rem;
-  align-items: center;
   justify-content: center;
 
   min-height: 200px; /* Prevent layout shift */
@@ -61,7 +113,7 @@
 }
 
 /* Prevent layout shift during load */
-.blackboard-widget-loading {
+.card--blackboard__loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -74,250 +126,36 @@
   text-align: center;
 }
 
-/* Mini Note Styles */
-.mini-note {
-  /* transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease; */
-  cursor: pointer;
+/* Empty State - Now using Design System empty-state component */
 
-  position: relative;
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 
-  flex: 0 0 250px;
-
-  min-height: 120px;
-  padding: 1rem;
-  border-radius: 8px;
-
-  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
-}
-
-.mini-note:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
-}
-
-/* Mini Note Colors */
-.mini-note.yellow {
-  color: #333;
-  background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
-}
-
-.mini-note.blue {
-  color: #0d47a1;
-  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
-}
-
-.mini-note.green {
-  color: #1b5e20;
-  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
-}
-
-.mini-note.red {
-  color: #b71c1c;
-  background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
-}
-
-.mini-note.orange {
-  color: #e65100;
-  background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
-}
-
-.mini-note.pink {
-  color: #880e4f;
-  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
-}
-
-/* Mini Pushpin */
-.mini-pushpin {
-  position: absolute;
-  top: -5px;
-  right: 15px;
-  transform: rotate(-45deg);
-
-  width: 15px;
-  height: 15px;
-  border-radius: 50% 50% 50% 0;
-
-  background: radial-gradient(circle at 30% 30%, #f44, #c00);
-  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
-}
-
-.mini-pushpin::after {
-  content: "";
-
-  position: absolute;
-  top: 5px;
-  left: 5px;
-
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* Mini Note Content */
-.mini-note-title {
-  overflow: hidden;
-
-  margin-bottom: 0.5rem;
-
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mini-note-content {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-.mini-note-meta {
-  position: absolute;
-  right: 1rem;
-  bottom: 0.5rem;
-  left: 1rem;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  font-size: 0.7rem;
-
-  opacity: 70%;
-}
-
-.mini-note-priority {
-  gap: 0.25rem;
-
-  /* display: flex; */
-  align-items: center;
-}
-
-.priority-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.priority-dot.urgent {
-  background: #f44336;
-}
-
-.priority-dot.high {
-  background: #ff9800;
-}
-
-.priority-dot.normal {
-  background: #2196f3;
-}
-
-.priority-dot.low {
-  background: #4caf50;
-}
-
-/* Empty State */
-.blackboard-widget-empty {
-  padding: 2rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.blackboard-widget-empty i {
-  margin-bottom: 0.5rem;
-  font-size: 2rem;
-  opacity: 50%;
-}
-
-/* Loading State - Merged with line 64 */
-/* Removed duplicate selector - styles merged above at line 64 */
-
-/* Responsive */
 @media (width <= 768px) {
-  .mini-notes-container {
+  .sticky-notes-container {
     gap: 0.75rem;
   }
-
-  .mini-note {
-    flex: 0 0 200px;
-    min-height: 100px;
-  }
 }
 
-/* Attachment Styles - Combined with line 311 */
-.mini-note-attachment {
-  position: relative;
-  overflow: hidden;
-  margin: 0.5rem 0;
-  border-radius: 4px;
-}
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
 
-.mini-note-attachment img {
-  display: block;
-  width: 100%;
-}
-
-.mini-note.has-attachment .mini-note-content {
-  display: none;
-}
-
-.mini-note-attachments {
-  position: absolute;
-  top: 0.5rem;
-  left: 1rem;
-
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-
-  font-size: 0.75rem;
-
-  opacity: 80%;
-}
-
-.mini-note-attachments i {
-  font-size: 0.8rem;
-}
-
-/* Adjust spacing for notes with attachments */
-.mini-note.has-attachment {
-  padding-bottom: 2.5rem;
-}
-
-/* Scrollbar Styling */
-.mini-notes-container::-webkit-scrollbar {
+.sticky-notes-container::-webkit-scrollbar {
   height: 6px;
 }
 
-.mini-notes-container::-webkit-scrollbar-track {
+.sticky-notes-container::-webkit-scrollbar-track {
   border-radius: 3px;
   background: rgb(255 255 255 / 5%);
 }
 
-.mini-notes-container::-webkit-scrollbar-thumb {
+.sticky-notes-container::-webkit-scrollbar-thumb {
   border-radius: 3px;
   background: rgb(255 255 255 / 20%);
 }
 
-.mini-notes-container::-webkit-scrollbar-thumb:hover {
+.sticky-notes-container::-webkit-scrollbar-thumb:hover {
   background: rgb(255 255 255 / 30%);
 }
-
-/* Mini note attachment preview - Merged with line 253 */
-
-.mini-note-attachment object {
-  pointer-events: none !important;
-  display: block;
-}
-
-.mini-note-attachment img,
-.mini-note-attachment object {
-  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
-}
-
-/* Mini note attachments indicator - Removed duplicate (already defined at line 269) */

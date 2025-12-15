@@ -1,11 +1,11 @@
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { errorResponse, successResponse } from '../../../types/response.types';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { getErrorMessage } from '../../../utils/errorHandler';
-import { FeaturesService } from './features.service';
-import type { FeatureActivationRequest, FeatureDeactivationRequest } from './types';
+import { getErrorMessage } from '../../../utils/errorHandler.js';
+import { FeaturesService } from './features.service.js';
+import type { FeatureActivationRequest, FeatureDeactivationRequest } from './types.js';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 const ACCESS_DENIED_MESSAGE = 'Access denied';
@@ -56,7 +56,7 @@ const ACCESS_DENIED_MESSAGE = 'Access denied';
 // GET /api/v2/features
 export async function getAllFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const includeInactive = req.query.includeInactive === 'true';
+    const includeInactive = req.query['includeInactive'] === 'true';
     const features = await FeaturesService.getAllFeatures(includeInactive);
 
     res.json(successResponse(features, 'Features retrieved successfully'));
@@ -98,7 +98,7 @@ export async function getFeaturesByCategory(
   res: Response,
 ): Promise<void> {
   try {
-    const includeInactive = req.query.includeInactive === 'true';
+    const includeInactive = req.query['includeInactive'] === 'true';
     const categories = await FeaturesService.getFeaturesByCategory(includeInactive);
 
     res.json(successResponse(categories, 'Features by category retrieved successfully'));
@@ -142,7 +142,11 @@ export async function getFeaturesByCategory(
 // GET /api/v2/features/:code
 export async function getFeatureByCode(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { code } = req.params;
+    const code = req.params['code'];
+    if (code === undefined) {
+      res.status(400).json(errorResponse('Feature code is required', 400));
+      return;
+    }
     const feature = await FeaturesService.getFeatureByCode(code);
 
     if (!feature) {
@@ -191,7 +195,12 @@ export async function getFeatureByCode(req: AuthenticatedRequest, res: Response)
 // GET /api/v2/features/tenant/:tenantId
 export async function getTenantFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const tenantId = Number.parseInt(req.params.tenantId, 10);
+    const tenantIdParam = req.params['tenantId'];
+    if (tenantIdParam === undefined) {
+      res.status(400).json(errorResponse('Tenant ID is required', 400));
+      return;
+    }
+    const tenantId = Number.parseInt(tenantIdParam, 10);
     const userTenantId = req.user.tenant_id;
 
     // Only allow viewing own tenant unless root/admin
@@ -282,7 +291,12 @@ export async function getTenantFeaturesSummary(
   res: Response,
 ): Promise<void> {
   try {
-    const tenantId = Number.parseInt(req.params.tenantId, 10);
+    const tenantIdParam = req.params['tenantId'];
+    if (tenantIdParam === undefined) {
+      res.status(400).json(errorResponse('Tenant ID is required', 400));
+      return;
+    }
+    const tenantId = Number.parseInt(tenantIdParam, 10);
     const userTenantId = req.user.tenant_id;
 
     // Only allow viewing own tenant unless root/admin
@@ -464,11 +478,24 @@ export async function deactivateFeature(req: AuthenticatedRequest, res: Response
 // GET /api/v2/features/usage/:featureCode
 export async function getUsageStats(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { featureCode } = req.params;
+    const featureCode = req.params['featureCode'];
     const { startDate, endDate } = req.query;
     const tenantId = req.user.tenant_id;
 
-    if (!startDate || !endDate) {
+    if (featureCode === undefined) {
+      res.status(400).json(errorResponse('Feature code is required', 400));
+      return;
+    }
+
+    const startDateStr = startDate as string | undefined;
+    const endDateStr = endDate as string | undefined;
+
+    if (
+      startDateStr === undefined ||
+      startDateStr === '' ||
+      endDateStr === undefined ||
+      endDateStr === ''
+    ) {
       res.status(400).json(errorResponse('Start date and end date are required', 400));
       return;
     }
@@ -476,8 +503,8 @@ export async function getUsageStats(req: AuthenticatedRequest, res: Response): P
     const stats = await FeaturesService.getUsageStats(
       tenantId,
       featureCode,
-      startDate as string,
-      endDate as string,
+      startDateStr,
+      endDateStr,
     );
 
     res.json(successResponse(stats, 'Usage statistics retrieved successfully'));
@@ -525,8 +552,13 @@ export async function getUsageStats(req: AuthenticatedRequest, res: Response): P
 // GET /api/v2/features/test/:featureCode
 export async function testFeatureAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { featureCode } = req.params;
+    const featureCode = req.params['featureCode'];
     const tenantId = req.user.tenant_id;
+
+    if (featureCode === undefined) {
+      res.status(400).json(errorResponse('Feature code is required', 400));
+      return;
+    }
 
     const hasAccess = await FeaturesService.checkTenantAccess(tenantId, featureCode);
 

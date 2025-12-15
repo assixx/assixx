@@ -90,7 +90,7 @@ describe('Blackboard API v2', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeUser = await createTestUser(testDb, {
       username: 'bb_employee_v2',
@@ -105,7 +105,7 @@ describe('Blackboard API v2', () => {
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
 
     // Create a test entry
     const [result] = await testDb.execute<ResultSetHeader>(
@@ -126,7 +126,7 @@ describe('Blackboard API v2', () => {
         'active',
       ],
     );
-    testEntryId = result.insertId;
+    testEntryId = result['insertId'];
 
     // Wait a bit to ensure the entry is committed
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -205,8 +205,8 @@ describe('Blackboard API v2', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBeGreaterThan(0);
-      if (response.body.data.length > 0) {
+      expect(response.body.data['length']).toBeGreaterThan(0);
+      if (response.body.data['length'] > 0) {
         expect(response.body.data[0].title).toBe('Test Entry');
       }
       expect(response.body.meta.pagination).toBeDefined();
@@ -238,7 +238,7 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.length).toBe(1);
+      expect(response.body.data['length']).toBe(1);
       expect(response.body.data[0].title).toBe('Archived Entry');
     });
 
@@ -268,8 +268,8 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.id).toBe(testEntryId);
-      expect(response.body.data.title).toBe('Test Entry');
+      expect(response.body.data['id']).toBe(testEntryId);
+      expect(response.body.data['title']).toBe('Test Entry');
     });
 
     it('should return 404 for non-existent entry', async () => {
@@ -301,9 +301,9 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.title).toBe('New Announcement');
-      expect(response.body.data.priority).toBe('high');
-      expect(response.body.data.requiresConfirmation).toBe(true);
+      expect(response.body.data['title']).toBe('New Announcement');
+      expect(response.body.data['priority']).toBe('high');
+      expect(response.body.data['requiresConfirmation']).toBe(true);
     });
 
     it('should require orgId for department level entries', async () => {
@@ -366,8 +366,8 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.title).toBe('Updated Title');
-      expect(response.body.data.priority).toBe('urgent');
+      expect(response.body.data['title']).toBe('Updated Title');
+      expect(response.body.data['priority']).toBe('urgent');
     });
 
     it('should allow partial updates', async () => {
@@ -380,8 +380,8 @@ describe('Blackboard API v2', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.priority).toBe('low');
-      expect(response.body.data.title).toBe('Test Entry'); // Unchanged
+      expect(response.body.data['priority']).toBe('low');
+      expect(response.body.data['title']).toBe('Test Entry'); // Unchanged
     });
   });
 
@@ -412,7 +412,7 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.entry.status).toBe('archived');
+      expect(response.body.data['entry'].status).toBe('archived');
     });
   });
 
@@ -431,7 +431,7 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.entry.status).toBe('active');
+      expect(response.body.data['entry'].status).toBe('active');
     });
   });
 
@@ -459,8 +459,8 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.length).toBeGreaterThan(0);
-      expect(response.body.data.some((u: any) => u.id === employeeUserId)).toBe(true);
+      expect(response.body.data['length']).toBeGreaterThan(0);
+      expect(response.body.data['some']((u: any) => u.id === employeeUserId)).toBe(true);
     });
   });
 
@@ -481,7 +481,7 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.length).toBeLessThanOrEqual(2);
+      expect(response.body.data['length']).toBeLessThanOrEqual(2);
     });
   });
 
@@ -501,7 +501,7 @@ describe('Blackboard API v2', () => {
           tags: ['announcement', 'hr', 'policy'],
         });
 
-      taggedEntryId = response.body.data.id;
+      taggedEntryId = response.body.data['id'];
     });
 
     it('should get all available tags', async () => {
@@ -512,7 +512,7 @@ describe('Blackboard API v2', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBe(3);
+      expect(response.body.data['length']).toBe(3);
     });
 
     it('should filter entries by tag', async () => {
@@ -523,8 +523,8 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.tags).toBeDefined();
-      expect(response.body.data.tags).toContain('announcement');
+      expect(response.body.data['tags']).toBeDefined();
+      expect(response.body.data['tags']).toContain('announcement');
     });
   });
 
@@ -551,7 +551,7 @@ describe('Blackboard API v2', () => {
       // Create user in different tenant
       const otherUser = await createTestUser(testDb, {
         username: 'other_tenant_user',
-        email: 'other@tenant.com',
+        email: 'other@tenant['com']',
         password: 'TestPass123!',
         role: 'admin',
         tenant_id: tenant2Id,
@@ -560,7 +560,7 @@ describe('Blackboard API v2', () => {
         email: otherUser.email,
         password: 'TestPass123!',
       });
-      otherTenantToken = otherLoginRes.body.data.accessToken;
+      otherTenantToken = otherLoginRes.body.data['accessToken'];
 
       // Create entry in tenant 2
       await testDb.execute<ResultSetHeader>(
@@ -589,7 +589,7 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.every((e: any) => e.title !== 'Other Tenant Entry')).toBe(true);
+      expect(response.body.data['every']((e: any) => e.title !== 'Other Tenant Entry')).toBe(true);
     });
 
     it("should not access other tenant's entry directly", async () => {
@@ -613,8 +613,8 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${otherTenantToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.some((e: any) => e.title === 'Other Tenant Entry')).toBe(true);
-      expect(response.body.data.every((e: any) => e.title !== 'Test Entry')).toBe(true);
+      expect(response.body.data['some']((e: any) => e.title === 'Other Tenant Entry')).toBe(true);
+      expect(response.body.data['every']((e: any) => e.title !== 'Test Entry')).toBe(true);
     });
   });
 
@@ -630,7 +630,7 @@ describe('Blackboard API v2', () => {
       }
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Attachment added successfully');
+      expect(response.body.data['message']).toBe('Attachment added successfully');
     });
 
     it('should get attachments for an entry', async () => {
@@ -647,7 +647,7 @@ describe('Blackboard API v2', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
     });
 
     it('should delete an attachment', async () => {
@@ -740,8 +740,8 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.some((e: any) => e.priority === 'high')).toBe(true);
-      expect(response.body.data.every((e: any) => e.priority !== 'low')).toBe(true);
+      expect(response.body.data['some']((e: any) => e.priority === 'high')).toBe(true);
+      expect(response.body.data['every']((e: any) => e.priority !== 'low')).toBe(true);
     });
 
     it('should filter by requiresConfirmation', async () => {
@@ -750,7 +750,7 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.every((e: any) => e.requiresConfirmation === true)).toBe(true);
+      expect(response.body.data['every']((e: any) => e.requiresConfirmation === true)).toBe(true);
     });
 
     it('should sort entries', async () => {
@@ -759,7 +759,7 @@ describe('Blackboard API v2', () => {
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(response.status).toBe(200);
-      const priorities = response.body.data.map((e: any) => e.priority);
+      const priorities = response.body.data['map']((e: any) => e.priority);
       // Check that high priority comes before low priority
       const highIndex = priorities.indexOf('high');
       const lowIndex = priorities.indexOf('low');
@@ -775,7 +775,7 @@ describe('Blackboard API v2', () => {
 
       expect(response.status).toBe(200);
       expect(
-        response.body.data.some(
+        response.body.data['some'](
           (e: any) => e.title.includes('Urgent') || e.content.includes('Urgent'),
         ),
       ).toBe(true);
@@ -797,8 +797,8 @@ describe('Blackboard API v2', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.expiresAt).toBeDefined();
-      const expiresAt = new Date(response.body.data.expiresAt);
+      expect(response.body.data['expiresAt']).toBeDefined();
+      const expiresAt = new Date(response.body.data['expiresAt']);
       expect(expiresAt.getTime()).toBeGreaterThan(Date.now());
     });
   });
@@ -817,8 +817,8 @@ describe('Blackboard API v2', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.orgLevel).toBe('department');
-      expect(response.body.data.orgId).toBe(1);
+      expect(response.body.data['orgLevel']).toBe('department');
+      expect(response.body.data['orgId']).toBe(1);
     });
 
     it('should create team level entry with orgId', async () => {
@@ -834,8 +834,8 @@ describe('Blackboard API v2', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.orgLevel).toBe('team');
-      expect(response.body.data.orgId).toBe(5);
+      expect(response.body.data['orgLevel']).toBe('team');
+      expect(response.body.data['orgId']).toBe(5);
     });
   });
 });

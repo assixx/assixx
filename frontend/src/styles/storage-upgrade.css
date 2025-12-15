@@ -1,36 +1,16 @@
 /* CSS Import - WICHTIG: Lädt dashboard-theme.css ZUERST */
-@import "/styles/dashboard-theme.css";
-@import "/styles/breadcrumb-alignment.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* ========================================
      GLASSMORPHISMUS ÜBERSCHREIBUNGEN
      ======================================== */
 
-/* Body Background - Dramatischer Verlauf */
-body {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background: #000;
-}
-
-body::after {
-  pointer-events: none;
-  content: "";
-
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
-}
-
 /* Storage Plans Grid */
 .storage-plans-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--spacing-xl);
-  margin: var(--spacing-xl) 0;
+  gap: var(--spacing-8);
+  margin: var(--spacing-8) 0;
 }
 
 /* Storage Plan Card */
@@ -38,9 +18,9 @@ body::after {
   display: flex;
   flex-direction: column;
 
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -63,7 +43,7 @@ body::after {
 }
 
 .storage-size {
-  margin: var(--spacing-lg) 0;
+  margin: var(--spacing-6) 0;
 
   font-size: 3rem;
   font-weight: 700;
@@ -72,7 +52,7 @@ body::after {
 }
 
 .storage-price {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 1.5rem;
   color: var(--text-primary);
 }
@@ -85,7 +65,7 @@ body::after {
 .storage-features {
   flex-grow: 1;
 
-  margin: var(--spacing-lg) 0;
+  margin: var(--spacing-6) 0;
   padding: 0;
 
   text-align: left;
@@ -94,8 +74,8 @@ body::after {
 
 .storage-features li {
   position: relative;
-  padding: var(--spacing-sm) 0;
-  padding-left: var(--spacing-xl);
+  padding: var(--spacing-2) 0;
+  padding-left: var(--spacing-8);
   color: var(--text-secondary);
 }
 
@@ -111,10 +91,10 @@ body::after {
 
 /* Current Usage */
 .current-usage {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-8);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -125,7 +105,7 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .usage-title {
@@ -144,7 +124,7 @@ body::after {
 
   width: 100%;
   height: 20px;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   border-radius: 10px;
 
   background: rgb(255 255 255 / 10%);
@@ -183,30 +163,18 @@ body::after {
     rgb(255 255 255 / 20%)
   );
   background-size: 20px 20px;
-
-  /* animation: progress-stripes 1s linear infinite; */
-}
-
-@keyframes progress-stripes {
-  0% {
-    background-position: 0 0;
-  }
-
-  100% {
-    background-position: 20px 20px;
-  }
 }
 
 /* FAQ Section */
 .faq-section {
-  margin-top: calc(var(--spacing-xl) * 2);
+  margin-top: calc(var(--spacing-8) * 2);
 }
 
 .faq-item {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -216,7 +184,7 @@ body::after {
 }
 
 .faq-question {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -224,4 +192,24 @@ body::after {
 .faq-answer {
   line-height: 1.6;
   color: var(--text-secondary);
+}
+
+/* Storage Percentage Text */
+.storage-percentage-text {
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Custom Storage Section */
+.custom-storage-section {
+  margin-top: var(--spacing-8);
+}
+
+.custom-storage-content {
+  padding: var(--spacing-8);
+  text-align: center;
+}
+
+.custom-storage-description {
+  margin-bottom: var(--spacing-6);
 }

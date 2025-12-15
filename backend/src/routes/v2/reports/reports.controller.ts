@@ -24,18 +24,20 @@ export const getOverviewReport = async (
   try {
     const { dateFrom, dateTo } = req.query;
 
-    const report = await reportsService.getOverviewReport({
+    const params: { tenantId: number; dateFrom?: string; dateTo?: string } = {
       tenantId: req.user.tenant_id,
-      dateFrom: dateFrom as string | undefined,
-      dateTo: dateTo as string | undefined,
-    });
+    };
+    if (dateFrom !== undefined) params.dateFrom = dateFrom as string;
+    if (dateTo !== undefined) params.dateTo = dateTo as string;
+
+    const report = await reportsService.getOverviewReport(params);
 
     res.json(successResponse(report, 'Overview report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -57,20 +59,28 @@ export const getEmployeeReport = async (
   try {
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
-    const report = await reportsService.getEmployeeReport({
+    const params: {
+      tenantId: number;
+      dateFrom?: string;
+      dateTo?: string;
+      departmentId?: number;
+      teamId?: number;
+    } = {
       tenantId: req.user.tenant_id,
-      dateFrom: dateFrom as string | undefined,
-      dateTo: dateTo as string | undefined,
-      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
-      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
-    });
+    };
+    if (dateFrom !== undefined) params.dateFrom = dateFrom as string;
+    if (dateTo !== undefined) params.dateTo = dateTo as string;
+    if (departmentId !== undefined) params.departmentId = Number.parseInt(departmentId as string);
+    if (teamId !== undefined) params.teamId = Number.parseInt(teamId as string);
+
+    const report = await reportsService.getEmployeeReport(params);
 
     res.json(successResponse(report, 'Employee report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -92,18 +102,20 @@ export const getDepartmentReport = async (
   try {
     const { dateFrom, dateTo } = req.query;
 
-    const report = await reportsService.getDepartmentReport({
+    const params: { tenantId: number; dateFrom?: string; dateTo?: string } = {
       tenantId: req.user.tenant_id,
-      dateFrom: dateFrom as string | undefined,
-      dateTo: dateTo as string | undefined,
-    });
+    };
+    if (dateFrom !== undefined) params.dateFrom = dateFrom as string;
+    if (dateTo !== undefined) params.dateTo = dateTo as string;
+
+    const report = await reportsService.getDepartmentReport(params);
 
     res.json(successResponse(report, 'Department report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -122,20 +134,28 @@ export const getShiftReport = async (req: AuthenticatedRequest, res: Response): 
   try {
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
-    const report = await reportsService.getShiftReport({
+    const params: {
+      tenantId: number;
+      dateFrom?: string;
+      dateTo?: string;
+      departmentId?: number;
+      teamId?: number;
+    } = {
       tenantId: req.user.tenant_id,
-      dateFrom: dateFrom as string | undefined,
-      dateTo: dateTo as string | undefined,
-      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
-      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
-    });
+    };
+    if (dateFrom !== undefined) params.dateFrom = dateFrom as string;
+    if (dateTo !== undefined) params.dateTo = dateTo as string;
+    if (departmentId !== undefined) params.departmentId = Number.parseInt(departmentId as string);
+    if (teamId !== undefined) params.teamId = Number.parseInt(teamId as string);
+
+    const report = await reportsService.getShiftReport(params);
 
     res.json(successResponse(report, 'Shift report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -154,19 +174,21 @@ export const getKvpReport = async (req: AuthenticatedRequest, res: Response): Pr
   try {
     const { dateFrom, dateTo, categoryId } = req.query;
 
-    const report = await reportsService.getKvpReport({
+    const params: { tenantId: number; dateFrom?: string; dateTo?: string; categoryId?: number } = {
       tenantId: req.user.tenant_id,
-      dateFrom: dateFrom as string | undefined,
-      dateTo: dateTo as string | undefined,
-      categoryId: categoryId ? Number.parseInt(categoryId as string) : undefined,
-    });
+    };
+    if (dateFrom !== undefined) params.dateFrom = dateFrom as string;
+    if (dateTo !== undefined) params.dateTo = dateTo as string;
+    if (categoryId !== undefined) params.categoryId = Number.parseInt(categoryId as string);
+
+    const report = await reportsService.getKvpReport(params);
 
     res.json(successResponse(report, 'KVP report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -185,20 +207,28 @@ export const getAttendanceReport = (req: AuthenticatedRequest, res: Response): v
   try {
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
-    const report = reportsService.getAttendanceReport({
+    const params: {
+      tenantId: number;
+      dateFrom: string;
+      dateTo: string;
+      departmentId?: number;
+      teamId?: number;
+    } = {
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
-      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
-    });
+    };
+    if (departmentId !== undefined) params.departmentId = Number.parseInt(departmentId as string);
+    if (teamId !== undefined) params.teamId = Number.parseInt(teamId as string);
+
+    const report = reportsService.getAttendanceReport(params);
 
     res.json(successResponse(report, 'Attendance report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -217,19 +247,21 @@ export const getComplianceReport = (req: AuthenticatedRequest, res: Response): v
   try {
     const { dateFrom, dateTo, departmentId } = req.query;
 
-    const report = reportsService.getComplianceReport({
+    const params: { tenantId: number; dateFrom: string; dateTo: string; departmentId?: number } = {
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
-    });
+    };
+    if (departmentId !== undefined) params.departmentId = Number.parseInt(departmentId as string);
+
+    const report = reportsService.getComplianceReport(params);
 
     res.json(successResponse(report, 'Compliance report retrieved successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -263,23 +295,34 @@ export const generateCustomReport = async (
     const { name, description, metrics, dateFrom, dateTo, filters, groupBy } =
       req.body as CustomReportBody;
 
-    const report = await reportsService.generateCustomReport({
+    const params: {
+      tenantId: number;
+      name: string;
+      description?: string;
+      metrics: string[];
+      dateFrom: string;
+      dateTo: string;
+      filters?: { departmentIds?: number[]; teamIds?: number[] };
+      groupBy?: string;
+    } = {
       tenantId: req.user.tenant_id,
       name,
-      description,
       metrics,
       dateFrom,
       dateTo,
-      filters,
-      groupBy,
-    });
+    };
+    if (description !== undefined) params.description = description;
+    if (filters !== undefined) params.filters = filters;
+    if (groupBy !== undefined) params.groupBy = groupBy;
+
+    const report = await reportsService.generateCustomReport(params);
 
     res.status(201).json(successResponse(report, 'Custom report generated successfully'));
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res
@@ -289,56 +332,96 @@ export const generateCustomReport = async (
   }
 };
 
+// Export format types and mappings
+const VALID_FORMATS = ['pdf', 'excel', 'csv'] as const;
+type ExportFormat = (typeof VALID_FORMATS)[number];
+
+const CONTENT_TYPES: Record<ExportFormat, string> = {
+  pdf: 'application/pdf',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv',
+};
+
+const EXTENSIONS: Record<ExportFormat, string> = {
+  pdf: 'pdf',
+  excel: 'xlsx',
+  csv: 'csv',
+};
+
+/**
+ * Parse and validate export format from query param
+ */
+function parseExportFormat(formatParam: unknown): ExportFormat {
+  if (typeof formatParam !== 'string') return 'pdf';
+  return VALID_FORMATS.includes(formatParam as ExportFormat) ?
+      (formatParam as ExportFormat)
+    : 'pdf';
+}
+
+/**
+ * Parse export filters from query params
+ */
+function parseExportFilters(filters: Record<string, unknown>): {
+  dateFrom?: string;
+  dateTo?: string;
+  departmentId?: number;
+  teamId?: number;
+} {
+  const result: { dateFrom?: string; dateTo?: string; departmentId?: number; teamId?: number } = {};
+  if (filters['dateFrom'] !== undefined) result.dateFrom = filters['dateFrom'] as string;
+  if (filters['dateTo'] !== undefined) result.dateTo = filters['dateTo'] as string;
+  if (filters['departmentId'] !== undefined)
+    result.departmentId = Number.parseInt(filters['departmentId'] as string);
+  if (filters['teamId'] !== undefined) result.teamId = Number.parseInt(filters['teamId'] as string);
+  return result;
+}
+
+/**
+ * Set response headers for file export
+ */
+function setExportHeaders(res: Response, format: ExportFormat, type: string): void {
+  const dateStr = new Date().toISOString().split('T')[0] ?? 'unknown';
+  // eslint-disable-next-line security/detect-object-injection -- format is validated against VALID_FORMATS enum
+  res.setHeader('Content-Type', CONTENT_TYPES[format]);
+
+  // eslint-disable-next-line security/detect-object-injection -- format is validated against VALID_FORMATS enum
+  const ext = EXTENSIONS[format];
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="assixx-${type}-report-${dateStr}.${ext}"`,
+  );
+}
+
 /**
  * Export report in various formats (PDF, Excel, CSV)
- * @param req - The request object
- * @param res - The response object
  */
 export const exportReport = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { type } = req.params;
-    const { format, ...filters } = req.query;
+    const { format: formatParam, ...filters } = req.query;
+
+    if (type === undefined) {
+      res.status(400).json(errorResponse('MISSING_PARAMETER', 'Report type is required'));
+      return;
+    }
+
+    const format = parseExportFormat(formatParam);
+    const exportFilters = parseExportFilters(filters as Record<string, unknown>);
 
     const exportData = await reportsService.exportReport({
       tenantId: req.user.tenant_id,
       reportType: type,
-      format: format as 'pdf' | 'excel' | 'csv',
-      filters: {
-        dateFrom: filters.dateFrom as string | undefined,
-        dateTo: filters.dateTo as string | undefined,
-        departmentId:
-          filters.departmentId ? Number.parseInt(filters.departmentId as string) : undefined,
-        teamId: filters.teamId ? Number.parseInt(filters.teamId as string) : undefined,
-      },
+      format,
+      filters: exportFilters,
     });
 
-    // Set appropriate headers based on format
-    const contentTypes = {
-      pdf: 'application/pdf',
-      excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      csv: 'text/csv',
-    };
-
-    const extensions = {
-      pdf: 'pdf',
-      excel: 'xlsx',
-      csv: 'csv',
-    };
-
-    res.setHeader('Content-Type', contentTypes[format as keyof typeof contentTypes]);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="assixx-${type}-report-${new Date().toISOString().split('T')[0]}.${extensions[format as keyof typeof extensions]}"`,
-    );
-
-    // For now, return mock data
-    // In production, this would generate actual files
+    setExportHeaders(res, format, type);
     res.send(exportData);
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
-        .status(serviceError.statusCode || HTTP_STATUS_INTERNAL_ERROR)
+        .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res

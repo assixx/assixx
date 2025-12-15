@@ -3,27 +3,19 @@
  * Handles shift planning business logic
  *
  * NOTE: This service wrapper only exposes generic CRUD methods,
- * but the Shift model has many more specific methods like getShiftTemplates,
- * createShiftTemplate, getShiftPlans, createShiftPlan, etc.
+ * but the Shift model has many more specific methods like getShiftPlans, createShiftPlan, etc.
  * This should be refactored to expose the full shift planning functionality.
  */
-import { Pool } from 'mysql2/promise';
-
+import type { DbShift } from '../routes/v2/shifts/shift-types.js';
 import {
   assignEmployeeToShift,
   createShift,
   createShiftPlan,
-  createShiftTemplate,
-  // getEmployeeAvailability, // Unused
-  // setEmployeeAvailability, // Unused
-  // getShiftExchangeRequests, // Unused
-  // createShiftExchangeRequest, // Unused
-  // canAccessShiftPlan, // Unused
   getEmployeeShifts,
   getShiftPlans,
-  getShiftTemplates,
   getShiftsByPlan,
-} from '../models/shift';
+} from '../routes/v2/shifts/shift.js';
+import { Pool } from '../utils/db.js';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {
@@ -68,23 +60,6 @@ interface ShiftUpdateData {
   end_time?: string;
   position?: string | null;
   required_employees?: number;
-}
-
-// Additional interfaces for actual Shift functionality
-interface ShiftTemplate {
-  id: number;
-  tenant_id: number;
-  name: string;
-  description?: string | null;
-  start_time: string;
-  end_time: string;
-  durationHours: number;
-  break_minutes: number;
-  color: string;
-  is_active: boolean | number;
-  created_by: number;
-  created_at: Date;
-  updated_at: Date;
 }
 
 interface ShiftPlan {
@@ -198,67 +173,6 @@ class ShiftService {
   // These should be added in a refactoring step:
 
   /**
-   * Get all shift templates for a tenant
-   * @param tenantId - The tenant ID
-   * @returns Promise resolving to array of shift templates
-   */
-  async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
-    try {
-      const templates = await getShiftTemplates(tenantId);
-      // Map duration_hours to durationHours for interface compatibility
-      return templates.map((template) => ({
-        ...template,
-        durationHours: template.duration_hours,
-      }));
-    } catch (error: unknown) {
-      console.error('Error in ShiftService.getShiftTemplates:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a new shift template
-   * @param templateData - The templateData parameter
-   * @returns Promise resolving to the created shift template
-   */
-  async createShiftTemplate(templateData: {
-    tenant_id: number;
-    name: string;
-    description?: string | null;
-    start_time: string;
-    end_time: string;
-    break_minutes?: number;
-    color?: string;
-    created_by: number;
-  }): Promise<ShiftTemplate> {
-    try {
-      // Calculate durationHours from start_time and end_time
-      const start = new Date(`2000-01-01 ${templateData.start_time}`);
-      const end = new Date(`2000-01-01 ${templateData.end_time}`);
-      let durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-      // Handle overnight shifts
-      if (durationHours < 0) {
-        durationHours += 24;
-      }
-
-      const template = await createShiftTemplate({
-        ...templateData,
-        duration_hours: durationHours,
-      });
-
-      // Map duration_hours to durationHours for interface compatibility
-      return {
-        ...template,
-        durationHours: template.duration_hours || 0,
-      };
-    } catch (error: unknown) {
-      console.error('Error in ShiftService.createShiftTemplate:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Get all shift plans for a tenant with optional filters
    * @param tenantId - The tenant ID
    * @param userId - The user ID
@@ -320,20 +234,28 @@ class ShiftService {
     try {
       const shifts = await getShiftsByPlan(planId, tenantId, userId);
       // Map DbShift to ShiftEntry
-      return shifts.map((shift) => ({
-        id: shift.id,
-        tenant_id: shift.tenant_id,
-        shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id
-        template_id: shift.template_id,
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        position: null as string | null,
-        required_employees: shift.required_employees,
-        assigned_employees: shift.assignedEmployees,
-        created_at: shift.created_at,
-        updated_at: shift.updated_at,
-      }));
+      return shifts.map((shift: DbShift) => {
+        const entry: ShiftEntry = {
+          id: shift.id,
+          tenant_id: shift.tenant_id,
+          shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id
+          date: shift.date,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          position: null as string | null,
+          required_employees: shift.required_employees,
+          created_at: shift.created_at,
+          updated_at: shift.updated_at,
+        };
+        // Only add optional properties if they have values
+        if (shift.template_id !== undefined) {
+          entry.template_id = shift.template_id ?? null;
+        }
+        if (shift.assignedEmployees !== undefined) {
+          entry.assigned_employees = shift.assignedEmployees;
+        }
+        return entry;
+      });
     } catch (error: unknown) {
       console.error('Error in ShiftService.getShiftsByPlan:', error);
       throw error;
@@ -348,32 +270,53 @@ class ShiftService {
   async createShift(shiftData: ShiftCreateData & { created_by: number }): Promise<ShiftEntry> {
     try {
       // Map ShiftCreateData to ShiftData expected by model
-      const modelData = {
+      // Build modelData conditionally to avoid undefined properties
+      const modelData: {
+        tenant_id: number;
+        plan_id: number;
+        template_id?: number | null;
+        date: string | Date;
+        start_time: string;
+        end_time: string;
+        required_employees?: number;
+        created_by: number;
+      } = {
         tenant_id: shiftData.tenant_id,
         plan_id: shiftData.shift_plan_id, // Map shift_plan_id to plan_id
-        template_id: shiftData.template_id,
         date: shiftData.date,
         start_time: shiftData.start_time,
         end_time: shiftData.end_time,
-        required_employees: shiftData.required_employees,
         created_by: shiftData.created_by,
       };
+      // Only add optional properties if they exist
+      if (shiftData.template_id !== undefined) {
+        modelData.template_id = shiftData.template_id ?? null;
+      }
+      if (shiftData.required_employees !== undefined) {
+        modelData.required_employees = shiftData.required_employees;
+      }
       const shift = await createShift(modelData);
       // Map DbShift back to ShiftEntry
-      return {
+      const entry: ShiftEntry = {
         id: shift.id,
         tenant_id: shift.tenant_id,
         shift_plan_id: shift.plan_id, // Map plan_id back to shift_plan_id
-        template_id: shift.template_id,
         date: shift.date,
         start_time: shift.start_time,
         end_time: shift.end_time,
-        position: shiftData.position ?? null,
         required_employees: shift.required_employees,
         assigned_employees: [],
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       };
+      // Only add optional properties if they have values
+      if (shift.template_id !== undefined) {
+        entry.template_id = shift.template_id ?? null;
+      }
+      if (shiftData.position !== undefined) {
+        entry.position = shiftData.position ?? null;
+      }
+      return entry;
     } catch (error: unknown) {
       console.error('Error in ShiftService.createShift:', error);
       throw error;

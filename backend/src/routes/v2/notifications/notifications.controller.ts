@@ -8,7 +8,7 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import * as notificationsService from './notifications.service.js';
-import { NotificationData, NotificationPreferences } from './types.js';
+import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 // Constants
 const INTERNAL_ERROR_MSG = 'An unexpected error occurred';
@@ -66,13 +66,24 @@ export const listNotifications = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const filters = {
-      type: req.query.type as string | undefined,
-      priority: req.query.priority as string | undefined,
-      unread: req.query.unread === 'true',
-      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
+    const typeQuery = req.query['type'] as string | undefined;
+    const priorityQuery = req.query['priority'] as string | undefined;
+    const pageQuery = req.query['page'] as string | undefined;
+    const limitQuery = req.query['limit'] as string | undefined;
+
+    const filters: NotificationFilters = {
+      unread: req.query['unread'] === 'true',
+      page: pageQuery !== undefined && pageQuery !== '' ? Number.parseInt(pageQuery) : 1,
+      limit: limitQuery !== undefined && limitQuery !== '' ? Number.parseInt(limitQuery) : 20,
     };
+
+    if (typeQuery !== undefined) {
+      filters.type = typeQuery;
+    }
+
+    if (priorityQuery !== undefined) {
+      filters.priority = priorityQuery;
+    }
 
     const result = await notificationsService.listNotifications(
       req.user.id,
@@ -169,7 +180,11 @@ export const createNotification = async (
  */
 export const markAsRead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const notificationId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      throw new ServiceError('BAD_REQUEST', 'Notification ID is required', 400);
+    }
+    const notificationId = Number.parseInt(idParam);
     await notificationsService.markAsRead(notificationId, req.user.id, req.user.tenant_id);
 
     res.json(successResponse(null));
@@ -251,7 +266,11 @@ export const deleteNotification = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const notificationId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      throw new ServiceError('BAD_REQUEST', 'Notification ID is required', 400);
+    }
+    const notificationId = Number.parseInt(idParam);
     await notificationsService.deleteNotification(
       notificationId,
       req.user.id,

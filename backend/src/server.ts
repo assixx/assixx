@@ -7,9 +7,10 @@ import fs from 'fs';
 import http, { Server } from 'http';
 import path from 'path';
 
-import app from './app';
-import { logger } from './utils/logger';
-import { ChatWebSocketServer } from './websocket';
+import app from './app.js';
+import { messageScheduler } from './services/messageScheduler.service.js';
+import { logger } from './utils/logger.js';
+import { ChatWebSocketServer } from './websocket.js';
 
 /**
  * Server Entry Point
@@ -29,7 +30,7 @@ const server: Server = http.createServer(app);
 new ChatWebSocketServer(server);
 
 // Get port from environment
-const PORT: number = Number.parseInt(process.env.PORT ?? '3000', 10);
+const PORT: number = Number.parseInt(process.env['PORT'] ?? '3000', 10);
 
 // Start server
 server.listen(PORT, (): void => {
@@ -37,8 +38,12 @@ server.listen(PORT, (): void => {
   logger.info(`WebSocket server running on ws://localhost:${PORT}`);
 
   // Log environment
-  logger.info(`Environment: ${process.env.NODE_ENV ?? 'development'}`);
+  logger.info(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
   logger.info('🚀 Live-Reload is working! Changed at: ' + new Date().toISOString());
+
+  // Start Message Scheduler for scheduled chat messages
+  messageScheduler.start();
+  logger.info('📅 Message Scheduler started');
 
   // Create required directories
   createRequiredDirectories();

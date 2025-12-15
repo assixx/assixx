@@ -2,13 +2,12 @@
  * Department Service
  * Handles department-related business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import department, {
   DepartmentCreateData,
   DbDepartment as DepartmentData,
   DepartmentUpdateData,
-} from '../models/department';
+} from '../routes/v2/departments/department.model.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Department Service
@@ -19,7 +18,7 @@ import department, {
 // Service-specific interfaces
 interface DepartmentFilters {
   search?: string;
-  manager_id?: number;
+  department_lead_id?: number;
   parent_id?: number;
   include_counts?: boolean;
   limit?: number;
@@ -43,7 +42,6 @@ class DepartmentService {
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
-      // TODO: Add pagination support to Department model
       return await department.findAll(tenantId);
     } catch (error: unknown) {
       console.error('Error in DepartmentService.getAll:', error);

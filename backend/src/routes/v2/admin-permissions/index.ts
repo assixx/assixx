@@ -1,18 +1,9 @@
-import { Router } from 'express';
+import { Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
-import { validate } from '../../../middleware/validation.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { adminPermissionsController } from './controller.js';
-import {
-  bulkPermissionsValidation,
-  checkAccessValidation,
-  getAdminPermissionsValidation,
-  getMyPermissionsValidation,
-  removeGroupPermissionValidation,
-  removePermissionValidation,
-  setPermissionsValidation,
-} from './validation.js';
 
 const router = Router();
 
@@ -76,8 +67,9 @@ router.use(authenticateToken);
  *                             type: boolean
  *                           canDelete:
  *                             type: boolean
- *                     hasAllAccess:
+ *                     hasFullAccess:
  *                       type: boolean
+ *                       description: Single source of truth for full tenant access (from users.has_full_access)
  *                     totalDepartments:
  *                       type: integer
  *                     assignedDepartments:
@@ -89,8 +81,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/my',
-  validate(getMyPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.getMyPermissions(req, res);
   }),
 );
@@ -125,8 +116,7 @@ router.get(
  */
 router.get(
   '/:adminId',
-  validate(getAdminPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.getAdminPermissions(req, res);
   }),
 );
@@ -190,8 +180,7 @@ router.get(
  */
 router.post(
   '/',
-  validate(setPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.setPermissions(req, res);
   }),
 );
@@ -234,8 +223,7 @@ router.post(
  */
 router.delete(
   '/:adminId/departments/:departmentId',
-  validate(removePermissionValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.removeDepartmentPermission(req, res);
   }),
 );
@@ -278,8 +266,7 @@ router.delete(
  */
 router.delete(
   '/:adminId/groups/:groupId',
-  validate(removeGroupPermissionValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.removeGroupPermission(req, res);
   }),
 );
@@ -366,8 +353,7 @@ router.delete(
  */
 router.post(
   '/bulk',
-  validate(bulkPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.bulkUpdatePermissions(req, res);
   }),
 );
@@ -443,8 +429,7 @@ router.post(
 // Route with permissionLevel
 router.get(
   '/:adminId/check/:departmentId/:permissionLevel',
-  validate(checkAccessValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.checkAccess(req, res);
   }),
 );
@@ -452,9 +437,46 @@ router.get(
 // Route without permissionLevel (defaults to 'read')
 router.get(
   '/:adminId/check/:departmentId',
-  validate(checkAccessValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.checkAccess(req, res);
+  }),
+);
+
+// ============================================================================
+// AREA PERMISSION ROUTES (New - Assignment System Refactoring 2025-11-27)
+// ============================================================================
+
+/**
+ * POST /api/v2/admin-permissions/:userId/areas
+ * Set Area permissions for a user (root only)
+ */
+router.post(
+  '/:userId/areas',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.setAreaPermissions(req, res);
+  }),
+);
+
+/**
+ * DELETE /api/v2/admin-permissions/:userId/areas/:areaId
+ * Remove specific Area permission (root only)
+ */
+router.delete(
+  '/:userId/areas/:areaId',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.removeAreaPermission(req, res);
+  }),
+);
+
+/**
+ * PATCH /api/v2/admin-permissions/:userId/full-access
+ * Set has_full_access flag for a user (root only)
+ * Body: \{ hasFullAccess: boolean \}
+ */
+router.patch(
+  '/:userId/full-access',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.setFullAccess(req, res);
   }),
 );
 

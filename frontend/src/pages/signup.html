@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registrieren - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/signup.css" />
+    <!-- Password Strength Styles -->
+    <link rel="stylesheet" href="/styles/password-strength.css" />
     <!-- Feature Flags for API v2 Migration -->
-    <script src="/feature-flags.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -27,7 +27,7 @@
     <!-- Help Button -->
     <div class="help-button" data-action="show-help">?</div>
 
-    <div class="signup-container">
+    <div class="page-container page-container--centered">
       <!-- Header -->
       <div class="signup-header">
         <div class="header-left">
@@ -41,53 +41,99 @@
         </div>
       </div>
 
-      <!-- Success Message -->
-      <div id="successMessage" class="success-message"></div>
+      <!-- Success Message - Design System Toast (no close button - users must wait) -->
+      <div class="toast toast--success" id="successMessage" style="display: none" role="alert">
+        <div class="toast__icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast__content">
+          <div class="toast__title">Erfolgreich registriert!</div>
+          <div class="toast__message">Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...</div>
+        </div>
+        <div class="toast__progress">
+          <div class="toast__progress-bar" style="animation-duration: 5s"></div>
+        </div>
+      </div>
 
       <!-- Compact Form -->
       <form id="signupForm">
         <div class="form-grid">
           <!-- Erste Zeile -->
-          <div class="form-group">
-            <label class="form-label">Firmenname *</label>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="company_name">Firmenname</label>
             <input
               type="text"
+              id="company_name"
               name="company_name"
-              class="form-control"
+              class="form-field__control"
               required
               placeholder="Ihre Firma GmbH"
               autocomplete="organization"
             />
           </div>
-          <div class="form-group">
-            <label class="form-label">Subdomain *</label>
-            <div class="input-group">
-              <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9\-]+" placeholder="ihre-firma" />
-              <span class="input-group-suffix">.assixx.com</span>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="subdomain">Subdomain</label>
+            <div class="subdomain-input-group">
+              <input
+                type="text"
+                id="subdomain"
+                name="subdomain"
+                class="subdomain-input"
+                required
+                pattern="[a-z0-9\-]+"
+                placeholder="ihre-firma"
+              />
+              <span class="subdomain-suffix">.assixx.com</span>
             </div>
-            <div id="subdomainError" class="error-message">Nur Kleinbuchstaben und Bindestriche</div>
+            <p id="subdomainError" class="form-field__message">Nur Kleinbuchstaben und Bindestriche</p>
           </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail *</label>
-            <input type="email" name="email" class="form-control" required placeholder="email@firma.de" autocomplete="email" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="email">E-Mail</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-field__control"
+              required
+              placeholder="email@firma.de"
+              autocomplete="email"
+            />
           </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail bestätigen *</label>
-            <input type="email" name="email_confirm" class="form-control" required placeholder="email@firma.de" />
-            <div id="emailMatchError" class="error-message" class="u-hidden">E-Mail-Adressen stimmen nicht überein</div>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="email_confirm">E-Mail bestätigen</label>
+            <input type="email" id="email_confirm" name="email_confirm" class="form-field__control" required placeholder="email@firma.de" />
+            <p id="emailMatchError" class="form-field__message form-field__message--error u-hidden">
+              E-Mail-Adressen stimmen nicht überein
+            </p>
           </div>
 
           <!-- Zweite Zeile -->
-          <div class="form-group">
-            <label class="form-label">Vorname *</label>
-            <input type="text" name="first_name" class="form-control" required placeholder="" autocomplete="given-name" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="first_name">Vorname</label>
+            <input
+              type="text"
+              id="first_name"
+              name="first_name"
+              class="form-field__control"
+              required
+              placeholder=""
+              autocomplete="given-name"
+            />
           </div>
-          <div class="form-group">
-            <label class="form-label">Nachname *</label>
-            <input type="text" name="last_name" class="form-control" required placeholder="" autocomplete="family-name" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="last_name">Nachname</label>
+            <input
+              type="text"
+              id="last_name"
+              name="last_name"
+              class="form-field__control"
+              required
+              placeholder=""
+              autocomplete="family-name"
+            />
           </div>
-          <div class="form-group">
-            <label class="form-label">Telefon *</label>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="phone">Telefon</label>
             <div class="phone-input-group">
               <div class="custom-country-select">
                 <div class="country-display" data-action="toggle-country">
@@ -116,36 +162,74 @@
               <input type="hidden" id="countryCode" value="+49" />
               <input
                 type="tel"
+                id="phone"
                 name="phone"
-                class="form-control phone-number"
+                class="form-field__control phone-number"
                 placeholder="123 456789"
                 autocomplete="tel-national"
                 required
               />
             </div>
-            <div id="phoneError" class="error-message">Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)</div>
+            <p id="phoneError" class="form-field__message">Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)</p>
           </div>
 
           <!-- Dritte Zeile -->
-          <div class="form-group">
-            <label class="form-label">Passwort *</label>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="password">
+              Passwort
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
+            </label>
             <input
               type="password"
+              id="password"
               name="password"
-              class="form-control"
+              class="form-field__control"
               required
-              minlength="8"
-              placeholder="Min. 8 Zeichen"
+              minlength="12"
+              maxlength="72"
+              placeholder="Min. 12 Zeichen"
               autocomplete="new-password"
             />
+            <p id="password-error" class="form-field__message form-field__message--error u-hidden"></p>
           </div>
-          <div class="form-group">
-            <label class="form-label">Passwort bestätigen *</label>
-            <input type="password" name="password_confirm" class="form-control" required placeholder="" autocomplete="new-password" />
-            <div id="passwordError" class="error-message">Passwörter stimmen nicht überein</div>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="password-strength-label"></span>
+              <span class="password-strength-time" id="password-strength-time"></span>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Plan</label>
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="password-feedback">
+            <span class="password-feedback-warning" id="password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="password-feedback-suggestions"></ul>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="password_confirm">Passwort bestätigen</label>
+            <input
+              type="password"
+              id="password_confirm"
+              name="password_confirm"
+              class="form-field__control"
+              required
+              placeholder=""
+              autocomplete="new-password"
+            />
+            <p id="passwordError" class="form-field__message">Passwörter stimmen nicht überein</p>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="planValue">Plan</label>
             <div class="custom-plan-select">
               <div class="plan-display" data-action="toggle-plan">
                 <span id="selectedPlan">Enterprise</span>
@@ -176,386 +260,24 @@
             <label class="terms-checkbox">
               <input type="checkbox" id="termsCheckbox" name="terms" required />
               <span>
-                Ich akzeptiere die
+                Ich akzeptiere die&nbsp;
                 <a href="/TERMS-OF-USE.md" target="_blank" class="terms-link">Nutzungsbedingungen</a>
               </span>
             </label>
-            <div class="offer-banner">
-              🎁
-              <strong>14 Tage kostenlos testen</strong>
-            </div>
-            <button type="submit" class="submit-button" id="submitButton">Jetzt registrieren →</button>
+            <button type="submit" class="btn btn-primary" id="submitButton">Jetzt registrieren →</button>
             <a href="/login" class="login-link">Bereits registriert?</a>
           </div>
         </div>
       </form>
     </div>
 
-    <script>
-      // Custom Dropdown Functions
-      let currentCountryCode = '+49';
-      // currentCountryFlag is updated when country is selected
-      let currentPlan = 'enterprise';
+    <!-- TypeScript Module -->
+    <script type="module">
+      import { SignupFormController } from '/scripts/auth/signup-form-controller.js';
 
-      // Country Dropdown
-      function toggleCountryDropdown() {
-        const dropdown = document.querySelector('#countryDropdown');
-        const display = document.querySelector('.country-display');
-
-        // Close plan dropdown if open
-        document.querySelector('#planDropdown').classList.remove('active');
-        document.querySelector('.plan-display').classList.remove('active');
-
-        dropdown.classList.toggle('active');
-        display.classList.toggle('active');
-
-        if (dropdown.classList.contains('active')) {
-          document.addEventListener('click', closeDropdownOutside);
-        }
-      }
-
-      function closeDropdownOutside(e) {
-        const countrySelect = document.querySelector('.custom-country-select');
-        const planSelect = document.querySelector('.custom-plan-select');
-
-        if (!countrySelect.contains(e.target)) {
-          document.querySelector('#countryDropdown').classList.remove('active');
-          document.querySelector('.country-display').classList.remove('active');
-        }
-
-        if (!planSelect.contains(e.target)) {
-          document.querySelector('#planDropdown').classList.remove('active');
-          document.querySelector('.plan-display').classList.remove('active');
-        }
-
-        if (!countrySelect.contains(e.target) && !planSelect.contains(e.target)) {
-          document.removeEventListener('click', closeDropdownOutside);
-        }
-      }
-
-      function selectCountry(flag, code) {
-        document.querySelector('#selectedFlag').textContent = flag;
-        document.querySelector('#selectedCode').textContent = code;
-        document.querySelector('#countryCode').value = code;
-        currentCountryCode = code;
-        // Update flag (used internally)
-
-        document.querySelector('#countryDropdown').classList.remove('active');
-        document.querySelector('.country-display').classList.remove('active');
-      }
-
-      // Plan Dropdown
-      function togglePlanDropdown() {
-        const dropdown = document.querySelector('#planDropdown');
-        const display = document.querySelector('.plan-display');
-
-        // Close country dropdown if open
-        document.querySelector('#countryDropdown').classList.remove('active');
-        document.querySelector('.country-display').classList.remove('active');
-
-        dropdown.classList.toggle('active');
-        display.classList.toggle('active');
-
-        if (dropdown.classList.contains('active')) {
-          document.addEventListener('click', closeDropdownOutside);
-        }
-      }
-
-      function selectPlan(value, name) {
-        document.querySelector('#selectedPlan').textContent = name;
-        document.querySelector('#planValue').value = value;
-        currentPlan = value;
-
-        document.querySelector('#planDropdown').classList.remove('active');
-        document.querySelector('.plan-display').classList.remove('active');
-      }
-
-      // Help function
-      function showHelp() {
-        alert(
-          'Hilfe zur Registrierung:\n\n' +
-            '1. Geben Sie Ihre Firmendaten ein\n' +
-            '2. Wählen Sie eine eindeutige Subdomain\n' +
-            '3. Erstellen Sie ein sicheres Passwort\n' +
-            '4. 14 Tage kostenlos testen!\n\n' +
-            'Bei Fragen: support@assixx.com',
-        );
-      }
-
-      // Get plan from URL parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      const selectedPlan = urlParams.get('plan');
-      if (selectedPlan) {
-        document.querySelector('select[name="plan"]').value = selectedPlan;
-      }
-
-      // Subdomain validation
-      const subdomainInput = document.querySelector('input[name="subdomain"]');
-      const subdomainError = document.querySelector('#subdomainError');
-
-      subdomainInput.addEventListener('input', (e) => {
-        const value = e.target.value.toLowerCase();
-        e.target.value = value;
-
-        if (value && !/^[a-z0-9-]+$/.test(value)) {
-          subdomainError.style.display = 'block';
-        } else {
-          subdomainError.style.display = 'none';
-        }
-      });
-
-      // Password confirmation with real-time validation
-      const passwordInput = document.querySelector('input[name="password"]');
-      const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
-      const passwordError = document.querySelector('#passwordError');
-
-      passwordConfirmInput.addEventListener('input', () => {
-        if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
-          passwordError.style.display = 'block';
-          passwordConfirmInput.style.borderColor = '#ef4444';
-        } else {
-          passwordError.style.display = 'none';
-          passwordConfirmInput.style.borderColor = '';
-        }
-      });
-
-      // Phone validation
-      const phoneInput = document.querySelector('input[name="phone"]');
-      const phoneError = document.querySelector('#phoneError');
-
-      phoneInput.addEventListener('input', () => {
-        const phoneValue = phoneInput.value.trim();
-        const countryCode = document.querySelector('#countryCode').value;
-
-        // Check if phone starts with 0 for Germany/Austria/Switzerland
-        if ((countryCode === '+49' || countryCode === '+43' || countryCode === '+41') && phoneValue.startsWith('0')) {
-          phoneError.textContent = 'Bitte ohne führende 0 eingeben (die Ländervorwahl ersetzt die 0)';
-          phoneError.style.display = 'block';
-          phoneInput.style.borderColor = '#ef4444';
-        } else if (phoneValue && !/^[1-9][0-9]{6,14}$/.test(phoneValue)) {
-          phoneError.textContent = 'Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)';
-          phoneError.style.display = 'block';
-          phoneInput.style.borderColor = '#ef4444';
-        } else if (phoneValue === '') {
-          phoneError.textContent = 'Telefonnummer ist ein Pflichtfeld';
-          phoneError.style.display = 'block';
-          phoneInput.style.borderColor = '#ef4444';
-        } else {
-          phoneError.style.display = 'none';
-          phoneInput.style.borderColor = '';
-        }
-      });
-
-      // Email confirmation validation
-      const emailInput = document.querySelector('input[name="email"]');
-      const emailConfirmInput = document.querySelector('input[name="email_confirm"]');
-      const emailMatchError = document.querySelector('#emailMatchError');
-
-      emailConfirmInput.addEventListener('input', () => {
-        if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
-          emailMatchError.style.display = 'block';
-          emailConfirmInput.style.borderColor = '#ef4444';
-        } else {
-          emailMatchError.style.display = 'none';
-          emailConfirmInput.style.borderColor = '';
-        }
-      });
-
-      // Also check when email field changes
-      emailInput.addEventListener('input', () => {
-        if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
-          emailMatchError.style.display = 'block';
-          emailConfirmInput.style.borderColor = '#ef4444';
-        } else {
-          emailMatchError.style.display = 'none';
-          emailConfirmInput.style.borderColor = '';
-        }
-      });
-
-      // Event Delegation for all button actions
-      document.addEventListener('click', (e) => {
-        const target = e.target.closest('[data-action]');
-        if (!target) return;
-
-        const action = target.dataset.action;
-
-        switch (action) {
-          case 'show-help':
-            showHelp();
-            break;
-          case 'reload-page':
-            window.location.reload();
-            break;
-          case 'toggle-country':
-            toggleCountryDropdown();
-            break;
-          case 'select-country': {
-            const flag = target.dataset.flag;
-            const code = target.dataset.code;
-            selectCountry(flag, code);
-            break;
-          }
-          case 'toggle-plan':
-            togglePlanDropdown();
-            break;
-          case 'select-plan': {
-            const value = target.dataset.value;
-            const name = target.dataset.name;
-            selectPlan(value, name);
-            break;
-          }
-        }
-      });
-
-      // Form submission
-      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // Validate emails match
-        if (emailInput.value !== emailConfirmInput.value) {
-          emailMatchError.style.display = 'block';
-          emailConfirmInput.focus();
-          return;
-        }
-
-        // Validate passwords match
-        if (passwordInput.value !== passwordConfirmInput.value) {
-          passwordError.style.display = 'block';
-          passwordConfirmInput.focus();
-          return;
-        }
-
-        // Validate phone number
-        const phoneValue = phoneInput.value.trim();
-        if (!phoneValue) {
-          phoneError.textContent = 'Telefonnummer ist ein Pflichtfeld';
-          phoneError.style.display = 'block';
-          phoneInput.focus();
-          return;
-        }
-
-        // Check for leading 0 in DACH countries
-        if ((currentCountryCode === '+49' || currentCountryCode === '+43' || currentCountryCode === '+41') && phoneValue.startsWith('0')) {
-          phoneError.textContent = 'Bitte ohne führende 0 eingeben (die Ländervorwahl ersetzt die 0)';
-          phoneError.style.display = 'block';
-          phoneInput.focus();
-          return;
-        }
-
-        // General phone validation
-        if (!/^[1-9][0-9]{6,14}$/.test(phoneValue)) {
-          phoneError.textContent = 'Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)';
-          phoneError.style.display = 'block';
-          phoneInput.focus();
-          return;
-        }
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
-        // Get country code and format phone without spaces
-        const phoneNumber = data.phone;
-        const fullPhone = `${currentCountryCode}${phoneNumber.replace(/\s+/g, '')}`;
-
-        // Check if v2 API should be used
-        const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
-
-        // Add root user credentials - use camelCase for v2, snake_case for v1
-        const signupData = useV2
-          ? {
-              // v2 format (camelCase)
-              companyName: data.company_name,
-              subdomain: data.subdomain,
-              email: data.email,
-              adminEmail: data.email,
-              adminPassword: data.password,
-              adminFirstName: data.first_name,
-              adminLastName: data.last_name,
-              phone: fullPhone,
-              plan: currentPlan,
-            }
-          : {
-              // v1 format (snake_case)
-              company_name: data.company_name,
-              subdomain: data.subdomain,
-              email: data.email,
-              admin_email: data.email,
-              admin_password: data.password,
-              admin_first_name: data.first_name,
-              admin_last_name: data.last_name,
-              phone: fullPhone,
-              plan: currentPlan,
-            };
-
-        const submitButton = e.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
-
-        try {
-          submitButton.disabled = true;
-          submitButton.textContent = '⏳ Wird erstellt...';
-
-          // API URL based on feature flag (useV2 already defined above)
-          const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
-
-          console.info(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
-
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(signupData),
-          });
-
-          let result;
-          const responseText = await response.text();
-
-          try {
-            result = JSON.parse(responseText);
-          } catch (e) {
-            console.error('Failed to parse response:', responseText, e);
-            result = { message: 'Server response was not valid JSON: ' + responseText };
-          }
-
-          // Handle v2 response format
-          if (useV2 && result.success === false) {
-            // v2 error format
-            const errorMessage = result.error?.message || result.message || 'Fehler bei der Registrierung';
-            alert(errorMessage);
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
-            return;
-          }
-
-          if (response.ok || (useV2 && result.success)) {
-            // v2 response handled, data extraction not needed here
-
-            document.querySelector('#successMessage').style.display = 'block';
-            window.setHTML(
-              document.querySelector('#successMessage'),
-              `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`,
-            );
-
-            // Clear form
-            e.target.reset();
-
-            // Redirect after 3 seconds
-            setTimeout(() => {
-              window.location.href = '/login';
-            }, 3000);
-          } else {
-            // v1 error handling
-            alert(result.message || 'Fehler bei der Registrierung');
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
-          }
-        } catch (error) {
-          console.error('Signup error:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-          submitButton.disabled = false;
-          submitButton.textContent = originalText;
-        }
-      });
+      // Initialize signup form
+      const controller = new SignupFormController();
+      controller.init();
     </script>
   </body>
 </html>

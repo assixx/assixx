@@ -9,8 +9,7 @@ export interface User {
   role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   departmentId: number | null;
-  isActive: boolean;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   profilePicture: string | null;
   phoneNumber: string | null;
   landline: string | null;
@@ -33,8 +32,7 @@ export interface DatabaseUser {
   role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   department_id: number | null;
-  is_active: boolean;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   profile_picture: string | null;
   phone_number: string | null;
   landline: string | null;
@@ -86,7 +84,7 @@ export interface Document {
   mimeType: string;
   description: string | null;
   tags: string | null;
-  isArchived: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,7 +100,7 @@ export interface DatabaseDocument {
   mime_type: string;
   description: string | null;
   tags: string | null;
-  is_archived: boolean;
+  is_active: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   created_at: Date;
   updated_at: Date;
 }
@@ -116,7 +114,7 @@ export interface Feature {
   isActive: boolean;
   isPremium: boolean;
   price: number;
-  config: any;
+  config: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -182,7 +180,7 @@ export interface ChatMessage {
   type: 'text' | 'file' | 'image' | 'system';
   attachmentUrl: string | null;
   isEdited: boolean;
-  isDeleted: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   readBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -221,6 +219,27 @@ export interface Shift {
   updatedAt: Date;
 }
 
+export interface SurveyQuestion {
+  id: number;
+  type: 'text' | 'number' | 'single-choice' | 'multiple-choice' | 'rating' | 'date';
+  text: string;
+  required: boolean;
+  order: number;
+  options?: string[];
+  minValue?: number;
+  maxValue?: number;
+  placeholder?: string;
+}
+
+export interface SurveyAnswer {
+  questionId: number;
+  answerType: 'text' | 'number' | 'choice' | 'date';
+  textValue?: string;
+  numberValue?: number;
+  choiceValues?: string[];
+  dateValue?: string | Date;
+}
+
 export interface Survey {
   id: number;
   title: string;
@@ -232,7 +251,7 @@ export interface Survey {
   isAnonymous: boolean;
   startsAt: Date;
   endsAt: Date | null;
-  questions: any;
+  questions: SurveyQuestion[] | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -241,7 +260,7 @@ export interface SurveyResponse {
   id: number;
   surveyId: number;
   respondentId: number | null;
-  answers: any;
+  answers: SurveyAnswer[] | null;
   completedAt: Date;
   createdAt: Date;
 }

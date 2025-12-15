@@ -1,0 +1,192 @@
+/**
+ * Design System – Custom Dropdown
+ *
+ * JavaScript-driven dropdown with custom styling.
+ * Use case: When native <select> is not enough (icons, prices, complex layout).
+ *
+ * Alternative: Use native <select> when possible (better accessibility).
+ */
+
+@layer components {
+  /* Wrapper */
+  .dropdown {
+    position: relative;
+    width: 100%;
+  }
+
+  /* Trigger Button (Display) */
+  .dropdown__trigger {
+    cursor: pointer;
+
+    display: flex;
+    gap: var(--spacing-2); /* 8px gap between text and chevron icon */
+    align-items: center;
+    justify-content: space-between;
+
+    min-height: 44px;
+    padding: var(--form-field-padding-y) var(--form-field-padding-x);
+    border: var(--form-field-border);
+    border-radius: var(--form-field-radius);
+
+    font-size: var(--form-field-font-size);
+    color: var(--form-field-text);
+
+    background: var(--form-field-bg);
+    backdrop-filter: var(--glass-form-backdrop);
+
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
+  }
+
+  /* Inner span in trigger must also be flex for proper icon alignment */
+  .dropdown__trigger > span {
+    display: flex;
+    gap: 0; /* No gap, margin-right on icon handles spacing */
+    align-items: center;
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+
+  .dropdown__trigger:hover {
+    border: var(--form-field-border-hover);
+    background: var(--form-field-bg-hover);
+  }
+
+  .dropdown__trigger svg,
+  .dropdown__trigger i {
+    opacity: 60%;
+    transition: transform 0.2s ease;
+  }
+
+  /* Material Symbols in trigger: use design system color */
+  .dropdown__trigger .material-symbols-outlined {
+    color: var(--text-secondary);
+  }
+
+  .dropdown__trigger.active svg,
+  .dropdown__trigger.active i {
+    transform: rotate(180deg);
+  }
+
+  /* Dropdown Menu (Options Container) */
+  .dropdown__menu {
+    position: absolute;
+    z-index: 1000;
+    top: calc(100% + 5px); /* 5px spacing - not 4px! */
+    right: 0;
+    left: 0;
+    transform: translateY(-10px);
+
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: var(--radius-xl);
+
+    visibility: hidden;
+    opacity: 0%;
+    background: rgb(30 30 30 / 95%); /* Heller als rgb(18,18,18) */
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+
+    transition: all 0.2s ease;
+  }
+
+  .dropdown__menu.active {
+    transform: translateY(0);
+    visibility: visible;
+    opacity: 100%;
+  }
+
+  /* Dropdown Option (Individual Item) */
+  .dropdown__option {
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10px 16px;
+    border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+    font-size: 14px;
+    color: var(--color-text-primary);
+
+    transition: all 0.15s ease;
+  }
+
+  .dropdown__option:last-child {
+    border-bottom: none;
+  }
+
+  .dropdown__option:hover {
+    padding-left: 20px;
+    border-radius: var(--radius-md);
+    color: #fff;
+    background: rgb(33 150 243 / 20%);
+  }
+
+  .dropdown__option:active {
+    background: rgb(33 150 243 / 30%);
+  }
+
+  /* Option with Icon */
+  .dropdown__option i {
+    width: 20px;
+    margin-right: 12px;
+    font-size: 14px;
+    color: rgb(255 255 255 / 60%);
+  }
+
+  .dropdown__option .material-symbols-outlined {
+    margin-right: 12px;
+    color: var(--text-secondary);
+  }
+
+  .dropdown__option:hover i {
+    color: #fff;
+  }
+
+  .dropdown__option:hover .material-symbols-outlined {
+    color: #fff;
+  }
+
+  /* Option Secondary Text (e.g., price) */
+  .dropdown__option-secondary {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-primary);
+  }
+
+  .dropdown__option:hover .dropdown__option-secondary {
+    color: #fff;
+  }
+
+  /* Fix stacking context: When a dropdown is active inside a glass-card,
+     elevate the glass-card above siblings to prevent overlap.
+     backdrop-filter creates a new stacking context, so z-index on dropdown__menu
+     alone is not sufficient when sibling elements also have backdrop-filter. */
+  .glass-card:has(.dropdown__menu.active) {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Max Height with Scroll */
+  .dropdown__menu--scrollable {
+    overflow-y: auto;
+    max-height: 200px;
+  }
+
+  /* Custom Scrollbar */
+  .dropdown__menu--scrollable::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .dropdown__menu--scrollable::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  .dropdown__menu--scrollable::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background: rgb(255 255 255 / 20%);
+  }
+
+  .dropdown__menu--scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 30%);
+  }
+}

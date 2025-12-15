@@ -1,0 +1,82 @@
+/* Employee Profile - Page-Specific Styles */
+/* Design System provides: Cards, Avatar, Forms, Buttons */
+/* This file only contains page-specific layout */
+
+/* ===== CONTAINER WIDTH ===== */
+.profile-card {
+  max-width: 800px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* ===== PROFILE PICTURE LAYOUT ===== */
+.profile-picture-section {
+  display: flex;
+  gap: var(--spacing-8);
+  align-items: center;
+  margin-bottom: var(--spacing-8);
+}
+
+/* Blue border ring around avatar (page-specific decoration) */
+.profile-picture-container {
+  padding: 3px;
+  border: 3px solid rgb(0 142 255 / 30%);
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* Button stack (vertical layout) */
+.profile-picture-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* ===== FORM LAYOUT ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+/* ===== INFO BOX (Employee-specific: readonly fields info) ===== */
+.info-box {
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
+  border: 1px solid rgb(33 150 243 / 20%);
+  border-radius: var(--radius-xl);
+
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+
+  background: rgb(33 150 243 / 5%);
+}
+
+.info-box i {
+  margin-right: var(--spacing-1);
+  color: #2196f3;
+}
+
+/* Non-editable fields styling */
+.non-editable {
+  cursor: default;
+  background: rgb(255 255 255 / 1%);
+}
+
+.non-editable:focus {
+  border-color: rgb(255 255 255 / 10%);
+  box-shadow: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (width <= 768px) {
+  .profile-picture-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

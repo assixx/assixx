@@ -2,17 +2,20 @@
  * Roles Service v2
  * Business logic for role management
  */
-import { RowDataPacket } from 'mysql2/promise';
-
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { execute } from '../../../utils/db.js';
+import { RowDataPacket, execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { Role, RoleCheckRequest, RoleName } from './types.js';
+
+// Query result interfaces
+interface UserRoleResult extends RowDataPacket {
+  role: string;
+}
 
 /**
  *
  */
-export class RolesService {
+class RolesService {
   /**
    * Static role definitions
    */
@@ -92,15 +95,21 @@ export class RolesService {
   }> {
     try {
       // Get user's current role from database
-      const [rows] = await execute<RowDataPacket[]>('SELECT role FROM users WHERE id = ?', [
-        request.userId,
-      ]);
+      const [rows] = await execute<UserRoleResult[]>(
+        'SELECT role FROM users WHERE id = $1 AND tenant_id = $2',
+        [request.userId, request.tenantId],
+      );
 
       if (rows.length === 0) {
         throw new ServiceError('NOT_FOUND', 'User not found');
       }
 
-      const userRole = rows[0].role as RoleName;
+      const userRow = rows[0];
+      if (userRow === undefined) {
+        throw new ServiceError('NOT_FOUND', 'User not found');
+      }
+
+      const userRole = userRow.role as RoleName;
       // ESLint disable needed: userRole is cast to RoleName type, not arbitrary string
       // eslint-disable-next-line security/detect-object-injection
       const userRoleLevel = RolesService.ROLES[userRole].level;

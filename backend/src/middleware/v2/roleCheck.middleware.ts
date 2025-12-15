@@ -15,7 +15,7 @@ export function requireRoleV2(allowedRoles: string[]): RequestHandler {
   return ((req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     // Check if user is authenticated
     // Note: This check is necessary as the type system doesn't guarantee user exists
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions -- Runtime check for missing user
     if (!req.user) {
       res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
       return;
@@ -23,7 +23,7 @@ export function requireRoleV2(allowedRoles: string[]): RequestHandler {
 
     // Check if user has one of the allowed roles
     const userRole = req.user.role;
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    if (!allowedRoles.includes(userRole)) {
       res
         .status(403)
         .json(errorResponse('FORBIDDEN', "You don't have permission to perform this action"));

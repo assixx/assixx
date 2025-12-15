@@ -3,16 +3,96 @@
  * Checks tenant deletion status and blocks access to suspended/deleting tenants
  */
 import { NextFunction, Request, Response } from 'express';
-import { RowDataPacket } from 'mysql2';
 
-import type { AuthenticatedRequest } from '../types/request.types';
-import { query } from '../utils/db';
-import { logger } from '../utils/logger';
+import type { AuthUser, AuthenticatedRequest } from '../types/request.types.js';
+import { RowDataPacket, query } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
+
+/**
+ * Grace period before tenant deletion (in minutes)
+ * Default: 43200 (30 days)
+ * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
+ */
+const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
+const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
 
 interface TenantStatusRow extends RowDataPacket {
   deletion_status: 'active' | 'marked_for_deletion' | 'suspended' | 'deleting';
   deletion_requested_at?: Date;
   company_name: string;
+}
+
+/**
+ * Check if the request path is whitelisted
+ */
+function isPathWhitelisted(path: string): boolean {
+  const whitelistedPaths = [
+    '/api/auth/logout',
+    '/api/root/tenants/:id/deletion-status',
+    '/api/root/tenants/:id/cancel-deletion',
+    '/api/export-data',
+    '/health',
+  ];
+
+  return whitelistedPaths.some((whitelistedPath: string) => {
+    // Safe: whitelistedPaths is a hardcoded array, not user input
+    // eslint-disable-next-line security/detect-non-literal-regexp
+    const regex = new RegExp('^' + whitelistedPath.replace(/:[^/]+/g, '[^/]+') + '$');
+    return regex.test(path);
+  });
+}
+
+/**
+ * Handle tenant status response based on deletion status
+ */
+function handleTenantStatus(
+  tenant: TenantStatusRow,
+  tenantId: number,
+  username: string,
+  res: Response,
+  next: NextFunction,
+): void {
+  switch (tenant.deletion_status) {
+    case 'active':
+      next();
+      break;
+
+    case 'marked_for_deletion':
+      res.setHeader('X-Tenant-Status', 'marked-for-deletion');
+      if (tenant.deletion_requested_at) {
+        const scheduledDate = new Date(tenant.deletion_requested_at);
+        scheduledDate.setDate(scheduledDate.getDate() + 30);
+        res.setHeader('X-Tenant-Deletion-Date', scheduledDate.toISOString());
+      }
+      next();
+      break;
+
+    case 'suspended':
+      logger.warn(`Access denied to suspended tenant ${tenantId} by user ${username}`);
+      res.status(403).json({
+        error: 'Tenant is suspended and scheduled for deletion',
+        code: 'TENANT_SUSPENDED',
+        status: tenant.deletion_status,
+        message:
+          'Ihr Konto wurde gesperrt und wird gelöscht. Bitte kontaktieren Sie den Support für weitere Informationen.',
+      });
+      break;
+
+    case 'deleting':
+      logger.warn(`Access denied to deleting tenant ${tenantId} by user ${username}`);
+      res.status(403).json({
+        error: 'Tenant is currently being deleted',
+        code: 'TENANT_DELETING',
+        status: tenant.deletion_status,
+        message:
+          'Ihr Konto wird gerade gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
+      });
+      break;
+
+    default:
+      logger.error(`Unknown tenant deletion status: ${String(tenant.deletion_status)}`);
+      next();
+  }
 }
 
 /**
@@ -25,44 +105,33 @@ export async function checkTenantStatus(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const authReq = req as AuthenticatedRequest;
+    // Check if request has user property (is authenticated)
+    // Using type guard to safely check for user existence
+    const reqWithUser = req as Request & { user?: AuthUser };
 
-    // Skip if no user or no tenant_id
-    if (!authReq.user.tenant_id) {
+    if (reqWithUser.user === undefined) {
       next();
       return;
     }
 
+    // Now TypeScript knows user exists and we can safely use it
+    const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id;
 
-    // Whitelist certain routes that should always be accessible
-    const whitelistedPaths = [
-      '/api/auth/logout',
-      '/api/root/tenants/:id/deletion-status',
-      '/api/root/tenants/:id/cancel-deletion',
-      '/api/export-data',
-      '/health',
-    ];
-
-    const isWhitelisted = whitelistedPaths.some((path) => {
-      // Safe: whitelistedPaths is a hardcoded array, not user input
-      // eslint-disable-next-line security/detect-non-literal-regexp
-      const regex = new RegExp('^' + path.replace(/:[^/]+/g, '[^/]+') + '$');
-      return regex.test(req.path);
-    });
-
-    if (isWhitelisted) {
+    // Check if path is whitelisted
+    if (isPathWhitelisted(req.path)) {
       next();
       return;
     }
 
     // Check tenant status
     const [tenantRows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = ?',
+      'SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = $1',
       [tenantId],
     );
 
-    if (tenantRows.length === 0) {
+    const tenant = tenantRows[0];
+    if (tenant === undefined) {
       logger.error(`Tenant ${tenantId} not found in status check`);
       res.status(404).json({
         error: 'Tenant not found',
@@ -71,56 +140,7 @@ export async function checkTenantStatus(
       return;
     }
 
-    const tenant = tenantRows[0];
-
-    // Block access based on deletion status
-    switch (tenant.deletion_status) {
-      case 'active':
-        // Normal operation
-        next();
-        break;
-
-      case 'marked_for_deletion':
-        // Still accessible but with warning header
-        res.setHeader('X-Tenant-Status', 'marked-for-deletion');
-        if (tenant.deletion_requested_at) {
-          const scheduledDate = new Date(tenant.deletion_requested_at);
-          scheduledDate.setDate(scheduledDate.getDate() + 30);
-          res.setHeader('X-Tenant-Deletion-Date', scheduledDate.toISOString());
-        }
-        next();
-        break;
-
-      case 'suspended':
-        logger.warn(
-          `Access denied to suspended tenant ${tenantId} by user ${authReq.user.username}`,
-        );
-        res.status(403).json({
-          error: 'Tenant is suspended and scheduled for deletion',
-          code: 'TENANT_SUSPENDED',
-          status: tenant.deletion_status,
-          message:
-            'Ihr Konto wurde gesperrt und wird gelöscht. Bitte kontaktieren Sie den Support für weitere Informationen.',
-        });
-        break;
-
-      case 'deleting':
-        logger.warn(
-          `Access denied to deleting tenant ${tenantId} by user ${authReq.user.username}`,
-        );
-        res.status(403).json({
-          error: 'Tenant is currently being deleted',
-          code: 'TENANT_DELETING',
-          status: tenant.deletion_status,
-          message:
-            'Ihr Konto wird gerade gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
-        });
-        break;
-
-      default:
-        logger.error(`Unknown tenant deletion status: ${String(tenant.deletion_status)}`);
-        next();
-    }
+    handleTenantStatus(tenant, tenantId, authReq.user.username, res, next);
   } catch (error: unknown) {
     logger.error('Error in tenant status middleware:', error);
     // Don't block access on middleware errors
@@ -138,7 +158,7 @@ export async function requireActiveTenant(
 ): Promise<void> {
   try {
     // First check regular tenant status
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve: () => void, reject: (reason?: unknown) => void) => {
       void checkTenantStatus(req, res, (err?: unknown) => {
         if (err !== null && err !== undefined && err !== '') {
           reject(
@@ -153,22 +173,23 @@ export async function requireActiveTenant(
     });
 
     const authReq = req as AuthenticatedRequest;
-    if (!authReq.user.tenant_id) {
+    if (typeof authReq.user.tenant_id !== 'number' || authReq.user.tenant_id === 0) {
       next();
       return;
     }
 
     // Additional check for marked_for_deletion
     const [rows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status FROM tenants WHERE id = ?',
+      'SELECT deletion_status FROM tenants WHERE id = $1',
       [authReq.user.tenant_id],
     );
 
-    if (rows.length > 0 && rows[0].deletion_status !== 'active') {
+    const row = rows[0];
+    if (row !== undefined && row.deletion_status !== 'active') {
       res.status(403).json({
         error: 'This action requires an active tenant',
         code: 'TENANT_NOT_ACTIVE',
-        status: rows[0].deletion_status,
+        status: row.deletion_status,
       });
       return;
     }
@@ -190,26 +211,30 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
 } | null> {
   try {
     const [tenantRows] = await query<TenantStatusRow[]>(
-      'SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = ?',
+      'SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = $1',
       [tenantId],
     );
 
-    if (tenantRows.length === 0) {
+    const tenant = tenantRows[0];
+    if (tenant === undefined) {
       return null;
     }
 
-    const tenant = tenantRows[0];
-
-    const result = {
+    // Build base result (exactOptionalPropertyTypes compliant)
+    const result: {
+      isScheduledForDeletion: boolean;
+      deletionDate?: Date;
+      status: string;
+      daysRemaining?: number;
+    } = {
       isScheduledForDeletion: tenant.deletion_status !== 'active',
       status: tenant.deletion_status,
-      deletionDate: undefined as Date | undefined,
-      daysRemaining: undefined as number | undefined,
     };
 
+    // Add optional properties only when defined
     if (tenant.deletion_status === 'marked_for_deletion' && tenant.deletion_requested_at) {
       const scheduledDate = new Date(tenant.deletion_requested_at);
-      scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 day grace period
+      scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
 
       result.deletionDate = scheduledDate;
       result.daysRemaining = Math.max(
@@ -224,5 +249,3 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
     return null;
   }
 }
-
-export default checkTenantStatus;

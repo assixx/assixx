@@ -1,0 +1,17 @@
+{
+  "name": "@assixx/design-system",
+  "version": "1.0.0",
+  "description": "Assixx Design System - Multi-theme, Multi-platform",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:watch": "node scripts/watch.js",
+    "clean": "rm -rf build",
+    "validate": "node scripts/validate.js"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "chokidar": "^3.6.0",
+    "style-dictionary": "^3.9.2"
+  }
+}

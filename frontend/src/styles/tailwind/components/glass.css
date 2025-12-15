@@ -1,0 +1,212 @@
+/**
+ * Glass Components
+ * Glassmorphism design components
+ */
+
+@layer components {
+  /* Glass Card */
+  .glass-card {
+    padding: 1.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+  }
+
+  /* Glass Button */
+  .btn-glass {
+    cursor: pointer;
+
+    display: inline-block;
+
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    font-weight: 500;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px) saturate(150%);
+
+    transition: all 0.3s ease;
+  }
+
+  .btn-glass:hover {
+    transform: translateY(-2px);
+    background: var(--glass-bg-hover);
+    box-shadow: 0 12px 40px 0 rgb(0 0 0 / 45%);
+  }
+
+  .btn-glass:active {
+    transform: translateY(0);
+    background: var(--glass-bg-active);
+  }
+
+  /* Glass Input */
+  .input-glass {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    color: var(--color-text-primary);
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px) saturate(150%);
+
+    transition: all 0.3s ease;
+  }
+
+  .input-glass:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+  }
+
+  .input-glass::placeholder {
+    color: var(--color-text-placeholder);
+  }
+
+  /* Glass Container */
+  .container-glass {
+    max-width: 80rem;
+    margin-right: auto;
+    margin-left: auto;
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  /* Glass Modal */
+  .modal-glass {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 1rem;
+
+    background: rgb(0 0 0 / 80%);
+    backdrop-filter: blur(5px);
+  }
+
+  .modal-content-glass {
+    overflow: auto;
+
+    width: 100%;
+    max-width: 28rem;
+    max-height: 90vh;
+    padding: 1.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+  }
+
+  /* Glass Navigation */
+  .nav-glass {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Glass Table */
+  .table-glass {
+    width: 100%;
+  }
+
+  .table-glass thead {
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .table-glass th {
+    padding: 0.75rem 1rem;
+
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-align: left;
+  }
+
+  .table-glass td {
+    padding: 0.75rem 1rem;
+    color: var(--color-text-primary);
+  }
+
+  .table-glass tbody tr {
+    border-bottom: 1px solid var(--glass-border);
+    transition: background-color 0.2s ease;
+  }
+
+  .table-glass tbody tr:hover {
+    background: var(--glass-bg-hover);
+  }
+
+  /* Glass Badge */
+  .badge-glass {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 0.125rem 0.625rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px) saturate(150%);
+  }
+
+  /* Glass Alert */
+  .alert-glass {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .alert-glass.alert-success {
+    border-color: var(--color-success);
+    background: rgb(76 175 80 / 10%);
+  }
+
+  .alert-glass.alert-error {
+    border-color: var(--color-error);
+    background: rgb(244 67 54 / 10%);
+  }
+
+  .alert-glass.alert-warning {
+    border-color: var(--color-warning);
+    background: rgb(255 152 0 / 10%);
+  }
+
+  @media (width >= 640px) {
+    .container-glass {
+      padding-right: 1.5rem;
+      padding-left: 1.5rem;
+    }
+  }
+
+  @media (width >= 1024px) {
+    .container-glass {
+      padding-right: 2rem;
+      padding-left: 2rem;
+    }
+  }
+}

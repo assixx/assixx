@@ -1,6 +1,6 @@
 # 🚀 Before Starting Development
 
-> **Zeitaufwand:** ~3 Minuten (inklusive TypeScript Check)  
+> **Zeitaufwand:** ~3 Minuten (inklusive TypeScript Check)
 > **Primäre Methode:** Ein einziger Befehl führt alle Checks aus!
 
 ## ⚠️ PFLICHT: Diesen einen Befehl IMMER ausführen
@@ -56,7 +56,6 @@ docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix"
 ```
 NAME                     STATUS              PORTS
 assixx-backend          Up X minutes        0.0.0.0:3000->3000/tcp
-assixx-mysql            Up X minutes        0.0.0.0:3307->3306/tcp
 assixx-redis            Up X minutes        6379/tcp
 ```
 
@@ -67,7 +66,7 @@ assixx-redis            Up X minutes        6379/tcp
   "status": "ok",
   "timestamp": "...",
   "uptime": 123.456,
-  "environment": "production"
+  "environment": "dev"
 }
 ```
 
@@ -88,22 +87,6 @@ docker-compose logs -f  # Logs prüfen
 docker-compose build --no-cache backend
 docker-compose up -d
 ```
-
-### MySQL Connection Fehler
-
-```bash
-docker logs assixx-mysql
-docker-compose restart mysql
-```
-
-### Port 3000 bereits belegt
-
-```bash
-lsof -i :3000 && kill -9 <PID>
-# oder
-docker-compose down
-```
-
 ## 📋 Zusätzliche Befehle
 
 ### Code Quality
@@ -128,10 +111,9 @@ git branch --show-current
 
 ## 📝 Wichtige Hinweise
 
-- **56 TypeScript Errors** in Test-Dateien sind bekannt und können ignoriert werden
 - **Working Directory** für Docker-Befehle: `/home/scs/projects/Assixx/docker`
 - **Container-Name**: `assixx-backend` (nicht docker-backend-1)
-- **MySQL Port**: 3307 (nicht 3306)
+- **PostgreSQL Port**: 5432
 
 ---
 

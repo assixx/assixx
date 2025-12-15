@@ -2,7 +2,14 @@
  * KVP Permission Service
  * Handles permission checks and department visibility for KVP suggestions
  */
-import { RowDataPacket, query as executeQuery } from '../utils/db';
+import {
+  KvpSuggestionDetailsResult,
+  PriorityCountResult,
+  StatusCountResult,
+  TotalSavingsResult,
+  UserDepartmentIdResult,
+} from '../types/query-results.types.js';
+import { query as executeQuery } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 import adminPermissionService from './adminPermission.service.js';
 
@@ -27,11 +34,67 @@ class KvpPermissionService {
   async getAdminDepartments(adminId: number, tenantId: number): Promise<number[]> {
     try {
       const result = await adminPermissionService.getAdminDepartments(adminId, tenantId);
-      return result.departments.map((dept) => dept.id);
+      return result.departments.map((dept: { id: number }) => dept.id);
     } catch (error: unknown) {
       logger.error('Error getting admin departments:', error);
       return [];
     }
+  }
+
+  private async getSuggestionDetails(
+    suggestionId: number,
+  ): Promise<KvpSuggestionDetailsResult | null> {
+    const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
+      `SELECT tenant_id, department_id, org_level, org_id, submitted_by
+       FROM kvp_suggestions
+       WHERE id = $1`,
+      [suggestionId],
+    );
+    const suggestion = suggestions[0];
+    if (suggestion === undefined) return null;
+    return suggestion;
+  }
+
+  private async canEmployeeViewSuggestion(
+    userId: number,
+    suggestion: KvpSuggestionDetailsResult,
+    tenantId: number,
+  ): Promise<boolean> {
+    // Can see own suggestions
+    if (suggestion.submitted_by === userId) return true;
+
+    // Can see company-wide suggestions
+    if (suggestion.org_level === 'company') return true;
+
+    // Can see department suggestions if in same department
+    // Note: department_id is now in user_departments table (many-to-many)
+    const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
+      `SELECT ud.department_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       WHERE u.id = $1 AND u.tenant_id = $2`,
+      [userId, tenantId],
+    );
+
+    const userRow = userInfo[0];
+    if (userRow !== undefined && suggestion.org_level === 'department') {
+      return userRow.department_id === suggestion.department_id;
+    }
+
+    return false;
+  }
+
+  private async canAdminViewSuggestion(
+    userId: number,
+    suggestion: KvpSuggestionDetailsResult,
+    tenantId: number,
+  ): Promise<boolean> {
+    // Can see company-wide
+    if (suggestion.org_level === 'company') return true;
+
+    // Check if admin manages this department
+    const adminDepts = await this.getAdminDepartments(userId, tenantId);
+    return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
   }
 
   /**
@@ -52,49 +115,19 @@ class KvpPermissionService {
       if (role === 'root') return true;
 
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level, org_id, submitted_by 
-         FROM kvp_suggestions 
-         WHERE id = ?`,
-        [suggestionId],
-      );
-
-      if (suggestions.length === 0) return false;
-      const suggestion = suggestions[0];
+      const suggestion = await this.getSuggestionDetails(suggestionId);
+      if (!suggestion) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
 
-      // Employee logic
+      // Check role-specific permissions
       if (role === 'employee') {
-        // Can see own suggestions
-        if (suggestion.submitted_by === userId) return true;
-
-        // Can see company-wide suggestions
-        if (suggestion.org_level === 'company') return true;
-
-        // Can see department suggestions if in same department
-        const [userInfo] = await executeQuery<RowDataPacket[]>(
-          'SELECT department_id FROM users WHERE id = ?',
-          [userId],
-        );
-
-        if (userInfo.length > 0 && suggestion.org_level === 'department') {
-          return userInfo[0].department_id === suggestion.department_id;
-        }
+        return await this.canEmployeeViewSuggestion(userId, suggestion, tenantId);
       }
 
-      // Admin logic
-      if (role === 'admin') {
-        // Can see company-wide
-        if (suggestion.org_level === 'company') return true;
-
-        // Check if admin manages this department
-        const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id as number);
-      }
-
-      return false;
+      // At this point, role must be 'admin' (union type exhausted)
+      return await this.canAdminViewSuggestion(userId, suggestion, tenantId);
     } catch (error: unknown) {
       logger.error('Error checking view permission:', error);
       return false;
@@ -116,15 +149,15 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by 
-         FROM kvp_suggestions 
-         WHERE id = ?`,
+      const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
+        `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by
+         FROM kvp_suggestions
+         WHERE id = $1`,
         [suggestionId],
       );
 
-      if (suggestions.length === 0) return false;
       const suggestion = suggestions[0];
+      if (suggestion === undefined) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
@@ -145,11 +178,101 @@ class KvpPermissionService {
 
       // For department suggestions, check admin permissions
       const adminDepts = await this.getAdminDepartments(userId, tenantId);
-      return adminDepts.includes(suggestion.department_id as number);
+      return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
     } catch (error: unknown) {
       logger.error('Error checking edit permission:', error);
       return false;
     }
+  }
+
+  private async addEmployeeVisibilityConditions(
+    userId: number,
+    tenantId: number,
+    conditions: string[],
+    queryParams: (string | number)[],
+    paramIndex: number,
+  ): Promise<number> {
+    // Get user's department
+    // Note: department_id is now in user_departments table (many-to-many)
+    const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
+      `SELECT ud.department_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       WHERE u.id = $1 AND u.tenant_id = $2`,
+      [userId, tenantId],
+    );
+
+    const userDeptId = userInfo[0]?.department_id;
+
+    // Employee sees: own + department + company-wide
+    const visibilityConditions = [
+      `s.submitted_by = $${paramIndex}`,
+      `(s.org_level = $${paramIndex + 1} AND s.department_id = $${paramIndex + 2})`,
+      `s.org_level = $${paramIndex + 3}`,
+    ];
+
+    conditions.push(`(${visibilityConditions.join(' OR ')})`);
+    queryParams.push(
+      userId,
+      'department',
+      userDeptId ?? 0, // Use 0 as fallback for NULL department
+      'company',
+    );
+    return paramIndex + 4;
+  }
+
+  private async addAdminVisibilityConditions(
+    userId: number,
+    tenantId: number,
+    conditions: string[],
+    queryParams: (string | number)[],
+    paramIndex: number,
+  ): Promise<number> {
+    // Admin role - Get admin's managed departments
+    const adminDepts = await this.getAdminDepartments(userId, tenantId);
+
+    if (adminDepts.length > 0) {
+      const deptPlaceholders = adminDepts
+        .map((_: number, i: number) => `$${paramIndex + i}`)
+        .join(',');
+      const orgLevelIndex = paramIndex + adminDepts.length;
+      conditions.push(
+        `(s.department_id IN (${deptPlaceholders}) OR s.org_level = $${orgLevelIndex})`,
+      );
+      queryParams.push(...adminDepts, 'company');
+      return orgLevelIndex + 1;
+    } else {
+      // Admin with no departments only sees company-wide
+      conditions.push(`s.org_level = $${paramIndex}`);
+      queryParams.push('company');
+      return paramIndex + 1;
+    }
+  }
+
+  private addStatusFilterConditions(
+    statusFilter: string | undefined,
+    includeArchived: boolean | undefined,
+    conditions: string[],
+    queryParams: (string | number)[],
+    paramIndex: number,
+  ): number {
+    // Status filter
+    if (includeArchived === false) {
+      conditions.push(`s.status != $${paramIndex++}`);
+      queryParams.push('archived');
+    }
+
+    if (statusFilter != null && statusFilter !== '' && statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        conditions.push(`s.status NOT IN ($${paramIndex}, $${paramIndex + 1})`);
+        queryParams.push('archived', 'rejected');
+        paramIndex += 2;
+      } else {
+        conditions.push(`s.status = $${paramIndex++}`);
+        queryParams.push(statusFilter);
+      }
+    }
+    return paramIndex;
   }
 
   /**
@@ -161,69 +284,43 @@ class KvpPermissionService {
     queryParams: (string | number)[];
   }> {
     const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
-    const conditions: string[] = ['s.tenant_id = ?'];
+    const conditions: string[] = ['s.tenant_id = $1'];
     const queryParams: (string | number)[] = [tenantId];
+    let paramIndex = 2;
 
-    // Root sees everything
+    // Add role-specific visibility conditions
     if (role === 'root') {
-      // No additional filters needed
+      // No additional filters needed for root
     } else if (role === 'employee') {
-      // Get user's department
-      const [userInfo] = await executeQuery<RowDataPacket[]>(
-        'SELECT department_id FROM users WHERE id = ?',
-        [userId],
-      );
-
-      const userDeptId = userInfo[0]?.department_id as number | null;
-
-      // Employee sees: own + department + company-wide
-      const visibilityConditions = [
-        's.submitted_by = ?',
-        '(s.org_level = ? AND s.department_id = ?)',
-        's.org_level = ?',
-      ];
-
-      conditions.push(`(${visibilityConditions.join(' OR ')})`);
-      queryParams.push(
+      paramIndex = await this.addEmployeeVisibilityConditions(
         userId,
-        'department',
-        userDeptId ?? 0, // Use 0 as fallback for NULL department
-        'company',
+        tenantId,
+        conditions,
+        queryParams,
+        paramIndex,
       );
     } else {
-      // Admin role - Get admin's managed departments
-      const adminDepts = await this.getAdminDepartments(userId, tenantId);
-
-      if (adminDepts.length > 0) {
-        const deptPlaceholders = adminDepts.map(() => '?').join(',');
-        conditions.push(`(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`);
-        queryParams.push(...adminDepts, 'company');
-      } else {
-        // Admin with no departments only sees company-wide
-        conditions.push('s.org_level = ?');
-        queryParams.push('company');
-      }
+      paramIndex = await this.addAdminVisibilityConditions(
+        userId,
+        tenantId,
+        conditions,
+        queryParams,
+        paramIndex,
+      );
     }
 
-    // Status filter
-    if (includeArchived === false) {
-      conditions.push('s.status != ?');
-      queryParams.push('archived');
-    }
-
-    if (statusFilter != null && statusFilter !== '' && statusFilter !== 'all') {
-      if (statusFilter === 'active') {
-        conditions.push('s.status NOT IN (?, ?)');
-        queryParams.push('archived', 'rejected');
-      } else {
-        conditions.push('s.status = ?');
-        queryParams.push(statusFilter);
-      }
-    }
+    // Add status filters
+    paramIndex = this.addStatusFilterConditions(
+      statusFilter,
+      includeArchived,
+      conditions,
+      queryParams,
+      paramIndex,
+    );
 
     // Department filter (for admins)
     if (departmentFilter != null && departmentFilter !== 0 && role === 'admin') {
-      conditions.push('s.department_id = ?');
+      conditions.push(`s.department_id = $${paramIndex}`);
       queryParams.push(departmentFilter);
     }
 
@@ -246,15 +343,15 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level 
-         FROM kvp_suggestions 
-         WHERE id = ?`,
+      const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
+        `SELECT tenant_id, department_id, org_level
+         FROM kvp_suggestions
+         WHERE id = $1`,
         [suggestionId],
       );
 
-      if (suggestions.length === 0) return false;
       const suggestion = suggestions[0];
+      if (suggestion === undefined) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
@@ -264,7 +361,7 @@ class KvpPermissionService {
 
       // Check if admin manages this department
       const adminDepts = await this.getAdminDepartments(adminId, tenantId);
-      return adminDepts.includes(suggestion.department_id as number);
+      return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
     } catch (error: unknown) {
       logger.error('Error checking share permission:', error);
       return false;
@@ -285,21 +382,23 @@ class KvpPermissionService {
     adminId: number,
     action: string,
     entityId: number,
-    entityType = 'kvp_suggestion',
+    entityType: string | undefined,
     tenantId: number,
     oldValue?: unknown,
     newValue?: unknown,
   ): Promise<void> {
+    const resolvedEntityType = entityType ?? 'kvp_suggestion';
+
     try {
       await executeQuery(
-        `INSERT INTO admin_logs 
-         (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO admin_logs
+         (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           tenantId,
           adminId,
           action,
-          entityType,
+          resolvedEntityType,
           entityId,
           oldValue != null ? JSON.stringify(oldValue) : null,
           newValue != null ? JSON.stringify(newValue) : null,
@@ -310,11 +409,33 @@ class KvpPermissionService {
     }
   }
 
+  /** Build WHERE clause for stats queries */
+  private buildStatsWhereClause(
+    scope: 'company' | 'department',
+    scopeId: number,
+    tenantId: number,
+  ): { where: string; params: (string | number)[] } {
+    const params: (string | number)[] = [tenantId];
+    let where = 's.tenant_id = $1';
+    if (scope === 'department') {
+      where += ' AND s.department_id = $2';
+      params.push(scopeId);
+    }
+    return { where, params };
+  }
+
+  /** Parse savings value safely */
+  private parseSavings(savingsRow: TotalSavingsResult | undefined): number {
+    if (savingsRow === undefined) return 0;
+    if (typeof savingsRow.total_savings === 'string') {
+      const parsed = Number.parseFloat(savingsRow.total_savings);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return savingsRow.total_savings;
+  }
+
   /**
    * Get suggestion statistics for a department or company
-   * @param scope - The scope parameter
-   * @param scopeId - The scopeId parameter
-   * @param tenantId - The tenant ID
    */
   async getSuggestionStats(
     scope: 'company' | 'department',
@@ -327,67 +448,36 @@ class KvpPermissionService {
     totalSavings: number;
   }> {
     try {
-      let whereClause = 's.tenant_id = ?';
-      const params: (string | number)[] = [tenantId];
+      const { where, params } = this.buildStatsWhereClause(scope, scopeId, tenantId);
 
-      if (scope === 'department') {
-        whereClause += ' AND s.department_id = ?';
-        params.push(scopeId);
-      }
-
-      // Get counts by status
-      const [statusCounts] = await executeQuery<RowDataPacket[]>(
-        `SELECT status, COUNT(*) as count 
-         FROM kvp_suggestions s
-         WHERE ${whereClause}
-         GROUP BY status`,
+      const [statusCounts] = await executeQuery<StatusCountResult[]>(
+        `SELECT status, COUNT(*) as count FROM kvp_suggestions s WHERE ${where} GROUP BY status`,
+        params,
+      );
+      const [priorityCounts] = await executeQuery<PriorityCountResult[]>(
+        `SELECT priority, COUNT(*) as count FROM kvp_suggestions s WHERE ${where} GROUP BY priority`,
+        params,
+      );
+      const [savings] = await executeQuery<TotalSavingsResult[]>(
+        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings FROM kvp_suggestions s WHERE ${where} AND status = 'implemented'`,
         params,
       );
 
-      // Get counts by priority
-      const [priorityCounts] = await executeQuery<RowDataPacket[]>(
-        `SELECT priority, COUNT(*) as count 
-         FROM kvp_suggestions s
-         WHERE ${whereClause}
-         GROUP BY priority`,
-        params,
-      );
-
-      // Get total savings
-      const [savings] = await executeQuery<RowDataPacket[]>(
-        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings 
-         FROM kvp_suggestions s
-         WHERE ${whereClause} AND status = 'implemented'`,
-        params,
-      );
-
-      // Build result
       const byStatus: Record<string, number> = {};
-      statusCounts.forEach((row: RowDataPacket) => {
-        byStatus[row.status as string] = row.count as number;
+      statusCounts.forEach((row: StatusCountResult) => {
+        byStatus[row.status] = row.count;
       });
 
       const byPriority: Record<string, number> = {};
-      priorityCounts.forEach((row: RowDataPacket) => {
-        byPriority[row.priority as string] = row.count as number;
+      priorityCounts.forEach((row: PriorityCountResult) => {
+        byPriority[row.priority] = row.count;
       });
 
-      const total = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
-
-      return {
-        total,
-        byStatus,
-        byPriority,
-        totalSavings: Number.parseFloat(savings[0].total_savings as string) || 0,
-      };
+      const total = Object.values(byStatus).reduce((sum: number, count: number) => sum + count, 0);
+      return { total, byStatus, byPriority, totalSavings: this.parseSavings(savings[0]) };
     } catch (error: unknown) {
       logger.error('Error getting suggestion stats:', error);
-      return {
-        total: 0,
-        byStatus: {},
-        byPriority: {},
-        totalSavings: 0,
-      };
+      return { total: 0, byStatus: {}, byPriority: {}, totalSavings: 0 };
     }
   }
 }

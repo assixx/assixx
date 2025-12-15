@@ -1,0 +1,302 @@
+/**
+ * Empty State Component
+ *
+ * "No data" screens with icon, message, and optional action button.
+ * Minimal, clean design with gray icons.
+ *
+ * USAGE:
+ *   <div class="empty-state">
+ *     <div class="empty-state__icon">
+ *       <i class="fas fa-inbox"></i>
+ *     </div>
+ *     <h3 class="empty-state__title">No items found</h3>
+ *     <p class="empty-state__description">Get started by creating your first item.</p>
+ *     <button class="btn btn-primary">Create Item</button>
+ *   </div>
+ */
+
+/* ========================================
+   BASE EMPTY STATE
+   ======================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 300px;
+  padding: var(--spacing-8);
+
+  text-align: center;
+}
+
+/* ========================================
+   ICON
+   ======================================== */
+
+.empty-state__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--spacing-4);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.empty-state__icon i {
+  font-size: 2rem;
+  color: var(--color-text-muted);
+  opacity: 60%;
+}
+
+/* ========================================
+   TEXT CONTENT
+   ======================================== */
+
+.empty-state__title {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.empty-state__description {
+  max-width: 400px;
+  margin: 0 0 var(--spacing-6) 0;
+
+  font-size: 0.938rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+.empty-state--sm {
+  min-height: 200px;
+  padding: var(--spacing-6);
+}
+
+.empty-state--sm .empty-state__icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: var(--spacing-3);
+}
+
+.empty-state--sm .empty-state__icon i {
+  font-size: 1.5rem;
+}
+
+.empty-state--sm .empty-state__title {
+  font-size: 1.125rem;
+}
+
+.empty-state--sm .empty-state__description {
+  margin-bottom: var(--spacing-4);
+  font-size: 0.875rem;
+}
+
+.empty-state--lg {
+  min-height: 400px;
+  padding: var(--spacing-12);
+}
+
+.empty-state--lg .empty-state__icon {
+  width: 100px;
+  height: 100px;
+  margin-bottom: var(--spacing-6);
+}
+
+.empty-state--lg .empty-state__icon i {
+  font-size: 2.5rem;
+}
+
+.empty-state--lg .empty-state__title {
+  font-size: 1.5rem;
+}
+
+.empty-state--lg .empty-state__description {
+  max-width: 500px;
+  font-size: 1rem;
+}
+
+/* ========================================
+   STYLE VARIANTS
+   ======================================== */
+
+/* Minimal variant - no background on icon */
+.empty-state--minimal .empty-state__icon {
+  border: none;
+  background: transparent;
+}
+
+/* Bordered variant - with card border */
+.empty-state--bordered {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
+}
+
+/* ========================================
+   SEMANTIC VARIANTS (Icon Colors)
+   ======================================== */
+
+/* Info state - for informational empty states */
+.empty-state--info .empty-state__icon {
+  border-color: rgb(33 150 243 / 15%);
+  background: rgb(33 150 243 / 5%);
+}
+
+.empty-state--info .empty-state__icon i {
+  color: rgb(33 150 243 / 80%);
+  opacity: 100%;
+}
+
+/* Warning state - for caution/attention needed */
+.empty-state--warning .empty-state__icon {
+  border-color: rgb(255 152 0 / 15%);
+  background: rgb(255 152 0 / 5%);
+}
+
+.empty-state--warning .empty-state__icon i {
+  color: rgb(255 152 0 / 80%);
+  opacity: 100%;
+}
+
+/* Error state - for errors/failures */
+.empty-state--error .empty-state__icon {
+  border-color: rgb(244 67 54 / 15%);
+  background: rgb(244 67 54 / 5%);
+}
+
+.empty-state--error .empty-state__icon i {
+  color: rgb(244 67 54 / 80%);
+  opacity: 100%;
+}
+
+/* Success state - for completed/success states */
+.empty-state--success .empty-state__icon {
+  border-color: rgb(76 175 80 / 15%);
+  background: rgb(76 175 80 / 5%);
+}
+
+.empty-state--success .empty-state__icon i {
+  color: rgb(76 175 80 / 80%);
+  opacity: 100%;
+}
+
+/* ========================================
+   WITH ILLUSTRATION/SVG
+   ======================================== */
+
+.empty-state__illustration {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  margin-bottom: var(--spacing-4);
+
+  opacity: 70%;
+}
+
+.empty-state--lg .empty-state__illustration {
+  max-width: 250px;
+}
+
+.empty-state--sm .empty-state__illustration {
+  max-width: 150px;
+  margin-bottom: var(--spacing-3);
+}
+
+/* ========================================
+   ACTIONS AREA
+   ======================================== */
+
+.empty-state__actions {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+  justify-content: center;
+
+  margin-top: var(--spacing-2);
+}
+
+.empty-state__actions .btn {
+  margin: 0;
+}
+
+/* ========================================
+   HELPER TEXT/LINK
+   ======================================== */
+
+.empty-state__help {
+  margin-top: var(--spacing-4);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.empty-state__help a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.empty-state__help a:hover {
+  color: var(--color-blue-400);
+  text-decoration: underline;
+}
+
+/* ========================================
+   IN TABLE/CARD CONTEXT
+   ======================================== */
+
+.empty-state--in-table {
+  min-height: 200px;
+  padding: var(--spacing-6);
+}
+
+.empty-state--in-card {
+  min-height: auto;
+  padding: var(--spacing-6);
+}
+
+/* ========================================
+   FULL HEIGHT VARIANT
+   ======================================== */
+
+.empty-state--full-height {
+  min-height: calc(100vh - 200px);
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+.empty-state[role="status"] {
+  /* Announces to screen readers */
+}
+
+/* Screen reader only text */
+.empty-state__sr-only {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(50%);
+}

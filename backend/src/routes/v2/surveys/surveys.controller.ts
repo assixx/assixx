@@ -4,10 +4,10 @@
  */
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { ServiceError } from '../../../utils/ServiceError';
-import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse';
-import { SurveyCreateData, SurveyUpdateData, surveysService } from './surveys.service';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
+import { SurveyCreateData, SurveyUpdateData, surveysService } from './surveys.service.js';
 
 /**
  * @param req - The request object
@@ -46,11 +46,25 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
   try {
     const { status, page = 1, limit = 20 } = req.query;
 
-    const filters = {
-      status: status as 'draft' | 'active' | 'closed' | undefined,
-      page: Number.parseInt(page as string, 10) || 1,
-      limit: Number.parseInt(limit as string, 10) || 20,
+    const statusValue = status as 'draft' | 'active' | 'closed' | undefined;
+    const parsedPage = Number.parseInt(page as string, 10);
+    const pageNum = Number.isNaN(parsedPage) ? 1 : parsedPage;
+    const parsedLimit = Number.parseInt(limit as string, 10);
+    const limitNum = Number.isNaN(parsedLimit) ? 20 : parsedLimit;
+
+    const filters: {
+      status?: 'draft' | 'active' | 'closed';
+      page?: number;
+      limit?: number;
+    } = {
+      page: pageNum,
+      limit: limitNum,
     };
+
+    // Only set status if it's defined - avoid exactOptionalPropertyTypes violation
+    if (statusValue !== undefined) {
+      filters.status = statusValue;
+    }
 
     const surveys = await surveysService.listSurveys(
       req.user.tenant_id,
@@ -59,13 +73,12 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
       filters,
     );
 
-    // TODO: Add proper pagination metadata
     res.json(
       paginatedResponse(surveys, {
-        currentPage: filters.page,
-        pageSize: filters.limit,
+        currentPage: pageNum,
+        pageSize: limitNum,
         totalItems: surveys.length,
-        totalPages: Math.ceil(surveys.length / filters.limit),
+        totalPages: Math.ceil(surveys.length / limitNum),
       }),
     );
   } catch (error: unknown) {
@@ -79,12 +92,20 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
 }
 
 /**
+ * Helper: Check if string is a valid UUID format
+ */
+function isUUID(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+/**
  * @param req - The request object
  * @param res - The response object
 
  * /api/v2/surveys/\{id\}:
  *   get:
- *     summary: Get survey by ID
+ *     summary: Get survey by ID or UUID
  *     tags: [Surveys v2]
  *     security:
  *       - bearerAuth: []
@@ -93,15 +114,41 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
- *         description: Survey ID
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *         description: Survey ID (numeric) or UUID (string)
  */
 export async function getSurveyById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
 
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
+      return;
+    }
+
+    console.log('[DEBUG] getSurveyById called with idParam:', idParam, 'isUUID:', isUUID(idParam));
+
+    // Check if it's a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    if (isUUID(idParam)) {
+      console.log('[DEBUG] Routing to UUID lookup');
+      // UUID lookup
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      res.json(successResponse(survey));
+      return;
+    }
+    console.log('[DEBUG] Routing to numeric ID lookup');
+
+    // Numeric ID lookup (backwards compatibility)
+    const surveyId = Number.parseInt(idParam, 10);
     if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
+      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
       return;
     }
 
@@ -193,11 +240,31 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function updateSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
       return;
+    }
+
+    let surveyId: number;
+
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const survey = await surveysService.updateSurvey(
@@ -241,11 +308,31 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function deleteSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
       return;
+    }
+
+    let surveyId: number;
+
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const result = await surveysService.deleteSurvey(
@@ -313,7 +400,14 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function createFromTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const templateId = Number.parseInt(req.params.templateId, 10);
+    const templateIdParam = req.params['templateId'];
+
+    if (templateIdParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Template ID is required'));
+      return;
+    }
+
+    const templateId = Number.parseInt(templateIdParam, 10);
 
     if (Number.isNaN(templateId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid template ID'));
@@ -359,11 +453,31 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
  */
 export async function getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params['id'];
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
       return;
+    }
+
+    let surveyId: number;
+
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const statistics = await surveysService.getSurveyStatistics(
@@ -384,9 +498,15 @@ export async function getStatistics(req: AuthenticatedRequest, res: Response): P
   }
 }
 
-// Note: Survey responses are handled by a separate API endpoint
-// TODO: Implement these in a separate responses controller
-// - POST /api/v2/surveys/{id}/responses - Submit a response
-// - GET /api/v2/surveys/{id}/responses - Get responses (admin only)
-// - GET /api/v2/surveys/{id}/responses/{responseId} - Get specific response
-// - PUT /api/v2/surveys/{id}/responses/{responseId} - Update response (if allowed)
+/**
+ * Survey Responses API
+ * All response endpoints are fully implemented in responses.controller.ts
+ *
+ * Available endpoints (see index.ts for routes):
+ * - POST   /api/v2/surveys/:id/responses          - Submit a response
+ * - GET    /api/v2/surveys/:id/responses          - Get all responses (admin only)
+ * - GET    /api/v2/surveys/:id/my-response        - Get user's own response
+ * - GET    /api/v2/surveys/:id/export             - Export responses (CSV/Excel)
+ * - GET    /api/v2/surveys/:id/responses/:id      - Get specific response
+ * - PUT    /api/v2/surveys/:id/responses/:id      - Update response (if allowed)
+ */

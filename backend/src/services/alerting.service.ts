@@ -4,8 +4,8 @@
  */
 import axios from 'axios';
 
-import { execute } from '../utils/db';
-import { logger } from '../utils/logger';
+import { execute } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 interface SlackAlert {
   channel: string;
@@ -35,6 +35,12 @@ interface PagerDutyIncident {
   group?: string;
 }
 
+interface PagerDutyResponse {
+  incident: {
+    id: string;
+  };
+}
+
 /**
  *
  */
@@ -44,7 +50,7 @@ export class AlertingService {
    * @param alert - The alert parameter
    */
   async sendSlackAlert(alert: SlackAlert): Promise<void> {
-    if (process.env.SLACK_WEBHOOK_URL == null || process.env.SLACK_WEBHOOK_URL === '') {
+    if (process.env['SLACK_WEBHOOK_URL'] == null || process.env['SLACK_WEBHOOK_URL'] === '') {
       logger.warn('Slack webhook URL not configured, skipping alert');
       return;
     }
@@ -56,14 +62,14 @@ export class AlertingService {
     }[alert.severity];
 
     try {
-      const response = await axios.post(process.env.SLACK_WEBHOOK_URL, {
+      const response = await axios.post(process.env['SLACK_WEBHOOK_URL'], {
         channel: alert.channel,
         attachments: [
           {
             color,
             title: alert.title,
             text: alert.message,
-            fields: Object.entries(alert.fields ?? {}).map(([k, v]) => ({
+            fields: Object.entries(alert.fields ?? {}).map(([k, v]: [string, unknown]) => ({
               title: k,
               value: String(v),
               short: true,
@@ -105,7 +111,7 @@ export class AlertingService {
    * @param alert - The alert parameter
    */
   async sendTeamsAlert(alert: TeamsAlert): Promise<void> {
-    if (process.env.TEAMS_WEBHOOK_URL == null || process.env.TEAMS_WEBHOOK_URL === '') {
+    if (process.env['TEAMS_WEBHOOK_URL'] == null || process.env['TEAMS_WEBHOOK_URL'] === '') {
       logger.warn('Teams webhook URL not configured, skipping alert');
       return;
     }
@@ -135,7 +141,7 @@ export class AlertingService {
         potentialAction: alert.actions ?? [],
       };
 
-      const response = await axios.post(process.env.TEAMS_WEBHOOK_URL, card);
+      const response = await axios.post(process.env['TEAMS_WEBHOOK_URL'], card);
 
       logger.info(`Teams alert sent successfully: ${alert.title}`);
 
@@ -163,164 +169,132 @@ export class AlertingService {
     }
   }
 
+  /** Build PagerDuty incident payload */
+  private buildPagerDutyPayload(incident: PagerDutyIncident): object {
+    return {
+      incident: {
+        type: 'incident',
+        title: incident.summary,
+        service: { id: process.env['PAGERDUTY_SERVICE_ID'], type: 'service_reference' },
+        urgency: incident.severity === 'critical' ? 'high' : 'low',
+        body: { type: 'incident_body', details: JSON.stringify(incident.details, null, 2) },
+        incident_key: `assixx-${String(Date.now())}`,
+        ...(incident.component != null && incident.component !== '' ?
+          { component: { id: incident.component, type: 'component_reference' } }
+        : {}),
+        ...(incident.group != null && incident.group !== '' ?
+          { priority: { id: incident.group, type: 'priority_reference' } }
+        : {}),
+      },
+    };
+  }
+
+  /** Check if PagerDuty is configured */
+  private isPagerDutyConfigured(): boolean {
+    return (
+      process.env['PAGERDUTY_TOKEN'] != null &&
+      process.env['PAGERDUTY_TOKEN'] !== '' &&
+      process.env['PAGERDUTY_SERVICE_ID'] != null &&
+      process.env['PAGERDUTY_SERVICE_ID'] !== ''
+    );
+  }
+
   /**
    * Create PagerDuty incident
    * @param incident - The incident parameter
    */
   async sendPagerDutyAlert(incident: PagerDutyIncident): Promise<void> {
-    if (
-      process.env.PAGERDUTY_TOKEN == null ||
-      process.env.PAGERDUTY_TOKEN === '' ||
-      process.env.PAGERDUTY_SERVICE_ID == null ||
-      process.env.PAGERDUTY_SERVICE_ID === ''
-    ) {
+    if (!this.isPagerDutyConfigured()) {
       logger.warn('PagerDuty not configured, skipping alert');
       return;
     }
 
+    const detailsJson = JSON.stringify(incident.details);
     try {
-      const payload = {
-        incident: {
-          type: 'incident',
-          title: incident.summary,
-          service: {
-            id: process.env.PAGERDUTY_SERVICE_ID,
-            type: 'service_reference',
+      const token = process.env['PAGERDUTY_TOKEN'] ?? '';
+      const response = await axios.post<PagerDutyResponse>(
+        'https://api.pagerduty.com/incidents',
+        this.buildPagerDutyPayload(incident),
+        {
+          headers: {
+            Authorization: `Token token=${token}`,
+            Accept: 'application/vnd.pagerduty+json;version=2',
+            'Content-Type': 'application/json',
+            From: process.env['PAGERDUTY_EMAIL'] ?? 'assixx@example.com',
           },
-          urgency: incident.severity === 'critical' ? 'high' : 'low',
-          body: {
-            type: 'incident_body',
-            details: JSON.stringify(incident.details, null, 2),
-          },
-          incident_key: `assixx-${String(Date.now())}`,
-          ...(incident.component != null && incident.component !== '' ?
-            {
-              component: {
-                id: incident.component,
-                type: 'component_reference',
-              },
-            }
-          : {}),
-          ...(incident.group != null && incident.group !== '' ?
-            {
-              priority: {
-                id: incident.group,
-                type: 'priority_reference',
-              },
-            }
-          : {}),
         },
-      };
-
-      const response = await axios.post('https://api.pagerduty.com/incidents', payload, {
-        headers: {
-          Authorization: `Token token=${process.env.PAGERDUTY_TOKEN}`,
-          Accept: 'application/vnd.pagerduty+json;version=2',
-          'Content-Type': 'application/json',
-          From: process.env.PAGERDUTY_EMAIL ?? 'assixx@example.com',
-        },
-      });
-
-      logger.info(
-        `PagerDuty incident created: ${(response.data as { incident: { id: string } }).incident.id}`,
       );
-
-      // Log alert to database
+      logger.info(`PagerDuty incident created: ${response.data.incident.id}`);
       await this.logAlert(
         'pagerduty',
         incident.severity,
         'incident',
         incident.summary,
-        JSON.stringify(incident.details),
+        detailsJson,
         response.status,
       );
     } catch (error: unknown) {
       logger.error('Failed to create PagerDuty incident:', error);
+      const errMsg = error instanceof Error ? error.message : String(error);
       await this.logAlert(
         'pagerduty',
         incident.severity,
         'incident',
         incident.summary,
-        JSON.stringify(incident.details),
+        detailsJson,
         0,
-        error instanceof Error ? error.message : String(error),
+        errMsg,
       );
       throw error;
     }
   }
 
-  /**
-   * Send alert to all configured channels based on severity
-   * @param title - The title parameter
-   * @param message - The message parameter
-   * @param details - The details parameter
-   */
+  /** Convert details to Slack fields format */
+  private toSlackFields(details: Record<string, unknown>): Record<string, string> {
+    const fields: Record<string, string> = {};
+    for (const [key, value] of Object.entries(details)) {
+      // eslint-disable-next-line security/detect-object-injection
+      fields[key] = String(value);
+    }
+    return fields;
+  }
+
+  /** Convert details to Teams facts format */
+  private toTeamsFacts(details: Record<string, unknown>): { name: string; value: string }[] {
+    return Object.entries(details).map(([name, value]: [string, unknown]) => ({
+      name,
+      value: String(value),
+    }));
+  }
+
+  /** Send alert to all configured channels based on severity */
   async sendCriticalAlert(
     title: string,
     message: string,
     details: Record<string, unknown>,
   ): Promise<void> {
-    const promises: Promise<void>[] = [];
+    const slackPromise = this.sendSlackAlert({
+      channel: process.env['SLACK_CRITICAL_CHANNEL'] ?? '#alerts-critical',
+      severity: 'critical',
+      title,
+      message,
+      fields: this.toSlackFields(details),
+    }).catch((e: unknown) => logger.error('Slack critical alert failed:', e));
 
-    // Always send critical alerts to all channels
-    promises.push(
-      (async (): Promise<void> => {
-        try {
-          await this.sendSlackAlert({
-            channel: process.env.SLACK_CRITICAL_CHANNEL ?? '#alerts-critical',
-            severity: 'critical',
-            title,
-            message,
-            fields: Object.entries(details).reduce<Record<string, string>>((acc, [key, value]) => {
-              // Use Object.defineProperty to avoid object injection warning
-              // ESLint disable needed: This is safe as we control the input from our own code
-              // eslint-disable-next-line security/detect-object-injection
-              acc[key] = String(value);
-              return acc;
-            }, {}),
-          });
-        } catch (error: unknown) {
-          logger.error('Slack critical alert failed:', error);
-        }
-      })(),
-    );
+    const teamsPromise = this.sendTeamsAlert({
+      severity: 'critical',
+      title,
+      message,
+      facts: this.toTeamsFacts(details),
+    }).catch((e: unknown) => logger.error('Teams critical alert failed:', e));
 
-    promises.push(
-      (async (): Promise<void> => {
-        try {
-          await this.sendTeamsAlert({
-            severity: 'critical',
-            title,
-            message,
-            facts: Object.entries(details).map(([name, value]) => ({
-              name,
-              value: String(value),
-            })),
-          });
-        } catch (error: unknown) {
-          logger.error('Teams critical alert failed:', error);
-        }
-      })(),
-    );
+    const pagerPromise = this.sendPagerDutyAlert({
+      summary: title,
+      severity: 'critical',
+      details: { message, ...details },
+    }).catch((e: unknown) => logger.error('PagerDuty critical alert failed:', e));
 
-    promises.push(
-      (async (): Promise<void> => {
-        try {
-          await this.sendPagerDutyAlert({
-            summary: title,
-            severity: 'critical',
-            details: {
-              message,
-              ...details,
-            },
-          });
-        } catch (error: unknown) {
-          logger.error('PagerDuty critical alert failed:', error);
-        }
-      })(),
-    );
-
-    await Promise.allSettled(promises);
+    await Promise.allSettled([slackPromise, teamsPromise, pagerPromise]);
   }
 
   /**
@@ -346,7 +320,7 @@ export class AlertingService {
       await execute(
         `INSERT INTO deletion_alerts 
          (queue_id, alert_type, severity, channel, title, message, sent_at, response_code, response_body) 
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8)`,
         [
           0, // Queue ID 0 for general alerts
           alertType,

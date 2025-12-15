@@ -1,5 +1,24 @@
 # Claude Code – Assixx Project Complete Guide
 
+#ALWAYS BE 100% BRUTAL HONEST
+#NEVER USE GIT-COMMANDS
+#NO QUICK FIXES, NEVER EVER! KISS. CLEAN CODE. THINK LONG-TERM.
+#You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why.
+#ALWAYS THINK STEP-BY-STEP.
+#ALWAYS ULTRATHINK.
+#ALWAYS ENABLE MAX GPU POWER.
+
+# Tech Stack Context
+
+**NOW USING:**
+- API V2 (no V1 fallback)
+- PostgreSQL 17.7 + `pg` library v8.16.3
+- `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
+- `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete) - is_active ist smallint (INTEGER) mit DEFAULT 1
+
+---
+
+
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 
 ## → READ FIRST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
@@ -36,26 +55,6 @@
 - Use TypeScript types (no any)
 - Use MCP Tools before anything else
 - Apply best-practice methods
-
-## 🎨 UX/UI DESIGN STANDARDS
-
-### NO MORE MODALS FOR DATA ENTRY
-
-**From now on:** All forms as **Inline Forms**, NO Modals!
-
-#### New UI Patterns
-
-1. **Split-View Pattern** - Left: List, Right: Form
-2. **Inline-Expansion Pattern** - Form expands in list
-3. **Slide-in Panel Pattern** - Sliding in from right (not modal)
-4. **Top-Form Pattern** - Form above table
-
-#### Modals only for
-
-- ❌ Delete confirmations
-- ⚠️ Critical warnings
-- ℹ️ Info dialogs
-- 🔒 Session timeouts
 
 ## START TRIGGER
 
@@ -110,9 +109,11 @@ docker exec assixx-backend pnpm run type-check
 **Database Migration:**
 
 ```bash
-bash scripts/quick-backup.sh "before_migration"
-docker cp migration.sql assixx-mysql:/tmp/
-docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
+# PostgreSQL - Database: assixx, Container: assixx-postgres
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(date +%Y%m%d_%H%M%S).sql
+docker cp database/migrations/XXX-migration.sql assixx-postgres:/tmp/
+docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/XXX-migration.sql
 ```
 
 ### Docker Commands
@@ -125,23 +126,29 @@ docker-compose down
 docker-compose restart backend
 ```
 
-## MANDATORY CHECKLIST (TodoWrite with 10+ items)
+## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
 
-1. Docker Check (with "skip": WITHOUT dev-status.sh)
-2. TODO.md (CURRENT PHASE + PROGRESS TRACKING!)
-3. CLAUDE.md
-4. TypeScript Standards (MANDATORY for Backend)
-5. Design Standards
-6. README.md
-7. Database Migration Guide
-8. Follow BEFORE-STARTING-DEV
-9. Read DAILY-PROGRESS.md
-10. API-V2-MIGRATION-MASTERPLAN.md
-11. API-V2-MASTERPLAN-CHECKLIST.md
-12. API-V2-MIGRATION-EXECUTIVE-SUMMARY.md
-13. API-V2-FRONTEND-MIGRATION-DETAILS.md
-14. workshop-decisions.md
-15. API-DESIGN-WORKSHOP-PLAN.md
+1. Docker Check (with "skip": WITHOUT dev-status.sh) (read whole file)
+2. Read(~/projects/Assixx/CLAUDE-KAIZEN-MANIFEST.md)
+3. Follow (~/projects/Assixx/docs/BEFORE-STARTING-DEV.md)
+4. Read(~/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md) (MANDATORY for Backend, read whole File)
+5. Read(~/projects/Assixx/README.md)
+6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
+7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
+8. Read(~/projects/Assixx/docs/STORYBOOK.md) for UI context (read whole File)
+9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
+10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
+11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
+12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
+13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-BRUNO.md) for context (read whole File)
+14. Dont do more than this and than recap fast and than ask user that youre ready.
+15. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
+16. change directory to root  Bash(cd /home/scs/projects/Assixx && pwd)
+  ⎿  /home/scs/projects/Assixx
+
+
+
+  docs/HOW-TO-TEST-WITH-BRUNO.md
 
 ## 📊 PROGRESS DOCUMENTATION
 
@@ -226,6 +233,6 @@ git diff master..<branch-name> -- TODO.md
 - Use TypeScript instead of any
 - See TYPESCRIPT-STANDARDS.md for details
 
-**MySQL Password:** AssixxP@ss2025!
+**MySQL Password:** See `docker/.env` for credentials (MYSQL_PASSWORD)
 
 **Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear. KISS PRINCIPLE

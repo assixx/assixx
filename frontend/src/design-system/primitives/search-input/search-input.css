@@ -1,0 +1,364 @@
+/**
+ * Search Input Component
+ *
+ * Enhanced search input with leading icon, trailing clear button, and loading state.
+ * Built on top of form-field base with additional search-specific features.
+ *
+ * USAGE:
+ *   <div class="search-input">
+ *     <i class="search-input__icon fas fa-search"></i>
+ *     <input type="search" class="search-input__field" placeholder="Search...">
+ *     <button class="search-input__clear" aria-label="Clear search">
+ *       <i class="fas fa-times"></i>
+ *     </button>
+ *   </div>
+ */
+
+/* ========================================
+   BASE SEARCH INPUT
+   ======================================== */
+
+.search-input {
+  position: relative;
+
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
+
+  transition: all var(--transition-normal);
+}
+
+.search-input:hover {
+  border-color: rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.search-input:focus-within {
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 4%);
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+}
+
+/* ========================================
+   SEARCH ICON (Leading)
+   ======================================== */
+
+.search-input__icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  transition: color var(--transition-normal);
+}
+
+.search-input:focus-within .search-input__icon {
+  color: var(--color-primary);
+}
+
+/* ========================================
+   INPUT FIELD
+   ======================================== */
+
+.search-input__field {
+  flex: 1;
+
+  min-width: 0;
+  height: 100%;
+  padding: var(--spacing-2) 0;
+  border: none;
+
+  font-size: 0.938rem;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+
+  background: transparent;
+  outline: none;
+}
+
+.search-input__field::placeholder {
+  color: var(--color-text-placeholder);
+  opacity: 100%;
+}
+
+/* Remove default search input styling */
+.search-input__field::-webkit-search-cancel-button,
+.search-input__field::-webkit-search-decoration {
+  appearance: none;
+}
+
+/* ========================================
+   CLEAR BUTTON (Trailing)
+   ======================================== */
+
+.search-input__clear {
+  cursor: pointer;
+
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-muted);
+
+  background: rgb(255 255 255 / 10%);
+
+  transition: all var(--transition-normal);
+}
+
+.search-input__clear:hover {
+  transform: scale(1.1);
+  color: var(--color-text-primary);
+  background: rgb(255 255 255 / 15%);
+}
+
+.search-input__clear:active {
+  transform: scale(0.95);
+}
+
+/* Show clear button when input has value (JS adds this class) */
+.search-input--has-value .search-input__clear {
+  display: flex;
+}
+
+/* ========================================
+   LOADING SPINNER (Trailing)
+   ======================================== */
+
+.search-input__spinner {
+  display: none;
+  flex-shrink: 0;
+
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255 255 255 / 20%);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+
+  animation: search-spinner 0.6s linear infinite;
+}
+
+.search-input--loading .search-input__spinner {
+  display: block;
+}
+
+.search-input--loading .search-input__clear {
+  display: none;
+}
+
+@keyframes search-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+.search-input--sm {
+  min-height: 36px;
+  padding: 0 var(--spacing-2);
+  font-size: 0.875rem;
+}
+
+.search-input--sm .search-input__icon {
+  font-size: 0.875rem;
+}
+
+.search-input--sm .search-input__field {
+  font-size: 0.875rem;
+}
+
+.search-input--sm .search-input__clear {
+  width: 18px;
+  height: 18px;
+}
+
+.search-input--sm .search-input__spinner {
+  width: 14px;
+  height: 14px;
+}
+
+.search-input--lg {
+  min-height: 52px;
+  padding: 0 var(--spacing-4);
+  font-size: 1.063rem;
+}
+
+.search-input--lg .search-input__icon {
+  font-size: 1.125rem;
+}
+
+.search-input--lg .search-input__field {
+  font-size: 1.063rem;
+}
+
+.search-input--lg .search-input__clear {
+  width: 24px;
+  height: 24px;
+}
+
+.search-input--lg .search-input__spinner {
+  width: 18px;
+  height: 18px;
+}
+
+/* ========================================
+   STATE VARIANTS
+   ======================================== */
+
+/* Error State */
+.search-input--error {
+  border-color: var(--color-danger);
+}
+
+.search-input--error:focus-within {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgb(244 67 54 / 10%);
+}
+
+.search-input--error .search-input__icon {
+  color: var(--color-danger);
+}
+
+/* Success State */
+.search-input--success {
+  border-color: var(--color-success);
+}
+
+.search-input--success:focus-within {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 3px rgb(76 175 80 / 10%);
+}
+
+.search-input--success .search-input__icon {
+  color: var(--color-success);
+}
+
+/* Disabled State */
+.search-input--disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 50%;
+}
+
+.search-input--disabled .search-input__field {
+  cursor: not-allowed;
+}
+
+/* ========================================
+   FULL WIDTH
+   ======================================== */
+
+.search-input--full-width {
+  width: 100%;
+}
+
+/* ========================================
+   WITH RESULTS DROPDOWN
+   ======================================== */
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input__results {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+
+  overflow-y: auto;
+  display: none;
+
+  max-height: 300px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: #000;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input-wrapper--open .search-input__results,
+.search-input__results.active {
+  display: block;
+}
+
+.search-input__result-item {
+  cursor: pointer;
+
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  color: var(--color-text-secondary);
+
+  transition: all var(--transition-fast);
+}
+
+.search-input__result-item:last-child {
+  border-bottom: none;
+}
+
+.search-input__result-item:hover,
+.search-input__result-item--active {
+  color: var(--color-text-primary);
+  background: rgb(255 255 255 / 8%);
+}
+
+.search-input__result-item strong {
+  color: #ffab0b;
+}
+
+.search-input__no-results {
+  padding: var(--spacing-4);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+.search-input__field:focus {
+  outline: none;
+}
+
+.search-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.search-input__sr-only {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(50%);
+}

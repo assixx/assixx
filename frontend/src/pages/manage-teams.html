@@ -5,26 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Teams verwalten - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-
-    <!-- Google Fonts - Outfit -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
@@ -32,7 +18,6 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
 
     <!-- Common Scripts with ApiClient -->
-    <script type="module" src="/scripts/common.js"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -41,58 +26,82 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-              <div>
-                <h2 class="card-title">Teamübersicht</h2>
-                <p class="text-secondary">Alle Teams verwalten und bearbeiten</p>
+            <!-- Card Header - Following Design System Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-users-cog mr-2"></i>
+                Teamübersicht
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Alle Teams verwalten und bearbeiten</p>
+
+              <!-- Controls Section - Inside header -->
+              <div class="flex gap-4 items-center justify-between mt-4">
+                <!-- Status Filter Toggle -->
+                <div class="toggle-group" id="team-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Teams">
+                    <i class="fas fa-check-circle"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Teams">
+                    <i class="fas fa-times-circle"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Teams">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Teams">
+                    <i class="fas fa-users"></i>
+                    Alle
+                  </button>
+                </div>
+                <!-- Search Input with Results Dropdown -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="team-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input type="search" id="team-search" class="search-input__field" placeholder="Teams suchen..." autocomplete="off" />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="team-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="team-search-results">
+                    <!-- Results will be populated here dynamically -->
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="flex-between mb-3">
-              <div class="filter-buttons">
-                <button id="show-all-teams" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                <button id="filter-teams-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                <button id="filter-teams-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
-              </div>
-              <div class="search-container">
-                <input type="text" id="team-search" class="search-input" placeholder="Name, Abteilung oder Team-Lead..." />
-                <button id="team-search-btn" class="btn btn-secondary">Suchen</button>
-              </div>
-            </div>
-
-            <div class="table-responsive">
-              <div id="teams-loading" class="loading u-hidden">
-                <div class="spinner"></div>
-                <p>Teams werden geladen...</p>
+            <div class="card__body">
+              <!-- Loading State -->
+              <div id="teams-loading" class="spinner-container u-hidden">
+                <div class="spinner-ring spinner-ring--md"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Teams werden geladen...</p>
               </div>
 
-              <table class="admin-table" id="teams-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Abteilung</th>
-                    <th>Team-Lead</th>
-                    <th>Mitglieder</th>
-                    <th>Status</th>
-                    <th>Erstellt am</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="teams-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
+              <!-- Table Content -->
+              <div id="teams-table-content">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
 
+              <!-- Empty State -->
               <div id="teams-empty" class="empty-state u-hidden">
-                <div class="empty-state-icon">👥</div>
-                <div class="empty-state-text">Keine Teams gefunden</div>
-                <div class="empty-state-subtext">Fügen Sie Ihr erstes Team hinzu</div>
+                <div class="empty-state__icon">
+                  <i class="fas fa-users-cog"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Teams gefunden</h3>
+                <p class="empty-state__description">Fügen Sie Ihr erstes Team hinzu</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Team hinzufügen
+                </button>
               </div>
             </div>
           </div>
@@ -103,148 +112,211 @@
     </div>
 
     <!-- Add/Edit Team Modal -->
-    <div id="team-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="team-modal-title">Neues Team</h3>
-          <button class="modal-close" id="close-team-modal">&times;</button>
+    <div id="team-modal" class="modal-overlay">
+      <form id="team-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="team-modal-title">Neues Team</h3>
+          <button type="button" class="ds-modal__close" id="close-team-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="team-form">
-          <div class="modal-body">
-            <input type="hidden" id="team-id" />
+        <div class="ds-modal__body">
+          <input type="hidden" id="team-id" name="id" />
 
-            <div class="form-group">
-              <label class="form-label" for="team-name">Name *</label>
-              <input type="text" id="team-name" name="name" class="form-control" required />
-            </div>
+          <div class="form-field">
+            <label class="form-field__label" for="team-name">
+              Name
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="team-name" name="name" class="form-field__control" required />
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="team-description">Beschreibung</label>
-              <textarea id="team-description" name="description" class="form-control" rows="3"></textarea>
-            </div>
+          <div class="form-field">
+            <label class="form-field__label" for="team-description">Beschreibung</label>
+            <textarea id="team-description" name="description" class="form-field__control" rows="3"></textarea>
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="team-department">Abteilung</label>
-              <select id="team-department" name="departmentId" class="form-control">
-                <option value="">Keine Abteilung</option>
+          <div class="form-field">
+            <label class="form-field__label" for="team-department">Abteilung</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="team-department" name="departmentId" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="department-dropdown">
+              <div class="dropdown__trigger" id="department-trigger">
+                <span>Keine Abteilung</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="department-menu">
+                <div class="dropdown__option" data-value="">Keine Abteilung</div>
                 <!-- Wird dynamisch gefüllt -->
-              </select>
+              </div>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="team-lead">Team-Leiter (Admin)</label>
-              <select id="team-lead" name="teamLeadId" class="form-control">
-                <option value="">Kein Team-Leiter</option>
+          <div class="form-field">
+            <label class="form-field__label" for="team-lead">Team-Leiter (Admin)</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="team-lead" name="teamLeadId" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="team-lead-dropdown">
+              <div class="dropdown__trigger" id="team-lead-trigger">
+                <span>Kein Team-Leiter</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="team-lead-menu">
+                <div class="dropdown__option" data-value="">Kein Team-Leiter</div>
                 <!-- Wird dynamisch mit Admins gefüllt -->
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Team-Mitglieder</label>
-              <div class="dropdown-container" style="position: relative">
-                <div class="form-control" style="cursor: pointer" data-action="toggle-dropdown" data-dropdown="team-members">
-                  <span id="team-members-display">Keine Mitglieder zugewiesen</span>
-                  <i class="fas fa-chevron-down" style="float: right"></i>
-                </div>
-                <div
-                  id="team-members-dropdown"
-                  class="dropdown-options"
-                  style="
-                    display: none;
-                    position: absolute;
-                    top: 100%;
-                    left: 0;
-                    right: 0;
-                    background: rgba(0, 0, 0, 0.9);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 4px;
-                    max-height: 200px;
-                    overflow-y: auto;
-                    z-index: 1000;
-                  "
-                >
-                  <!-- Wird dynamisch mit Checkboxen gefüllt -->
-                </div>
-                <input type="hidden" name="userIds" id="team-members-select" />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Zugewiesene Maschinen</label>
-              <div class="dropdown-container" style="position: relative">
-                <div class="form-control" style="cursor: pointer" data-action="toggle-dropdown" data-dropdown="team-machines">
-                  <span id="team-machines-display">Keine Maschinen zugewiesen</span>
-                  <i class="fas fa-chevron-down" style="float: right"></i>
-                </div>
-                <div
-                  id="team-machines-dropdown"
-                  class="dropdown-options"
-                  style="
-                    display: none;
-                    position: absolute;
-                    top: 100%;
-                    left: 0;
-                    right: 0;
-                    background: rgba(0, 0, 0, 0.9);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 4px;
-                    max-height: 200px;
-                    overflow-y: auto;
-                    z-index: 1000;
-                  "
-                >
-                  <!-- Wird dynamisch mit Checkboxen gefüllt -->
-                </div>
-                <input type="hidden" name="machineIds" id="team-machines-select" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="team-status">Status</label>
-              <select id="team-status" name="status" class="form-control">
-                <option value="active">Aktiv</option>
-                <option value="inactive">Inaktiv</option>
-              </select>
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="cancel-team-modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">Speichern</button>
+          <div class="form-field">
+            <label class="form-field__label">Team-Mitglieder</label>
+            <!-- Hidden input to store the selected values -->
+            <input type="hidden" name="userIds" id="team-members-select" />
+            <!-- Custom Dropdown with Checkboxes -->
+            <div class="dropdown" id="team-members-dropdown">
+              <div class="dropdown__trigger" id="team-members-trigger">
+                <span id="team-members-display">Keine Mitglieder zugewiesen</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu dropdown__menu--scrollable" id="team-members-menu">
+                <!-- Wird dynamisch mit Checkboxen gefüllt -->
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+
+          <div class="form-field">
+            <label class="form-field__label">Zugewiesene Maschinen</label>
+            <!-- Hidden input to store the selected values -->
+            <input type="hidden" name="machineIds" id="team-machines-select" />
+            <!-- Custom Dropdown with Checkboxes -->
+            <div class="dropdown" id="team-machines-dropdown">
+              <div class="dropdown__trigger" id="team-machines-trigger">
+                <span id="team-machines-display">Keine Maschinen zugewiesen</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu dropdown__menu--scrollable" id="team-machines-menu">
+                <!-- Wird dynamisch mit Checkboxen gefüllt -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
+            <label class="form-field__label" for="team-status">
+              Status
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input: unified isActive status (0=inactive, 1=active, 3=archived, 4=deleted) -->
+            <input type="hidden" id="team-is-active" name="isActive" value="1" />
+            <!-- Custom Dropdown maps UI selections to isActive values -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
+                </div>
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Teams werden nicht angezeigt
+            </span>
+          </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-team-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-team-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Team löschen</h3>
-          <button class="modal-close" id="close-delete-modal">&times;</button>
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
+    <div id="delete-team-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Team löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body">
-          <p>Möchten Sie dieses Team wirklich löschen?</p>
-          <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <div class="ds-modal__body">
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie dieses Team wirklich löschen?</p>
           <input type="hidden" id="delete-team-id" />
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="confirm-delete-team">Löschen</button>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-team">Löschen</button>
         </div>
       </div>
     </div>
 
-    <!-- Floating Add Button -->
-    <button id="add-team-btn" class="add-team-btn">+</button>
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-team-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Das Team wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-team-final">
+            Endgültig löschen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Force Delete Warning Modal -->
+    <div id="force-delete-warning-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--warning">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Team hat Mitglieder</h3>
+        <p class="confirm-modal__message" id="force-delete-warning-message">
+          Das Team hat Mitglieder. Möchten Sie das Team trotzdem löschen? Alle Mitglieder werden automatisch aus dem Team entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-force-delete">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--confirm" id="confirm-force-delete">Team löschen</button>
+        </div>
+        <input type="hidden" id="force-delete-team-id" />
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="btn-float" id="add-team-btn" aria-label="Team hinzufügen">
+      <i class="fas fa-plus"></i>
+    </button>
 
     <!-- Navigation Components -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <script type="module" src="/scripts/components/navigation/index.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
 
     <!-- Page Script -->
-    <script type="module" src="/scripts/manage-teams.ts"></script>
+    <script type="module" src="/scripts/manage/teams/index.ts"></script>
   </body>
 </html>

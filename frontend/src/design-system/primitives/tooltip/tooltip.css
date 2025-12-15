@@ -1,0 +1,433 @@
+/**
+ * Tooltip Component
+ *
+ * Hover/focus tooltips with bottom and right positioning.
+ * Glassmorphism style with semantic variants.
+ *
+ * USAGE (Data Attribute - Auto Init):
+ *   <button data-tooltip="Helpful information">Hover me</button>
+ *   <button data-tooltip="Info text" data-tooltip-position="right">Right</button>
+ *
+ * USAGE (Manual HTML):
+ *   <div class="tooltip">
+ *     <button class="tooltip__trigger">Hover me</button>
+ *     <div class="tooltip__content tooltip__content--bottom" role="tooltip">
+ *       Helpful information
+ *     </div>
+ *   </div>
+ *
+ * USAGE (JavaScript API):
+ *   const tooltip = initTooltip(element, {
+ *     content: 'Tooltip text',
+ *     position: 'bottom',
+ *     delay: 300
+ *   });
+ */
+
+/* ========================================
+   BASE TOOLTIP CONTAINER
+   ======================================== */
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+/* ========================================
+   TOOLTIP TRIGGER (Optional)
+   ======================================== */
+
+.tooltip__trigger {
+  /* Inherits button/element styles */
+  cursor: help;
+}
+
+/* ========================================
+   TOOLTIP CONTENT (Popover)
+   ======================================== */
+
+.tooltip__content {
+  pointer-events: none;
+
+  /* Positioning */
+  position: absolute;
+  z-index: 9999;
+
+  /* Default transform (will be overridden by position) */
+  transform: translateY(-4px);
+
+  /* Sizing */
+  max-width: 250px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: var(--radius-md);
+
+  /* Typography */
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-white);
+  text-align: center;
+  overflow-wrap: break-word;
+  white-space: normal;
+
+  visibility: hidden;
+
+  /* Animation */
+  opacity: 0%;
+
+  /* Visual - Glassmorphism */
+  background: rgb(30 30 30 / 95%);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+
+  transition:
+    opacity var(--transition-fast),
+    visibility var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+/* Show state */
+.tooltip__content.show,
+.tooltip:hover .tooltip__content,
+.tooltip__trigger:hover + .tooltip__content,
+.tooltip__trigger:focus + .tooltip__content {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+/* ========================================
+   TOOLTIP ARROW
+   ======================================== */
+
+.tooltip__content::before {
+  content: "";
+
+  position: absolute;
+
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+}
+
+/* ========================================
+   POSITION VARIANTS
+   ======================================== */
+
+/* Top Position (appears above element) */
+.tooltip__content--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.tooltip__content--top.show,
+.tooltip:hover .tooltip__content--top,
+.tooltip__trigger:hover + .tooltip__content--top,
+.tooltip__trigger:focus + .tooltip__content--top {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip__content--top::before {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: rgb(30 30 30 / 95%);
+}
+
+/* Bottom Position (default) */
+.tooltip__content--bottom {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.tooltip__content--bottom.show,
+.tooltip:hover .tooltip__content--bottom,
+.tooltip__trigger:hover + .tooltip__content--bottom,
+.tooltip__trigger:focus + .tooltip__content--bottom {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip__content--bottom::before {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: rgb(30 30 30 / 95%);
+}
+
+/* Right Position */
+.tooltip__content--right {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%) translateX(4px);
+}
+
+.tooltip__content--right.show,
+.tooltip:hover .tooltip__content--right,
+.tooltip__trigger:hover + .tooltip__content--right,
+.tooltip__trigger:focus + .tooltip__content--right {
+  transform: translateY(-50%) translateX(0);
+}
+
+.tooltip__content--right::before {
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border-right-color: rgb(30 30 30 / 95%);
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+.tooltip__content--sm {
+  max-width: 180px;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: 0.75rem;
+}
+
+.tooltip__content--lg {
+  max-width: 320px;
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: 0.938rem;
+}
+
+/* ========================================
+   SEMANTIC VARIANTS
+   ======================================== */
+
+/* Info Tooltip */
+.tooltip__content--info {
+  width: 200px;
+  padding: var(--spacing-3);
+  border-color: var(--color-icon-primary);
+  border-radius: var(--radius-xl);
+
+  background: var(--color-black);
+}
+
+.tooltip__content--info.tooltip__content--bottom::before {
+  border-bottom-color: rgb(33 150 243 / 95%);
+}
+
+.tooltip__content--info.tooltip__content--right::before {
+  border-right-color: rgb(33 150 243 / 95%);
+}
+
+/* Warning Tooltip */
+.tooltip__content--warning {
+  border-color: rgb(255 152 0 / 30%);
+  color: var(--color-black);
+  background: rgb(255 152 0 / 95%);
+}
+
+.tooltip__content--warning.tooltip__content--bottom::before {
+  border-bottom-color: rgb(255 152 0 / 95%);
+}
+
+.tooltip__content--warning.tooltip__content--right::before {
+  border-right-color: rgb(255 152 0 / 95%);
+}
+
+/* Error Tooltip */
+.tooltip__content--error {
+  border-color: rgb(244 67 54 / 30%);
+  background: rgb(244 67 54 / 95%);
+}
+
+.tooltip__content--error.tooltip__content--bottom::before {
+  border-bottom-color: rgb(244 67 54 / 95%);
+}
+
+.tooltip__content--error.tooltip__content--right::before {
+  border-right-color: rgb(244 67 54 / 95%);
+}
+
+/* Success Tooltip */
+.tooltip__content--success {
+  border-color: rgb(76 175 80 / 30%);
+  background: rgb(76 175 80 / 95%);
+}
+
+.tooltip__content--success.tooltip__content--bottom::before {
+  border-bottom-color: rgb(76 175 80 / 95%);
+}
+
+.tooltip__content--success.tooltip__content--right::before {
+  border-right-color: rgb(76 175 80 / 95%);
+}
+
+/* Light Tooltip */
+.tooltip__content--light {
+  border-color: rgb(0 0 0 / 10%);
+  color: var(--color-gray-900);
+  background: rgb(245 245 245 / 98%);
+}
+
+.tooltip__content--light.tooltip__content--bottom::before {
+  border-bottom-color: rgb(245 245 245 / 98%);
+}
+
+.tooltip__content--light.tooltip__content--right::before {
+  border-right-color: rgb(245 245 245 / 98%);
+}
+
+/* ========================================
+   NO ARROW VARIANT
+   ======================================== */
+
+.tooltip__content--no-arrow::before {
+  display: none;
+}
+
+/* ========================================
+   TOOLTIP WITH MULTILINE TEXT
+   ======================================== */
+
+.tooltip__content--multiline {
+  min-width: 200px;
+  max-width: 200px;
+  text-align: left;
+  white-space: pre-line; /* Respektiert \n als harte Zeilenumbrüche - jeder Name auf eigener Zeile */
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+/* Screen reader only */
+.tooltip__sr-only {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(50%);
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (width <= 640px) {
+  .tooltip__content {
+    max-width: 200px;
+    font-size: 0.813rem;
+  }
+
+  .tooltip__content--lg {
+    max-width: 280px;
+  }
+}
+
+/* ========================================
+   ANIMATION VARIANTS
+   ======================================== */
+
+/* Fade only (no slide) */
+.tooltip__content--fade {
+  transform: none !important;
+}
+
+.tooltip__content--fade.show,
+.tooltip:hover .tooltip__content--fade,
+.tooltip__trigger:hover + .tooltip__content--fade,
+.tooltip__trigger:focus + .tooltip__content--fade {
+  transform: none !important;
+}
+
+/* Scale animation */
+.tooltip__content--scale {
+  transform-origin: center;
+  transform: scale(0.9);
+}
+
+.tooltip__content--scale.show,
+.tooltip:hover .tooltip__content--scale,
+.tooltip__trigger:hover + .tooltip__content--scale,
+.tooltip__trigger:focus + .tooltip__content--scale {
+  transform: scale(1);
+}
+
+/* ========================================
+   INTERACTIVE TOOLTIP (Clickable)
+   ======================================== */
+
+.tooltip--interactive .tooltip__content {
+  pointer-events: auto;
+}
+
+.tooltip--interactive .tooltip__content:hover {
+  visibility: visible;
+  opacity: 100%;
+}
+
+/* ========================================
+   FIXED POSITIONING FOR SCROLL CONTAINERS
+   ======================================== */
+
+/**
+ * .tooltip--fixed - Uses position:fixed to escape overflow:auto containers
+ *
+ * USAGE:
+ * 1. Add class .tooltip--fixed to tooltip container
+ * 2. Use JavaScript to set CSS custom properties for positioning:
+ *    --tooltip-top: calculated viewport Y position
+ *    --tooltip-left: calculated viewport X position
+ *
+ * Example JS:
+ *   const rect = trigger.getBoundingClientRect();
+ *   tooltip.style.setProperty('--tooltip-top', `${rect.top - tooltipHeight - 8}px`);
+ *   tooltip.style.setProperty('--tooltip-left', `${rect.left + rect.width / 2}px`);
+ *
+ * WHY THIS IS NEEDED:
+ * CSS Spec: overflow:auto creates a new stacking context that clips position:absolute
+ * Solution: Use position:fixed which positions relative to viewport, not parent
+ */
+.tooltip--fixed .tooltip__content {
+  position: fixed;
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+  transform: translateX(-50%);
+}
+
+/* Override position variants for fixed tooltips */
+.tooltip--fixed .tooltip__content--top,
+.tooltip--fixed .tooltip__content--bottom,
+.tooltip--fixed .tooltip__content--right {
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+}
+
+/* Show state for fixed tooltips */
+.tooltip--fixed .tooltip__content.show,
+.tooltip--fixed:hover .tooltip__content {
+  transform: translateX(-50%);
+}
+
+/* ========================================
+   TABLE-RESPONSIVE AUTO-FIX
+   ======================================== */
+
+/**
+ * Auto-apply fixed behavior for tooltips inside .table-responsive
+ * NOTE: Requires JavaScript to set position variables
+ * This CSS hook enables the behavior, JS calculates the actual position
+ */
+.table-responsive .tooltip.tooltip--auto-fixed .tooltip__content {
+  position: fixed;
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+  transform: translateX(-50%);
+}

@@ -1,33 +1,39 @@
-/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable max-lines */
 /**
- * Tenant Deletion Service
- * Handles complete tenant deletion with background processing, audit trail, and rollback capability
+ * DYNAMIC TENANT DELETION SERVICE - Best Practice Implementation
+ * Automatically finds and deletes ALL tables with tenant_id
+ * No manual maintenance needed - adapts to schema changes automatically!
  */
-// import Feature from '../models/feature'; // Currently unused
-// import archiver from 'archiver/index.js';
-import axios from 'axios';
-import { exec } from 'child_process';
-import crypto from 'crypto';
 import fs from 'fs/promises';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import path from 'path';
-import { promisify } from 'util';
 
-import { getRedisClient } from '../config/redis';
-import { DbUser } from '../models/user';
-import { execute, query, transaction } from '../utils/db';
-import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper';
-import emailService from '../utils/emailService';
-import { logger } from '../utils/logger';
-import { alertingService } from './alerting.service.stub';
+import { getRedisClient } from '../config/redis.js';
+import { DbUser } from '../routes/v2/users/model/index.js';
+import {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+  execute,
+  query,
+  transaction,
+} from '../utils/db.js';
+import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
+import emailService from '../utils/emailService.js';
+import { logger } from '../utils/logger.js';
 
-const execAsync = promisify(exec);
-
-// Constants for tenant deletion status
-const TENANT_STATUS_SUSPENDED = 'suspended' as const;
-const UPDATE_TENANT_STATUS_QUERY = 'UPDATE tenants SET deletion_status = ? WHERE id = ?' as const;
+/**
+ * Grace period before tenant deletion (in minutes)
+ * Default: 43200 (30 days)
+ * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
+ */
+const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
+const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
 
 type ConnectionWrapper = DbConnectionWrapper;
+
+interface TableNameRow extends RowDataPacket {
+  TABLE_NAME: string;
+}
 
 interface CountResult extends RowDataPacket {
   count: number;
@@ -40,6 +46,7 @@ interface TenantInfoRow extends RowDataPacket {
   tax_id?: string;
   email?: string;
   phone?: string;
+  created_at?: string | Date;
 }
 
 interface QueueRow extends RowDataPacket {
@@ -50,2318 +57,331 @@ interface QueueRow extends RowDataPacket {
   status: string;
   scheduled_deletion_date?: Date;
   created_at?: Date;
+  deletion_reason?: string;
+  ip_address?: string;
 }
 
-interface FileRow extends RowDataPacket {
-  id: number;
-  file_path: string;
-  file_name: string;
+interface LegalHoldResult extends RowDataPacket {
+  reason: string;
+  active: number;
 }
 
-interface WebhookRow extends RowDataPacket {
-  url: string;
-  secret?: string;
+interface DeletionResult {
+  success: boolean;
+  tablesAffected: number;
+  totalRowsDeleted: number;
+  details: { table: string; deleted: number }[];
 }
 
-interface DeletionStatusRow extends RowDataPacket {
+interface DeletionLog {
+  table: string;
+  deleted: number;
+}
+
+interface LegalHoldRow extends RowDataPacket {
   id: number;
   tenant_id: number;
-  approval_status: string;
-  status: string;
-  deletion_status: string;
-  deletion_requested_at: Date;
-  completed_steps: number;
-  failed_steps: number;
+  reason?: string;
+  active: number;
 }
-
-interface DeletionStep {
-  name: string;
-  description: string;
-  handler: (tenantId: number, queueId: number, connection: ConnectionWrapper) => Promise<number>;
-  critical: boolean; // If true, failure stops entire process
-}
-
-// Removed unused interfaces QueueItem and TenantInfo
 
 /**
- *
+ * Dynamic Tenant Deletion Service
+ * Finds and deletes ALL data for a tenant automatically
  */
 export class TenantDeletionService {
-  private steps: DeletionStep[] = [];
+  private readonly CRITICAL_TABLES = [
+    'tenant_deletion_queue', // Needed for the deletion process itself
+    'deletion_audit_trail', // Audit must be kept
+    'tenant_deletion_backups', // Backups must be kept
+    'archived_tenant_invoices', // Archived invoices (10 year retention)
+    'tenant_data_exports', // GDPR exports
+    'legal_holds', // Legal compliance
+    'audit_trail', // Audit trail for compliance
+  ];
 
   /**
-   *
+   * Validate tenant ID
    */
-  constructor() {
-    this.initializeSteps();
-  }
-
-  /**
-   *
-   */
-  private initializeSteps(): void {
-    this.steps = [
-      // ========== PRE-DELETION PHASE ==========
-      {
-        name: 'legal_hold_check',
-        description: 'Prüfe Legal Hold Status',
-        critical: true,
-        handler: async (tenantId: number) => {
-          const [legalHolds] = await query<RowDataPacket[]>(
-            'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
-            [tenantId],
-          );
-
-          if (legalHolds.length > 0) {
-            const legalHold = legalHolds[0];
-            throw new Error(
-              `Tenant has active legal hold: ${String(legalHold.reason ?? 'No reason specified')}`,
-            );
-          }
-
-          return 0;
-        },
-      },
-      {
-        name: 'shared_resources_check',
-        description: 'Prüfe geteilte Ressourcen',
-        critical: true,
-        handler: async (tenantId: number) => {
-          const [sharedDocsResult] = await query<CountResult[]>(
-            'SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?',
-            [tenantId, tenantId],
-          );
-
-          const sharedDocs = sharedDocsResult[0];
-          if (sharedDocs.count > 0) {
-            throw new Error(`Tenant has ${sharedDocs.count} documents shared with other tenants`);
-          }
-
-          return 0;
-        },
-      },
-      {
-        name: 'create_data_export',
-        description: 'Erstelle DSGVO Datenexport',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number) => {
-          const exportPath = await this.createTenantDataExport(tenantId);
-
-          // SICHER: exportPath wird von createTenantDataExport() konstruiert
-          // Format: /exports/tenant_${tenantId}/tenant_${tenantId}_export_${timestamp}.tar.gz
-          // tenantId ist eine Nummer aus der DB, kein User-Input
-          // Kein Directory Traversal möglich da der Pfad programmatisch gebaut wird
-          // eslint-disable-next-line security/detect-non-literal-fs-filename
-          const fileSize = (await fs.stat(exportPath)).size;
-
-          await execute(
-            'INSERT INTO tenant_data_exports (tenant_id, file_path, file_size, checksum, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 90 DAY))',
-            [tenantId, exportPath, fileSize, await this.calculateFileChecksum(exportPath)],
-          );
-
-          return 1;
-        },
-      },
-      {
-        name: 'create_final_backup',
-        description: 'Erstelle finales Backup',
-        critical: true,
-        handler: async (tenantId: number) => {
-          const backupFile = `/backups/tenant_${tenantId}_final_${String(Date.now())}.sql.gz`;
-
-          // Erstelle tenant-spezifisches Backup
-          // Da wir innerhalb des Containers sind, können wir direkt auf MySQL zugreifen
-          await execAsync(
-            `mysqldump --single-transaction --routines --triggers -h mysql -u assixx_user -pAssixxP@ss2025! main --where="tenant_id=${tenantId}" users departments teams documents messages conversations calendar_events shifts blackboard_entries surveys kvp_suggestions | gzip > ${backupFile}`,
-          );
-
-          await execute(
-            'INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES (?, ?, ?, ?)',
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- backupFile is safely constructed from tenantId (number) and Date.now() (number)
-            [tenantId, backupFile, (await fs.stat(backupFile)).size, 'final'],
-          );
-
-          return 1;
-        },
-      },
-      {
-        name: 'archive_billing_records',
-        description: 'Archiviere Rechnungen (10 Jahre Aufbewahrung)',
-        critical: false, // Nicht kritisch, da invoices Tabelle optional ist
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          try {
-            // Prüfe ob invoices Tabelle existiert
-            const tables = await conn.query("SHOW TABLES LIKE 'invoices'");
-
-            if (tables.length === 0) {
-              logger.info(`Invoices table not found, skipping archival for tenant ${tenantId}`);
-              return 0;
-            }
-
-            // Hole Tenant-Info für Archivierung
-            const tenantInfoResult = await conn.query<TenantInfoRow[]>(
-              'SELECT * FROM tenants WHERE id = ?',
-              [tenantId],
-            );
-            const tenantInfo = tenantInfoResult[0];
-
-            // Archiviere alle Rechnungen (wenn vorhanden)
-            const result = await conn.query(
-              `INSERT INTO archived_tenant_invoices
-               (original_tenant_id, tenant_name, tenant_tax_id, invoice_data, invoice_number, invoice_date, invoice_amount, delete_after)
-               SELECT
-                 ?, ?, ?,
-                 JSON_OBJECT('invoice_id', id, 'data', invoice_data),
-                 invoice_number,
-                 invoice_date,
-                 amount,
-                 DATE_ADD(NOW(), INTERVAL 10 YEAR)
-               FROM invoices
-               WHERE tenant_id = ?`,
-              [tenantId, tenantInfo.company_name, tenantInfo.tax_id ?? '', tenantId],
-            );
-
-            return (result as unknown as ResultSetHeader).affectedRows;
-          } catch (error: unknown) {
-            logger.warn(`Failed to archive billing records for tenant ${tenantId}:`, error);
-            return 0; // Nicht kritisch, also 0 zurückgeben
-          }
-        },
-      },
-      {
-        name: 'send_final_notifications',
-        description: 'Sende finale Benachrichtigungen',
-        critical: false,
-        handler: async (tenantId: number) => {
-          const [admins] = await query<DbUser[]>(
-            'SELECT u.* FROM users u WHERE u.tenant_id = ? AND u.role IN ("admin", "root")',
-            [tenantId],
-          );
-
-          for (const admin of admins) {
-            await emailService.sendEmail({
-              to: admin.email,
-              subject: 'Ihr Assixx-Konto wird gelöscht',
-              html: `
-                <h2>Ihr Assixx-Konto wird endgültig gelöscht</h2>
-                <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
-                <p>Ihr Assixx-Konto wird in Kürze endgültig gelöscht.</p>
-                <p>Falls Sie einen Datenexport benötigen, kontaktieren Sie bitte umgehend den Support.</p>
-                <p>Mit freundlichen Grüßen<br>Ihr Assixx-Team</p>
-              `,
-            });
-          }
-
-          return admins.length;
-        },
-      },
-      {
-        name: 'notify_external_services',
-        description: 'Benachrichtige externe Services',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const webhooks = await conn.query(
-            'SELECT * FROM tenant_webhooks WHERE tenant_id = ? AND active = 1',
-            [tenantId],
-          );
-
-          for (const webhook of webhooks as unknown as WebhookRow[]) {
-            try {
-              await axios.post(
-                (webhook as unknown as WebhookRow).url,
-                {
-                  event: 'tenant.deletion',
-                  tenant_id: tenantId,
-                  timestamp: new Date().toISOString(),
-                },
-                {
-                  headers: {
-                    'X-Webhook-Secret': (webhook as unknown as WebhookRow).secret ?? '',
-                  },
-                  timeout: 5000,
-                },
-              );
-            } catch (error: unknown) {
-              logger.warn(
-                `Webhook notification failed: ${(webhook as unknown as WebhookRow).url}`,
-                error,
-              );
-            }
-          }
-
-          return webhooks.length;
-        },
-      },
-
-      // ========== CACHE & SESSION CLEANUP ==========
-      {
-        name: 'redis_cleanup',
-        description: 'Lösche Redis Sessions und Cache',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          let deletedKeys = 0;
-
-          try {
-            const redis = await getRedisClient();
-
-            // Hole alle User IDs des Tenants
-            interface UserIdRow extends RowDataPacket {
-              id: number;
-            }
-            const userRows = await conn.query<UserIdRow[]>(
-              'SELECT id FROM users WHERE tenant_id = ?',
-              [tenantId],
-            );
-
-            for (const user of userRows) {
-              // Lösche alle Keys die mit user:id: beginnen
-              const keys = await redis.keys(`user:${user.id}:*`);
-              if (keys.length > 0) {
-                await redis.del(keys);
-                deletedKeys += keys.length;
-              }
-
-              // Lösche Session Keys
-              const sessionKeys = await redis.keys(`session:${user.id}:*`);
-              if (sessionKeys.length > 0) {
-                await redis.del(sessionKeys);
-                deletedKeys += sessionKeys.length;
-              }
-            }
-
-            // Lösche Tenant-spezifischen Cache
-            const tenantKeys = await redis.keys(`tenant:${tenantId}:*`);
-            if (tenantKeys.length > 0) {
-              await redis.del(tenantKeys);
-              deletedKeys += tenantKeys.length;
-            }
-          } catch (error: unknown) {
-            logger.warn('Error during Redis cleanup:', error);
-          }
-
-          return deletedKeys;
-        },
-      },
-      {
-        name: 'user_sessions',
-        description: 'Lösche User Sessions',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE s FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'user_chat_status',
-        description: 'Lösche Chat Status',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cs FROM user_chat_status cs JOIN users u ON cs.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // ========== MAIN DELETION PHASE ==========
-      // Level 1: Notifications & Temp Data
-      {
-        name: 'chat_notifications',
-        description: 'Lösche Chat Benachrichtigungen',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cn FROM chat_notifications cn JOIN users u ON cn.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'email_queue',
-        description: 'Lösche ausstehende E-Mails',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE FROM email_queue WHERE tenant_id = ? AND status = "pending"',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 2: Activity & Logs
-      {
-        name: 'activity_logs',
-        description: 'Lösche Activity Logs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.execute(
-            'DELETE al FROM activity_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return result.affectedRows;
-        },
-      },
-      {
-        name: 'api_logs',
-        description: 'Lösche API Logs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE al FROM api_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'security_logs',
-        description: 'Lösche Security Logs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sl FROM security_logs sl JOIN users u ON sl.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'admin_logs',
-        description: 'Lösche Admin Logs',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.execute('DELETE FROM admin_logs WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return result.affectedRows;
-        },
-      },
-
-      // Level 3: OAuth & API Keys
-      {
-        name: 'revoke_oauth_tokens',
-        description: 'Widerrufe OAuth Tokens',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          await conn.query(
-            'UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE tenant_id = ?',
-            [tenantId],
-          );
-
-          const result = await conn.query('DELETE FROM oauth_tokens WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'revoke_api_keys',
-        description: 'Deaktiviere API Keys',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          await conn.query(
-            'UPDATE api_keys SET active = 0, deactivated_at = NOW() WHERE tenant_id = ?',
-            [tenantId],
-          );
-
-          const result = await conn.query('DELETE FROM api_keys WHERE tenant_id = ?', [tenantId]);
-
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 4: 2FA Data
-      {
-        name: 'remove_2fa_secrets',
-        description: 'Lösche 2FA Secrets',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE s FROM user_2fa_secrets s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'remove_2fa_backup_codes',
-        description: 'Lösche 2FA Backup Codes',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE c FROM user_2fa_backup_codes c JOIN users u ON c.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 5: Messages & Communication
-      {
-        name: 'message_read_receipts',
-        description: 'Lösche Message Read Receipts',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE mr FROM message_read_receipts mr JOIN users u ON mr.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'message_status',
-        description: 'Lösche Message Status',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ms FROM message_status ms JOIN users u ON ms.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'messages',
-        description: 'Lösche Messages',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE m FROM messages m JOIN users u ON m.sender_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'conversation_participants',
-        description: 'Lösche Conversation Participants',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cp FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'conversations',
-        description: 'Lösche Conversations',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM conversations WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 6: Documents
-      {
-        name: 'document_read_status',
-        description: 'Lösche Document Read Status',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE dr FROM document_read_status dr JOIN users u ON dr.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'documents_with_files',
-        description: 'Lösche Documents und Dateien',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          // Erst Dateipfade sammeln
-          const files = await conn.query(
-            'SELECT id, file_path, filename FROM documents WHERE tenant_id = ?',
-            [tenantId],
-          );
-
-          const failedFiles = [];
-          const uploadDir = process.env.UPLOAD_DIR ?? '/uploads';
-
-          // Dateien löschen mit Error Handling
-          for (const file of files) {
-            if (!(file as unknown as FileRow).file_path) continue;
-
-            try {
-              const fullPath = path.join(uploadDir, (file as unknown as FileRow).file_path);
-
-              // Prüfe ob Datei existiert
-              try {
-                await fs.access(fullPath);
-                // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath is safely constructed from validated database values
-                await fs.unlink(fullPath);
-              } catch (error: unknown) {
-                if (error instanceof Error && 'code' in error && error.code !== 'ENOENT') {
-                  throw error;
-                }
-              }
-            } catch (error: unknown) {
-              failedFiles.push({
-                document_id: (file as unknown as FileRow).id,
-                path: (file as unknown as FileRow).file_path,
-                name: (file as unknown as FileRow).file_name,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
-          }
-
-          // Failed files loggen für manuelle Bereinigung
-          if (failedFiles.length > 0) {
-            await conn.query(
-              'INSERT INTO failed_file_deletions (queue_id, file_data) VALUES (?, ?)',
-              [_queueId, JSON.stringify(failedFiles)],
-            );
-
-            logger.warn(`Failed to delete ${failedFiles.length} files for tenant ${tenantId}`);
-          }
-
-          // Dann DB-Einträge löschen
-          const result = await conn.query('DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
-
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 7: KVP System
-      {
-        name: 'kvp_comments',
-        description: 'Lösche KVP Comments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE kc FROM kvp_comments kc JOIN users u ON kc.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'kvp_ratings',
-        description: 'Lösche KVP Ratings',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE kr FROM kvp_ratings kr JOIN users u ON kr.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'kvp_points',
-        description: 'Lösche KVP Points',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE kp FROM kvp_points kp JOIN users u ON kp.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'kvp_status_history',
-        description: 'Lösche KVP Status History',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ksh FROM kvp_status_history ksh JOIN users u ON ksh.changed_by = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'kvp_attachments',
-        description: 'Lösche KVP Attachments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ka FROM kvp_attachments ka JOIN users u ON ka.uploaded_by = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'kvp_suggestions',
-        description: 'Lösche KVP Suggestions',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM kvp_suggestions WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 8: Calendar
-      {
-        name: 'calendar_attendees',
-        description: 'Lösche Calendar Attendees',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ca FROM calendar_attendees ca JOIN users u ON ca.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'calendar_participants',
-        description: 'Lösche Calendar Participants',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cp FROM calendar_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'calendar_reminders',
-        description: 'Lösche Calendar Reminders',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cr FROM calendar_reminders cr JOIN users u ON cr.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'calendar_shares',
-        description: 'Lösche Calendar Shares',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE cs FROM calendar_shares cs JOIN users u1 ON cs.calendar_owner_id = u1.id JOIN users u2 ON cs.shared_with_id = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
-            [tenantId, tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'calendar_events',
-        description: 'Lösche Calendar Events',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM calendar_events WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 9: Shifts
-      {
-        name: 'shift_assignments',
-        description: 'Lösche Shift Assignments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sa FROM shift_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'shift_notes',
-        description: 'Lösche Shift Notes',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sn FROM shift_notes sn JOIN users u ON sn.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'weekly_shift_notes',
-        description: 'Lösche Weekly Shift Notes',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE wsn FROM weekly_shift_notes wsn JOIN departments d ON wsn.department_id = d.id WHERE d.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'shifts',
-        description: 'Lösche Shifts',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 10: Blackboard
-      {
-        name: 'blackboard_confirmations',
-        description: 'Lösche Blackboard Confirmations',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE bc FROM blackboard_confirmations bc JOIN users u ON bc.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'blackboard_attachments',
-        description: 'Lösche Blackboard Attachments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ba FROM blackboard_attachments ba JOIN users u ON ba.uploaded_by = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'blackboard_entries',
-        description: 'Lösche Blackboard Entries',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM blackboard_entries WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 11: Surveys
-      {
-        name: 'survey_comments',
-        description: 'Lösche Survey Comments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sc FROM survey_comments sc JOIN users u ON sc.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'survey_responses',
-        description: 'Lösche Survey Responses',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sr FROM survey_responses sr JOIN users u ON sr.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'survey_participants',
-        description: 'Lösche Survey Participants',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sp FROM survey_participants sp JOIN users u ON sp.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'survey_assignments',
-        description: 'Lösche Survey Assignments',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sa FROM survey_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'survey_questions',
-        description: 'Lösche Survey Questions',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE sq FROM survey_questions sq JOIN surveys s ON sq.survey_id = s.id WHERE s.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'surveys',
-        description: 'Lösche Surveys',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 12: User Settings & Preferences
-      {
-        name: 'user_settings',
-        description: 'Lösche User Settings',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE us FROM user_settings us JOIN users u ON us.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'notification_preferences',
-        description: 'Lösche Notification Preferences',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE np FROM notification_preferences np JOIN users u ON np.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 13: Scheduled Tasks & Jobs
-      {
-        name: 'scheduled_tasks',
-        description: 'Lösche Scheduled Tasks',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM scheduled_tasks WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'recurring_jobs',
-        description: 'Lösche Recurring Jobs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM recurring_jobs WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 14: Employee & Features
-      {
-        name: 'employee_availability',
-        description: 'Lösche Employee Availability',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ea FROM employee_availability ea JOIN users u ON ea.employee_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'feature_usage_logs',
-        description: 'Lösche Feature Usage Logs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ful FROM feature_usage_logs ful JOIN users u ON ful.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 15: Admin Permissions
-      {
-        name: 'admin_permission_logs',
-        description: 'Lösche Admin Permission Logs',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE apl FROM admin_permission_logs apl JOIN users u1 ON apl.admin_user_id = u1.id JOIN users u2 ON apl.changed_by = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
-            [tenantId, tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'admin_department_permissions',
-        description: 'Lösche Admin Department Permissions',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE adp FROM admin_department_permissions adp JOIN users u ON adp.admin_user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'admin_group_permissions',
-        description: 'Lösche Admin Group Permissions',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE agp FROM admin_group_permissions agp JOIN users u ON agp.admin_user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 16: Teams & User Relations
-      {
-        name: 'user_teams',
-        description: 'Lösche User Teams',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE ut FROM user_teams ut JOIN users u ON ut.user_id = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'department_group_members',
-        description: 'Lösche Department Group Members',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE dgm FROM department_group_members dgm JOIN users u ON dgm.added_by = u.id WHERE u.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'tenant_admins',
-        description: 'Lösche Tenant Admins',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM tenant_admins WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 17: Nullify Foreign Keys
-      {
-        name: 'nullify_foreign_keys',
-        description: 'Setze Foreign Keys auf NULL',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          // Teams
-          await conn.query('UPDATE teams SET team_lead_id = NULL WHERE tenant_id = ?', [tenantId]);
-          await conn.query('UPDATE teams SET created_by = NULL WHERE tenant_id = ?', [tenantId]);
-
-          // Departments
-          await conn.query('UPDATE departments SET manager_id = NULL WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          await conn.query('UPDATE departments SET created_by = NULL WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-
-          // Department Groups
-          await conn.query('UPDATE department_groups SET created_by = NULL WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-
-          // Tenant Features
-          await conn.query('UPDATE tenant_features SET activated_by = NULL WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-
-          // Tenants
-          await conn.query('UPDATE tenants SET created_by = NULL WHERE id = ?', [tenantId]);
-
-          // Tenant deletion_requested_by (wichtig vor User-Löschung!)
-          await conn.query('UPDATE tenants SET deletion_requested_by = NULL WHERE id = ?', [
-            tenantId,
-          ]);
-
-          // Tenant deletion queue - alle User-Referenzen auf NULL (wichtig vor User-Löschung!)
-          await conn.query(
-            'UPDATE tenant_deletion_queue SET second_approver_id = NULL, emergency_stopped_by = NULL WHERE tenant_id = ?',
-            [tenantId],
-          );
-
-          return 0; // Kein affected rows count nötig
-        },
-      },
-
-      // Level 18: Core Entities
-      {
-        name: 'department_groups',
-        description: 'Lösche Department Groups',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
-            'DELETE dg FROM department_groups dg JOIN departments d ON dg.department_id = d.id WHERE d.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'teams',
-        description: 'Lösche Teams',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'departments',
-        description: 'Lösche Departments',
-        critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM departments WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'deletion_approvals',
-        description: 'Lösche Deletion Approvals',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          // Lösche alle Approval-Einträge für diesen Tenant
-          const result = await conn.query(
-            'DELETE ta FROM tenant_deletion_approvals ta ' +
-              'JOIN tenant_deletion_queue tdq ON ta.queue_id = tdq.id ' +
-              'WHERE tdq.tenant_id = ?',
-            [tenantId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'deletion_queue_entries',
-        description: 'Lösche alte Deletion Queue Einträge',
-        critical: false,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
-          // Lösche alle Queue-Einträge außer dem aktuellen
-          const result = await conn.query(
-            'DELETE FROM tenant_deletion_queue WHERE tenant_id = ? AND id != ?',
-            [tenantId, queueId],
-          );
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'users',
-        description: 'Lösche Users',
-        critical: true,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
-          // Zuerst hole den User der die Queue erstellt hat
-          const queueResult = await conn.query(
-            'SELECT created_by FROM tenant_deletion_queue WHERE id = ?',
-            [queueId],
-          );
-
-          const queueRows = queueResult as unknown as QueueRow[];
-          if (queueRows.length === 0) {
-            logger.warn(`No created_by found for queue ${queueId}`);
-            // Lösche alle Users wenn kein created_by gefunden wurde
-            const result = await conn.query('DELETE FROM users WHERE tenant_id = ?', [tenantId]);
-            return (result as unknown as ResultSetHeader).affectedRows;
-          }
-
-          // Lösche alle Users AUSSER dem Queue-Ersteller
-          const result = await conn.query('DELETE FROM users WHERE tenant_id = ? AND id != ?', [
-            tenantId,
-            (queueResult as unknown as QueueRow[])[0].created_by,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 19: Tenant Features & Plans
-      {
-        name: 'tenant_features',
-        description: 'Lösche Tenant Features',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM tenant_features WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-      {
-        name: 'tenant_plans',
-        description: 'Lösche Tenant Plans',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM tenant_plans WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 20: Scheduled Tasks & Cronjobs
-      {
-        name: 'scheduled_tasks_cleanup',
-        description: 'Lösche geplante Tasks und Cronjobs',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          let deleted = 0;
-
-          // Scheduled Tasks
-          const tasksResult = await conn.execute(
-            'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
-            [tenantId],
-          );
-          deleted += tasksResult.affectedRows;
-
-          // Recurring Jobs
-          const jobsResult = await conn.execute('DELETE FROM recurring_jobs WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          deleted += jobsResult.affectedRows;
-
-          return deleted;
-        },
-      },
-
-      // Level 21: Webhooks
-      {
-        name: 'tenant_webhooks',
-        description: 'Lösche Tenant Webhooks',
-        critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query('DELETE FROM tenant_webhooks WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 22: Lösche den letzten User (Queue-Ersteller)
-      {
-        name: 'last_user',
-        description: 'Lösche letzten User',
-        critical: true,
-        handler: async (_tenantId: number, queueId: number, conn: ConnectionWrapper) => {
-          // Hole den User der die Queue erstellt hat
-          const queueResult = await conn.query(
-            'SELECT created_by FROM tenant_deletion_queue WHERE id = ?',
-            [queueId],
-          );
-
-          const queueRows = queueResult as unknown as QueueRow[];
-          if (queueRows.length === 0) {
-            logger.warn(`No created_by found for queue ${queueId}`);
-            return 0;
-          }
-
-          // Setze created_by auf NULL bevor wir den User löschen
-          await conn.query('UPDATE tenant_deletion_queue SET created_by = NULL WHERE id = ?', [
-            queueId,
-          ]);
-
-          // Jetzt können wir den Queue-Ersteller sicher löschen
-          const result = await conn.query('DELETE FROM users WHERE id = ?', [
-            (queueResult as unknown as QueueRow[])[0].created_by,
-          ]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // Level 23: Final - Tenant selbst
-      {
-        name: 'tenant',
-        description: 'Lösche Tenant',
-        critical: true,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
-          // Setze tenant_id auf NULL in tenant_deletion_queue bevor wir den Tenant löschen
-          await conn.query('UPDATE tenant_deletion_queue SET tenant_id = NULL WHERE id = ?', [
-            queueId,
-          ]);
-
-          // Jetzt können wir den Tenant sicher löschen
-          const result = await conn.query('DELETE FROM tenants WHERE id = ?', [tenantId]);
-          return (result as unknown as ResultSetHeader).affectedRows;
-        },
-      },
-
-      // ========== POST-DELETION PHASE ==========
-      {
-        name: 'release_subdomain',
-        description: 'Subdomain wieder verfügbar machen',
-        critical: false,
-        handler: async (
-          tenantId: number,
-          _queueId: number,
-          _conn: ConnectionWrapper,
-        ): Promise<number> => {
-          // Tenant ist bereits gelöscht, wir nutzen nur die ID
-          // Subdomain-Release sollte eigentlich vorher in einem separaten Schritt passieren
-          logger.info(`Tenant ${tenantId} deletion completed - subdomain can be reused`);
-          return await Promise.resolve(0);
-        },
-      },
-      {
-        name: 'cleanup_temp_files',
-        description: 'Bereinige temporäre Dateien',
-        critical: false,
-        handler: async (tenantId: number) => {
-          const tempDirs = [
-            `/temp/tenant_${tenantId}`,
-            `/exports/tenant_${tenantId}`,
-            `/uploads/tenant_${tenantId}`,
-          ];
-
-          let cleanedDirs = 0;
-          for (const dir of tempDirs) {
-            try {
-              await fs.rm(dir, { recursive: true, force: true });
-              cleanedDirs++;
-            } catch (error: unknown) {
-              logger.warn(`Failed to clean directory ${dir}:`, error);
-            }
-          }
-
-          return cleanedDirs;
-        },
-      },
-      {
-        name: 'external_storage_cleanup',
-        description: 'Bereinige S3/CDN',
-        critical: false,
-        handler: async (_tenantId: number): Promise<number> => {
-          await Promise.resolve(); // Satisfy require-await rule
-          if (process.env.USE_S3 === 'true') {
-            logger.warn('S3 cleanup disabled - AWS SDK not installed');
-            // AWS SDK not currently installed
-            // try {
-            //   const s3 = new AWS.S3({
-            //     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            //     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            //     region: process.env.AWS_REGION
-            //   });
-            //
-            //   const prefix = `tenants/${tenantId}/`;
-            //
-            //   // Liste alle Objekte
-            //   const objects = await s3.listObjectsV2({
-            //     Bucket: process.env.S3_BUCKET!,
-            //     Prefix: prefix
-            //   }).promise();
-            //
-            //   // Lösche alle Objekte
-            //   if (objects.Contents && objects.Contents.length > 0) {
-            //     await s3.deleteObjects({
-            //       Bucket: process.env.S3_BUCKET!,
-            //       Delete: {
-            //         Objects: objects.Contents.map(obj => ({ Key: obj.Key! }))
-            //       }
-            //     }).promise();
-            //
-            //     return objects.Contents.length;
-            //   }
-            // } catch (error: unknown) {
-            //   logger.error('S3 cleanup failed:', error);
-            // }
-          }
-
-          return 0;
-        },
-      },
-    ];
-  }
-
-  /**
-   * Request tenant deletion (requires approval from second root user)
-   * @param tenantId - The tenant ID
-   * @param requestedBy - The requestedBy parameter
-   * @param reason - The reason parameter
-   * @param ipAddress - The ipAddress parameter
-   */
-  async requestTenantDeletion(
-    tenantId: number,
-    requestedBy: number,
-    reason?: string,
-    ipAddress?: string,
-  ): Promise<number> {
-    return await transaction(async (connection) => {
-      // 1. Check if tenant exists and is active
-      interface TenantRow extends RowDataPacket {
-        id: number;
-        deletion_status: string | null;
-        company_name: string;
-      }
-      const [tenantResult] = await connection.query<TenantRow[]>(
-        'SELECT id, deletion_status, company_name FROM tenants WHERE id = ?',
-        [tenantId],
-      );
-
-      if (tenantResult.length === 0) {
-        throw new Error('Tenant not found');
-      }
-      const tenant = tenantResult[0];
-
-      // If deletion_status is null/undefined, treat as 'active'
-      const currentStatus = tenant.deletion_status ?? 'active';
-
-      if (currentStatus !== 'active') {
-        throw new Error(`Tenant is already ${currentStatus}`);
-      }
-
-      // 2. Create audit trail
-      await this.createDeletionAuditTrail(
-        tenantId,
-        requestedBy,
-        reason,
-        ipAddress,
-        wrapConnection(connection),
-      );
-
-      // 3. Mark tenant as marked_for_deletion
-      await connection.query(
-        'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW(), deletion_requested_by = ? WHERE id = ?',
-        ['marked_for_deletion', requestedBy, tenantId],
-      );
-
-      // 4. Calculate scheduled deletion date (30 days grace period)
-      // TESTPHASE: Grace Period kann über Umgebungsvariable gesetzt werden
-      const gracePeriodDays =
-        (
-          process.env.DELETION_GRACE_PERIOD_DAYS != null &&
-          process.env.DELETION_GRACE_PERIOD_DAYS !== ''
-        ) ?
-          Number.parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
-        : 30;
-      const scheduledDate = new Date();
-      scheduledDate.setDate(scheduledDate.getDate() + gracePeriodDays);
-
-      // 5. Create queue entry with pending approval status and 24h cooling-off
-      // TESTPHASE: Cooling-off kann über Umgebungsvariable gesetzt werden
-      const coolingOffHours =
-        (
-          process.env.DELETION_COOLING_OFF_HOURS != null &&
-          process.env.DELETION_COOLING_OFF_HOURS !== ''
-        ) ?
-          Number.parseInt(process.env.DELETION_COOLING_OFF_HOURS)
-        : process.env.NODE_ENV === 'development' ? 0
-        : 24;
-
-      const [result] = await connection.query<ResultSetHeader>(
-        `INSERT INTO tenant_deletion_queue
-         (tenant_id, created_by, total_steps, grace_period_days, scheduled_deletion_date,
-          status, approval_status, approval_required, approval_requested_at, cooling_off_hours)
-         VALUES (?, ?, ?, ?, ?, 'pending_approval', 'pending', TRUE, NOW(), ?)`,
-        [tenantId, requestedBy, this.steps.length, gracePeriodDays, scheduledDate, coolingOffHours],
-      );
-
-      // 6. Send deletion warning emails (non-blocking)
-      this.sendDeletionWarningEmails(tenantId, scheduledDate).catch((error: unknown) => {
-        logger.error('Failed to send deletion warning emails:', error);
-      });
-
-      // 7. Notify other root admins for approval (non-blocking)
-      this.notifyRootAdminsForApproval(
-        tenantId,
-        requestedBy,
-        tenant.company_name,
-        result.insertId,
-      ).catch((error: unknown) => {
-        logger.error('Failed to notify root admins:', error);
-      });
-
-      logger.warn(
-        `Tenant ${tenantId} deletion requested by user ${requestedBy}. Awaiting approval.`,
-      );
-
-      return result.insertId;
-    });
-  }
-
-  /**
-   * Approve tenant deletion request
-   * @param queueId - The queueId parameter
-   * @param approverId - The approverId parameter
-   * @param comment - The comment parameter
-   */
-  async approveDeletion(queueId: number, approverId: number, comment?: string): Promise<void> {
-    await transaction(async (connection) => {
-      // Get queue item
-      interface QueueRowLocal extends RowDataPacket {
-        id: number;
-        tenant_id: number;
-        created_by: number;
-        approval_status: string;
-        approval_requested_at: Date;
-        cooling_off_hours?: number;
-        scheduled_deletion_date?: Date;
-      }
-      const [queueResults] = await connection.query<QueueRowLocal[]>(
-        'SELECT * FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
-
-      if (queueResults.length === 0) {
-        throw new Error('Deletion request not found');
-      }
-
-      const queue = queueResults[0];
-
-      if (queue.approval_status !== 'pending') {
-        throw new Error('Deletion request is not pending approval');
-      }
-
-      if (queue.created_by === approverId) {
-        throw new Error('Cannot approve own deletion request');
-      }
-
-      // Check if cooling-off period has passed (24 hours)
-      const requestedAt = new Date(queue.approval_requested_at);
-      const hoursSinceRequest = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
-      const coolingOffHours = queue.cooling_off_hours ?? 24;
-
-      if (hoursSinceRequest < coolingOffHours) {
-        const hoursRemaining = Math.ceil(coolingOffHours - hoursSinceRequest);
-        throw new Error(
-          `Cooling-off period not met. Please wait ${hoursRemaining} more hours before approving.`,
-        );
-      }
-
-      // Update queue status to approved and queued
-      await connection.query(
-        `UPDATE tenant_deletion_queue
-         SET second_approver_id = ?, approved_at = NOW(),
-             approval_status = 'approved', status = 'queued'
-         WHERE id = ?`,
-        [approverId, queueId],
-      );
-
-      // Log approval
-      await connection.query(
-        `INSERT INTO tenant_deletion_approvals
-         (queue_id, approver_id, action, comment, created_at)
-         VALUES (?, ?, 'approved', ?, NOW())`,
-        [queueId, approverId, comment],
-      );
-
-      // Update tenant status to suspended (immediate effect)
-      await connection.query(UPDATE_TENANT_STATUS_QUERY, [
-        TENANT_STATUS_SUSPENDED,
-        queue.tenant_id,
-      ]);
-
-      logger.info(`Deletion request ${queueId} approved by user ${approverId}`);
-
-      // Send notification to requester
-      await this.notifyApprovalStatus(queue.tenant_id, queue.created_by, 'approved', approverId);
-
-      // Send alert about approval
-      await alertingService
-        .sendSlackAlert({
-          channel: process.env.SLACK_AUDIT_CHANNEL ?? '#audit',
-          severity: 'info',
-          title: '✅ Tenant Deletion Approved',
-          message: 'A tenant deletion request has been approved',
-          fields: {
-            'Queue ID': queueId,
-            'Tenant ID': queue.tenant_id,
-            'Approved By': `User ${approverId}`,
-            'Scheduled Date':
-              queue.scheduled_deletion_date ?
-                new Date(queue.scheduled_deletion_date).toISOString()
-              : 'Not scheduled',
-          },
-        })
-        .catch((error: unknown) => logger.error('Failed to send approval alert:', error));
-    });
-  }
-
-  /**
-   * Reject tenant deletion request
-   * @param queueId - The queueId parameter
-   * @param approverId - The approverId parameter
-   * @param reason - The reason parameter
-   */
-  async rejectDeletion(queueId: number, approverId: number, reason: string): Promise<void> {
-    await transaction(async (connection) => {
-      interface QueueRowLocal extends RowDataPacket {
-        id: number;
-        tenant_id: number;
-        created_by: number;
-        approval_status: string;
-        approval_requested_at: Date;
-        cooling_off_hours?: number;
-        scheduled_deletion_date?: Date;
-      }
-
-      const [queueResults] = await connection.query<QueueRowLocal[]>(
-        'SELECT * FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
-
-      if (queueResults.length === 0) {
-        throw new Error('Deletion request not found');
-      }
-
-      const queue = queueResults[0];
-
-      if (queue.approval_status !== 'pending') {
-        throw new Error('Deletion request is not pending approval');
-      }
-
-      // Update queue status to rejected
-      await connection.query(
-        `UPDATE tenant_deletion_queue
-         SET approval_status = 'rejected', status = 'rejected',
-             error_message = ?
-         WHERE id = ?`,
-        [reason, queueId],
-      );
-
-      // Log rejection
-      await connection.query(
-        `INSERT INTO tenant_deletion_approvals
-         (queue_id, approver_id, action, comment, created_at)
-         VALUES (?, ?, 'rejected', ?, NOW())`,
-        [queueId, approverId, reason],
-      );
-
-      // Revert tenant status
-      await connection.query(
-        'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NULL, deletion_requested_by = NULL WHERE id = ?',
-        ['active', queue.tenant_id],
-      );
-
-      logger.info(`Deletion request ${queueId} rejected by user ${approverId}`);
-
-      // Send notification to requester
-      await this.notifyApprovalStatus(
-        queue.tenant_id,
-        queue.created_by,
-        'rejected',
-        approverId,
-        reason,
-      );
-
-      // Send alert about rejection
-      await alertingService
-        .sendSlackAlert({
-          channel: process.env.SLACK_AUDIT_CHANNEL ?? '#audit',
-          severity: 'info',
-          title: '❌ Tenant Deletion Rejected',
-          message: 'A tenant deletion request has been rejected',
-          fields: {
-            'Queue ID': queueId,
-            'Tenant ID': queue.tenant_id,
-            'Rejected By': `User ${approverId}`,
-            Reason: reason,
-          },
-        })
-        .catch((error: unknown) => logger.error('Failed to send rejection alert:', error));
-    });
-  }
-
-  /**
-   * Emergency stop for a deletion in progress
-   * @param queueId - The queueId parameter
-   * @param stoppedBy - The stoppedBy parameter
-   */
-  async emergencyStop(queueId: number, stoppedBy: number): Promise<void> {
-    try {
-      // Update the queue status
-      await execute(
-        `UPDATE tenant_deletion_queue
-         SET status = 'cancelled',
-             emergency_stop = true,
-             emergency_stopped_by = ?,
-             emergency_stopped_at = NOW()
-         WHERE id = ? AND status IN ('processing', 'queued')`,
-        [stoppedBy, queueId],
-      );
-
-      // Get tenant info for notifications
-      interface QueueItemWithTenant extends RowDataPacket {
-        id: number;
-        tenant_id: number;
-        company_name: string;
-      }
-      const [queueItemResult] = await query<QueueItemWithTenant[]>(
-        `SELECT q.*, t.company_name
-         FROM tenant_deletion_queue q
-         JOIN tenants t ON t.id = q.tenant_id
-         WHERE q.id = ?`,
-        [queueId],
-      );
-
-      if (queueItemResult.length > 0) {
-        const queueItem = queueItemResult[0];
-        // Notify about emergency stop
-        await this.notifyEmergencyStop(
-          (queueItem as unknown as QueueRow).tenant_id,
-          queueId,
-          stoppedBy,
-        );
-
-        // Log the emergency stop
-        logger.warn(
-          `EMERGENCY STOP activated for tenant ${String((queueItem as unknown as QueueRow).tenant_id)} deletion by user ${stoppedBy}`,
-        );
-      }
-    } catch (error: unknown) {
-      logger.error('Error in emergency stop:', error);
-      throw error;
+  private validateTenantId(tenantId: number): void {
+    if (tenantId <= 0 || !Number.isInteger(tenantId)) {
+      throw new Error(`INVALID TENANT_ID: ${tenantId} - must be positive integer`);
     }
   }
 
   /**
-   * Process deletion queue (called by worker)
+   * Get all tables with tenant_id column
+   * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
-  async processQueue(): Promise<void> {
-    try {
-      // Get next queued item where grace period has expired and cooling-off is complete
-      const [queueItems] = await query<RowDataPacket[]>(
-        `SELECT * FROM tenant_deletion_queue
-         WHERE status = 'queued'
-         AND approval_status = 'approved'
-         AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
-         AND (approved_at IS NULL OR DATE_ADD(approved_at, INTERVAL cooling_off_hours HOUR) <= NOW())
-         ORDER BY created_at ASC
-         LIMIT 1`,
-      );
-
-      if (queueItems.length === 0) {
-        return; // Nothing to process
-      }
-
-      await this.processTenantDeletion(queueItems[0].id as number);
-    } catch (error: unknown) {
-      logger.error('Error processing deletion queue:', error);
-    }
+  private async getTablesWithTenantId(conn: ConnectionWrapper): Promise<TableNameRow[]> {
+    return await conn.query<TableNameRow[]>(`
+      SELECT DISTINCT table_name AS "TABLE_NAME"
+      FROM information_schema.columns
+      WHERE column_name = 'tenant_id'
+      AND table_schema = 'public'
+      AND table_name NOT LIKE 'v_%'
+      ORDER BY table_name
+    `);
   }
 
   /**
-   * Process single tenant deletion
-   * @param queueId - The queueId parameter
+   * Get user-related tables (with user_id FK)
+   * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
-  private async processTenantDeletion(queueId: number): Promise<void> {
-    let tenantId = 0;
-
-    try {
-      // Get tenant info first
-      const [queueInfo] = await query<RowDataPacket[]>(
-        'SELECT * FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
-
-      if (queueInfo.length === 0) {
-        throw new Error(`Queue item ${queueId} not found`);
-      }
-
-      tenantId = queueInfo[0].tenant_id as number;
-
-      await transaction(async (connection) => {
-        // 1. Mark as processing
-        await connection.query(
-          'UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?',
-          ['processing', queueId],
-        );
-
-        // 2. Update tenant status to suspended (immediate logout)
-        await connection.query(UPDATE_TENANT_STATUS_QUERY, [TENANT_STATUS_SUSPENDED, tenantId]);
-
-        // 3. Log out all users immediately
-        await connection.query(
-          'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
-          [tenantId],
-        );
-      });
-
-      // 5. Now mark as deleting
-      await execute(UPDATE_TENANT_STATUS_QUERY, ['deleting', tenantId]);
-
-      // 6. Process each step
-      let completedSteps = 0;
-
-      for (const step of this.steps) {
-        const startTime = Date.now();
-
-        // Check for emergency stop before each step
-        interface EmergencyCheckRow extends RowDataPacket {
-          emergency_stop: boolean;
-        }
-        const [emergencyCheckResult] = await query<EmergencyCheckRow[]>(
-          'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
-          [queueId],
-        );
-
-        if (emergencyCheckResult.length > 0 && emergencyCheckResult[0].emergency_stop) {
-          logger.warn(`Emergency stop detected for queue ${queueId}`);
-          await this.handleEmergencyStop(queueId, tenantId);
-          return;
-        }
-
-        try {
-          logger.info(`Processing deletion step: ${step.name} for tenant ${tenantId}`);
-
-          // Update current step
-          await execute(
-            'UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?',
-            [step.description, Math.round((completedSteps / this.steps.length) * 100), queueId],
-          );
-
-          // Execute step in new connection to isolate transactions
-          let recordsDeleted = 0;
-
-          try {
-            recordsDeleted = await transaction(async (stepConnection) => {
-              logger.debug(`Executing step ${step.name} for tenant ${tenantId}`);
-
-              // Create a wrapper using the dbWrapper utility
-              const connWrapper = wrapConnection(stepConnection);
-
-              return await step.handler(tenantId, queueId, connWrapper);
-            });
-          } catch (stepError: unknown) {
-            logger.error(`Step ${step.name} failed for tenant ${tenantId}:`, stepError);
-            throw stepError;
-          }
-
-          // Log success
-          await execute(
-            `INSERT INTO tenant_deletion_log
-             (queue_id, step_name, table_name, records_deleted, duration_ms, status)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, 'success'],
-          );
-
-          completedSteps++;
-        } catch (error: unknown) {
-          logger.error(`Error in deletion step ${step.name}:`, error);
-
-          // Log failure
-          await execute(
-            `INSERT INTO tenant_deletion_log
-             (queue_id, step_name, table_name, duration_ms, status, error_message)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              queueId,
-              step.name,
-              step.name,
-              Date.now() - startTime,
-              'failed',
-              error instanceof Error ? error.message : String(error),
-            ],
-          );
-
-          if (step.critical) {
-            throw new Error(
-              `Critical step ${step.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          }
-        }
-      }
-
-      // 7. Mark as completed
-      await execute(
-        'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?',
-        ['completed', queueId],
-      );
-
-      logger.info(`Tenant ${tenantId} deletion completed successfully`);
-    } catch (error: unknown) {
-      logger.error('Tenant deletion failed:', error);
-
-      // Mark as failed
-      await execute('UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?', [
-        'failed',
-        error instanceof Error ? error.message : String(error),
-        queueId,
-      ]);
-
-      // Revert tenant status
-      const [queueItemRows] = await query<RowDataPacket[]>(
-        'SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
-
-      if (queueItemRows.length > 0) {
-        await execute(UPDATE_TENANT_STATUS_QUERY, [
-          'active',
-          (queueItemRows[0] as unknown as QueueRow).tenant_id,
-        ]);
-      }
-
-      // Send failure alert
-      await this.sendDeletionFailureAlert(
-        queueId,
-        error instanceof Error ? error.message : String(error),
-      );
-
-      // Send critical alert to all channels
-      await alertingService.sendCriticalAlert(
-        '🚨 Tenant Deletion Failed',
-        `Critical failure during tenant deletion process`,
-        {
-          'Queue ID': queueId,
-          'Tenant ID': tenantId,
-          Error: error instanceof Error ? error.message : String(error),
-          Environment: process.env.NODE_ENV ?? 'production',
-        },
-      );
-
-      throw error;
-    }
+  private async getUserRelatedTables(conn: ConnectionWrapper): Promise<TableNameRow[]> {
+    // PostgreSQL: Generate sequential $1, $2, $3... for each table name
+    const placeholders = this.CRITICAL_TABLES.map((_: string, idx: number) => `$${idx + 1}`).join(
+      ',',
+    );
+    return await conn.query<TableNameRow[]>(
+      `SELECT DISTINCT table_name AS "TABLE_NAME"
+      FROM information_schema.columns
+      WHERE column_name = 'user_id'
+      AND table_schema = 'public'
+      ${placeholders !== '' ? `AND table_name NOT IN (${placeholders})` : ''}`,
+      this.CRITICAL_TABLES,
+    );
   }
 
   /**
-   * Trigger emergency stop for deletion
-   * @param queueId - The queueId parameter
-   * @param stoppedBy - The stoppedBy parameter
+   * Check for legal holds
    */
-  async triggerEmergencyStop(queueId: number, stoppedBy: number): Promise<void> {
-    // Set emergency stop flag
-    await execute(
-      `UPDATE tenant_deletion_queue
-       SET emergency_stop = TRUE, emergency_stopped_at = NOW(), emergency_stopped_by = ?
-       WHERE id = ? AND status = 'processing'`,
-      [stoppedBy, queueId],
-    );
-
-    // Log emergency stop
-    await execute(
-      `INSERT INTO tenant_deletion_log
-       (queue_id, step_name, status, error_message)
-       VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
-      [queueId, `Emergency stop triggered by user ${stoppedBy}`],
-    );
-
-    logger.warn(`Emergency stop triggered for deletion queue ${queueId} by user ${stoppedBy}`);
-
-    // Send alert about emergency stop
-    await alertingService
-      .sendSlackAlert({
-        channel: process.env.SLACK_ALERTS_CHANNEL ?? '#alerts',
-        severity: 'warning',
-        title: '🛑 Emergency Stop Triggered',
-        message: 'Tenant deletion was halted by emergency stop',
-        fields: {
-          'Queue ID': queueId,
-          'Stopped By': `User ${stoppedBy}`,
-          Action: 'Deletion process will be halted at next checkpoint',
-        },
-      })
-      .catch((error: unknown) => logger.error('Failed to send emergency stop alert:', error));
-  }
-
-  /**
-   * Handle emergency stop during deletion
-   * @param queueId - The queueId parameter
-   * @param tenantId - The tenant ID
-   */
-  private async handleEmergencyStop(queueId: number, tenantId: number): Promise<void> {
-    logger.warn(`Handling emergency stop for queue ${queueId}`);
-
-    // Update queue status
-    await execute(
-      `UPDATE tenant_deletion_queue
-       SET status = 'emergency_stopped',
-           error_message = 'Emergency stop requested by administrator'
-       WHERE id = ?`,
-      [queueId],
-    );
-
-    // Revert tenant status to active
-    await execute(UPDATE_TENANT_STATUS_QUERY, ['active', tenantId]);
-
-    // Log final status
-    await execute(
-      `INSERT INTO tenant_deletion_log
-       (queue_id, step_name, status, error_message)
-       VALUES (?, 'EMERGENCY_STOP_COMPLETED', 'success', 'Deletion halted and tenant restored to active')`,
-      [queueId],
-    );
-
-    // Notify admins
-    interface StoppedByRow extends RowDataPacket {
-      emergency_stopped_by: number | null;
-    }
-    const [stoppedByUserResult] = await query<StoppedByRow[]>(
-      'SELECT emergency_stopped_by FROM tenant_deletion_queue WHERE id = ?',
-      [queueId],
-    );
-
-    if (
-      stoppedByUserResult.length > 0 &&
-      stoppedByUserResult[0].emergency_stopped_by != null &&
-      stoppedByUserResult[0].emergency_stopped_by !== 0
-    ) {
-      await this.notifyEmergencyStop(
-        tenantId,
-        queueId,
-        stoppedByUserResult[0].emergency_stopped_by,
-      );
-    }
-  }
-
-  /**
-   * Get deletion status
-   * @param tenantId - The tenant ID
-   */
-  async getDeletionStatus(tenantId: number): Promise<DeletionStatusRow | null> {
-    const [result] = await query<DeletionStatusRow[]>(
-      `SELECT
-        q.*,
-        t.deletion_status,
-        t.deletion_requested_at,
-        (SELECT COUNT(*) FROM tenant_deletion_log WHERE queue_id = q.id) as completed_steps,
-        (SELECT COUNT(*) FROM tenant_deletion_log WHERE queue_id = q.id AND status = 'failed') as failed_steps
-       FROM tenant_deletion_queue q
-       JOIN tenants t ON t.id = q.tenant_id
-       WHERE q.tenant_id = ?
-       ORDER BY q.created_at DESC
-       LIMIT 1`,
+  private async checkLegalHolds(tenantId: number, conn: ConnectionWrapper): Promise<void> {
+    const holds = await conn.query<LegalHoldRow[]>(
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
 
-    return result[0] ?? null;
-  }
-
-  /**
-   * Retry failed deletion
-   * @param queueId - The queueId parameter
-   */
-  async retryDeletion(queueId: number): Promise<void> {
-    const [queueItems] = await query<RowDataPacket[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE id = ? AND status = ?',
-      [queueId, 'failed'],
-    );
-
-    if (queueItems.length === 0) {
-      throw new Error('Queue item not found or not in failed state');
-    }
-
-    await execute(
-      'UPDATE tenant_deletion_queue SET status = ?, retry_count = retry_count + 1, error_message = NULL WHERE id = ?',
-      ['queued', queueId],
-    );
-  }
-
-  /**
-   * Cancel queued deletion (within grace period)
-   * @param tenantId - The tenant ID
-   * @param cancelledBy - The cancelledBy parameter
-   */
-  async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
-    logger.info('[TenantDeletionService.cancelDeletion] Starting cancellation', {
-      tenantId,
-      cancelledBy,
-    });
-
-    // First check all deletion queue items for this tenant
-    const [allQueueItems] = await query<RowDataPacket[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?',
-      [tenantId],
-    );
-
-    logger.info('[TenantDeletionService.cancelDeletion] All queue items for tenant:', {
-      tenantId,
-      count: allQueueItems.length,
-      items: allQueueItems.map((item) => ({
-        id: (item as QueueRow).id,
-        status: (item as QueueRow).status,
-        approval_status: (item as QueueRow).approval_status,
-        scheduled_deletion_date: (item as QueueRow).scheduled_deletion_date,
-        created_at: (item as QueueRow).created_at,
-      })),
-    });
-
-    // Now check for cancellable items - any that are not already completed, cancelled, or failed
-    // Also include items with empty status (initial state)
-    const [queueItems] = await query<RowDataPacket[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ? AND (status = ? OR status NOT IN (?, ?, ?))',
-      [tenantId, '', 'cancelled', 'completed', 'failed'],
-    );
-
-    logger.info('[TenantDeletionService.cancelDeletion] Cancellable queue items:', {
-      tenantId,
-      count: queueItems.length,
-      statusNotIn: ['cancelled', 'completed', 'failed'],
-      items: queueItems.map((item) => ({
-        id: (item as QueueRow).id,
-        status: (item as QueueRow).status,
-        approval_status: (item as QueueRow).approval_status,
-        scheduled_deletion_date: (item as QueueRow).scheduled_deletion_date,
-      })),
-    });
-
-    if (queueItems.length === 0) {
-      logger.error('[TenantDeletionService.cancelDeletion] No cancellable deletion found', {
-        tenantId,
-        allItemsCount: allQueueItems.length,
-      });
-      throw new Error('No cancellable deletion found for this tenant');
-    }
-
-    await transaction(async (connection) => {
-      // Update tenant status back to active
-      await connection.query(
-        'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NULL, deletion_requested_by = NULL WHERE id = ?',
-        ['active', tenantId],
-      );
-
-      // Cancel queue item
-      await connection.query(
-        'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW() WHERE id = ?',
-        ['cancelled', (queueItems[0] as unknown as QueueRow).id],
-      );
-
-      // Log cancellation
-      await connection.query(
-        `INSERT INTO tenant_deletion_log
-         (queue_id, step_name, status, error_message)
-         VALUES (?, ?, ?, ?)`,
-        [
-          (queueItems[0] as unknown as QueueRow).id,
-          'deletion_cancelled',
-          'success',
-          `Cancelled by user ${cancelledBy}`,
-        ],
-      );
-
-      logger.info(`Tenant ${tenantId} deletion cancelled by user ${cancelledBy}`);
-    });
-  }
-
-  // ========== HELPER METHODS ==========
-
-  /**
-   *
-   * @param tenantId - The tenant ID
-   */
-  private async createTenantDataExport(tenantId: number): Promise<string> {
-    const exportDir = `/exports/tenant_${tenantId}`;
-    const timestamp = Date.now();
-    const exportFile = `${exportDir}/tenant_${tenantId}_export_${timestamp}.tar.gz`;
-
-    // Create export directory
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- exportDir is safely constructed from tenantId (number)
-    await fs.mkdir(exportDir, { recursive: true });
-
-    // Create JSON export directory instead of zip for now
-    const jsonExportDir = `${exportDir}/json_export`;
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- jsonExportDir is safely constructed from tenantId (number)
-    await fs.mkdir(jsonExportDir, { recursive: true });
-
-    // Export all tenant data as JSON files
-    const tables = [
-      'users',
-      'departments',
-      'teams',
-      'documents',
-      'messages',
-      'conversations',
-      'calendar_events',
-      'shifts',
-      'blackboard_entries',
-      'surveys',
-      'kvp_suggestions',
-    ];
-
-    for (const table of tables) {
-      // Validate table name against whitelist to prevent SQL injection
-      if (!tables.includes(table)) {
-        throw new Error(`Invalid table name: ${table}`);
+    if (holds.length > 0) {
+      const firstHold = holds[0];
+      if (!firstHold) {
+        throw new Error('Tenant has active legal hold: No reason specified');
       }
-
-      // Use backticks for table name (MySQL identifier quote)
-      const [data] = await query<RowDataPacket[]>(
-        `SELECT * FROM \`${table}\` WHERE tenant_id = ?`,
-        [tenantId],
-      );
-      if (data.length > 0) {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safely constructed from tenantId and known table names
-        await fs.writeFile(`${jsonExportDir}/${table}.json`, JSON.stringify(data, null, 2));
-      }
+      throw new Error(`Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`);
     }
-
-    // Create a simple tar archive using system command
-    await execAsync(
-      `cd ${exportDir} && tar -czf tenant_${tenantId}_export_${timestamp}.tar.gz json_export/`,
-    );
-
-    return exportFile;
   }
 
   /**
-   *
-   * @param filePath - The filePath parameter
+   * Sanitize company name for use in file/folder names
    */
-  private async calculateFileChecksum(filePath: string): Promise<string> {
-    // SICHER: filePath kommt von createTenantDataExport() oder ähnlichen internen Funktionen
-    // Niemals direkt von User-Input. Pfad wird programmatisch erstellt.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    const fileBuffer = await fs.readFile(filePath);
-    const hashSum = crypto.createHash('sha256');
-    hashSum.update(fileBuffer);
-    return hashSum.digest('hex');
+  private sanitizeCompanyName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9äöüß]/gi, '_') // Replace special chars with underscore
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_|_$/g, '') // Trim underscores
+      .substring(0, 50); // Limit length
   }
 
   /**
-   *
-   * @param tenantId - The tenant ID
-   * @param requestedBy - The requestedBy parameter
-   * @param reason - The reason parameter
-   * @param ipAddress - The ipAddress parameter
-   * @param connection - The connection parameter
+   * Generate SQL INSERT statement for a single row
    */
-  private async createDeletionAuditTrail(
+  private generateInsertStatement(tableName: string, row: Record<string, unknown>): string {
+    const entries = Object.entries(row);
+    const columns = entries.map(([col]: [string, unknown]) => `"${col}"`);
+    const values = entries.map(([, val]: [string, unknown]) => this.formatSqlValue(val));
+    return `INSERT INTO "${tableName}" (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+  }
+
+  /**
+   * Format a value for SQL INSERT statement
+   */
+  private formatSqlValue(val: unknown): string {
+    if (val === null) return 'NULL';
+    if (typeof val === 'number') return String(val);
+    if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+    if (val instanceof Date) return `'${val.toISOString()}'`;
+    if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+    // Objects/Arrays → JSON string
+    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+    return 'NULL';
+  }
+
+  /**
+   * Create SQL backup file with INSERT statements for all tenant data
+   */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  private async createSqlBackup(
     tenantId: number,
-    requestedBy: number,
-    reason?: string,
-    ipAddress?: string,
-    connection?: ConnectionWrapper,
+    companyName: string,
+    sqlBackupPath: string,
+    conn: ConnectionWrapper,
   ): Promise<void> {
-    if (connection) {
-      // If connection is provided, use it directly
-      const [tenantResults] = await connection.query('SELECT * FROM tenants WHERE id = ?', [
-        tenantId,
-      ]);
-      const tenantInfo = tenantResults[0] as RowDataPacket | undefined;
+    const tables = await this.getTablesWithTenantId(conn);
+    const tableNames = tables.map((t: TableNameRow) => t.TABLE_NAME);
 
-      const [userResults] = await connection.query(
-        'SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?',
-        [tenantId],
-      );
-      const firstUserResult = userResults[0] as { user_count: number } | undefined;
-      const userCount = firstUserResult?.user_count ?? 0;
+    let sqlContent = `-- Tenant Backup: ${companyName} (ID: ${tenantId})\n`;
+    sqlContent += `-- Created: ${new Date().toISOString()}\n`;
+    sqlContent += `-- Tables: ${tableNames.length}\n\n`;
 
-      await connection.query(
-        `INSERT INTO deletion_audit_trail
-         (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
+    for (const tableName of tableNames) {
+      try {
+        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
           tenantId,
-          tenantInfo !== undefined ?
-            ((tenantInfo.company_name as string | undefined) ?? 'Unknown')
-          : 'Unknown',
-          userCount,
-          requestedBy,
-          ipAddress ?? 'unknown',
-          reason ?? 'No reason provided',
-          JSON.stringify({
-            subdomain:
-              tenantInfo !== undefined ?
-                ((tenantInfo.subdomain as string | undefined) ?? null)
-              : null,
-            created_at:
-              tenantInfo !== undefined ?
-                ((tenantInfo.created_at as Date | undefined) ?? null)
-              : null,
-            plan:
-              tenantInfo !== undefined ?
-                ((tenantInfo.current_plan_id as number | undefined) ?? null)
-              : null,
-            deletion_status:
-              tenantInfo !== undefined ?
-                ((tenantInfo.deletion_status as string | undefined) ?? null)
-              : null,
-          }),
-        ],
-      );
-    } else {
-      // If no connection provided, use transaction
-      await transaction(async (conn) => {
-        const [tenantResults] = await conn.query<RowDataPacket[]>(
-          'SELECT * FROM tenants WHERE id = ?',
-          [tenantId],
-        );
-        const tenantInfo = tenantResults[0] as RowDataPacket | undefined;
+        ]);
+        if (data.length > 0) {
+          sqlContent += `-- Table: ${tableName} (${data.length} rows)\n`;
+          for (const row of data) {
+            sqlContent += this.generateInsertStatement(tableName, row as Record<string, unknown>);
+          }
+          sqlContent += '\n';
+        }
+      } catch (error) {
+        sqlContent += `-- ERROR exporting ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}\n`;
+      }
+    }
 
-        const [userResults] = await conn.query<RowDataPacket[]>(
-          'SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?',
-          [tenantId],
-        );
-        const userCount = (userResults[0]?.user_count as number | undefined) ?? 0;
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by caller
+    await fs.writeFile(sqlBackupPath, sqlContent);
+    logger.info(`✅ SQL backup created: ${sqlBackupPath}`);
+  }
 
-        await conn.query(
-          `INSERT INTO deletion_audit_trail
-           (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
-            tenantId,
-            tenantInfo !== undefined ?
-              ((tenantInfo.company_name as string | undefined) ?? 'Unknown')
-            : 'Unknown',
-            userCount,
-            requestedBy,
-            ipAddress ?? 'unknown',
-            reason ?? 'No reason provided',
-            JSON.stringify({
-              subdomain:
-                tenantInfo !== undefined ?
-                  ((tenantInfo.subdomain as string | undefined) ?? null)
-                : null,
-              created_at:
-                tenantInfo !== undefined ?
-                  ((tenantInfo.created_at as Date | undefined) ?? null)
-                : null,
-              plan:
-                tenantInfo !== undefined ?
-                  ((tenantInfo.current_plan_id as number | undefined) ?? null)
-                : null,
-              deletion_status:
-                tenantInfo !== undefined ?
-                  ((tenantInfo.deletion_status as string | undefined) ?? null)
-                : null,
-            }),
-          ],
+  /**
+   * Export tenant data to JSON files
+   */
+  private async exportTablesToJson(
+    tenantId: number,
+    dataDir: string,
+    conn: ConnectionWrapper,
+  ): Promise<{ tables: TableNameRow[]; totalRecords: number }> {
+    const tables = await this.getTablesWithTenantId(conn);
+    let totalRecords = 0;
+
+    for (const tableRow of tables) {
+      const tableName = tableRow.TABLE_NAME;
+      try {
+        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
+          tenantId,
+        ]);
+        if (data.length > 0) {
+          const jsonPath = path.join(dataDir, `${tableName}.json`);
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated, tableName from DB schema
+          await fs.writeFile(jsonPath, JSON.stringify(data, null, 2));
+          totalRecords += data.length;
+          logger.info(`Exported ${data.length} records from ${tableName}`);
+        }
+      } catch (error) {
+        logger.warn(
+          `Could not export ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
         );
-      });
+      }
+    }
+
+    return { tables, totalRecords };
+  }
+
+  /**
+   * Create complete tenant backup before deletion
+   * Includes: SQL dump + JSON exports + metadata
+   */
+  private async createTenantDataExport(tenantId: number, conn: ConnectionWrapper): Promise<string> {
+    // 1. Get tenant info
+    const tenantInfo = await conn.query<TenantInfoRow[]>(
+      'SELECT company_name, subdomain, email, created_at FROM tenants WHERE id = $1',
+      [tenantId],
+    );
+    const tenant = tenantInfo[0];
+    const companyName = tenant?.company_name ?? 'unknown';
+
+    // 2. Setup backup directories
+    const sanitizedName = this.sanitizeCompanyName(companyName);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const backupDirName = `${sanitizedName}_${tenantId}_${timestamp}`;
+    const backupDir = `/backups/tenant_deletions/${backupDirName}`;
+    const dataDir = `${backupDir}/data`;
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: sanitizedName removes special chars
+    await fs.mkdir(dataDir, { recursive: true });
+    logger.info(`📦 Creating tenant backup in ${backupDir}`);
+
+    // 3. Create SQL backup
+    await this.createSqlBackup(tenantId, companyName, `${backupDir}/backup.sql`, conn);
+
+    // 4. Export JSON files
+    const { tables, totalRecords } = await this.exportTablesToJson(tenantId, dataDir, conn);
+
+    // 5. Create metadata
+    const metadata = {
+      tenantId,
+      companyName,
+      subdomain: tenant?.subdomain ?? null,
+      email: tenant?.email ?? null,
+      tenantCreatedAt: tenant?.created_at ?? null,
+      backupCreatedAt: new Date().toISOString(),
+      tablesExported: tables.length,
+      totalRecords,
+      backupType: 'pre_deletion',
+      version: '1.0',
+    };
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
+    await fs.writeFile(`${backupDir}/metadata.json`, JSON.stringify(metadata, null, 2));
+
+    // 6. Create archive and store in DB
+    const archivePath = `${backupDir}.tar.gz`;
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    await promisify(exec)(
+      `tar -czf "${archivePath}" -C /backups/tenant_deletions "${backupDirName}"`,
+    );
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: constructed from sanitized values above
+    const archiveStats = await fs.stat(archivePath);
+    await conn.query(
+      `INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES ($1, $2, $3, 'final')`,
+      [tenantId, archivePath, archiveStats.size],
+    );
+    await conn.query(
+      'INSERT INTO tenant_data_exports (tenant_id, file_path, file_size) VALUES ($1, $2, $3)',
+      [tenantId, archivePath, archiveStats.size],
+    );
+
+    logger.info(`📦 Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`);
+    return archivePath;
+  }
+
+  /**
+   * Delete data from a single table
+   */
+  private async deleteFromTable(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<DeletionLog | null> {
+    // Use SAVEPOINT to recover from FK constraint violations without aborting the whole transaction
+    const savepointName = `sp_${tableName.replace(/[^a-z0-9]/gi, '_')}`;
+
+    try {
+      await conn.query(`SAVEPOINT ${savepointName}`);
+
+      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE tenant_id = $1`, [
+        tenantId,
+      ])) as unknown as ResultSetHeader;
+
+      await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
+
+      const deleted = result.affectedRows;
+      if (deleted > 0) {
+        logger.info(`✅ Deleted ${deleted} rows from ${tableName}`);
+      }
+      return { table: tableName, deleted };
+    } catch (error) {
+      // Rollback to savepoint to recover from error (FK constraint, etc.)
+      try {
+        await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+      } catch {
+        // Savepoint might not exist, ignore
+      }
+      logger.warn(`⚠️ Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`);
+      return null;
     }
   }
 
   /**
-   *
-   * @param tenantId - The tenant ID
-   * @param scheduledDate - The scheduledDate parameter
+   * Send notification emails
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const [admins] = await query<DbUser[]>(
-      'SELECT * FROM users WHERE tenant_id = ? AND role IN ("admin", "root")',
+      "SELECT * FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
@@ -2372,317 +392,658 @@ export class TenantDeletionService {
         html: `
           <h2>Ihr Assixx-Konto wird gelöscht</h2>
           <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
-          <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> endgültig gelöscht.</p>
+          <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE')}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>
-            <li>Laden Sie Ihre Daten herunter über das <a href="${process.env.APP_URL ?? ''}/export-data">Export-Tool</a></li>
+            <li>Laden Sie Ihre Daten herunter über das Export-Tool</li>
             <li>Kontaktieren Sie den Support, wenn dies ein Fehler ist</li>
             <li>Sichern Sie wichtige Dokumente und Informationen</li>
           </ul>
           <p>Nach der Löschung sind Ihre Daten unwiderruflich verloren.</p>
-          <p>Mit freundlichen Grüßen<br>Ihr Assixx-Team</p>
         `,
       });
     }
-
-    // Schedule reminder emails (non-blocking)
-    try {
-      await this.scheduleReminderEmails(tenantId, scheduledDate);
-    } catch (error: unknown) {
-      logger.error('Failed to schedule reminder emails:', error);
-      // Don't fail the whole operation
-    }
   }
 
   /**
-   *
-   * @param tenantId - The tenant ID
-   * @param scheduledDate - The scheduledDate parameter
+   * Create audit trail entry
    */
-  private async scheduleReminderEmails(tenantId: number, scheduledDate: Date): Promise<void> {
-    const reminders = [
-      {
-        days: 14,
-        subject: 'Erinnerung: Ihr Assixx-Konto wird in 14 Tagen gelöscht',
-      },
-      {
-        days: 7,
-        subject: 'Letzte Warnung: Ihr Assixx-Konto wird in 7 Tagen gelöscht',
-      },
-      { days: 1, subject: 'DRINGEND: Ihr Assixx-Konto wird morgen gelöscht' },
-    ];
-
-    for (const reminder of reminders) {
-      const reminderDate = new Date(scheduledDate);
-      reminderDate.setDate(reminderDate.getDate() - reminder.days);
-
-      await execute(
-        'INSERT INTO scheduled_tasks (tenant_id, task_type, task_data, scheduled_at) VALUES (?, ?, ?, ?)',
-        [
-          tenantId,
-          'deletion_reminder',
-          JSON.stringify({
-            days_remaining: reminder.days,
-            subject: reminder.subject,
-          }),
-          reminderDate,
-        ],
-      );
-    }
-  }
-
-  /**
-   *
-   * @param tenantId - The tenant ID
-   * @param requestedBy - The requestedBy parameter
-   * @param tenantName - The tenantName parameter
-   * @param queueId - The queueId parameter
-   */
-  private async notifyRootAdminsForApproval(
+  private async createDeletionAuditTrail(
     tenantId: number,
     requestedBy: number,
-    tenantName: string,
-    queueId: number,
+    reason?: string,
+    ipAddress?: string,
+    connection?: ConnectionWrapper,
   ): Promise<void> {
-    const [rootUsers] = await query<DbUser[]>(
-      'SELECT * FROM users WHERE role = "root" AND id != ?',
-      [requestedBy],
-    );
+    const executeAudit = async (conn: ConnectionWrapper): Promise<void> => {
+      const tenantResults = await conn.query<TenantInfoRow[]>(
+        'SELECT * FROM tenants WHERE id = $1',
+        [tenantId],
+      );
+      const tenantInfo = tenantResults[0];
 
-    interface UserNameInfo extends RowDataPacket {
-      username: string;
-      first_name: string;
-      last_name: string;
-    }
-    const [[requestedByUser]] = await query<UserNameInfo[]>(
-      'SELECT username, first_name, last_name FROM users WHERE id = ?',
-      [requestedBy],
-    );
+      const userResults = await conn.query<CountResult[]>(
+        'SELECT COUNT(*) as count FROM users WHERE tenant_id = $1',
+        [tenantId],
+      );
+      const firstUserResult: CountResult | undefined = userResults[0];
+      const userCount = firstUserResult?.count ?? 0;
 
-    for (const root of rootUsers) {
-      await emailService.sendEmail({
-        to: (root as unknown as DbUser).email,
-        subject: 'Genehmigung erforderlich: Tenant-Löschung',
-        html: `
-          <h2>Tenant-Löschung Genehmigung erforderlich</h2>
-          <p><strong>${requestedByUser.first_name} ${requestedByUser.last_name}</strong> (${requestedByUser.username}) hat die Löschung des folgenden Tenants beantragt:</p>
-          <ul>
-            <li><strong>Firma:</strong> ${tenantName}</li>
-            <li><strong>Tenant ID:</strong> ${tenantId}</li>
-            <li><strong>Geplantes Löschdatum:</strong> ${(() => {
-              const d = new Date();
-              d.setDate(d.getDate() + 30);
-              return d.toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              });
-            })()}</li>
-          </ul>
-          <h3>Aktion erforderlich:</h3>
-          <p>Als zweiter Root-User müssen Sie diese Löschung genehmigen oder ablehnen.</p>
-          <p>
-            <a href="${process.env.APP_URL ?? ''}/root/deletion-approvals/${queueId}"
-               style="background: #dc3545; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px;">
-              Zur Genehmigung
-            </a>
-          </p>
-          <p><em>Hinweis: Ohne Ihre Genehmigung wird die Löschung nicht durchgeführt.</em></p>
-        `,
+      await conn.query(
+        `INSERT INTO deletion_audit_trail
+         (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          tenantId,
+          tenantInfo?.company_name ?? 'Unknown',
+          userCount,
+          requestedBy,
+          ipAddress ?? 'unknown',
+          reason ?? 'No reason provided',
+          JSON.stringify({
+            subdomain: tenantInfo?.subdomain ?? null,
+            created_at: tenantInfo?.created_at ?? null,
+          }),
+        ],
+      );
+    };
+
+    if (connection) {
+      await executeAudit(connection);
+    } else {
+      await transaction(async (conn: PoolConnection) => {
+        const wrappedConn = wrapConnection(conn);
+        await executeAudit(wrappedConn);
       });
     }
   }
 
   /**
-   *
-   * @param tenantId - The tenant ID
-   * @param requesterId - The requesterId parameter
-   * @param status - The status parameter
-   * @param approverId - The approverId parameter
-   * @param reason - The reason parameter
+   * Maximum number of deletion passes before giving up
+   * Prevents infinite loops in case of circular FK dependencies
    */
-  private async notifyApprovalStatus(
+  private readonly MAX_DELETION_PASSES = 15;
+
+  /**
+   * Execute core table deletions with multi-pass FK dependency resolution
+   *
+   * Strategy:
+   * 1. Get all tables with tenant_id
+   * 2. Multi-pass deletion: retry failed tables until all deleted or no progress
+   * 3. Handle user-related tables with same multi-pass approach
+   * 4. Clear FK references in critical tables before deleting users
+   * 5. Delete users
+   * 6. Delete tenant
+   */
+  private async executeDeletions(
     tenantId: number,
-    requesterId: number,
-    status: 'approved' | 'rejected',
-    approverId: number,
-    reason?: string,
+    conn: ConnectionWrapper,
+  ): Promise<DeletionLog[]> {
+    const deletionLog: DeletionLog[] = [];
+
+    // Phase 1: Get all tables with tenant_id column
+    const allTables = await this.getTablesWithTenantId(conn);
+    logger.info(`Found ${allTables.length} tables with tenant_id column`);
+
+    // Separate tables into categories
+    const regularTables = allTables
+      .map((t: TableNameRow) => t.TABLE_NAME)
+      .filter(
+        (name: string) =>
+          !this.CRITICAL_TABLES.includes(name) && name !== 'users' && name !== 'tenants',
+      );
+
+    // Phase 2: Multi-pass deletion of regular tables
+    const regularResults = await this.multiPassDelete(regularTables, tenantId, conn);
+    deletionLog.push(...regularResults.deleted);
+
+    if (regularResults.stuck.length > 0) {
+      logger.warn(
+        `Could not delete ${regularResults.stuck.length} tables after ${this.MAX_DELETION_PASSES} passes: ${regularResults.stuck.join(', ')}`,
+      );
+    }
+
+    // Phase 3: Delete user-related tables (tables with user_id FK)
+    const userRelatedTables = await this.getUserRelatedTables(conn);
+    const userTableNames = userRelatedTables.map((t: TableNameRow) => t.TABLE_NAME);
+    const userResults = await this.multiPassDeleteUserRelated(userTableNames, tenantId, conn);
+    deletionLog.push(...userResults.deleted);
+
+    // Phase 4: Clear FK references in critical tables before deleting users
+    // This allows us to delete users without violating FK constraints
+    await this.clearCriticalTableUserReferences(tenantId, conn);
+
+    // Phase 5: Delete users
+    const usersResult = await this.deleteFromTableDirect('users', tenantId, conn);
+    if (usersResult) {
+      deletionLog.push(usersResult);
+    }
+
+    // Phase 6: Delete tenant record
+    const tenantResult = await this.deleteFromTableDirect('tenants', tenantId, conn, 'id');
+    if (tenantResult) {
+      deletionLog.push(tenantResult);
+    }
+
+    return deletionLog;
+  }
+
+  /**
+   * Multi-pass deletion for tables with tenant_id
+   * Keeps retrying failed tables until all succeed or no progress
+   */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  private async multiPassDelete(
+    tableNames: string[],
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<{ deleted: DeletionLog[]; stuck: string[] }> {
+    const deletionLog: DeletionLog[] = [];
+    let pendingTables = [...tableNames];
+
+    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+      logger.info(
+        `🔄 Deletion pass ${pass}/${this.MAX_DELETION_PASSES}: ${pendingTables.length} tables remaining`,
+      );
+
+      const failedTables: string[] = [];
+      let deletedCount = 0;
+
+      for (const tableName of pendingTables) {
+        const result = await this.deleteFromTable(tableName, tenantId, conn);
+
+        if (result !== null) {
+          // Success - table processed (even if 0 rows deleted)
+          deletionLog.push(result);
+          deletedCount++;
+        } else {
+          // Failed due to FK constraint - retry in next pass
+          failedTables.push(tableName);
+        }
+      }
+
+      logger.info(
+        `   Pass ${pass} complete: ${deletedCount} tables processed, ${failedTables.length} deferred`,
+      );
+
+      // Check for progress
+      if (deletedCount === 0 && failedTables.length > 0) {
+        // No progress this pass - likely circular dependency or unresolvable FK
+        logger.warn(`⚠️ No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`);
+        return { deleted: deletionLog, stuck: failedTables };
+      }
+
+      pendingTables = failedTables;
+    }
+
+    return { deleted: deletionLog, stuck: pendingTables };
+  }
+
+  /**
+   * Process a single user-related table deletion
+   * @returns true if processed successfully, false if FK constraint failed (needs retry)
+   */
+  private async processUserRelatedTable(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+    deletionLog: DeletionLog[],
+  ): Promise<boolean> {
+    const result = await this.deleteFromUserRelatedTable(tableName, tenantId, conn);
+
+    if (result === null) {
+      return false;
+    }
+
+    if (result.deleted > 0) {
+      deletionLog.push(result);
+    }
+    return true;
+  }
+
+  /**
+   * Check if deletion pass made no progress (all tables failed)
+   */
+  private hasNoProgress(failedCount: number, pendingCount: number): boolean {
+    return failedCount === pendingCount && failedCount > 0;
+  }
+
+  /**
+   * Multi-pass deletion for user-related tables (via user_id FK)
+   */
+  private async multiPassDeleteUserRelated(
+    tableNames: string[],
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<{ deleted: DeletionLog[]; stuck: string[] }> {
+    const deletionLog: DeletionLog[] = [];
+    let pendingTables = [...tableNames];
+
+    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+      const failedTables: string[] = [];
+
+      for (const tableName of pendingTables) {
+        const success = await this.processUserRelatedTable(tableName, tenantId, conn, deletionLog);
+        if (!success) {
+          failedTables.push(tableName);
+        }
+      }
+
+      if (this.hasNoProgress(failedTables.length, pendingTables.length)) {
+        return { deleted: deletionLog, stuck: failedTables };
+      }
+
+      pendingTables = failedTables;
+    }
+
+    return { deleted: deletionLog, stuck: pendingTables };
+  }
+
+  /**
+   * Delete from a single user-related table using JOIN with users
+   */
+  private async deleteFromUserRelatedTable(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<DeletionLog | null> {
+    const savepointName = `sp_user_${tableName.replace(/[^a-z0-9]/gi, '_')}`;
+
+    try {
+      await conn.query(`SAVEPOINT ${savepointName}`);
+
+      const result = (await conn.query(
+        `DELETE FROM "${tableName}"
+         USING users u
+         WHERE "${tableName}".user_id = u.id AND u.tenant_id = $1`,
+        [tenantId],
+      )) as unknown as ResultSetHeader;
+
+      await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
+
+      return { table: `${tableName} (via users)`, deleted: result.affectedRows };
+    } catch {
+      try {
+        await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+      } catch {
+        // Ignore rollback errors
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Clear FK references to users in critical tables
+   * This allows deleting users without FK violations
+   * Uses SAVEPOINT to prevent transaction abort on NOT NULL constraint violations
+   */
+  private async clearCriticalTableUserReferences(
+    tenantId: number,
+    conn: ConnectionWrapper,
   ): Promise<void> {
-    const [[requester]] = await query<DbUser[]>('SELECT * FROM users WHERE id = ?', [requesterId]);
-    interface ApproverRow extends RowDataPacket {
-      username: string;
-    }
-    const [[approver]] = await query<ApproverRow[]>('SELECT username FROM users WHERE id = ?', [
-      approverId,
-    ]);
-    interface TenantNameRow extends RowDataPacket {
-      company_name: string;
-    }
-    const [[tenant]] = await query<TenantNameRow[]>(
-      'SELECT company_name FROM tenants WHERE id = ?',
+    // Helper to safely update with SAVEPOINT (prevents transaction abort)
+    const safeUpdate = async (
+      tableName: string,
+      sql: string,
+      params: unknown[],
+    ): Promise<boolean> => {
+      const savepointName = `sp_clear_${tableName}`;
+      try {
+        await conn.query(`SAVEPOINT ${savepointName}`);
+        await conn.query(sql, params);
+        await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
+        logger.info(`✅ Cleared user references in ${tableName}`);
+        return true;
+      } catch (error) {
+        try {
+          await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+        } catch {
+          // Ignore rollback errors
+        }
+        logger.warn(
+          `⚠️ Could not clear ${tableName} user refs: ${error instanceof Error ? error.message : 'Unknown'}`,
+        );
+        return false;
+      }
+    };
+
+    // tenant_deletion_queue has created_by -> users FK (NULLable)
+    await safeUpdate(
+      'tenant_deletion_queue',
+      `UPDATE tenant_deletion_queue
+       SET created_by = NULL,
+           second_approver_id = NULL,
+           emergency_stopped_by = NULL
+       WHERE tenant_id = $1`,
       [tenantId],
     );
 
-    const subject =
-      status === 'approved' ?
-        'Ihre Tenant-Löschung wurde genehmigt'
-      : 'Ihre Tenant-Löschung wurde abgelehnt';
+    // deletion_audit_trail has deleted_by -> users FK
+    // Note: deleted_by may have NOT NULL constraint, so this might fail
+    await safeUpdate(
+      'deletion_audit_trail',
+      `UPDATE deletion_audit_trail SET deleted_by = NULL WHERE tenant_id = $1`,
+      [tenantId],
+    );
 
-    const statusText =
-      status === 'approved' ?
-        `<p style="color: green;"><strong>✅ Genehmigt von ${approver.username}</strong></p>`
-      : `<p style="color: #f00;"><strong>❌ Abgelehnt von ${approver.username}</strong></p>`;
+    // legal_holds has created_by and released_by -> users FK
+    await safeUpdate(
+      'legal_holds',
+      `UPDATE legal_holds SET created_by = NULL, released_by = NULL WHERE tenant_id = $1`,
+      [tenantId],
+    );
+  }
 
-    await emailService.sendEmail({
-      to: requester.email,
-      subject,
-      html: `
-        <h2>${subject}</h2>
-        <p>Ihre Anfrage zur Löschung des Tenants <strong>${tenant.company_name}</strong> wurde bearbeitet.</p>
-        ${statusText}
-        ${reason != null && reason !== '' ? `<p><strong>Grund:</strong> ${reason}</p>` : ''}
-        ${
-          status === 'approved' ?
-            `
-          <p>Die Löschung wird nach der 30-tägigen Wartefrist automatisch durchgeführt.</p>
-          <p>Sie können den Status im Admin-Dashboard verfolgen.</p>
-        `
-          : `
-          <p>Der Tenant bleibt aktiv. Bei Fragen wenden Sie sich bitte an ${approver.username}.</p>
-        `
+  /**
+   * Direct table deletion without SAVEPOINT (for final cleanup)
+   */
+  private async deleteFromTableDirect(
+    tableName: string,
+    tenantId: number,
+    conn: ConnectionWrapper,
+    idColumn: string = 'tenant_id',
+  ): Promise<DeletionLog | null> {
+    try {
+      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE ${idColumn} = $1`, [
+        tenantId,
+      ])) as unknown as ResultSetHeader;
+
+      if (result.affectedRows > 0) {
+        logger.info(`✅ Deleted ${result.affectedRows} rows from ${tableName}`);
+      }
+      return { table: tableName, deleted: result.affectedRows };
+    } catch (error) {
+      logger.error(
+        `❌ Failed to delete from ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      throw error; // Re-throw for final tables - these must succeed
+    }
+  }
+
+  /**
+   * Main deletion method - DYNAMIC approach
+   */
+  public async deleteTenant(
+    tenantId: number,
+    queueId: number,
+    requestedBy: number,
+    reason?: string,
+    ipAddress?: string,
+  ): Promise<DeletionResult> {
+    this.validateTenantId(tenantId);
+    logger.warn(`🚨 STARTING DYNAMIC DELETION FOR TENANT ${tenantId}`);
+
+    return await transaction(async (conn: PoolConnection) => {
+      const wrappedConn = wrapConnection(conn);
+
+      try {
+        await this.checkLegalHolds(tenantId, wrappedConn);
+        const exportPath = await this.createTenantDataExport(tenantId, wrappedConn);
+        logger.info(`GDPR export created: ${exportPath}`);
+        await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress, wrappedConn);
+
+        // Delete all tenant data (uses SAVEPOINT to handle FK constraint violations gracefully)
+        const deletionLog = await this.executeDeletions(tenantId, wrappedConn);
+
+        await wrappedConn.query(
+          'UPDATE tenant_deletion_queue SET status = $1, completed_at = NOW() WHERE id = $2',
+          ['completed', queueId],
+        );
+        await this.clearRedisCache(tenantId);
+        await this.verifyCompleteDeletion(tenantId, wrappedConn);
+        return this.logAndReturnResult(tenantId, deletionLog, exportPath);
+      } catch (error) {
+        // Log the ORIGINAL error before trying any recovery
+        logger.error(`DELETION FAILED for tenant ${tenantId}:`, error);
+
+        // Try to update queue status, but this may fail if transaction is aborted
+        try {
+          await wrappedConn.query(
+            'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
+            ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
+          );
+        } catch (updateError) {
+          // Queue update failed (transaction aborted), original error already logged above
+          logger.debug('Could not update queue status:', updateError);
         }
-      `,
+        throw error;
+      }
     });
   }
 
-  /* Unused function - kept for future use
-  private async _notifyRootAdmins(tenantId: number, deletedBy: number, tenantName: string): Promise<void> {
-    const [rootUsers] = await query<DbUser[]>(
-      'SELECT * FROM users WHERE role = "root" AND id != ?',
-      [deletedBy]
-    );
-
-    interface UsernameRow extends RowDataPacket {
-      username: string;
-    }
-    const [[deletedByUser]] = await query<UsernameRow[]>(
-      'SELECT username FROM users WHERE id = ?',
-      [deletedBy]
-    );
-
-    for (const root of rootUsers) {
-      await emailService.sendEmail({
-        to: (root as unknown as DbUser).email,
-        subject: 'Tenant-Löschung eingeleitet',
-        html: `
-          <h2>Tenant-Löschung eingeleitet</h2>
-          <p>Der Tenant <strong>${tenantName}</strong> (ID: ${tenantId}) wurde zur Löschung markiert.</p>
-          <p>Gelöscht von: ${deletedByUser.username}</p>
-          <p>Geplantes Löschdatum: ${String((() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' )}); })()}</p>
-          <p>Sie können die Löschung im Admin-Dashboard überwachen oder abbrechen.</p>
-        `
-      });
-    }
-  } */
-
   /**
-   *
-   * @param queueId - The queueId parameter
-   * @param error - The error object
+   * Clear Redis cache for tenant
    */
-  private async sendDeletionFailureAlert(queueId: number, error: string): Promise<void> {
-    // Email an alle Root-User
-    const rootUsers = await query('SELECT * FROM users WHERE role = "root"');
-
-    for (const root of rootUsers) {
-      await emailService.sendEmail({
-        to: (root as unknown as DbUser).email,
-        subject: '🚨 Kritischer Fehler: Tenant-Löschung fehlgeschlagen',
-        html: `
-          <h2>Tenant-Löschung fehlgeschlagen</h2>
-          <p>Die Löschung eines Tenants ist fehlgeschlagen und erfordert Ihre Aufmerksamkeit.</p>
-          <p><strong>Queue ID:</strong> ${queueId}</p>
-          <p><strong>Fehler:</strong> ${error}</p>
-          <p>Bitte prüfen Sie die Logs und versuchen Sie die Löschung erneut oder kontaktieren Sie den Support.</p>
-        `,
-      });
+  private async clearRedisCache(tenantId: number): Promise<void> {
+    const redis = await getRedisClient();
+    const pattern = `tenant:${tenantId}:*`;
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      for (const key of keys) {
+        await redis.del(key);
+      }
     }
-
-    // Send alerts to configured channels
-    await alertingService
-      .sendSlackAlert({
-        channel: process.env.SLACK_CRITICAL_CHANNEL ?? '#alerts-critical',
-        severity: 'critical',
-        title: '🚨 Tenant Deletion Failed',
-        message: `Queue ${queueId} failed with error: ${error}`,
-        fields: {
-          'Queue ID': queueId,
-          Error: error,
-          Time: new Date().toISOString(),
-          'Action Required': 'Check logs and retry or contact support',
-        },
-      })
-      .catch((error_: unknown) => logger.error('Failed to send Slack alert:', error_));
-
-    await alertingService
-      .sendTeamsAlert({
-        severity: 'critical',
-        title: 'Tenant Deletion Failed',
-        message: `Critical failure in tenant deletion process (Queue: ${queueId})`,
-        facts: [
-          { name: 'Queue ID', value: String(queueId) },
-          { name: 'Error', value: error },
-          { name: 'Time', value: new Date().toISOString() },
-        ],
-      })
-      .catch((error_: unknown) => logger.error('Failed to send Teams alert:', error_));
   }
 
   /**
-   * Notify admins about emergency stop
-   * @param tenantId - The tenant ID
-   * @param queueId - The queueId parameter
-   * @param stoppedBy - The stoppedBy parameter
+   * Log deletion completion and return result
    */
-  private async notifyEmergencyStop(
+  private logAndReturnResult(
     tenantId: number,
-    queueId: number,
-    stoppedBy: number,
-  ): Promise<void> {
-    interface TenantNameRow extends RowDataPacket {
-      company_name: string;
+    deletionLog: DeletionLog[],
+    exportPath: string,
+  ): DeletionResult {
+    const totalDeleted = deletionLog.reduce(
+      (sum: number, log: DeletionLog) => sum + log.deleted,
+      0,
+    );
+
+    logger.warn(`
+      ========================================
+      TENANT ${tenantId} DELETION COMPLETE
+      ========================================
+      Tables affected: ${deletionLog.length}
+      Total rows deleted: ${totalDeleted}
+      GDPR Export: ${exportPath}
+      ========================================
+    `);
+
+    return {
+      success: true,
+      tablesAffected: deletionLog.length,
+      totalRowsDeleted: totalDeleted,
+      details: deletionLog,
+    };
+  }
+
+  /**
+   * Verify that all data was deleted
+   */
+  private async verifyCompleteDeletion(
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<string[]> {
+    const tables = await this.getTablesWithTenantId(conn);
+    const remainingData: string[] = [];
+
+    for (const tableRow of tables) {
+      const tableName = tableRow.TABLE_NAME;
+
+      if (this.CRITICAL_TABLES.includes(tableName)) {
+        continue;
+      }
+
+      const countResult = await conn.query<CountResult[]>(
+        `SELECT COUNT(*) as count FROM "${tableName}" WHERE tenant_id = $1`,
+        [tenantId],
+      );
+
+      const firstResult: CountResult | undefined = countResult[0];
+      if (firstResult !== undefined && firstResult.count > 0) {
+        remainingData.push(`${tableName}: ${String(firstResult.count)} rows remaining`);
+      }
     }
-    const [[tenant]] = await query<TenantNameRow[]>(
-      'SELECT company_name FROM tenants WHERE id = ?',
+
+    if (remainingData.length > 0) {
+      logger.error(`⚠️ INCOMPLETE DELETION - Data remains in: ${remainingData.join(', ')}`);
+      throw new Error(`Deletion incomplete: ${remainingData.length} tables still contain data`);
+    }
+
+    logger.info('✅ Deletion verified - all data removed successfully');
+    return remainingData;
+  }
+
+  /**
+   * Request tenant deletion (requires approval)
+   */
+  async requestDeletion(
+    tenantId: number,
+    requestedBy: number,
+    reason?: string,
+    ipAddress?: string,
+  ): Promise<number> {
+    this.validateTenantId(tenantId);
+
+    // Check if already queued
+    const [existing] = await query<QueueRow[]>(
+      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'processing')",
       [tenantId],
     );
-    interface UsernameRow extends RowDataPacket {
-      username: string;
-    }
-    const [[user]] = await query<UsernameRow[]>('SELECT username FROM users WHERE id = ?', [
-      stoppedBy,
-    ]);
-    const [rootUsers] = await query<DbUser[]>('SELECT * FROM users WHERE role = "root"');
 
-    for (const root of rootUsers) {
-      await emailService.sendEmail({
-        to: (root as unknown as DbUser).email,
-        subject: '🚨 Emergency Stop: Tenant-Löschung angehalten',
-        html: `
-          <h2>Emergency Stop ausgelöst</h2>
-          <p>Die Löschung des Tenants <strong>${tenant.company_name}</strong> wurde durch einen Emergency Stop angehalten.</p>
-          <p><strong>Gestoppt von:</strong> ${user.username}</p>
-          <p><strong>Queue ID:</strong> ${queueId}</p>
-          <p><strong>Status:</strong> Der Tenant wurde auf "active" zurückgesetzt.</p>
-          <p>Bitte prüfen Sie die Logs für weitere Details.</p>
-        `,
-      });
+    if (existing.length > 0) {
+      throw new Error('Deletion already requested for this tenant');
+    }
+
+    // Check legal holds
+    const [legalHolds] = await query<RowDataPacket[]>(
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
+      [tenantId],
+    );
+
+    if (legalHolds.length > 0) {
+      throw new Error('Cannot delete tenant with active legal hold');
+    }
+
+    // Create queue entry
+    const scheduledDate = new Date();
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
+
+    const [rows] = await execute<{ id: number }[]>(
+      `INSERT INTO tenant_deletion_queue
+       (tenant_id, created_by, scheduled_deletion_date, status, approval_status, deletion_reason, ip_address)
+       VALUES ($1, $2, $3, 'pending_approval', 'pending', $4, $5)
+       RETURNING id`,
+      [tenantId, requestedBy, scheduledDate, reason ?? null, ipAddress ?? null],
+    );
+
+    const queueId = rows[0]?.id ?? 0;
+
+    // Update tenant status
+    await execute('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
+      'marked_for_deletion',
+      tenantId,
+    ]);
+
+    // Send warning emails
+    await this.sendDeletionWarningEmails(tenantId, scheduledDate);
+
+    // Create audit trail
+    await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress);
+
+    logger.info(`Tenant deletion requested: ${tenantId}, Queue ID: ${queueId}`);
+
+    return queueId;
+  }
+
+  /**
+   * Cancel deletion request (supports both pending_approval and queued status)
+   * @param tenantId - The tenant ID
+   * @param cancelledBy - User ID who cancelled
+   * @param isEmergencyStop - If true, sets emergency_stop fields for audit trail
+   */
+  async cancelDeletion(
+    tenantId: number,
+    cancelledBy: number,
+    isEmergencyStop: boolean = false,
+  ): Promise<void> {
+    // Support both pending_approval AND queued status for emergency stop
+    const [queue] = await query<QueueRow[]>(
+      "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'queued')",
+      [tenantId],
+    );
+
+    if (queue.length === 0) {
+      throw new Error('No active deletion found (must be pending_approval or queued)');
+    }
+
+    const firstQueueItem = queue[0];
+    if (!firstQueueItem) {
+      throw new Error('No pending deletion found');
+    }
+
+    if (isEmergencyStop) {
+      // Emergency stop: set all tracking fields for audit
+      await execute(
+        `UPDATE tenant_deletion_queue
+         SET status = 'cancelled',
+             completed_at = NOW(),
+             emergency_stop = true,
+             emergency_stopped_at = NOW(),
+             emergency_stopped_by = $1
+         WHERE id = $2`,
+        [cancelledBy, firstQueueItem.id],
+      );
+      logger.warn(`EMERGENCY STOP: Tenant ${tenantId} deletion stopped by user ${cancelledBy}`);
+    } else {
+      // Normal cancel
+      await execute(
+        "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
+        [firstQueueItem.id],
+      );
+      logger.info(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
+    }
+
+    await execute('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
+  }
+
+  /**
+   * Process deletion queue (called by worker)
+   */
+  async processQueue(): Promise<void> {
+    try {
+      // Get next approved item ready for deletion
+      const [queueItems] = await query<QueueRow[]>(
+        `SELECT * FROM tenant_deletion_queue
+         WHERE status = 'queued'
+         AND approval_status = 'approved'
+         AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
+         ORDER BY created_at ASC
+         LIMIT 1`,
+      );
+
+      if (queueItems.length === 0) {
+        return; // Nothing to process
+      }
+
+      const queueItem = queueItems[0];
+      if (!queueItem) {
+        return; // Nothing to process
+      }
+
+      await this.deleteTenant(
+        queueItem.tenant_id,
+        queueItem.id,
+        queueItem.created_by,
+        queueItem.deletion_reason,
+        queueItem.ip_address,
+      );
+    } catch (error: unknown) {
+      logger.error('Error processing deletion queue:', error);
     }
   }
 
   /**
-   * Perform dry-run simulation
-   * @param tenantId - The tenant ID
+   * Perform dry run to estimate deletion impact
    */
   async performDryRun(tenantId: number): Promise<{
     tenantId: number;
@@ -2692,6 +1053,8 @@ export class TenantDeletionService {
     blockers: string[];
     totalRecords: number;
   }> {
+    this.validateTenantId(tenantId);
+
     const report = {
       tenantId,
       estimatedDuration: 0,
@@ -2701,68 +1064,194 @@ export class TenantDeletionService {
       totalRecords: 0,
     };
 
-    // Check for blockers
-    interface LegalHoldRow extends RowDataPacket {
-      reason: string;
-    }
-    const [legalHoldResults] = await query<LegalHoldRow[]>(
-      'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
+    // Check blockers
+    const [legalHolds] = await query<LegalHoldResult[]>(
+      'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
-    const legalHold = legalHoldResults[0] as LegalHoldRow | undefined;
 
-    if (legalHold !== undefined) {
-      report.blockers.push(`Legal hold active: ${legalHold.reason}`);
-    }
-
-    // Simulate each step
-    for (const step of this.steps) {
-      try {
-        let count = 0;
-
-        // Estimate records based on step type
-        if (step.name.includes('users')) {
-          const [result] = await query('SELECT COUNT(*) as count FROM users WHERE tenant_id = ?', [
-            tenantId,
-          ]);
-          const countResult = result as unknown as CountResult;
-          count = countResult.count;
-        } else if (step.name.includes('documents')) {
-          const [result] = await query(
-            'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
-            [tenantId],
-          );
-          const countResult = result as unknown as CountResult;
-          count = countResult.count;
-        } else if (step.name.includes('messages')) {
-          const [result] = await query(
-            'SELECT COUNT(*) as count FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)',
-            [tenantId],
-          );
-          const countResult = result as unknown as CountResult;
-          count = countResult.count;
-        }
-        // Add more estimations for other steps...
-
-        report.affectedRecords[step.name] = count;
-        report.totalRecords += count;
-        report.estimatedDuration += count * 0.001; // 1ms per record estimate
-      } catch (error: unknown) {
-        report.warnings.push(
-          `Could not estimate ${step.name}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+    if (legalHolds.length > 0) {
+      const firstHold = legalHolds[0];
+      if (firstHold) {
+        report.blockers.push(`Legal hold active: ${firstHold.reason}`);
       }
     }
 
-    // Convert duration to minutes
+    // Count records in each table
+    await transaction(async (conn: PoolConnection) => {
+      const wrappedConn = wrapConnection(conn);
+      const tables = await this.getTablesWithTenantId(wrappedConn);
+
+      for (const tableRow of tables) {
+        const tableName = tableRow.TABLE_NAME;
+
+        try {
+          const countResult = await wrappedConn.query<CountResult[]>(
+            `SELECT COUNT(*) as count FROM "${tableName}" WHERE tenant_id = $1`,
+            [tenantId],
+          );
+
+          const firstResult: CountResult | undefined = countResult[0];
+          const count: number = firstResult?.count ?? 0;
+          // Use Object.defineProperty to safely set the property and avoid injection
+          Object.defineProperty(report.affectedRecords, tableName, {
+            value: count,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
+          report.totalRecords += count;
+          report.estimatedDuration += count * 0.001; // 1ms per record estimate
+        } catch (error) {
+          report.warnings.push(
+            `Could not estimate ${tableName}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+    });
+
+    // Convert to minutes
     report.estimatedDuration = Math.ceil(report.estimatedDuration / 60);
 
     return report;
   }
+
+  // ============================================================================
+  // COMPATIBILITY METHODS - For backward compatibility with routes
+  // ============================================================================
+
+  /**
+   * Alias for requestDeletion - kept for backward compatibility
+   */
+  async requestTenantDeletion(
+    tenantId: number,
+    requestedBy: number,
+    reason?: string,
+    ipAddress?: string,
+  ): Promise<{ queueId: number; scheduledDate: Date }> {
+    const queueId = await this.requestDeletion(tenantId, requestedBy, reason, ipAddress);
+    const scheduledDate = new Date();
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
+    return { queueId, scheduledDate };
+  }
+
+  /**
+   * Approve a deletion request (process it immediately)
+   * NOTE: approved_by column does not exist in DB schema - using second_approver_id instead
+   */
+  async approveDeletion(queueId: number, approvedBy: number, _comment?: string): Promise<void> {
+    // Update approval status
+    // Using second_approver_id since approved_by column doesn't exist in current schema
+    await execute(
+      `UPDATE tenant_deletion_queue
+       SET approval_status = 'approved',
+           second_approver_id = $1,
+           approved_at = NOW(),
+           status = 'queued'
+       WHERE id = $2 AND approval_status = 'pending'`,
+      [approvedBy, queueId],
+    );
+
+    // Process the queue to handle approved deletions
+    await this.processQueue();
+  }
+
+  /**
+   * Reject a deletion request
+   */
+  async rejectDeletion(queueId: number, rejectedBy: number, _reason?: string): Promise<void> {
+    const [queueRows] = await query<QueueRow[]>(
+      'SELECT tenant_id FROM tenant_deletion_queue WHERE id = $1',
+      [queueId],
+    );
+
+    if (queueRows.length > 0) {
+      const firstRow = queueRows[0];
+      if (firstRow) {
+        const tenantId = firstRow.tenant_id;
+        await this.cancelDeletion(tenantId, rejectedBy);
+      }
+    }
+  }
+
+  /**
+   * Emergency stop for deletion
+   * Sets emergency_stop = true and tracks who stopped it
+   */
+  async emergencyStop(tenantId: number, stoppedBy: number): Promise<void> {
+    await this.cancelDeletion(tenantId, stoppedBy, true);
+  }
+
+  /**
+   * Trigger emergency stop (alias)
+   */
+  async triggerEmergencyStop(tenantId: number, stoppedBy: number): Promise<void> {
+    await this.emergencyStop(tenantId, stoppedBy);
+  }
+
+  /**
+   * Get deletion status for a tenant
+   */
+  async getDeletionStatus(tenantId: number): Promise<{
+    status: string;
+    queueId?: number;
+    scheduledDate?: Date;
+    approvalStatus?: string;
+  }> {
+    const [rows] = await query<QueueRow[]>(
+      `SELECT id, status, scheduled_deletion_date, approval_status
+       FROM tenant_deletion_queue
+       WHERE tenant_id = $1 AND status != 'cancelled'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [tenantId],
+    );
+
+    if (rows.length === 0) {
+      return { status: 'not_scheduled' };
+    }
+
+    const row = rows[0];
+    if (!row) {
+      return { status: 'not_scheduled' };
+    }
+
+    const result: {
+      status: string;
+      queueId?: number;
+      scheduledDate?: Date;
+      approvalStatus?: string;
+    } = {
+      status: row.status,
+      queueId: row.id,
+      approvalStatus: row.approval_status,
+    };
+
+    if (row.scheduled_deletion_date !== undefined) {
+      result.scheduledDate = row.scheduled_deletion_date;
+    }
+
+    return result;
+  }
+
+  /**
+   * Retry a failed deletion
+   */
+  async retryDeletion(queueId: number): Promise<void> {
+    // Reset status to queued to retry
+    await execute(
+      `UPDATE tenant_deletion_queue
+       SET status = 'queued',
+           error_message = NULL,
+           retry_count = retry_count + 1
+       WHERE id = $1 AND status = 'failed'`,
+      [queueId],
+    );
+
+    // Process the queue to retry
+    await this.processQueue();
+  }
 }
 
-// Create singleton instance
+// Export singleton instance
 export const tenantDeletionService = new TenantDeletionService();
-
-// Export for backwards compatibility
-export default tenantDeletionService;

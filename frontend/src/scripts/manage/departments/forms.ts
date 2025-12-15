@@ -1,0 +1,237 @@
+/**
+ * Department Management - Modal & Form Handling
+ */
+
+import { $$id, setSafeHTML } from '../../../utils/dom-utils';
+import type { Department, Area, AdminUser } from './types';
+
+// Constants
+const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
+
+/**
+ * Show Add Department Modal
+ */
+export function showAddDepartmentModal(): void {
+  const modal = $$id('department-modal');
+  const form = $$id('department-form') as HTMLFormElement | null;
+  const title = $$id('department-modal-title');
+  const deptIdInput = $$id('department-id') as HTMLInputElement | null;
+
+  if (form !== null) {
+    form.reset();
+  }
+
+  if (title !== null) {
+    title.textContent = 'Neue Abteilung';
+  }
+
+  if (deptIdInput !== null) {
+    deptIdInput.value = '';
+  }
+
+  // Reset custom dropdown triggers (form.reset() only clears hidden inputs, not trigger text)
+  const areaTriggerSpan = $$id('area-trigger')?.querySelector('span');
+  if (areaTriggerSpan !== null && areaTriggerSpan !== undefined) {
+    areaTriggerSpan.textContent = 'Kein Bereich';
+  }
+
+  const leadTriggerSpan = $$id('department-lead-trigger')?.querySelector('span');
+  if (leadTriggerSpan !== null && leadTriggerSpan !== undefined) {
+    leadTriggerSpan.textContent = 'Kein Abteilungsleiter';
+  }
+
+  // Hide status dropdown for CREATE (new departments are always active)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.add('u-hidden');
+
+  modal?.classList.add(MODAL_ACTIVE_CLASS);
+}
+
+/**
+ * Helper: Set Area Dropdown value and display
+ */
+function setAreaDropdown(department: Department): void {
+  const areaInput = $$id('department-area') as HTMLInputElement | null;
+  const areaTrigger = $$id('area-trigger');
+
+  if (areaInput === null || areaTrigger === null) {
+    return;
+  }
+
+  const areaValue = department.areaId !== null && department.areaId !== undefined ? String(department.areaId) : '';
+  areaInput.value = areaValue;
+
+  const areaTriggerSpan = areaTrigger.querySelector('span');
+  if (areaTriggerSpan !== null) {
+    areaTriggerSpan.textContent = department.areaName ?? 'Kein Bereich';
+  }
+}
+
+/**
+ * Helper: Set Department Lead Dropdown value (Custom Dropdown)
+ */
+function setDepartmentLeadDropdown(department: Department): void {
+  const leadInput = $$id('department-lead') as HTMLInputElement | null;
+  const leadTrigger = $$id('department-lead-trigger');
+
+  if (leadInput === null || leadTrigger === null) {
+    return;
+  }
+
+  const leadValue =
+    department.departmentLeadId !== null && department.departmentLeadId !== undefined
+      ? String(department.departmentLeadId)
+      : '';
+  leadInput.value = leadValue;
+
+  const leadTriggerSpan = leadTrigger.querySelector('span');
+  if (leadTriggerSpan !== null) {
+    leadTriggerSpan.textContent = department.departmentLeadName ?? 'Kein Abteilungsleiter';
+  }
+}
+
+/**
+ * Helper: Set Status Dropdown value and display (with badge)
+ */
+function setStatusDropdown(department: Department): void {
+  const statusInput = $$id('department-status') as HTMLInputElement | null;
+  const statusTrigger = $$id('status-trigger');
+
+  if (statusInput === null || statusTrigger === null) {
+    return;
+  }
+
+  // Convert status to string for form input
+  // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  const isActive = department.isActive === 1;
+  statusInput.value = isActive ? '1' : '0';
+
+  const statusTriggerSpan = statusTrigger.querySelector('span');
+  if (statusTriggerSpan !== null) {
+    const badgeClass = isActive ? 'badge--success' : 'badge--warning';
+    const badgeText = isActive ? 'Aktiv' : 'Inaktiv';
+    setSafeHTML(statusTriggerSpan, `<span class="badge ${badgeClass}">${badgeText}</span>`);
+  }
+}
+
+/**
+ * Show Edit Department Modal
+ */
+export function showEditDepartmentModal(department: Department): void {
+  const modal = $$id('department-modal');
+  const form = $$id('department-form') as HTMLFormElement | null;
+  const title = $$id('department-modal-title');
+  const deptIdInput = $$id('department-id') as HTMLInputElement | null;
+
+  // Set modal title
+  if (title !== null) {
+    title.textContent = 'Abteilung bearbeiten';
+  }
+
+  // Set department ID
+  if (deptIdInput !== null) {
+    deptIdInput.value = String(department.id);
+  }
+
+  // Show status dropdown for EDIT (allows changing status)
+  const statusFieldGroup = document.querySelector('#status-field-group');
+  statusFieldGroup?.classList.remove('u-hidden');
+
+  // Populate basic form fields
+  if (form !== null) {
+    const nameInput = form.querySelector<HTMLInputElement>('#department-name');
+    const descInput = form.querySelector<HTMLTextAreaElement>('#department-description');
+
+    if (nameInput !== null) {
+      nameInput.value = department.name;
+    }
+    if (descInput !== null) {
+      descInput.value = department.description ?? '';
+    }
+  }
+
+  // Set custom dropdowns
+  setAreaDropdown(department);
+  setDepartmentLeadDropdown(department);
+  setStatusDropdown(department);
+
+  modal?.classList.add(MODAL_ACTIVE_CLASS);
+}
+
+/**
+ * Close Department Modal
+ */
+export function closeDepartmentModal(): void {
+  const modal = $$id('department-modal');
+  modal?.classList.remove(MODAL_ACTIVE_CLASS);
+}
+
+/**
+ * Show Delete Modal
+ */
+export function showDeleteModal(id: number, _name: string): void {
+  const modal = $$id('delete-department-modal');
+  const deleteInput = $$id('delete-department-id') as HTMLInputElement | null;
+
+  if (deleteInput !== null) {
+    deleteInput.value = String(id);
+  }
+
+  modal?.classList.add(MODAL_ACTIVE_CLASS);
+}
+
+/**
+ * Close Delete Modal
+ */
+export function closeDeleteModal(): void {
+  const modal = $$id('delete-department-modal');
+  modal?.classList.remove(MODAL_ACTIVE_CLASS);
+}
+
+/**
+ * Load and populate areas dropdown (Custom Dropdown)
+ */
+export function loadAndPopulateAreas(areas: Area[]): void {
+  const areaMenu = $$id('area-menu');
+
+  if (areaMenu === null) {
+    return;
+  }
+
+  // Clear existing options and add default
+  areaMenu.innerHTML = '<div class="dropdown__option" data-value="">Kein Bereich</div>';
+
+  // Add area options
+  areas.forEach((area) => {
+    const option = document.createElement('div');
+    option.className = 'dropdown__option';
+    option.dataset['value'] = String(area.id);
+    option.textContent = area.name;
+    areaMenu.appendChild(option);
+  });
+}
+
+/**
+ * Load and populate department lead dropdown (Custom Dropdown)
+ * Shows only admin/root users
+ */
+export function loadAndPopulateDepartmentLeads(users: AdminUser[]): void {
+  const leadMenu = $$id('department-lead-menu');
+
+  if (leadMenu === null) {
+    return;
+  }
+
+  // Clear existing options and add default
+  leadMenu.innerHTML = '<div class="dropdown__option" data-value="">Kein Abteilungsleiter</div>';
+
+  // Add user options
+  users.forEach((user) => {
+    const option = document.createElement('div');
+    option.className = 'dropdown__option';
+    option.dataset['value'] = String(user.id);
+    const roleLabel = user.role === 'root' ? '(Root)' : '(Admin)';
+    option.textContent = `${user.firstName} ${user.lastName} ${roleLabel}`;
+    leadMenu.appendChild(option);
+  });
+}
