@@ -17,7 +17,6 @@ COPY tsconfig.json ./
 # Workspace package.json files kopieren (für pnpm workspace)
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
-COPY scripts/package.json ./scripts/
 
 # Dependencies installieren
 RUN pnpm install --frozen-lockfile
@@ -25,13 +24,8 @@ RUN pnpm install --frozen-lockfile
 # Backend Source kopieren
 COPY backend/ ./backend/
 
-# Fix-Script kopieren (scripts/package.json bereits kopiert)
-COPY scripts/fix-esm-imports.js ./scripts/
-
-# Backend Dependencies sind bereits durch Workspace installiert
-
-# TypeScript kompilieren
-RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
+# TypeScript kompilieren (für Type-Checking, tsx führt TS direkt aus)
+RUN cd backend && pnpm run build
 
 # Stage 2: Production Runtime
 FROM node:24.11.1-alpine
@@ -60,16 +54,12 @@ COPY tsconfig.json ./
 # Workspace package.json files kopieren
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
-COPY scripts/package.json ./scripts/
 
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune
 
 # Source Code kopieren
 COPY --from=builder --chown=nodejs:nodejs /app/backend ./backend
-
-# Scripts kopieren (für build:ts command)
-COPY --chown=nodejs:nodejs scripts/ ./scripts/
 
 # Environment
 ENV NODE_ENV=production
