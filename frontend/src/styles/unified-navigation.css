@@ -1,20 +1,25 @@
+/* Import Design System Components needed by navigation */
+@import "../design-system/primitives/modals/modal.base.css";
+@import "../design-system/components/confirm-modal/confirm-modal.css";
+
 /* Header Base Styles */
+
 .header {
-  position: fixed;
+  position: sticky;
   z-index: 1000;
   top: 0;
-  right: 0;
-  left: 0;
 
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
-  height: 60px;
-  padding: 0 20px;
+  height: 80px;
+  min-height: 3.5rem;
+  padding: 0.5rem 1rem;
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 0 0 2px #00000017;
 }
 
 .header .header-content {
@@ -27,33 +32,72 @@
   display: flex;
   align-items: center;
 
-  margin-right: var(--spacing-lg);
+  margin-right: var(--spacing-6);
   margin-bottom: -3px;
 
   text-decoration: none;
 }
 
 .header .logo {
-  width: auto;
+  width: 120px;
   height: 50px;
   margin-left: -13px;
 }
 
 .header .header-actions {
   display: flex;
-  gap: calc(var(--spacing-lg) + 8px);
+  gap: calc(var(--spacing-6) + 8px);
   align-items: center;
 }
 
 .header-actions [id="user-info"] {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
   /* background: rgba(255, 255, 255, 0.1); */
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-1) var(--spacing-2);
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 20px;
+}
+
+/* Token Timer */
+.token-timer {
+  display: inline-block;
+
+  min-width: 45px; /* Reserve space for "00:00" format */
+
+  /* Prevent layout shift when timer updates (different digit widths) */
+  font-size: 1rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums; /* Zahlen gleich breit */
+  color: rgb(255 255 255 / 80%);
+  text-align: center;
+  letter-spacing: 0.05em;
+
+  transition: color 0.3s ease;
+}
+
+.token-timer--warning {
+  font-weight: 600;
+  color: #fbbf24; /* Amber/Yellow warning color */
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.token-timer--expired {
+  font-weight: 700;
+  color: #ef4444; /* Red error color */
+}
+
+@keyframes pulse-warning {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 60%;
+  }
 }
 
 .header-actions [id="user-name"] {
@@ -63,38 +107,24 @@
   white-space: nowrap;
 }
 
-.header-actions [id="user-info"]::before {
-  content: "";
-
-  /* background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-}
+/* Avatar styles removed - handled by Design System (avatar.css) */
 
 /* Role Switch Warning Banner */
 .role-switch-banner {
   position: fixed;
   z-index: 999;
-  top: 60px;
+  top: 80px;
   right: 30%;
   left: 30%;
 
   margin-top: 2px;
   padding: 5px 20px;
-  border-bottom: 1px solid rgb(255 193 7 / 30%);
+
+  /* border-bottom: 1px solid rgb(255 193 7 / 30%); */
   border-radius: 5px;
 
-  background: #ffc1071c;
-  box-shadow: -2px 5px 14px #ffc10724;
+  /* background: #ffc1071c; */
+  /* box-shadow: -2px 5px 14px #ffc10724; */
 }
 
 .role-switch-banner-content {
@@ -105,7 +135,6 @@
   justify-content: center;
 
   width: 100%;
-  max-width: 1200px;
 
   font-size: 14px;
   color: #ff9800;
@@ -122,9 +151,11 @@
   position: absolute;
   right: 0;
 
+  display: inherit;
+
   padding: 4px;
   border: none;
-  border-radius: 4px;
+  border-radius: 300px;
 
   color: #ff9800;
 
@@ -138,19 +169,25 @@
 
 /* Base sidebar styles - lowest specificity first */
 .sidebar {
-  position: relative;
-  top: 0;
+  /* STICKY: Sidebar klebt UNTER dem Header (80px vom Viewport-Top) */
+  position: sticky;
+  top: 80px; /* Header-Höhe! Sidebar klebt unter dem Header, nicht dahinter */
   left: 0;
 
   overflow: hidden auto;
+
+  /* Eigener Scrollbereich für Sidebar */
   flex-shrink: 0;
+  align-self: flex-start; /* Wichtig für sticky in Flexbox */
 
-  width: 280px !important;
-  min-width: 280px;
+  width: 260px !important;
+  min-width: 260px;
 
-  /* border-right: 1px solid rgba(255, 255, 255, 0.1); */
-  height: auto;
-  min-height: calc(100vh - 60px);
+  /* Exakte Höhe = Viewport minus Header (80px) */
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+  margin-top: 0; /* Kein margin-top mehr nötig, top: 80px übernimmt */
+  margin-left: 10px;
 
   background: rgb(255 255 255 / 0%);
   backdrop-filter: blur(20px);
@@ -188,8 +225,7 @@
   display: flex;
   flex-direction: column;
 
-  min-height: 100%;
-  padding: var(--spacing-md);
+  padding: var(--spacing-4);
 }
 
 .sidebar-title {
@@ -202,15 +238,14 @@
   align-items: center;
   justify-content: center;
 
-  width: 98%;
+  width: 85%;
   margin-top: 23px;
   margin-right: 1%;
-  margin-left: 1%;
-  padding: var(--spacing-sm);
+  margin-left: 15px;
+  padding: var(--spacing-1);
   border: 1px solid rgb(255 255 255 / 100%);
   border-radius: 10px;
 
-  font-size: 0.825rem;
   font-weight: 600;
   color: #ffff;
   text-align: center;
@@ -254,128 +289,6 @@
     0 2px 4px rgb(0 0 0 / 15%);
 }
 
-/* Base pin styles - lowest specificity first */
-/* Pin head (only the head visible - like pushed in) */
-.pin-head {
-  position: relative;
-
-  display: block;
-
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-
-  background: #d32f2f;
-  box-shadow:
-    0 3px 6px rgb(0 0 0 / 40%),
-    inset -2px -2px 3px rgb(0 0 0 / 30%),
-    inset 2px 2px 3px rgb(255 255 255 / 40%);
-}
-
-.pin-head::after {
-  content: "";
-
-  position: absolute;
-  top: 4px;
-  left: 4px;
-
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-/* Pin needle (appears on hover - full pushpin) */
-.pin-needle {
-  position: absolute;
-  z-index: 2;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  opacity: 0%;
-}
-
-/* Pin needle head */
-.pin-needle::before {
-  content: "";
-
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-
-  background: #d32f2f;
-  box-shadow:
-    0 3px 6px rgb(0 0 0 / 40%),
-    inset -2px -2px 3px rgb(0 0 0 / 30%),
-    inset 2px 2px 3px rgb(255 255 255 / 40%);
-}
-
-/* Pin needle shaft */
-.pin-needle::after {
-  content: "";
-
-  position: absolute;
-  top: 7px;
-
-  /* Von 17px auf 8px reduziert um Lücke zu schließen */
-  left: 50%;
-  transform: translateX(-50%);
-
-  width: 2px;
-  height: 22px;
-
-  background: linear-gradient(to bottom, #aaa 0%, #888 50%, #666 100%);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
-}
-
-/* Hover states for pins - higher specificity */
-.sidebar-title:hover .pin-head {
-  opacity: 0%;
-}
-
-.sidebar-title:hover .pin-needle {
-  top: -18px;
-  opacity: 100%;
-}
-
-/* Pinned icon styles */
-.pinned-icon {
-  position: absolute;
-  z-index: 2;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.title-content {
-  display: flex;
-  gap: var(--spacing-sm);
-  justify-content: center;
-
-  width: 100%;
-  min-width: 0;
-}
-
-.title-text {
-  overflow: hidden;
-
-  /* transition: opacity 0.3s ease, width 0.3s ease; */
-  font-family:
-    Outfit,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Arial,
-    sans-serif;
-  white-space: nowrap;
-}
-
 /* Toggle button im Header */
 .header .sidebar-toggle {
   cursor: pointer;
@@ -389,7 +302,7 @@
   width: 40px;
   height: 40px;
   margin-right: 15px;
-  margin-left: -6px;
+  margin-left: 8px;
   border: 1px solid transparent;
   border-radius: 8px;
 
@@ -417,6 +330,7 @@
 
   /* 72px bei 16px base - durch 8 teilbar! */
   min-width: 4.5rem !important;
+  margin-left: 10px;
 }
 
 /* Logo size adjustment when sidebar is collapsed */
@@ -433,7 +347,7 @@ body:has(.sidebar.collapsed) .header .logo {
   width: calc(100% - 8px);
   min-height: 26px;
   margin-left: 4px;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-2);
 
   font-size: 0;
 
@@ -451,42 +365,18 @@ body:has(.sidebar.collapsed) .header .logo {
   justify-content: center;
 }
 
-.sidebar.collapsed .pinned-icon {
-  top: -0.438rem;
-
-  /* -7px in rem */
-}
-
-.sidebar.collapsed .pin-head {
-  width: 1rem;
-
-  /* 16px in rem */
-  height: 1rem;
-}
-
-.sidebar.collapsed .pin-head::after {
-  top: 0.188rem;
-
-  /* 3px in rem */
-  left: 0.188rem;
-  width: 0.313rem;
-
-  /* 5px in rem */
-  height: 0.313rem;
-}
-
 .sidebar.collapsed .user-info-card {
   flex-direction: column;
   align-items: center;
 
   min-height: auto;
-  margin-top: 5rem;
 
   /* 80px in rem */
-  margin-bottom: 1.25rem;
+  margin-bottom: 9rem;
+  margin-left: 4px;
 
   /* 20px in rem */
-  padding: 1.063rem;
+  padding: 0.7rem;
 
   /* 17px in rem */
 }
@@ -534,6 +424,17 @@ body:has(.sidebar.collapsed) .header .logo {
   height: 1.063rem !important;
 }
 
+/* Active item when sidebar is collapsed - keep black color with higher specificity */
+.sidebar.collapsed .sidebar-item.active .sidebar-link {
+  color: var(--color-black) !important;
+  transition: color 0.2s ease;
+}
+
+/* Icon color for active item when sidebar is collapsed */
+.sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
+  color: var(--color-black);
+}
+
 .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
   content: "";
 
@@ -543,15 +444,11 @@ body:has(.sidebar.collapsed) .header .logo {
 
   /* -9px in rem */
 
-  border: 1px solid hsl(0deg 0% 39.6%);
-  border-radius: 50%;
+  border-radius: var(--glass-card-radius);
 
-  background: rgb(139 139 139 / 41%);
-}
+  /* NOTE: 'color' doesn't work on ::before with empty content - use .icon instead (see above) */
 
-/* Hover - Icon wird primary color */
-.sidebar.collapsed .sidebar-link:hover .icon {
-  color: var(--primary-color);
+  background: var(--color-icon-primary);
 }
 
 /* Hover nur bei NICHT active */
@@ -560,45 +457,35 @@ body:has(.sidebar.collapsed) .header .logo {
 
   position: absolute;
   z-index: -1;
-  inset: -0.55rem;
+  inset: -0.525rem;
 
-  /* -9px in rem */
+  border-radius: var(--glass-card-radius);
 
-  border-radius: 50%;
-
-  background: rgb(33 150 243 / 10%);
+  background: #a9d9ff47;
 }
 
-/* Active + Hover = stärkerer active effect */
-.sidebar.collapsed .sidebar-item.active .sidebar-link:hover .icon::before {
-  background: linear-gradient(135deg, rgb(33 150 243 / 25%), rgb(33 150 243 / 15%));
-}
+/* Active items should NOT have hover effect - removed the rule */
 
 /* Moved to after base styles - see lines 954+ and 1029+ */
 
-.sidebar.collapsed .sidebar-menu {
-  /* margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
-  margin-top: 4.44rem;
-}
-
-/* Main content adjustment for collapsed sidebar - not needed with flex layout */
-.main-content.sidebar-collapsed {
+/* Main content adjustment for collapsed sidebar - updated selectors */
+.sidebar-collapsed {
   margin-left: 0;
 }
 
 /* Container full width when sidebar collapsed */
-.main-content.sidebar-collapsed .container {
+.sidebar-collapsed .container {
   max-width: none;
 }
 
 /* Content sections full width when sidebar collapsed */
-.main-content.sidebar-collapsed .content-section {
+.sidebar-collapsed .content-section {
   width: 100%;
   max-width: none;
 }
 
 /* Cards inside collapsed layout use more space */
-.main-content.sidebar-collapsed .card {
+.sidebar-collapsed .card {
   max-width: none;
 }
 
@@ -615,7 +502,7 @@ body:has(.sidebar.collapsed) .header .logo {
     padding: 8px 12px;
     background: rgba(0, 0, 0, 0.9);
     color: #fff;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xl);
     font-size: 14px;
     white-space: nowrap;
     z-index: 1000;
@@ -623,12 +510,6 @@ body:has(.sidebar.collapsed) .header .logo {
     opacity: 0;
 }
 */
-
-@keyframes tooltip-fade-in {
-  to {
-    opacity: 100%;
-  }
-}
 
 /* Badge adjustments for collapsed sidebar */
 
@@ -643,17 +524,17 @@ body:has(.sidebar.collapsed) .header .logo {
   /* display: flex; */
   align-items: center;
 
+  width: 85%;
   min-height: 100px;
 
   /* animation: fadeInUp 0.6s ease-out; */
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin: 20px 15px;
 
   /* ap: 15px; */
-  padding: 14px 10px 15px 40px;
+  padding: 14px 10px 15px 20px;
 
   /* border: 1px solid rgba(115, 115, 115, 0.36); */
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -694,57 +575,11 @@ body:has(.sidebar.collapsed) .header .logo {
   z-index: 1;
 }
 
-/* Avatar Styles - Ohne Border */
-[id="sidebar-user-avatar"],
-.sidebar .user-avatar,
-.user-info-card .user-avatar,
-[id="user-avatar"] {
-  position: relative;
-
-  overflow: hidden;
-  flex-shrink: 0 !important;
-
-  /* display: block !important; */
-  width: 31px !important;
-  height: 31px !important;
-  margin-left: 0;
-  border: none !important;
-  border-radius: 50% !important;
-
-  object-fit: cover !important;
-}
-
-/* Header avatar specific size */
-[id="user-avatar"] {
-  width: 31px !important;
-  height: 31px !important;
-}
-
-/* Avatar with initials */
-.avatar-initials {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #fff;
-  text-transform: uppercase;
-
-  background: linear-gradient(135deg, #2196f3, #42a5f5);
-}
-
-/* Avatar padding when sidebar is collapsed */
-.sidebar.collapsed .user-avatar {
-  padding: 3px;
-}
-
-/* Avatar margin adjustment when sidebar is collapsed */
-.sidebar.collapsed [id="sidebar-user-avatar"],
-.sidebar.collapsed .user-avatar,
-.sidebar.collapsed .user-info-card .user-avatar {
-  margin-left: -13px !important;
-}
+/* Avatar Styles - Handled by Design System (avatar.css)
+ * Use .avatar with size variants: avatar--xs, avatar--sm, avatar--md, avatar--lg, avatar--xl
+ * Color variants: avatar--color-0 through avatar--color-9
+ * Initials: .avatar__initials
+ */
 
 .user-details {
   display: flex;
@@ -781,15 +616,6 @@ body:has(.sidebar.collapsed) .header .logo {
   white-space: nowrap;
 }
 
-.company-domain {
-  overflow: hidden;
-
-  font-size: 12px;
-  color: rgb(255 255 255 / 50%);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .user-name {
   overflow: hidden;
 
@@ -810,49 +636,27 @@ body:has(.sidebar.collapsed) .header .logo {
   white-space: nowrap;
 }
 
-.role-badge {
-  display: inline-block;
-
-  width: fit-content;
-  margin: 6px 0 0;
-  padding: 2px 8px;
-  border-radius: 8px;
-
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+/* Role Badge - Now uses Design System: badge badge--sm badge--danger/warning/info */
+/* Spacing adjustment for badge in user-info-card */
+.user-info-card .badge {
+  margin-top: 6px;
 }
 
-/* Role-specific badge colors - Exact match from logs */
-.role-badge.root {
-  /* color: #9C27B0; */
-  /* border: 1px solid rgba(156, 39, 176, 0.9); */
-  margin-left: -2px;
-  background: rgb(156 39 176 / 15%);
-  box-shadow: 0 0 1px rgb(255 0 230 / 100%);
-}
-
-.role-badge.admin {
-  /* color: #03A9F4; */
-  /* border: 1px solid rgba(3, 169, 244, 0.9); */
-  margin-left: -2px;
-  background: rgb(3 169 244 / 15%);
-  box-shadow: 0 0 1px rgb(0 190 255);
-}
-
-.role-badge.employee {
-  /* color: #607D8B; */
-  /* border: 1px solid rgba(96, 125, 139, 0.9); */
-  margin-left: -2px;
-  background: rgb(96 125 139 / 15%);
-  box-shadow: 0 0 1px rgb(100 116 122 / 100%);
-}
-
-/* Role Switch Dropdown - Using styles from dashboard-theme.css */
-/* Only adding the specific margin that's different */
+/* Role Switch Dropdown - Specific styles */
 .role-switch-dropdown {
+  min-width: 200px; /* Give it width so justify-content: space-between works */
   margin-right: 12px;
+  font-size: 14px; /* Explicit font size for dropdown */
+}
+
+/* Explicit margin for icons in dropdown options to prevent disappearing during transitions */
+.role-switch-dropdown .dropdown__option i {
+  margin-right: 8px !important; /* Explicit and important to ensure it persists */
+}
+
+/* Also ensure the trigger icon keeps its margin */
+.role-switch-dropdown .dropdown__trigger span i {
+  margin-right: 8px !important;
 }
 
 .sidebar-menu {
@@ -877,7 +681,7 @@ body:has(.sidebar.collapsed) .header .logo {
   height: 2.1rem;
 
   /* 34px in rem */
-  margin-bottom: 0.313rem;
+  margin-bottom: 0.3rem;
 
   /* 5px in rem */
   padding: 0.5rem;
@@ -886,16 +690,14 @@ body:has(.sidebar.collapsed) .header .logo {
   border: 1px solid transparent;
 
   /* Reserviert Platz für active border */
-  border-radius: 18px;
+  border-radius: var(--glass-card-radius);
 
   font-size: 0.875rem;
 
   /* 14px in rem */
-  line-height: 1.25rem;
 
   /* 20px in rem */
   color: var(--text-secondary);
-  text-decoration: none;
 }
 
 .sidebar-link .icon {
@@ -958,14 +760,6 @@ body:has(.sidebar.collapsed) .header .logo {
   /* animation: ripple 0.6s ease-out; */
 }
 
-@keyframes ripple {
-  to {
-    width: 200px;
-    height: 200px;
-    opacity: 0%;
-  }
-}
-
 /* Submenu Styles */
 .sidebar-item {
   margin: 0;
@@ -976,14 +770,15 @@ body:has(.sidebar.collapsed) .header .logo {
   position: relative;
 }
 
-/* Hover/Active nur wenn NICHT collapsed - moved here to fix specificity order */
-.sidebar:not(.collapsed) .sidebar-link:hover {
-  background: rgb(33 150 243 / 10%);
+/* Hover nur wenn NICHT collapsed UND NICHT active - moved here to fix specificity order */
+.sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover {
+  background: #a9d9ff47;
 }
 
 .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-  border: 1px solid hsl(0deg 0% 39.6%);
-  background: rgb(139 139 139 / 41%);
+  border-color: var(--color-icon-primary);
+  color: var(--color-black);
+  background: var(--color-icon-primary);
 }
 
 .submenu-arrow {
@@ -1039,10 +834,10 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-left: 0.375rem;
 
   /* 6px in rem */
-  padding: 0.188rem 1.25rem;
+  padding: 0.4rem;
 
   /* 3px 20px in rem */
-  border-radius: 12px;
+  border-radius: var(--glass-card-radius);
 
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -1050,7 +845,6 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .submenu-link:hover {
-  border-color: rgb(33 150 243 / 15%);
   background: rgb(33 150 243 / 8%);
 }
 
@@ -1063,8 +857,9 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-right: 2rem;
 
   /* 80px in rem */
-  border: 1px solid hsl(0deg 0% 39.6% / 44%);
-  border-radius: var(--radius-md);
+  border-radius: var(--glass-card-radius);
+
+  text-align: center;
 
   background: rgb(139 139 139 / 12%);
 }
@@ -1077,41 +872,25 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .role-switch-banner:not([style*="display: none"]) ~ .layout-container {
-  min-height: calc(100vh - 100px) !important;
-  margin-top: 100px !important;
+  min-height: calc(100vh - 120px) !important;
+  margin-top: 40px !important;
 
-  /* 60px header + 40px banner */
+  /* Banner ist ~40px */
 }
 
+/* Sidebar anpassen wenn Role-Switch-Banner sichtbar (80px header + 40px banner) */
 .role-switch-banner:not([style*="display: none"]) ~ .layout-container .sidebar {
-  min-height: calc(100vh - 100px) !important;
+  top: 120px !important; /* 80px Header + 40px Banner */
+  height: calc(100vh - 120px) !important;
+  max-height: calc(100vh - 120px) !important;
 }
 
-.main-content {
-  flex: 1;
-  min-height: calc(100vh - 60px);
-  padding: var(--spacing-xl);
-  background: var(--background-primary);
-}
+/* .main-content - REMOVED: Migrated to Tailwind utilities in HTML files */
 
 /* Storage Widget - Glassmorphismus Style */
 .storage-widget {
+  width: 95%;
   margin-top: 50px;
-
-  /* position: sticky;
-    bottom: 0;
-    margin: var(--spacing-md);
-    margin-top: auto;
-    margin-top: 40px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsla(0,0%,100%,.1);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-     */
 }
 
 /* Collapsed state for storage widget */
@@ -1129,10 +908,10 @@ body:has(.sidebar.collapsed) .header .logo {
 
 .storage-header {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 
   font-size: 14px;
   font-weight: 600;
@@ -1142,11 +921,11 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .storage-info {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .storage-usage-text {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -1161,7 +940,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   width: 100%;
   height: 8px;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
   border-radius: 4px;
 
   background: rgb(255 255 255 / 10%);
@@ -1201,16 +980,6 @@ body:has(.sidebar.collapsed) .header .logo {
   /* animation: progress-stripes 1s linear infinite; */
 }
 
-@keyframes progress-stripes {
-  0% {
-    background-position: 0 0;
-  }
-
-  100% {
-    background-position: 20px 20px;
-  }
-}
-
 .storage-percentage {
   font-size: 12px;
   color: var(--text-secondary);
@@ -1221,14 +990,14 @@ body:has(.sidebar.collapsed) .header .logo {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
   justify-content: center;
 
   width: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -1236,7 +1005,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   box-shadow:
-    0 2px 8px rgb(33 150 243 / 30%),
+    0 1px 8px rgb(33 150 243 / 30%),
     inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
@@ -1249,19 +1018,28 @@ body:has(.sidebar.collapsed) .header .logo {
 
 /* Responsive Design */
 @media (width <=768px) {
+  .header {
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
   .sidebar {
+    /* Mobile: Fixed statt Sticky (Overlay-Menü) */
+    position: fixed;
+    z-index: 100;
     top: 60px;
     transform: translateX(-100%);
+
     width: 100%;
+    height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
   }
 
-  .main-content {
-    margin-left: 0;
-  }
+  /* .main-content - REMOVED: Margin-left now handled by Tailwind utilities */
 
   .layout-container {
     flex-direction: column;
@@ -1273,8 +1051,77 @@ body:has(.sidebar.collapsed) .header .logo {
     bottom: auto;
     left: auto;
 
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-6);
   }
+}
+
+/* ========== Navigation Badges ========== */
+
+.nav-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+
+  display: inline-block;
+
+  min-width: 24px;
+  border-radius: 50px;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+
+  background: linear-gradient(0deg, rgb(243 33 33 / 71%), rgb(243 33 33 / 76%));
+}
+
+.nav-badge-kvp {
+  background: linear-gradient(0deg, rgb(76 175 80 / 71%), rgb(76 175 80 / 76%));
+}
+
+.nav-badge-surveys {
+  right: 15px;
+
+  min-width: 20px;
+  padding: 3px 8px;
+  border: 1px solid rgb(255 152 0 / 30%);
+  border-radius: 12px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ff9800;
+
+  background: rgb(255 152 0 / 15%);
+  backdrop-filter: blur(10px);
+}
+
+.nav-badge-documents {
+  min-width: 18px;
+  border-radius: 10px;
+  color: #fff;
+  background: #2196f3;
+}
+
+.nav-badge-lean-parent {
+  right: 40px;
+
+  font-weight: 600;
+  color: #fff;
+
+  background: rgb(255 153 0 / 70%);
+  backdrop-filter: blur(10px);
+}
+
+.nav-badge-child {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.nav-badge-child-default {
+  min-width: 18px;
+  border-radius: 10px;
+  color: #fff;
+  background: #ff5722;
 }
 
 /* Collapsed sidebar - show badges as dots */
@@ -1301,4 +1148,77 @@ body:has(.sidebar.collapsed) .header .logo {
   top: 50% !important;
   right: 8px !important;
   transform: translateY(-50%) !important;
+}
+
+/* ============================================
+   Phase 1 CSS Cleanup - Inline Style Replacements
+   Added: 2025-12-12
+   ============================================ */
+
+/* Employee Number Styles (replaces inline styles) */
+.employee-number--visible {
+  display: flex;
+  justify-content: center;
+}
+
+.employee-number__text {
+  letter-spacing: 2px;
+}
+
+.employee-number--temp {
+  color: var(--warning-color);
+}
+
+/* User Info Styles (replaces inline template styles) */
+.user-position {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+}
+
+.user-employee-number {
+  overflow: hidden;
+
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Logo Clickable State (replaces style.cursor = 'pointer') */
+.logo-container--clickable {
+  cursor: pointer;
+}
+
+/* Storage Progress Bar - CSS Variables for dynamic values
+   Usage: element.style.setProperty('--storage-progress', '75%');
+          element.style.setProperty('--storage-color', 'var(--success-color)');
+*/
+.storage-progress-bar--dynamic {
+  width: var(--storage-progress, 0%);
+  background-color: var(--storage-color, var(--success-color));
+  transition:
+    width 0.5s ease,
+    background-color 0.3s ease;
+}
+
+/* Submenu Open State (replaces style.display = 'block') */
+.submenu--open {
+  display: block !important;
+}
+
+/* Icon Margin Right (replaces style="margin-right: 8px;") */
+.mr-2 {
+  margin-right: 8px;
+}
+
+/* Sidebar Banner Reset (replaces inline style.top/height) */
+.sidebar--banner-dismissed {
+  top: unset;
+  height: unset;
+}
+
+/* Logout Button - Custom padding override */
+#logout-btn {
+  padding: 12px 22px;
 }

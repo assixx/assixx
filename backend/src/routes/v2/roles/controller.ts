@@ -3,7 +3,8 @@
  * HTTP request handlers for roles API
  */
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
+
+// Removed express-validator - using Zod validation in routes
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -14,7 +15,7 @@ import type { RoleCheckRequest, RoleName } from './types.js';
 /**
  *
  */
-export class RolesController {
+class RolesController {
   /**
    * Get all available roles
    * @param _req - The _req parameter
@@ -46,25 +47,10 @@ export class RolesController {
    * @param res - The response object
    */
   getRoleById(req: AuthenticatedRequest, res: Response): void {
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: errors.array().map((error) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: error.msg,
-          })),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
-      const roleId = req.params.id as RoleName;
+      const roleId = req.params['id'] as RoleName;
       const role = rolesService.getRoleById(roleId);
 
       res.json({
@@ -162,22 +148,7 @@ export class RolesController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: errors.array().map((error) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: error.msg,
-          })),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const request = req.body as RoleCheckRequest;

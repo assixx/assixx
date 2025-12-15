@@ -1,0 +1,283 @@
+/**
+ * Feature Cards - Choice Card Variant
+ *
+ * Cards for feature activation/deactivation management
+ * Used in root-features page
+ *
+ * Pattern from: /root-features Feature Management
+ *
+ * Usage:
+ * <div class="feature-card active" data-feature="basic_employees">
+ *   <span class="feature-status status-active">Aktiv</span>
+ *   <h4 class="feature-name">Mitarbeiterverwaltung</h4>
+ *   <p class="feature-description">Verwalten Sie Ihre Mitarbeiter effizient</p>
+ *   <div class="feature-plan-badge">Ab Basic</div>
+ *   <div class="feature-actions">
+ *     <button class="btn btn-deactivate">Deaktivieren</button>
+ *   </div>
+ * </div>
+ */
+
+/* ============================================================
+   FEATURE CARD - Base
+   ============================================================ */
+
+.feature-card {
+  /* Layout */
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+
+  /* Spacing */
+  padding: 24px;
+
+  /* Glassmorphism */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+
+  /* Transition */
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out);
+}
+
+/* Hover state */
+.feature-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 10%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+/* Active state (feature is enabled) */
+.feature-card.active {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--glass-card-radius);
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--card-shadow);
+}
+
+.feature-card.active:hover {
+  border-color: var(--color-success);
+  background: rgb(255 255 255 / 3%);
+}
+
+/* Inactive/Disabled state */
+.feature-card.inactive {
+  border-color: rgb(255 255 255 / 5%);
+  opacity: 70%;
+  background: rgb(255 255 255 / 3%);
+}
+
+/* ============================================================
+   FEATURE STATUS BADGE
+   ============================================================ */
+
+.feature-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feature-status.status-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-success) 0%, rgb(56 142 60) 100%);
+  box-shadow: 0 2px 8px rgb(76 175 80 / 30%);
+}
+
+.feature-status.status-inactive {
+  border: 1px solid rgb(255 255 255 / 10%);
+  color: var(--color-text-secondary);
+  background: rgb(255 255 255 / 5%);
+}
+
+/* ============================================================
+   FEATURE CONTENT
+   ============================================================ */
+
+.feature-name {
+  margin: 0;
+  margin-top: var(--spacing-2);
+
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.feature-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   FEATURE PLAN BADGE
+   ============================================================ */
+
+.feature-plan-badge {
+  display: inline-flex;
+  gap: var(--spacing-1);
+  align-items: center;
+
+  padding: 4px 10px;
+  border: 1px solid rgb(33 150 243 / 20%);
+  border-radius: var(--radius-md);
+
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+
+  background: rgb(33 150 243 / 10%);
+}
+
+.feature-plan-badge::before {
+  content: "★";
+  font-size: 14px;
+}
+
+/* ============================================================
+   FEATURE ACTIONS
+   ============================================================ */
+
+.feature-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.feature-actions .btn {
+  flex: 1;
+}
+
+/*
+ * Button Variants:
+ * - Activate: Use .btn.btn-status-inactive (existing)
+ * - Deactivate: Use .btn.btn-status-active (existing)
+ * - Configure: Use .btn.btn-cancel (existing)
+ */
+
+/* ============================================================
+   FEATURE GRID CONTAINER
+   ============================================================ */
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-5);
+}
+
+/* Responsive grid */
+@media (width <= 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (width <= 768px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   FEATURE CARD VARIANTS
+   ============================================================ */
+
+/* Compact variant */
+.feature-card--compact {
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+}
+
+.feature-card--compact .feature-name {
+  font-size: 16px;
+}
+
+.feature-card--compact .feature-description {
+  font-size: 13px;
+}
+
+/* Premium feature (requires higher plan) */
+.feature-card--premium {
+  border-color: rgb(255 215 0 / 30%);
+  background: rgb(255 215 0 / 5%);
+}
+
+.feature-card--premium .feature-plan-badge {
+  border-color: rgb(255 215 0 / 30%);
+  color: rgb(255 215 0);
+  background: rgb(255 215 0 / 10%);
+}
+
+.feature-card--premium .feature-plan-badge::before {
+  content: "⭐";
+}
+
+/* Coming soon */
+.feature-card--coming-soon {
+  pointer-events: none;
+  opacity: 60%;
+}
+
+.feature-card--coming-soon::after {
+  content: "Demnächst";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-5deg);
+
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+
+  background: rgb(0 0 0 / 80%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .feature-card {
+    border-width: 2px;
+  }
+
+  .feature-status {
+    border: 2px solid currentcolor;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .feature-card {
+    transition: none;
+  }
+
+  .feature-card:hover {
+    transform: none;
+  }
+}

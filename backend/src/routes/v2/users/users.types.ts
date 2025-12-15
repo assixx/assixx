@@ -10,7 +10,12 @@ export interface CreateUserBody {
   lastName: string;
   password: string;
   role?: 'employee' | 'admin';
+  // N:M REFACTORING: Legacy field (deprecated, use departmentIds)
   departmentId?: number;
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds?: number[];
+  teamIds?: number[];
+  hasFullAccess?: boolean;
   position?: string;
   phone?: string;
   address?: string;
@@ -22,7 +27,12 @@ export interface UpdateUserBody {
   firstName?: string;
   lastName?: string;
   role?: 'employee' | 'admin';
+  // N:M REFACTORING: Legacy field (deprecated, use departmentIds)
   departmentId?: number;
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds?: number[];
+  teamIds?: number[];
+  hasFullAccess?: boolean;
   position?: string;
   phone?: string;
   address?: string;
@@ -38,6 +48,7 @@ export interface UpdateProfileBody {
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
+  employeeNumber?: string;
 }
 
 export interface ChangePasswordBody {
@@ -54,23 +65,23 @@ export interface UpdateAvailabilityBody {
 }
 
 // Query Parameter Types
+// UPDATED: isArchived removed, using isActive status (2025-12-02)
 export interface ListUsersQuery {
   page?: string;
   limit?: string;
   search?: string;
   role?: string;
-  isActive?: string;
-  isArchived?: string;
+  isActive?: string; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
 
 // Database field mapping types
+// UPDATED: is_archived removed, using is_active status (2025-12-02)
 export interface UserDbFields {
   tenant_id: number;
   role?: string;
-  is_active?: boolean;
-  is_archived?: boolean;
+  is_active?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   first_name?: string;
   last_name?: string;
   department_id?: number;
@@ -81,23 +92,4 @@ export interface UserDbFields {
   availability_start?: Date | null;
   availability_end?: Date | null;
   availability_notes?: string | null;
-}
-
-// User creation data for database
-export interface UserCreateData {
-  email: string;
-  username: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  tenant_id: number;
-  role?: string;
-  department_id?: number;
-  position?: string;
-  phone?: string;
-  address?: string;
-  employee_id?: string;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
 }

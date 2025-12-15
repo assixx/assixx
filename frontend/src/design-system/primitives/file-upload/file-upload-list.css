@@ -1,0 +1,408 @@
+/**
+ * File Upload List Component
+ *
+ * Displays uploaded/uploading files with progress, previews, and actions.
+ * Works with our Progress component for upload status.
+ *
+ * USAGE:
+ *   <div class="file-upload-list">
+ *     <div class="file-upload-item">
+ *       <div class="file-upload-item__preview">
+ *         <img src="..." alt="Preview" />
+ *       </div>
+ *       <div class="file-upload-item__info">
+ *         <div class="file-upload-item__name">document.pdf</div>
+ *         <div class="file-upload-item__meta">2.5 MB • Uploading...</div>
+ *       </div>
+ *       <div class="file-upload-item__progress">
+ *         <div class="progress progress--sm">
+ *           <div class="progress__bar" style="width: 75%;"></div>
+ *         </div>
+ *       </div>
+ *       <button class="file-upload-item__remove" aria-label="Remove file">
+ *         <i class="fas fa-times"></i>
+ *       </button>
+ *     </div>
+ *   </div>
+ *
+ * STATES:
+ *   - .file-upload-item--pending (waiting to upload)
+ *   - .file-upload-item--uploading (currently uploading)
+ *   - .file-upload-item--success (upload complete)
+ *   - .file-upload-item--error (upload failed)
+ */
+
+/* ============================================================
+   FILE LIST CONTAINER
+   ============================================================ */
+
+.file-upload-list {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+/* Empty state */
+.file-upload-list:empty::before {
+  content: "No files selected";
+
+  display: block;
+
+  padding: var(--spacing-6);
+
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ============================================================
+   FILE ITEM
+   ============================================================ */
+
+.file-upload-item {
+  /* Layout */
+  display: grid;
+  grid-template-areas:
+    "preview info actions remove"
+    "preview progress progress progress";
+  grid-template-columns: auto 1fr auto auto;
+  gap: var(--spacing-3);
+  align-items: center;
+
+  padding: var(--spacing-4);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  /* Glassmorphism */
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-glass);
+
+  /* Transition */
+  transition:
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+/* ============================================================
+   PREVIEW (Image or Icon)
+   ============================================================ */
+
+.file-upload-item__preview {
+  overflow: hidden;
+
+  /* Layout */
+  display: flex;
+
+  /* Grid placement */
+  grid-area: preview;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  /* Glass background */
+  background: rgb(255 255 255 / 5%);
+}
+
+/* Image preview */
+.file-upload-item__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Icon fallback */
+.file-upload-item__preview i {
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+}
+
+/* File type specific icons */
+.file-upload-item__preview--pdf {
+  color: var(--color-danger);
+}
+
+.file-upload-item__preview--doc,
+.file-upload-item__preview--word {
+  color: var(--color-primary);
+}
+
+.file-upload-item__preview--xls,
+.file-upload-item__preview--excel {
+  color: var(--color-success);
+}
+
+.file-upload-item__preview--zip {
+  color: var(--color-warning);
+}
+
+.file-upload-item__preview--image {
+  color: var(--color-info, #3b82f6);
+}
+
+/* ============================================================
+   FILE INFO
+   ============================================================ */
+
+.file-upload-item__info {
+  /* Layout */
+  display: flex;
+
+  /* Grid placement */
+  grid-area: info;
+  flex-direction: column;
+  gap: var(--spacing-1);
+
+  min-width: 0; /* Allow text truncation */
+}
+
+.file-upload-item__name {
+  /* Truncate long names */
+  overflow: hidden;
+
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+
+  /* File name */
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-upload-item__meta {
+  font-size: var(--font-size-sm);
+
+  /* Size and status */
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+
+.file-upload-item__progress {
+  /* Layout */
+  display: none; /* Hidden by default */
+
+  /* Grid placement */
+  grid-area: progress;
+}
+
+/* Show progress when uploading */
+.file-upload-item--uploading .file-upload-item__progress {
+  display: block;
+}
+
+/* ============================================================
+   ACTIONS (Optional buttons)
+   ============================================================ */
+
+.file-upload-item__actions {
+  /* Layout */
+  display: flex;
+
+  /* Grid placement */
+  grid-area: actions;
+  gap: var(--spacing-2);
+}
+
+/* ============================================================
+   REMOVE BUTTON
+   ============================================================ */
+
+.file-upload-item__remove {
+  cursor: pointer;
+
+  /* Reset button styling */
+  display: flex;
+
+  /* Grid placement */
+  grid-area: remove;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+
+  font-size: 0.875rem;
+
+  /* Icon */
+  color: var(--color-text-secondary);
+
+  background: rgb(255 255 255 / 5%);
+
+  /* Transition */
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.file-upload-item__remove:hover {
+  color: var(--color-danger);
+  background: rgb(244 67 54 / 10%);
+}
+
+.file-upload-item__remove:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================
+   STATE: PENDING
+   ============================================================ */
+
+.file-upload-item--pending {
+  /* Waiting to upload */
+  opacity: 70%;
+}
+
+.file-upload-item--pending .file-upload-item__meta::after {
+  content: " • Pending";
+  color: var(--color-warning);
+}
+
+/* ============================================================
+   STATE: UPLOADING
+   ============================================================ */
+
+.file-upload-item--uploading {
+  /* Currently uploading */
+  border-color: rgb(33 150 243 / 30%);
+}
+
+.file-upload-item--uploading .file-upload-item__preview {
+  /* Pulse animation */
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    border-color: rgb(33 150 243 / 20%);
+  }
+
+  50% {
+    border-color: rgb(33 150 243 / 50%);
+  }
+}
+
+/* ============================================================
+   STATE: SUCCESS
+   ============================================================ */
+
+.file-upload-item--success {
+  /* Upload complete */
+  border-color: rgb(76 175 80 / 30%);
+}
+
+.file-upload-item--success .file-upload-item__meta::after {
+  content: " • ✓ Uploaded";
+  color: var(--color-success);
+}
+
+/* ============================================================
+   STATE: ERROR
+   ============================================================ */
+
+.file-upload-item--error {
+  /* Upload failed */
+  border-color: rgb(244 67 54 / 30%);
+  background: rgb(244 67 54 / 2%);
+}
+
+.file-upload-item--error .file-upload-item__meta::after {
+  content: " • ✗ Failed";
+  color: var(--color-danger);
+}
+
+.file-upload-item--error .file-upload-item__preview {
+  opacity: 50%;
+}
+
+/* ============================================================
+   ERROR MESSAGE
+   ============================================================ */
+
+.file-upload-item__error {
+  /* Error message below file */
+  grid-area: progress;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+/* ============================================================
+   COMPACT VARIANT
+   ============================================================ */
+
+.file-upload-list--compact .file-upload-item {
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+}
+
+.file-upload-list--compact .file-upload-item__preview {
+  width: 36px;
+  height: 36px;
+}
+
+.file-upload-list--compact .file-upload-item__name {
+  font-size: var(--font-size-sm);
+}
+
+.file-upload-list--compact .file-upload-item__meta {
+  font-size: var(--font-size-xs);
+}
+
+/* ============================================================
+   GRID LAYOUT VARIANT
+   ============================================================ */
+
+.file-upload-list--grid {
+  /* Grid layout for multiple files */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.file-upload-list--grid .file-upload-item {
+  grid-template-areas:
+    "preview"
+    "info"
+    "progress"
+    "remove";
+
+  /* Vertical layout */
+  grid-template-columns: 1fr;
+  text-align: center;
+}
+
+.file-upload-list--grid .file-upload-item__preview {
+  width: 100%;
+  height: 120px;
+  margin: 0 auto;
+}
+
+.file-upload-list--grid .file-upload-item__remove {
+  margin: var(--spacing-2) auto 0;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .file-upload-item,
+  .file-upload-item__preview {
+    animation: none;
+  }
+}

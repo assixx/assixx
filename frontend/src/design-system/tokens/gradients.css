@@ -1,0 +1,51 @@
+/**
+ * Design System - Gradient Tokens
+ *
+ * Purpose: Reusable gradient definitions for buttons and UI
+ * Philosophy: Gradients add depth and premium feel
+ *
+ * Reference:
+ * - iOS Design: Gradient buttons
+ * - Material You: Dynamic color gradients
+ * - Modern SaaS: Linear/Vercel gradient usage
+ */
+
+:root {
+  /* ========== BUTTON GRADIENTS ========== */
+
+  /* Primary - Blue gradient (135deg like original) */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+
+  /* Outputs: linear-gradient(135deg, #2196f3, #1976d2) */
+
+  /* Danger - Red gradient */
+  --gradient-danger: linear-gradient(135deg, #9a1e2a 0%, #c82333 100%);
+
+  /* Danger Hover - Reversed for subtle effect */
+  --gradient-danger-hover: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+
+  /* Success - Green gradient */
+  --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-success-hover));
+
+  /* ========== ACCENT GRADIENTS ========== */
+
+  /* Subtle glass gradient (for card tops) */
+  --gradient-glass-accent: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+
+  /* ========== SHINE EFFECT GRADIENT ========== */
+
+  /* Button shine animation (transparent → white → transparent) */
+  --gradient-shine: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
+
+  /* ========== BACKGROUND GRADIENTS ========== */
+
+  /* Body background - Dramatic dark gradient */
+  --gradient-body-bg: linear-gradient(
+    5deg,
+    transparent 0%,
+    rgb(0 142 255 / 10%) 25%,
+    rgb(1 0 4 / 51%) 60%,
+    rgb(0 0 4 / 60%) 90%,
+    var(--color-black) 100%
+  );
+}

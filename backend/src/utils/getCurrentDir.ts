@@ -11,8 +11,8 @@ export function getCurrentDirPath(): string {
 
   // In tests, we're already in the backend directory
   if (
-    process.env.NODE_ENV === 'test' ||
-    (process.env.JEST_WORKER_ID != null && process.env.JEST_WORKER_ID !== '')
+    process.env['NODE_ENV'] === 'test' ||
+    (process.env['JEST_WORKER_ID'] != null && process.env['JEST_WORKER_ID'] !== '')
   ) {
     return path.join(baseDir, 'src');
   }
@@ -24,7 +24,11 @@ export function getCurrentDirPath(): string {
 
   // In local development, find the src directory
   if (baseDir.includes('backend')) {
-    return path.join(baseDir.split('backend')[0], 'backend', 'src');
+    const rootPath = baseDir.split('backend')[0];
+    if (rootPath === undefined) {
+      return path.join(baseDir, 'backend', 'src');
+    }
+    return path.join(rootPath, 'backend', 'src');
   }
 
   // Fallback - assume we're in the project root

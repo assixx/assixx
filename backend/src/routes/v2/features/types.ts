@@ -1,4 +1,4 @@
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket } from '../../../utils/db.js';
 
 // Features API v2 Types
 

@@ -5,100 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Assixx - Login</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
-    <link rel="preload" as="image" href="../favicon.ico" />
 
     <!-- Critical CSS - Load immediately to prevent FOUC -->
     <link rel="preload" href="/styles/login.css" as="style" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- FontAwesome loaded globally via main.css -->
     <link rel="stylesheet" href="/styles/login.css" />
-
-    <!-- Font loading after critical CSS -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <!-- Feature Flags for API v2 Migration -->
-    <script src="/feature-flags.js"></script>
-    <!-- Dom-utils Module für sichere HTML-Sanitization -->
-    <script type="module">
-      // Simple setHTML implementation for login page (no navigation = no dom-utils import)
-      window.setHTML = function (element, html) {
-        if (!element) return;
-
-        // Create temporary container
-        const temp = document.createElement('div');
-        // eslint-disable-next-line no-unsanitized/property -- Will be sanitized below
-        temp.innerHTML = html;
-
-        // Remove all script tags and dangerous elements
-        const scripts = temp.querySelectorAll('script, iframe, object, embed, form');
-        scripts.forEach((el) => el.remove());
-
-        // Remove dangerous attributes
-        const allElements = temp.querySelectorAll('*');
-        allElements.forEach((el) => {
-          // Remove event handlers and dangerous attributes
-          Array.from(el.attributes).forEach((attr) => {
-            if (attr.name.startsWith('on') || attr.name === 'style' || attr.name === 'href' || attr.name === 'src') {
-              el.removeAttribute(attr.name);
-            }
-          });
-        });
-
-        // Only allow specific tags
-        const allowedTags = ['DIV', 'STRONG', 'BR', 'EM', 'B', 'I', 'SPAN'];
-        allElements.forEach((el) => {
-          if (!allowedTags.includes(el.tagName)) {
-            el.replaceWith(...el.childNodes);
-          }
-        });
-
-        // eslint-disable-next-line no-unsanitized/property -- HTML has been sanitized above
-        element.innerHTML = temp.innerHTML;
-      };
-    </script>
   </head>
   <body>
-    <!-- Quick redirect check before page renders -->
-    <script>
-      // FIRST: Check if session expired, timeout, or rate limit - clear storage before any redirect
-      const urlParamsInitial = new URLSearchParams(window.location.search);
-      if (
-        urlParamsInitial.get('session') === 'expired' ||
-        urlParamsInitial.get('timeout') === 'true' ||
-        urlParamsInitial.get('ratelimit') === 'expired'
-      ) {
-        // Clear all auth data immediately to prevent redirect loop
-        localStorage.removeItem('token');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('user');
-        sessionStorage.clear();
-        // Clear auth cookies
-        document.cookie.split(';').forEach(function (c) {
-          if (c.includes('token') || c.includes('Token')) {
-            document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date(0).toUTCString() + ';path=/');
-          }
-        });
-      } else {
-        // ONLY check for existing token if NOT coming from session expired
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        const userRole = localStorage.getItem('userRole');
-        if (token && userRole) {
-          // Hide login form immediately while we redirect
-          document.documentElement.style.visibility = 'hidden';
-
-          // Redirect based on role (validation happens in background after redirect)
-          switch (userRole) {
-            case 'root':
-              window.location.replace('/root-dashboard');
-              break;
-            case 'admin':
-              window.location.replace('/admin-dashboard');
-              break;
-            case 'employee':
-              window.location.replace('/employee-dashboard');
-              break;
-          }
-        }
-      }
+    <!-- Pre-login checks handled by TypeScript module -->
+    <script type="module">
+      import '/scripts/auth/login-pre-check.js';
     </script>
 
     <!-- Back to Homepage Button -->
@@ -110,72 +27,32 @@
     <!-- Fragezeichen oben rechts - Glassmorphismus -->
     <div class="help-button" data-action="show-help">?</div>
     <div class="login-container">
-      <!-- Logo Section -->
-      <div class="login-header">
-        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo u-cursor-pointer" data-action="reload-page" />
-      </div>
-
       <!-- Login Form -->
-      <div class="login-card card">
-        <!-- Session Expired Alert -->
-        <div
-          id="session-expired-alert"
-          class="alert-warning"
-          style="
-            display: none;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 8px;
-            color: #ffc107;
-          "
-        >
-          <div style="display: flex; align-items: center; gap: 10px">
-            <span style="font-size: 20px">⚠️</span>
-            <div>
-              <strong>Sitzung abgelaufen</strong>
-              <br />
-              <span style="font-size: 14px">Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.</span>
-            </div>
-          </div>
+      <div class="login-card">
+        <!-- Logo inside card -->
+        <div class="login-card-logo">
+          <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo u-cursor-pointer" data-action="reload-page" />
         </div>
 
-        <!-- Error Alert -->
-        <div
-          id="error-alert"
-          class="alert-danger"
-          style="
-            display: none;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-radius: 8px;
-            color: #dc3545;
-          "
-        >
-          <div style="display: flex; align-items: center; gap: 10px">
-            <span style="font-size: 20px">❌</span>
-            <div id="error-message"></div>
-          </div>
-        </div>
+        <!-- Alerts are created dynamically by LoginFormController.showError/showInfo -->
 
         <form id="loginForm">
-          <div class="form-group">
-            <label class="form-label">E-Mail</label>
-            <input type="email" id="username" class="form-control" required autofocus placeholder="" autocomplete="email" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="username">E-Mail</label>
+            <input type="email" id="username" class="form-field__control" required autofocus placeholder="" autocomplete="email" />
           </div>
-          <div class="form-group">
-            <label class="form-label">Passwort</label>
-            <input type="password" id="password" class="form-control" required autocomplete="current-password" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="password">Passwort</label>
+            <input type="password" id="password" class="form-field__control" required autocomplete="current-password" />
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+          <div class="flex justify-end mt-4">
+            <button type="submit" class="btn btn-primary">Anmelden</button>
+          </div>
         </form>
 
         <div class="login-footer">
           <a href="#" data-action="show-password-reset" class="text-secondary">Passwort vergessen?</a>
-          <a href="#" data-action="request-access" class="text-secondary" style="margin-left: 20px">Zugangsdaten beantragen</a>
+          <a href="#" data-action="request-access" class="text-secondary">Zugangsdaten beantragen</a>
         </div>
       </div>
 
@@ -185,261 +62,18 @@
       </div>
     </div>
 
+    <!-- Token validation handled by TypeScript module -->
     <script type="module">
-      import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
+      import '/scripts/auth/login-token-validator.js';
+    </script>
 
-      // Fallback validation in case redirect failed
-      (async function validateIfNeeded() {
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        const userRole = localStorage.getItem('userRole');
+    <!-- TypeScript Module - Handles all login interactions -->
+    <script type="module">
+      import { LoginFormController } from '/scripts/auth/login-form-controller.js';
 
-        // If we still have token/role but are on login page, validate
-        if (token && userRole) {
-          try {
-            const fingerprint = await BrowserFingerprint.generate();
-            const response = await fetch('/api/auth/validate', {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'X-Browser-Fingerprint': fingerprint,
-              },
-            });
-
-            if (!response.ok || !(await response.json()).valid) {
-              // Token is invalid, clear and show login
-              localStorage.removeItem('token');
-              localStorage.removeItem('userRole');
-              localStorage.removeItem('user');
-              document.documentElement.style.visibility = 'visible';
-            }
-          } catch {
-            // On error, show login page
-            document.documentElement.style.visibility = 'visible';
-          }
-        } else {
-          // No token, show login page
-          document.documentElement.style.visibility = 'visible';
-        }
-      })();
-
-      // Setup the page
-      document.addEventListener('DOMContentLoaded', async function () {
-        // Check for timeout, session expired, or rate limit parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
-          showError('Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.');
-          // Clean up URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (urlParams.get('ratelimit') === 'expired') {
-          showInfo('Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.', true); // persistent = true
-          // Clean up URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      });
-
-      // Error/Success Message Functions
-      function showError(message) {
-        // Remove any existing error messages
-        const existingErrors = document.querySelectorAll('.alert-error');
-        existingErrors.forEach((error) => error.remove());
-
-        const errorDiv = document.createElement('div');
-        const isTimeout = message.includes('Sitzung');
-        errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
-        // Safe: HTML is generated from error message and sanitized with dom-utils
-        window.setHTML(
-          errorDiv,
-          `
-          <div class="alert-content">
-            ${isTimeout ? '<strong>⏱️ Sitzung abgelaufen</strong><br>' : '<strong>Fehler!</strong><br>'}
-            ${message.replace(/\n/g, '<br>')}
-          </div>
-        `,
-        );
-        document.querySelector('.login-card').insertBefore(errorDiv, document.querySelector('#loginForm'));
-
-        // Remove after 10 seconds
-        setTimeout(() => errorDiv.remove(), 10000);
-      }
-
-      function showInfo(message, persistent = false) {
-        // Remove existing messages
-        const existingInfo = document.querySelectorAll('.alert-info');
-        existingInfo.forEach((info) => info.remove());
-
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'alert alert-info';
-        infoDiv.textContent = message;
-        document.querySelector('.login-card').insertBefore(infoDiv, document.querySelector('#loginForm'));
-
-        // Only auto-remove if not persistent
-        if (!persistent) {
-          setTimeout(() => infoDiv.remove(), 5000);
-        }
-      }
-
-      window.showHelp = function () {
-        showInfo(
-          'Hilfe: Für neue Kunden: Klicken Sie auf "Zugangsdaten beantragen". Für bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
-        );
-      };
-
-      window.showPasswordReset = function () {
-        showInfo('Passwort zurücksetzen - Feature kommt bald');
-      };
-
-      window.requestAccess = function () {
-        window.location.href = '/';
-      };
-
-      document.querySelector('#loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const username = document.querySelector('#username').value;
-        const password = document.querySelector('#password').value;
-
-        try {
-          // Check if v2 API should be used
-          const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
-
-          // Generate browser fingerprint
-          const fingerprint = await BrowserFingerprint.generate();
-          BrowserFingerprint.store(fingerprint);
-
-          // Prepare request based on API version
-          let apiUrl, requestBody;
-          if (useV2) {
-            apiUrl = '/api/v2/auth/login';
-            // v2 uses 'email' instead of 'username'
-            requestBody = { email: username, password };
-          } else {
-            apiUrl = '/api/auth/login';
-            requestBody = { username, password, fingerprint };
-          }
-
-          console.info(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
-
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Browser-Fingerprint': fingerprint,
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          // Handle rate limiting error
-          if (response.status === 429) {
-            showError('Zu viele Anmeldeversuche!\n\nBitte warten Sie einige Minuten und versuchen Sie es erneut.');
-            return;
-          }
-
-          const data = await response.json();
-
-          if (response.ok || (useV2 && data.success)) {
-            let token, role, user;
-
-            if (useV2) {
-              // v2 response format
-              if (data.success && data.data) {
-                token = data.data.accessToken;
-                const refreshToken = data.data.refreshToken;
-                user = data.data.user;
-                role = user?.role || data.data.role;
-
-                // Store v2 tokens
-                localStorage.setItem('accessToken', token);
-                localStorage.setItem('refreshToken', refreshToken);
-
-                // Also store in old format for compatibility
-                localStorage.setItem('token', token);
-
-                // Set cookie for server-side page protection (temporary compatibility)
-                // Using setTimeout to avoid race condition warning
-                setTimeout(() => {
-                  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-                }, 0);
-              } else {
-                showError(data.error?.message || 'Login fehlgeschlagen');
-                return;
-              }
-            } else {
-              // v1 response format
-              token = data.data.token;
-              role = data.data.role;
-              user = data.data.user;
-
-              // Store v1 token
-              localStorage.setItem('token', token);
-            }
-
-            // Store role separately for easy access
-            localStorage.setItem('userRole', role);
-
-            // Also store user info
-            if (user) {
-              localStorage.setItem('user', JSON.stringify(user));
-            }
-
-            // Clear any stored navigation state to ensure dashboard is active
-            localStorage.removeItem('activeNavigation');
-            localStorage.removeItem('activeRole'); // Clear role switching state
-
-            // Redirect based on role (using setTimeout to avoid race condition warning)
-            setTimeout(() => {
-              switch (role) {
-                case 'root':
-                  window.location.href = '/root-dashboard';
-                  break;
-                case 'admin':
-                  window.location.href = '/admin-dashboard';
-                  break;
-                case 'employee':
-                  window.location.href = '/employee-dashboard';
-                  break;
-                default:
-                  showError('Unknown role');
-              }
-            }, 0);
-          } else {
-            // Show specific error message from backend
-            const errorMessage = useV2
-              ? data.error?.message || data.message || 'Login fehlgeschlagen'
-              : data.message || 'Login fehlgeschlagen';
-            showError(errorMessage);
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          showError('An error occurred during login');
-        }
-      });
-
-      // Event delegation for all click actions
-      document.addEventListener('click', function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) return;
-
-        const action = target.dataset.action;
-        e.preventDefault();
-
-        switch (action) {
-          case 'show-help':
-            alert(
-              'Hilfe:\n\nBitte kontaktieren Sie Ihren Administrator für Unterstützung.\n\nE-Mail: admin@assixx.de\nTelefon: +49 123 456789',
-            );
-            break;
-          case 'reload-page':
-            window.location.reload();
-            break;
-          case 'show-password-reset':
-            alert('Passwort zurücksetzen:\n\nBitte wenden Sie sich an Ihren Administrator um Ihr Passwort zurückzusetzen.');
-            break;
-          case 'request-access':
-            alert(
-              'Zugangsdaten beantragen:\n\nBitte kontaktieren Sie Ihren Administrator um Zugangsdaten zu erhalten.\n\nE-Mail: admin@assixx.de',
-            );
-            break;
-        }
-      });
+      // Initialize login form
+      const controller = new LoginFormController();
+      controller.init();
     </script>
   </body>
 </html>

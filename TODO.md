@@ -10,7 +10,7 @@
 
 1. **Hauptdokument:** `/home/scs/projects/Assixx/TODO.md` (diese Datei)
 
-###DOM-purify-siehe Goldstandard###
+### dom-purify siehe Goldstandard ###
 
 ## 🔥 DEAL-BREAKER Features
 

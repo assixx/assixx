@@ -1,41 +1,19 @@
 /* Shift Planning Specific Styles */
 
 /* Essential Body Styles */
-body {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background: #000;
-}
 
 /* Background Gradient - Essential for the page design */
-body::after {
-  pointer-events: none;
-  content: "";
 
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
-}
-
-/* Main content area - wie calendar */
-.main-content {
-  overflow-y: auto;
-  width: 100%;
-  height: calc(100vh - 56px);
-  padding: var(--spacing-lg);
-}
+/* Main content area - REMOVED: Migrated to Tailwind utilities in shifts.html */
 
 /* Custom styles for shift planning interface - Glassmorphismus Design */
 .shift-planning-container {
   overflow: visible;
 
   margin: 0 auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -47,14 +25,15 @@ body::after {
   position: relative;
   z-index: 1;
 
-  display: grid;
+  display: inline-flex;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
+  justify-content: center;
 
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
   backdrop-filter: blur(10px);
@@ -86,112 +65,28 @@ body::after {
 }
 
 .info-label {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.info-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* Custom Dropdown Styles */
-.custom-dropdown {
-  position: relative;
-  width: 100%;
-}
-
-.dropdown-display {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-2sm);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
-
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.dropdown-display:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.dropdown-display.active {
-  border-color: rgb(0 142 255 / 50%);
-  box-shadow: 0 0 0 3px rgb(0 142 255 / 15%);
-}
-
-.dropdown-display.active svg {
-  transform: rotate(180deg);
-}
-
-.dropdown-options {
-  position: absolute;
-  z-index: 9999;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  transform: translateY(-10px);
-
-  overflow-y: auto;
-
-  max-height: 200px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
-
-  visibility: hidden;
-  opacity: 0%;
-  background: rgb(18 18 18 / 98%);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
-}
-
-.dropdown-options.active {
-  transform: translateY(0);
-  visibility: visible;
-  opacity: 100%;
-}
-
-.dropdown-option {
-  cursor: pointer;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-  color: var(--text-primary);
-}
-
-.dropdown-option:last-child {
-  border-bottom: none;
-}
-
-.dropdown-option:hover {
-  color: var(--primary-color);
-  background: rgb(33 150 243 / 20%);
-}
+/* Dropdown styles now provided by Design System (custom-dropdown.css) */
 
 /* Week Navigation */
 .week-navigation {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   align-items: center;
   justify-content: center;
 
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -200,25 +95,9 @@ body::after {
     inset 0 1px 0 rgb(255 255 255 / 5%);
 }
 
-.week-nav-btn {
-  cursor: pointer;
-
-  padding: var(--spacing-2sm);
-  border: none;
-  border-radius: var(--radius-sm);
-
-  font-weight: 600;
-  color: var(--text-primary);
-
-  background: var(--primary-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.week-nav-btn:hover {
-  transform: translateY(-1px);
-  background: var(--primary-dark);
-  box-shadow: var(--shadow-md);
-}
+/* DEPRECATED: .week-nav-btn - Use Design System buttons instead:
+   - btn btn-sm btn-secondary (for navigation buttons)
+   See: design-system/primitives/buttons/button.css */
 
 .week-info {
   font-size: 18px;
@@ -230,7 +109,7 @@ body::after {
 .main-planning-area {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
 }
 
 /* Week Schedule */
@@ -239,7 +118,7 @@ body::after {
 
   padding: 10px;
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   box-shadow: var(--shadow-sm);
 }
@@ -257,9 +136,9 @@ body::after {
 }
 
 .day-header {
-  padding: var(--spacing-md) var(--spacing-xs);
+  padding: var(--spacing-4) var(--spacing-1);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   color: var(--primary-color);
   text-align: center;
@@ -286,9 +165,9 @@ body::after {
   justify-content: center;
 
   min-height: 85px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -328,14 +207,13 @@ body::after {
 
   min-height: 85px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(5px);
 }
 
 .shift-cell:hover {
-  transform: translateY(-1px);
   border-color: var(--primary-color);
   background: rgb(33 150 243 / 10%);
   box-shadow: var(--shadow-sm);
@@ -352,6 +230,54 @@ body::after {
   box-shadow: 0 0 0 2px rgb(76 175 80 / 30%);
 }
 
+/* Locked shift cell - read-only mode (plan exists, not in edit mode) */
+.shift-cell.locked {
+  cursor: not-allowed;
+  border-color: rgb(255 255 255 / 10%);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgb(255 255 255 / 3%) 10px,
+      rgb(255 255 255 / 3%) 20px
+    ),
+    var(--glass-bg);
+}
+
+.shift-cell.locked:hover {
+  cursor: not-allowed;
+  border-color: rgb(255 255 255 / 10%);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgb(255 255 255 / 3%) 10px,
+      rgb(255 255 255 / 3%) 20px
+    ),
+    var(--glass-bg);
+  box-shadow: none; /* Override hover effect - no visual feedback when locked */
+}
+
+.shift-cell.locked .remove-btn {
+  display: none !important;
+}
+
+.shift-cell.locked .employee-card {
+  pointer-events: none;
+}
+
+/* Week 2 cells for Kontischicht mode (NO inline styles - all styling via CSS) */
+.shift-cell.week-2-cell {
+  min-height: 85px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: var(--radius-xl);
+
+  background: var(--glass-bg);
+  backdrop-filter: blur(5px);
+}
+
 /* Employee Assignment */
 .employee-assignment {
   display: flex;
@@ -360,7 +286,7 @@ body::after {
   justify-content: center;
 
   height: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
 
   text-align: center;
 }
@@ -385,9 +311,9 @@ body::after {
 
   min-height: 120px;
   margin-top: 2px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -402,10 +328,10 @@ body::after {
 
 .shift-info-title {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
 
   font-size: 14px;
   font-weight: 600;
@@ -418,9 +344,9 @@ body::after {
   flex: 1;
 
   min-height: 300px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   font-family: inherit;
   font-size: 13px;
@@ -437,16 +363,16 @@ body::after {
 }
 
 .shift-info-textarea::placeholder {
-  color: var(--text-secondary);
+  color: var(--color-text-placeholder);
 }
 
 /* Department Notice */
 .department-notice {
   max-width: 600px;
-  margin: var(--spacing-xl) auto;
-  padding: var(--spacing-xl) var(--spacing-lg);
+  margin: var(--spacing-8) auto;
+  padding: var(--spacing-8) var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -456,14 +382,14 @@ body::after {
 }
 
 .department-notice .notice-icon {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 48px;
   color: var(--primary-color);
   opacity: 80%;
 }
 
 .department-notice h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 24px;
   color: var(--text-primary);
 }
@@ -476,9 +402,9 @@ body::after {
 
 /* Employee Sidebar */
 .employee-sidebar {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -486,7 +412,7 @@ body::after {
 }
 
 .shift-sidebar-title {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 17px;
   font-weight: 500;
@@ -505,7 +431,7 @@ body::after {
   margin: 2px 0;
   padding: 6px 8px;
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -561,996 +487,12 @@ body::after {
   background: rgb(244 67 54 / 37%);
 }
 
-/* Generic icon styles for buttons */
-.scroll-nav-btn i {
-  font-size: 0.75rem;
-  transition: transform 0.3s ease;
-}
-
 .employee-card .remove-btn i {
   font-size: 10px;
 }
 
-/* Generic Modal Overlay Class */
-.modal-overlay {
-  position: fixed;
-  z-index: 9999;
-  inset: 0;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  background: rgb(0 0 0 / 80%);
-  backdrop-filter: blur(5px);
-
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
-}
-
-/* Generic Modal Styles */
-.modal-content {
-  position: relative;
-
-  overflow-y: auto;
-
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  padding: 0;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
-
-  background: rgb(30 39 46 / 95%);
-  backdrop-filter: blur(20px);
-
-  /* animation: modalSlideIn 0.3s ease; */
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 2rem 2rem 1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.modal-close {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-
-  font-size: 2rem;
-  color: var(--text-light);
-
-  background: none;
-}
-
-.modal-close:hover {
-  color: #fff;
-  background: rgb(255 255 255 / 10%);
-}
-
-.modal form {
-  padding: 2rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-.modal-actions button {
-  cursor: pointer;
-
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-
-  font-weight: 500;
-}
-
-/* Modal Styles for Shift Rotation - Using Calendar Modal Design */
-
-/* Modal Background Overlay */
-.rotation-setup-modal {
-  position: fixed;
-  z-index: 9999;
-  inset: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  visibility: hidden;
-  opacity: 0%;
-  background: rgb(0 0 0 / 70%);
-
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
-}
-
-.rotation-setup-modal.show {
-  visibility: visible;
-  opacity: 100%;
-}
-
-/* Modal Content Container - Calendar Style */
-.rotation-setup-modal .modal-content {
-  transform: translateY(0);
-
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-
-  width: 90%;
-  max-width: 900px;
-  max-height: 85vh !important;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md, 16px);
-
-  background: hsl(0deg 0% 6.7% / 77%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 8px 32px rgb(0 0 0 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-}
-
-/* Modal Header - Calendar Style */
-.rotation-setup-modal .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-lg, 1.5rem);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-
-  background: rgb(255 255 255 / 2%);
-}
-
-.rotation-setup-modal .modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color, #3498db);
-}
-
-/* Modal Close Button - Calendar Style */
-.rotation-setup-modal .modal-close {
-  cursor: pointer;
-
-  padding: 10px;
-  border: none;
-  border-radius: var(--radius-sm, 8px);
-
-  font-size: 20px;
-  color: var(--text-secondary, rgb(255 255 255 / 60%));
-
-  background: transparent;
-}
-
-.rotation-setup-modal .modal-close:hover {
-  transform: rotate(90deg);
-  color: var(--primary-color, #3498db);
-  background: rgb(255 255 255 / 5%);
-}
-
-/* Modal Body */
-.rotation-setup-modal .modal-body {
-  overflow-y: auto;
-  flex: 1;
-  padding: var(--spacing-lg, 1.5rem);
-}
-
-/* Modal Footer - Calendar Style */
-.rotation-setup-modal .modal-footer {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-
-  padding: var(--spacing-lg, 1.5rem);
-  border-top: 1px solid rgb(255 255 255 / 10%);
-
-  background: rgb(255 255 255 / 2%);
-}
-
-/* Form Styles - Generic before specific */
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #fff;
-}
-
-.form-group .text-input,
-.form-group .date-input,
-.form-group .time-input,
-.form-group .number-input,
-.form-group .color-input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-
-  font-family: inherit;
-  color: #fff;
-
-  background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-group .color-input {
-  cursor: pointer;
-  height: 45px;
-  padding: 5px;
-}
-
-.form-group input:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
-}
-
-/* Pattern Week Styles */
-.pattern-week {
-  padding: 15px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.pattern-week h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1rem;
-  color: #fff;
-}
-
-.pattern-week > label {
-  display: block;
-  margin: 8px 0;
-  color: var(--text-light);
-}
-
-/* Form Styles - Specific to rotation modal */
-.rotation-setup-modal .form-group {
-  margin-bottom: 1.5rem;
-}
-
-.rotation-setup-modal .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: rgb(255 255 255 / 80%);
-}
-
-.rotation-setup-modal .form-control {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 0.5rem;
-
-  font-size: 1rem;
-  color: #fff;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.rotation-setup-modal .form-control:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
-}
-
-.rotation-setup-modal .form-text {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: rgb(255 255 255 / 50%);
-}
-
-/* Checkbox and Pattern Builder Styles */
-.checkbox-group {
-  overflow-y: auto;
-
-  max-height: 200px;
-  padding: 10px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.pattern-builder {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-top: 1rem;
-}
-
-/* Tab System */
-.content-tabs {
-  display: flex;
-  gap: 0;
-
-  margin-bottom: 2rem;
-  padding: 4px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-.tab-btn {
-  cursor: pointer;
-
-  flex: 1;
-
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-light);
-
-  background: transparent;
-}
-
-.tab-btn:hover {
-  color: #fff;
-  background: rgb(255 255 255 / 10%);
-}
-
-.tab-btn.active {
-  color: var(--primary-color);
-  background: rgb(52 152 219 / 20%);
-  box-shadow: 0 2px 8px rgb(52 152 219 / 20%);
-}
-
-.tab-content {
-  min-height: 600px;
-}
-
-.tab-pane {
-  display: none;
-
-  /* animation: fadeIn 0.3s ease; */
-}
-
-.tab-pane.active {
-  display: block;
-}
-
-/* Section Headers */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.section-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.section-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-/* Filters */
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.filters select,
-.filters .date-input {
-  min-width: 200px;
-  padding: 10px 15px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-
-  color: #fff;
-
-  background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-.filters select:focus,
-.filters .date-input:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
-}
-
-/* Overview Grid */
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-}
-
-.overview-card {
-  padding: 2rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.overview-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.overview-card h3 {
-  margin: 0 0 1.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-/* Plans Grid */
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-.plan-card {
-  cursor: pointer;
-
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.plan-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.plan-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.plan-card-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.plan-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.plan-status.draft {
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-.plan-status.published {
-  color: #28a745;
-  background: rgb(40 167 69 / 20%);
-}
-
-.plan-status.archived {
-  color: #6c757d;
-  background: rgb(108 117 125 / 20%);
-}
-
-.plan-card-meta {
-  margin-bottom: 1rem;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.plan-card-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.plan-card-actions button {
-  cursor: pointer;
-
-  flex: 1;
-
-  padding: 8px 12px;
-  border: 1px solid rgb(52 152 219 / 30%);
-  border-radius: var(--radius-md);
-
-  font-size: 12px;
-  color: var(--primary-color);
-
-  background: rgb(52 152 219 / 20%);
-}
-
-.plan-card-actions button:hover {
-  border-color: var(--primary-color);
-  background: rgb(52 152 219 / 30%);
-}
-
-/* Templates Grid */
-.templates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.template-card {
-  position: relative;
-
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.template-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.template-color-indicator {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgb(255 255 255 / 30%);
-  border-radius: 50%;
-}
-
-.template-card-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.template-time {
-  margin-bottom: 0.5rem;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.template-duration {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary-color);
-}
-
-/* Shift List */
-.shift-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.shift-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.shift-item:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.shift-item-left {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.shift-time-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary-color);
-}
-
-.shift-item-info h4 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #fff;
-}
-
-.shift-item-meta {
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.shift-item-right {
-  text-align: right;
-}
-
-.shift-status {
-  display: inline-block;
-
-  margin-bottom: 0.25rem;
-  padding: 4px 8px;
-  border-radius: 12px;
-
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.shift-status.assigned {
-  color: #28a745;
-  background: rgb(40 167 69 / 20%);
-}
-
-.shift-status.pending {
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-/* Availability Grid */
-.availability-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.availability-day {
-  cursor: pointer;
-
-  padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  text-align: center;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.availability-day:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.availability-day.available {
-  border-color: rgb(40 167 69 / 50%);
-  background: rgb(40 167 69 / 10%);
-}
-
-.availability-day.unavailable {
-  border-color: rgb(220 53 69 / 50%);
-  background: rgb(220 53 69 / 10%);
-}
-
-.availability-day-name {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.availability-day-date {
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-/* Exchange Grid */
-.exchange-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.exchange-item {
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.exchange-item:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.exchange-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.exchange-type {
-  padding: 4px 12px;
-  border-radius: 20px;
-
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.exchange-type.give-away {
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-.exchange-type.swap {
-  color: var(--primary-color);
-  background: rgb(52 152 219 / 20%);
-}
-
-.exchange-details {
-  line-height: 1.5;
-  color: var(--text-light);
-}
-
-.exchange-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.exchange-actions .action-btn {
-  cursor: pointer;
-
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-md);
-
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.btn-accept {
-  border: 1px solid rgb(40 167 69 / 30%);
-  color: #28a745;
-  background: rgb(40 167 69 / 20%);
-}
-
-.btn-accept:hover {
-  background: rgb(40 167 69 / 30%);
-}
-
-.btn-decline {
-  border: 1px solid rgb(220 53 69 / 30%);
-  color: #dc3545;
-  background: rgb(220 53 69 / 20%);
-}
-
-.btn-decline:hover {
-  background: rgb(220 53 69 / 30%);
-}
-
-/* Assignments Grid */
-.assignments-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-.assignment-card {
-  padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.assignment-card:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.assignment-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.assignment-time {
-  font-weight: 600;
-  color: #fff;
-}
-
-.assignment-employee {
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-/* Calendar Grid */
-.calendar-grid {
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 10%);
-}
-
-.calendar-day {
-  cursor: pointer;
-
-  display: flex;
-  flex-direction: column;
-
-  min-height: 120px;
-  padding: 1rem;
-
-  background: rgb(30 39 46 / 80%);
-}
-
-.calendar-day:hover {
-  background: rgb(255 255 255 / 5%);
-}
-
-.calendar-day-number {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.calendar-day.other-month {
-  opacity: 50%;
-}
-
-.calendar-day.today {
-  border: 1px solid var(--primary-color);
-  background: rgb(52 152 219 / 20%);
-}
-
-/* Loading States */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 200px;
-
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-/* Animation */
-/* @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-} */
-
-/* Form Enhancements for Shift Planning - moved to avoid specificity issues */
-
-/* Modal Styles */
-.modal {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(5px);
-}
-
-.btn-primary {
-  color: #fff;
-  background: var(--primary-color);
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  background: #2980b9;
-}
-
-.btn-secondary {
-  border: 1px solid rgb(255 255 255 / 20%);
-  color: var(--text-light);
-  background: rgb(255 255 255 / 10%);
-}
-
-.btn-secondary:hover {
-  color: #fff;
-  background: rgb(255 255 255 / 20%);
-}
-
-/* @keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-} */
+/* NOTE: .modal-overlay removed 2025-12-12 - Design System modal.base.css handles this
+   The old definition used display:none without a .show rule, breaking modals */
 
 /* Employee Availability Status Styles */
 .employee-item.unavailable {
@@ -1662,28 +604,23 @@ body::after {
   cursor: not-allowed;
 }
 
+/* Locked employee items - read-only mode (plan exists, not in edit mode) */
+.employee-item.locked {
+  cursor: not-allowed;
+  opacity: 75%;
+
+  -webkit-user-drag: none;
+}
+
+.employee-item.locked:hover {
+  cursor: not-allowed;
+  transform: none;
+  background: inherit;
+  box-shadow: none; /* Override hover effect - no visual feedback when locked */
+}
+
 /* Responsive Design */
 @media (width <=768px) {
-  .content-tabs {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .tab-btn {
-    flex: 1 1 calc(50% - 2px);
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-
-  .overview-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .plans-grid,
-  .templates-grid {
-    grid-template-columns: 1fr;
-  }
-
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -1704,116 +641,76 @@ body::after {
   .calendar-day {
     min-height: 80px;
   }
-
-  .availability-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
-/* Shift Details Modal Styles */
-.shift-detail-modal {
-  padding: var(--spacing-lg);
+/* Shift Details Modal Styles (refactored - used by modals.ts) */
+.shift-details-content {
+  padding: var(--spacing-6);
 }
 
-.shift-detail-modal h3 {
-  margin-bottom: var(--spacing-lg);
+.shift-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.shift-details-header h3 {
+  margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: var(--primary-color);
 }
 
-.shift-detail-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.detail-label {
-  flex: 0 0 180px;
+.shift-details-header .shift-date {
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
 }
 
-.detail-value {
-  flex: 1;
+.shift-employees-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.shift-employee-item {
+  display: flex;
+  align-items: center;
+
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+
+  font-weight: 500;
   color: var(--text-primary);
-  text-align: right;
+
+  background: rgb(255 255 255 / 5%);
+
+  transition: background 0.2s ease;
 }
 
-/* Duplicate modal-actions removed - using the one above */
-
-/* Read-Only / Edit Mode Styles */
-.employee-item.locked {
-  cursor: not-allowed;
-  opacity: 70%;
-  background: rgb(0 0 0 / 20%);
+.shift-employee-item:hover {
+  background: rgb(255 255 255 / 10%);
 }
 
-.employee-item.locked:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.shift-cell.locked {
-  pointer-events: none;
-  cursor: not-allowed;
-  opacity: 80%;
-  background: rgb(0 0 0 / 10%);
-}
-
-.shift-cell.locked::after {
-  pointer-events: none;
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background: repeating-linear-gradient(
-    45deg,
-    #ffffff0a,
-    #0000 10px,
-    hsl(0deg 0% 0% / 3%) 0,
-    hsl(0deg 0% 100% / 0%) 20px
-  );
-}
-
-.weekly-notes[readonly] {
-  cursor: not-allowed;
-  opacity: 80%;
-  background: rgb(0 0 0 / 20%);
+.shift-employees-list .empty-message {
+  padding: var(--spacing-4);
+  font-style: italic;
+  color: var(--text-tertiary);
+  text-align: center;
 }
 
 /* Edit Mode Button */
-.edit-schedule-btn,
-.update-schedule-btn {
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.edit-schedule-btn:hover,
-.update-schedule-btn:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  box-shadow: 0 6px 20px rgb(102 126 234 / 40%);
-}
 
 /* ================================
-   Kontischicht Ansicht Styles
+   Custom Rotation View Styles
    ================================ */
 
-/* When Kontischicht is active */
-.week-schedule.kontischicht-active {
+/* When Custom Rotation is active */
+.week-schedule.custom-rotation-active {
   position: relative;
 
   overflow-x: auto !important;
@@ -1826,7 +723,7 @@ body::after {
 }
 
 /* Horizontal Scroll Container for Schedule Header */
-.kontischicht-scroll-container {
+.custom-rotation-scroll-container {
   scroll-behavior: smooth;
   scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
@@ -1840,114 +737,27 @@ body::after {
   -webkit-overflow-scrolling: touch;
 }
 
-.kontischicht-scroll-container::-webkit-scrollbar {
+.custom-rotation-scroll-container::-webkit-scrollbar {
   display: block !important;
   height: 12px !important;
 }
 
-.kontischicht-scroll-container::-webkit-scrollbar-track {
+.custom-rotation-scroll-container::-webkit-scrollbar-track {
   margin: 0 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 10%);
 }
 
-.kontischicht-scroll-container::-webkit-scrollbar-thumb {
+.custom-rotation-scroll-container::-webkit-scrollbar-thumb {
   border: 2px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
   transition: background 0.3s ease;
 }
 
-.kontischicht-scroll-container::-webkit-scrollbar-thumb:hover {
+.custom-rotation-scroll-container::-webkit-scrollbar-thumb:hover {
   border-color: rgb(255 255 255 / 20%);
   background: linear-gradient(90deg, rgb(52 152 219 / 80%), rgb(52 152 219 / 60%));
-}
-
-/* Scroll Navigation */
-.week-scroll-navigation {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-  justify-content: center;
-
-  margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-2sm);
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(10px);
-
-  animation: fade-in-up 0.4s ease-out;
-}
-
-/* Animation keyframes */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(20px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-.scroll-nav-btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-
-  padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
-
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-
-  background: transparent;
-}
-
-.scroll-nav-btn:hover {
-  transform: translateY(-1px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.scroll-nav-btn:active {
-  transform: translateY(0);
-}
-
-.scroll-nav-btn:hover i {
-  transform: scale(1.1);
-}
-
-/* Scroll Progress Indicator */
-.scroll-indicator {
-  position: relative;
-
-  overflow: hidden;
-  flex: 1;
-
-  max-width: 200px;
-  height: 4px;
-  border-radius: 2px;
-
-  background: rgb(255 255 255 / 10%);
-}
-
-.scroll-progress {
-  width: 0%;
-  height: 100%;
-  border-radius: 2px;
-
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
-
-  transition: width 0.3s ease;
 }
 
 /* Week 2 Headers Styling */
@@ -1975,14 +785,14 @@ body::after {
 }
 
 /* Enhanced Week Headers Layout for 14-day View */
-.kontischicht-scroll-container .day-header {
+.custom-rotation-scroll-container .day-header {
   scroll-snap-align: start;
   flex-shrink: 0;
   min-width: 120px;
 }
 
 /* Make "Schicht" header same size as shift labels */
-.kontischicht-scroll-container .day-header:first-child {
+.custom-rotation-scroll-container .day-header:first-child {
   position: sticky;
   z-index: 10;
   left: 0;
@@ -1994,8 +804,8 @@ body::after {
   backdrop-filter: blur(10px);
 }
 
-/* Apply horizontal scroll to shift rows when Kontischicht is active */
-.shift-row.kontischicht-scroll-container {
+/* Apply horizontal scroll to shift rows when Custom Rotation is active */
+.shift-row.custom-rotation-scroll-container {
   scroll-behavior: smooth;
   scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
@@ -2008,30 +818,26 @@ body::after {
   -webkit-overflow-scrolling: touch;
 }
 
-.shift-row.kontischicht-scroll-container::-webkit-scrollbar {
+.shift-row.custom-rotation-scroll-container::-webkit-scrollbar {
   display: block !important;
   height: 12px !important;
 }
 
-.shift-row.kontischicht-scroll-container::-webkit-scrollbar-track {
-  border-radius: var(--radius-md);
+.shift-row.custom-rotation-scroll-container::-webkit-scrollbar-track {
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 10%);
 }
 
-.shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb {
+.shift-row.custom-rotation-scroll-container::-webkit-scrollbar-thumb {
   border: 2px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
 }
 
 /* Simplified selector for scrollbar hover */
-.kontischicht-scrollbar-hover::-webkit-scrollbar-thumb:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: linear-gradient(90deg, rgb(52 152 219 / 80%), rgb(52 152 219 / 60%));
-}
 
 /* Make shift label sticky like the Schicht header and same size */
-.shift-row.kontischicht-scroll-container .shift-label {
+.shift-row.custom-rotation-scroll-container .shift-label {
   position: sticky;
   z-index: 9;
   left: 0;
@@ -2046,7 +852,7 @@ body::after {
 }
 
 /* Ensure shift cells have same width as headers */
-.shift-row.kontischicht-scroll-container .shift-cell {
+.shift-row.custom-rotation-scroll-container .shift-cell {
   flex-shrink: 0;
   width: 120px;
   min-width: 120px;
@@ -2056,35 +862,18 @@ body::after {
 
 /* Responsive Design */
 @media (width <=768px) {
-  .week-scroll-navigation {
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-  }
-
-  .scroll-nav-btn {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .scroll-indicator {
-    order: -1;
-    max-width: 100%;
-    margin-bottom: var(--spacing-sm);
-  }
-
-  .kontischicht-scroll-container .day-header {
+  .custom-rotation-scroll-container .day-header {
     min-width: 100px;
   }
 }
 
 /* Touch-friendly scrolling on mobile */
 @media (hover: none) and (pointer: coarse) {
-  .kontischicht-scroll-container {
+  .custom-rotation-scroll-container {
     scroll-padding-left: 110px;
   }
 
-  .kontischicht-scroll-container .day-header {
+  .custom-rotation-scroll-container .day-header {
     min-width: 90px;
   }
 }
@@ -2097,33 +886,6 @@ body::after {
   margin-top: 20px;
 }
 
-.rotation-box {
-  margin-bottom: 20px;
-  padding: 15px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.rotation-box h4 {
-  margin: 0 0 15px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--primary);
-}
-
-.available-employees-box .employee-list {
-  overflow-y: auto;
-
-  max-height: 200px;
-  padding: 10px;
-  border-radius: 4px;
-
-  background: rgb(0 0 0 / 20%);
-}
-
 .employee-item {
   cursor: grab;
   user-select: none;
@@ -2131,7 +893,7 @@ body::after {
   margin: 5px 0;
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
 }
@@ -2192,23 +954,54 @@ body::after {
 }
 
 .drop-zone .employee-item::after {
+  /* Disabled - using btn-remove-rotation instead */
+  display: none;
+}
+
+/* Remove button for employees in drop zones */
+.btn-remove-rotation {
   cursor: pointer;
-  content: "×";
 
   position: absolute;
   top: 50%;
   right: 8px;
   transform: translateY(-50%);
 
-  font-size: 20px;
-  line-height: 1;
-  color: rgb(255 255 255 / 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  font-size: 12px;
+  color: rgb(255 255 255 / 70%);
+
+  background: rgb(255 0 0 / 30%);
+
+  transition: all 0.2s;
+}
+
+.btn-remove-rotation:hover {
+  color: #fff;
+  background: rgb(255 0 0 / 60%);
+}
+
+/* Ensure employee-item in drop zone has relative positioning */
+.drop-zone .employee-item.in-drop-zone {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-right: 35px;
 }
 
 /* Simplified selector for employee item hover */
-.employee-item-hover::after {
-  color: rgb(255 255 255 / 80%);
-}
 
 /* Responsive Design */
 @media (width <=768px) {
@@ -2234,18 +1027,18 @@ body::after {
 .shift-controls {
   display: flex;
   justify-content: center;
-  margin: var(--spacing-md) auto var(--spacing-lg);
+  margin: var(--spacing-4) auto var(--spacing-6);
 }
 
 .controls-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  padding: var(--spacing-md);
+  padding: var(--spacing-4);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
@@ -2254,7 +1047,7 @@ body::after {
 .divider {
   width: 1px;
   height: 40px;
-  margin: 0 var(--spacing-sm);
+  margin: 0 var(--spacing-2);
   background: rgb(255 255 255 / 10%);
 }
 
@@ -2268,14 +1061,14 @@ body::after {
 @media (width <=768px) {
   .controls-group {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-2);
     align-items: flex-start;
   }
 
   .divider {
     width: 100%;
     height: 1px;
-    margin: var(--spacing-sm) 0;
+    margin: var(--spacing-2) 0;
   }
 }
 
@@ -2292,131 +1085,23 @@ body::after {
   font-weight: 400 !important;
 }
 
-/* Button Sizes */
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
+/* Button Sizes - REMOVED: .btn-sm is handled by Design System
+   See: design-system/primitives/buttons/button.css */
 
-/* Enhanced Checkbox Styles from backup */
-.checkbox-label {
-  cursor: pointer;
-
-  position: relative;
-
-  display: inline-flex;
-  align-items: center;
-
-  min-width: 200px;
-  max-width: 450px;
-  margin-right: 10px;
-  padding: 10px 16px;
-  border-radius: 12px;
-
-  background: rgb(255 255 255 / 3%);
-
-  transition: all 0.3s ease;
-}
-
-.checkbox-label:hover {
-  border-color: rgb(33 150 243 / 30%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.checkbox-label:has(input:checked) {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(33 150 243 / 10%);
-  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
-}
-
-.checkbox-label [type="checkbox"] {
-  pointer-events: none;
-  position: absolute;
-  opacity: 0%;
-}
-
-.checkbox-label::before {
-  content: "";
-
-  display: inline-block;
-  flex-shrink: 0;
-
-  width: 15px;
-  height: 15px;
-  margin-right: 12px;
-  border: 2px solid rgb(255 255 255 / 30%);
-  border-radius: 4px;
-
-  background: rgb(255 255 255 / 5%);
-
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.checkbox-label:has(input:checked)::before {
-  border-color: #2196f3;
-  background: #2196f3;
-}
-
-.checkbox-label::after {
-  content: "✓";
-
-  position: absolute;
-  top: 50%;
-  left: 24.5px; /* Position über Checkbox: 10px padding + 7.5px (halbe Checkbox-Breite) */
-  transform: translate(-50%, -50%) scale(0);
-
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.checkbox-label:has(input:checked)::after {
-  transform: translate(-50%, -50%) scale(1);
-  animation: checkmark-pop 0.3s ease-out;
-}
-
-@keyframes checkmark-pop {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-  }
-
-  50% {
-    transform: translate(-50%, -50%) scale(1.2);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-.checkbox-text {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgb(255 255 255 / 80%);
-}
-
-.checkbox-label:has(input:checked) .checkbox-text {
-  color: rgb(255 255 255 / 95%);
-}
-
-.checkbox-hint {
-  margin-left: auto;
-  padding-left: 12px;
-  font-size: 12px;
-  color: rgb(255 255 255 / 50%);
-}
-
-.checkbox-label:has(input:checked) .checkbox-hint {
-  color: rgb(33 150 243 / 70%);
+/* Toggle hint for Design System toggle-switch */
+.toggle-hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-muted, rgb(255 255 255 / 50%));
 }
 
 /* ============ FAVORITES STYLES ============ */
 .favorites-container {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -2426,7 +1111,7 @@ body::after {
 .favorites-header {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 }
 
@@ -2449,7 +1134,7 @@ body::after {
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .favorite-btn {
@@ -2463,7 +1148,7 @@ body::after {
 
   padding: 8px 16px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -2475,7 +1160,6 @@ body::after {
 }
 
 .favorite-btn:hover {
-  transform: translateY(-1px);
   border-color: rgb(76 175 80 / 60%);
   background: linear-gradient(135deg, rgb(76 175 80 / 30%), rgb(76 175 80 / 20%));
   box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
@@ -2527,11 +1211,11 @@ body::after {
 
   display: inline-block;
 
-  margin-top: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
   padding: 10px 20px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 700;
@@ -2561,7 +1245,7 @@ body::after {
   min-width: 150px;
   padding: var(--spacing-2);
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -2584,11 +1268,6 @@ body::after {
   color: var(--text-primary);
 }
 
-.member-details {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
 .shift-cell.drop-invalid {
   border-color: var(--error-color) !important;
   border-width: 2px !important;
@@ -2604,18 +1283,6 @@ body::after {
 }
 
 /* Employee info in sidebar */
-.employee-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-xs);
-}
-
-.employee-name-sidebar {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
 
 .employee-details {
   font-size: 12px;
@@ -2624,7 +1291,7 @@ body::after {
 
 /* ============ CORE SHIFT PLANNING STYLES ============ */
 .shift-title {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 28px;
   font-weight: 700;
@@ -2634,10 +1301,12 @@ body::after {
 
 /* Admin Actions Styles */
 .admin-actions {
-  margin-top: var(--spacing-xl);
-  padding: var(--spacing-lg);
+  justify-content: center;
+
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -2648,35 +1317,10 @@ body::after {
     inset 0 1px 0 rgb(255 255 255 / 5%);
 }
 
-.admin-btn {
-  cursor: pointer;
-
-  margin: 0 var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border: none;
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-
-  background: var(--success-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.admin-btn:hover {
-  transform: translateY(-1px);
-  background: #45a049;
-  box-shadow: var(--shadow-md);
-}
-
-.admin-btn.cancel {
-  background: var(--warning-color);
-}
-
-.admin-btn.cancel:hover {
-  background: #aa7400;
-}
+/* DEPRECATED: .admin-btn - Use Design System buttons instead:
+   - btn btn-primary (for save actions)
+   - btn btn-cancel (for cancel/reset actions)
+   See: design-system/primitives/buttons/button.css */
 
 /* Additional dropdown styles combined with existing ones at line 175-181 */
 
@@ -2684,15 +1328,6 @@ body::after {
    Additional styles for existing components
    (Main definitions at lines 185-271)
    ======================================== */
-
-/* Additional week schedule rules */
-.main-planning-area.full-width {
-  grid-template-columns: 1fr;
-}
-
-.main-planning-area.full-width .week-schedule {
-  max-width: 100%;
-}
 
 /* Additional shift row rules - see main definition at line 271 */
 

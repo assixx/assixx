@@ -3,12 +3,25 @@
  * Route definitions for root user operations
  */
 import { Router } from 'express';
-import { body, param } from 'express-validator';
+import { z } from 'zod';
 
 import { security } from '../../../middleware/security.js';
-import { createValidation } from '../../../middleware/validation.js';
+import {
+  validate,
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../../../middleware/validation.zod.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { rootController } from './root.controller.js';
+import {
+  AdminIdParamSchema,
+  CreateAdminSchema,
+  CreateRootUserSchema,
+  RootApiFiltersSchema,
+  UpdateAdminSchema,
+  UpdateRootUserSchema,
+} from './root.validation.zod.js';
 
 const router = Router();
 
@@ -16,64 +29,45 @@ const router = Router();
 router.get(
   '/admins',
   ...security.root(),
+  validateQuery(RootApiFiltersSchema), // Add query validation
   typed.auth(rootController.getAdmins.bind(rootController)),
 );
 
 router.get(
   '/admins/:id',
-  ...security.root(
-    createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
-  ),
+  ...security.root(),
+  validateParams(AdminIdParamSchema), // Use centralized schema
   typed.params<{ id: string }>(rootController.getAdminById.bind(rootController)),
 );
 
 router.post(
   '/admins',
-  ...security.root(
-    createValidation([
-      body('username').isString().notEmpty(),
-      body('email').isEmail(),
-      body('password').isString().isLength({ min: 6 }),
-      body('firstName').optional().isString(),
-      body('lastName').optional().isString(),
-      body('company').optional().isString(),
-      body('notes').optional().isString(),
-    ]),
-  ),
+  ...security.root(),
+  validateBody(CreateAdminSchema), // Use centralized schema
   typed.body(rootController.createAdmin.bind(rootController)),
 );
 
 router.put(
   '/admins/:id',
-  ...security.root(
-    createValidation([
-      param('id').isInt({ min: 1 }).withMessage('Invalid admin ID'),
-      body('username').optional().isString(),
-      body('email').optional().isEmail(),
-      body('password').optional().isString().isLength({ min: 6 }),
-      body('firstName').optional().isString(),
-      body('lastName').optional().isString(),
-      body('company').optional().isString(),
-      body('notes').optional().isString(),
-      body('isActive').optional().isBoolean(),
-    ]),
-  ),
+  ...security.root(),
+  validate({
+    params: AdminIdParamSchema,
+    body: UpdateAdminSchema,
+  }),
   typed.paramsBody<{ id: string }>(rootController.updateAdmin.bind(rootController)),
 );
 
 router.delete(
   '/admins/:id',
-  ...security.root(
-    createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
-  ),
+  ...security.root(),
+  validateParams(AdminIdParamSchema),
   typed.params<{ id: string }>(rootController.deleteAdmin.bind(rootController)),
 );
 
 router.get(
   '/admins/:id/logs',
-  ...security.root(
-    createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
-  ),
+  ...security.root(),
+  validateParams(AdminIdParamSchema),
   typed.params<{ id: string }>(rootController.getAdminLogs.bind(rootController)),
 );
 
@@ -93,60 +87,46 @@ router.get(
 
 router.get(
   '/users/:id',
-  ...security.root(
-    createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid user ID')]),
-  ),
+  ...security.root(),
+  validateParams(z.object({ id: z.coerce.number().int().min(1, 'Invalid user ID') })),
   typed.params<{ id: string }>(rootController.getRootUserById.bind(rootController)),
 );
 
 router.post(
   '/users',
-  ...security.root(
-    createValidation([
-      body('username').isString().notEmpty(),
-      body('email').isEmail(),
-      body('password').isString().isLength({ min: 6 }),
-      body('firstName').isString().notEmpty(),
-      body('lastName').isString().notEmpty(),
-      body('position').optional().isString(),
-      body('notes').optional().isString(),
-      body('employeeNumber').optional().isString(),
-      body('departmentId').optional().isNumeric(),
-      body('isActive').optional().isBoolean(),
-    ]),
-  ),
+  ...security.root(),
+  validateBody(CreateRootUserSchema),
   typed.body(rootController.createRootUser.bind(rootController)),
 );
 
 router.put(
   '/users/:id',
-  ...security.root(
-    createValidation([
-      param('id').isInt({ min: 1 }).withMessage('Invalid user ID'),
-      body('firstName').optional().isString(),
-      body('lastName').optional().isString(),
-      body('email').optional().isEmail(),
-      body('position').optional().isString(),
-      body('notes').optional().isString(),
-      body('employeeNumber').optional().isString(),
-      body('departmentId').optional().isNumeric(),
-      body('isActive').optional().isBoolean(),
-    ]),
-  ),
+  ...security.root(),
+  validate({
+    params: z.object({
+      id: z.coerce.number().int().min(1, 'Invalid user ID'),
+    }),
+    body: UpdateRootUserSchema,
+  }),
   typed.paramsBody<{ id: string }>(rootController.updateRootUser.bind(rootController)),
 );
 
 router.delete(
   '/users/:id',
-  ...security.root(
-    createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid user ID')]),
-  ),
+  ...security.root(),
+  validateParams(z.object({ id: z.coerce.number().int().min(1, 'Invalid user ID') })),
   typed.params<{ id: string }>(rootController.deleteRootUser.bind(rootController)),
 );
 
 // Dashboard & System Info Routes
 router.get(
   '/dashboard',
+  ...security.root(),
+  typed.auth(rootController.getDashboard.bind(rootController)),
+);
+
+router.get(
+  '/stats',
   ...security.root(),
   typed.auth(rootController.getDashboard.bind(rootController)),
 );
@@ -162,7 +142,12 @@ router.get(
 // DELETE /tenants/current - Compatible with v1 API
 router.delete(
   '/tenants/current',
-  ...security.root(createValidation([body('reason').optional().isString()])),
+  ...security.root(),
+  validateBody(
+    z.object({
+      reason: z.string().optional(),
+    }),
+  ),
   typed.paramsBody<Record<string, never>, { reason?: string }>(
     rootController.deleteCurrentTenant.bind(rootController),
   ),
@@ -170,7 +155,12 @@ router.delete(
 
 router.post(
   '/tenant/deletion',
-  ...security.root(createValidation([body('reason').optional().isString()])),
+  ...security.root(),
+  validateBody(
+    z.object({
+      reason: z.string().optional(),
+    }),
+  ),
   typed.body(rootController.requestTenantDeletion.bind(rootController)),
 );
 
@@ -207,9 +197,15 @@ router.get(
 
 router.post(
   '/deletion-approvals/:queueId/approve',
-  ...security.root(
-    createValidation([param('queueId').isInt({ min: 1 }), body('comment').optional().isString()]),
-  ),
+  ...security.root(),
+  validate({
+    params: z.object({
+      queueId: z.coerce.number().int().min(1),
+    }),
+    body: z.object({
+      comment: z.string().optional(),
+    }),
+  }),
   typed.paramsBody<{ queueId: string }, { comment?: string }>(
     rootController.approveDeletion.bind(rootController),
   ),
@@ -217,9 +213,15 @@ router.post(
 
 router.post(
   '/deletion-approvals/:queueId/reject',
-  ...security.root(
-    createValidation([param('queueId').isInt({ min: 1 }), body('reason').isString().notEmpty()]),
-  ),
+  ...security.root(),
+  validate({
+    params: z.object({
+      queueId: z.coerce.number().int().min(1),
+    }),
+    body: z.object({
+      reason: z.string().min(1),
+    }),
+  }),
   typed.paramsBody<{ queueId: string }, { reason: string }>(
     rootController.rejectDeletion.bind(rootController),
   ),
@@ -227,7 +229,8 @@ router.post(
 
 router.post(
   '/deletion-queue/:queueId/emergency-stop',
-  ...security.root(createValidation([param('queueId').isInt({ min: 1 })])),
+  ...security.root(),
+  validateParams(z.object({ queueId: z.coerce.number().int().min(1) })),
   typed.params<{ queueId: string }>(rootController.emergencyStop.bind(rootController)),
 );
 

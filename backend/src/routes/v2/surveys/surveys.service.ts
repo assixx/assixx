@@ -2,11 +2,11 @@
  * surveys API v2 Service Layer
  * Business logic for survey management
  */
-import rootLog from '../../../models/rootLog';
-import survey, { SurveyStatistics } from '../../../models/survey.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { eventBus } from '../../../utils/eventBus.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import rootLog from '../logs/logs.service.js';
+import survey, { SurveyStatistics } from './survey.model.js';
 
 export interface SurveyFilters {
   status?: 'draft' | 'active' | 'closed';
@@ -27,6 +27,17 @@ export interface AssignmentCreateData {
   departmentId?: number | null;
   teamId?: number | null;
   userId?: number | null;
+}
+
+// Survey query result type (from model functions)
+interface SurveyQueryResult {
+  id: number;
+  response_count?: number;
+  completed_count?: number;
+  creator_first_name?: string;
+  creator_last_name?: string;
+  // Add other fields as needed by dbToApi
+  [key: string]: unknown;
 }
 
 interface SurveyStatisticsResponse {
@@ -60,19 +71,8 @@ interface SurveyStatisticsResponse {
   }[];
 }
 
-export interface SurveyCreateData {
-  title: string;
-  description?: string;
-  status?: 'draft' | 'active' | 'closed';
-  isAnonymous?: boolean;
-  isMandatory?: boolean;
-  startDate?: string | null;
-  endDate?: string | null;
-  questions?: QuestionCreateData[];
-  assignments?: AssignmentCreateData[];
-}
-
-export interface SurveyUpdateData {
+/** Base survey data with all optional fields (used for updates) */
+interface SurveyBaseData {
   title?: string;
   description?: string;
   status?: 'draft' | 'active' | 'closed';
@@ -84,20 +84,74 @@ export interface SurveyUpdateData {
   assignments?: AssignmentCreateData[];
 }
 
-export interface ResponseSubmitData {
-  surveyId: number;
-  answers: {
-    questionId: number;
-    answerText?: string;
-    answerNumber?: number;
-    selectedOptions?: number[];
-  }[];
+/** Survey creation data - title is required */
+export interface SurveyCreateData extends SurveyBaseData {
+  title: string;
+}
+
+/** Survey update data - all fields optional */
+export type SurveyUpdateData = SurveyBaseData;
+
+// Internal types for DB payloads
+interface QuestionDbPayload {
+  question_text: string;
+  question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
+  is_required: boolean;
+  order_position: number;
+  options?: string[];
+}
+
+interface AssignmentDbPayload {
+  type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  area_id?: number | null;
+  department_id?: number | null;
+  team_id?: number | null;
+  user_id?: number | null;
+}
+
+/**
+ * Transform API questions to DB format
+ */
+function transformQuestionsToDb(questions: QuestionCreateData[]): QuestionDbPayload[] {
+  return questions.map((q: QuestionCreateData, index: number) => {
+    const question: QuestionDbPayload = {
+      question_text: q.questionText,
+      question_type: q.questionType,
+      is_required: q.isRequired ?? true,
+      order_position: q.orderPosition ?? index + 1,
+    };
+    if (q.options !== undefined) {
+      question.options = q.options;
+    }
+    return question;
+  });
+}
+
+/**
+ * Transform API assignments to DB format
+ */
+function transformAssignmentsToDb(assignments: AssignmentCreateData[]): AssignmentDbPayload[] {
+  return assignments.map((a: AssignmentCreateData) => {
+    const assignment: AssignmentDbPayload = {
+      type: a.type,
+    };
+    if (a.departmentId !== undefined) {
+      assignment.department_id = a.departmentId;
+    }
+    if (a.teamId !== undefined) {
+      assignment.team_id = a.teamId;
+    }
+    if (a.userId !== undefined) {
+      assignment.user_id = a.userId;
+    }
+    return assignment;
+  });
 }
 
 /**
  *
  */
-export class SurveysService {
+class SurveysService {
   /**
    * List surveys based on user role
    * @param tenantId - The tenant ID
@@ -105,6 +159,56 @@ export class SurveysService {
    * @param userRole - The userRole parameter
    * @param filters - The filter criteria
    */
+  /**
+   * Group assignments by survey ID
+   */
+  private groupAssignmentsBySurveyId(assignments: { survey_id: number }[]): Map<number, unknown[]> {
+    const assignmentsBySurveyId = new Map<number, unknown[]>();
+    for (const assignment of assignments) {
+      const surveyId = assignment.survey_id;
+      if (!assignmentsBySurveyId.has(surveyId)) {
+        assignmentsBySurveyId.set(surveyId, []);
+      }
+      assignmentsBySurveyId.get(surveyId)?.push(assignment);
+    }
+    return assignmentsBySurveyId;
+  }
+
+  /**
+   * Attach assignments to surveys
+   */
+  private async attachAssignmentsToSurveys(
+    surveys: SurveyQueryResult[],
+    tenantId: number,
+  ): Promise<void> {
+    if (surveys.length === 0) return;
+
+    const surveyIds = surveys.map((s: SurveyQueryResult) => s.id);
+    const assignments = await survey.getAssignmentsBySurveyIds(surveyIds, tenantId);
+    const assignmentsBySurveyId = this.groupAssignmentsBySurveyId(
+      assignments as { survey_id: number }[],
+    );
+
+    for (const surveyItem of surveys) {
+      (surveyItem as { assignments?: unknown[] }).assignments =
+        assignmentsBySurveyId.get(surveyItem.id) ?? [];
+    }
+  }
+
+  /**
+   * Transform survey query result to API format with metadata
+   */
+  private transformSurveyWithMetadata(surveyItem: SurveyQueryResult): unknown {
+    const transformedSurvey = this.transformSurveyToApi(surveyItem) as Record<string, unknown>;
+    return {
+      ...transformedSurvey,
+      responseCount: surveyItem.response_count ?? 0,
+      completedCount: surveyItem.completed_count ?? 0,
+      creatorFirstName: surveyItem.creator_first_name,
+      creatorLastName: surveyItem.creator_last_name,
+    };
+  }
+
   async listSurveys(
     tenantId: number,
     userId: number,
@@ -112,34 +216,94 @@ export class SurveysService {
     filters: SurveyFilters = {},
   ): Promise<unknown[]> {
     try {
-      let surveys;
+      let surveys: SurveyQueryResult[];
 
       if (userRole === 'root') {
-        // Root can see all surveys
         surveys = await survey.getAllByTenant(tenantId, filters);
       } else if (userRole === 'admin') {
-        // Admin sees surveys based on department permissions
         surveys = await survey.getAllByTenantForAdmin(tenantId, userId, filters);
       } else {
-        // Employee sees assigned surveys
         surveys = await survey.getAllByTenantForEmployee(tenantId, userId, filters);
       }
 
-      // Transform to API format
-      return surveys.map((survey) => {
-        const apisurvey = dbToApi(survey);
-        return {
-          ...apisurvey,
-          responseCount: survey.response_count ?? 0,
-          completedCount: survey.completed_count ?? 0,
-          creatorFirstName: survey.creator_first_name,
-          creatorLastName: survey.creator_last_name,
-        };
-      });
+      await this.attachAssignmentsToSurveys(surveys, tenantId);
+
+      return surveys.map((surveyItem: SurveyQueryResult) =>
+        this.transformSurveyWithMetadata(surveyItem),
+      );
     } catch (error: unknown) {
       console.error('Error listing surveys:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to list surveys');
     }
+  }
+
+  /**
+   * Check survey access for user
+   */
+  private async checkSurveyAccess(
+    surveyId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<void> {
+    if (userRole === 'employee') {
+      const surveys = await survey.getAllByTenantForEmployee(tenantId, userId, {});
+      const hasAccess = surveys.some((s: { id: number }) => s.id === surveyId);
+      if (!hasAccess) {
+        throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
+      }
+      return;
+    }
+
+    if (userRole === 'admin') {
+      const surveys = await survey.getAllByTenantForAdmin(tenantId, userId, {});
+      const hasAccess = surveys.some((s: { id: number }) => s.id === surveyId);
+      if (!hasAccess) {
+        throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
+      }
+    }
+  }
+
+  /**
+   * Transform survey data to API format
+   */
+  private transformSurveyToApi(surveyData: Record<string, unknown>): unknown {
+    const apisurvey = dbToApi(surveyData);
+
+    const questions = surveyData['questions'];
+    if (questions !== undefined && questions !== null && Array.isArray(questions)) {
+      apisurvey['questions'] = (questions as Record<string, unknown>[]).map(
+        (q: Record<string, unknown>) => {
+          const transformedQuestion = dbToApi(q);
+
+          // Transform nested options array (option_text → optionText)
+          const options = q['options'];
+          if (options !== null && options !== undefined && Array.isArray(options)) {
+            transformedQuestion['options'] = options.map((opt: unknown) => {
+              if (typeof opt === 'string') return opt;
+              if (typeof opt === 'object' && opt !== null) {
+                return dbToApi(opt as Record<string, unknown>);
+              }
+              return opt;
+            });
+          }
+
+          return {
+            ...transformedQuestion,
+            orderPosition: q['order_position'] ?? q['order_index'],
+          };
+        },
+      );
+    }
+
+    const assignments = surveyData['assignments'];
+    if (assignments !== undefined && assignments !== null && Array.isArray(assignments)) {
+      apisurvey['assignments'] = (assignments as Record<string, unknown>[]).map(
+        (a: Record<string, unknown>) => dbToApi(a),
+      );
+    }
+
+    return apisurvey;
   }
 
   /**
@@ -162,52 +326,100 @@ export class SurveysService {
         throw new ServiceError('NOT_FOUND', 'survey not found');
       }
 
-      // Check access permissions
-      if (userRole === 'employee') {
-        // Employee can only see surveys assigned to them
-        const assignedsurveys = await survey.getAllByTenantForEmployee(tenantId, userId, {});
-        const hasAccess = assignedsurveys.some((s) => s.id === surveyId);
+      await this.checkSurveyAccess(surveyId, tenantId, userId, userRole);
 
-        if (!hasAccess) {
-          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
-        }
-      } else if (userRole === 'admin') {
-        // Admin can see surveys in their departments
-        const adminsurveys = await survey.getAllByTenantForAdmin(tenantId, userId, {});
-        const hasAccess = adminsurveys.some((s) => s.id === surveyId);
-
-        if (!hasAccess) {
-          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
-        }
-      }
-
-      // Transform to API format
-      const apisurvey = dbToApi(surveyData);
-
-      // Transform questions
-      if (surveyData.questions) {
-        apisurvey.questions = surveyData.questions.map((q: Record<string, unknown>) => {
-          const apiQuestion = dbToApi(q);
-          return {
-            ...apiQuestion,
-            orderPosition: q.order_position ?? q.order_index,
-          };
-        });
-      }
-
-      // Transform assignments
-      if (surveyData.assignments) {
-        apisurvey.assignments = surveyData.assignments.map((a: Record<string, unknown>) =>
-          dbToApi(a),
-        );
-      }
-
-      return apisurvey;
+      return this.transformSurveyToApi(surveyData);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error('Error getting survey:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to get survey');
     }
+  }
+
+  /**
+   * Get survey by UUID
+   * @param surveyUUID - The survey UUID (UUIDv7)
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
+   */
+  async getSurveyByUUID(
+    surveyUUID: string,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<unknown> {
+    try {
+      const surveyData = await survey.getByUUID(surveyUUID, tenantId);
+
+      if (!surveyData) {
+        throw new ServiceError('NOT_FOUND', 'survey not found');
+      }
+
+      // Check access using the numeric ID from the survey data
+      await this.checkSurveyAccess(surveyData.id, tenantId, userId, userRole);
+
+      return this.transformSurveyToApi(surveyData);
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) throw error;
+      console.error('Error getting survey by UUID:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get survey');
+    }
+  }
+
+  /**
+   * Set payload field if value is defined
+   */
+  private setPayloadField(payload: Record<string, unknown>, key: string, value: unknown): void {
+    if (value !== undefined) {
+      Object.defineProperty(payload, key, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    }
+  }
+
+  /**
+   * Build survey payload for DB from API data
+   * @param data - Survey data (create or update)
+   * @param isCreateOperation - Whether this is a create operation (to apply defaults)
+   */
+  private buildSurveyPayload(
+    data: SurveyBaseData,
+    isCreateOperation: boolean,
+  ): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+
+    // For create: set required fields with defaults
+    // For update: only set fields that are provided
+    if (isCreateOperation) {
+      // Create operation: title is required, apply defaults for optional fields
+      this.setPayloadField(payload, 'title', data.title);
+      this.setPayloadField(payload, 'status', data.status ?? 'draft');
+      this.setPayloadField(payload, 'is_anonymous', data.isAnonymous ?? false);
+      this.setPayloadField(payload, 'is_mandatory', data.isMandatory ?? false);
+    } else {
+      // Update operation: only set fields that are provided
+      this.setPayloadField(payload, 'title', data.title);
+      this.setPayloadField(payload, 'status', data.status);
+      this.setPayloadField(payload, 'is_anonymous', data.isAnonymous);
+      this.setPayloadField(payload, 'is_mandatory', data.isMandatory);
+    }
+
+    this.setPayloadField(payload, 'description', data.description);
+    this.setPayloadField(payload, 'start_date', data.startDate);
+    this.setPayloadField(payload, 'end_date', data.endDate);
+
+    if (data.questions !== undefined) {
+      payload['questions'] = transformQuestionsToDb(data.questions);
+    }
+    if (data.assignments !== undefined) {
+      payload['assignments'] = transformAssignmentsToDb(data.assignments);
+    }
+
+    return payload;
   }
 
   /**
@@ -226,31 +438,13 @@ export class SurveysService {
     userAgent?: string,
   ): Promise<unknown> {
     try {
-      // Transform API data to DB format
-      const surveyData = {
-        title: data.title,
-        description: data.description,
-        status: data.status ?? 'draft',
-        is_anonymous: data.isAnonymous ?? false,
-        is_mandatory: data.isMandatory ?? false,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        questions: data.questions?.map((q, index) => ({
-          question_text: q.questionText,
-          question_type: q.questionType,
-          is_required: q.isRequired ?? true,
-          order_position: q.orderPosition ?? index + 1,
-          options: q.options,
-        })),
-        assignments: data.assignments?.map((a) => ({
-          type: a.type,
-          department_id: a.departmentId,
-          team_id: a.teamId,
-          user_id: a.userId,
-        })),
-      };
-
-      const surveyId = await survey.create(surveyData, tenantId, userId);
+      const surveyData = this.buildSurveyPayload(data, true);
+      // Type assertion: buildSurveyPayload guarantees title is set for create operations
+      const surveyId = await survey.create(
+        surveyData as unknown as Parameters<typeof survey.create>[0],
+        tenantId,
+        userId,
+      );
 
       // Log the action
       await rootLog.create({
@@ -265,12 +459,20 @@ export class SurveysService {
       });
 
       // Emit event for SSE notifications
-      eventBus.emitSurveyCreated(tenantId, {
+      const eventPayload: {
+        id: number;
+        title: string;
+        deadline?: string;
+        created_at?: string;
+      } = {
         id: surveyId,
         title: data.title,
-        deadline: data.endDate ?? undefined,
-        created_at: new Date().toISOString(),
-      });
+      };
+      if (data.endDate !== null && data.endDate !== undefined) {
+        eventPayload.deadline = data.endDate;
+      }
+      eventPayload.created_at = new Date().toISOString();
+      eventBus.emitSurveyCreated(tenantId, eventPayload);
 
       // Return the created survey
       return await this.getSurveyById(surveyId, tenantId, userId, 'admin');
@@ -305,9 +507,9 @@ export class SurveysService {
 
       // Type assertions for existingsurvey properties
       const surveyData = existingsurvey as Record<string, unknown>;
-      const existingTitle = surveyData.title as string;
-      const existingStatus = surveyData.status as string;
-      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
+      const existingTitle = surveyData['title'] as string;
+      const existingStatus = surveyData['status'] as string;
+      const responseCount = (surveyData['responseCount'] as number | undefined) ?? 0;
 
       if (userRole === 'employee') {
         throw new ServiceError('FORBIDDEN', 'Only admins can update surveys');
@@ -318,31 +520,13 @@ export class SurveysService {
         throw new ServiceError('CONFLICT', 'Cannot update survey with existing responses');
       }
 
-      // Transform API data to DB format
-      const updateData = {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        is_anonymous: data.isAnonymous,
-        is_mandatory: data.isMandatory,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        questions: data.questions?.map((q, index) => ({
-          question_text: q.questionText,
-          question_type: q.questionType,
-          is_required: q.isRequired ?? true,
-          order_position: q.orderPosition ?? index + 1,
-          options: q.options,
-        })),
-        assignments: data.assignments?.map((a) => ({
-          type: a.type,
-          department_id: a.departmentId,
-          team_id: a.teamId,
-          user_id: a.userId,
-        })),
-      };
-
-      await survey.update(surveyId, updateData, tenantId);
+      const updateData = this.buildSurveyPayload(data, false);
+      // Type assertion: buildSurveyPayload returns correct structure for update
+      await survey.update(
+        surveyId,
+        updateData as unknown as Parameters<typeof survey.update>[1],
+        tenantId,
+      );
 
       // Log the action
       await rootLog.create({
@@ -395,9 +579,9 @@ export class SurveysService {
 
       // Type assertions for existingsurvey properties
       const surveyData = existingsurvey as Record<string, unknown>;
-      const existingTitle = surveyData.title as string;
-      const existingStatus = surveyData.status as string;
-      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
+      const existingTitle = surveyData['title'] as string;
+      const existingStatus = surveyData['status'] as string;
+      const responseCount = (surveyData['responseCount'] as number | undefined) ?? 0;
 
       if (userRole === 'employee') {
         throw new ServiceError('FORBIDDEN', 'Only admins can delete surveys');
@@ -444,7 +628,7 @@ export class SurveysService {
   async getSurveyTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await survey.getTemplates(tenantId);
-      return templates.map((template) => dbToApi(template));
+      return templates.map((template: Record<string, unknown>) => dbToApi(template));
     } catch (error: unknown) {
       console.error('Error getting templates:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to get survey templates');
@@ -490,6 +674,54 @@ export class SurveysService {
   }
 
   /**
+   * Transform a single question for statistics response
+   */
+  private transformStatisticsQuestion(
+    q: SurveyStatistics['questions'][number],
+  ): SurveyStatisticsResponse['questions'][number] {
+    const question: SurveyStatisticsResponse['questions'][number] = {
+      id: q.id,
+      questionText: q.question_text,
+      questionType: q.question_type,
+    };
+
+    if (q.responses !== undefined) {
+      type ResponseItem = NonNullable<SurveyStatistics['questions'][number]['responses']>[number];
+      type ApiResponseItem = NonNullable<
+        SurveyStatisticsResponse['questions'][number]['responses']
+      >[number];
+      question.responses = q.responses.map((r: ResponseItem): ApiResponseItem => {
+        const response: ApiResponseItem = {};
+        if (r.answer_text !== undefined) response.answerText = r.answer_text;
+        if (r.user_id !== undefined) response.userId = r.user_id;
+        if (r.first_name !== undefined) response.firstName = r.first_name;
+        if (r.last_name !== undefined) response.lastName = r.last_name;
+        return response;
+      });
+    }
+
+    if (q.options !== undefined) {
+      type OptionItem = NonNullable<SurveyStatistics['questions'][number]['options']>[number];
+      question.options = q.options.map((opt: OptionItem) => ({
+        optionId: opt.option_id,
+        optionText: opt.option_text,
+        count: opt.count,
+      }));
+    }
+
+    if (q.statistics !== undefined) {
+      question.statistics = {
+        average: q.statistics.average,
+        min: q.statistics.min,
+        max: q.statistics.max,
+        totalResponses: q.statistics.total_responses,
+      };
+    }
+
+    return question;
+  }
+
+  /**
    * Get survey statistics
    * @param surveyId - The surveyId parameter
    * @param tenantId - The tenant ID
@@ -513,38 +745,22 @@ export class SurveysService {
       const statistics: SurveyStatistics = await survey.getStatistics(surveyId, tenantId);
 
       // Transform to API format
-      const response: SurveyStatisticsResponse = {
+      const responseBase = {
         surveyId: statistics.survey_id,
         totalResponses: statistics.total_responses,
         completedResponses: statistics.completed_responses,
         completionRate: statistics.completion_rate,
-        firstResponse: statistics.first_response,
-        lastResponse: statistics.last_response,
-        questions: statistics.questions.map((q) => ({
-          id: q.id,
-          questionText: q.question_text,
-          questionType: q.question_type,
-          responses: q.responses?.map((r) => ({
-            answerText: r.answer_text,
-            userId: r.user_id,
-            firstName: r.first_name,
-            lastName: r.last_name,
-          })),
-          options: q.options?.map((opt) => ({
-            optionId: opt.option_id,
-            optionText: opt.option_text,
-            count: opt.count,
-          })),
-          statistics:
-            q.statistics ?
-              {
-                average: q.statistics.average,
-                min: q.statistics.min,
-                max: q.statistics.max,
-                totalResponses: q.statistics.total_responses,
-              }
-            : undefined,
-        })),
+        questions: statistics.questions.map((q: SurveyStatistics['questions'][number]) =>
+          this.transformStatisticsQuestion(q),
+        ),
+      };
+
+      const response: SurveyStatisticsResponse = {
+        ...responseBase,
+        ...(statistics.first_response !== null &&
+          statistics.first_response !== undefined && { firstResponse: statistics.first_response }),
+        ...(statistics.last_response !== null &&
+          statistics.last_response !== undefined && { lastResponse: statistics.last_response }),
       };
 
       return response;

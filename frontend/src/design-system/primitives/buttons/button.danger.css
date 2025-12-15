@@ -1,0 +1,57 @@
+/**
+ * Design System - Danger Button
+ *
+ * Purpose: Destructive actions (delete, remove, deactivate)
+ * Usage: Delete user, Remove item, Destructive confirmations
+ *
+ * Visual: Red gradient with solid style (high visibility)
+ */
+
+.btn-danger {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  border: 1px solid rgb(229 57 53); /* Solid red border - avatar style */
+
+  color: var(--color-white);
+
+  /* ========== VISUAL ========== */
+  background: linear-gradient(145deg, #f44336b0, #ff000052);
+  box-shadow: var(--shadow-btn-danger);
+}
+
+/* Hover state - Brighten the gradient */
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(145deg, #ff1100b0, #ff000052);
+  box-shadow: var(--shadow-btn-danger-hover);
+}
+
+/* Focus state - Red focus ring */
+.btn-danger:focus-visible {
+  box-shadow: var(--shadow-btn-danger), var(--shadow-focus-danger);
+}
+
+/**
+ * WHY SOLID RED GRADIENT?
+ *
+ * - Destructive actions need HIGH visibility
+ * - Red is universal danger color
+ * - Gradient makes it feel "heavy" (intentional friction)
+ * - Solid style (not outline) = serious action
+ * - Border reinforces boundaries
+ *
+ * BEST PRACTICE: Always confirm before danger actions
+ * - Show modal: "Are you sure you want to delete X?"
+ * - Require re-type of name for critical operations
+ * - Provide undo option when possible
+ *
+ * WHEN TO USE:
+ * ✅ Delete buttons
+ * ✅ Remove from list
+ * ✅ Destructive confirmations
+ * ✅ Account deletion
+ *
+ * WHEN NOT TO USE:
+ * ❌ Regular actions (use .btn-primary)
+ * ❌ Cancel (use .btn-cancel)
+ * ❌ Deactivate toggle (use .btn-status-active)
+ */

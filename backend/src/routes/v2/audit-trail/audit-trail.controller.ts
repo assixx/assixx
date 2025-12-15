@@ -11,6 +11,105 @@ import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { auditTrailService } from './audit-trail.service.js';
 import { AuditEntry, AuditFilter } from './types.js';
 
+/**
+ * Parse optional string query params into filter object
+ */
+function applyStringParams(query: AuthenticatedRequest['query'], filter: AuditFilter): void {
+  const stringKeys: (keyof AuditFilter)[] = [
+    'action',
+    'resourceType',
+    'status',
+    'dateFrom',
+    'dateTo',
+    'search',
+    'sortBy',
+    'sortOrder',
+  ];
+  for (const key of stringKeys) {
+    // eslint-disable-next-line security/detect-object-injection -- key is from static stringKeys array, not user input
+    const value = query[key];
+    if (typeof value === 'string' && value !== '') {
+      // eslint-disable-next-line security/detect-object-injection -- key is from static stringKeys array, not user input
+      (filter as unknown as Record<string, unknown>)[key] = value;
+    }
+  }
+}
+
+/**
+ * Parse optional numeric query params into filter object
+ */
+function applyNumericParams(query: AuthenticatedRequest['query'], filter: AuditFilter): void {
+  const numericKeys: (keyof AuditFilter)[] = ['userId', 'resourceId'];
+  for (const key of numericKeys) {
+    // eslint-disable-next-line security/detect-object-injection -- key is from static numericKeys array, not user input
+    const value = query[key];
+    if (typeof value === 'string' && value !== '') {
+      // eslint-disable-next-line security/detect-object-injection -- key is from static numericKeys array, not user input
+      (filter as unknown as Record<string, unknown>)[key] = Number.parseInt(value, 10);
+    }
+  }
+}
+
+/**
+ * Build audit filter from request query
+ */
+function buildAuditFilter(req: AuthenticatedRequest): AuditFilter {
+  const pageParam = req.query['page'];
+  const limitParam = req.query['limit'];
+  const parsedPage =
+    typeof pageParam === 'string' && pageParam !== '' ? Number.parseInt(pageParam, 10) : 1;
+  const parsedLimit =
+    typeof limitParam === 'string' && limitParam !== '' ? Number.parseInt(limitParam, 10) : 50;
+  const filter: AuditFilter = {
+    tenantId: req.user.tenant_id,
+    page: parsedPage,
+    limit: parsedLimit,
+  };
+
+  applyStringParams(req.query, filter);
+  applyNumericParams(req.query, filter);
+
+  return filter;
+}
+
+/**
+ * Validate audit access permissions
+ */
+function validateAuditAccess(
+  user: AuthenticatedRequest['user'],
+  filter: AuditFilter,
+): ReturnType<typeof errorResponse> | null {
+  if (user.role !== 'root') {
+    const filterUserId = filter.userId;
+    if (filterUserId !== undefined && filterUserId !== user.id) {
+      return errorResponse('FORBIDDEN', "Cannot view other users' audit entries");
+    }
+    filter.userId = user.id;
+  }
+  return null;
+}
+
+/**
+ * Build pagination response
+ */
+function buildPagination(
+  total: number,
+  filter: AuditFilter,
+): {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+} {
+  const pageSize = filter.limit ?? 50;
+  return {
+    currentPage: filter.page ?? 1,
+    pageSize,
+    totalItems: total,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
 export const auditTrailController = {
   /**
    * Get audit entries with filters
@@ -21,39 +120,13 @@ export const auditTrailController = {
     try {
       log('[Audit Trail v2] getEntries called with user:', req.user.id);
 
-      const filter: AuditFilter = {
-        tenantId: req.user.tenant_id,
-        userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-        action: req.query.action as string,
-        resourceType: req.query.resourceType as string,
-        resourceId:
-          req.query.resourceId ? Number.parseInt(req.query.resourceId as string) : undefined,
-        status: req.query.status as 'success' | 'failure',
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
-        search: req.query.search as string,
-        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
-        sortBy: req.query.sortBy as
-          | 'created_at'
-          | 'action'
-          | 'user_id'
-          | 'resource_type'
-          | undefined,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc',
-      };
+      const filter = buildAuditFilter(req);
 
-      // Only root users can see entries from other users
-      if (req.user.role !== 'root') {
-        // Non-root users can only see their own entries
-        if (filter.userId && filter.userId !== req.user.id) {
-          res
-            .status(403)
-            .json(errorResponse('FORBIDDEN', "Cannot view other users' audit entries"));
-          return;
-        }
-        // Force filter to only show their own entries
-        filter.userId = req.user.id;
+      // Apply access control
+      const accessError = validateAuditAccess(req.user, filter);
+      if (accessError) {
+        res.status(403).json(accessError);
+        return;
       }
 
       const result = await auditTrailService.getEntries(filter);
@@ -62,12 +135,7 @@ export const auditTrailController = {
         successResponse(
           {
             entries: result.entries,
-            pagination: {
-              currentPage: filter.page ?? 1,
-              pageSize: filter.limit ?? 50,
-              totalItems: result.total,
-              totalPages: Math.ceil(result.total / (filter.limit ?? 50)),
-            },
+            pagination: buildPagination(result.total, filter),
           },
           'Audit entries retrieved successfully',
         ),
@@ -92,7 +160,12 @@ export const auditTrailController = {
    */
   async getEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const id = Number.parseInt(req.params.id);
+      const idParam = req.params['id'];
+      if (idParam === undefined || idParam === '') {
+        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Entry ID is required'));
+        return;
+      }
+      const id = Number.parseInt(idParam);
       const entry = await auditTrailService.getEntryById(id, req.user.tenant_id);
 
       // Only root users can see entries from other users
@@ -127,8 +200,8 @@ export const auditTrailController = {
 
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
+        dateFrom: req.query['dateFrom'] as string,
+        dateTo: req.query['dateTo'] as string,
       };
 
       const stats = await auditTrailService.getStats(filter);
@@ -195,11 +268,12 @@ export const auditTrailController = {
         return;
       }
 
-      const format = (req.query.format as string) || 'json';
+      const formatParam = req.query['format'];
+      const format = typeof formatParam === 'string' && formatParam !== '' ? formatParam : 'json';
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
+        dateFrom: req.query['dateFrom'] as string,
+        dateTo: req.query['dateTo'] as string,
         // No pagination for export
         page: 1,
         limit: 10000, // Max export limit
@@ -261,7 +335,7 @@ export const auditTrailController = {
         confirmPassword: string;
       };
 
-      if (!olderThanDays || olderThanDays < 90) {
+      if (Number.isNaN(olderThanDays) || olderThanDays < 90) {
         res
           .status(400)
           .json(errorResponse('VALIDATION_ERROR', 'Cannot delete entries newer than 90 days'));
@@ -324,7 +398,7 @@ export const auditTrailController = {
       'IP Address',
     ];
 
-    const rows = entries.map((entry) => [
+    const rows = entries.map((entry: AuditEntry) => [
       entry.id,
       entry.createdAt,
       entry.userName ?? entry.userId,
@@ -336,8 +410,9 @@ export const auditTrailController = {
       entry.ipAddress ?? '',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
-      '\n',
-    );
+    return [
+      headers.join(','),
+      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
+    ].join('\n');
   },
 };

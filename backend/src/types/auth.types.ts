@@ -1,5 +1,5 @@
 // Authentication-specific Type Definitions
-import { User } from './models';
+import { User } from './models.js';
 
 // Authentication Results
 export interface AuthResult {

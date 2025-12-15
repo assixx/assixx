@@ -29,7 +29,7 @@ describe('Machines v2 API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-machines-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-machines-v2-tests';
 
     // Create test tenant
     tenantId = await createTestTenant(testDb, 'machinesv2test', 'Machines v2 Test Company');
@@ -77,19 +77,19 @@ describe('Machines v2 API Endpoints', () => {
       email: adminUser.email,
       password: 'AdminPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     // const managerLoginRes = await request(app).post("/api/v2/auth/login").send({
     //   email: managerUser.email,
     //   password: "ManagerPass123!",
     // });
-    // managerToken = managerLoginRes.body.data.accessToken;
+    // managerToken = managerLoginRes.body.data['accessToken'];
 
     const employeeLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
       password: 'EmployeePass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
 
     // Create test machine category in database (ignore if exists)
     await testDb.execute(
@@ -176,7 +176,7 @@ describe('Machines v2 API Endpoints', () => {
       });
 
       // Save for other tests
-      testMachineId = response.body.data.id;
+      testMachineId = response.body.data['id'];
     });
 
     // Manager role test commented out as role might not exist
@@ -267,7 +267,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
     });
 
     it('should filter machines by status', async () => {
@@ -278,7 +278,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      response.body.data.forEach((machine: any) => {
+      response.body.data['forEach']((machine: any) => {
         expect(machine.status).toBe('operational');
       });
     });
@@ -291,7 +291,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      response.body.data.forEach((machine: any) => {
+      response.body.data['forEach']((machine: any) => {
         expect(machine.machineType).toBe('production');
       });
     });
@@ -304,7 +304,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
     });
   });
 
@@ -553,7 +553,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
 
       // Check camelCase in maintenance records
       const record = response.body.data[0];
@@ -597,7 +597,7 @@ describe('Machines v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
 
       // Check category structure
       const category = response.body.data[0];
@@ -642,7 +642,7 @@ describe('Machines v2 API Endpoints', () => {
           name: 'Machine to Delete',
         });
 
-      const machineId = createRes.body.data.id;
+      const machineId = createRes.body.data['id'];
 
       const response = await request(app)
         .delete(`/api/v2/machines/${machineId}`)
@@ -650,14 +650,14 @@ describe('Machines v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toBe('Machine deleted successfully');
+      expect(response.body.data['message']).toBe('Machine deleted successfully');
 
       // Verify it's soft deleted (isActive = false)
       const getRes = await request(app)
         .get(`/api/v2/machines/${machineId}`)
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect(getRes.body.data.isActive).toBe(0); // MySQL returns boolean as 0/1
+      expect(getRes.body.data['isActive']).toBe(0); // MySQL returns boolean as 0/1
     });
 
     // Manager role test commented out
@@ -705,7 +705,7 @@ describe('Machines v2 API Endpoints', () => {
         email: otherUser.email,
         password: 'OtherPass123!',
       });
-      otherTenantToken = loginRes.body.data.accessToken;
+      otherTenantToken = loginRes.body.data['accessToken'];
 
       // Create machine for other tenant
       const createRes = await request(app)
@@ -715,7 +715,7 @@ describe('Machines v2 API Endpoints', () => {
         .send({
           name: 'Other Tenant Machine',
         });
-      otherTenantMachineId = createRes.body.data.id;
+      otherTenantMachineId = createRes.body.data['id'];
     });
 
     it('should not see machines from other tenants', async () => {
@@ -724,7 +724,7 @@ describe('Machines v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      const machineIds = response.body.data.map((m: any) => m.id);
+      const machineIds = response.body.data['map']((m: any) => m.id);
       expect(machineIds).not.toContain(otherTenantMachineId);
     });
 

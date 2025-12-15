@@ -4,7 +4,7 @@
  */
 import path from 'path';
 
-import { logger } from './logger';
+import { logger } from './logger.js';
 
 /**
  * Validates and sanitizes a file path to prevent directory traversal attacks
@@ -62,7 +62,7 @@ export function sanitizeFilename(filename: string): string {
     .trim();
 
   // Ensure filename is not empty after sanitization
-  if (!sanitized || sanitized === '_') {
+  if (sanitized === '' || sanitized === '_') {
     sanitized = `file_${String(Date.now())}`;
   }
 
@@ -74,35 +74,6 @@ export function sanitizeFilename(filename: string): string {
   }
 
   return sanitized;
-}
-
-/**
- * Creates a secure file path within a base directory
- * @param baseDir - The base directory
- * @param filename - The filename to use
- * @returns The secure file path
- */
-export function createSecurePath(baseDir: string, filename: string): string {
-  const sanitizedFilename = sanitizeFilename(filename);
-
-  // Validate the final path
-  const validated = validatePath(sanitizedFilename, baseDir);
-  if (validated == null || validated === '') {
-    throw new Error('Invalid file path');
-  }
-
-  return validated;
-}
-
-/**
- * Checks if a file extension is allowed
- * @param filename - The filename to check
- * @param allowedExtensions - Array of allowed extensions (e.g., ['.pdf', '.jpg'])
- * @returns True if the extension is allowed
- */
-export function isAllowedExtension(filename: string, allowedExtensions: string[]): boolean {
-  const ext = path.extname(filename).toLowerCase();
-  return allowedExtensions.includes(ext);
 }
 
 /**
@@ -118,55 +89,14 @@ export function getUploadDirectory(type: string): string {
     profile_pictures: path.join(baseUploadDir, 'profile_pictures'),
     blackboard: path.join(baseUploadDir, 'blackboard'),
     chat: path.join(baseUploadDir, 'chat'),
-    kvp: path.join(baseUploadDir, 'kvp'),
+    kvp: path.join(baseUploadDir, 'kvp-attachments'),
   };
 
   // eslint-disable-next-line security/detect-object-injection -- Safe: type is validated against predefined keys
   const dir = uploadDirs[type];
-  if (!dir) {
+  if (dir === undefined) {
     throw new Error(`Invalid upload type: ${type}`);
   }
 
   return dir;
-}
-
-/**
- * Safely deletes a file, ensuring it's within the uploads directory
- * @param filePath - The file path to delete
- * @returns True if file was deleted, false otherwise
- */
-export async function safeDeleteFile(filePath: string): Promise<boolean> {
-  try {
-    // Validate the path is within the uploads directory
-    const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    const validatedPath = validatePath(filePath, process.cwd());
-
-    // Check if path validation failed
-    if (validatedPath == null) {
-      logger.warn(`Invalid file path provided: ${filePath}`);
-      return false;
-    }
-
-    // Check if path is outside uploads directory
-    if (!validatedPath.startsWith(uploadsDir)) {
-      logger.warn(`Attempted to delete file outside uploads directory: ${filePath}`);
-      return false;
-    }
-
-    // Check if file exists before attempting to delete
-    const fs = await import('fs/promises');
-    try {
-      await fs.access(validatedPath);
-      await fs.unlink(validatedPath);
-      logger.info(`Successfully deleted file: ${validatedPath}`);
-      return true;
-    } catch {
-      // File doesn't exist or can't be accessed
-      logger.warn(`File not found or inaccessible: ${validatedPath}`);
-      return false;
-    }
-  } catch (error: unknown) {
-    logger.error(`Error in safeDeleteFile: ${String(error)}`);
-    return false;
-  }
 }

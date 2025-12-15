@@ -1,0 +1,201 @@
+/**
+ * Tailwind v4 Base Layer
+ * Global resets and element styles
+ *
+ * NOTE: We don't use Tailwind's Preflight to avoid `* { padding: 0 }`
+ *       which would override utility classes like .px-4
+ *       Instead, we apply a minimal, safe reset below.
+ */
+
+@layer base {
+  /* ============================================
+     MINIMAL CSS RESET (Preflight Alternative)
+     ============================================ */
+
+  /* Universal box-sizing and border reset */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    border-color: currentcolor;
+    border-style: solid;
+    border-width: 0;
+  }
+
+  /* Remove default margins on common elements */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  figure,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  /* Lists reset */
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Media elements */
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Form elements normalization */
+  button,
+  input,
+  select,
+  textarea {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Hidden attribute support - ensures [hidden] attribute works correctly */
+  [hidden] {
+    display: none !important;
+  }
+
+  /* ============================================
+     CUSTOM BASE STYLES
+     ============================================ */
+
+  /* Root setup */
+  :root {
+    color-scheme: dark;
+  }
+
+  /* Body reset */
+  body {
+    position: relative;
+
+    overflow-x: hidden;
+
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+
+    font-family: var(--font-primary);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+
+    background: #000;
+  }
+
+  /* Glassmorphism background */
+  body::after {
+    pointer-events: none;
+    content: "";
+
+    position: fixed;
+    z-index: -100;
+    inset: 0;
+
+    background: linear-gradient(360deg, #0000, #0070ff1f 100%, #01000482 0, #00000499 100%, #000);
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 3.5rem;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  h6 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  /* Links */
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-primary-hover);
+  }
+
+  /* Focus */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    color: #fff;
+    background-color: var(--color-primary);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgb(255 255 255 / 20%);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 30%);
+  }
+
+  /* NOTE: .overflow-x-visible was REMOVED (2025-11)
+   * Use .table-responsive from Design System instead
+   * Reason: overflow-x:visible doesn't enable scrolling!
+   * See: design-system/primitives/data-display/table.base.css
+   */
+}

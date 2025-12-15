@@ -4,15 +4,15 @@
  */
 import { Response } from 'express';
 
-import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
 import { ServiceError, teamsService } from './teams.service.js';
 
 // Constants
-const USER_NOT_AUTHENTICATED_MSG = 'User not authenticated';
 const USER_AGENT_HEADER = 'user-agent';
+const TEAM_ID_REQUIRED_MSG = 'Team ID is required';
 
 interface Team {
   id: number;
@@ -36,6 +36,7 @@ interface UpdateTeamBody {
   description?: string;
   departmentId?: number;
   leaderId?: number;
+  status?: 'active' | 'inactive';
 }
 
 interface AddMemberBody {
@@ -49,7 +50,7 @@ interface AddMachineBody {
 /**
  *
  */
-export class TeamsController {
+class TeamsController {
   /**
    *
    */
@@ -68,6 +69,56 @@ export class TeamsController {
     this.removeTeamMachine = this.removeTeamMachine.bind(this);
   }
 
+  /** Build update data object from request body */
+  private buildUpdateData(body: UpdateTeamBody): {
+    name?: string;
+    description?: string;
+    departmentId?: number;
+    leaderId?: number;
+    status?: 'active' | 'inactive';
+  } {
+    const updateData: {
+      name?: string;
+      description?: string;
+      departmentId?: number;
+      leaderId?: number;
+      status?: 'active' | 'inactive';
+    } = {};
+
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.departmentId !== undefined) updateData.departmentId = body.departmentId;
+    if (body.leaderId !== undefined) updateData.leaderId = body.leaderId;
+    if (body.status !== undefined) updateData.status = body.status;
+
+    return updateData;
+  }
+
+  /** Log team action to audit log */
+  private async logTeamAction(
+    req: AuthenticatedRequest,
+    tenantId: number,
+    action: string,
+    entityId: number,
+    details: string,
+    oldValues?: Record<string, unknown>,
+    newValues?: Record<string, unknown>,
+  ): Promise<void> {
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: req.user.id,
+      action,
+      entity_type: 'team',
+      entity_id: entityId,
+      details,
+      old_values: oldValues,
+      new_values: newValues,
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get(USER_AGENT_HEADER),
+      was_role_switched: false,
+    });
+  }
+
   /**
    * List all teams
    * @param req - The request object
@@ -75,26 +126,34 @@ export class TeamsController {
    */
   async listTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const filters = {
-        departmentId: req.query.departmentId ? Number(req.query.departmentId) : undefined,
-        search: req.query.search as string,
-        includeMembers: req.query.includeMembers === 'true',
+      // Build filters object without undefined values to satisfy exactOptionalPropertyTypes
+      const filters: {
+        departmentId?: number;
+        search?: string;
+        includeMembers?: boolean;
+      } = {
+        includeMembers: req.query['includeMembers'] === 'true',
       };
 
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
-        return;
+      const departmentIdQuery = req.query['departmentId'];
+      if (typeof departmentIdQuery === 'string' && departmentIdQuery !== '') {
+        filters.departmentId = Number(departmentIdQuery);
       }
-      const teams = await teamsService.listTeams(req.user.tenant_id, filters);
+
+      const searchQuery = req.query['search'];
+      if (typeof searchQuery === 'string' && searchQuery !== '') {
+        filters.search = searchQuery;
+      }
+
+      const tenantId = req.user.tenant_id;
+      const teams = await teamsService.listTeams(tenantId, filters);
 
       res.json(successResponse(teams));
     } catch (error: unknown) {
       logger.error('Error in listTeams:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -115,21 +174,21 @@ export class TeamsController {
    */
   async getTeamById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const team = await teamsService.getTeamById(teamId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const tenantId = req.user.tenant_id;
+      const team = await teamsService.getTeamById(teamId, tenantId);
 
       res.json(successResponse(team));
     } catch (error: unknown) {
       logger.error('Error in getTeamById:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -151,47 +210,54 @@ export class TeamsController {
   async createTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const body = req.body as CreateTeamBody;
-      const teamData = {
+
+      // Build teamData object without undefined values to satisfy exactOptionalPropertyTypes
+      const teamData: {
+        name: string;
+        description?: string;
+        departmentId?: number;
+        leaderId?: number;
+      } = {
         name: body.name,
-        description: body.description,
-        departmentId: body.departmentId,
-        leaderId: body.leaderId,
       };
 
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
-        return;
+      if (body.description !== undefined) {
+        teamData.description = body.description;
       }
-      const team = await teamsService.createTeam(teamData, req.user.tenant_id);
 
-      // Log team creation
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'create',
-        entity_type: 'team',
-        entity_id: (team as Team).id,
-        details: `Erstellt: ${teamData.name}`,
-        new_values: {
+      if (body.departmentId !== undefined) {
+        teamData.departmentId = body.departmentId;
+      }
+
+      if (body.leaderId !== undefined) {
+        teamData.leaderId = body.leaderId;
+      }
+
+      const tenantId = req.user.tenant_id;
+      const team = await teamsService.createTeam(teamData, tenantId);
+
+      await this.logTeamAction(
+        req,
+        tenantId,
+        'create',
+        (team as Team).id,
+        `Erstellt: ${teamData.name}`,
+        undefined,
+        {
           name: teamData.name,
           description: teamData.description,
           department_id: teamData.departmentId,
           leader_id: teamData.leaderId,
           created_by: req.user.email,
         },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
+      );
 
       res.status(201).json(successResponse(team, 'Team created successfully'));
     } catch (error: unknown) {
       logger.error('Error in createTeam:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -212,58 +278,47 @@ export class TeamsController {
    */
   async updateTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      const body = req.body as UpdateTeamBody;
-      const updateData = {
-        name: body.name,
-        description: body.description,
-        departmentId: body.departmentId,
-        leaderId: body.leaderId,
-      };
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      // Get old team data for logging
-      const oldTeam = await teamsService.getTeamById(teamId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const body = req.body as UpdateTeamBody;
+      const updateData = this.buildUpdateData(body);
+      const tenantId = req.user.tenant_id;
+      const oldTeam = (await teamsService.getTeamById(teamId, tenantId)) as Team | null;
+      const team = await teamsService.updateTeam(teamId, updateData, tenantId);
 
-      const team = await teamsService.updateTeam(teamId, updateData, req.user.tenant_id);
-
-      // Log team update
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'update',
-        entity_type: 'team',
-        entity_id: teamId,
-        details: `Aktualisiert: ${updateData.name ?? 'Team'}`,
-        old_values: {
-          name: (oldTeam as Team | null)?.name,
-          description: (oldTeam as Team | null)?.description,
-          department_id: (oldTeam as Team | null)?.departmentId,
-          leader_id: (oldTeam as Team | null)?.leaderId,
+      await this.logTeamAction(
+        req,
+        tenantId,
+        'update',
+        teamId,
+        `Aktualisiert: ${updateData.name ?? 'Team'}`,
+        {
+          name: oldTeam?.name,
+          description: oldTeam?.description,
+          department_id: oldTeam?.departmentId,
+          leader_id: oldTeam?.leaderId,
+          status: oldTeam?.['status'],
         },
-        new_values: {
+        {
           name: updateData.name,
           description: updateData.description,
           department_id: updateData.departmentId,
           leader_id: updateData.leaderId,
+          status: updateData.status,
           updated_by: req.user.email,
         },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
+      );
 
       res.json(successResponse(team, 'Team updated successfully'));
     } catch (error: unknown) {
       logger.error('Error in updateTeam:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -284,47 +339,38 @@ export class TeamsController {
    */
   async deleteTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      // Get force parameter from query string (e.g., /teams/123?force=true)
-      const force = req.query.force === 'true';
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      // Get team data before deletion for logging
-      const deletedTeam = await teamsService.getTeamById(teamId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const force = req.query['force'] === 'true';
+      const tenantId = req.user.tenant_id;
+      const deletedTeam = (await teamsService.getTeamById(teamId, tenantId)) as Team | null;
+      const result = await teamsService.deleteTeam(teamId, tenantId, force);
 
-      const result = await teamsService.deleteTeam(teamId, req.user.tenant_id, force);
-
-      // Log team deletion
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'delete',
-        entity_type: 'team',
-        entity_id: teamId,
-        details: `Gelöscht: ${String((deletedTeam as Team | null)?.name)}`,
-        old_values: {
-          name: (deletedTeam as Team | null)?.name,
-          description: (deletedTeam as Team | null)?.description,
-          department_id: (deletedTeam as Team | null)?.departmentId,
-          leader_id: (deletedTeam as Team | null)?.leaderId,
+      await this.logTeamAction(
+        req,
+        tenantId,
+        'delete',
+        teamId,
+        `Gelöscht: ${String(deletedTeam?.name)}`,
+        {
+          name: deletedTeam?.name,
+          description: deletedTeam?.description,
+          department_id: deletedTeam?.departmentId,
+          leader_id: deletedTeam?.leaderId,
           deleted_by: req.user.email,
         },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
+      );
 
       res.json(successResponse(result));
     } catch (error: unknown) {
       logger.error('Error in deleteTeam:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -345,21 +391,21 @@ export class TeamsController {
    */
   async getTeamMembers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const members = await teamsService.getTeamMembers(teamId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const tenantId = req.user.tenant_id;
+      const members = await teamsService.getTeamMembers(teamId, tenantId);
 
       res.json(successResponse(members));
     } catch (error: unknown) {
       logger.error('Error in getTeamMembers:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -380,41 +426,36 @@ export class TeamsController {
    */
   async addTeamMember(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      const body = req.body as AddMemberBody;
-      const userId = body.userId;
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const result = await teamsService.addTeamMember(teamId, userId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const body = req.body as AddMemberBody;
+      const userId = body.userId;
+      const tenantId = req.user.tenant_id;
+      const result = await teamsService.addTeamMember(teamId, userId, tenantId);
 
-      // Log team member addition
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'add_member',
-        entity_type: 'team',
-        entity_id: teamId,
-        details: `Mitglied hinzugefügt`,
-        new_values: {
+      await this.logTeamAction(
+        req,
+        tenantId,
+        'add_member',
+        teamId,
+        'Mitglied hinzugefügt',
+        undefined,
+        {
           user_id: userId,
           added_by: req.user.email,
         },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
+      );
 
       res.status(201).json(successResponse(result));
     } catch (error: unknown) {
       logger.error('Error in addTeamMember:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -435,23 +476,27 @@ export class TeamsController {
    */
   async removeTeamMember(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      const userId = Number.parseInt(req.params.userId);
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      const userIdParam = req.params['userId'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const result = await teamsService.removeTeamMember(teamId, userId, req.user.tenant_id);
+      if (userIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'User ID is required'));
+        return;
+      }
+      const teamId = Number.parseInt(idParam);
+      const userId = Number.parseInt(userIdParam);
+      const tenantId = req.user.tenant_id;
+      const result = await teamsService.removeTeamMember(teamId, userId, tenantId);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
       logger.error('Error in removeTeamMember:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -472,21 +517,21 @@ export class TeamsController {
    */
   async getTeamMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const machines = await teamsService.getTeamMachines(teamId, req.user.tenant_id);
+      const teamId = Number.parseInt(idParam);
+      const tenantId = req.user.tenant_id;
+      const machines = await teamsService.getTeamMachines(teamId, tenantId);
 
       res.json(successResponse(machines));
     } catch (error: unknown) {
       logger.error('Error in getTeamMachines:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -507,46 +552,36 @@ export class TeamsController {
    */
   async addTeamMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      const body = req.body as AddMachineBody;
-      const machineId = body.machineId;
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const result = await teamsService.addTeamMachine(
-        teamId,
-        machineId,
-        req.user.tenant_id,
-        req.user.id,
-      );
+      const teamId = Number.parseInt(idParam);
+      const body = req.body as AddMachineBody;
+      const machineId = body.machineId;
+      const tenantId = req.user.tenant_id;
+      const result = await teamsService.addTeamMachine(teamId, machineId, tenantId, req.user.id);
 
-      // Log team machine addition
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'add_machine',
-        entity_type: 'team',
-        entity_id: teamId,
-        details: `Maschine hinzugefügt`,
-        new_values: {
+      await this.logTeamAction(
+        req,
+        tenantId,
+        'add_machine',
+        teamId,
+        'Maschine hinzugefügt',
+        undefined,
+        {
           machine_id: machineId,
           added_by: req.user.email,
         },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
+      );
 
       res.status(201).json(successResponse(result));
     } catch (error: unknown) {
       logger.error('Error in addTeamMachine:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,
@@ -567,23 +602,27 @@ export class TeamsController {
    */
   async removeTeamMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = Number.parseInt(req.params.id);
-      const machineId = Number.parseInt(req.params.machineId);
-
-      // Note: This check is necessary as the type system doesn't guarantee user exists
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
+      const idParam = req.params['id'];
+      const machineIdParam = req.params['machineId'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', TEAM_ID_REQUIRED_MSG));
         return;
       }
-      const result = await teamsService.removeTeamMachine(teamId, machineId, req.user.tenant_id);
+      if (machineIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Machine ID is required'));
+        return;
+      }
+      const teamId = Number.parseInt(idParam);
+      const machineId = Number.parseInt(machineIdParam);
+      const tenantId = req.user.tenant_id;
+      const result = await teamsService.removeTeamMachine(teamId, machineId, tenantId);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
       logger.error('Error in removeTeamMachine:', error);
       if (error instanceof ServiceError) {
         res
-          .status(error.statusCode)
+          .status(error.statusCode ?? 500)
           .json(
             errorResponse(
               error.code,

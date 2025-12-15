@@ -1,0 +1,68 @@
+/**
+ * Design System – Container
+ *
+ * Glassmorphism page wrapper für Hauptsektionen.
+ * Ähnlich wie Cards, aber für ganze Page-Bereiche statt Content-Gruppierung.
+ *
+ * Use case: Login/Signup Boxes, Settings Pages, Wizard Steps, Modal Content
+ *
+ * Unterschied zu Cards:
+ * - Container = Ganze Seite/Hauptbereich (größer, centered)
+ * - Card = Content-Gruppierung innerhalb von Containern (kleiner, Teil des Layouts)
+ *
+ * NOTE: No @layer for compatibility with legacy CSS
+ */
+
+/* Base Container - Glassmorphism Page Wrapper */
+.page-container {
+  position: relative;
+
+  width: 100%;
+  max-width: 1200px;
+  padding: 28px 40px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Centered variant (most common) */
+.page-container--centered {
+  margin: 0 auto;
+}
+
+/* Wide variant (more space) */
+.page-container--wide {
+  max-width: 1600px;
+}
+
+/* Narrow variant (forms, wizards) */
+.page-container--narrow {
+  max-width: 800px;
+}
+
+/* Compact padding */
+.page-container--compact {
+  padding: var(--spacing-6); /* 24px */
+}
+
+/* No border variant */
+.page-container--borderless {
+  border: none;
+}
+
+/* Responsive padding */
+@media (width <= 768px) {
+  .page-container {
+    padding: var(--spacing-6); /* 24px on mobile */
+    border-radius: var(--radius-xl); /* 8px on mobile */
+  }
+}
+
+@media (width <= 480px) {
+  .page-container {
+    padding: var(--spacing-4); /* 16px on small mobile */
+  }
+}

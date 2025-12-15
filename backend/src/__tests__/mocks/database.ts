@@ -33,11 +33,11 @@ export interface MockTenant extends RowDataPacket {
 
 // Test database configuration - matches GitHub Actions MySQL service
 const TEST_DB_CONFIG = {
-  host: process.env.DB_HOST ?? 'localhost',
-  port: parseInt(process.env.DB_PORT ?? '3306'),
-  user: process.env.DB_USER ?? 'assixx_user',
-  password: process.env.DB_PASSWORD ?? 'AssixxP@ss2025!',
-  database: process.env.DB_NAME ?? 'main',
+  host: process.env['DB_HOST'] ?? 'localhost',
+  port: parseInt(process.env['DB_PORT'] ?? '3306'),
+  user: process.env['DB_USER'] ?? 'assixx_user',
+  password: process.env['DB_PASSWORD'] ?? 'AssixxP@ss2025!',
+  database: process.env['DB_NAME'] ?? 'main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -336,7 +336,7 @@ export async function getAuthToken(
     throw new Error(`Failed to get auth token for ${username}: ${response.body.message}`);
   }
 
-  return response.body.data.token;
+  return response.body.data['token'];
 }
 
 // Create test department
@@ -398,4 +398,32 @@ export async function cleanupTestData(): Promise<void> {
   } finally {
     await db.end();
   }
+}
+
+// Store active database connections for cleanup
+const activePools = new Set<Pool>();
+
+/**
+ * Track a database pool for cleanup
+ * @param pool - Database pool to track
+ */
+export function trackDatabasePool(pool: Pool): void {
+  activePools.add(pool);
+}
+
+/**
+ * Close all active database connections
+ * Used in Jest afterAll hooks to prevent hanging connections
+ */
+export async function closeTestDatabase(): Promise<void> {
+  const closePromises = Array.from(activePools).map(async (pool) => {
+    try {
+      await pool.end();
+    } catch (error) {
+      console.error('Error closing database pool:', error);
+    }
+  });
+
+  await Promise.all(closePromises);
+  activePools.clear();
 }

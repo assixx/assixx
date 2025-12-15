@@ -6,12 +6,12 @@ import * as fs from 'fs/promises';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
-import app from '../app';
-import { getRedisClient } from '../config/redis';
-// import { closeDatabaseConnection, connectDatabase } from '../database'; // These functions don't exist anymore
-import { tenantDeletionService } from '../services/tenantDeletion.service';
-import { query } from '../utils/db';
-import { emailService } from '../utils/emailService';
+import app from '../app.js';
+import { getRedisClient } from '../config/redis.js';
+// import { closeDatabaseConnection, connectDatabase } from '../database.js'; // These functions don't exist anymore
+import { tenantDeletionService } from '../services/tenantDeletion.service.js';
+import { query } from '../utils/db.js';
+import { emailService } from '../utils/emailService.js';
 
 // Mock external services
 jest.mock('../utils/emailService');
@@ -26,7 +26,7 @@ const mockRedisClient = {
 
 // Helper to generate test JWT token
 function generateTestToken(userId: number, tenantId: number, role = 'root'): string {
-  return jwt.sign({ userId, tenantId, role }, process.env.JWT_SECRET ?? 'test-secret', {
+  return jwt.sign({ userId, tenantId, role }, process.env['JWT_SECRET'] ?? 'test-secret', {
     expiresIn: '1h',
   });
 }
@@ -106,13 +106,13 @@ describe('Tenant Deletion Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('queueId');
-      expect(response.body.data.message).toContain('scheduled for deletion');
+      expect(response.body.data['message']).toContain('scheduled for deletion');
 
       // Verify database state
       const [tenant] = await query('SELECT deletion_status FROM tenants WHERE id = ?', [
         testTenantId,
       ]);
-      expect(tenant.deletion_status).toBe('marked_for_deletion');
+      expect(tenant['deletion_status']).toBe('marked_for_deletion');
 
       const [queueEntry] = await query('SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?', [
         testTenantId,
@@ -215,9 +215,9 @@ describe('Tenant Deletion Integration Tests', () => {
         .get(`/api/root/tenants/${testTenantId}/deletion-status`)
         .set('Authorization', `Bearer ${authToken}`);
 
-      expect(response.body.data.progress).toBe(45);
-      expect(response.body.data.status).toBe('processing');
-      expect(response.body.data.current_step).toBe('deleteDocuments');
+      expect(response.body.data['progress']).toBe(45);
+      expect(response.body.data['status']).toBe('processing');
+      expect(response.body.data['current_step']).toBe('deleteDocuments');
     });
   });
 
@@ -240,7 +240,7 @@ describe('Tenant Deletion Integration Tests', () => {
       const [tenant] = await query('SELECT deletion_status FROM tenants WHERE id = ?', [
         testTenantId,
       ]);
-      expect(tenant.deletion_status).toBe('active');
+      expect(tenant['deletion_status']).toBe('active');
 
       const [queueEntry] = await query(
         'SELECT status FROM tenant_deletion_queue WHERE tenant_id = ? ORDER BY id DESC LIMIT 1',

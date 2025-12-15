@@ -109,19 +109,19 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
       email: '__AUTOTEST__root_roleswitch@test.com',
       password: 'Test123!',
     });
-    rootToken = rootLogin.body.data.accessToken;
+    rootToken = rootLogin.body.data['accessToken'];
 
     const adminLogin = await request(app).post('/api/v2/auth/login').send({
       email: '__AUTOTEST__admin_roleswitch@test.com',
       password: 'Test123!',
     });
-    adminToken = adminLogin.body.data.accessToken;
+    adminToken = adminLogin.body.data['accessToken'];
 
     const employeeLogin = await request(app).post('/api/v2/auth/login').send({
       email: '__AUTOTEST__employee_roleswitch@test.com',
       password: 'Test123!',
     });
-    employeeToken = employeeLogin.body.data.accessToken;
+    employeeToken = employeeLogin.body.data['accessToken'];
   });
 
   afterAll(async () => {
@@ -147,8 +147,8 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
 
-      const userData = response.body.data.user;
-      const newToken = response.body.data.token;
+      const userData = response.body.data['user'];
+      const newToken = response.body.data['token'];
 
       // CRITICAL CHECKS
       expect(userData.id).toBe(rootUser.id); // user_id unchanged
@@ -168,7 +168,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
 
-      const userData = response.body.data.user;
+      const userData = response.body.data['user'];
 
       // CRITICAL CHECKS
       expect(userData.id).toBe(rootUser.id);
@@ -185,7 +185,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
         .set('Authorization', `Bearer ${rootToken}`)
         .set('Content-Type', 'application/json');
 
-      const switchedToken = switchResponse.body.data.token;
+      const switchedToken = switchResponse.body.data['token'];
 
       // Now switch back
       const response = await request(app)
@@ -195,7 +195,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
 
       expect(response.status).toBe(200);
 
-      const userData = response.body.data.user;
+      const userData = response.body.data['user'];
 
       // CRITICAL CHECKS
       expect(userData.id).toBe(rootUser.id);
@@ -216,7 +216,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
 
-      const userData = response.body.data.user;
+      const userData = response.body.data['user'];
 
       // CRITICAL CHECKS
       expect(userData.id).toBe(adminUser.id);
@@ -244,7 +244,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json');
 
-      const switchedToken = switchResponse.body.data.token;
+      const switchedToken = switchResponse.body.data['token'];
 
       // Now switch back
       const response = await request(app)
@@ -254,7 +254,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
 
       expect(response.status).toBe(200);
 
-      const userData = response.body.data.user;
+      const userData = response.body.data['user'];
 
       // CRITICAL CHECKS
       expect(userData.id).toBe(adminUser.id);
@@ -294,7 +294,7 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.canSwitch).toBe(false);
+      expect(response.body.data['canSwitch']).toBe(false);
     });
   });
 
@@ -339,12 +339,12 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json');
 
-      const switchedToken = switchResponse.body.data.token;
+      const switchedToken = switchResponse.body.data['token'];
 
       // CRITICAL: Verify the switch response itself
-      expect(switchResponse.body.data.user.role).toBe('admin'); // Original role preserved
-      expect(switchResponse.body.data.user.activeRole).toBe('employee');
-      expect(switchResponse.body.data.user.isRoleSwitched).toBe(true);
+      expect(switchResponse.body.data['user'].role).toBe('admin'); // Original role preserved
+      expect(switchResponse.body.data['user'].activeRole).toBe('employee');
+      expect(switchResponse.body.data['user'].isRoleSwitched).toBe(true);
 
       // Use the switched token to check status
       const statusCheck = await request(app)
@@ -354,16 +354,16 @@ describe('Role Switch API v2 - CRITICAL SECURITY TESTS', () => {
       // Debug info removed - test should pass now
 
       // CRITICAL: Verify all security properties are preserved
-      expect(statusCheck.body.data.tenantId).toBe(tenantId);
-      expect(statusCheck.body.data.userId).toBe(adminUser.id);
-      expect(statusCheck.body.data.isRoleSwitched).toBe(true);
-      expect(statusCheck.body.data.activeRole).toBe('employee');
+      expect(statusCheck.body.data['tenantId']).toBe(tenantId);
+      expect(statusCheck.body.data['userId']).toBe(adminUser.id);
+      expect(statusCheck.body.data['isRoleSwitched']).toBe(true);
+      expect(statusCheck.body.data['activeRole']).toBe('employee');
 
       // The originalRole should be admin, but if it's showing employee,
       // that means the auth middleware is not correctly preserving the original role from JWT
       // This is a known issue that needs to be fixed in production
       // For now, we'll test what we have
-      const currentBehavior = statusCheck.body.data.originalRole === 'employee';
+      const currentBehavior = statusCheck.body.data['originalRole'] === 'employee';
       if (currentBehavior !== null && currentBehavior !== undefined && currentBehavior !== '') {
         console.warn(
           'WARNING: originalRole not preserved correctly in JWT - this is a security issue!',

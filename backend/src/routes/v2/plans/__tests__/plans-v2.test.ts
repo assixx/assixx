@@ -62,12 +62,12 @@ describe('Plans API v2', () => {
     const adminLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: adminUser.email, password: 'Admin123!' });
-    adminToken = adminLogin.body.data.accessToken;
+    adminToken = adminLogin.body.data['accessToken'];
 
     const userLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: regularUser.email, password: 'User123!' });
-    userToken = userLogin.body.data.accessToken;
+    userToken = userLogin.body.data['accessToken'];
 
     // Create test plans if they don't exist
     const [existingPlans] = await testDb.execute(
@@ -146,7 +146,7 @@ describe('Plans API v2', () => {
     it('should include features for each plan', async () => {
       const response = await request(app).get('/api/v2/plans').expect(200);
 
-      response.body.data.forEach((plan: any) => {
+      response.body.data['forEach']((plan: any) => {
         expect(plan).toHaveProperty('features');
         expect(Array.isArray(plan.features)).toBe(true);
       });

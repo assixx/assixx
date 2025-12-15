@@ -3,10 +3,9 @@
  * Types for Express middleware functions with proper typing
  */
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { ValidationChain } from 'express-validator';
 
-import type { AuthUser, AuthenticatedRequest } from './request.types';
-import { RateLimiterMiddleware, RateLimiterType } from './security.types';
+import type { AuthUser, AuthenticatedRequest } from './request.types.js';
+import { RateLimiterMiddleware, RateLimiterType } from './security.types.js';
 
 // Generic middleware that adds properties to request
 export type MiddlewareWithRequest<T extends Request = Request> = (
@@ -31,8 +30,8 @@ export type PermissionMiddleware = (
 
 // Rate limiter middleware factory is imported from security.types
 
-// Validation middleware - can include validation chains and error handlers
-export type ValidationMiddleware = (ValidationChain | RequestHandler)[];
+// Validation middleware - Zod validation returns RequestHandler
+export type ValidationMiddleware = RequestHandler[];
 
 // Error handling middleware
 export type ErrorHandlerMiddleware = (
@@ -69,7 +68,7 @@ export interface MiddlewareFactories {
 
 // Type guard to check if request is authenticated
 export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null && typeof req.user === 'object';
+  return 'user' in req && typeof req.user === 'object';
 }
 
 // Type guard to check if user has specific role

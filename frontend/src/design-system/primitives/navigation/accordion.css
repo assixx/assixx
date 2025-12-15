@@ -1,0 +1,259 @@
+/**
+ * Accordion Navigation
+ *
+ * Collapsible content sections for FAQs, settings, documentation
+ * Source: New component (not previously in codebase)
+ *
+ * Usage:
+ * <div class="accordion">
+ *   <div class="accordion__item">
+ *     <button class="accordion__header">
+ *       <span class="accordion__title">Section 1</span>
+ *       <i class="fas fa-chevron-down accordion__icon"></i>
+ *     </button>
+ *     <div class="accordion__content">
+ *       <div class="accordion__body">
+ *         Content goes here
+ *       </div>
+ *     </div>
+ *   </div>
+ *   <div class="accordion__item accordion__item--active">
+ *     <button class="accordion__header">
+ *       <span class="accordion__title">Section 2</span>
+ *       <i class="fas fa-chevron-down accordion__icon"></i>
+ *     </button>
+ *     <div class="accordion__content">
+ *       <div class="accordion__body">
+ *         Expanded content
+ *       </div>
+ *     </div>
+ *   </div>
+ * </div>
+ */
+
+/* ========== BASE ACCORDION CONTAINER ========== */
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* ========== ACCORDION ITEM ========== */
+
+.accordion__item {
+  overflow: hidden;
+
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+
+  transition: all 0.2s ease;
+}
+
+.accordion__item:hover {
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 8%);
+}
+
+/* ========== ACCORDION HEADER ========== */
+
+.accordion__header {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  padding: var(--spacing-4);
+  border: none;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-align: left;
+
+  background: transparent;
+
+  transition: all 0.2s ease;
+}
+
+.accordion__header:hover {
+  color: var(--color-primary);
+}
+
+/* Header title */
+.accordion__title {
+  flex: 1;
+}
+
+/* Chevron icon */
+.accordion__icon {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  transition: transform 0.3s ease;
+}
+
+/* ========== ACCORDION CONTENT ========== */
+
+.accordion__content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.accordion__body {
+  overflow: hidden;
+  padding: 0 var(--spacing-4);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* ========== ACTIVE STATE ========== */
+
+.accordion__item--active {
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.accordion__item--active .accordion__header {
+  color: var(--color-primary);
+}
+
+.accordion__item--active .accordion__icon {
+  transform: rotate(180deg);
+  color: var(--color-primary);
+}
+
+.accordion__item--active .accordion__content {
+  grid-template-rows: 1fr;
+}
+
+.accordion__item--active .accordion__body {
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}
+
+/* ========== DISABLED STATE ========== */
+
+.accordion__item--disabled {
+  pointer-events: none;
+  opacity: 50%;
+}
+
+/* ========== FLUSH VARIANT (no borders between items) ========== */
+
+.accordion--flush {
+  gap: 0;
+}
+
+.accordion--flush .accordion__item {
+  border-right: none;
+  border-left: none;
+  border-radius: 0;
+}
+
+.accordion--flush .accordion__item:first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.accordion--flush .accordion__item:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.accordion--flush .accordion__item + .accordion__item {
+  border-top: none;
+}
+
+/* ========== COMPACT VARIANT ========== */
+
+.accordion--compact .accordion__header {
+  padding: var(--spacing-3);
+  font-size: 13px;
+}
+
+.accordion--compact .accordion__body {
+  padding: 0 var(--spacing-3);
+  font-size: 13px;
+}
+
+.accordion--compact .accordion__item--active .accordion__body {
+  padding: 0 var(--spacing-3) var(--spacing-3);
+}
+
+/* ========== BORDERED VARIANT ========== */
+
+.accordion--bordered .accordion__item {
+  border: 2px solid var(--glass-border);
+}
+
+.accordion--bordered .accordion__item--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+}
+
+/* ========== WITH ICONS ========== */
+
+.accordion__header-icon {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.accordion__header-icon i:first-child {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+/* ========== WITH BADGES ========== */
+
+.accordion__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 22px;
+  height: 22px;
+  margin-left: var(--spacing-2);
+  padding: 0 6px;
+  border-radius: 50%;
+
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--color-primary);
+}
+
+/* ========== ALWAYS OPEN VARIANT ========== */
+
+/* For accordions where multiple items can be open at once */
+.accordion--always-open .accordion__item {
+  /* No special styling needed - behavior handled by JS */
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .accordion__header {
+    padding: var(--spacing-3);
+    font-size: 13px;
+  }
+
+  .accordion__body {
+    padding: 0 var(--spacing-3);
+    font-size: 13px;
+  }
+
+  .accordion__item--active .accordion__body {
+    padding: 0 var(--spacing-3) var(--spacing-3);
+  }
+
+  .accordion__icon {
+    font-size: 11px;
+  }
+}

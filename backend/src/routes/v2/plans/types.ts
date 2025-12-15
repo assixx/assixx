@@ -1,4 +1,4 @@
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket } from '../../../utils/db.js';
 
 // Plans API v2 Types
 
@@ -112,12 +112,12 @@ export interface DbPlan extends RowDataPacket {
   id: number;
   code: string;
   name: string;
-  description: string;
-  base_price: string | number;
-  max_employees: number | null;
-  max_admins: number | null;
-  max_storage_gb: number | null;
-  is_active: number | boolean;
+  description?: string;
+  base_price: number;
+  max_employees?: number;
+  max_admins?: number;
+  max_storage_gb: number;
+  is_active: boolean;
   sort_order: number;
   created_at: Date;
   updated_at: Date;
@@ -128,9 +128,13 @@ export interface DbPlanFeature {
   feature_id: number;
   feature_code: string;
   feature_name: string;
-  is_included: number | boolean;
+  is_included: boolean;
 }
 
+// Database result type for tenant plans
+// Note: expires_at and custom_price are optional to match the model definition
+// expires_at: allows for plans without expiration
+// custom_price: allows for plans without custom pricing
 export interface DbTenantPlan {
   id: number;
   tenant_id: number;
@@ -139,8 +143,8 @@ export interface DbTenantPlan {
   plan_name: string;
   status: string;
   started_at: Date;
-  expires_at: Date | null;
-  custom_price: number | null;
+  expires_at?: Date | null;
+  custom_price?: number | null;
   billing_cycle: string;
 }
 

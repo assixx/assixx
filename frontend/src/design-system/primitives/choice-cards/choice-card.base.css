@@ -1,0 +1,319 @@
+/**
+ * Design System – Choice Cards
+ *
+ * Card-style selection controls for radio buttons and checkboxes.
+ * Vertical stacked layout with glassmorphism styling.
+ *
+ * Use cases:
+ * - Permissions selection (Keine/Spezifisch/Alle Abteilungen)
+ * - Settings options (multiple exclusive choices)
+ * - Plan selection (Free/Basic/Pro/Enterprise)
+ * - Multi-step form choices
+ * - Feature toggles (checkbox variant)
+ *
+ * Pattern from: manage-admins.html Berechtigungen Modal
+ *
+ * NOTE: No @layer for compatibility with legacy CSS
+ */
+
+/* ========================================
+   CHOICE GROUP (Container)
+   ======================================== */
+
+.choice-group {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3); /* 12px */
+
+  /* Spacing */
+  margin-top: var(--spacing-4); /* 16px */
+  margin-bottom: var(--spacing-4); /* 16px */
+}
+
+/* Compact variant (less gap) */
+.choice-group--compact {
+  gap: var(--spacing-2); /* 8px */
+}
+
+/* ========================================
+   CHOICE CARD (Label wrapper)
+   ======================================== */
+
+.choice-card {
+  /* Reset label defaults */
+  cursor: pointer;
+
+  /* Layout */
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  margin: 0;
+
+  /* Spacing */
+  padding: 10px var(--spacing-4); /* 10px 16px */
+
+  /* Glassmorphism */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(255 255 255 / 3%);
+
+  /* Smooth transitions */
+  transition: all 0.2s ease;
+}
+
+/* Hover state */
+.choice-card:hover {
+  border-color: rgb(33 150 243 / 30%);
+  background: rgb(255 255 255 / 5%);
+}
+
+/* Active/Checked state - when input is checked */
+.choice-card:has(.choice-card__input:checked) {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+}
+
+/* Focus state - accessibility */
+.choice-card:has(.choice-card__input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   CHOICE CARD INPUT (Radio/Checkbox)
+   ======================================== */
+
+.choice-card__input {
+  cursor: pointer;
+
+  /* Layout */
+  position: relative;
+
+  flex-shrink: 0;
+
+  /* Size */
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  margin-right: var(--spacing-3); /* 12px gap from text */
+
+  /* Base styling */
+  border: 2px solid rgb(255 255 255 / 30%);
+
+  /* Reset browser default */
+  appearance: none;
+  background: transparent;
+
+  /* Transition */
+  transition: all 0.2s ease;
+}
+
+/* Radio variant - circle */
+.choice-card__input[type="radio"] {
+  border-radius: 50%;
+}
+
+/* Checkbox variant - square */
+.choice-card__input[type="checkbox"] {
+  border-radius: var(--radius-sm); /* 4px */
+}
+
+/* Checked state - border and background */
+.choice-card__input:checked {
+  border-color: var(--color-primary);
+  background: rgb(33 150 243 / 10%);
+}
+
+/* Focus state */
+.choice-card__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   RADIO INDICATOR (Inner dot)
+   ======================================== */
+
+.choice-card__input[type="radio"]:checked::after {
+  /* Dot element */
+  content: "";
+
+  /* Positioning */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Size */
+  width: 8px;
+  height: 8px;
+
+  /* Styling */
+  border-radius: 50%;
+
+  background: var(--color-primary);
+
+  /* Animation */
+  animation: choice-radio-check 0.3s ease;
+}
+
+@keyframes choice-radio-check {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0%;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 100%;
+  }
+}
+
+/* ========================================
+   CHECKBOX INDICATOR (Checkmark)
+   ======================================== */
+
+.choice-card__input[type="checkbox"]:checked::after {
+  /* Checkmark */
+  content: "";
+
+  /* Positioning */
+  position: absolute;
+  top: 2px;
+  left: 6px;
+
+  /* Rotate to create checkmark */
+  transform: rotate(45deg);
+
+  /* Checkmark shape using borders */
+  width: 5px;
+  height: 10px;
+  border: solid var(--color-primary);
+  border-width: 0 2px 2px 0;
+
+  /* Animation */
+  animation: choice-checkbox-check 0.3s ease;
+}
+
+@keyframes choice-checkbox-check {
+  0% {
+    transform: rotate(45deg) scale(0);
+    opacity: 0%;
+  }
+
+  50% {
+    transform: rotate(45deg) scale(1.2);
+  }
+
+  100% {
+    transform: rotate(45deg) scale(1);
+    opacity: 100%;
+  }
+}
+
+/* ========================================
+   CHOICE CARD TEXT
+   ======================================== */
+
+.choice-card__text {
+  /* Typography */
+  font-size: 0.875rem; /* 14px */
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+
+  /* Smooth transition */
+  transition: all 0.2s ease;
+}
+
+/* Text when checked */
+.choice-card:has(.choice-card__input:checked) .choice-card__text {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   ENHANCED VARIANTS
+   ======================================== */
+
+/* Choice card with icon */
+.choice-card--with-icon .choice-card__text {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+/* Choice card with description */
+.choice-card__description {
+  display: block;
+
+  margin-top: var(--spacing-1);
+
+  font-size: 0.75rem; /* 12px */
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
+
+/* Large choice card (more padding) */
+.choice-card--lg {
+  padding: var(--spacing-4) var(--spacing-5); /* 16px 20px */
+}
+
+/* ========================================
+   DISABLED STATE
+   ======================================== */
+
+.choice-card:has(.choice-card__input:disabled) {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 50%;
+}
+
+.choice-card__input:disabled {
+  cursor: not-allowed;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (width <= 480px) {
+  .choice-card {
+    padding: var(--spacing-2) var(--spacing-3); /* 8px 12px on mobile */
+  }
+
+  .choice-card__input {
+    width: 18px;
+    height: 18px;
+    margin-right: var(--spacing-2); /* 8px on mobile */
+  }
+
+  .choice-card__text {
+    font-size: 0.813rem; /* 13px on mobile */
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .choice-card,
+  .choice-card__input {
+    transition: none;
+  }
+
+  .choice-card__input::after {
+    animation: none;
+  }
+}

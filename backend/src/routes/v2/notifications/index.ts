@@ -2,13 +2,13 @@
  * Notifications v2 Routes
  * Defines all notification-related endpoints
  */
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as notificationsController from './notifications.controller.js';
-import * as notificationsValidation from './notifications.validation.js';
+import { notificationsValidationZod } from './notifications.validation.zod.js';
 import { getStats, stream } from './sse.controller.js';
 
 const router = Router();
@@ -17,7 +17,7 @@ const router = Router();
 router.get(
   '/',
   authenticateV2,
-  notificationsValidation.listNotifications,
+  notificationsValidationZod.listNotifications,
   typed.auth(notificationsController.listNotifications),
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.post(
   '/',
   authenticateV2,
-  notificationsValidation.createNotification,
+  notificationsValidationZod.createNotification,
   typed.auth(notificationsController.createNotification),
 );
 
@@ -36,7 +36,7 @@ router.get('/preferences', authenticateV2, typed.auth(notificationsController.ge
 router.put(
   '/preferences',
   authenticateV2,
-  notificationsValidation.updatePreferences,
+  notificationsValidationZod.updatePreferences,
   typed.auth(notificationsController.updatePreferences),
 );
 
@@ -50,7 +50,7 @@ router.get('/stats/me', authenticateV2, typed.auth(notificationsController.getPe
 router.post(
   '/subscribe',
   authenticateV2,
-  notificationsValidation.subscribe,
+  notificationsValidationZod.subscribe,
   typed.auth(notificationsController.subscribe),
 );
 
@@ -61,7 +61,7 @@ router.get('/templates', authenticateV2, typed.auth(notificationsController.getT
 router.post(
   '/from-template',
   authenticateV2,
-  notificationsValidation.createFromTemplate,
+  notificationsValidationZod.createFromTemplate,
   typed.auth(notificationsController.createFromTemplate),
 );
 
@@ -72,7 +72,7 @@ router.put('/mark-all-read', authenticateV2, typed.auth(notificationsController.
 router.delete(
   '/subscribe/:id',
   authenticateV2,
-  notificationsValidation.unsubscribe,
+  notificationsValidationZod.unsubscribe,
   typed.auth(notificationsController.unsubscribe),
 );
 
@@ -80,7 +80,7 @@ router.delete(
 router.put(
   '/:id/read',
   authenticateV2,
-  notificationsValidation.markAsRead,
+  notificationsValidationZod.markAsRead,
   typed.auth(notificationsController.markAsRead),
 );
 
@@ -88,17 +88,17 @@ router.put(
 router.delete(
   '/:id',
   authenticateV2,
-  notificationsValidation.deleteNotification,
+  notificationsValidationZod.deleteNotification,
   typed.auth(notificationsController.deleteNotification),
 );
 
 // SSE Stream endpoint for real-time notifications
-router.get('/stream', authenticateV2, (req, res) => {
+router.get('/stream', authenticateV2, (req: Request, res: Response) => {
   stream(req as AuthenticatedRequest, res);
 });
 
 // SSE Statistics endpoint for monitoring
-router.get('/stream/stats', authenticateV2, (req, res) => {
+router.get('/stream/stats', authenticateV2, (req: Request, res: Response) => {
   getStats(req as AuthenticatedRequest, res);
 });
 

@@ -1,0 +1,40 @@
+/**
+ * Alerts and Confirmation Dialog Container Styles
+ *
+ * Purpose: Provides container/overlay for confirmation dialogs
+ * Used by: alerts.ts utility
+ *
+ * NOTE: Modal and button styles are now in Design System:
+ *       /design-system/components/confirm-modal/confirm-modal.css
+ *
+ * Migration: Redundant button/modal styles removed (2025-01-14)
+ */
+
+/* ========== DIALOG CONTAINER ========== */
+
+.custom-confirm-dialog {
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+/* ========== OVERLAY BACKDROP ========== */
+
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgb(0 0 0 / 70%);
+}

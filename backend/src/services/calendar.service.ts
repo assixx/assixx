@@ -2,8 +2,6 @@
  * Calendar Service
  * Handles calendar business logic
  */
-import { Pool } from 'mysql2/promise';
-
 import {
   type DbCalendarEvent,
   type EventQueryOptions,
@@ -19,9 +17,9 @@ import {
   getEventAttendees,
   getEventById,
   removeEventAttendee,
-  respondToEvent,
   updateEvent,
-} from '../models/calendar';
+} from '../routes/v2/calendar/model/index.js';
+import { Pool } from '../utils/db.js';
 
 // UserInfo is defined below
 
@@ -43,8 +41,6 @@ type EventsResponse = EventsListResponse;
 
 interface EventAttendee {
   user_id: number;
-  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
-  responded_at?: Date;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -235,13 +231,9 @@ class CalendarService {
    * @param userId - The user ID
    * @param responseStatus - The responseStatus parameter
    */
-  async addEventAttendee(
-    eventId: number,
-    userId: number,
-    responseStatus?: 'pending' | 'accepted' | 'declined' | 'tentative',
-  ): Promise<boolean> {
+  async addEventAttendee(eventId: number, userId: number, tenantId?: number): Promise<boolean> {
     try {
-      return await addEventAttendee(eventId, userId, responseStatus);
+      return await addEventAttendee(eventId, userId, tenantId);
     } catch (error: unknown) {
       console.error('Error in CalendarService.addEventAttendee:', error);
       throw error;
@@ -258,21 +250,6 @@ class CalendarService {
       return await removeEventAttendee(eventId, userId);
     } catch (error: unknown) {
       console.error('Error in CalendarService.removeEventAttendee:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Respond to event invitation
-   * @param eventId - The eventId parameter
-   * @param userId - The user ID
-   * @param response - The response parameter
-   */
-  async respondToEvent(eventId: number, userId: number, response: string): Promise<boolean> {
-    try {
-      return await respondToEvent(eventId, userId, response);
-    } catch (error: unknown) {
-      console.error('Error in CalendarService.respondToEvent:', error);
       throw error;
     }
   }

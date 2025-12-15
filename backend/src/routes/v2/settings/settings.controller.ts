@@ -8,12 +8,50 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import * as settingsService from './settings.service.js';
-import type { SettingCategory, SettingData, SettingType } from './settings.service.js';
+import type { SettingCategory, SettingData } from './settings.service.js';
 import { BulkUpdateRequest, SystemSetting, UserSetting } from './types.js';
 
 // Constants
 const UNEXPECTED_ERROR = 'An unexpected error occurred';
 const USER_AGENT_HEADER = 'user-agent';
+const SETTING_KEY_REQUIRED = 'Setting key is required';
+
+/**
+ * Validate and get setting key from params or body
+ */
+function getSettingKey(paramKey: string | undefined, bodyKey: string | undefined): string {
+  const key = paramKey ?? bodyKey ?? '';
+  if (key === '') {
+    throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+  }
+  return key;
+}
+
+/**
+ * Build SettingData from body with optional fields
+ */
+function buildSettingData(key: string, bodyData: SystemSetting): SettingData {
+  const data: SettingData = {
+    setting_key: key,
+    setting_value: bodyData.setting_value,
+  };
+
+  // value_type is a union type ('string'|'number'|'boolean'|'json'), can't be empty string
+  if (bodyData.value_type !== undefined) {
+    data.value_type = bodyData.value_type;
+  }
+  if (bodyData.category !== undefined && bodyData.category !== '') {
+    data.category = bodyData.category as SettingCategory;
+  }
+  if (bodyData.description !== undefined && bodyData.description !== '') {
+    data.description = bodyData.description;
+  }
+  if (bodyData.is_public !== undefined) {
+    data.is_public = bodyData.is_public;
+  }
+
+  return data;
+}
 
 // ==================== SYSTEM SETTINGS ====================
 
@@ -27,14 +65,25 @@ export const getSystemSettings = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const filters = {
-      category: req.query.category as string | undefined,
-      is_public:
-        req.query.is_public === 'true' ? true
-        : req.query.is_public === 'false' ? false
-        : undefined,
-      search: req.query.search as string | undefined,
-    };
+    // Build filters object conditionally to avoid undefined values
+    const filters: { category?: string; is_public?: boolean; search?: string } = {};
+
+    const categoryParam = req.query['category'];
+    if (typeof categoryParam === 'string') {
+      filters.category = categoryParam;
+    }
+
+    const isPublicParam = req.query['is_public'];
+    if (isPublicParam === 'true') {
+      filters.is_public = true;
+    } else if (isPublicParam === 'false') {
+      filters.is_public = false;
+    }
+
+    const searchParam = req.query['search'];
+    if (typeof searchParam === 'string') {
+      filters.search = searchParam;
+    }
 
     const settings = await settingsService.getSystemSettings(filters, req.user.role);
     res.json(successResponse({ settings }));
@@ -54,7 +103,12 @@ export const getSystemSettings = async (
  */
 export const getSystemSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const setting = await settingsService.getSystemSetting(req.params.key, req.user.role);
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
+    const setting = await settingsService.getSystemSetting(key, req.user.role);
     res.json(successResponse(setting));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
@@ -76,14 +130,8 @@ export const upsertSystemSetting = async (
 ): Promise<void> => {
   try {
     const bodyData = req.body as SystemSetting;
-    const data: SettingData = {
-      setting_key: req.params.key || bodyData.setting_key,
-      setting_value: bodyData.setting_value,
-      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
-      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
-      description: bodyData.description,
-      is_public: bodyData.is_public,
-    };
+    const key = getSettingKey(req.params['key'], bodyData.setting_key);
+    const data = buildSettingData(key, bodyData);
 
     await settingsService.upsertSystemSetting(
       data,
@@ -114,8 +162,13 @@ export const deleteSystemSetting = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
     await settingsService.deleteSystemSetting(
-      req.params.key,
+      key,
       req.user.id,
       req.user.tenant_id,
       req.user.role,
@@ -145,10 +198,18 @@ export const getTenantSettings = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const filters = {
-      category: req.query.category as string | undefined,
-      search: req.query.search as string | undefined,
-    };
+    // Build filters object conditionally to avoid undefined values
+    const filters: { category?: string; search?: string } = {};
+
+    const categoryParam = req.query['category'];
+    if (typeof categoryParam === 'string') {
+      filters.category = categoryParam;
+    }
+
+    const searchParam = req.query['search'];
+    if (typeof searchParam === 'string') {
+      filters.search = searchParam;
+    }
 
     const settings = await settingsService.getTenantSettings(req.user.tenant_id, filters);
 
@@ -169,7 +230,12 @@ export const getTenantSettings = async (
  */
 export const getTenantSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const setting = await settingsService.getTenantSetting(req.params.key, req.user.tenant_id);
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
+    const setting = await settingsService.getTenantSetting(key, req.user.tenant_id);
 
     res.json(successResponse(setting));
   } catch (error: unknown) {
@@ -192,14 +258,8 @@ export const upsertTenantSetting = async (
 ): Promise<void> => {
   try {
     const bodyData = req.body as SystemSetting;
-    const data: SettingData = {
-      setting_key: req.params.key || bodyData.setting_key,
-      setting_value: bodyData.setting_value,
-      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
-      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
-      description: bodyData.description,
-      is_public: bodyData.is_public,
-    };
+    const key = getSettingKey(req.params['key'], bodyData.setting_key);
+    const data = buildSettingData(key, bodyData);
 
     await settingsService.upsertTenantSetting(
       data,
@@ -230,8 +290,13 @@ export const deleteTenantSetting = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
     await settingsService.deleteTenantSetting(
-      req.params.key,
+      key,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
@@ -258,13 +323,23 @@ export const deleteTenantSetting = async (
  */
 export const getUserSettings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const filters = {
-      category: req.query.category as string | undefined,
-      search: req.query.search as string | undefined,
-    };
+    // Build filters object conditionally to avoid undefined values
+    const filters: { category?: string; search?: string } = {};
+
+    const categoryParam = req.query['category'];
+    if (typeof categoryParam === 'string') {
+      filters.category = categoryParam;
+    }
+
+    const searchParam = req.query['search'];
+    if (typeof searchParam === 'string') {
+      filters.search = searchParam;
+    }
 
     // Get team_id from query params if provided
-    const teamId = req.query.team_id ? Number(req.query.team_id) : undefined;
+    const teamIdParam = req.query['team_id'];
+    const teamId =
+      typeof teamIdParam === 'string' && teamIdParam !== '' ? Number(teamIdParam) : undefined;
 
     const settings = await settingsService.getUserSettings(
       req.user.id,
@@ -290,7 +365,12 @@ export const getUserSettings = async (req: AuthenticatedRequest, res: Response):
  */
 export const getUserSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const setting = await settingsService.getUserSetting(req.params.key, req.user.id);
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
+    const setting = await settingsService.getUserSetting(key, req.user.id);
 
     res.json(successResponse(setting));
   } catch (error: unknown) {
@@ -303,6 +383,35 @@ export const getUserSetting = async (req: AuthenticatedRequest, res: Response): 
 };
 
 /**
+ * Build user setting data from body with optional team_id
+ */
+function buildUserSettingData(
+  key: string,
+  bodyData: UserSetting & { team_id?: number | null },
+): SettingData & { team_id?: number | null } {
+  const data: SettingData & { team_id?: number | null } = {
+    setting_key: key,
+    setting_value: bodyData.setting_value,
+  };
+
+  // value_type is a union type ('string'|'number'|'boolean'|'json'), can't be empty string
+  if (bodyData.value_type !== undefined) {
+    data.value_type = bodyData.value_type;
+  }
+  if (bodyData.category !== undefined && bodyData.category !== '') {
+    data.category = bodyData.category as SettingCategory;
+  }
+  if (bodyData.description !== undefined && bodyData.description !== '') {
+    data.description = bodyData.description;
+  }
+  if (bodyData.team_id !== undefined) {
+    data.team_id = bodyData.team_id;
+  }
+
+  return data;
+}
+
+/**
  * Create or update user setting
  * @param req - The request object
  * @param res - The response object
@@ -313,14 +422,8 @@ export const upsertUserSetting = async (
 ): Promise<void> => {
   try {
     const bodyData = req.body as UserSetting & { team_id?: number | null };
-    const data: SettingData & { team_id?: number | null } = {
-      setting_key: req.params.key || bodyData.setting_key,
-      setting_value: bodyData.setting_value,
-      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
-      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
-      description: bodyData.description,
-      team_id: bodyData.team_id, // Include team_id if provided
-    };
+    const key = getSettingKey(req.params['key'], bodyData.setting_key);
+    const data = buildUserSettingData(key, bodyData);
 
     await settingsService.upsertUserSetting(
       data,
@@ -351,7 +454,12 @@ export const deleteUserSetting = async (
   res: Response,
 ): Promise<void> => {
   try {
-    await settingsService.deleteUserSetting(req.params.key, req.user.id);
+    const key = req.params['key'];
+    if (key === undefined || key === '') {
+      throw new ServiceError('VALIDATION_ERROR', SETTING_KEY_REQUIRED);
+    }
+
+    await settingsService.deleteUserSetting(key, req.user.id);
 
     res.json(successResponse(null));
   } catch (error: unknown) {
@@ -375,7 +483,12 @@ export const getAdminUserSettings = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const targetUserId = Number.parseInt(req.params.userId);
+    const userIdParam = req.params['userId'];
+    if (userIdParam === undefined || userIdParam === '') {
+      throw new ServiceError('VALIDATION_ERROR', 'User ID is required');
+    }
+
+    const targetUserId = Number.parseInt(userIdParam);
     const settings = await settingsService.getAdminUserSettings(
       targetUserId,
       req.user.tenant_id,
@@ -409,6 +522,32 @@ export const getCategories = (_req: AuthenticatedRequest, res: Response): void =
 };
 
 /**
+ * Build SettingData from bulk update item
+ */
+function buildBulkSettingData(setting: BulkUpdateRequest['settings'][number]): SettingData {
+  const data: SettingData = {
+    setting_key: setting.setting_key,
+    setting_value: setting.setting_value,
+  };
+
+  // value_type is a union type ('string'|'number'|'boolean'|'json'), can't be empty string
+  if (setting.value_type !== undefined) {
+    data.value_type = setting.value_type;
+  }
+  if (setting.category !== undefined && setting.category !== '') {
+    data.category = setting.category as SettingCategory;
+  }
+  if (setting.description !== undefined && setting.description !== '') {
+    data.description = setting.description;
+  }
+  if (setting.is_public !== undefined) {
+    data.is_public = setting.is_public;
+  }
+
+  return data;
+}
+
+/**
  * Bulk update settings
  * @param req - The request object
  * @param res - The response object
@@ -426,16 +565,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response): Prom
     }
 
     const contextId = type === 'user' ? req.user.id : req.user.tenant_id;
-
-    // Convert settings to SettingData format
-    const settingsData: SettingData[] = settings.map((setting) => ({
-      setting_key: setting.setting_key,
-      setting_value: setting.setting_value,
-      value_type: setting.value_type ? (setting.value_type as SettingType) : 'string',
-      category: setting.category ? (setting.category as SettingCategory) : 'other',
-      description: setting.description,
-      is_public: setting.is_public,
-    }));
+    const settingsData: SettingData[] = settings.map(buildBulkSettingData);
 
     const results = await settingsService.bulkUpdateSettings(
       type,

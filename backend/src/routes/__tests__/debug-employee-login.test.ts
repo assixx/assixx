@@ -16,7 +16,7 @@ describe('Debug Employee Login', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-debug-employee';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-debug-employee';
 
     // Create test tenant
     tenantId = await createTestTenant(testDb, 'debugemployee', 'Debug Employee Test Company');

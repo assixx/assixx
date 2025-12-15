@@ -1,42 +1,91 @@
+// ESLint Configuration - PostgreSQL 17 + pg (Raw SQL) + TypeScript
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 import typescript from '@typescript-eslint/parser';
 import prettierConfig from 'eslint-config-prettier';
-import htmlPlugin from 'eslint-plugin-html';
 import importPlugin from 'eslint-plugin-import-x';
 import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
 import prettier from 'eslint-plugin-prettier';
 import promisePlugin from 'eslint-plugin-promise';
-import regexpPlugin from 'eslint-plugin-regexp';
 import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
+import storybook from 'eslint-plugin-storybook';
 import tsdocPlugin from 'eslint-plugin-tsdoc';
 import unicornPlugin from 'eslint-plugin-unicorn';
 
 export default [
-  // Base JavaScript configuration
-  js.configs.recommended,
-
-  // Prettier configuration
-  prettierConfig,
-
-  // Disable core no-useless-escape since we use regexp/no-useless-escape
+  // Global ignores - must be first to apply to all configs
   {
-    rules: {
-      'no-useless-escape': 'off', // Using regexp/no-useless-escape instead
-    },
-  },
+    ignores: [
+      'node_modules/**',
+      'archive/**',
+      'scripts/analyze-css.cjs',
+      'scripts/purge-css-inplace.cjs',
+      'node_modules_old_backup/**',
+      '**/node_modules_old_backup/**',
+      'dist/**',
+      'build/**',
+      '*.min.js',
+      '**/*.bak', // Ignore all backup files
+      'backend/dist/**',
+      'backend/src/routes/v1/**',
+      'backend/archive/**', // Archived code - not actively maintained
+      'frontend/dist/**',
+      'coverage/**',
+      '*.log',
+      'backend/logs/**',
+      '.env',
+      '.env.*',
+      'backend/**/*.js',
+      '!frontend/dist/**/*.js',
+      '!scripts/fix-esm-imports.js',
+      'scripts/fix-*.js',
+      'jest.config.js',
+      'jest.config.cjs',
+      'uploads/**',
+      '**/*.yml',
+      '**/*.yaml',
+      'frontend/src/scripts/lib/**',
+      'frontend/src/styles/lib/**',
+      'backups/**',
+      '.storybook/**',
+      'stories/**',
+      'design-system/build/**',
+      'frontend/public/**',
+      'backend/src/database/migrations/**/*.js',
+      'database/**/*.js',
+      'backend/src/server-old.js',
+      'backend/src/__tests__/**',
+      'backend/**/*.test.ts',
+      'backend/**/*.spec.ts',
+      'frontend/**/*.test.ts',
+      'frontend/**/*.spec.ts',
+      'backend/coverage/**',
+      '**/*.generated.ts',
+      '**/*.config.js',
+      '**/vite.config.optimized.js',
+      '**/*.min.css',
+      'backend/src/routes/mocks/**',
+      '**/__tests__/**',
+      '**/test/**',
+      '**/tests/**',
+      '**/*.html',
+    ],
+  }, // Base JavaScript configuration
+  js.configs.recommended, // Prettier configuration
+  prettierConfig, // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
 
-  // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
-
-  // TypeScript configuration for backend
+  // =============================================================================
+  // PostgreSQL 17 + pg (Raw SQL) - Backend TypeScript Configuration
+  // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx'],
     languageOptions: {
       parser: typescript,
       parserOptions: {
-        ecmaVersion: 2021,
+        ecmaVersion: 2022, // ES2022 für BigInt (PostgreSQL BIGINT/BIGSERIAL)
         sourceType: 'module',
         project: './backend/tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
@@ -59,6 +108,7 @@ export default [
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
         Express: 'readonly',
+        BigInt: 'readonly', // PostgreSQL BIGINT/BIGSERIAL Support
       },
     },
     plugins: {
@@ -87,9 +137,75 @@ export default [
       ...typescriptPlugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
-      'tsdoc/syntax': 'warn',
+      'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
 
-      complexity: ['error', 60], // Beibehalten, aber SonarJS ist wichtiger.
+      // =======================================================================
+      // PostgreSQL SQL Injection Prevention
+      // =======================================================================
+      'no-restricted-syntax': [
+        'error',
+        // Verbiete String-Konkatenation als erstes Argument in query()
+        {
+          selector: 'CallExpression[callee.property.name="query"] > BinaryExpression:first-child',
+          message:
+            '⚠️ SQL INJECTION: Keine String-Konkatenation in query()! Nutze parameterisierte Queries: pool.query("SELECT * FROM x WHERE id = $1", [id])',
+        },
+        // Verbiete eval() komplett
+        {
+          selector: 'CallExpression[callee.name="eval"]',
+          message: '⚠️ SECURITY: eval() ist verboten - Code Injection Risiko',
+        },
+      ],
+
+      // PostgreSQL BigInt Precision (BIGINT/BIGSERIAL)
+      '@typescript-eslint/no-loss-of-precision': 'error',
+
+      // Enterprise Code Quality Standards
+      // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
+      // See: docs/POWER-OF-TEN-RULES.md
+      'max-lines': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 800,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      'max-lines-per-function': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 60, // Regel 4: Max 60 Zeilen pro Funktion
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
+      'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
+      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
+
+      // Line Length Control
+      'max-len': [
+        'error', // Regel 10: Zero Warnings
+        {
+          code: 120,
+          tabWidth: 2,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+          ignoreComments: true,
+        },
+      ],
+
+      // Import Dependencies Limit
+      'import-x/max-dependencies': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 25,
+          ignoreTypeImports: true,
+        },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -109,6 +225,16 @@ export default [
           allowConciseArrowFunctionExpressionsStartingWithVoid: true,
         },
       ],
+      '@typescript-eslint/typedef': [
+        'error',
+        {
+          parameter: true,
+          arrowParameter: true,
+        },
+      ],
+      // Disable no-inferrable-types because it conflicts with typedef rule
+      // We want explicit types for better documentation and consistency
+      '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
@@ -128,12 +254,25 @@ export default [
       ],
       '@typescript-eslint/prefer-optional-chain': 'error',
 
-      // --- ANGEPASST --- Deaktiviert wegen Circular Fix Konflikt
-      '@typescript-eslint/strict-boolean-expressions': 'off',
+      // Power of Ten Regel 7: Parameter validieren, Regel 10: Zero Warnings
+      // Reaktiviert - Circular Fix Konflikt muss manuell gelöst werden
+      '@typescript-eslint/strict-boolean-expressions': [
+        'error',
+        {
+          allowString: false,
+          allowNumber: false,
+          allowNullableObject: true,
+          allowNullableBoolean: false,
+          allowNullableString: false,
+          allowNullableNumber: false,
+          allowAny: false,
+        },
+      ],
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/only-throw-error': 'error',
 
       'no-eval': 'error',
@@ -190,9 +329,7 @@ export default [
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',
     },
-  },
-
-  // Security configuration for all TypeScript/JavaScript files
+  }, // Security configuration for all TypeScript/JavaScript files
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -200,7 +337,8 @@ export default [
       'no-unsanitized': noUnsanitizedPlugin,
     },
     rules: {
-      'security/detect-eval-with-expression': 'warn',
+      // Power of Ten Regel 10: Zero Warnings - Security Rules
+      'security/detect-eval-with-expression': 'error',
       'security/detect-non-literal-fs-filename': 'error',
       'security/detect-non-literal-regexp': 'error',
       'security/detect-unsafe-regex': 'error',
@@ -210,9 +348,10 @@ export default [
       'security/detect-no-csrf-before-method-override': 'error',
       'security/detect-possible-timing-attacks': 'error',
       'security/detect-pseudoRandomBytes': 'error',
+      // detect-object-injection bleibt warn - zu viele false positives bei computed properties
       'security/detect-object-injection': 'warn',
 
-      'no-unsanitized/method': 'warn',
+      'no-unsanitized/method': 'error', // Regel 10: Zero Warnings
       'no-unsanitized/property': 'error',
 
       'no-restricted-syntax': [
@@ -224,33 +363,7 @@ export default [
         },
       ],
     },
-  },
-
-  // RegExp Plugin Configuration
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      regexp: regexpPlugin,
-    },
-    rules: {
-      'regexp/no-super-linear-backtracking': 'error',
-      'regexp/no-useless-lazy': 'error',
-      'regexp/no-useless-quantifier': 'error',
-      'regexp/optimal-quantifier-concatenation': 'error',
-      'regexp/no-empty-alternative': 'error',
-      'regexp/no-empty-group': 'error',
-      'regexp/no-lazy-ends': 'error',
-      'regexp/no-optional-assertion': 'error',
-      'regexp/no-useless-escape': 'error',
-      'regexp/no-useless-flag': 'error',
-      'regexp/prefer-d': 'error',
-      'regexp/prefer-w': 'error',
-      'regexp/prefer-character-class': 'error',
-      'regexp/sort-character-class-elements': 'error',
-    },
-  },
-
-  // Promise Plugin Configuration
+  }, // Promise Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -269,13 +382,8 @@ export default [
       'promise/no-new-statics': 'error',
       'promise/no-return-in-finally': 'error',
       'promise/valid-params': 'error',
-      // --- ANGEPASST --- Auf 'warn' gesetzt, um Flexibilität zu ermöglichen.
-      'promise/prefer-await-to-then': 'warn',
-      'promise/prefer-await-to-callbacks': 'error',
     },
-  },
-
-  // SonarJS Plugin Configuration
+  }, // SonarJS Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -291,11 +399,11 @@ export default [
       'sonarjs/no-use-of-empty-return-value': 'error',
       'sonarjs/non-existent-operator': 'error',
 
-      // --- ANGEPASST --- Kognitive Komplexität auf einen realistischen Wert gesetzt.
-      'sonarjs/cognitive-complexity': ['warn', 10],
+      // Power of Ten Regel 1: Einfacher Kontrollfluss, Regel 10: Zero Warnings
+      'sonarjs/cognitive-complexity': ['error', 10],
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-collection-size-mischeck': 'error',
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
+      'sonarjs/no-duplicate-string': ['error', { threshold: 5 }], // Regel 10: Zero Warnings
       'sonarjs/no-duplicated-branches': 'error',
       'sonarjs/no-gratuitous-expressions': 'error',
       'sonarjs/no-inverted-boolean-check': 'error',
@@ -309,40 +417,18 @@ export default [
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
     },
-  },
-
-  // Unicorn Plugin - Cherry-picked best rules
+  }, // Unicorn Plugin - Cherry-picked best rules
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
       unicorn: unicornPlugin,
     },
     rules: {
-      'unicorn/no-instanceof-builtins': 'error',
-      'unicorn/no-new-buffer': 'error',
-      'unicorn/catch-error-name': ['error', { name: 'error' }],
-      'unicorn/prefer-optional-catch-binding': 'error',
-      'unicorn/custom-error-definition': 'error',
-      'unicorn/prefer-includes': 'error',
-      'unicorn/prefer-string-starts-ends-with': 'error',
-      'unicorn/prefer-array-find': 'error',
-      'unicorn/prefer-array-some': 'error',
-      'unicorn/prefer-default-parameters': 'error',
-      'unicorn/prefer-spread': 'error',
-      'unicorn/prefer-number-properties': 'error',
-      'unicorn/prefer-modern-math-apis': 'error',
-      'unicorn/no-null': 'off',
-      'unicorn/no-useless-undefined': 'error',
-      'unicorn/filename-case': 'off',
-      'unicorn/prevent-abbreviations': 'off',
-      'unicorn/no-array-for-each': 'off',
-      'unicorn/no-array-reduce': 'off',
-      'unicorn/explicit-length-check': 'off',
-      'unicorn/no-await-expression-member': 'off',
+      // Keep only critical unicorn rules
+      'unicorn/no-new-buffer': 'error', // Security: deprecated API
+      'unicorn/prefer-number-properties': 'error', // Regel 10: Zero Warnings - Type safety: Number.isNaN vs isNaN
     },
-  },
-
-  // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
+  }, // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
   {
     files: [
       '**/controllers/**/*.ts',
@@ -353,9 +439,7 @@ export default [
       '**/config/*.ts',
     ],
     // JSDoc entfernt - wir nutzen nur TSDoc
-  },
-
-  // No-Secrets Plugin
+  }, // No-Secrets Plugin
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -369,9 +453,49 @@ export default [
           additionalRegexes: {
             'German Password': '(passwort|kennwort)\\s*[:=]\\s*[\'"]?.+[\'"]?',
             'JWT Token': 'eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*',
+            // PostgreSQL Connection Strings (nur env vars, nicht generische password strings)
+            'PostgreSQL Env Hardcoded':
+              '(PG_PASSWORD|POSTGRES_PASSWORD|DATABASE_URL)\\s*[:=]\\s*[\'"][^$\\{][^\'"]{8,}[\'"]',
           },
         },
       ],
+    },
+  },
+
+  // =============================================================================
+  // PostgreSQL Database Layer - Spezielle Regeln für DB-Code
+  // =============================================================================
+  {
+    files: [
+      'backend/src/database/**/*.ts',
+      'backend/src/config/database*.ts',
+      'backend/src/utils/db*.ts',
+    ],
+    rules: {
+      // Längere Dateien für komplexe DB-Queries erlauben
+      'max-lines': ['error', { max: 1000, skipBlankLines: true, skipComments: true }],
+      // Längere Funktionen für komplexe DB-Operationen
+      'max-lines-per-function': [
+        'error',
+        { max: 80, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
+      // Duplicate Strings OK in SQL (Spaltennamen wiederholen sich)
+      'sonarjs/no-duplicate-string': ['error', { threshold: 8 }],
+    },
+  },
+
+  // =============================================================================
+  // PostgreSQL Migrations
+  // =============================================================================
+  {
+    files: ['backend/src/database/migrations/**/*.ts', 'migration/**/*.ts'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'no-console': 'off',
+      'sonarjs/no-duplicate-string': 'off',
+      'security/detect-object-injection': 'off',
+      'tsdoc/syntax': 'off',
     },
   },
 
@@ -454,6 +578,59 @@ export default [
       ...typescriptPlugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
+
+      // Disable no-undef for TypeScript - TypeScript handles this better with type checking
+      // ESLint's no-undef doesn't understand TypeScript's global declarations (.d.ts files)
+      // See: https://typescript-eslint.io/linting/troubleshooting/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-runtime-errors
+      'no-undef': 'off',
+
+      // Enterprise Standards for Frontend (stricter than backend)
+      // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
+      // See: docs/POWER-OF-TEN-RULES.md
+      'max-lines': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 400,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      'max-lines-per-function': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 60, // Regel 4: Max 60 Zeilen pro Funktion
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
+      'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
+      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
+
+      // Line Length Control
+      'max-len': [
+        'error', // Regel 10: Zero Warnings
+        {
+          code: 120,
+          tabWidth: 2,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+          ignoreComments: true,
+        },
+      ],
+
+      // Import Dependencies Limit
+      'import-x/max-dependencies': [
+        'error', // Regel 10: Zero Warnings
+        {
+          max: 30,
+          ignoreTypeImports: true,
+        },
+      ],
+
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -463,6 +640,21 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/typedef': [
+        'error',
+        {
+          arrayDestructuring: false,
+          arrowParameter: false,
+          memberVariableDeclaration: false,
+          objectDestructuring: false,
+          parameter: true,
+          propertyDeclaration: true,
+          variableDeclaration: false,
+        },
+      ],
+      // Disable no-inferrable-types because it conflicts with typedef rule
+      // We want explicit types for better documentation and consistency
+      '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
@@ -498,6 +690,7 @@ export default [
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/only-throw-error': 'error',
 
       'no-eval': 'error',
@@ -538,9 +731,9 @@ export default [
         },
       ],
 
-      // --- ANGEPASST --- Korrigierte und vereinfachte Import-Reihenfolge.
+      // Import-Reihenfolge - Regel 10: Zero Warnings
       'import-x/order': [
-        'warn',
+        'error',
         {
           groups: ['builtin', 'external', 'internal', ['parent', 'sibling'], 'index'],
           'newlines-between': 'never',
@@ -551,135 +744,18 @@ export default [
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',
     },
-  },
-
-  // HTML configuration - uses same strict rules as frontend TypeScript
-  {
-    files: ['**/*.html'],
-    plugins: {
-      html: htmlPlugin,
-      '@typescript-eslint': typescriptPlugin,
-      prettier,
-      'import-x': importPlugin,
-      security: securityPlugin,
-      'no-unsanitized': noUnsanitizedPlugin,
-      regexp: regexpPlugin,
-      promise: promisePlugin,
-      sonarjs: sonarjsPlugin,
-      unicorn: unicornPlugin,
-    },
-    languageOptions: {
-      globals: {
-        console: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        fetch: 'readonly',
-        FormData: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        alert: 'readonly',
-        confirm: 'readonly',
-        Element: 'readonly',
-        HTMLElement: 'readonly',
-        Event: 'readonly',
-        CustomEvent: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        atob: 'readonly',
-        btoa: 'readonly',
-        navigator: 'readonly',
-        screen: 'readonly',
-        crypto: 'readonly',
-        MutationObserver: 'readonly',
-        IntersectionObserver: 'readonly',
-        requestAnimationFrame: 'readonly',
-        Audio: 'readonly',
-        prompt: 'readonly',
-        performance: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        FileReader: 'readonly',
-        Blob: 'readonly',
-        event: 'readonly',
-        Toastify: 'readonly',
-        ApiClient: 'readonly',
-        apiClient: 'readonly',
-      },
-    },
-    rules: {
-      // Basic JavaScript rules (same as frontend)
-      'no-unused-vars': 'off', // Disabled for HTML files - functions are used in onclick handlers
-      'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
-      'no-undef': 'warn',
-      'no-eval': 'warn',
-      'prefer-const': 'warn',
-      'no-var': 'warn',
-      'no-implied-eval': 'warn',
-      'no-new-func': 'warn',
-      'no-script-url': 'warn',
-      'no-unsafe-finally': 'warn',
-      'require-atomic-updates': 'warn',
-
-      // Security rules (same as frontend)
-      'security/detect-eval-with-expression': 'warn',
-      'security/detect-non-literal-regexp': 'error',
-      'security/detect-unsafe-regex': 'error',
-      'security/detect-object-injection': 'warn',
-      'no-unsanitized/method': 'warn',
-      'no-unsanitized/property': 'error',
-
-      // No inline event handlers (XSS prevention)
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "CallExpression[callee.property.name='setAttribute'][arguments.0.value='onclick']",
-          message: 'Use addEventListener instead of onclick attributes to prevent XSS',
-        },
-      ],
-
-      // Promise rules
-      'promise/always-return': 'error',
-      'promise/no-return-wrap': 'error',
-      'promise/catch-or-return': 'error',
-      'promise/no-nesting': 'error',
-
-      // SonarJS rules
-      'sonarjs/no-identical-conditions': 'error',
-      'sonarjs/no-identical-functions': 'error',
-      'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/cognitive-complexity': ['warn', 10],
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
-      'sonarjs/no-duplicated-branches': 'error',
-
-      // Unicorn rules for DOM
-      'unicorn/prefer-modern-dom-apis': 'error',
-      'unicorn/prefer-query-selector': 'error',
-      'unicorn/prefer-dom-node-remove': 'error',
-      'unicorn/prefer-dom-node-append': 'error',
-      'unicorn/prefer-dom-node-text-content': 'error',
-
-      // Complexity
-      complexity: ['error', 60],
-    },
-  },
+  }, // HTML configuration removed - HTML files are ignored
+  // This project doesn't use inline JavaScript in HTML files
+  // All JavaScript is in separate TypeScript modules
 
   // Frontend-specific DOM rules
   {
     files: ['frontend/**/*.ts', 'frontend/**/*.tsx', 'frontend/**/*.js'],
     rules: {
-      'unicorn/prefer-modern-dom-apis': 'error',
-      'unicorn/prefer-query-selector': 'error',
-      'unicorn/prefer-dom-node-remove': 'error',
-      'unicorn/prefer-dom-node-append': 'error',
-      'unicorn/prefer-dom-node-text-content': 'error',
-      'unicorn/prefer-dom-node-dataset': 'error',
+      // Keep essential DOM modernization
+      'unicorn/prefer-modern-dom-apis': 'error', // DOM modernization
     },
-  },
-
-  // Test files configuration
+  }, // Test files configuration
   {
     files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts', '**/*.test.js', '**/*.spec.js'],
     languageOptions: {
@@ -723,9 +799,7 @@ export default [
         },
       ],
     },
-  },
-
-  // Remaining configurations for JS files, configs, etc.
+  }, // Remaining configurations for JS files, configs, etc.
   // ... (Diese Teile waren bereits gut und wurden unverändert übernommen)
 
   {
@@ -767,20 +841,19 @@ export default [
       'object-shorthand': 'error',
       'prefer-template': 'error',
       'no-return-await': 'error',
-      complexity: 'off',
-      'max-depth': 'off',
-      'max-lines': 'off',
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Levels, Regel 10: Zero Warnings
+      'max-lines': ['error', 400], // Regel 10: Zero Warnings
       'require-await': 'error',
       'no-async-promise-executor': 'error',
       'prefer-promise-reject-errors': 'error',
     },
   },
-
   {
     files: [
       'frontend/src/scripts/**/*.js',
       'frontend/src/components/**/*.js',
       'frontend/src/pages/**/*.js',
+      'frontend/src/design-system/**/*.js',
     ],
     languageOptions: {
       ecmaVersion: 2021,
@@ -841,7 +914,6 @@ export default [
       'no-console': 'off',
     },
   },
-
   {
     files: ['frontend/vite.config.js', 'frontend/postcss.config.js'],
     languageOptions: {
@@ -849,7 +921,6 @@ export default [
       sourceType: 'module',
     },
   },
-
   {
     files: [
       'eslint.config.js',
@@ -867,7 +938,6 @@ export default [
       },
     },
   },
-
   {
     files: ['**/jest.config.js', '**/jest.config.cjs'],
     languageOptions: {
@@ -881,7 +951,6 @@ export default [
       },
     },
   },
-
   {
     files: ['jest.globalSetup.js', 'jest.globalTeardown.js'],
     languageOptions: {
@@ -896,55 +965,5 @@ export default [
       'prettier/prettier': 'error',
     },
   },
-
-  {
-    ignores: [
-      'node_modules/**',
-      'node_modules_old_backup/**',
-      '**/node_modules_old_backup/**',
-      '**/*.d.ts',
-      'dist/**',
-      'build/**',
-      '*.min.js',
-      'backend/dist/**',
-      'backend/src/routes/v1/**',
-      'frontend/dist/**',
-      'coverage/**',
-      '*.log',
-      'backend/logs/**',
-      '.env',
-      '.env.*',
-      'backend/**/*.js',
-      '!frontend/dist/**/*.js',
-      '!scripts/fix-esm-imports.js',
-      'scripts/fix-*.js',
-      'jest.config.js',
-      'jest.config.cjs',
-      'uploads/**',
-      '**/*.yml',
-      '**/*.yaml',
-      'frontend/src/scripts/lib/**',
-      'frontend/src/styles/lib/**',
-      'frontend/public/**',
-      '**/*.d.ts',
-      'backend/src/database/migrations/**/*.js',
-      'database/**/*.js',
-      'backend/src/server-old.js',
-      'backend/src/register-ts.js',
-      'backend/src/__tests__/**',
-      'backend/**/*.test.ts',
-      'backend/**/*.spec.ts',
-      'frontend/**/*.test.ts',
-      'frontend/**/*.spec.ts',
-      'backend/coverage/**',
-      '**/*.generated.ts', // Falls ihr Code-Generatoren verwendet
-      '**/*.config.js', // Zusätzliche Config-Dateien
-      '**/*.min.css', // Minifizierte CSS-Dateien
-      'backend/src/routes/mocks/**',
-      '**/__tests__/**',
-      '**/test/**',
-      '**/tests/**',
-    ],
-  },
+  ...storybook.configs['flat/recommended'],
 ];
-``;

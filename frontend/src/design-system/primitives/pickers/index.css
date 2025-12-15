@@ -1,0 +1,17 @@
+/**
+ * Pickers - Barrel Export
+ *
+ * Enhanced native HTML5 date/time pickers
+ * All pickers use browser's native functionality for best UX
+ *
+ * Components:
+ * - Date Picker - Single date selection
+ * - Time Picker - Single time selection
+ * - Date Range - Start/End date selection
+ *
+ * @see README.md for full documentation
+ */
+
+@import "./date-picker.css";
+@import "./time-picker.css";
+@import "./date-range.css";

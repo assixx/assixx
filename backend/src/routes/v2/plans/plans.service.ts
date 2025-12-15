@@ -1,8 +1,8 @@
+import { query } from '../../../utils/db.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import PlanModel from '../../../models/plan';
+import RootLog from '../logs/logs.service.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog';
-import { query } from '../../../utils/db';
+import PlanModel from './plan.model.js';
 import {
   CostCalculation,
   CurrentPlanResponse,
@@ -19,11 +19,10 @@ import {
   TenantCosts,
   TenantPlan,
   UpdateAddonsRequest,
-} from './types';
+} from './types.js';
 
 // Type helper to cast Model types to our types
 type ModelDbPlan = DbPlan & { description?: string };
-type ModelDbTenantPlan = DbTenantPlan & { expires_at?: Date | null };
 
 /**
  * Plans service with static methods
@@ -35,20 +34,30 @@ export class PlansService {
    * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiPlan(dbPlan: DbPlan): Plan {
-    return {
+    const plan: Plan = {
       id: dbPlan.id,
       code: dbPlan.code,
       name: dbPlan.name,
-      description: dbPlan.description,
       basePrice: Number.parseFloat(String(dbPlan.base_price)),
-      maxEmployees: dbPlan.max_employees ?? 0,
-      maxAdmins: dbPlan.max_admins ?? 0,
-      maxStorageGb: dbPlan.max_storage_gb ?? 0,
-      isActive: Boolean(dbPlan.is_active),
+      maxStorageGb: dbPlan.max_storage_gb,
+      isActive: dbPlan.is_active,
       sortOrder: dbPlan.sort_order,
       createdAt: dbPlan.created_at.toISOString(),
       updatedAt: dbPlan.updated_at.toISOString(),
     };
+
+    // Conditionally add optional properties to avoid exactOptionalPropertyTypes issues
+    if (dbPlan.description !== undefined) {
+      (plan as unknown as Record<string, unknown>)['description'] = dbPlan.description;
+    }
+    if (dbPlan.max_employees !== undefined) {
+      (plan as unknown as Record<string, unknown>)['maxEmployees'] = dbPlan.max_employees;
+    }
+    if (dbPlan.max_admins !== undefined) {
+      (plan as unknown as Record<string, unknown>)['maxAdmins'] = dbPlan.max_admins;
+    }
+
+    return plan;
   }
 
   /**
@@ -61,7 +70,7 @@ export class PlansService {
       featureId: dbFeature.feature_id,
       featureCode: dbFeature.feature_code,
       featureName: dbFeature.feature_name,
-      isIncluded: Boolean(dbFeature.is_included),
+      isIncluded: dbFeature.is_included,
     };
   }
 
@@ -70,7 +79,7 @@ export class PlansService {
    * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiTenantPlan(dbPlan: DbTenantPlan): TenantPlan {
-    return {
+    const tenantPlan: TenantPlan = {
       id: dbPlan.id,
       tenantId: dbPlan.tenant_id,
       planId: dbPlan.plan_id,
@@ -78,10 +87,19 @@ export class PlansService {
       planName: dbPlan.plan_name,
       status: dbPlan.status as 'active' | 'cancelled' | 'trial' | 'expired',
       startedAt: dbPlan.started_at.toISOString(),
-      expiresAt: dbPlan.expires_at?.toISOString(),
-      customPrice: dbPlan.custom_price ?? undefined,
       billingCycle: dbPlan.billing_cycle as 'monthly' | 'yearly',
     };
+
+    // Conditionally add optional properties to avoid exactOptionalPropertyTypes issues
+    if (dbPlan.expires_at !== undefined && dbPlan.expires_at !== null) {
+      (tenantPlan as unknown as Record<string, unknown>)['expiresAt'] =
+        dbPlan.expires_at.toISOString();
+    }
+    if (dbPlan.custom_price !== undefined && dbPlan.custom_price !== null) {
+      (tenantPlan as unknown as Record<string, unknown>)['customPrice'] = dbPlan.custom_price;
+    }
+
+    return tenantPlan;
   }
 
   /**
@@ -104,16 +122,19 @@ export class PlansService {
    * Get all available plans
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getAllPlans(includeInactive = false): Promise<PlanWithFeatures[]> {
     // Get all plans based on includeInactive filter
     const dbPlans = await PlanModel.findAll();
-    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p) => p.is_active);
+    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p: DbPlan) => p.is_active);
 
     return await Promise.all(
-      filteredPlans.map(async (dbPlan) => {
+      filteredPlans.map(async (dbPlan: DbPlan) => {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
-        const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
+        const features = dbFeatures
+          .filter((f: DbPlanFeature) => f.is_included)
+          .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
         return {
           ...plan,
@@ -128,17 +149,23 @@ export class PlansService {
    * @param planId - The planId parameter
    */
   static async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
-    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = ?', [planId]);
+    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = $1', [planId]);
 
     if (dbPlans.length === 0) {
       return null;
     }
 
     const dbPlan = dbPlans[0];
+    if (dbPlan === undefined) {
+      return null;
+    }
+
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
 
     const plan = this.dbToApiPlan(dbPlan);
-    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures
+      .filter((f: DbPlanFeature) => f.is_included)
+      .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
     return {
       ...plan,
@@ -166,10 +193,12 @@ export class PlansService {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
     const costs = await PlanModel.calculateTenantCost(tenantId);
 
-    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan as ModelDbTenantPlan);
-    const planDetails = this.dbToApiPlan(dbPlan as ModelDbPlan);
-    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
-    const addons = dbAddons.map((a) => this.dbToApiAddon(a));
+    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan);
+    const planDetails = this.dbToApiPlan(dbPlan);
+    const features = dbFeatures
+      .filter((f: DbPlanFeature) => f.is_included)
+      .map((f: DbPlanFeature) => this.dbToApiFeature(f));
+    const addons = dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
 
     const apiCosts: TenantCosts = {
       basePlanCost: costs.planCost,
@@ -216,14 +245,20 @@ export class PlansService {
     }
 
     // Change the plan
-    await PlanModel.changeTenantPlan({
+    const planChangeRequest: { tenantId: number; newPlanCode: string; effectiveDate?: Date } = {
       tenantId,
       newPlanCode,
-      effectiveDate,
-    });
+    };
+
+    // Conditionally add effectiveDate to avoid exactOptionalPropertyTypes issues
+    if (effectiveDate !== undefined) {
+      (planChangeRequest as unknown as Record<string, unknown>)['effectiveDate'] = effectiveDate;
+    }
+
+    await PlanModel.changeTenantPlan(planChangeRequest);
 
     // Log the change
-    if (userId) {
+    if (userId !== undefined) {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
@@ -253,7 +288,7 @@ export class PlansService {
    */
   static async getPlanFeatures(planId: number): Promise<PlanFeature[]> {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
-    return dbFeatures.map((f) => this.dbToApiFeature(f));
+    return dbFeatures.map((f: DbPlanFeature) => this.dbToApiFeature(f));
   }
 
   /**
@@ -267,7 +302,7 @@ export class PlansService {
         COALESCE(MAX(CASE WHEN addon_type = 'admins' THEN quantity END), 0) as extra_admins,
         COALESCE(MAX(CASE WHEN addon_type = 'storage_gb' THEN quantity END), 0) as extra_storage_gb
       FROM tenant_addons
-      WHERE tenant_id = ? AND status = 'active'`,
+      WHERE tenant_id = $1 AND status = 'active'`,
       [tenantId],
     );
 
@@ -279,10 +314,19 @@ export class PlansService {
       };
     }
 
+    const firstAddon = dbAddons[0];
+    if (firstAddon === undefined) {
+      return {
+        employees: 0,
+        admins: 0,
+        storageGb: 0,
+      };
+    }
+
     return {
-      employees: dbAddons[0].extra_employees,
-      admins: dbAddons[0].extra_admins,
-      storageGb: dbAddons[0].extra_storage_gb,
+      employees: firstAddon.extra_employees,
+      admins: firstAddon.extra_admins,
+      storageGb: firstAddon.extra_storage_gb,
     };
   }
 
@@ -292,7 +336,7 @@ export class PlansService {
    */
   static async getTenantAddonDetails(tenantId: number): Promise<TenantAddon[]> {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
-    return dbAddons.map((a) => this.dbToApiAddon(a));
+    return dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
   }
 
   /**
@@ -308,9 +352,9 @@ export class PlansService {
   ): Promise<TenantAddons> {
     // Map camelCase to snake_case for model
     const addonUpdate: Record<string, number> = {};
-    if (addons.employees !== undefined) addonUpdate.employees = addons.employees;
-    if (addons.admins !== undefined) addonUpdate.admins = addons.admins;
-    if (addons.storageGb !== undefined) addonUpdate.storage_gb = addons.storageGb;
+    if (addons.employees !== undefined) addonUpdate['employees'] = addons.employees;
+    if (addons.admins !== undefined) addonUpdate['admins'] = addons.admins;
+    if (addons.storageGb !== undefined) addonUpdate['storage_gb'] = addons.storageGb;
 
     await PlanModel.updateTenantAddons({
       tenantId,
@@ -318,7 +362,7 @@ export class PlansService {
     });
 
     // Log the change
-    if (userId) {
+    if (userId !== undefined) {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,

@@ -6,8 +6,16 @@
 // Request Types
 export interface SetPermissionsRequest {
   adminId: number;
+  areaIds?: number[];
   departmentIds?: number[];
   groupIds?: number[];
+  permissions?: PermissionSet;
+  hasFullAccess?: boolean;
+}
+
+export interface SetAreaPermissionsRequest {
+  userId: number;
+  areaIds: number[];
   permissions?: PermissionSet;
 }
 
@@ -20,6 +28,16 @@ export interface BulkPermissionsRequest {
 }
 
 // Response Types
+export interface AdminArea {
+  id: number;
+  name: string;
+  description?: string;
+  departmentCount: number;
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
 export interface AdminDepartment {
   id: number;
   name: string;
@@ -40,10 +58,13 @@ export interface AdminGroup {
 }
 
 export interface AdminPermissionsResponse {
+  areas: AdminArea[];
   departments: AdminDepartment[];
   groups: AdminGroup[];
-  hasAllAccess: boolean;
+  hasFullAccess: boolean; // has_full_access flag from users table (single source of truth)
+  totalAreas: number;
   totalDepartments: number;
+  assignedAreas: number;
   assignedDepartments: number;
 }
 
@@ -65,7 +86,7 @@ export type PermissionLevel = 'read' | 'write' | 'delete';
 // Service Layer Types
 export interface PermissionCheckResult {
   hasAccess: boolean;
-  source?: 'direct' | 'group';
+  source?: 'direct' | 'area' | 'group' | 'full_access';
   permissions?: PermissionSet;
 }
 

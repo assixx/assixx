@@ -2,12 +2,12 @@
  * Admin Log Service
  * Handles admin log business logic
  */
-import { Pool } from 'mysql2/promise';
-
-import rootLog, {
-  type DbRootLog,
-  type RootLogCreateData as ModelRootLogCreateData,
-} from '../models/rootLog';
+import rootLog from '../routes/v2/logs/logs.service.js';
+import type {
+  DbRootLog,
+  RootLogCreateData as ModelRootLogCreateData,
+} from '../routes/v2/logs/types.js';
+import { Pool } from '../utils/db.js';
 
 /**
  * Admin Log Service
@@ -38,13 +38,6 @@ interface AdminLogCreateData extends Omit<ModelRootLogCreateData, 'tenant_id'> {
   was_role_switched?: boolean;
 }
 
-interface AdminLogUpdateData {
-  action?: string;
-  entity_type?: string | null;
-  entity_id?: number | null;
-  details?: string | null;
-}
-
 /**
  *
  */
@@ -59,10 +52,8 @@ class AdminLogService {
       // Use getByUserId if user_id is provided, otherwise return empty array
       if (filters.user_id != null && filters.user_id !== 0) {
         const logs = await rootLog.getByUserId(filters.user_id);
-        return logs.map((log: DbRootLog) => ({
-          ...log,
-          created_at: log.timestamp as Date,
-        }));
+        // DbRootLog already has created_at, no transformation needed
+        return logs as AdminLogData[];
       }
       return [];
     } catch (error: unknown) {
@@ -104,7 +95,7 @@ class AdminLogService {
       // Return the data without trying to match RowDataPacket structure
       return {
         id: id,
-        admin_id: modelData.user_id,
+        user_id: modelData.user_id,
         tenant_id: data.tenant_id,
         action: modelData.action,
         entity_type: modelData.entity_type,
@@ -123,29 +114,17 @@ class AdminLogService {
   }
 
   /**
-   * Aktualisiert einen AdminLog Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
-   * @param _data - The _data parameter
+   * NOTE: No update() or delete() methods
+   *
+   * Audit logs are immutable by design for security and compliance:
+   * - Security: Prevents attackers from covering their tracks
+   * - Forensics: Maintains tamper-proof audit trail
+   * - Compliance: GDPR Art. 17(3), SOX, ISO 27001 require immutable logs
+   * - Legal: Audit logs are exempt from "right to erasure"
+   *
+   * If you need to "delete" a log entry (e.g., for GDPR), use pseudonymization
+   * or mark as redacted - never actually delete the record.
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: AdminLogUpdateData,
-  ): Promise<AdminLogData | null> {
-    // TODO: Implement update method in AdminLog model
-    return await Promise.resolve(null);
-  }
-
-  /**
-   * Löscht einen AdminLog Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
-   */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
-    // TODO: Implement delete method in AdminLog model
-    return await Promise.resolve(false);
-  }
 }
 
 // Export singleton instance

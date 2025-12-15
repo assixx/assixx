@@ -4,15 +4,18 @@
  */
 
 // Admin User Types
+// REMOVED: company column dropped (2025-11-27)
+// UPDATED: isArchived removed, using is_active status (2025-12-02)
 export interface AdminUser {
   id: number;
   username: string;
   email: string;
   firstName: string;
   lastName: string;
-  company?: string;
   notes?: string;
-  isActive: boolean;
+  position?: string;
+  employeeNumber?: string;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   tenantId: number;
   tenantName?: string;
   createdAt: Date;
@@ -20,32 +23,42 @@ export interface AdminUser {
   lastLogin?: Date;
 }
 
+/**
+ * Create Admin Request
+ * IMPORTANT: username is optional and IGNORED - will be set to email (lowercase) in service
+ * REMOVED: company column dropped (2025-11-27)
+ */
 export interface CreateAdminRequest {
-  username: string;
+  username?: string; // Optional and IGNORED - will be set to email (lowercase) in service
   email: string;
   password: string;
   firstName?: string;
   lastName?: string;
-  company?: string;
   notes?: string;
   employeeNumber?: string;
   position?: string;
 }
 
+/**
+ * Update Admin Request
+ * IMPORTANT: username is optional and IGNORED - when email changes, username is auto-synced
+ * REMOVED: company column dropped (2025-11-27)
+ * UPDATED: isArchived removed, using isActive status (2025-12-02)
+ */
 export interface UpdateAdminRequest {
-  username?: string;
+  username?: string; // Optional and IGNORED - will be synced from email in service
   email?: string;
   password?: string;
   firstName?: string;
   lastName?: string;
-  company?: string;
   notes?: string;
-  isActive?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeNumber?: string;
   position?: string;
 }
 
 // Root User Types
+// UPDATED: isActive changed to number for unified status (2025-12-12)
 export interface RootUser {
   id: number;
   username: string;
@@ -56,14 +69,20 @@ export interface RootUser {
   notes?: string;
   employeeNumber?: string;
   departmentId?: number;
-  isActive: boolean;
+  isActive: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   employeeId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
+/**
+ * Create Root User Request
+ * IMPORTANT: username is optional and will be set to email (lowercase) in service
+ * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ * UPDATED: isActive changed to number for unified status (2025-12-12)
+ */
 export interface CreateRootUserRequest {
-  username: string;
+  username?: string; // Optional - will be set to email (lowercase) in service
   email: string;
   password: string;
   firstName: string;
@@ -71,19 +90,24 @@ export interface CreateRootUserRequest {
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  departmentId?: number;
-  isActive?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted (default: 1)
 }
 
+/**
+ * Update Root User Request
+ * IMPORTANT: When email changes, username is also updated (username = email, lowercase)
+ * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ * UPDATED: isActive changed to number for unified status (2025-12-12)
+ */
 export interface UpdateRootUserRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
+  password?: string;
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  departmentId?: number;
-  isActive?: boolean;
+  isActive?: number; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
 }
 
 // Tenant Types

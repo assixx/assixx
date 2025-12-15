@@ -1,70 +1,46 @@
-/* Glassmorphismus Design-Standards */
+/* ========================================
+   SURVEY RESULTS - DOMAIN-SPECIFIC STYLES
+   Uses Design System for: cards, buttons, progress, badges, spinners
+   This file: ONLY survey-specific layouts & typography
+   ======================================== */
 
-/* Dramatischer Hintergrund-Gradient */
-body {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background: #000;
-}
+/* ========================================
+   LAYOUT
+   ======================================== */
 
-body::after {
-  pointer-events: none;
-  content: "";
-
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
-}
-
-/* Survey Results Container */
 .survey-results-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
 }
 
-/* Survey Results Specific Styles */
 .results-header {
-  /* Nutzt glass-card Klasse aus dashboard-theme.css */
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .survey-title {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-2) 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--primary-color);
 }
 
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-title {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
 .survey-meta {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
+/* ========================================
+   STATISTICS GRID
+   ======================================== */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .stat-value {
@@ -75,56 +51,34 @@ body::after {
 }
 
 .stat-label {
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-1);
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
-.question-card {
-  overflow: hidden;
+/* ========================================
+   EXPORT ACTIONS
+   ======================================== */
 
-  /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
-  margin-bottom: var(--spacing-lg);
+.export-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
 }
 
-.question-header {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-  background: rgb(255 255 255 / 1%);
-}
+/* ========================================
+   SURVEY QUESTION RESULTS
+   ======================================== */
 
-.question-text {
-  margin: 0;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.question-type {
-  margin-top: var(--spacing-xs);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.question-body {
-  padding: var(--spacing-lg);
-}
-
-/* Chart Container */
-.chart-container {
-  position: relative;
-  height: 300px;
-  margin: var(--spacing-md) 0;
-}
-
-/* Progress Bars for Options */
+/* Choice question option layout */
 .option-result {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .option-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 }
 
 .option-text {
@@ -137,243 +91,97 @@ body::after {
   color: var(--text-secondary);
 }
 
-.progress-bar {
-  position: relative;
-
-  overflow: hidden;
-
-  height: 24px;
-  border-radius: var(--radius-sm);
-
-  background: rgb(255 255 255 / 5%);
+/* Progress bars use Design System: progress, progress__bar */
+/* Fix for 0% progress: ensure text is visible */
+.option-result .progress__bar--empty {
+  justify-content: flex-start;
+  min-width: 40px;
+  padding-left: var(--spacing-2);
 }
 
-.progress-fill {
-  display: flex;
-  align-items: center;
+/* ========================================
+   RATING & NUMBER RESULTS
+   ======================================== */
 
-  height: 100%;
-  padding: 0 var(--spacing-sm);
-
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-
-  transition: width 0.6s ease;
+.u-text-center {
+  text-align: center;
 }
 
-.progress-percentage {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-/* Text Responses */
-.text-responses {
-  overflow-y: auto;
-  max-height: 400px;
-}
-
-.text-response {
-  margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-2sm);
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
-
-  background: rgb(255 255 255 / 2%);
-}
-
-.response-text {
+.rating-average,
+.number-average {
   margin: 0;
-  color: var(--text-primary);
-}
-
-.response-meta {
-  margin-top: var(--spacing-xs);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-/* Export Actions */
-.export-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-}
-
-.btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-
-  padding: 10px 24px;
-  border: none;
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.btn-primary {
-  position: relative;
-
-  overflow: hidden;
-
-  color: #fff;
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  box-shadow:
-    0 1px 4px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgb(33 150 243 / 40%);
-}
-
-.btn-secondary {
-  border: 1px solid rgb(255 255 255 / 12%);
-  color: var(--primary-color);
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
-
-.btn-secondary:hover {
-  transform: translateY(-1px);
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-}
-
-/* Loading State */
-.loading {
-  padding: var(--spacing-xl);
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.spinner {
-  display: inline-block;
-
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgb(255 255 255 / 10%);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-
-  /* animation: spin 1s ease-in-out infinite; */
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Empty State */
-.empty-state {
-  padding: var(--spacing-xl);
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.empty-icon {
-  margin-bottom: var(--spacing-md);
   font-size: 3rem;
-  opacity: 50%;
+  font-weight: 700;
+  color: var(--primary-color);
 }
 
-/* Individual Responses Section */
+.number-average {
+  font-size: 2rem;
+}
+
+.rating-meta,
+.number-meta {
+  margin-top: var(--spacing-2);
+  color: var(--text-secondary);
+}
+
+.rating-stars {
+  margin: var(--spacing-4) 0;
+  font-size: 2rem;
+  color: #ffc107;
+}
+
+.rating-range,
+.number-range {
+  margin-top: var(--spacing-4);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.text-info-message {
+  margin: 0;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   INDIVIDUAL RESPONSES (Accordion-based)
+   Uses Design System: accordion, accordion--compact, badge--success, badge--warning
+   ======================================== */
+
 .responses-section {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
 }
 
 .responses-section h3 {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 
   color: var(--primary-color);
 }
 
-.responses-list {
+/* Accordion title with name + date + badge */
+.responses-section .accordion__title {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.response-card {
-  padding: var(--spacing-md);
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
-
-  background: rgb(255 255 255 / 2%);
-
-  transition: all 0.3s ease;
-}
-
-.response-card:hover {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 4%);
-}
-
-.response-header {
-  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
   align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
-.response-header h4 {
-  margin: 0;
-  color: var(--text-primary);
+/* Accordion body spacing */
+.responses-section .accordion__body {
+  padding-top: var(--spacing-4);
 }
 
-/* .response-meta - Duplicate removed (first defined at line 189) */
-/* .response-meta {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-} */
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-xs);
-
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.completed {
-  color: #4caf50;
-  background: rgb(76 175 80 / 20%);
-}
-
-.status-badge.pending {
-  color: #ff9800;
-  background: rgb(255 152 0 / 20%);
-}
-
-.response-answers {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
+/* Answer items */
 .answer-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-3);
 }
 
 .answer-item strong {
@@ -382,6 +190,8 @@ body::after {
 }
 
 .answer-item span {
-  padding-left: var(--spacing-md);
+  padding-left: var(--spacing-4);
   color: var(--text-primary);
 }
+
+/* Loading & Empty States use Design System: spinner, empty-state */
