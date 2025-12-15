@@ -231,7 +231,7 @@ export async function getTenantFeatures(tenant_id: number): Promise<DbTenantFeat
           tf.expires_at,
           tf.custom_config,
           CASE
-            WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 1
+            WHEN tf.is_active = 1 AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 1
             ELSE 0
           END as is_available
         FROM features f

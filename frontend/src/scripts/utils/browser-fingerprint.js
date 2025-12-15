@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 /**
  * Browser Fingerprinting Utility
  * Generates a unique fingerprint based on browser characteristics

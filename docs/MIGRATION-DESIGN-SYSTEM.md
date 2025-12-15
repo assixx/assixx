@@ -191,7 +191,7 @@ export class SignupFormController {
 - [x] shifts.html ✅ (2025-12-11) - 100% Design System compliant (ds-modal for rotation config, form-field with tooltip info icons, toggle-switch for autofill/rotation/custom-rotation, dropdown for filters cascade (area→department→machine→team), card with card__header/card__body, badge variants, btn-secondary/btn-manage/btn-danger/btn-cancel, favorites system with btn-float, week-navigation with u-hidden toggle, employee-sidebar for drag-drop assignments, TypeScript modules split to 23 files: api/autofill/constants/custom-rotation/custom-rotation-types/data-processing/drag-drop/events/favorites/filters/handlers/index/kontischicht/kontischicht-types/lock-mode/modals/rotation/state/types/ui/utils/validation/week-renderer layers, fixed snake_case→camelCase in types.ts/rotation.ts/validation.ts, fixed inline styles→u-hidden class, no inline styles/JS, no Bootstrap)
 - [x] logs.html ✅ (2025-12-12) - 100% Design System compliant (dropdown→dropdown__trigger/dropdown__menu/dropdown__option, ds-modal/ds-modal__close for details modal, modal-overlay, spinner/spinner--lg, empty-state/empty-state--sm/empty-state--error, form-field/form-field__control, pagination, TypeScript modules split to index/ui layers, logs.css reduced 304→145 lines -52%, eliminated custom dropdown CSS→Design System dropdown, eliminated .details-modal/.close-btn→Design System modal, eliminated .loading-spinner (broken class), eliminated .container/.table-responsive (redundant), fixed DELETE with search filter bug in backend, no inline styles/JS, no Bootstrap)
 - [x] unified-navigation.ts und css ✅ (2025-12-12) - 100% Design System compliant (MAJOR REFACTORING: Split 1,800+ line monolith into 12 modular TypeScript files: constants/handlers/icons/index/menu-config/render/role-switch-ui/services/sidebar/types/utils layers, unified-navigation.css reduced to domain-specific sidebar/mobile styles, Design System badges for role indicators, role-switch modal with glassmorphism, TypeScript modules with proper type definitions, no inline styles/JS, no Bootstrap)
-- [ ] tenant-deletion-status.html - last one
+- [x] tenant-deletion-status.html - last one -finished 14.12.2025
 
 - [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
 - [x] kvp-detail.html ✅ (2025-11-15) - 100% Design System compliant (ds-modal, form-field, dropdown, choice-card, data-list, badge, btn-cancel, TypeScript modules split to actions/data-loader/index/permissions/renderer/share-modal/ui layers, lightbox photo gallery, comments section with avatar, kvp-detail.css 399 lines domain-specific only, fixed Bootstrap btn-secondary→btn-cancel and btn-light→btn-cancel, no inline styles/JS, no Bootstrap)
@@ -425,31 +425,31 @@ Note: File count varies per page based on inline JS complexity.
 1. Update landing page with Design System
 2. Migrate utility pages
 
-### Phase 9: Bootstrap Removal
+### Phase 9: Bootstrap Removal ✅ COMPLETE (2025-12-15)
 
-**After all pages migrated:**
+**All Bootstrap dependencies removed:**
 
-1. Remove Bootstrap JavaScript
-   - Delete `/scripts/lib/bootstrap.bundle.min.js`
-   - Remove script tag from HTML
+1. ✅ Removed Bootstrap JavaScript
+   - Deleted `/scripts/lib/bootstrap.bundle.min.js`
+   - No HTML files referenced it
 
-2. Remove Bootstrap CSS
-   - Delete `/styles/lib/bootstrap.min.css`
-   - Remove link tag from HTML
+2. ✅ Removed Bootstrap CSS
+   - Deleted `/styles/lib/bootstrap.min.css`
+   - Was already commented out in `main.css`
 
-3. Remove Bootstrap Compatibility Layer
-   - Delete `/styles/tailwind/compat/bootstrap-buttons.css`
-   - Delete `/styles/tailwind/compat/bootstrap-forms.css`
-   - Delete `/styles/tailwind/compat/bootstrap-modals.css`
-   - Delete `/styles/tailwind/compat/bootstrap-tables.css`
-   - Remove imports from `/styles/tailwind.css`
+3. ✅ Removed Bootstrap Compatibility Layer
+   - Deleted `/styles/tailwind/compat/bootstrap-buttons.css`
+   - Deleted `/styles/tailwind/compat/bootstrap-forms.css`
+   - Deleted `/styles/tailwind/compat/bootstrap-modals.css`
+   - Deleted `/styles/tailwind/compat/bootstrap-tables.css`
+   - Removed imports from `/styles/tailwind.css`
+   - Deleted empty `/styles/tailwind/compat/` directory
 
-4. Clean up unused CSS classes
-   - Search and remove `.form-control`, `.btn`, `.modal`, etc. if not from Design System
+4. ✅ Deleted `/styles/bootstrap-override.css`
 
-5. Verify build output
-   - Check bundle size reduction
-   - Test all pages in production build
+5. ✅ Build verified - No errors
+
+**Total files removed:** 7 files (~768 lines of CSS)
 
 ## Component Mapping
 
@@ -544,12 +544,6 @@ Before marking a page as complete:
 3. File upload with drag and drop
 4. Complex forms with multi-step validation
 
-### Rollback Plan
-
-1. Git provides instant rollback
-2. Keep Bootstrap compat layer until Phase 9
-3. Test each page independently
-4. User acceptance testing before Phase 9
 
 ## Next Steps
 

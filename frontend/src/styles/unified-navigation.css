@@ -1217,3 +1217,8 @@ body:has(.sidebar.collapsed) .header .logo {
   top: unset;
   height: unset;
 }
+
+/* Logout Button - Custom padding override */
+#logout-btn {
+  padding: 12px 22px;
+}

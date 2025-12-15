@@ -182,13 +182,14 @@
 /* Utility layer */
 @import "./tailwind/utilities.css";
 
-/* Bootstrap Compatibility Layer (temporary) */
-/* @import "./tailwind/compat/bootstrap-buttons.css"; -- DEACTIVATED 2025-01-10 - Using Design System buttons now */
-@import "./tailwind/compat/bootstrap-forms.css";
-
-/* bootstrap-cards.css REMOVED 2025-10-02 - Replaced by semantic .card in dashboard-theme.css - Backup: bootstrap-cards.css.bak */
-@import "./tailwind/compat/bootstrap-modals.css";
-@import "./tailwind/compat/bootstrap-tables.css";
+/* ============================================================
+   BOOTSTRAP COMPATIBILITY LAYER - REMOVED 2025-12-15
+   Phase 9 Complete: All pages migrated to Design System
+   ============================================================ */
+/* @import "./tailwind/compat/bootstrap-buttons.css"; -- REMOVED 2025-01-10 */
+/* @import "./tailwind/compat/bootstrap-forms.css";   -- REMOVED 2025-12-15 */
+/* @import "./tailwind/compat/bootstrap-modals.css";  -- REMOVED 2025-12-15 */
+/* @import "./tailwind/compat/bootstrap-tables.css";  -- REMOVED 2025-12-15 */
 
 /* ============================================================
    DESIGN SYSTEM (Best Practice 2025)

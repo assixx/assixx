@@ -232,7 +232,7 @@ async function activateTrialFeatures(
   for (const feature of features) {
     await conn.query(
       `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
-         VALUES ($1, $2, TRUE, NOW() + INTERVAL '14 days')`,
+         VALUES ($1, $2, 1, NOW() + INTERVAL '14 days')`,
       [tenantId, feature.id],
     );
   }
@@ -387,9 +387,7 @@ export async function upgradeTenantToPlan(
 // Plan-Features aktivieren (private function)
 async function activatePlanFeatures(tenantId: number, plan: string): Promise<void> {
   // Deaktiviere alle aktuellen Features
-  await executeQuery('UPDATE tenant_features SET is_active = FALSE WHERE tenant_id = $1', [
-    tenantId,
-  ]);
+  await executeQuery('UPDATE tenant_features SET is_active = 0 WHERE tenant_id = $1', [tenantId]);
 
   // Hole Features für den Plan
   const [planFeatures] = await executeQuery<DbFeature[]>(
@@ -404,8 +402,8 @@ async function activatePlanFeatures(tenantId: number, plan: string): Promise<voi
   for (const feature of planFeatures) {
     await executeQuery(
       `INSERT INTO tenant_features (tenant_id, feature_id, is_active)
-         VALUES ($1, $2, TRUE)
-         ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = TRUE, expires_at = NULL`,
+         VALUES ($1, $2, 1)
+         ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1, expires_at = NULL`,
       [tenantId, feature.feature_id],
     );
   }

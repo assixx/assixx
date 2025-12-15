@@ -1,7 +1,7 @@
 /**
  * Main CSS Entry Point
- * MIGRATION IN PROGRESS: Bootstrap → Tailwind v4
- * Updated: 2025-09-27
+ * MIGRATION COMPLETE: 100% Tailwind + Design System (Bootstrap removed 2025-12-15)
+ * Updated: 2025-12-15
  */
 
 /* ========================================
@@ -12,19 +12,7 @@
 @layer base, components, utilities;
 
 /* ========================================
-   PHASE 1: TAILWIND v4 PROPER IMPLEMENTATION
-   ======================================== */
-
-/* ========================================
-   BOOTSTRAP REMOVED - USING PURE TAILWIND WITH COMPAT LAYER
-   ======================================== */
-
-/* BOOTSTRAP COMPLETELY DISABLED - Using Tailwind compat classes instead */
-/* @import "./lib/bootstrap.min.css"; */
-/* @import "./bootstrap-override.css"; */
-
-/* ========================================
-   TAILWIND - PROPER V4 IMPLEMENTATION
+   TAILWIND v4 + DESIGN SYSTEM
    ======================================== */
 @import "./tailwind.css";
 
@@ -55,9 +43,7 @@
 /* Theme and core styles */
 /* NOTE: dashboard-theme.css DELETED 2025-12-12 - All styles migrated to:
    - Tailwind native utilities (mt-*, mb-*, gap-*, flex, text-center)
-   - Design System (card__header, badge--*, glass-card)
-   - bootstrap-tables.css (.table, .table-responsive)
-   - bootstrap-modals.css (.modal-footer)
+   - Design System (card__header, badge--*, glass-card, data-table, ds-modal)
    - tailwind/components/container.css (.container) */
 @import "./style.css";
 
