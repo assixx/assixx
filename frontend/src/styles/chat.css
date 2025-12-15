@@ -68,7 +68,7 @@
   align-items: center;
 
   padding: var(--spacing-2);
-  padding-bottom: 7px;
+  padding: 14px 10px 12px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   background: rgb(0 98 183 / 32%);

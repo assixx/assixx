@@ -48,10 +48,11 @@ interface EventFilterOptions {
 
 /**
  * Allowed columns for ORDER BY to prevent SQL injection
+ * NOTE: PostgreSQL uses start_date/end_date, not start_time/end_time
  */
 const ALLOWED_SORT_COLUMNS = new Set([
-  'start_time',
-  'end_time',
+  'start_date',
+  'end_date',
   'title',
   'created_at',
   'updated_at',
@@ -66,7 +67,7 @@ function validateSortColumn(sortBy: string): string {
     return sortBy;
   }
   logger.warn(`[Calendar] Invalid sortBy column rejected: ${sortBy}`);
-  return 'start_time'; // Safe default
+  return 'start_date'; // Safe default - matches PostgreSQL column name
 }
 
 /**

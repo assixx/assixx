@@ -107,14 +107,30 @@ export function normalizeEventData(data: unknown, alwaysV2: boolean = true): Cal
 
 /**
  * Extract dashboard events from API v2 response
+ * Handles multiple response formats:
+ * - Direct array: CalendarEvent[]
+ * - V2 standard: { success, data: CalendarEvent[], meta }
+ * - V2 nested: { data: { data: CalendarEvent[] } }
  */
 function extractDashboardEvents(data: CalendarEvent[] | ApiV2Response<CalendarEvent>): CalendarEvent[] {
+  // Case 1: Direct array
   if (Array.isArray(data)) {
     return data;
   }
 
-  if ('data' in data && Array.isArray(data.data.data)) {
-    return data.data.data;
+  // Case 2: V2 standard format { success, data: [], meta }
+  if ('data' in data && Array.isArray(data.data)) {
+    return data.data as CalendarEvent[];
+  }
+
+  // Case 3: V2 nested format { data: { data: [] } }
+  // Check for nested data structure (legacy API format)
+  const dataField = 'data' in data ? data.data : null;
+  if (typeof dataField === 'object' && dataField !== null && !Array.isArray(dataField)) {
+    const maybeNested = dataField as Record<string, unknown>;
+    if ('data' in maybeNested && Array.isArray(maybeNested['data'])) {
+      return maybeNested['data'] as CalendarEvent[];
+    }
   }
 
   console.error('Unexpected response format from dashboard:', data);
