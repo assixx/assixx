@@ -326,6 +326,64 @@ async function getTotalEntriesCount(
 }
 
 /**
+ * Allowed columns for ORDER BY to prevent SQL injection
+ * Only these column names can be used in sortBy parameter
+ */
+const ALLOWED_SORT_COLUMNS = new Set([
+  'created_at',
+  'updated_at',
+  'title',
+  'priority',
+  'expires_at',
+  'status',
+]);
+
+/**
+ * Validate and sanitize sort column to prevent SQL injection
+ * @param sortBy - User-provided sort column
+ * @returns Safe column name or default 'created_at'
+ */
+function validateSortColumn(sortBy: string): string {
+  if (ALLOWED_SORT_COLUMNS.has(sortBy)) {
+    return sortBy;
+  }
+  logger.warn(`[Blackboard] Invalid sortBy column rejected: ${sortBy}`);
+  return 'created_at'; // Safe default
+}
+
+/**
+ * Validate sort direction to prevent SQL injection
+ * @param sortDir - User-provided sort direction
+ * @returns Safe direction 'ASC' or 'DESC'
+ */
+function validateSortDirection(sortDir: string): 'ASC' | 'DESC' {
+  const upper = sortDir.toUpperCase();
+  if (upper === 'ASC' || upper === 'DESC') {
+    return upper;
+  }
+  return 'DESC'; // Safe default
+}
+
+/** SQL query for fetching blackboard entries with joins */
+const FETCH_ENTRIES_BASE_QUERY = `
+  SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
+         e.expires_at, e.priority, e.color, e.status,
+         e.created_at, e.updated_at, e.uuid_created_at,
+         u.username as author_name,
+         u.first_name as author_first_name,
+         u.last_name as author_last_name,
+         CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
+         CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+         c.confirmed_at as confirmed_at,
+         (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
+         (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
+  FROM blackboard_entries e
+  LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
+  LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+  WHERE e.tenant_id = $2 AND e.status = $3
+`;
+
+/**
  * Fetch entries with filters and pagination
  * VISIBILITY-FIX: Added hasFullAccess for admin filtering
  */
@@ -345,24 +403,6 @@ async function fetchEntries(
   limit: number,
   hasFullAccess: boolean,
 ): Promise<DbBlackboardEntry[]> {
-  const baseQuery = `
-    SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-           e.expires_at, e.priority, e.color, e.status,
-           e.created_at, e.updated_at, e.uuid_created_at,
-           u.username as author_name,
-           u.first_name as author_first_name,
-           u.last_name as author_last_name,
-           CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-           CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
-           c.confirmed_at as confirmed_at,
-           (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
-           (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
-    FROM blackboard_entries e
-    LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-    WHERE e.tenant_id = $2 AND e.status = $3
-  `;
-
   const baseParams: unknown[] = [userId, tenant_id, status];
 
   // Build filters without undefined properties (exactOptionalPropertyTypes)
@@ -384,13 +424,16 @@ async function fetchEntries(
   }
 
   const { query: filteredQuery, params: queryParams } = buildQueryFilters(
-    baseQuery,
+    FETCH_ENTRIES_BASE_QUERY,
     baseParams,
     entryFilters,
   );
   const limitIndex = queryParams.length + 1;
   const offsetIndex = queryParams.length + 2;
-  const finalQuery = `${filteredQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir} LIMIT $${limitIndex} OFFSET $${offsetIndex}`;
+  // SECURITY: Validate sortBy and sortDir to prevent SQL injection (CVE fix)
+  const safeSortBy = validateSortColumn(sortBy);
+  const safeSortDir = validateSortDirection(sortDir);
+  const finalQuery = `${filteredQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${safeSortBy} ${safeSortDir} LIMIT $${limitIndex} OFFSET $${offsetIndex}`;
   queryParams.push(Number.parseInt(limit.toString(), 10), (page - 1) * limit);
   const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
   return entries;

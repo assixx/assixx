@@ -33,6 +33,42 @@ interface OvertimeSummaryResult extends RowDataPacket {
   breakHours: number | null;
 }
 
+// ============= SECURITY: SQL INJECTION PREVENTION =============
+
+/**
+ * Allowed columns for ORDER BY to prevent SQL injection
+ */
+const ALLOWED_SORT_COLUMNS = new Set([
+  'date',
+  'start_time',
+  'end_time',
+  'created_at',
+  'updated_at',
+  'status',
+]);
+
+/**
+ * Validate sort column to prevent SQL injection
+ */
+function validateSortColumn(sortBy: string): string {
+  if (ALLOWED_SORT_COLUMNS.has(sortBy)) {
+    return sortBy;
+  }
+  console.warn(`[Shifts] Invalid sortBy column rejected: ${sortBy}`);
+  return 'date'; // Safe default
+}
+
+/**
+ * Validate sort direction to prevent SQL injection
+ */
+function validateSortDirection(sortDir: string): 'ASC' | 'DESC' {
+  const upper = sortDir.toUpperCase();
+  if (upper === 'ASC' || upper === 'DESC') {
+    return upper;
+  }
+  return 'DESC'; // Safe default
+}
+
 // ============= V2 API HELPER FUNCTIONS =============
 
 /**
@@ -272,10 +308,10 @@ export async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
     }
     queryParams.push(...params);
 
-    // Sorting
-    const sortBy = filters.sort_by ?? 'date';
-    const sortOrder = filters.sort_order ?? 'DESC';
-    query += ` ORDER BY s.${sortBy} ${sortOrder}`;
+    // Sorting - SECURITY: Validate to prevent SQL injection
+    const safeSortBy = validateSortColumn(filters.sort_by ?? 'date');
+    const safeSortOrder = validateSortDirection(filters.sort_order ?? 'DESC');
+    query += ` ORDER BY s.${safeSortBy} ${safeSortOrder}`;
 
     // Pagination - PostgreSQL dynamic $N
     if (filters.limit != null && filters.limit !== 0) {

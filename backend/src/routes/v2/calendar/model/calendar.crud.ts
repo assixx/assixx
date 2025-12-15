@@ -44,6 +44,42 @@ interface EventFilterOptions {
   isCountQuery?: boolean;
 }
 
+// ============= SECURITY: SQL INJECTION PREVENTION =============
+
+/**
+ * Allowed columns for ORDER BY to prevent SQL injection
+ */
+const ALLOWED_SORT_COLUMNS = new Set([
+  'start_time',
+  'end_time',
+  'title',
+  'created_at',
+  'updated_at',
+  'all_day',
+]);
+
+/**
+ * Validate sort column to prevent SQL injection
+ */
+function validateSortColumn(sortBy: string): string {
+  if (ALLOWED_SORT_COLUMNS.has(sortBy)) {
+    return sortBy;
+  }
+  logger.warn(`[Calendar] Invalid sortBy column rejected: ${sortBy}`);
+  return 'start_time'; // Safe default
+}
+
+/**
+ * Validate sort direction to prevent SQL injection
+ */
+function validateSortDirection(sortDir: string): 'ASC' | 'DESC' {
+  const upper = sortDir.toUpperCase();
+  if (upper === 'ASC' || upper === 'DESC') {
+    return upper;
+  }
+  return 'ASC'; // Safe default for calendar
+}
+
 /** Build filter options from query options */
 function buildFilterOptions(
   filter: string,
@@ -68,6 +104,14 @@ function buildFilterOptions(
   if (opts.search !== undefined && opts.search !== '') result.search = opts.search;
   return result;
 }
+
+/** SQL query for fetching calendar events with creator info */
+const GET_EVENTS_BASE_QUERY = `
+  SELECT e.*, u.username as creator_name
+  FROM calendar_events e
+  LEFT JOIN users u ON e.user_id = u.id
+  WHERE e.tenant_id = $1 AND e.status = $2
+`;
 
 /**
  * Get all calendar events visible to the user
@@ -96,29 +140,23 @@ export async function getAllEvents(
     const { role } = await user.getUserDepartmentAndTeam(userId);
     const filterOpts = { userDepartmentId, userTeamId, startDate, endDate, search };
 
-    // Build base query
-    const baseQuery = `
-        SELECT e.*, u.username as creator_name
-        FROM calendar_events e
-        LEFT JOIN users u ON e.user_id = u.id
-        WHERE e.tenant_id = $1 AND e.status = $2
-      `;
-
     // Apply filters and execute query
     const filterOptions = buildFilterOptions(filter, userId, role, filterOpts, false);
     const { query: filteredQuery, params: queryParams } = applyEventFilters(
-      baseQuery,
+      GET_EVENTS_BASE_QUERY,
       [tenantId, dbStatus],
       filterOptions,
     );
 
-    // Apply sorting and pagination
+    // Apply sorting and pagination - SECURITY: Validate to prevent SQL injection
     const offset = (page - 1) * limit;
     const paramIndexLimit = queryParams.length + 1;
     const paramIndexOffset = queryParams.length + 2;
+    const safeSortBy = validateSortColumn(sortBy);
+    const safeSortDir = validateSortDirection(sortDir);
     const finalQuery =
       filteredQuery +
-      ` ORDER BY e.${sortBy} ${sortDir} LIMIT $${paramIndexLimit} OFFSET $${paramIndexOffset}`;
+      ` ORDER BY e.${safeSortBy} ${safeSortDir} LIMIT $${paramIndexLimit} OFFSET $${paramIndexOffset}`;
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query

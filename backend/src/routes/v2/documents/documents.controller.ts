@@ -486,12 +486,17 @@ function validateCategory(category: string | undefined): DocumentCategory {
   if (category === undefined) {
     throw new Error('Category is required');
   }
-  // SECURITY: Explicit allowlist check - only these values can be used in file paths
-  if (!ALLOWED_CATEGORIES.includes(category as DocumentCategory)) {
+  // SECURITY: Find the matching value FROM the allowlist constant
+  // This breaks the taint chain - we return the constant value, not user input
+  const matchedCategory = ALLOWED_CATEGORIES.find(
+    (allowed: DocumentCategory) => allowed === category,
+  );
+  if (matchedCategory === undefined) {
     logger.warn(`Invalid category rejected: ${category}`);
     throw new Error(`Invalid category. Allowed values: ${ALLOWED_CATEGORIES.join(', ')}`);
   }
-  return category as DocumentCategory;
+  // Return the value from ALLOWED_CATEGORIES constant (untainted), not user input
+  return matchedCategory;
 }
 
 // NEW: Parse document data with clean structure (refactored 2025-01-10)

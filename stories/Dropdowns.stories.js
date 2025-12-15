@@ -303,9 +303,23 @@ export const DepartmentSelector = {
 
     options.forEach((option) => {
       option.addEventListener('click', () => {
-        const icon = option.querySelector('i').className;
-        const text = option.textContent.trim();
-        trigger.querySelector('span').innerHTML = `<i class="${icon}" style="margin-right: 8px;"></i>${text}`;
+        const iconElement = option.querySelector('i');
+        const triggerSpan = trigger.querySelector('span');
+
+        // Clear existing content safely
+        triggerSpan.textContent = '';
+
+        // Create icon element safely (no innerHTML)
+        if (iconElement) {
+          const newIcon = document.createElement('i');
+          newIcon.className = iconElement.className;
+          newIcon.style.marginRight = '8px';
+          triggerSpan.appendChild(newIcon);
+        }
+
+        // Append text safely using createTextNode (XSS-safe)
+        triggerSpan.appendChild(document.createTextNode(option.textContent.trim()));
+
         trigger.classList.remove('active');
         menu.classList.remove('active');
       });
