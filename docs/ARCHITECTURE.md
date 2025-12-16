@@ -1,433 +1,352 @@
-# Assixx System-Architektur
+# Assixx System Architecture
 
-> **Letzte Aktualisierung:** 06.01.2025  
-> **Version:** 2.1.0 - Docker-Architektur hinzugefügt
+**Version:** 3.0.0 | **Updated:** 2025-12-16
 
-## 🏗️ System-Übersicht
+Multi-Tenant SaaS platform for industrial companies.
 
-Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickelt mit modernen Web-Technologien und Fokus auf Skalierbarkeit, Sicherheit und Benutzerfreundlichkeit. Die Anwendung ist vollständig containerisiert und kann sowohl für Entwicklung als auch Produktion mit Docker bereitgestellt werden.
+---
 
-## 🔧 Technology Stack
-
-### Frontend
-
-- **HTML5/CSS3/JavaScript (Vanilla)**
-  - Kein Framework-Overhead
-  - Maximale Performance
-  - Direkte DOM-Manipulation
-- **CSS-Architektur**
-  - Glassmorphismus Design-System
-  - CSS Custom Properties (Variables)
-  - Mobile-First Responsive Design
-  - BEM-ähnliche Namenskonvention
-
-- **JavaScript-Bibliotheken**
-  - Socket.io Client (Echtzeit-Kommunikation)
-  - FullCalendar.js (Kalender-Funktionalität)
-  - Chart.js (Datenvisualisierung - geplant)
+## Technology Stack
 
 ### Backend
 
-- **Node.js v18+ & Express.js mit TypeScript**
-  - TypeScript für Type-Safety und bessere Entwicklererfahrung
-  - MVC-Architektur (Model-View-Controller)
-  - RESTful API Design
-  - Service Layer für Business Logic
-  - Middleware-basierte Architektur
-  - Async/Await Pattern
-  - Strict TypeScript Konfiguration für maximale Sicherheit
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Node.js | 24.x | Runtime |
+| TypeScript | 5.x | Language |
+| Express.js | 4.x | Web framework |
+| PostgreSQL | 17.x | Database |
+| Redis | 7.x | Sessions, rate limiting |
+| Socket.io | 4.x | WebSocket |
+| Zod | 3.x | Validation |
+| pnpm | 10.x | Package manager |
 
-- **Datenbank**
-  - MySQL 8.0+
-  - Multi-Tenant Architektur (Schema-Separation)
-  - Connection Pooling
-  - Prepared Statements
+### Frontend
 
-- **Echtzeit-Features**
-  - Socket.io für WebSocket-Kommunikation
-  - Event-basierte Architektur
-  - Room-basierte Isolation
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| TypeScript | 5.x | Language |
+| Vite | 7.x | Build tool |
+| Tailwind CSS | 4.x | Styling |
+| FullCalendar | 6.x | Calendar |
+| Socket.io Client | 4.x | WebSocket |
 
-### Sicherheit
+### Infrastructure
 
-- **Authentifizierung**
-  - JWT (JSON Web Tokens)
-  - Bcrypt für Passwort-Hashing
-  - 24-Stunden Token-Expiration
+| Technology | Purpose |
+|------------|---------|
+| Docker | Containerization |
+| Docker Compose | Orchestration |
+| Nginx | Reverse proxy (production) |
 
-- **Autorisierung**
-  - Role-Based Access Control (RBAC)
-  - Tenant-Isolation
-  - API-Rate-Limiting
+---
 
-## 🐳 Docker Architecture
-
-### Container-Setup
-
-Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklungs- und Produktionsumgebungen:
-
-#### Container-Übersicht
-
-1. **MySQL Container** (`assixx-db`)
-   - MySQL 8.0 Server
-   - Persistente Volumes für Datenspeicherung
-   - Automatisches Schema-Setup beim ersten Start
-   - Health-Checks für Verfügbarkeit
-
-2. **Backend Container** (`assixx-backend`)
-   - Node.js 18 Alpine Linux
-   - Express.js TypeScript Anwendung
-   - Abhängig vom MySQL Container
-   - Auto-Restart bei Fehlern
-
-3. **Frontend Container** (`assixx-frontend`)
-   - Nginx Alpine Linux
-   - Statische Asset-Bereitstellung
-   - Reverse Proxy für API-Requests
-   - Optimierte Caching-Headers
-
-#### Entwicklung vs. Produktion
-
-**Entwicklungsumgebung** (`docker-compose.dev.yml`):
-
-- Volume-Mounts für Hot-Reload
-- Nodemon für automatische Backend-Neustarts
-- Vite Dev-Server für Frontend
-- Erweiterte Logging-Ausgaben
-- Ports: 3000 (Frontend), 3001 (Backend), 3306 (MySQL)
-
-**Produktionsumgebung** (`docker-compose.yml`):
-
-- Optimierte Multi-Stage Builds
-- Minimale Alpine Images
-- Production-optimierte Konfigurationen
-- Gesundheitsprüfungen für alle Services
-- Automatische Restart-Policies
-
-#### Volume-Management
-
-```yaml
-volumes:
-  mysql_data: # Persistente MySQL-Daten
-  mysql_config: # MySQL-Konfiguration
-  uploads: # Benutzer-Uploads
-  logs: # Anwendungs-Logs
-```
-
-#### Netzwerk-Konfiguration
-
-```yaml
-networks:
-  assixx-network:
-    driver: bridge
-    # Isoliertes Netzwerk für Container-Kommunikation
-    # Frontend → Backend: http://backend:3001
-    # Backend → MySQL: mysql://assixx-db:3306
-```
-
-### Monitoring Stack (Optional)
-
-Für Produktionsumgebungen steht ein vollständiger Monitoring-Stack zur Verfügung (`docker-compose.monitoring.yml`):
-
-- **Prometheus**: Metriken-Sammlung und -Speicherung
-- **Grafana**: Visualisierung und Dashboards
-- **Loki**: Log-Aggregation und -Analyse
-- **Promtail**: Log-Sammlung von Containern
-- **Alertmanager**: Alert-Verwaltung und -Routing
-
-## 📐 Architektur-Diagramm
+## Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (Browser)                     │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │   HTML/CSS  │  │  JavaScript  │  │  Socket.io Client│   │
-│  └─────────────┘  └──────────────┘  └──────────────────┘   │
-└─────────────────────────────┬───────────────────────────────┘
-                              │ HTTPS
-┌─────────────────────────────┴───────────────────────────────┐
-│                      Backend (Node.js)                       │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │  Express.js │  │   REST API   │  │  Socket.io Server│   │
-│  └─────────────┘  └──────────────┘  └──────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                   MVC Architecture                   │    │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────────┐  │    │
-│  │  │Controllers │ │  Services  │ │     Models     │  │    │
-│  │  └────────────┘ └────────────┘ └────────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Middleware Layer                        │    │
-│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌─────────────┐ │    │
-│  │  │  Auth  │ │ Tenant │ │Security│ │  Validation │ │    │
-│  │  └────────┘ └────────┘ └────────┘ └─────────────┘ │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────┴───────────────────────────────┐
-│                    Database Layer (MySQL)                     │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │ System DB   │  │  Tenant DB 1 │  │   Tenant DB 2   │   │
-│  │ (Tenants,   │  │ (Users,Docs, │  │  (Users,Docs,   │   │
-│  │  Features)  │  │  Chats, etc) │  │   Chats, etc)   │   │
-│  └─────────────┘  └──────────────┘  └──────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+│                     Frontend (Browser)                       │
+│  ┌───────────────┐  ┌───────────────┐  ┌────────────────┐  │
+│  │  TypeScript   │  │  Vite Build   │  │  Design System │  │
+│  │  Modules      │  │  (HTML/CSS)   │  │  (29 components)│  │
+│  └───────────────┘  └───────────────┘  └────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │ HTTPS / WSS
+┌────────────────────────────┴────────────────────────────────┐
+│                    Backend (Node.js 24)                      │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                  Express.js + TypeScript              │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌────────┐ │   │
+│  │  │ Routes  │  │ Services│  │ Models  │  │  Zod   │ │   │
+│  │  │ /api/v2 │  │ (Logic) │  │ (Data)  │  │(Valid.)│ │   │
+│  │  └─────────┘  └─────────┘  └─────────┘  └────────┘ │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                   Middleware Layer                    │   │
+│  │  ┌──────┐ ┌────────┐ ┌─────┐ ┌──────┐ ┌──────────┐ │   │
+│  │  │ Auth │ │ Tenant │ │ RLS │ │ Rate │ │ Security │ │   │
+│  │  │ JWT  │ │ Check  │ │ Set │ │Limit │ │ Helmet   │ │   │
+│  │  └──────┘ └────────┘ └─────┘ └──────┘ └──────────┘ │   │
+│  └─────────────────────────────────────────────────────┘   │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+┌───────┴───────┐    ┌───────┴───────┐    ┌──────┴──────┐
+│  PostgreSQL   │    │     Redis     │    │   Uploads   │
+│     17.x      │    │      7.x      │    │   (Files)   │
+│               │    │               │    │             │
+│  - RLS        │    │  - Sessions   │    │  - UUIDv7   │
+│  - tenant_id  │    │  - Rate limit │    │  - Isolated │
+│  - 119 tables │    │  - Cache      │    │             │
+└───────────────┘    └───────────────┘    └─────────────┘
 ```
 
-## 💾 Datenbank-Design
+---
 
-### Multi-Tenant Strategie
+## Multi-Tenant Architecture
 
-- **Schema-per-Tenant**: Jeder Mandant hat eigene Datenbank
-- **Shared System DB**: Zentrale Verwaltung von Tenants und Features
-- **Connection Pool**: Optimierte Verbindungsverwaltung
+### Strategy: Single Database with Row Level Security
 
-### Haupt-Tabellen (39 insgesamt)
+All tenants share one PostgreSQL database. Isolation via:
 
-#### System-Datenbank
+1. **tenant_id column** - Every tenant-specific table has `tenant_id`
+2. **RLS Policies** - PostgreSQL enforces isolation at database level
+3. **App Context** - `SET app.tenant_id = X` before each request
 
-- `tenants` - Mandantenverwaltung
-- `features` - Feature-Definitionen
-- `feature_management` - Feature-Aktivierung pro Tenant
+```sql
+-- RLS Policy (applied to 95/119 tables)
+CREATE POLICY tenant_isolation ON users
+    FOR ALL
+    USING (
+        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
+        OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
+    );
+```
 
-#### Tenant-Datenbanken
+### Database Users
 
-- `users` - Benutzerverwaltung
-- `departments` - Abteilungen
-- `teams` - Teams
-- `documents` - Dokumentenverwaltung
-- `blackboard_entries` - Schwarzes Brett
-- `calendar_events` - Kalendereinträge
-- `chat_conversations` - Chat-Konversationen
-- `chat_messages` - Chat-Nachrichten
-- `kvp_suggestions` - KVP-Vorschläge
-- `shifts` - Schichtpläne
-- `surveys` - Umfragen
-- Und 28 weitere...
+| User | Purpose | Access |
+|------|---------|--------|
+| `assixx_user` | Admin/migrations | Full access |
+| `app_user` | Application | RLS enforced |
 
-Vollständiges Schema siehe [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md#database-schema)
+---
 
-## 🔐 Sicherheitsarchitektur
+## API Structure
 
-### Schichten-Modell
+### Versioning
 
-1. **Frontend-Validierung** (Client-seitig)
-2. **API-Gateway** (Rate-Limiting, CORS)
-3. **Middleware-Security** (Auth, Tenant-Check)
-4. **Business-Logic-Validation**
-5. **Database-Constraints**
+- **Current:** `/api/v2/` (only version)
+- **No v1 fallback**
 
-### Implementierte Maßnahmen
+### Route Pattern
 
-- SQL-Injection Schutz (Prepared Statements)
-- XSS-Prävention (Input-Sanitization)
-- CSRF-Token (geplant)
-- Secure Headers (teilweise)
-- Tenant-Isolation
+```
+/api/v2/{resource}
+/api/v2/{resource}/:id
+/api/v2/{resource}/:id/{sub-resource}
+```
 
-Details siehe [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md)
+### Modules
 
-## 🚀 Performance-Optimierungen
+| Module | Endpoint | Description |
+|--------|----------|-------------|
+| Auth | `/api/v2/auth` | Login, logout, refresh |
+| Users | `/api/v2/users` | User management |
+| Departments | `/api/v2/departments` | Department CRUD |
+| Teams | `/api/v2/teams` | Team management |
+| Documents | `/api/v2/documents` | Document storage |
+| Calendar | `/api/v2/calendar` | Events, scheduling |
+| Chat | `/api/v2/chat` | Real-time messaging |
+| Blackboard | `/api/v2/blackboard` | Announcements |
+| KVP | `/api/v2/kvp` | Suggestions system |
+| Shifts | `/api/v2/shifts` | Shift planning |
+| Surveys | `/api/v2/surveys` | Survey system |
+| Notifications | `/api/v2/notifications` | Push, SSE |
 
-### Frontend
+---
 
-- Lazy Loading für Bilder
-- CSS/JS Minification (Production)
-- Browser-Caching
-- CDN für statische Assets (geplant)
+## Authentication & Authorization
 
-### Backend
+### Authentication Flow
 
-- Connection Pooling
-- Query-Optimierung mit Indizes
-- Caching-Strategy (geplant)
-- Horizontal Scaling Ready
+```
+1. POST /api/v2/auth/login
+   ├── Validate credentials
+   ├── Generate JWT (access + refresh)
+   └── Return tokens
 
-### Database
+2. Request with token
+   ├── Authorization: Bearer <access_token>
+   ├── Middleware validates JWT
+   ├── Sets req.user
+   └── Sets app.tenant_id (RLS)
 
-- Optimierte Indizes
-- Query-Performance-Monitoring
-- Backup-Strategie
-- Read-Replicas (geplant)
+3. Token refresh
+   ├── POST /api/v2/auth/refresh
+   ├── Validate refresh token
+   └── Return new access token
+```
 
-## 📁 Projekt-Struktur
+### JWT Structure
+
+```typescript
+{
+  id: number,        // User ID
+  email: string,
+  role: 'root' | 'admin' | 'employee',
+  tenantId: number,
+  type: 'access' | 'refresh',
+  iat: number,
+  exp: number
+}
+```
+
+### Role Hierarchy
+
+```
+root     → Full system access (super admin)
+  │
+admin    → Full tenant access
+  │
+employee → Limited access (own data + shared)
+```
+
+---
+
+## Project Structure
 
 ```
 Assixx/
 ├── backend/
-│   ├── src/
-│   │   ├── server.ts         # Server-Starter (TypeScript)
-│   │   ├── app.ts           # Express App Konfiguration
-│   │   ├── database.ts      # DB-Verbindungsmanagement
-│   │   ├── websocket.ts     # Socket.io Setup
-│   │   ├── controllers/     # MVC Controllers
-│   │   ├── services/        # Business Logic Layer
-│   │   ├── models/          # Datenmodelle
-│   │   ├── routes/          # API-Routen
-│   │   ├── middleware/      # Express Middleware
-│   │   └── utils/           # Hilfsfunktionen
-│   ├── tests/               # Test-Suite
-│   └── scripts/             # Backend-Scripts
+│   └── src/
+│       ├── app.ts                 # Express setup
+│       ├── server.ts              # Entry point
+│       ├── websocket.ts           # Socket.io
+│       ├── config/                # DB, Redis config
+│       ├── middleware/            # Auth, RLS, security
+│       ├── routes/v2/             # API endpoints
+│       │   ├── auth/
+│       │   ├── users/
+│       │   ├── calendar/
+│       │   └── ...
+│       ├── models/                # Database models
+│       ├── services/              # Business logic
+│       ├── types/                 # TypeScript types
+│       └── utils/                 # Helpers
 ├── frontend/
-│   ├── src/
-│   │   ├── pages/           # HTML-Seiten
-│   │   ├── scripts/         # Client-Scripts
-│   │   ├── styles/          # CSS/Stylesheets
-│   │   ├── assets/          # Bilder, Fonts
-│   │   └── components/      # UI-Komponenten
-│   └── dist/                # Build-Output
+│   └── src/
+│       ├── pages/                 # HTML pages
+│       ├── scripts/               # TypeScript modules
+│       ├── styles/                # CSS + Tailwind
+│       ├── design-system/         # Component library
+│       └── utils/                 # Client helpers
+├── docker/
+│   ├── docker-compose.yml         # Main orchestration
+│   ├── Dockerfile.dev             # Dev container
+│   └── .env                       # Environment vars
+├── api-tests/                     # Bruno API tests
 ├── database/
-│   ├── schema/              # Strukturierte SQL-Schemas
-│   ├── migrations/          # Datenbank-Migrationen
-│   └── docker-init.sql      # Docker DB-Initialisierung
-├── infrastructure/
-│   ├── docker/              # Docker-Dokumentation
-│   ├── monitoring/          # Monitoring-Konfigurationen
-│   └── nginx/               # Nginx-Konfigurationen
-├── uploads/                 # User-Uploads
-├── tools/                   # Entwickler-Tools
-├── docker-compose.yml       # Production Docker Setup
-├── docker-compose.dev.yml   # Development Docker Setup
-├── docker-compose.monitoring.yml  # Monitoring Stack
-├── Dockerfile               # Production Container
-└── Dockerfile.dev           # Development Container
+│   └── migrations/                # SQL migrations
+└── docs/                          # Documentation
 ```
 
-Details siehe [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md)
+---
 
-## 🔄 API-Design
+## Database Schema
 
-### RESTful Endpoints
+### Tables: 119 total
+
+**System tables (no RLS):**
+- `tenants` - Tenant registry
+- `features` - Feature definitions
+- `plans` - Subscription plans
+
+**Tenant tables (RLS enabled, 95 tables):**
+- `users` - User accounts
+- `departments` - Organization structure
+- `teams` - Team assignments
+- `documents` - File metadata
+- `calendar_events` - Scheduling
+- `chat_conversations` / `chat_messages`
+- `blackboard_entries` - Announcements
+- `kvp_suggestions` - Improvement ideas
+- `shifts` / `shift_assignments`
+- `surveys` / `survey_responses`
+- And 80+ more...
+
+### Key Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | SERIAL | Primary key |
+| `tenant_id` | INTEGER | Tenant reference |
+| `is_active` | SMALLINT | 0=inactive, 1=active, 3=archived, 4=deleted |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | Last modification |
+
+---
+
+## Security Architecture
+
+### Layers
 
 ```
-GET    /api/users          # Liste aller Benutzer
-POST   /api/users          # Neuen Benutzer erstellen
-GET    /api/users/:id      # Einzelnen Benutzer abrufen
-PUT    /api/users/:id      # Benutzer aktualisieren
-DELETE /api/users/:id      # Benutzer löschen
+1. Network      → HTTPS, CORS, Rate limiting
+2. Gateway      → Helmet headers, request size limits
+3. Auth         → JWT validation, role check
+4. Tenant       → RLS policy enforcement
+5. Validation   → Zod schema validation
+6. Database     → Parameterized queries ($1, $2, $3)
 ```
 
-### WebSocket Events
+### Implemented Measures
 
-```javascript
-// Client → Server
-socket.emit('join_conversation', conversationId);
-socket.emit('send_message', messageData);
-socket.emit('typing', { conversationId, isTyping });
+| Measure | Implementation |
+|---------|----------------|
+| SQL Injection | Parameterized queries |
+| XSS | Input sanitization, CSP headers |
+| CSRF | SameSite cookies |
+| Tenant Isolation | PostgreSQL RLS |
+| Rate Limiting | Redis-based per IP/user |
+| Password Security | bcrypt (cost 12) |
 
-// Server → Client
-socket.emit('new_message', messageData);
-socket.emit('user_typing', { userId, userName, isTyping });
-socket.emit('conversation_updated', conversationData);
-```
+---
 
-## 🚦 Deployment-Architektur
+## Docker Setup
 
-### Docker-basiertes Deployment (Primäre Methode)
+### Containers
 
-Docker ist die empfohlene Deployment-Methode für Assixx, sowohl für Entwicklung als auch Produktion:
+| Container | Image | Port | Purpose |
+|-----------|-------|------|---------|
+| assixx-backend | Node 24 Alpine | 3000 | API + static files |
+| assixx-postgres | PostgreSQL 17 | 5432 | Database |
+| assixx-redis | Redis 7 Alpine | 6379 | Sessions, cache |
 
-#### Entwicklung
+### Development
 
 ```bash
-# Entwicklungsumgebung starten
-docker-compose -f docker-compose.dev.yml up
-
-# Mit Monitoring-Stack
-docker-compose -f docker-compose.dev.yml -f docker-compose.monitoring.yml up
-```
-
-- Volume-Mounts für Live-Code-Änderungen
-- Automatisches Neuladen bei Änderungen
-- Vollständige Entwicklungsumgebung in Minuten
-
-#### Production
-
-```bash
-# Produktionsumgebung starten
+cd docker
 docker-compose up -d
-
-# Mit Monitoring
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+docker-compose ps
+curl http://localhost:3000/health
 ```
 
-- Optimierte Container-Images
-- Automatische Gesundheitsprüfungen
-- Restart-Policies für Hochverfügbarkeit
-- Integrierte Backup-Strategien
+### Volumes
 
-### Cloud-Deployment Optionen
+```yaml
+volumes:
+  postgres_data:    # Database files
+  redis_data:       # Redis persistence
+  uploads:          # User uploads
+```
 
-- **Docker Swarm**: Für kleine bis mittlere Deployments
-- **Kubernetes**: Für Enterprise-Skalierung
-- **AWS ECS/Fargate**: Serverless Container-Hosting
-- **Google Cloud Run**: Automatische Skalierung
-- **Azure Container Instances**: Einfaches Container-Hosting
+---
 
-### Traditionelles Deployment (Alternative)
+## Performance
 
-- Cloud SQL (GCP) oder RDS (AWS)
-- App Engine oder EC2/Compute Engine
-- Load Balancer
-- SSL/TLS Termination
-- CDN für Assets
+### Current Optimizations
 
-Details siehe [DEPLOYMENT.md](./DEPLOYMENT.md) und [DOCKER-SETUP.md](./DOCKER-SETUP.md)
+- Connection pooling (PostgreSQL)
+- Redis caching for sessions
+- Vite build optimization
+- Lazy loading in frontend
+- Database indexes
 
-## 📊 Monitoring & Logging
+### Database Indexes
 
-### Aktuell implementiert
+All foreign keys and commonly queried fields are indexed:
+- `tenant_id` on all tenant tables
+- `user_id` on user-related tables
+- `created_at` for time-based queries
+- Composite indexes for common joins
 
-- Console-basiertes Logging
-- Error-Tracking
-- Basic Performance-Metriken
-- **Docker Monitoring Stack** (Optional):
-  - **Prometheus**: Sammelt Metriken von allen Containern
-  - **Grafana**: Vorkonfigurierte Dashboards für System- und Anwendungsmetriken
-  - **Loki**: Zentralisierte Log-Sammlung und -Suche
-  - **Promtail**: Automatische Log-Erfassung von Docker-Containern
-  - **Alertmanager**: Konfigurierbare Alerts für kritische Ereignisse
+---
 
-### Monitoring-Stack Features
+## References
 
-- **System-Metriken**: CPU, Memory, Disk, Network
-- **Container-Metriken**: Ressourcennutzung pro Container
-- **Anwendungs-Metriken**: Response-Zeiten, Request-Raten, Fehlerquoten
-- **Log-Aggregation**: Zentrale Sammlung aller Container-Logs
-- **Alert-Rules**: Vordefinierte Regeln für häufige Probleme
-
-### Geplant
-
-- Structured Logging (Winston) Integration
-- Custom Application Metrics
-- Real User Monitoring
-- Database Query Analytics
-- Distributed Tracing (Jaeger/Zipkin)
-
-## 🔮 Zukünftige Architektur-Erweiterungen
-
-### Microservices (Langfristig)
-
-- Auth-Service
-- Document-Service
-- Notification-Service
-- Analytics-Service
-
-### Message Queue
-
-- RabbitMQ/Redis für asynchrone Tasks
-- Event-Sourcing für Audit-Trail
-- CQRS für Read/Write Separation
-
-### Caching Layer
-
-- Redis für Session-Management
-- Query-Result-Caching
-- Static Asset Caching
-
-## 📚 Weiterführende Dokumentation
-
-- [Feature-Übersicht](./FEATURES.md)
-- [Setup-Anleitung](./SETUP-QUICKSTART.md)
-- [API-Dokumentation](./server/API-TEST-README.md)
-- [Entwickler-Guide](./DEVELOPMENT-GUIDE.md)
+- [CODE-OF-CONDUCT.md](./CODE-OF-CONDUCT.md) - Development standards
+- [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md) - Code standards
+- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - PostgreSQL + RLS
+- [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md) - Detailed structure
