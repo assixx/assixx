@@ -1795,15 +1795,9 @@ async function bootstrap() {
 │                    ASSIXX ROADMAP 2025                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  PHASE 0: AKTUELLES FERTIGMACHEN                               │
-│  ════════════════════════════════                               │
-│  └── Shifts-Refactoring abschließen                            │
-│  └── lint/refactoring Branch mergen                            │
-│  └── Codebase stabilisieren                                    │
-│                         ↓                                       │
-│  PHASE 1: NESTJS MIGRATION (Backend)            [~100-120h]    │
+│  PHASE 1: NESTJS MIGRATION (Backend)            [~140-160h]    │
 │  ════════════════════════════════════                           │
-│  ├── NestJS Projekt Setup                                      │
+│  ├── NestJS Projekt Setup + Fastify Adapter                    │
 │  ├── Module-Struktur erstellen (25+ Module)                    │
 │  ├── Guards implementieren (JWT, Tenant, Roles)                │
 │  ├── Services migrieren (191+ Dateien!)                        │
@@ -1820,9 +1814,9 @@ async function bootstrap() {
 │  └── Config anpassen                                           │
 │  └── QUICK WIN: 95% API-kompatibel                             │
 │                         ↓                                       │
-│  PHASE 3: SVELTEKIT MIGRATION (Frontend)        [~80h]         │
+│  PHASE 3: SVELTEKIT MIGRATION (Frontend)        [~100h]        │
 │  ═════════════════════════════════════                          │
-│  └── ⚠️ FullCalendar → @event-calendar/core (ZUERST!)          │
+│  └── FullCalendar → @event-calendar/core (ZUERST!)             │
 │  └── Library-Kompatibilität prüfen (siehe Part 2.3.3)          │
 │  └── Page für Page migrieren                                   │
 │  └── tRPC Client einbinden                                     │
@@ -1849,13 +1843,12 @@ async function bootstrap() {
 
 | Phase | Aufgabe | Geschätzt | Abhängigkeit |
 |-------|---------|-----------|--------------|
-| 0 | Refactoring fertig | ~5h | - |
-| 1 | NestJS Migration | ~140-160h | Phase 0 |
+| 1 | NestJS Migration | ~140-160h | - |
 | 2 | Vitest Migration | ~4h | Phase 1 |
 | 3 | SvelteKit Migration | ~100h | Phase 1 |
 | 4 | Pre-Launch Polish | ~5h | Phase 1 |
 | 5 | Enterprise Features | ~20h | Launch |
-| | **TOTAL bis Launch** | **~270-290h** | |
+| | **TOTAL bis Launch** | **~250-270h** | |
 
 > **Hinweis:** Zeitschätzung inkl. 20-30% Puffer für:
 > - 191 Dateien × ~45min pro Datei (nicht 30min!)
@@ -1958,3 +1951,44 @@ async function bootstrap() {
 | **SLA definieren** | "99.9% Uptime" = max 8.7h Downtime/Jahr | Vor Enterprise |
 | **Support-Prozess** | Wer antwortet wann? | Vor Launch |
 | **ISO 27001** | Manche Enterprise-Kunden fordern es | Bei >500k € ARR |
+
+---
+
+## APPENDIX B: BRANCH-STRATEGIE
+
+### Branch pro Phase
+
+| Phase | Branch-Name | Inhalt |
+|-------|-------------|--------|
+| 1 | `feature/nestjs-migration` | NestJS + Fastify, Guards, Module, tRPC, WebSocket, Bull |
+| 2 | `refactor/jest-to-vitest` | jest.fn() → vi.fn(), Config |
+| 3 | `feature/sveltekit-migration` | Pages, tRPC Client, Design System → Svelte |
+| 4 | `feature/pre-launch-polish` | Sentry, Health Checks, Graceful Shutdown |
+| 5 | `feature/enterprise-features` | Secrets, OpenTelemetry, SOC2 |
+
+### Workflow
+
+```
+master (stable)
+    │
+    ├── feature/nestjs-migration ──────► PR → master
+    │                                        │
+    │   ◄────────────────────────────────────┘
+    │
+    ├── refactor/jest-to-vitest ───────► PR → master
+    │                                        │
+    │   ◄────────────────────────────────────┘
+    │
+    ├── feature/sveltekit-migration ───► PR → master
+    │                                        │
+    │   ◄────────────────────────────────────┘
+    │
+    └── ... (weitere Phasen)
+```
+
+### Regeln
+
+1. **Ein Branch pro Phase** - nicht mischen
+2. **Phase 1 zuerst** - Frontend braucht tRPC Types
+3. **PR nach jeder Phase** - incremental mergen
+4. **master bleibt stable** - nur getesteter Code
