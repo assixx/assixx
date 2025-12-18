@@ -13,14 +13,12 @@
 // IMPORTS - External Dependencies
 // ============================================================================
 
-import type { EventClickArg, DateSelectArg, EventHoveringArg } from '@fullcalendar/core';
-import type { DateClickArg } from '@fullcalendar/interaction';
 import { $$, $$id, $all, setHTML } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth/index';
 import { showErrorAlert } from '../utils/alerts';
 import { shiftCalendarIntegration } from '../shifts/calendar-integration';
 // ============================================================================
-// IMPORTS - Calendar Modules
+// IMPORTS - Calendar Modules (EventCalendar - Phase 0 Migration)
 // ============================================================================
 import type { CalendarEvent } from './types';
 import { state } from './state';
@@ -28,7 +26,13 @@ import * as api from './api';
 import * as modals from './modals';
 import * as filters from './filters';
 import * as ui from './ui';
-import { initializeCalendar } from './fullcalendar-loader';
+import {
+  initializeCalendar,
+  type EventClickInfo,
+  type DateClickInfo,
+  type SelectInfo,
+  type EventHoverInfo,
+} from './event-calendar-loader';
 
 // ============================================================================
 // CONSTANTS
@@ -327,7 +331,7 @@ function registerModalTemplates(): void {
  * Handle date click (create event on click)
  * All users can create events (employees: personal only, admins: all types)
  */
-function handleDateClick(info: { date: Date; allDay: boolean }, _userRole: string | null): void {
+function handleDateClick(info: DateClickInfo, _userRole: string | null): void {
   console.info('Calendar: Date clicked:', info);
 
   // Disable date click in fullscreen mode - only allow event detail view
@@ -345,7 +349,7 @@ function handleDateClick(info: { date: Date; allDay: boolean }, _userRole: strin
  * Handle date select (create event on drag)
  * All users can create events (employees: personal only, admins: all types)
  */
-function handleDateSelect(info: DateSelectArg, _userRole: string | null): void {
+function handleDateSelect(info: SelectInfo, _userRole: string | null): void {
   console.info('Calendar: Date range selected:', info);
 
   // Disable date selection in fullscreen mode - only allow event detail view
@@ -363,8 +367,8 @@ function handleDateSelect(info: DateSelectArg, _userRole: string | null): void {
 /**
  * Show event tooltip on hover using Design System tooltip component
  */
-function showEventTooltip(info: EventHoveringArg): void {
-  const extendedProps = info.event.extendedProps as {
+function showEventTooltip(info: EventHoverInfo): void {
+  const extendedProps = (info.event.extendedProps ?? {}) as {
     description?: string;
     location?: string;
   };
@@ -403,7 +407,7 @@ function showEventTooltip(info: EventHoveringArg): void {
 /**
  * Hide event tooltip
  */
-function hideEventTooltip(info: EventHoveringArg): void {
+function hideEventTooltip(info: EventHoverInfo): void {
   const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
   if (el._tooltip) {
     el._tooltip.remove();
@@ -459,42 +463,6 @@ async function viewEvent(eventId: number): Promise<void> {
 }
 
 // ============================================================================
-// RESPOND TO EVENT
-// ============================================================================
-
-/**
- * Respond to event invitation
- */
-async function respondToEvent(eventId: number, response: string): Promise<void> {
-  try {
-    const success = await api.respondToEvent(eventId, response);
-
-    if (success) {
-      // Close event details modal
-      hideModal('eventDetailsModal');
-
-      // Refresh calendar and upcoming events
-      state.calendar?.refetchEvents();
-
-      const upcomingEvents = await api.loadUpcomingEvents();
-      ui.displayUpcomingEvents(upcomingEvents, viewEvent);
-
-      // Update badge in navigation
-      if (window.unifiedNav) {
-        window.unifiedNav.updateUnreadCalendarEvents();
-      }
-
-      // Reload the page to refresh everything
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
-  } catch (error: unknown) {
-    console.error('Error responding to event:', error);
-  }
-}
-
-// ============================================================================
 // DELETE EVENT
 // ============================================================================
 
@@ -546,6 +514,7 @@ async function confirmDeleteEvent(): Promise<void> {
     hideModal('eventDetailModal');
 
     // Refresh calendar
+
     state.calendar?.refetchEvents();
 
     const upcomingEvents = await api.loadUpcomingEvents();
@@ -1058,6 +1027,7 @@ async function handleEventSaveSuccess(): Promise<void> {
   hideModal('eventFormModal');
 
   // Refresh calendar
+
   state.calendar?.refetchEvents();
 
   // Refresh upcoming events
@@ -1416,22 +1386,12 @@ function handleViewEventActions(action: string, element: HTMLElement): boolean {
 }
 
 /**
- * Handle event response actions
+ * Handle event delete confirmation action
  */
-function handleResponseEventActions(action: string, element: HTMLElement): boolean {
-  switch (action) {
-    case 'confirm-delete-event':
-      void confirmDeleteEvent();
-      return true;
-
-    case 'respond-event': {
-      const eventId = element.dataset['eventId'];
-      const response = element.dataset['response'];
-      if (eventId !== undefined && eventId !== '' && response !== undefined) {
-        void respondToEvent(Number.parseInt(eventId, 10), response);
-      }
-      return true;
-    }
+function handleDeleteEventActions(action: string, _element: HTMLElement): boolean {
+  if (action === 'confirm-delete-event') {
+    void confirmDeleteEvent();
+    return true;
   }
   return false;
 }
@@ -1446,8 +1406,8 @@ function handleEventActions(action: string, element: HTMLElement): boolean {
   // Try view actions
   if (handleViewEventActions(action, element)) return true;
 
-  // Try response actions
-  if (handleResponseEventActions(action, element)) return true;
+  // Try delete confirmation action
+  if (handleDeleteEventActions(action, element)) return true;
 
   return false;
 }
@@ -1551,20 +1511,20 @@ const LOG_SEPARATOR = '[CALENDAR] ========================================';
 
 /**
  * Build calendar options
- * Extracted to reduce complexity of initializeFullCalendar
+ * Extracted to reduce complexity of initializeEventCalendar
+ * Updated for @event-calendar/core (Phase 0 Migration)
  */
 function buildCalendarOptions(
   canEdit: boolean,
   userRole: string | null,
-): Partial<import('@fullcalendar/core').CalendarOptions> {
+): import('./event-calendar-loader').EventCalendarOptions {
   return {
     headerToolbar: {
-      left: 'prev,next today',
+      start: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+      end: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
     },
-    // Explicit button texts for German locale (fixes missing text bug)
-    // IMPORTANT: Use exact view names as keys, not generic names
+    // Explicit button texts for German locale
     buttonText: {
       today: 'Heute',
       dayGridMonth: 'Monat',
@@ -1576,23 +1536,24 @@ function buildCalendarOptions(
     selectable: canEdit,
     selectMirror: true,
     dayMaxEvents: true,
-    weekends: true,
     nowIndicator: true,
     height: 'auto',
 
-    // Event sources
-    events: async (fetchInfo, successCallback, failureCallback) => {
-      try {
-        const events = await api.loadCalendarEvents(fetchInfo);
-        successCallback(events);
-      } catch (error: unknown) {
-        console.error('[CALENDAR] Error loading events:', error);
-        failureCallback(error as Error);
-      }
+    // Event sources - EventCalendar uses same callback signature
+    events: (fetchInfo, successCallback, failureCallback) => {
+      void (async (): Promise<void> => {
+        try {
+          const events = await api.loadCalendarEvents(fetchInfo);
+          successCallback(events);
+        } catch (error: unknown) {
+          console.error('[CALENDAR] Error loading events:', error);
+          failureCallback(error as Error);
+        }
+      })();
     },
 
-    // Event handlers
-    eventClick: (info: EventClickArg) => {
+    // Event handlers - updated for EventCalendar types
+    eventClick: (info: EventClickInfo) => {
       info.jsEvent.preventDefault();
       const eventId = Number.parseInt(info.event.id, 10);
       if (!Number.isNaN(eventId)) {
@@ -1600,30 +1561,31 @@ function buildCalendarOptions(
       }
     },
 
-    dateClick: (info: DateClickArg) => {
-      handleDateClick({ date: info.date, allDay: info.allDay }, userRole);
+    dateClick: (info: DateClickInfo) => {
+      handleDateClick(info, userRole);
     },
 
-    select: (info: DateSelectArg) => {
+    select: (info: SelectInfo) => {
       handleDateSelect(info, userRole);
     },
 
-    eventMouseEnter: (info: EventHoveringArg) => {
+    eventMouseEnter: (info: EventHoverInfo) => {
       showEventTooltip(info);
     },
 
-    eventMouseLeave: (info: EventHoveringArg) => {
+    eventMouseLeave: (info: EventHoverInfo) => {
       hideEventTooltip(info);
     },
   };
 }
 
 /**
- * Initialize FullCalendar using lazy loader
+ * Initialize EventCalendar
+ * Updated for @event-calendar/core (Phase 0 Migration)
  */
-async function initializeFullCalendar(): Promise<void> {
+function initializeEventCalendar(): void {
   console.info(LOG_SEPARATOR);
-  console.info('[CALENDAR] STARTING FullCalendar Initialization...');
+  console.info('[CALENDAR] STARTING EventCalendar Initialization...');
   console.info(LOG_SEPARATOR);
 
   const calendarElement = $$('#calendar');
@@ -1646,29 +1608,28 @@ async function initializeFullCalendar(): Promise<void> {
   console.info('[CALENDAR] User permissions:', { userRole, canEdit });
 
   try {
-    console.info('[CALENDAR] 📦 Loading FullCalendar via lazy loader...');
+    console.info('[CALENDAR] 📦 Initializing EventCalendar...');
 
     // Build calendar options
     const options = buildCalendarOptions(canEdit, userRole);
 
-    // Use lazy loader for FullCalendar
-    const { calendar } = await initializeCalendar(calendarElement, 'month', canEdit, options);
+    // Initialize EventCalendar (renders automatically on creation)
+
+    const { calendar } = initializeCalendar(calendarElement, 'month', canEdit, options);
 
     // Store calendar instance in state
+
     state.calendar = calendar;
 
     console.info('[CALENDAR] ✅ Calendar instance created and stored in state');
-    console.info('[CALENDAR] 🎨 Rendering calendar to DOM...');
-
-    // Render the calendar
-    calendar.render();
+    // Note: EventCalendar renders automatically on creation, no .render() needed
 
     console.info(LOG_SEPARATOR);
-    console.info('[CALENDAR] ✅ FullCalendar initialized successfully!');
+    console.info('[CALENDAR] ✅ EventCalendar initialized successfully!');
     console.info(LOG_SEPARATOR);
   } catch (error: unknown) {
     console.error(LOG_SEPARATOR);
-    console.error('[CALENDAR] ❌ ERROR initializing FullCalendar!');
+    console.error('[CALENDAR] ❌ ERROR initializing EventCalendar!');
     console.error('[CALENDAR] Error details:', error);
     console.error(LOG_SEPARATOR);
     showErrorAlert('Fehler beim Laden des Kalenders.');
@@ -1875,9 +1836,9 @@ async function initializeApp(): Promise<void> {
     await api.loadDepartmentsAndTeams();
     console.info('[CALENDAR] ✅ Departments and teams loaded');
 
-    // Step 5: Initialize FullCalendar
-    console.info('[CALENDAR] Step 5: Initializing FullCalendar...');
-    await initializeFullCalendar();
+    // Step 5: Initialize EventCalendar
+    console.info('[CALENDAR] Step 5: Initializing EventCalendar...');
+    initializeEventCalendar();
 
     // Step 6: Initialize filters
     console.info('[CALENDAR] Step 6: Initializing filters...');
@@ -1960,7 +1921,6 @@ declare global {
       viewEvent: typeof viewEvent;
       editEvent: typeof editEvent;
       deleteEvent: typeof deleteEvent;
-      respondToEvent: typeof respondToEvent;
       openEventForm: typeof openEventForm;
       saveEvent: typeof saveEvent;
     };
@@ -1971,7 +1931,6 @@ window.calendarApp = {
   viewEvent,
   editEvent: (eventId: number) => editEvent(eventId),
   deleteEvent,
-  respondToEvent,
   openEventForm,
   saveEvent,
 };

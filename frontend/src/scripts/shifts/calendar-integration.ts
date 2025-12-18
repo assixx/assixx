@@ -1,6 +1,8 @@
 /**
  * Shifts in Calendar Integration
  * Shows user's shift assignments (F/S/N) in the calendar view
+ *
+ * Updated for @event-calendar/core (Phase 0 Migration)
  */
 
 import { getAuthToken } from '../auth/index';
@@ -16,16 +18,13 @@ interface ShiftApiResponse {
   data: UserShift[];
 }
 
-// FullCalendar types (matching calendar.ts)
-interface FullCalendarApi {
-  view: {
-    activeStart: Date;
-    activeEnd: Date;
-  };
-  on(eventName: string, callback: (info: FullCalendarDatesSetInfo) => void): void;
+// EventCalendar types
+interface EventCalendarApi {
+  getOption(name: string): unknown;
+  setOption(name: string, value: unknown): void;
 }
 
-interface FullCalendarDatesSetInfo {
+interface EventCalendarDatesSetInfo {
   start: Date;
   end: Date;
 }
@@ -33,7 +32,8 @@ interface FullCalendarDatesSetInfo {
 export class ShiftCalendarIntegration {
   private showShifts = false;
   private shiftsCache = new Map<string, UserShift>();
-  private calendar: FullCalendarApi | null = null;
+  private calendar: EventCalendarApi | null = null;
+  private datesSetHandler: ((info: EventCalendarDatesSetInfo) => void) | null = null;
 
   constructor() {
     // Load saved preference from localStorage
@@ -42,9 +42,9 @@ export class ShiftCalendarIntegration {
 
   /**
    * Initialize the shift calendar integration
-   * @param calendar - FullCalendar instance
+   * @param calendar - EventCalendar instance
    */
-  public init(calendar: FullCalendarApi): void {
+  public init(calendar: EventCalendarApi): void {
     this.calendar = calendar;
     this.addCheckbox();
 
@@ -57,12 +57,13 @@ export class ShiftCalendarIntegration {
       void this.onCheckboxChange(true);
     }
 
-    // Listen to calendar navigation events
-    calendar.on('datesSet', (info: FullCalendarDatesSetInfo) => {
+    // Listen to calendar navigation events via datesSet option
+    this.datesSetHandler = (info: EventCalendarDatesSetInfo) => {
       if (this.showShifts) {
         void this.fetchAndRenderShifts(info.start, info.end);
       }
-    });
+    };
+    calendar.setOption('datesSet', this.datesSetHandler);
   }
 
   /**
@@ -152,9 +153,12 @@ export class ShiftCalendarIntegration {
     localStorage.setItem('showShiftsInCalendar', String(checked));
 
     if (checked && this.calendar) {
-      // Get current calendar view dates
-      const view = this.calendar.view;
-      await this.fetchAndRenderShifts(view.activeStart, view.activeEnd);
+      // Get current calendar view dates via getOption
+      const view = this.calendar.getOption('view') as { activeStart?: Date; activeEnd?: Date } | undefined;
+      // After view?.activeStart check, TypeScript knows view exists, so no ?. needed for activeEnd
+      if (view?.activeStart && view.activeEnd) {
+        await this.fetchAndRenderShifts(view.activeStart, view.activeEnd);
+      }
     } else {
       // Remove all shift indicators
       this.removeAllShiftIndicators();
@@ -225,13 +229,15 @@ export class ShiftCalendarIntegration {
 
   /**
    * Render shift indicators in calendar cells
+   * Updated for @event-calendar/core (uses .ec-* classes)
    */
   private renderShiftIndicators(): void {
     // Remove existing indicators first
     this.removeAllShiftIndicators();
 
-    // Find all day cells in the calendar
-    const dayCells = document.querySelectorAll('.fc-daygrid-day');
+    // Find all day cells in the calendar (EventCalendar uses .ec-day)
+    // Try both FullCalendar (.fc-*) and EventCalendar (.ec-*) selectors for compatibility
+    const dayCells = document.querySelectorAll('.ec-day, .fc-daygrid-day');
 
     dayCells.forEach((cell) => {
       const dateAttr = (cell as HTMLElement).dataset['date'];
@@ -240,9 +246,17 @@ export class ShiftCalendarIntegration {
       const shift = this.shiftsCache.get(dateAttr);
       if (shift === undefined) return;
 
-      // Find the day number element
-      const dayTopElement = cell.querySelector('.fc-daygrid-day-top');
-      if (!dayTopElement) return;
+      // Find the day number element (EventCalendar: .ec-day-head, FullCalendar: .fc-daygrid-day-top)
+      const dayTopElement = cell.querySelector('.ec-day-head, .fc-daygrid-day-top');
+      if (!dayTopElement) {
+        // Fallback: append directly to the cell
+        const indicator = document.createElement('div');
+        indicator.className = `shift-indicator shift-${shift.type}`;
+        indicator.setAttribute('aria-label', `Schicht: ${this.getShiftName(shift.type)}`);
+        indicator.textContent = shift.type;
+        cell.append(indicator);
+        return;
+      }
 
       // Create shift indicator
       const indicator = document.createElement('div');

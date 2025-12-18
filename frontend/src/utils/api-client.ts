@@ -69,10 +69,12 @@ export class ApiClient {
       }
     }
 
-    // Only set Content-Type for requests with body
-    if (options.body !== undefined && config.contentType !== undefined && config.contentType !== null) {
+    // Only set Content-Type for requests with actual body (not null/undefined)
+    // CRITICAL: DELETE requests often have no body - setting Content-Type without body causes NestJS 400 error
+    const hasBody = options.body !== undefined && options.body !== null;
+    if (hasBody && config.contentType !== undefined && config.contentType !== null) {
       headers['Content-Type'] = config.contentType;
-    } else if (options.body !== undefined && !(options.body instanceof FormData)) {
+    } else if (hasBody && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -182,7 +184,20 @@ export class ApiClient {
 
       return await this.handleResponse<T>(response, version);
     } catch (error) {
-      console.error(`[API ${version}] Request failed:`, error);
+      // Check if this is a normal page navigation abort (NOT a real error)
+      const isAbortError =
+        error instanceof Error &&
+        (error.name === 'AbortError' ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('aborted') ||
+          error.message.includes('NS_BINDING_ABORTED'));
+
+      if (isAbortError) {
+        // Normal browser behavior during page navigation - don't log as error
+        console.info(`[API ${version}] Request aborted (page navigation)`);
+      } else {
+        console.error(`[API ${version}] Request failed:`, error);
+      }
       throw this.handleError(error);
     }
   }
@@ -432,6 +447,18 @@ if (typeof window !== 'undefined') {
 window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
   const reason: unknown = event.reason;
   if (reason instanceof ApiError) {
+    // Ignore abort errors (normal during page navigation)
+    const isAbortError =
+      reason.code === 'NETWORK_ERROR' &&
+      (reason.message.includes('NetworkError') ||
+        reason.message.includes('aborted') ||
+        reason.message.includes('NS_BINDING_ABORTED'));
+
+    if (isAbortError) {
+      event.preventDefault(); // Suppress console error for navigation aborts
+      return;
+    }
+
     console.error('[API] Unhandled API Error:', reason);
 
     // Handle specific error codes

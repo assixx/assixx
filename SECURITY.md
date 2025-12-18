@@ -7,7 +7,7 @@
 ## Supported Versions
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | 0.1.x   | Yes       |
 | < 0.1   | No        |
 
@@ -30,12 +30,12 @@ Email: security@scs-technik.de
 
 ### Response Timeline
 
-| Action | Timeframe |
-|--------|-----------|
-| Acknowledgment | 48 hours |
-| Initial assessment | 7 days |
-| Fix for critical issues | 14 days |
-| Fix for non-critical | 30 days |
+| Action                  | Timeframe |
+| ----------------------- | --------- |
+| Acknowledgment          | 48 hours  |
+| Initial assessment      | 7 days    |
+| Fix for critical issues | 14 days   |
+| Fix for non-critical    | 30 days   |
 
 ### What to Expect
 
@@ -89,6 +89,7 @@ Email: security@scs-technik.de
 ### Multi-Tenant Architecture
 
 Each tenant's data is isolated via:
+
 - `tenant_id` column on all tenant-specific tables
 - PostgreSQL RLS policies
 - Application-level checks

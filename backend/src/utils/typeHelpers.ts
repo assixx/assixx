@@ -137,10 +137,10 @@ export function camelToSnake(obj: unknown): unknown {
 }
 
 /**
- * Normalize MySQL boolean values to JavaScript boolean
- * MySQL returns 0/1 for boolean fields, this converts them properly
+ * Normalize database boolean values to JavaScript boolean
+ * PostgreSQL/databases return 0/1 for boolean fields, this converts them properly
  */
-export function normalizeMySQLBoolean(value: unknown): boolean {
+export function normalizeDbBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') {
     return value;
   }

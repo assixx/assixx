@@ -45,16 +45,26 @@ export class DashboardService {
   loadStats(): DashboardStats {
     const authToken = getAuthToken();
     if (authToken === null || authToken === '') {
-      throw new Error('No authentication token');
+      console.warn('[DashboardService] No authentication token for loadStats');
+      // Return zeros instead of throwing - more graceful handling
+      return {
+        employeeCount: 0,
+        documentCount: 0,
+        departmentCount: 0,
+        teamCount: 0,
+      };
     }
 
     // Use cached data counts instead of making separate API calls
-    return {
+    const stats: DashboardStats = {
       employeeCount: this.getEmployeeCount(),
       documentCount: this.getDocumentCount(),
       departmentCount: this.getDepartmentCount(),
       teamCount: this.getTeamCount(),
     };
+
+    console.info('[DashboardService] Stats loaded:', stats);
+    return stats;
   }
 
   private getEmployeeCount(): number {

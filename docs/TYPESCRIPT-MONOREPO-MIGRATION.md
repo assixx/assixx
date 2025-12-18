@@ -11,6 +11,7 @@
 Successfully migrated Assixx TypeScript configuration from a conflicting single-config setup to a **Best Practice 2025 monorepo pattern** with separated project configurations and Project References.
 
 ### **Problem Solved:**
+
 ```
 frontend/src/scripts/admin/areas.ts(6,27): error TS2835:
 Relative import paths need explicit file extensions in ECMAScript imports
@@ -18,6 +19,7 @@ when '--moduleResolution' is 'node16' or 'nodenext'.
 ```
 
 ### **Solution:**
+
 Implemented **Project References pattern** with separate `moduleResolution` for Backend (Node.js) and Frontend (Vite/Bundler).
 
 ---
@@ -25,16 +27,21 @@ Implemented **Project References pattern** with separate `moduleResolution` for 
 ## ❌ **THE PROBLEM**
 
 ### **Root Cause:**
+
 The root `tsconfig.json` was configured with:
+
 - `moduleResolution: "nodenext"` (Node.js standard)
 - `include: ["backend/**/*", "frontend/**/*"]` (Both included!)
 
 This caused the **Frontend** (which needs `moduleResolution: "bundler"` for Vite) to be type-checked with **Node.js** rules, requiring `.js` extensions in imports.
 
 ### **Why This Failed:**
+
 ```typescript
 // Frontend code (areas.ts)
-import { ApiClient } from '../../utils/api-client';  // ❌ ERROR!
+import { ApiClient } from '../../utils/api-client';
+
+// ❌ ERROR!
 // TypeScript (with nodenext): "You need .js extension!"
 ```
 
@@ -57,6 +64,7 @@ import { ApiClient } from '../../utils/api-client';  // ❌ ERROR!
 ```
 
 ### **Key Principles:**
+
 1. **Separation of Concerns:** Each project has its own `moduleResolution`
 2. **Shared Rules:** Common strict TypeScript rules in `tsconfig.base.json`
 3. **Project References:** Root config references sub-projects
@@ -67,59 +75,68 @@ import { ApiClient } from '../../utils/api-client';  // ❌ ERROR!
 ## 📋 **FILES CHANGED**
 
 ### **1️⃣ NEW: `/tsconfig.base.json`**
+
 **Purpose:** Shared TypeScript rules for all projects
 
 **Key Settings:**
+
 - `strict: true` - Maximum type safety
 - `target: ES2022` - Modern JavaScript
 - All strict mode flags enabled
 - **NO `module` or `moduleResolution`** (project-specific!)
 
 ### **2️⃣ UPDATED: `/tsconfig.json` (Root)**
+
 **Before:**
+
 ```json
 {
   "compilerOptions": {
     "module": "NodeNext",
-    "moduleResolution": "nodenext",  // ← PROBLEM!
+    "moduleResolution": "nodenext" // ← PROBLEM!
     // ... many other settings
   },
-  "include": ["backend/**/*", "frontend/**/*"]  // ← CONFLICT!
+  "include": ["backend/**/*", "frontend/**/*"] // ← CONFLICT!
 }
 ```
 
 **After:**
+
 ```json
 {
-  "files": [],  // ← Compiles NOTHING
-  "references": [
-    { "path": "./backend" },
-    { "path": "./frontend" }
-  ]
+  "files": [], // ← Compiles NOTHING
+  "references": [{ "path": "./backend" }, { "path": "./frontend" }]
 }
 ```
 
 ### **3️⃣ UPDATED: `/backend/tsconfig.json`**
+
 **Key Changes:**
+
 - `extends: "../tsconfig.base.json"` ← Inherits shared rules
 - `composite: true` ← Enables Project References
 - `declaration: true` ← Generates .d.ts files
 - `moduleResolution: "nodenext"` ← Node.js standard
 
 ### **4️⃣ UPDATED: `/frontend/tsconfig.json`**
+
 **Key Changes:**
+
 - `extends: "../tsconfig.base.json"` ← Inherits shared rules
 - `moduleResolution: "bundler"` ← **THIS FIXES THE ERROR!**
 - `lib: ["ES2022", "DOM", "DOM.Iterable"]` ← Browser APIs
 - `noEmit: true` ← Vite handles compilation
 
 ### **5️⃣ UPDATED: `/docker/docker-compose.yml`**
+
 **Added Mount:**
+
 ```yaml
 volumes:
   - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
 ```
-*(Added to both `backend` and `deletion-worker` services)*
+
+_(Added to both `backend` and `deletion-worker` services)_
 
 ---
 
@@ -127,18 +144,21 @@ volumes:
 
 ### **moduleResolution: nodenext vs bundler**
 
-| Feature | `nodenext` (Backend) | `bundler` (Frontend) |
-|---------|---------------------|---------------------|
-| **Target** | Node.js runtime | Vite/Webpack/Rollup |
-| **Import Extensions** | ✅ **Required** (.js) | ❌ **Not needed** |
-| **package.json exports** | ✅ Understands | ✅ Understands |
-| **.ts imports** | ❌ Not allowed | ✅ Allowed (with flag) |
-| **Use Case** | Server-side Node.js | Browser bundled apps |
+| Feature                  | `nodenext` (Backend)  | `bundler` (Frontend)   |
+| ------------------------ | --------------------- | ---------------------- |
+| **Target**               | Node.js runtime       | Vite/Webpack/Rollup    |
+| **Import Extensions**    | ✅ **Required** (.js) | ❌ **Not needed**      |
+| **package.json exports** | ✅ Understands        | ✅ Understands         |
+| **.ts imports**          | ❌ Not allowed        | ✅ Allowed (with flag) |
+| **Use Case**             | Server-side Node.js   | Browser bundled apps   |
 
 ### **Why .js for Backend?**
+
 ```typescript
 // backend/src/app.ts
-import { db } from './database.js';  // ← Must use .js!
+import { db } from './database.js';
+
+// ← Must use .js!
 
 // Reason: TypeScript thinks about COMPILED output
 // app.ts → app.js
@@ -147,9 +167,12 @@ import { db } from './database.js';  // ← Must use .js!
 ```
 
 ### **Why NO extension for Frontend?**
+
 ```typescript
 // frontend/src/scripts/admin/areas.ts
-import { ApiClient } from '../../utils/api-client';  // ← No .js needed!
+import { ApiClient } from '../../utils/api-client';
+
+// ← No .js needed!
 
 // Reason: Vite resolves .ts files automatically
 // The bundler finds api-client.ts and bundles it
@@ -161,21 +184,25 @@ import { ApiClient } from '../../utils/api-client';  // ← No .js needed!
 ## 🚀 **BENEFITS**
 
 ### **1. Performance**
+
 - ✅ **Incremental Builds:** `composite: true` enables faster rebuilds
 - ✅ **Parallel Compilation:** Projects can be compiled independently
 - ✅ **Cache Utilization:** `.tsbuildinfo` files track changes
 
 ### **2. Correctness**
+
 - ✅ **No Module Resolution Conflicts:** Each project has correct settings
 - ✅ **Type Safety:** Shared strict rules across all projects
 - ✅ **IDE Support:** VS Code understands Project References
 
 ### **3. Maintainability**
+
 - ✅ **Single Source of Truth:** `tsconfig.base.json` for shared rules
 - ✅ **Clear Boundaries:** Backend vs Frontend separation
 - ✅ **Easy to Extend:** Add new projects by adding references
 
 ### **4. Standards Compliance**
+
 - ✅ **TypeScript Team Recommendation:** Official pattern for monorepos
 - ✅ **Industry Standard:** Used by Microsoft, Google, Airbnb
 - ✅ **Future-Proof:** Ready for React migration
@@ -185,6 +212,7 @@ import { ApiClient } from '../../utils/api-client';  // ← No .js needed!
 ## 📊 **RESULTS**
 
 ### **Before Migration:**
+
 ```
 frontend/src/scripts/admin/areas.ts(6,27): error TS2835
 frontend/src/scripts/admin/areas.ts(7,25): error TS2835
@@ -194,6 +222,7 @@ frontend/src/scripts/admin/dashboard/index.ts(7,41): error TS2835
 ```
 
 ### **After Migration:**
+
 ```bash
 $ cd frontend && npx tsc --noEmit
 # NO ERRORS! ✅
@@ -203,7 +232,9 @@ $ cd backend && pnpm run type-check
 ```
 
 ### **Zero TypeScript Errors:** ✅
+
 ### **moduleResolution Conflicts:** ✅ **RESOLVED**
+
 ### **Best Practice 2025:** ✅ **IMPLEMENTED**
 
 ---
@@ -224,6 +255,7 @@ pnpm run type-check
 ```
 
 ### **Expected Results:**
+
 - ✅ Backend: 1 known test error (jest.setup.ts - harmless)
 - ✅ Frontend: **0 errors**
 - ✅ No `error TS2835` about file extensions
@@ -233,16 +265,19 @@ pnpm run type-check
 ## 📚 **REFERENCES**
 
 ### **Official Documentation:**
+
 - [TypeScript Handbook: Project References](https://www.typescriptlang.org/docs/handbook/project-references.html)
 - [moduleResolution Options](https://www.typescriptlang.org/docs/handbook/modules/guides/choosing-compiler-options.html)
 - [TypeScript 5.0+ Best Practices](https://www.typescriptlang.org/docs/handbook/modules/theory.html)
 
 ### **Industry Standards:**
+
 - Microsoft: Uses Project References for VS Code monorepo
 - Google: Uses similar pattern for Angular monorepo
 - TypeScript Team: Official recommendation for 2025
 
 ### **Research Sources:**
+
 - Stack Overflow: "Why nodenext when we have esnext?" (71463698)
 - TypeScript GitHub: Module resolution discussions
 - Web Search: Best Practices 2025 (Oct 2025)
@@ -252,15 +287,19 @@ pnpm run type-check
 ## 🎓 **LESSONS LEARNED**
 
 ### **1. Config Inheritance is Complex**
+
 Root `tsconfig.json` with `include` patterns can override sub-project configs. **Solution:** Use Project References instead.
 
 ### **2. Docker Volume Mounts**
+
 New files require explicit mounts in `docker-compose.yml`. **Solution:** Always add new config files to volume mounts.
 
 ### **3. moduleResolution Matters**
+
 Different runtimes need different resolution strategies. **Solution:** Separate configs for Backend (Node.js) and Frontend (Bundler).
 
 ### **4. Testing is Critical**
+
 Always test after config changes. **Solution:** Run type-check for both Backend and Frontend.
 
 ---

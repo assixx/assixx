@@ -56,8 +56,19 @@ export function populateEntryForm(entry: BlackboardEntry): void {
   // Populate basic fields
   populateBasicFields(entry);
 
-  // Org ID (department/team/area)
-  if (entry.orgLevel !== 'company' && entry.orgId !== null) {
+  // Company-wide toggle - CRITICAL: Must be set before org selects
+  const companyWideToggle = $$id('entry-company-wide') as HTMLInputElement | null;
+  const isCompanyWide = entry.orgLevel === 'company';
+
+  if (companyWideToggle !== null) {
+    companyWideToggle.checked = isCompanyWide;
+
+    // Trigger change event to update UI (disable/enable org selects)
+    companyWideToggle.dispatchEvent(new Event('change'));
+  }
+
+  // Org ID (department/team/area) - only if NOT company-wide
+  if (!isCompanyWide && entry.orgId !== null) {
     const orgIdInput = $$id('entryOrgId') as HTMLInputElement | null;
     if (orgIdInput !== null) orgIdInput.value = entry.orgId.toString();
   }
@@ -68,7 +79,7 @@ export function populateEntryForm(entry: BlackboardEntry): void {
     modalTitle.textContent = 'Eintrag bearbeiten';
   }
 
-  console.info('[Forms] Form populated for editing entry ID:', entry.id);
+  console.info('[Forms] Form populated for editing entry ID:', entry.id, '| Company-wide:', isCompanyWide);
 }
 
 /**
@@ -82,6 +93,14 @@ export function resetEntryForm(): void {
   const form = $$id('entryForm') as HTMLFormElement | null;
   if (form !== null) {
     form.reset();
+  }
+
+  // Reset company-wide toggle and re-enable org selects
+  const companyWideToggle = $$id('entry-company-wide') as HTMLInputElement | null;
+  if (companyWideToggle !== null) {
+    companyWideToggle.checked = false;
+    // Trigger change event to re-enable org selects
+    companyWideToggle.dispatchEvent(new Event('change'));
   }
 
   // Update modal title (HTML uses entryFormModalLabel)

@@ -87,14 +87,16 @@ Warning.args = {
   variant: 'warning',
   icon: 'fa-exclamation-triangle',
   title: 'Archive Suggestion',
-  message: 'This will archive the suggestion and remove it from active items. You can restore it later from the archive.',
+  message:
+    'This will archive the suggestion and remove it from active items. You can restore it later from the archive.',
   cancelText: 'Cancel',
   confirmText: 'Archive',
 };
 Warning.parameters = {
   docs: {
     description: {
-      story: 'Warning variant with orange styling for actions requiring caution. Used for archive, bulk operations, or configuration changes.',
+      story:
+        'Warning variant with orange styling for actions requiring caution. Used for archive, bulk operations, or configuration changes.',
     },
   },
 };
@@ -107,14 +109,16 @@ Danger.args = {
   variant: 'danger',
   icon: 'fa-trash-alt',
   title: 'Delete User',
-  message: 'This will permanently delete the user "Max Mustermann" and all associated data. This action cannot be undone.',
+  message:
+    'This will permanently delete the user "Max Mustermann" and all associated data. This action cannot be undone.',
   cancelText: 'Cancel',
   confirmText: 'Delete User',
 };
 Danger.parameters = {
   docs: {
     description: {
-      story: 'Danger variant with red styling for destructive actions like deleting users, removing data, or permanent removal operations.',
+      story:
+        'Danger variant with red styling for destructive actions like deleting users, removing data, or permanent removal operations.',
     },
   },
 };
@@ -127,14 +131,16 @@ Info.args = {
   variant: 'info',
   icon: 'fa-info-circle',
   title: 'Send Notification',
-  message: 'This will send a notification to all team members (42 users). They will receive an email and in-app notification.',
+  message:
+    'This will send a notification to all team members (42 users). They will receive an email and in-app notification.',
   cancelText: 'Cancel',
   confirmText: 'Send Notification',
 };
 Info.parameters = {
   docs: {
     description: {
-      story: 'Info variant with blue styling for informational confirmations like sending notifications or sharing information.',
+      story:
+        'Info variant with blue styling for informational confirmations like sending notifications or sharing information.',
     },
   },
 };
@@ -147,14 +153,16 @@ Success.args = {
   variant: 'success',
   icon: 'fa-check-circle',
   title: 'Activate Account',
-  message: 'Your account setup is complete! Ready to activate your account and start using all features?',
+  message:
+    'Your account setup is complete! Ready to activate your account and start using all features?',
   cancelText: 'Not Yet',
   confirmText: 'Activate Now',
 };
 Success.parameters = {
   docs: {
     description: {
-      story: 'Success variant with green styling for positive confirmations like activating features or completing onboarding.',
+      story:
+        'Success variant with green styling for positive confirmations like activating features or completing onboarding.',
     },
   },
 };
@@ -187,7 +195,8 @@ LongMessage.args = {
   variant: 'warning',
   icon: 'fa-exclamation-triangle',
   title: 'Reset Settings',
-  message: 'This will reset all your custom settings to their default values. This includes theme preferences, notification settings, dashboard layouts, and saved filters. All your data will remain intact. You can reconfigure your settings at any time after the reset.',
+  message:
+    'This will reset all your custom settings to their default values. This includes theme preferences, notification settings, dashboard layouts, and saved filters. All your data will remain intact. You can reconfigure your settings at any time after the reset.',
   cancelText: 'Keep Settings',
   confirmText: 'Reset to Default',
 };
@@ -223,7 +232,8 @@ export const DisabledButtons = () => {
 DisabledButtons.parameters = {
   docs: {
     description: {
-      story: 'Disabled state while an action is in progress. Both buttons are disabled to prevent multiple submissions.',
+      story:
+        'Disabled state while an action is in progress. Both buttons are disabled to prevent multiple submissions.',
     },
   },
 };
@@ -256,7 +266,8 @@ export const WithOverlay = () => {
 WithOverlay.parameters = {
   docs: {
     description: {
-      story: 'Confirm modal displayed within a modal overlay for full-page blocking. Click outside the modal to close (in actual implementation).',
+      story:
+        'Confirm modal displayed within a modal overlay for full-page blocking. Click outside the modal to close (in actual implementation).',
     },
   },
 };
@@ -311,26 +322,35 @@ export const AllVariants = () => {
   };
 
   // Default
-  grid.appendChild(createVariant('', 'fa-question-circle', 'Default', 'Standard confirmation', 'Confirm'));
+  grid.appendChild(
+    createVariant('', 'fa-question-circle', 'Default', 'Standard confirmation', 'Confirm'),
+  );
 
   // Warning
-  grid.appendChild(createVariant('warning', 'fa-exclamation-triangle', 'Warning', 'Caution required', 'Proceed'));
+  grid.appendChild(
+    createVariant('warning', 'fa-exclamation-triangle', 'Warning', 'Caution required', 'Proceed'),
+  );
 
   // Danger
-  grid.appendChild(createVariant('danger', 'fa-trash-alt', 'Danger', 'Destructive action', 'Delete'));
+  grid.appendChild(
+    createVariant('danger', 'fa-trash-alt', 'Danger', 'Destructive action', 'Delete'),
+  );
 
   // Info
   grid.appendChild(createVariant('info', 'fa-info-circle', 'Info', 'Informational', 'Confirm'));
 
   // Success
-  grid.appendChild(createVariant('success', 'fa-check-circle', 'Success', 'Positive action', 'Confirm'));
+  grid.appendChild(
+    createVariant('success', 'fa-check-circle', 'Success', 'Positive action', 'Confirm'),
+  );
 
   return grid;
 };
 AllVariants.parameters = {
   docs: {
     description: {
-      story: 'Visual comparison of all available variants: Default (Blue), Warning (Orange), Danger (Red), Info (Blue), and Success (Green).',
+      story:
+        'Visual comparison of all available variants: Default (Blue), Warning (Orange), Danger (Red), Info (Blue), and Success (Green).',
     },
   },
 };

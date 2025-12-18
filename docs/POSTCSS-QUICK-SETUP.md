@@ -12,7 +12,7 @@ pnpm add -D postcss postcss-preset-env autoprefixer postcss-nesting
 // postcss.config.js (in project root)
 export default {
   plugins: {
-    'postcss-nesting': {},  // CSS Nesting JETZT nutzen
+    'postcss-nesting': {}, // CSS Nesting JETZT nutzen
     'postcss-preset-env': {
       stage: 2,
       features: {
@@ -21,27 +21,28 @@ export default {
         'custom-media-queries': true,
         'container-queries': true,
         'has-pseudo-class': true,
-        'is-pseudo-class': true
-      }
+        'is-pseudo-class': true,
+      },
     },
-    'autoprefixer': {}
-  }
-}
+    autoprefixer: {},
+  },
+};
 ```
 
 ## 3. Vite Config Update (1 Min)
 
 ```javascript
 // vite.config.js
-import { defineConfig } from 'vite'
-import postcss from './postcss.config.js'
+import { defineConfig } from 'vite';
+
+import postcss from './postcss.config.js';
 
 export default defineConfig({
   css: {
-    postcss
+    postcss,
   },
   // ... rest of config
-})
+});
 ```
 
 ## 4. Was ihr SOFORT nutzen könnt
@@ -86,18 +87,24 @@ export default defineConfig({
 ```css
 /* Container definieren */
 .sidebar {
-  container-type: inline-size;
   container-name: sidebar;
+  container-type: inline-size;
 }
 
 /* Reagiert auf CONTAINER Größe, nicht Viewport! */
 @container sidebar (width < 200px) {
-  .nav-label { display: none; }
-  .nav-icon { font-size: 20px; }
+  .nav-label {
+    display: none;
+  }
+  .nav-icon {
+    font-size: 20px;
+  }
 }
 
 @container sidebar (width > 400px) {
-  .nav-expanded { display: block; }
+  .nav-expanded {
+    display: block;
+  }
 }
 ```
 
@@ -107,7 +114,7 @@ export default defineConfig({
 /* Style form wenn es einen Error enthält */
 .form:has(.error) {
   border: 2px solid red;
-  background: rgba(255,0,0,0.05);
+  background: rgba(255, 0, 0, 0.05);
 }
 
 /* Style container wenn spezifisches Child aktiv */
@@ -116,7 +123,7 @@ export default defineConfig({
 }
 
 /* Disable button wenn form invalid */
-.form:has(input:invalid) button[type="submit"] {
+.form:has(input:invalid) button[type='submit'] {
   opacity: 0.5;
   pointer-events: none;
 }
@@ -127,13 +134,13 @@ export default defineConfig({
 ```css
 /* ALTE Welt */
 .card {
-  margin-left: 1rem;  /* Problem bei RTL */
+  margin-left: 1rem; /* Problem bei RTL */
   padding-right: 2rem;
 }
 
 /* NEUE Welt - funktioniert LTR und RTL */
 .card {
-  margin-inline-start: 1rem;  /* left in LTR, right in RTL */
+  margin-inline-start: 1rem; /* left in LTR, right in RTL */
   padding-inline-end: 2rem;
 }
 ```
@@ -145,8 +152,10 @@ export default defineConfig({
 ```css
 /* Neue Components direkt mit Nesting schreiben */
 .new-feature {
-  & .header { }
-  & .body { }
+  & .header {
+  }
+  & .body {
+  }
 }
 ```
 
@@ -185,25 +194,24 @@ pnpm add -D @fullhuman/postcss-purgecss
 
 ```javascript
 // postcss.config.js - NUR für Production!
-import purgecss from '@fullhuman/postcss-purgecss'
+import purgecss from '@fullhuman/postcss-purgecss';
 
 export default {
   plugins: [
     // ... andere plugins
-    process.env.NODE_ENV === 'production' ? purgecss({
-      content: [
-        './frontend/src/**/*.html',
-        './frontend/src/**/*.js',
-      ],
-      safelist: [
-        'active',
-        'show',
-        'hidden',
-        /^modal-/,  // Alle modal-* Klassen behalten
-      ]
-    }) : false
-  ].filter(Boolean)
-}
+    process.env.NODE_ENV === 'production' ?
+      purgecss({
+        content: ['./frontend/src/**/*.html', './frontend/src/**/*.js'],
+        safelist: [
+          'active',
+          'show',
+          'hidden',
+          /^modal-/, // Alle modal-* Klassen behalten
+        ],
+      })
+    : false,
+  ].filter(Boolean),
+};
 ```
 
 ## ⚠️ Gotchas

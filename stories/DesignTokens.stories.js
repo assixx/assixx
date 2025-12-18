@@ -10,14 +10,14 @@ export default {
   tags: ['autodocs'],
 
   parameters: {
-    layout: 'fullscreen'
+    layout: 'fullscreen',
   },
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**

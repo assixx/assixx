@@ -87,6 +87,7 @@ docker-compose logs -f  # Logs prüfen
 docker-compose build --no-cache backend
 docker-compose up -d
 ```
+
 ## 📋 Zusätzliche Befehle
 
 ### Code Quality

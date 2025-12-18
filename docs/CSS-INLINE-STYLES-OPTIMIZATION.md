@@ -21,11 +21,13 @@
 ### 🎯 Bewusste Strategie
 
 **Ersetzt wurden nur:**
+
 - Häufig wiederholte Patterns (6+ Vorkommen)
 - Sicherheitskritische styles (display: none für UI-Kontrolle)
 - Semantisch sinnvolle Klassen (text-danger, text-success)
 
 **Nicht ersetzt wurden:**
+
 - Einmalige/seltene styles
 - Komplexe Layout-Definitionen
 - Modal/Component-spezifische styles
@@ -48,15 +50,15 @@
 
 ### Ersetzt in folgenden Dateien
 
-| Datei | Anzahl | Status | Details |
-|-------|--------|--------|---------|
-| admin-dashboard.html | 4 | ✅ Fertig | Floating Action Buttons |
-| document-upload.html | 4 | ✅ Fertig | Upload alerts & dropdowns |
-| manage-admins.html | 2 | ✅ Fertig | Fehlermeldungen (E-Mail/Passwort) |
-| manage-employees.html | 2 | ✅ Fertig | Fehlermeldungen (E-Mail/Passwort) |
-| manage-root-users.html | 5 | ✅ Fertig | Fehlermeldungen + activeStatusGroup |
-| shifts.html | 5 | ✅ Fertig | Navigation, Controls, Planning Area |
-| **GESAMT** | **22** | **✅ 100%** | **Alle ersetzt!** |
+| Datei                  | Anzahl | Status      | Details                             |
+| ---------------------- | ------ | ----------- | ----------------------------------- |
+| admin-dashboard.html   | 4      | ✅ Fertig   | Floating Action Buttons             |
+| document-upload.html   | 4      | ✅ Fertig   | Upload alerts & dropdowns           |
+| manage-admins.html     | 2      | ✅ Fertig   | Fehlermeldungen (E-Mail/Passwort)   |
+| manage-employees.html  | 2      | ✅ Fertig   | Fehlermeldungen (E-Mail/Passwort)   |
+| manage-root-users.html | 5      | ✅ Fertig   | Fehlermeldungen + activeStatusGroup |
+| shifts.html            | 5      | ✅ Fertig   | Navigation, Controls, Planning Area |
+| **GESAMT**             | **22** | **✅ 100%** | **Alle ersetzt!**                   |
 
 ### Verbleibende inline styles: ~207
 
@@ -80,17 +82,17 @@
 
 ### ✅ Abgeschlossene Ersetzungen (41 Zeilen)
 
-| Datei | Anzahl | Status | Details |
-|-------|--------|--------|---------|
-| account-settings.html | 14 | ✅ Fertig | Gefahrenzone, Modals |
-| tenant-deletion-status.html | 11 | ✅ Fertig | Status-Cards, Warnungen |
-| logs.html | 9 | ✅ Fertig | Lösch-Modal, Warnungen |
-| manage-admins.html | 4 | ✅ Fertig | Info-Box, Hilfetexte |
-| document-upload.html | 1 | ✅ Fertig | Info-Icon |
-| admin-dashboard.html | 1 | ✅ Fertig | Lade-Spinner |
-| manage-root-users.html | 1 | ✅ Fertig | Hilfetexte |
-| manage-employees.html | 1 | ✅ Fertig | Verfügbarkeit-Header |
-| **GESAMT** | **41** | **✅ 100%** | |
+| Datei                       | Anzahl | Status      | Details                 |
+| --------------------------- | ------ | ----------- | ----------------------- |
+| account-settings.html       | 14     | ✅ Fertig   | Gefahrenzone, Modals    |
+| tenant-deletion-status.html | 11     | ✅ Fertig   | Status-Cards, Warnungen |
+| logs.html                   | 9      | ✅ Fertig   | Lösch-Modal, Warnungen  |
+| manage-admins.html          | 4      | ✅ Fertig   | Info-Box, Hilfetexte    |
+| document-upload.html        | 1      | ✅ Fertig   | Info-Icon               |
+| admin-dashboard.html        | 1      | ✅ Fertig   | Lade-Spinner            |
+| manage-root-users.html      | 1      | ✅ Fertig   | Hilfetexte              |
+| manage-employees.html       | 1      | ✅ Fertig   | Verfügbarkeit-Header    |
+| **GESAMT**                  | **41** | **✅ 100%** |                         |
 
 ### ✅ Geprüft - Keine color styles gefunden
 
@@ -167,23 +169,25 @@
 
 ### ✅ Ersetzt (16 Zeilen)
 
-| Datei | Anzahl | Details |
-|-------|--------|---------|
-| document-upload.html | 1 | margin-right: 8px → .u-mr-8 |
-| manage-admins.html | 5 | margin-right: 8px → .u-mr-8 (1x), margin-left: 8px → .u-ml-8 (1x), margin-top: 4px → .u-mt-4 (3x) |
-| manage-root-users.html | 2 | margin-left: 8px → .u-ml-8 (1x), margin-top: 4px → .u-mt-4 (1x) |
-| logs.html | 5 | margin-bottom: 12px → .u-mb-12 (3x), margin-bottom: 8px → .u-mb-8 (2x) |
-| account-settings.html | 3 | margin-bottom: 12px → .u-mb-12 (2x), margin-bottom: 8px → .u-mb-8 (1x) |
-| **GESAMT** | **16** | |
+| Datei                  | Anzahl | Details                                                                                           |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| document-upload.html   | 1      | margin-right: 8px → .u-mr-8                                                                       |
+| manage-admins.html     | 5      | margin-right: 8px → .u-mr-8 (1x), margin-left: 8px → .u-ml-8 (1x), margin-top: 4px → .u-mt-4 (3x) |
+| manage-root-users.html | 2      | margin-left: 8px → .u-ml-8 (1x), margin-top: 4px → .u-mt-4 (1x)                                   |
+| logs.html              | 5      | margin-bottom: 12px → .u-mb-12 (3x), margin-bottom: 8px → .u-mb-8 (2x)                            |
+| account-settings.html  | 3      | margin-bottom: 12px → .u-mb-12 (2x), margin-bottom: 8px → .u-mb-8 (1x)                            |
+| **GESAMT**             | **16** |                                                                                                   |
 
 ### 🎯 Bewusste Entscheidung: Was NICHT ersetzt wurde
 
 **Begründung:** Viele inline styles sind einmalig verwendet oder sehr spezifisch für ihren Kontext. Diese zu ersetzen würde:
+
 - Mehr CSS-Klassen ohne echten Mehrwert erzeugen
 - Code-Komplexität erhöhen ohne Performance-Gewinn
 - Wartbarkeit nicht verbessern
 
 **Beispiele nicht ersetzter inline styles:**
+
 - Komplexe Kombinationen: `margin: 0 0 8px 0`, `margin: 0 auto`
 - Einmalige Layout-Styles: `max-width: 1200px`, `min-height: 200px`
 - Dynamische/berechnete Werte: `calc(var(--spacing-xl) * 1.5)`
@@ -252,9 +256,9 @@ document.head.append(linkElement);
 ```html
 <!-- Vorher: -->
 <div style="border-color: rgba(244, 67, 54, 0.3)">
-
-<!-- Nachher: Neue Utility-Klasse benötigt -->
-<div class="u-border-danger">
+  <!-- Nachher: Neue Utility-Klasse benötigt -->
+  <div class="u-border-danger"></div>
+</div>
 ```
 
 ### Dynamische Styles
@@ -269,14 +273,14 @@ Einige inline styles werden dynamisch per JavaScript gesetzt und können nicht d
 
 ## 📈 Fortschritt Gesamt
 
-| Phase | Kategorie | Total | Ersetzt | Verbleibend | Status |
-|-------|-----------|-------|---------|-------------|--------|
-| 1 | display: none | 22 | 22 | 0 | ✅ 100% |
-| 2 | Farben | ~50 | 0 | ~50 | ⏳ 0% |
-| 3 | Spacing | ~100 | 0 | ~100 | ⏳ 0% |
-| 4 | Width | ~30 | 0 | ~30 | ⏳ 0% |
-| 5 | Sonstige | ~27 | 0 | ~27 | ⏳ 0% |
-| **GESAMT** | **Alle** | **~229** | **22** | **~207** | **🟦 9.6%** |
+| Phase      | Kategorie     | Total    | Ersetzt | Verbleibend | Status      |
+| ---------- | ------------- | -------- | ------- | ----------- | ----------- |
+| 1          | display: none | 22       | 22      | 0           | ✅ 100%     |
+| 2          | Farben        | ~50      | 0       | ~50         | ⏳ 0%       |
+| 3          | Spacing       | ~100     | 0       | ~100        | ⏳ 0%       |
+| 4          | Width         | ~30      | 0       | ~30         | ⏳ 0%       |
+| 5          | Sonstige      | ~27      | 0       | ~27         | ⏳ 0%       |
+| **GESAMT** | **Alle**      | **~229** | **22**  | **~207**    | **🟦 9.6%** |
 
 ---
 
@@ -286,23 +290,48 @@ Einige inline styles werden dynamisch per JavaScript gesetzt und können nicht d
 
 ```css
 /* Display */
-.u-hidden { display: none !important; }
-.u-block { display: block !important; }
-.u-flex { display: flex !important; }
+.u-hidden {
+  display: none !important;
+}
+.u-block {
+  display: block !important;
+}
+.u-flex {
+  display: flex !important;
+}
 
 /* Spacing */
-.u-m-0 { margin: 0 !important; }
-.u-mt-xs { margin-top: var(--spacing-xs) !important; }
-.u-mt-text { margin-top: var(--margin-text-top) !important; }
-.u-p-container { padding: var(--spacing-lg) !important; }
+.u-m-0 {
+  margin: 0 !important;
+}
+.u-mt-xs {
+  margin-top: var(--spacing-xs) !important;
+}
+.u-mt-text {
+  margin-top: var(--margin-text-top) !important;
+}
+.u-p-container {
+  padding: var(--spacing-lg) !important;
+}
 
 /* Width */
-.u-w-full { width: 100% !important; }
-.u-max-w-modal { max-width: var(--modal-width) !important; }
+.u-w-full {
+  width: 100% !important;
+}
+.u-max-w-modal {
+  max-width: var(--modal-width) !important;
+}
 
 /* Flex */
-.u-flex-gap-sm { display: flex; gap: var(--spacing-sm) !important; }
-.u-flex-center { display: flex; align-items: center; justify-content: center !important; }
+.u-flex-gap-sm {
+  display: flex;
+  gap: var(--spacing-sm) !important;
+}
+.u-flex-center {
+  display: flex;
+  justify-content: center !important;
+  align-items: center;
+}
 ```
 
 ### Weitere verfügbare Klassen
@@ -337,13 +366,13 @@ Einige inline styles werden dynamisch per JavaScript gesetzt und können nicht d
 
 ## 🔄 Updates
 
-| Datum | Änderung | Von → Zu |
-|-------|----------|----------|
-| 09.17.2025 | Phase 1 abgeschlossen | 0/22 → 22/22 ✅ |
-| 09.17.2025 | Phase 2 abgeschlossen | 0/41 → 41/41 ✅ |
-| 09.17.2025 | Phase 3 abgeschlossen | 0/16 → 16/16 ✅ |
+| Datum      | Änderung                             | Von → Zu                       |
+| ---------- | ------------------------------------ | ------------------------------ |
+| 09.17.2025 | Phase 1 abgeschlossen                | 0/22 → 22/22 ✅                |
+| 09.17.2025 | Phase 2 abgeschlossen                | 0/41 → 41/41 ✅                |
+| 09.17.2025 | Phase 3 abgeschlossen                | 0/16 → 16/16 ✅                |
 | 09.17.2025 | unified-navigation.ts CSS extrahiert | 1132 Zeilen → externe Datei ✅ |
-| 09.17.2025 | Dokumentation erstellt | - |
+| 09.17.2025 | Dokumentation erstellt               | -                              |
 
 ---
 

@@ -11,6 +11,7 @@
 ## ✅ WHAT'S BEEN DONE
 
 ### 1. Database Migration ✅
+
 - ✅ New columns added (access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month)
 - ✅ Data migrated successfully (1 document: access_scope='company')
 - ✅ Category changed to flexible VARCHAR(50)
@@ -19,11 +20,13 @@
 - ✅ Constraints added for data integrity
 
 ### 2. Schema Files ✅
+
 - ✅ `database/schema/02-modules/documents.sql` updated
 - ✅ Single source of truth restored
 - ✅ Comprehensive comments added
 
 ### 3. Migration Script ✅
+
 - ✅ `database/migrations/2025-01-10_document_schema_ultimate_refactor.sql` created
 - ✅ Backwards compatible (old columns kept for safety)
 
@@ -54,6 +57,7 @@ All code has been refactored to use the new clean structure:
 **User Decision:** Drop old columns immediately for clean structure.
 
 **Phases Completed:**
+
 1. ✅ **Phase 1:** Database migration with immediate old column removal
 2. ✅ **Phase 2:** Schema file updates
 3. ✅ **Phase 3:** Backend MODEL refactoring (all SQL queries)
@@ -79,6 +83,7 @@ All code has been refactored to use the new clean structure:
 **File:** `backend/src/models/document.ts`
 
 **Current Interface (OLD):**
+
 ```typescript
 interface DocumentCreateData {
   userId?: number;
@@ -92,21 +97,22 @@ interface DocumentCreateData {
 ```
 
 **New Interface (TARGET):**
+
 ```typescript
 interface DocumentCreateData {
   // NEW: Clean access control
   accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
-  ownerUserId?: number;       // For personal/payroll
-  targetTeamId?: number;      // For team
+  ownerUserId?: number; // For personal/payroll
+  targetTeamId?: number; // For team
   targetDepartmentId?: number; // For department
 
   // NEW: Flexible classification
-  category?: string;           // VARCHAR, not ENUM
+  category?: string; // VARCHAR, not ENUM
   tags?: string[];
 
   // NEW: Payroll fields
   salaryYear?: number;
-  salaryMonth?: number;        // 1-12
+  salaryMonth?: number; // 1-12
 
   // File fields (unchanged)
   fileName: string;
@@ -116,6 +122,7 @@ interface DocumentCreateData {
 ```
 
 **Migration Function (TEMPORARY):**
+
 ```typescript
 function createDocumentData(newData: DocumentCreateData): DbInsertData {
   return {
@@ -167,6 +174,7 @@ function mapAccessScopeToRecipientType(scope: string): string {
 **File:** `backend/src/routes/v2/documents/documents.service.ts`
 
 **Current checkDocumentAccess (USES OLD FIELDS):**
+
 ```typescript
 switch (document.recipient_type) {
   case 'user':
@@ -179,6 +187,7 @@ switch (document.recipient_type) {
 ```
 
 **New checkDocumentAccess (USES NEW FIELDS):**
+
 ```typescript
 private async checkDocumentAccess(
   document: DbDocument,
@@ -225,6 +234,7 @@ private async checkDocumentAccess(
 **File:** `backend/src/routes/v2/documents/documents.validation.zod.ts`
 
 **Add new validation schema:**
+
 ```typescript
 export const CreateDocumentBodySchemaV2 = z.object({
   // NEW: Direct access_scope (matches frontend sidebar 1:1)
@@ -263,17 +273,20 @@ export const CreateDocumentBodySchemaV2 = z.object({
   category: z.string().max(50).optional(),
 
   // Tags
-  tags: z.string().refine(
-    (val) => {
-      try {
-        const tags = JSON.parse(val);
-        return Array.isArray(tags) && tags.every(t => typeof t === 'string');
-      } catch {
-        return false;
-      }
-    },
-    { message: 'Tags must be a JSON array of strings' },
-  ).optional(),
+  tags: z
+    .string()
+    .refine(
+      (val) => {
+        try {
+          const tags = JSON.parse(val);
+          return Array.isArray(tags) && tags.every((t) => typeof t === 'string');
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Tags must be a JSON array of strings' },
+    )
+    .optional(),
 
   // Other fields (unchanged)
   description: z.string().max(500).optional(),
@@ -288,15 +301,17 @@ export const CreateDocumentBodySchemaV2 = z.object({
 **File:** `frontend/src/scripts/documents/explorer/upload-modal.ts`
 
 **Current buildFormData (COMPLEX MAPPING):**
+
 ```typescript
 const CATEGORY_MAPPINGS = {
-  'personal': { recipientType: 'user', dbCategory: 'personal' },
-  'team': { recipientType: 'team', dbCategory: 'work' },
+  personal: { recipientType: 'user', dbCategory: 'personal' },
+  team: { recipientType: 'team', dbCategory: 'work' },
   // ...confusing...
 };
 ```
 
 **New buildFormData (DIRECT 1:1):**
+
 ```typescript
 private async buildFormData(file: File): Promise<FormData | null> {
   const user = await this.getCurrentUser();
@@ -362,6 +377,7 @@ private async buildFormData(file: File): Promise<FormData | null> {
 **File:** `frontend/src/scripts/documents/explorer/state.ts`
 
 **Current matchesCategory (BROKEN):**
+
 ```typescript
 private matchesCategory(doc, category): boolean {
   if (category === 'payroll') {
@@ -373,6 +389,7 @@ private matchesCategory(doc, category): boolean {
 ```
 
 **New matchesCategory (PERFECT):**
+
 ```typescript
 private matchesCategory(doc: Document, category: string): boolean {
   // Direct 1:1 mapping - no translation needed!
@@ -390,6 +407,7 @@ private matchesCategory(doc: Document, category: string): boolean {
 **File:** `frontend/src/pages/documents-explorer.html`
 
 **Update dropdown values:**
+
 ```html
 <!-- OLD (WRONG): -->
 <div class="dropdown__option" data-value="work">Arbeitsdokumente</div>
@@ -424,12 +442,14 @@ private matchesCategory(doc: Document, category: string): boolean {
 **Status:** User is currently testing manually
 
 ### Unit Tests
+
 - [ ] Backend model creates document with new fields
 - [ ] Backend service checks access using new fields
 - [ ] Frontend uploads document with accessScope
 - [ ] Sidebar filtering works with accessScope
 
 ### Integration Tests
+
 - [ ] Upload "personal" → DB has access_scope='personal', owner_user_id=me
 - [ ] Upload "team" → DB has access_scope='team', target_team_id=myTeam
 - [ ] Upload "payroll" → DB has access_scope='payroll', salary_year/month set
@@ -437,6 +457,7 @@ private matchesCategory(doc: Document, category: string): boolean {
 - [ ] Sidebar "payroll" → Shows only my payroll docs
 
 ### Security Tests
+
 - [ ] User A cannot see User B's personal docs
 - [ ] User A cannot see different team's docs
 - [ ] Cross-tenant isolation still works
@@ -480,6 +501,7 @@ private matchesCategory(doc: Document, category: string): boolean {
 ## 📚 FILES MODIFIED
 
 ### Backend (Completed)
+
 1. ✅ `database/schema/02-modules/documents.sql` - Schema updated
 2. ✅ `backend/src/models/document.ts` - All interfaces and queries refactored
 3. ✅ `backend/src/routes/v2/documents/documents.service.ts` - Access control updated
@@ -488,6 +510,7 @@ private matchesCategory(doc: Document, category: string): boolean {
 6. ✅ `backend/src/services/document.service.ts` - DELETED (obsolete API v1 file)
 
 ### Frontend (Completed)
+
 7. ✅ `frontend/src/scripts/documents/explorer/types.ts` - TypeScript interfaces updated
 8. ✅ `frontend/src/scripts/documents/explorer/upload-modal.ts` - Form data mapping refactored
 9. ✅ `frontend/src/scripts/documents/explorer/api.ts` - API client updated
@@ -495,6 +518,7 @@ private matchesCategory(doc: Document, category: string): boolean {
 11. ✅ `frontend/src/scripts/documents/explorer/sidebar.ts` - Category counts fixed
 
 ### Documentation (In Progress)
+
 12. ⏳ `docs/DATABASE-SETUP-README.md` - Schema docs need updating
 13. ⏳ `docs/REFACTORING-NEXT-STEPS.md` - THIS FILE (being updated now)
 14. ⏳ `docs/API-DOCS.md` - API documentation (if exists)
@@ -531,15 +555,16 @@ private matchesCategory(doc: Document, category: string): boolean {
 
 ---
 
-*Generated: 2025-01-10*
-*Completed: 2025-01-11*
-*Status: ✅ Code refactoring complete | ⏳ Testing in progress*
+_Generated: 2025-01-10_
+_Completed: 2025-01-11_
+_Status: ✅ Code refactoring complete | ⏳ Testing in progress_
 
 ---
 
 ## 📊 QUICK SUMMARY
 
 **What Changed:**
+
 - Database: `recipient_type`, `user_id`, `team_id`, `department_id`, `year`, `month` → `access_scope`, `owner_user_id`, `target_team_id`, `target_department_id`, `salary_year`, `salary_month`
 - Backend: 4 layers refactored (Model, Service, Controller, Validation)
 - Frontend: 5 modules refactored (Types, Upload, API, State, Sidebar)

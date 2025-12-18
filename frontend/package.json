@@ -32,11 +32,11 @@
     "vite-plugin-simple-html": "1.1.0"
   },
   "dependencies": {
-    "@fullcalendar/core": "6.1.19",
-    "@fullcalendar/daygrid": "6.1.19",
-    "@fullcalendar/interaction": "6.1.19",
-    "@fullcalendar/list": "6.1.19",
-    "@fullcalendar/timegrid": "6.1.19",
+    "@event-calendar/core": "^3.8.1",
+    "@event-calendar/day-grid": "^3.8.1",
+    "@event-calendar/time-grid": "^3.8.1",
+    "@event-calendar/list": "^3.8.1",
+    "@event-calendar/interaction": "^3.8.1",
     "@zxcvbn-ts/core": "3.0.4",
     "@zxcvbn-ts/language-common": "3.0.4",
     "@zxcvbn-ts/language-de": "3.0.2",

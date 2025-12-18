@@ -17,6 +17,7 @@ This document defines the **unified badge system** for all table assignment colu
 ```
 
 **Detection:**
+
 ```typescript
 if (entity.hasFullAccess === true || entity.hasFullAccess === 1)
 ```
@@ -34,6 +35,7 @@ if (entity.hasFullAccess === true || entity.hasFullAccess === 1)
 ```
 
 **Detection:**
+
 ```typescript
 if (entity.items?.length > 0) {
   const names = entity.items.map(i => i.name).join(', ');
@@ -48,12 +50,11 @@ if (entity.items?.length > 0) {
 **Use when:** Access is inherited from parent hierarchy (Employee → Team → Dept → Area).
 
 ```html
-<span class="badge badge--info" title="Vererbt von: Team Alpha">
-  <i class="fas fa-sitemap mr-1"></i>Vererbt
-</span>
+<span class="badge badge--info" title="Vererbt von: Team Alpha"> <i class="fas fa-sitemap mr-1"></i>Vererbt </span>
 ```
 
 **Detection:**
+
 ```typescript
 // For Employees: Check if they have teams but no direct assignments
 const hasTeams = (entity.teams?.length ?? 0) > 0 || entity.teamId != null;
@@ -75,6 +76,7 @@ if (hasTeams && !hasDirectAssignments) {
 ```
 
 **Detection:**
+
 ```typescript
 // Final fallback - no direct or inherited access
 return '<span class="badge badge--secondary" title="Kein Bereich zugewiesen">Keine</span>';
@@ -113,26 +115,28 @@ return '<span class="badge badge--secondary" title="Kein Bereich zugewiesen">Kei
 
 ### Employees (role: employee)
 
-| Column | Direct Source | Inherited From |
-|--------|--------------|----------------|
-| Areas | `employee.areas[]` | Team → Dept → Area |
-| Departments | `employee.departments[]` | Team → Dept |
-| Teams | `employee.teams[]` | - (no inheritance) |
+| Column      | Direct Source            | Inherited From     |
+| ----------- | ------------------------ | ------------------ |
+| Areas       | `employee.areas[]`       | Team → Dept → Area |
+| Departments | `employee.departments[]` | Team → Dept        |
+| Teams       | `employee.teams[]`       | - (no inheritance) |
 
 **Inheritance Detection:**
+
 ```typescript
 const hasTeams = (employee.teams?.length ?? 0) > 0 || employee.teamId != null;
 ```
 
 ### Admins (role: admin)
 
-| Column | Direct Source | Inherited From |
-|--------|--------------|----------------|
-| Areas | `admin.areas[]` | - (no inheritance) |
-| Departments | `admin.departments[]` | Area → Dept |
-| Teams | - | Area/Dept → Teams |
+| Column      | Direct Source         | Inherited From     |
+| ----------- | --------------------- | ------------------ |
+| Areas       | `admin.areas[]`       | - (no inheritance) |
+| Departments | `admin.departments[]` | Area → Dept        |
+| Teams       | -                     | Area/Dept → Teams  |
 
 **Inheritance Detection:**
+
 ```typescript
 // For Departments: Check if admin has areas (depts inherited from areas)
 const hasAreas = (admin.areas?.length ?? 0) > 0;
@@ -163,13 +167,13 @@ export function getAreasBadge(entity: Entity): string {
   if (hasAreas) {
     const count = entity.areas.length;
     const label = count === 1 ? 'Bereich' : 'Bereiche';
-    const names = entity.areas.map(a => a.name).join(', ');
+    const names = entity.areas.map((a) => a.name).join(', ');
     return `<span class="badge badge--info" title="${names}">${count} ${label}</span>`;
   }
 
   // 3. Inherited (via teams)
   if (hasTeams) {
-    const teamNames = entity.teams?.map(t => t.name).join(', ') ?? entity.teamName ?? '';
+    const teamNames = entity.teams?.map((t) => t.name).join(', ') ?? entity.teamName ?? '';
     return `<span class="badge badge--info" title="Vererbt von: ${teamNames}"><i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
   }
 
@@ -182,28 +186,39 @@ export function getAreasBadge(entity: Entity): string {
 
 **MANDATORY:** ALL badges MUST have a `title` attribute for native browser tooltips.
 
-| Badge Type | Tooltip Content |
-|-----------|-----------------|
+| Badge Type  | Tooltip Content                   |
+| ----------- | --------------------------------- |
 | Full Access | "Voller Zugriff auf alle {Label}" |
-| Count (1) | Single item name |
-| Count (N) | Comma-separated list of names |
-| Inherited | "Vererbt von: {Parent Names}" |
-| None | "Keine {Label} zugewiesen" |
+| Count (1)   | Single item name                  |
+| Count (N)   | Comma-separated list of names     |
+| Inherited   | "Vererbt von: {Parent Names}"     |
+| None        | "Keine {Label} zugewiesen"        |
 
 ## CSS Classes Reference
 
 ```css
 /* Base badge */
-.badge { }
+.badge {
+}
 
 /* Assignment badge variants */
-.badge--primary   { /* Full access - blue gradient */ }
-.badge--info      { /* Count & Inherited - cyan/teal */ }
-.badge--secondary { /* None - gray */ }
+.badge--primary {
+  /* Full access - blue gradient */
+}
+.badge--info {
+  /* Count & Inherited - cyan/teal */
+}
+.badge--secondary {
+  /* None - gray */
+}
 
 /* Icons (Font Awesome) */
-.fa-globe    { /* Full access icon */ }
-.fa-sitemap  { /* Inheritance icon */ }
+.fa-globe {
+  /* Full access icon */
+}
+.fa-sitemap {
+  /* Inheritance icon */
+}
 ```
 
 ## Files Using This System
@@ -236,6 +251,6 @@ http://localhost:6006/?path=/story/design-system-assignment-badges
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change                                             |
+| ---------- | -------------------------------------------------- |
 | 2025-11-29 | Initial version - unified badge system established |

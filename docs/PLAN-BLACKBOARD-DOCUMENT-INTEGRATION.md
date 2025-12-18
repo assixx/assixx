@@ -11,10 +11,12 @@
 Blackboard-Anhänge sollen im Documents-System gespeichert und in document-explorer.html unter einem eigenen "Schwarzes Brett" Ordner angezeigt werden.
 
 **Vorher:**
+
 - Blackboard-Anhänge → `blackboard_attachments` Tabelle → `/uploads/blackboard/{tenant}/{timestamp}.ext`
 - Separate Logik, kein UUID, keine Hierarchie
 
 **Nachher:**
+
 - Blackboard-Anhänge → `documents` Tabelle mit `category = 'blackboard'` → `/uploads/documents/{tenant}/blackboard/{year}/{month}/{uuid}.ext`
 - Einheitliche Logik wie alle anderen Dokumente
 - Vorschau-Modal identisch zu document-explorer
@@ -24,11 +26,13 @@ Blackboard-Anhänge sollen im Documents-System gespeichert und in document-explo
 ## Architektur-Entscheidung
 
 ### Option A: Neue Kategorie in `documents` Tabelle ✅ GEWÄHLT
+
 - Nutzt bestehende Infrastruktur (UUID, Checksum, hierarchische Pfade)
 - Document-Explorer funktioniert automatisch
 - Weniger Code-Duplikation
 
 ### Option B: `blackboard_attachments` Tabelle upgraden ❌
+
 - Mehr Arbeit, parallele Logik
 - Document-Explorer braucht separate Integration
 
@@ -39,6 +43,7 @@ Blackboard-Anhänge sollen im Documents-System gespeichert und in document-explo
 ### Phase 1: Datenbank
 
 #### 1.1 Migration erstellen
+
 **Datei:** `database/migrations/028-add-blackboard-document-category.sql`
 
 ```sql
@@ -63,6 +68,7 @@ CREATE INDEX idx_documents_blackboard_entry ON documents(blackboard_entry_id);
 ```
 
 #### 1.2 Optional: blackboard_attachments deprecaten
+
 - NICHT löschen (historische Daten)
 - Neue Uploads gehen in `documents`
 - Migration für bestehende Anhänge (später)
@@ -72,9 +78,11 @@ CREATE INDEX idx_documents_blackboard_entry ON documents(blackboard_entry_id);
 ### Phase 2: Backend
 
 #### 2.1 Documents Controller erweitern
+
 **Datei:** `backend/src/routes/v2/documents/documents.controller.ts`
 
 Änderungen:
+
 - `parseDocumentData()` → `blackboardEntryId` Parameter hinzufügen
 - `buildStoragePath()` → Blackboard-Pfad: `/uploads/documents/{tenant}/blackboard/{year}/{month}/{uuid}.ext`
 
@@ -87,9 +95,11 @@ blackboardEntryId: body.blackboardEntryId ? Number.parseInt(body.blackboardEntry
 ```
 
 #### 2.2 Blackboard Controller ändern
+
 **Datei:** `backend/src/routes/v2/blackboard/blackboard.controller.ts`
 
 Änderung in `uploadAttachment()`:
+
 ```typescript
 // ALT: Eigene multer-Logik, blackboard_attachments Tabelle
 // NEU: Weiterleitung an documents.service mit category='blackboard'
@@ -114,12 +124,14 @@ export async function uploadAttachment(req: AuthenticatedRequest, res: Response)
 ```
 
 #### 2.3 Blackboard Routes anpassen
+
 **Datei:** `backend/src/routes/v2/blackboard/index.ts`
 
 - Multer-Konfiguration auf memoryStorage umstellen (wie documents)
 - Oder: direkt documents-Upload-Route verwenden
 
 #### 2.4 Documents Service erweitern
+
 **Datei:** `backend/src/routes/v2/documents/documents.service.ts`
 
 ```typescript
@@ -137,15 +149,25 @@ async getDocumentsByBlackboardEntry(entryId: number, tenantId: number): Promise<
 ### Phase 3: Frontend - Document Explorer
 
 #### 3.1 Folder Tree erweitern
+
 **Datei:** `frontend/src/pages/documents-explorer.html`
 
 Neuen Ordner hinzufügen nach "Gehaltsabrechnungen":
+
 ```html
 <li>
-  <button class="folder-item w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-left text-content-primary hover:bg-surface-3" data-category="blackboard">
+  <button
+    class="folder-item w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-left text-content-primary hover:bg-surface-3"
+    data-category="blackboard"
+  >
     <span class="text-content-secondary">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+        ></path>
       </svg>
     </span>
     <span class="text-sm">Schwarzes Brett</span>
@@ -155,6 +177,7 @@ Neuen Ordner hinzufügen nach "Gehaltsabrechnungen":
 ```
 
 #### 3.2 TypeScript anpassen
+
 **Datei:** `frontend/src/scripts/documents/*.ts`
 
 - Filter-Logik für `accessScope: 'blackboard'` hinzufügen
@@ -165,9 +188,11 @@ Neuen Ordner hinzufügen nach "Gehaltsabrechnungen":
 ### Phase 4: Frontend - Blackboard
 
 #### 4.1 Attachment-Anzeige ändern
+
 **Datei:** `frontend/src/scripts/blackboard/ui.ts`
 
 Statt Datei-Preview nur Links anzeigen:
+
 ```typescript
 function renderAttachmentLinks(attachments: Attachment[]): string {
   if (attachments.length === 0) return '';
@@ -179,7 +204,9 @@ function renderAttachmentLinks(attachments: Attachment[]): string {
         ${attachments.length} Anhang${attachments.length > 1 ? 'e' : ''}
       </p>
       <div class="flex flex-wrap gap-2">
-        ${attachments.map(att => `
+        ${attachments
+          .map(
+            (att) => `
           <button
             class="btn btn-sm btn-secondary attachment-preview-btn"
             data-document-id="${att.id}"
@@ -189,7 +216,9 @@ function renderAttachmentLinks(attachments: Attachment[]): string {
             <i class="${getFileIcon(att.mimeType)} mr-1"></i>
             ${truncateFilename(att.originalName, 20)}
           </button>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     </div>
   `;
@@ -197,9 +226,11 @@ function renderAttachmentLinks(attachments: Attachment[]): string {
 ```
 
 #### 4.2 Preview Modal integrieren
+
 **Datei:** `frontend/src/scripts/blackboard/modals.ts`
 
 Preview-Modal aus document-explorer wiederverwenden:
+
 ```typescript
 import { showDocumentPreview } from '../documents/preview';
 
@@ -215,6 +246,7 @@ document.addEventListener('click', (e) => {
 ```
 
 #### 4.3 Upload-Logik anpassen
+
 **Datei:** `frontend/src/scripts/blackboard/forms.ts`
 
 ```typescript
@@ -241,9 +273,11 @@ async function uploadBlackboardDocument(entryId: number, file: File): Promise<vo
 ### Phase 5: Shared Preview Component
 
 #### 5.1 Preview-Modal extrahieren
+
 **Datei:** `frontend/src/scripts/shared/document-preview.ts`
 
 Wiederverwendbare Komponente für:
+
 - document-explorer.html
 - blackboard.html
 - Zukünftig: chat.html, kvp.html
@@ -272,16 +306,16 @@ export class DocumentPreviewModal {
 
 ## Implementierungs-Reihenfolge
 
-| # | Task | Abhängigkeit | Aufwand |
-|---|------|--------------|---------|
-| 1 | DB Migration erstellen & ausführen | - | 10 min |
-| 2 | Backend: documents.service erweitern | 1 | 20 min |
-| 3 | Backend: blackboard.controller → documents nutzen | 2 | 30 min |
-| 4 | Frontend: document-explorer Ordner | 1 | 15 min |
-| 5 | Frontend: Shared Preview Component | - | 30 min |
-| 6 | Frontend: blackboard Attachment-Links | 3, 5 | 30 min |
-| 7 | Frontend: blackboard Upload-Logik | 3 | 20 min |
-| 8 | Testing & Bugfixing | 1-7 | 30 min |
+| #   | Task                                              | Abhängigkeit | Aufwand |
+| --- | ------------------------------------------------- | ------------ | ------- |
+| 1   | DB Migration erstellen & ausführen                | -            | 10 min  |
+| 2   | Backend: documents.service erweitern              | 1            | 20 min  |
+| 3   | Backend: blackboard.controller → documents nutzen | 2            | 30 min  |
+| 4   | Frontend: document-explorer Ordner                | 1            | 15 min  |
+| 5   | Frontend: Shared Preview Component                | -            | 30 min  |
+| 6   | Frontend: blackboard Attachment-Links             | 3, 5         | 30 min  |
+| 7   | Frontend: blackboard Upload-Logik                 | 3            | 20 min  |
+| 8   | Testing & Bugfixing                               | 1-7          | 30 min  |
 
 **Geschätzter Gesamtaufwand:** ~3 Stunden
 
@@ -289,11 +323,11 @@ export class DocumentPreviewModal {
 
 ## Risiken & Mitigations
 
-| Risiko | Mitigation |
-|--------|------------|
-| Bestehende blackboard_attachments | Nicht löschen, parallel betreiben |
-| Document-Explorer Filter | accessScope='blackboard' explizit testen |
-| Berechtigungen | Blackboard-Docs erben Entry-Sichtbarkeit |
+| Risiko                            | Mitigation                               |
+| --------------------------------- | ---------------------------------------- |
+| Bestehende blackboard_attachments | Nicht löschen, parallel betreiben        |
+| Document-Explorer Filter          | accessScope='blackboard' explizit testen |
+| Berechtigungen                    | Blackboard-Docs erben Entry-Sichtbarkeit |
 
 ---
 

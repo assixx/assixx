@@ -75,22 +75,10 @@ export default defineConfig({
             return 'zxcvbn-de'; // ~1.2 MB - German dictionaries
           }
 
-          // FullCalendar: Split each plugin into separate chunks for lazy loading
-          // This allows loading only the plugins needed for the current view
-          if (id.includes('@fullcalendar/core')) {
-            return 'fullcalendar-core'; // ~450 KB - Lazy load on calendar page
-          }
-          if (id.includes('@fullcalendar/daygrid')) {
-            return 'fullcalendar-daygrid'; // ~150 KB - Loaded on demand (month view)
-          }
-          if (id.includes('@fullcalendar/timegrid')) {
-            return 'fullcalendar-timegrid'; // ~200 KB - Loaded on demand (week/day view)
-          }
-          if (id.includes('@fullcalendar/interaction')) {
-            return 'fullcalendar-interaction'; // ~100 KB - Loaded on demand (edit mode)
-          }
-          if (id.includes('@fullcalendar/list')) {
-            return 'fullcalendar-list'; // ~80 KB - Loaded on demand (list view)
+          // EventCalendar: Much smaller than FullCalendar (~35kb total vs ~980kb)
+          // No need for complex chunking - single bundle is fine
+          if (id.includes('@event-calendar/')) {
+            return 'event-calendar'; // ~35 KB total - all plugins in one chunk
           }
 
           // Marked.js - Markdown parser (188 KB) - only for blackboard/calendar
@@ -234,12 +222,13 @@ export default defineConfig({
 
   optimizeDeps: {
     // 🔥 OPTIMIZED: Include more dependencies
+    // EventCalendar replaces FullCalendar (Phase 0 Migration)
     include: [
-      '@fullcalendar/core',
-      '@fullcalendar/daygrid',
-      '@fullcalendar/timegrid',
-      '@fullcalendar/interaction',
-      '@fullcalendar/list',
+      '@event-calendar/core',
+      '@event-calendar/day-grid',
+      '@event-calendar/time-grid',
+      '@event-calendar/list',
+      '@event-calendar/interaction',
       'dompurify',
     ],
 
@@ -408,11 +397,8 @@ export default defineConfig({
           console.info('✅ Copied purify.min.js to dist/js');
         }
 
-        // Copy FullCalendar CSS (v6 doesn't export CSS from npm package)
-        const fullcalendarCssSrc = resolve(__dirname, 'src/styles/lib/fullcalendar.min.css');
-        if (existsSync(fullcalendarCssSrc)) {
-          copyFileSync(fullcalendarCssSrc, resolve(stylesDir, 'fullcalendar.min.css'));
-        }
+        // Note: EventCalendar CSS is imported directly via event-calendar-loader.ts
+        // No need to copy CSS manually (unlike FullCalendar v6)
 
         // Copy FontAwesome CSS (still external)
         const fontawesomeCssSrc = resolve(__dirname, 'src/styles/lib/fontawesome.min.css');

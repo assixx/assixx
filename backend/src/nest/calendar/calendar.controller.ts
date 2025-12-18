@@ -1,0 +1,198 @@
+/**
+ * Calendar Controller
+ *
+ * HTTP endpoints for calendar event management:
+ * - GET  /calendar/events        - List events with filters
+ * - GET  /calendar/events/:id    - Get event by ID
+ * - POST /calendar/events        - Create event
+ * - PUT  /calendar/events/:id    - Update event
+ * - DELETE /calendar/events/:id  - Delete event
+ * - GET  /calendar/export        - Export events (ICS/CSV)
+ * - GET  /calendar/dashboard     - Get upcoming events
+ * - GET  /calendar/unread-events - Get unread events
+ */
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
+
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { TenantId } from '../common/decorators/tenant.decorator.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { CalendarEventResponse, PaginatedEventsResult } from './calendar.service.js';
+import { CalendarService } from './calendar.service.js';
+import {
+  CreateEventDto,
+  DashboardEventsQueryDto,
+  ExportEventsQueryDto,
+  ListEventsQueryDto,
+  UpdateEventDto,
+} from './dto/index.js';
+
+/**
+ * Response type for message-only responses
+ */
+interface MessageResponse {
+  message: string;
+}
+
+/**
+ * Response type for unread events
+ */
+interface UnreadEventsResponse {
+  totalUnread: number;
+  eventsRequiringResponse: never[];
+}
+
+@Controller('calendar')
+export class CalendarController {
+  constructor(private readonly calendarService: CalendarService) {}
+
+  /**
+   * GET /calendar/events
+   * List events with filters and pagination
+   */
+  @Get('events')
+  async listEvents(
+    @Query() query: ListEventsQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedEventsResult> {
+    return await this.calendarService.listEvents(
+      tenantId,
+      user.id,
+      user.departmentId ?? null,
+      user.teamId ?? null,
+      {
+        status: query.status,
+        filter: query.filter,
+        search: query.search,
+        startDate: query.startDate,
+        endDate: query.endDate,
+        page: query.page,
+        limit: query.limit,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      },
+    );
+  }
+
+  /**
+   * GET /calendar/dashboard
+   * Get upcoming events for dashboard
+   */
+  @Get('dashboard')
+  async getDashboardEvents(
+    @Query() query: DashboardEventsQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse[]> {
+    return await this.calendarService.getDashboardEvents(
+      tenantId,
+      user.id,
+      query.days ?? 7,
+      query.limit ?? 5,
+    );
+  }
+
+  /**
+   * GET /calendar/export
+   * Export events as ICS or CSV
+   */
+  @Get('export')
+  async exportEvents(
+    @Query() query: ExportEventsQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const data = await this.calendarService.exportEvents(
+      tenantId,
+      user.id,
+      user.departmentId ?? null,
+      query.format,
+    );
+
+    const contentType = query.format === 'ics' ? 'text/calendar' : 'text/csv';
+    const filename = query.format === 'ics' ? 'calendar.ics' : 'calendar.csv';
+
+    await reply
+      .header('Content-Type', contentType)
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(data);
+  }
+
+  /**
+   * GET /calendar/unread-events
+   * Get unread events requiring response (deprecated)
+   */
+  @Get('unread-events')
+  getUnreadEvents(): UnreadEventsResponse {
+    return this.calendarService.getUnreadEvents();
+  }
+
+  /**
+   * GET /calendar/events/:id
+   * Get event by ID
+   */
+  @Get('events/:id')
+  async getEventById(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse> {
+    return await this.calendarService.getEventById(id, tenantId, user.id);
+  }
+
+  /**
+   * POST /calendar/events
+   * Create a new event
+   */
+  @Post('events')
+  @HttpCode(HttpStatus.CREATED)
+  async createEvent(
+    @Body() dto: CreateEventDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse> {
+    return await this.calendarService.createEvent(dto, tenantId, user.id);
+  }
+
+  /**
+   * PUT /calendar/events/:id
+   * Update an event
+   */
+  @Put('events/:id')
+  async updateEvent(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateEventDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse> {
+    return await this.calendarService.updateEvent(id, dto, tenantId, user.id, user.role);
+  }
+
+  /**
+   * DELETE /calendar/events/:id
+   * Delete an event
+   */
+  @Delete('events/:id')
+  async deleteEvent(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.calendarService.deleteEvent(id, tenantId, user.id, user.role);
+  }
+}

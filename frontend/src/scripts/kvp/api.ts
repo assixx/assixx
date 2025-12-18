@@ -53,7 +53,11 @@ export class KvpApiService {
 
   async fetchSuggestions(params: URLSearchParams): Promise<KvpSuggestion[]> {
     try {
-      return await this.apiClient.get<KvpSuggestion[]>(`/kvp?${params}`);
+      // API returns { suggestions: [...], pagination: {...} }
+      const response = await this.apiClient.get<{ suggestions: KvpSuggestion[]; pagination: unknown }>(
+        `/kvp?${params}`,
+      );
+      return response.suggestions;
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       throw error; // Re-throw for caller to handle

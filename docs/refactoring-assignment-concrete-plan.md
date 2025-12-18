@@ -29,29 +29,39 @@ NIEMALS vergessen was geändert wurde!
 ## 1. Entscheidungen (FINAL)
 
 ### Entscheidung 1: Team-Permissions
+
 **Gewählt: Option A** - `user_teams` reicht
+
 - Team-Mitgliedschaft = Team-Sichtbarkeit
 - KEINE neue `user_team_permissions` Tabelle
 
 ### Entscheidung 2: Department Groups
+
 **Gewählt: Option B** - Aus Permission-System ENTFERNEN
+
 - Area-Vererbung ersetzt Department Groups für Permissions
 - `admin_group_permissions` Tabelle wird NICHT MEHR GENUTZT
 - Department Groups bleiben für andere Zwecke (Reporting, etc.)
 
 ### Entscheidung 3: NULL-Handling
+
 **Gewählt:** Direkte Zuweisung nötig
+
 - Department ohne `area_id` → Braucht direkte Zuweisung
 - Team ohne `department_id` → Braucht Team-Mitgliedschaft
 
 ### Entscheidung 4: "Access All" Option
+
 **Gewählt:** `has_full_access` Flag in users Tabelle
+
 - Checkbox im UI: "Zugriff auf alles"
 - Wenn TRUE → User hat Vollzugriff wie Root (aber andere Rolle)
 - Keine einzelnen Zuweisungen nötig
 
 ### Entscheidung 5: Content Visibility
+
 **Gewählt:** `visibility_type` + `visibility_id` Pattern
+
 - Wiederverwendbar für alle Features (Blackboard, Docs, Surveys, etc.)
 - Levels: tenant, area, department, team
 
@@ -129,14 +139,14 @@ ALTER TABLE blackboard_entries
 
 ### 2.5 Übersicht: Finale Tabellen
 
-| Tabelle | Zweck | Status |
-|---------|-------|--------|
-| `users.has_full_access` | Vollzugriff-Flag | **NEUE SPALTE** |
-| `user_area_permissions` | User → Area Sichtbarkeit | **NEUE TABELLE** |
-| `admin_department_permissions` | User → Department Sichtbarkeit | Behalten |
-| `admin_group_permissions` | ~~Dept Group Permissions~~ | **DEPRECATED** |
-| `user_teams` | Team-Mitgliedschaft = Sichtbarkeit | Behalten |
-| `*.visibility_type/id` | Content Sichtbarkeit | **NEUE SPALTEN** (pro Feature) |
+| Tabelle                        | Zweck                              | Status                         |
+| ------------------------------ | ---------------------------------- | ------------------------------ |
+| `users.has_full_access`        | Vollzugriff-Flag                   | **NEUE SPALTE**                |
+| `user_area_permissions`        | User → Area Sichtbarkeit           | **NEUE TABELLE**               |
+| `admin_department_permissions` | User → Department Sichtbarkeit     | Behalten                       |
+| `admin_group_permissions`      | ~~Dept Group Permissions~~         | **DEPRECATED**                 |
+| `user_teams`                   | Team-Mitgliedschaft = Sichtbarkeit | Behalten                       |
+| `*.visibility_type/id`         | Content Sichtbarkeit               | **NEUE SPALTEN** (pro Feature) |
 
 ---
 
@@ -146,40 +156,40 @@ ALTER TABLE blackboard_entries
 
 #### KRITISCH - Muss geändert werden:
 
-| Datei | Änderung |
-|-------|----------|
-| `middleware/departmentAccess.ts` | Employee-Bypass ENTFERNEN + has_full_access Check |
-| `services/adminPermission.service.ts` | Hierarchie-Vererbung + has_full_access hinzufügen |
-| `routes/v2/admin-permissions/service.ts` | Area-Permissions hinzufügen |
-| `routes/v2/admin-permissions/types.ts` | Area-Types + has_full_access hinzufügen |
-| `routes/v2/admin-permissions/controller.ts` | Area-Endpoints hinzufügen |
-| `routes/v2/admin-permissions/index.ts` | Area-Routes hinzufügen |
-| `routes/v2/users/users.service.ts` | has_full_access bei User-Update |
-| `routes/v2/users/users.types.ts` | has_full_access Type hinzufügen |
+| Datei                                       | Änderung                                          |
+| ------------------------------------------- | ------------------------------------------------- |
+| `middleware/departmentAccess.ts`            | Employee-Bypass ENTFERNEN + has_full_access Check |
+| `services/adminPermission.service.ts`       | Hierarchie-Vererbung + has_full_access hinzufügen |
+| `routes/v2/admin-permissions/service.ts`    | Area-Permissions hinzufügen                       |
+| `routes/v2/admin-permissions/types.ts`      | Area-Types + has_full_access hinzufügen           |
+| `routes/v2/admin-permissions/controller.ts` | Area-Endpoints hinzufügen                         |
+| `routes/v2/admin-permissions/index.ts`      | Area-Routes hinzufügen                            |
+| `routes/v2/users/users.service.ts`          | has_full_access bei User-Update                   |
+| `routes/v2/users/users.types.ts`            | has_full_access Type hinzufügen                   |
 
 #### NEU ERSTELLEN:
 
-| Datei | Zweck |
-|-------|-------|
-| `services/hierarchyPermission.service.ts` | Zentrale Permission-Logik mit Vererbung |
-| `services/contentVisibility.service.ts` | Content-Sichtbarkeit prüfen |
-| `routes/v2/admin-permissions/validation.zod.ts` | Zod Schemas für Area-Permissions |
+| Datei                                           | Zweck                                   |
+| ----------------------------------------------- | --------------------------------------- |
+| `services/hierarchyPermission.service.ts`       | Zentrale Permission-Logik mit Vererbung |
+| `services/contentVisibility.service.ts`         | Content-Sichtbarkeit prüfen             |
+| `routes/v2/admin-permissions/validation.zod.ts` | Zod Schemas für Area-Permissions        |
 
 #### ANPASSEN - Filter-Logik:
 
-| Datei | Änderung |
-|-------|----------|
+| Datei                                          | Änderung          |
+| ---------------------------------------------- | ----------------- |
 | `routes/v2/departments/departments.service.ts` | Permission-Filter |
-| `routes/v2/teams/teams.service.ts` | Permission-Filter |
-| `routes/v2/users/users.service.ts` | Permission-Filter |
-| `routes/v2/areas/areas.service.ts` | Permission-Filter |
+| `routes/v2/teams/teams.service.ts`             | Permission-Filter |
+| `routes/v2/users/users.service.ts`             | Permission-Filter |
+| `routes/v2/areas/areas.service.ts`             | Permission-Filter |
 
 #### NEU ERSTELLEN:
 
-| Datei | Zweck |
-|-------|-------|
-| `services/hierarchyPermission.service.ts` | Zentrale Permission-Logik mit Vererbung |
-| `routes/v2/admin-permissions/validation.zod.ts` | Zod Schemas für Area-Permissions |
+| Datei                                           | Zweck                                   |
+| ----------------------------------------------- | --------------------------------------- |
+| `services/hierarchyPermission.service.ts`       | Zentrale Permission-Logik mit Vererbung |
+| `routes/v2/admin-permissions/validation.zod.ts` | Zod Schemas für Area-Permissions        |
 
 ### 3.2 Konkrete Code-Änderungen
 
@@ -208,7 +218,6 @@ if (user.role === 'root') {
  * Zentrale Logik für Permission-Checks mit Vererbung
  */
 export class HierarchyPermissionService {
-
   /**
    * Prüft ob User Zugriff auf Resource hat
    * Berücksichtigt Hierarchie-Vererbung
@@ -218,9 +227,8 @@ export class HierarchyPermissionService {
     tenantId: number,
     resourceType: 'area' | 'department' | 'team',
     resourceId: number,
-    permission: 'read' | 'write' | 'delete' = 'read'
+    permission: 'read' | 'write' | 'delete' = 'read',
   ): Promise<boolean> {
-
     // 1. User-Rolle holen
     const user = await this.getUser(userId, tenantId);
 
@@ -250,9 +258,8 @@ export class HierarchyPermissionService {
     userId: number,
     departmentId: number,
     permission: string,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
-
     // 1. Direkte Department-Permission?
     const directPerm = await this.getDirectDepartmentPerm(userId, departmentId, tenantId);
     if (directPerm && this.hasPermLevel(directPerm, permission)) {
@@ -280,13 +287,12 @@ export class HierarchyPermissionService {
     userId: number,
     teamId: number,
     permission: string,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
-
     // 1. Team-Mitgliedschaft?
     const isMember = await this.isTeamMember(userId, teamId, tenantId);
     if (isMember) {
-      return true;  // Mitglieder haben immer read-Zugriff
+      return true; // Mitglieder haben immer read-Zugriff
     }
 
     // 2. Vererbt von Department? (NUR wenn Team department_id hat!)
@@ -304,7 +310,7 @@ export class HierarchyPermissionService {
   async getAccessibleIds(
     userId: number,
     tenantId: number,
-    resourceType: 'area' | 'department' | 'team'
+    resourceType: 'area' | 'department' | 'team',
   ): Promise<number[]> {
     // Für Listen-Filter in UI
     // Implementierung je nach resourceType
@@ -336,28 +342,28 @@ GET    /api/v2/admin-permissions/:userId
 
 #### User-Management (Area-Assignment hinzufügen):
 
-| Datei | Änderung |
-|-------|----------|
+| Datei                               | Änderung                 |
+| ----------------------------------- | ------------------------ |
 | `scripts/manage/employees/forms.ts` | Area-Dropdown hinzufügen |
-| `scripts/manage/employees/ui.ts` | Area-Anzeige |
-| `scripts/manage/employees/types.ts` | Area-Types |
-| `scripts/manage/admins/forms.ts` | Area-Assignment UI |
-| `scripts/manage/admins/ui.ts` | Area-Anzeige |
+| `scripts/manage/employees/ui.ts`    | Area-Anzeige             |
+| `scripts/manage/employees/types.ts` | Area-Types               |
+| `scripts/manage/admins/forms.ts`    | Area-Assignment UI       |
+| `scripts/manage/admins/ui.ts`       | Area-Anzeige             |
 
 #### Filter-Listen (basierend auf Permissions):
 
-| Datei | Änderung |
-|-------|----------|
+| Datei                                 | Änderung               |
+| ------------------------------------- | ---------------------- |
 | `scripts/manage/departments/index.ts` | Filter nach Permission |
-| `scripts/manage/teams/index.ts` | Filter nach Permission |
-| `scripts/manage/areas/index.ts` | Filter nach Permission |
+| `scripts/manage/teams/index.ts`       | Filter nach Permission |
+| `scripts/manage/areas/index.ts`       | Filter nach Permission |
 
 ### 4.2 HTML-Änderungen
 
-| Datei | Änderung |
-|-------|----------|
-| `pages/manage-employees.html` | Area-Dropdown im Modal |
-| `pages/manage-admins.html` | Area-Assignment Section |
+| Datei                         | Änderung                |
+| ----------------------------- | ----------------------- |
+| `pages/manage-employees.html` | Area-Dropdown im Modal  |
+| `pages/manage-admins.html`    | Area-Assignment Section |
 
 ---
 
@@ -508,12 +514,12 @@ Team.department_id = NULL:
 
 ## 8. Risiken & Mitigation
 
-| Risiko | Mitigation |
-|--------|------------|
-| Breaking Changes | Schrittweise Migration, Feature-Flag |
-| Performance | Caching für Permission-Lookups (später) |
-| Komplexität | Zentrale Service-Klasse, keine doppelte Logik |
-| Edge Cases | NULL-Handling klar definiert, Tests |
+| Risiko           | Mitigation                                    |
+| ---------------- | --------------------------------------------- |
+| Breaking Changes | Schrittweise Migration, Feature-Flag          |
+| Performance      | Caching für Permission-Lookups (später)       |
+| Komplexität      | Zentrale Service-Klasse, keine doppelte Logik |
+| Edge Cases       | NULL-Handling klar definiert, Tests           |
 
 ---
 
@@ -531,14 +537,14 @@ Team.department_id = NULL:
 
 ### Was wir machen:
 
-| Aktion | Details |
-|--------|---------|
-| **1 neue Spalte** | `users.has_full_access` |
-| **1 neue Tabelle** | `user_area_permissions` |
-| **2 neue Services** | `hierarchyPermission.service.ts` + `contentVisibility.service.ts` |
-| **1 Code-Fix** | Employee-Bypass entfernen |
-| **Content Visibility** | `visibility_type` + `visibility_id` für Features |
-| **Department Groups** | DEPRECATED für Permissions |
+| Aktion                 | Details                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| **1 neue Spalte**      | `users.has_full_access`                                           |
+| **1 neue Tabelle**     | `user_area_permissions`                                           |
+| **2 neue Services**    | `hierarchyPermission.service.ts` + `contentVisibility.service.ts` |
+| **1 Code-Fix**         | Employee-Bypass entfernen                                         |
+| **Content Visibility** | `visibility_type` + `visibility_id` für Features                  |
+| **Department Groups**  | DEPRECATED für Permissions                                        |
 
 ### ZWEI Konzepte:
 
@@ -559,14 +565,14 @@ Team.department_id = NULL:
 
 ### Betroffene Tabellen:
 
-| Tabelle | Aktion |
-|---------|--------|
-| `users.has_full_access` | NEUE SPALTE |
-| `user_area_permissions` | NEUE TABELLE |
-| `admin_department_permissions` | Behalten |
-| `admin_group_permissions` | DEPRECATED |
-| `user_teams` | Behalten |
-| `blackboard_entries` etc. | visibility_type/id Spalten hinzufügen |
+| Tabelle                        | Aktion                                |
+| ------------------------------ | ------------------------------------- |
+| `users.has_full_access`        | NEUE SPALTE                           |
+| `user_area_permissions`        | NEUE TABELLE                          |
+| `admin_department_permissions` | Behalten                              |
+| `admin_group_permissions`      | DEPRECATED                            |
+| `user_teams`                   | Behalten                              |
+| `blackboard_entries` etc.      | visibility_type/id Spalten hinzufügen |
 
 ### Permission Check Flow:
 

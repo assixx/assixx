@@ -65,11 +65,14 @@ export class SSEClient {
 
     this.isConnecting = true;
 
-    // SECURITY FIX: Use cookies instead of URL parameter
-    // Cookies are set on login (auth/index.ts line 60) and sent automatically
-    // withCredentials: true ensures cookies are included (required for cross-origin, harmless for same-origin)
-    console.info('[SSE] Connecting to:', this.url);
-    this.eventSource = new EventSource(this.url, { withCredentials: true });
+    // Build URL with token as query parameter
+    // EventSource API doesn't support custom headers, so we use query param
+    // The backend JwtAuthGuard supports token extraction from query params (jwt-auth.guard.ts line 177)
+    const sseUrl = new URL(this.url, window.location.origin);
+    sseUrl.searchParams.set('token', token);
+
+    console.info('[SSE] Connecting to:', sseUrl.pathname);
+    this.eventSource = new EventSource(sseUrl.toString(), { withCredentials: true });
 
     this.eventSource.onopen = () => {
       console.info('[SSE] Connection established');
@@ -80,7 +83,9 @@ export class SSEClient {
 
     this.eventSource.onmessage = (event: MessageEvent<string>) => {
       try {
-        const data = JSON.parse(event.data) as SSEMessage;
+        const parsed = JSON.parse(event.data) as { data: SSEMessage } | SSEMessage;
+        // NestJS @Sse() decorator wraps messages in { data: ... }
+        const data = 'data' in parsed ? parsed.data : parsed;
         this.handleMessage(data);
       } catch (error) {
         console.error('[SSE] Failed to parse message:', error);
@@ -172,7 +177,10 @@ export class SSEClient {
   }
 
   private handleMessage(data: SSEMessage): void {
-    console.info('[SSE] Received:', data.type, data);
+    // Skip logging heartbeats - they're just keep-alive signals
+    if (data.type !== 'HEARTBEAT') {
+      console.info('[SSE] Received:', data.type, data);
+    }
 
     switch (data.type) {
       case 'CONNECTED':
@@ -192,6 +200,9 @@ export class SSEClient {
         break;
       case 'NEW_KVP':
         this.handleNewKvp(data);
+        break;
+      case 'HEARTBEAT':
+        // Keep-alive signal from server - no action needed
         break;
       default:
         console.warn('[SSE] Unknown message type:', data.type);

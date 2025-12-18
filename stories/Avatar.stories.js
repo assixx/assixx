@@ -6,55 +6,55 @@
  */
 
 export default {
-  title: "Design System/Avatar",
-  tags: ["autodocs"],
+  title: 'Design System/Avatar',
+  tags: ['autodocs'],
 
   parameters: {
-    layout: "centered"
+    layout: 'centered',
   },
 
   argTypes: {
     name: {
-      control: "text",
-      description: "Full name for initials",
+      control: 'text',
+      description: 'Full name for initials',
     },
     username: {
-      control: "text",
-      description: "Username for consistent color assignment",
+      control: 'text',
+      description: 'Username for consistent color assignment',
     },
     size: {
-      control: "select",
-      options: ["xs", "sm", "md", "lg", "xl"],
-      description: "Avatar size",
+      control: 'select',
+      options: ['xs', 'sm', 'md', 'lg', 'xl'],
+      description: 'Avatar size',
     },
     shape: {
-      control: "select",
-      options: ["circle", "square"],
-      description: "Avatar shape",
+      control: 'select',
+      options: ['circle', 'square'],
+      description: 'Avatar shape',
     },
     status: {
-      control: "select",
-      options: ["none", "online", "offline", "busy", "away"],
-      description: "Status indicator",
+      control: 'select',
+      options: ['none', 'online', 'offline', 'busy', 'away'],
+      description: 'Status indicator',
     },
     imageUrl: {
-      control: "text",
-      description: "Optional image URL",
+      control: 'text',
+      description: 'Optional image URL',
     },
   },
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
  * Helper to get initials from name
  */
 function getInitials(name) {
-  if (!name) return "?";
+  if (!name) return '?';
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -77,25 +77,25 @@ function getColorClass(username) {
  */
 export const BasicAvatar = {
   args: {
-    name: "John Doe",
-    username: "john.doe",
-    size: "md",
-    shape: "circle",
-    status: "none",
-    imageUrl: "",
+    name: 'John Doe',
+    username: 'john.doe',
+    size: 'md',
+    shape: 'circle',
+    status: 'none',
+    imageUrl: '',
   },
   render: (args) => {
-    const sizeClass = args.size !== "md" ? `avatar--${args.size}` : "";
-    const shapeClass = args.shape === "square" ? "avatar--square" : "";
+    const sizeClass = args.size !== 'md' ? `avatar--${args.size}` : '';
+    const shapeClass = args.shape === 'square' ? 'avatar--square' : '';
     const colorClass = getColorClass(args.username);
     const initials = getInitials(args.name);
 
     const statusHtml =
-      args.status !== "none"
-        ? `<span class="avatar__status avatar__status--${args.status}"></span>`
-        : "";
+      args.status !== 'none' ?
+        `<span class="avatar__status avatar__status--${args.status}"></span>`
+      : '';
 
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
 
     if (args.imageUrl) {
       wrapper.innerHTML = `
@@ -122,7 +122,7 @@ export const BasicAvatar = {
  */
 export const SizeVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; align-items: center; gap: 1rem;">
         <div class="avatar avatar--xs avatar--color-4">
@@ -151,7 +151,7 @@ export const SizeVariants = {
  */
 export const ColorVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
         ${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -162,7 +162,7 @@ export const ColorVariants = {
           </div>
         `,
           )
-          .join("")}
+          .join('')}
       </div>
     `;
     return wrapper;
@@ -174,7 +174,7 @@ export const ColorVariants = {
  */
 export const WithStatus = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; gap: 2rem;">
         <div>
@@ -216,7 +216,7 @@ export const WithStatus = {
  */
 export const ShapeVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; gap: 2rem;">
         <div>
@@ -242,7 +242,7 @@ export const ShapeVariants = {
  */
 export const ImageFallback = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; gap: 2rem; align-items: center;">
         <div>
@@ -268,10 +268,10 @@ export const ImageFallback = {
  */
 export const AvatarGroup = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 2rem;">
         <div>
@@ -342,10 +342,10 @@ export const AvatarGroup = {
  */
 export const UserProfileCard = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 400px; padding: 2rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; backdrop-filter: blur(10px);">
         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
@@ -374,35 +374,37 @@ export const UserProfileCard = {
  */
 export const CommentSection = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 600px;">
         <h4 style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">Comments (3)</h4>
 
         ${[
           {
-            name: "Sarah Johnson",
-            initials: "SJ",
+            name: 'Sarah Johnson',
+            initials: 'SJ',
             color: 1,
-            time: "2 hours ago",
-            comment: "Great work on this feature! The glassmorphism design really makes it stand out.",
+            time: '2 hours ago',
+            comment:
+              'Great work on this feature! The glassmorphism design really makes it stand out.',
           },
           {
-            name: "Mike Chen",
-            initials: "MC",
+            name: 'Mike Chen',
+            initials: 'MC',
             color: 5,
-            time: "5 hours ago",
-            comment: "Love the attention to detail. The color palette is perfect for our brand.",
+            time: '5 hours ago',
+            comment: 'Love the attention to detail. The color palette is perfect for our brand.',
           },
           {
-            name: "Emily Rodriguez",
-            initials: "ER",
+            name: 'Emily Rodriguez',
+            initials: 'ER',
             color: 8,
-            time: "1 day ago",
-            comment: "This will be a huge improvement for the user experience. Can't wait to see it live!",
+            time: '1 day ago',
+            comment:
+              "This will be a huge improvement for the user experience. Can't wait to see it live!",
           },
         ]
           .map(
@@ -421,7 +423,7 @@ export const CommentSection = {
           </div>
         `,
           )
-          .join("")}
+          .join('')}
       </div>
     `;
     return wrapper;
@@ -433,49 +435,49 @@ export const CommentSection = {
  */
 export const TeamMembersList = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 500px;">
         <h4 style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">Team Members (5)</h4>
 
         ${[
           {
-            name: "John Doe",
-            initials: "JD",
+            name: 'John Doe',
+            initials: 'JD',
             color: 4,
-            role: "Team Lead",
-            status: "online",
+            role: 'Team Lead',
+            status: 'online',
           },
           {
-            name: "Alice Brown",
-            initials: "AB",
+            name: 'Alice Brown',
+            initials: 'AB',
             color: 2,
-            role: "Senior Developer",
-            status: "online",
+            role: 'Senior Developer',
+            status: 'online',
           },
           {
-            name: "Mike Chen",
-            initials: "MC",
+            name: 'Mike Chen',
+            initials: 'MC',
             color: 5,
-            role: "Designer",
-            status: "away",
+            role: 'Designer',
+            status: 'away',
           },
           {
-            name: "Sarah Kim",
-            initials: "SK",
+            name: 'Sarah Kim',
+            initials: 'SK',
             color: 7,
-            role: "Product Manager",
-            status: "busy",
+            role: 'Product Manager',
+            status: 'busy',
           },
           {
-            name: "Tom Wilson",
-            initials: "TW",
+            name: 'Tom Wilson',
+            initials: 'TW',
             color: 0,
-            role: "QA Engineer",
-            status: "offline",
+            role: 'QA Engineer',
+            status: 'offline',
           },
         ]
           .map(
@@ -492,7 +494,7 @@ export const TeamMembersList = {
           </div>
         `,
           )
-          .join("")}
+          .join('')}
       </div>
     `;
     return wrapper;
@@ -504,10 +506,10 @@ export const TeamMembersList = {
  */
 export const AllVariants = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 3rem;">
         <!-- Sizes -->
@@ -544,7 +546,7 @@ export const AllVariants = {
               </div>
             `,
               )
-              .join("")}
+              .join('')}
           </div>
         </div>
 

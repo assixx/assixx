@@ -1,6 +1,9 @@
 # PostgreSQL Migration Plan - Assixx
+
 # MySQL Verbindung testen
+
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT 1;"'
+
 ```
 
 ## Executive Summary
@@ -23,31 +26,33 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ## WICHTIG: Parallel-Betrieb Strategie
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
-│ PHASE 1-5: Parallel-Betrieb (MySQL + PostgreSQL)            │
-│                                                             │
-│  MySQL Container     PostgreSQL Container                   │
-│  ┌─────────────┐     ┌─────────────┐                       │
-│  │ assixx-mysql│     │assixx-postgres│  ◄── Aktiv          │
-│  │ Port: 3307  │     │ Port: 5432    │                     │
-│  │ (Backup)    │     │ (Primary)     │                     │
-│  └─────────────┘     └───────────────┘                     │
-│        │                    │                               │
-│        ▼                    ▼                               │
-│   phpMyAdmin            DBeaver                             │
-│   (noch da)             (neu)                               │
+│ PHASE 1-5: Parallel-Betrieb (MySQL + PostgreSQL) │
+│ │
+│ MySQL Container PostgreSQL Container │
+│ ┌─────────────┐ ┌─────────────┐ │
+│ │ assixx-mysql│ │assixx-postgres│ ◄── Aktiv │
+│ │ Port: 3307 │ │ Port: 5432 │ │
+│ │ (Backup) │ │ (Primary) │ │
+│ └─────────────┘ └───────────────┘ │
+│ │ │ │
+│ ▼ ▼ │
+│ phpMyAdmin DBeaver │
+│ (noch da) (neu) │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│ PHASE 6: Nach erfolgreichem Test (frühestens 2-4 Wochen)   │
-│                                                             │
-│  MySQL Container        PostgreSQL Container                │
-│  ┌─────────────┐        ┌─────────────┐                    │
-│  │   LÖSCHEN   │   ──►  │assixx-postgres│  ◄── Einzig      │
-│  │   (später)  │        │ Port: 5432    │                  │
-│  └─────────────┘        └───────────────┘                  │
+│ PHASE 6: Nach erfolgreichem Test (frühestens 2-4 Wochen) │
+│ │
+│ MySQL Container PostgreSQL Container │
+│ ┌─────────────┐ ┌─────────────┐ │
+│ │ LÖSCHEN │ ──► │assixx-postgres│ ◄── Einzig │
+│ │ (später) │ │ Port: 5432 │ │
+│ └─────────────┘ └───────────────┘ │
 └─────────────────────────────────────────────────────────────┘
-```
+
+````
 
 **Regeln für Parallel-Betrieb:**
 1. MySQL bleibt **mindestens 2-4 Wochen** nach Migration laufen
@@ -74,9 +79,10 @@ choco install dbeaver
 
 # Option 3: Via winget
 winget install dbeaver.dbeaver
-```
+````
 
 **DBeaver Verbindung zu PostgreSQL in Docker:**
+
 - Host: `localhost`
 - Port: `5432`
 - Database: `assixx`
@@ -123,9 +129,9 @@ PostgreSQL Zielstruktur:
 
 ### Tabellen in `global` DB
 
-| Tabelle | Spalten | Beschreibung |
-|---------|---------|--------------|
-| `kvp_categories` | id, name, description, color, icon, created_at | KVP Kategorien |
+| Tabelle              | Spalten                                            | Beschreibung                          |
+| -------------------- | -------------------------------------------------- | ------------------------------------- |
+| `kvp_categories`     | id, name, description, color, icon, created_at     | KVP Kategorien                        |
 | `machine_categories` | id, name, description, icon, sort_order, is_active | Maschinenkategorien (seit 2025-11-30) |
 
 ---
@@ -196,14 +202,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-assixx}
       TZ: Europe/Berlin
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U assixx_user -d assixx"]
+      test: ['CMD-SHELL', 'pg_isready -U assixx_user -d assixx']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -242,7 +248,7 @@ services:
       DB_NAME: ${POSTGRES_DB:-assixx}
       # Rest bleibt gleich...
     depends_on:
-      postgres:  # Statt mysql
+      postgres: # Statt mysql
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -263,7 +269,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      postgres:  # Statt mysql
+      postgres: # Statt mysql
         condition: service_healthy
 
   # =============================================
@@ -279,13 +285,13 @@ services:
 volumes:
   mysql_data:
     name: assixx_mysql_data
-    external: true  # Bleibt für Parallel-Betrieb!
+    external: true # Bleibt für Parallel-Betrieb!
   postgres_data:
     name: assixx_postgres_data
     # external: true  # Erst später, wenn Volume erstellt
   redis_data:
     name: assixx_redis_data
-    external: true  # Bleibt unverändert!
+    external: true # Bleibt unverändert!
 ```
 
 ### 0.4 PostgreSQL Volume erstellen
@@ -320,16 +326,16 @@ docker run --rm --network assixx-network \
 
 ### 1.1 Datentyp-Mapping MySQL → PostgreSQL
 
-| MySQL | PostgreSQL | Notiz |
-|-------|------------|-------|
-| `INT AUTO_INCREMENT` | `SERIAL` oder `INT GENERATED ALWAYS AS IDENTITY` | |
-| `TINYINT(1)` | `BOOLEAN` | pgloader macht das automatisch |
-| `ENUM('a','b','c')` | `TEXT CHECK (col IN ('a','b','c'))` oder PostgreSQL ENUM | |
-| `JSON` | `JSONB` | Besser! Native Indexierung |
-| `LONGBLOB` | `BYTEA` | |
-| `DATETIME` | `TIMESTAMP` | |
-| `VARCHAR(n)` | `VARCHAR(n)` | Identisch |
-| `TEXT` | `TEXT` | Identisch |
+| MySQL                | PostgreSQL                                               | Notiz                          |
+| -------------------- | -------------------------------------------------------- | ------------------------------ |
+| `INT AUTO_INCREMENT` | `SERIAL` oder `INT GENERATED ALWAYS AS IDENTITY`         |                                |
+| `TINYINT(1)`         | `BOOLEAN`                                                | pgloader macht das automatisch |
+| `ENUM('a','b','c')`  | `TEXT CHECK (col IN ('a','b','c'))` oder PostgreSQL ENUM |                                |
+| `JSON`               | `JSONB`                                                  | Besser! Native Indexierung     |
+| `LONGBLOB`           | `BYTEA`                                                  |                                |
+| `DATETIME`           | `TIMESTAMP`                                              |                                |
+| `VARCHAR(n)`         | `VARCHAR(n)`                                             | Identisch                      |
+| `TEXT`               | `TEXT`                                                   | Identisch                      |
 
 ### 1.2 pgloader Konfiguration
 
@@ -715,6 +721,7 @@ Erstelle `backend/src/utils/db-postgres.ts`:
 
 ```typescript
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+
 import { logger } from './logger.js';
 
 // Connection Pool
@@ -722,7 +729,7 @@ const pool = new Pool({
   host: process.env.DB_HOST || 'assixx-postgres',
   port: parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME || 'assixx',
-  user: process.env.DB_USER || 'app_user',  // NOT superuser!
+  user: process.env.DB_USER || 'app_user', // NOT superuser!
   password: process.env.DB_PASSWORD,
   max: 20,
   idleTimeoutMillis: 30000,
@@ -738,7 +745,7 @@ export async function setTenantContext(client: PoolClient, tenantId: number): Pr
 export async function query<T extends QueryResultRow>(
   text: string,
   params?: unknown[],
-  tenantId?: number
+  tenantId?: number,
 ): Promise<QueryResult<T>> {
   const client = await pool.connect();
   try {
@@ -752,10 +759,7 @@ export async function query<T extends QueryResultRow>(
 }
 
 // Transaction with tenant context
-export async function transaction<T>(
-  tenantId: number,
-  callback: (client: PoolClient) => Promise<T>
-): Promise<T> {
+export async function transaction<T>(tenantId: number, callback: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -789,7 +793,8 @@ export { pool };
 
 ```typescript
 // backend/src/middleware/tenant-context.ts
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
+
 import { pool, setTenantContext } from '../utils/db-postgres.js';
 
 declare global {
@@ -801,11 +806,7 @@ declare global {
   }
 }
 
-export async function tenantContextMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function tenantContextMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   // tenantId should already be set by auth middleware
   if (!req.tenantId) {
     res.status(401).json({ error: 'Tenant context required' });
@@ -834,14 +835,14 @@ export async function tenantContextMiddleware(
 
 ### 3.4 Query Syntax Änderungen
 
-| MySQL | PostgreSQL | Beispiel |
-|-------|------------|----------|
-| `?` placeholder | `$1, $2, $3` | `WHERE id = $1` |
-| `LIMIT ?, ?` | `LIMIT $1 OFFSET $2` | `LIMIT 10 OFFSET 0` |
-| `` `column` `` | `"column"` | `SELECT "user"` |
-| `NOW()` | `NOW()` | Identisch |
-| `IFNULL()` | `COALESCE()` | |
-| `AUTO_INCREMENT` | `SERIAL` / `GENERATED` | |
+| MySQL            | PostgreSQL             | Beispiel            |
+| ---------------- | ---------------------- | ------------------- |
+| `?` placeholder  | `$1, $2, $3`           | `WHERE id = $1`     |
+| `LIMIT ?, ?`     | `LIMIT $1 OFFSET $2`   | `LIMIT 10 OFFSET 0` |
+| `` `column` ``   | `"column"`             | `SELECT "user"`     |
+| `NOW()`          | `NOW()`                | Identisch           |
+| `IFNULL()`       | `COALESCE()`           |                     |
+| `AUTO_INCREMENT` | `SERIAL` / `GENERATED` |                     |
 
 ### 3.5 Beispiel Query Migration
 
@@ -870,11 +871,13 @@ const rows = result.rows;
 ### 4.1 Protected Tables - DELETE Schutz
 
 Diese Tabellen sind systemkritisch und dürfen NICHT gelöscht werden:
+
 - `plans` - Subscription Pläne
 - `features` - Verfügbare Features
 - `plan_features` - Plan-Feature Zuordnung
 
 **MySQL Trigger (bereits aktiv seit 2025-11-30):**
+
 ```sql
 -- Bereits in MySQL erstellt!
 -- prevent_plans_delete
@@ -1078,6 +1081,7 @@ docker-compose stop phpmyadmin
 ```
 
 **Timeline:**
+
 ```
 Tag 0          Tag 7           Tag 21-28        Tag 42+
   │              │                 │               │
@@ -1092,12 +1096,14 @@ Migration    PostgreSQL       MySQL stoppen    MySQL Volume
 ## Checkliste
 
 ### Pre-Migration
+
 - [x] MySQL Backup erstellt ✅ (2025-11-30)
 - [x] PostgreSQL Container läuft ✅ (2025-11-30)
 - [x] pgloader installiert ✅ (2025-11-30)
 - [x] Test-Environment bereit ✅ (2025-11-30)
 
 ### Schema Migration
+
 - [x] pgloader Konfiguration für `main` DB erstellt ✅ (2025-11-30)
 - [x] pgloader Konfiguration für `global` DB erstellt ✅ (2025-11-30)
 - [x] Dry-run main DB erfolgreich ✅ (2025-11-30)
@@ -1109,12 +1115,14 @@ Migration    PostgreSQL       MySQL stoppen    MySQL Volume
 - [x] Total: 119 Tabellen in PostgreSQL ✅ (2025-11-30)
 
 ### RLS Setup
+
 - [x] app_user erstellt (kein Superuser!) ✅ (2025-11-30)
 - [x] RLS auf allen 90 Tenant-Tabellen aktiviert ✅ (2025-11-30)
 - [x] Policies getestet ✅ (2025-11-30)
 - [x] Penetration Tests bestanden ✅ (2025-11-30)
 
 ### Protected Tables (DELETE-Schutz)
+
 - [x] MySQL Trigger: prevent_plans_delete ✅ (2025-11-30)
 - [x] MySQL Trigger: prevent_features_delete ✅ (2025-11-30)
 - [x] MySQL Trigger: prevent_plan_features_delete ✅ (2025-11-30)
@@ -1123,6 +1131,7 @@ Migration    PostgreSQL       MySQL stoppen    MySQL Volume
 - [x] PostgreSQL Trigger: prevent_plan_features_delete ✅ (2025-11-30)
 
 ### Backend
+
 - [x] pg Package installiert ✅ (2025-11-30)
 - [x] Connection Pool implementiert ✅ (2025-11-30)
 - [x] Tenant Context Middleware ✅ (2025-11-30)
@@ -1131,6 +1140,7 @@ Migration    PostgreSQL       MySQL stoppen    MySQL Volume
 - [x] Lint passed (0 errors) ✅ (2025-11-30)
 
 ### Deployment
+
 - [x] Docker Compose aktualisiert ✅ (2025-11-30)
 - [x] Environment Variables gesetzt ✅ (2025-11-30)
 - [x] Health Checks funktionieren ✅ (2025-11-30)

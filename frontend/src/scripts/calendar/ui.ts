@@ -8,7 +8,7 @@ import type { User } from '../../types/api.types';
 import { $$, setHTML } from '../../utils/dom-utils';
 import { state } from './state';
 import type { CalendarEvent, EventLevelInfo } from './types';
-import { escapeHtml, getResponseText } from './modals';
+import { escapeHtml } from './modals';
 
 // ============================================================================
 // Utility Functions
@@ -66,13 +66,18 @@ export function getEventLevelInfo(orgLevel: string | undefined): EventLevelInfo 
  * Create event date section (calendar icon with date/time)
  */
 export function createEventDateSection(event: CalendarEvent): HTMLElement {
-  const startDate = new Date(event.start_time);
-  const endDate = new Date(event.end_time);
+  // API v2 returns camelCase (startTime), fallback to snake_case (start_time) for compatibility
+  const startTime = event.startTime ?? event.start_time;
+  const endTime = event.endTime ?? event.end_time;
+  const isAllDay = event.allDay ?? event.all_day;
+
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
   const day = startDate.getDate();
   const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
 
   const timeStr =
-    event.all_day === true || event.all_day === 1 || event.all_day === '1'
+    isAllDay === true || isAllDay === 1 || isAllDay === '1'
       ? 'Ganztägig'
       : `${startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 
@@ -98,10 +103,13 @@ export function createEventDateSection(event: CalendarEvent): HTMLElement {
 }
 
 /**
- * Create event details section (title, location, level, response)
+ * Create event details section (title, location, level)
  */
 export function createEventDetailsSection(event: CalendarEvent): HTMLElement {
-  const levelInfo = getEventLevelInfo(event.org_level);
+  // API v2 returns camelCase (orgLevel), fallback to snake_case (org_level) for compatibility
+  const orgLevel = event.orgLevel ?? event.org_level;
+
+  const levelInfo = getEventLevelInfo(orgLevel);
   const detailsDiv = document.createElement('div');
   detailsDiv.className = 'event-details';
 
@@ -124,13 +132,6 @@ export function createEventDetailsSection(event: CalendarEvent): HTMLElement {
   levelSpan.className = 'event-level ' + levelInfo.class;
   levelSpan.textContent = levelInfo.text;
   detailsDiv.append(levelSpan);
-
-  if (event.user_response !== undefined) {
-    const responseSpan = document.createElement('span');
-    responseSpan.className = 'status-' + event.user_response + ' event-response';
-    responseSpan.textContent = 'Ihr Status: ' + getResponseText(event.user_response);
-    detailsDiv.append(responseSpan);
-  }
 
   return detailsDiv;
 }

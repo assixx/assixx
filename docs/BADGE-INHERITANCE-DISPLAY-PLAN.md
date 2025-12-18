@@ -11,6 +11,7 @@
 ### 1.1 Aktueller Status (Inkonsistent)
 
 **Admin ID 35844 - Beispiel:**
+
 ```
 Direkte Zuweisungen in DB:
 ├── admin_area_permissions: 1 Eintrag (area_id=51, "Bereich 1")
@@ -42,14 +43,14 @@ EMPLOYEE mit Team-Zuweisung:
 
 ### 1.3 Inkonsistenz-Details
 
-| Badge | Aktuelle Logik | Problem |
-|-------|----------------|---------|
-| Areas (Admin) | Zeigt direkte Zuweisungen | OK |
-| Teams (Admin) | Zeigt "Vererbt" wenn Areas/Depts | OK ✅ |
-| **Departments (Admin)** | Zeigt NUR direkte Zuweisungen | **INKONSISTENT** ❌ |
-| Areas (Employee) | Zeigt direkte (die es nicht gibt!) | Sollte Vererbung zeigen |
-| Departments (Employee) | Zeigt direkte | Sollte Vererbung zeigen |
-| Teams (Employee) | Zeigt zugewiesene Teams | OK ✅ |
+| Badge                   | Aktuelle Logik                     | Problem                 |
+| ----------------------- | ---------------------------------- | ----------------------- |
+| Areas (Admin)           | Zeigt direkte Zuweisungen          | OK                      |
+| Teams (Admin)           | Zeigt "Vererbt" wenn Areas/Depts   | OK ✅                   |
+| **Departments (Admin)** | Zeigt NUR direkte Zuweisungen      | **INKONSISTENT** ❌     |
+| Areas (Employee)        | Zeigt direkte (die es nicht gibt!) | Sollte Vererbung zeigen |
+| Departments (Employee)  | Zeigt direkte                      | Sollte Vererbung zeigen |
+| Teams (Employee)        | Zeigt zugewiesene Teams            | OK ✅                   |
 
 ---
 
@@ -117,23 +118,23 @@ EMPLOYEE mit Team-Zuweisung:
 
 **Admin Table:**
 
-| Szenario | Bereiche | Abteilungen | Teams |
-|----------|----------|-------------|-------|
-| Admin mit 1 Area | `1 Bereich` | `🔗 Vererbt` | `🔗 Vererbt` |
-| Admin mit 2 Areas | `2 Bereiche` | `🔗 Vererbt` | `🔗 Vererbt` |
-| Admin mit 1 Dept | `Keine` | `1 Abteilung` | `🔗 Vererbt` |
-| Admin mit Area+Dept | `1 Bereich` | `1 Abtlg. + Vererbt` | `🔗 Vererbt` |
-| Admin ohne Zuweisungen | `Keine` | `Keine Abteilungen` | `Keine` |
-| Full Access | `🌍 Alle` | `🌍 Vollzugriff` | `🌍 Alle` |
+| Szenario               | Bereiche     | Abteilungen          | Teams        |
+| ---------------------- | ------------ | -------------------- | ------------ |
+| Admin mit 1 Area       | `1 Bereich`  | `🔗 Vererbt`         | `🔗 Vererbt` |
+| Admin mit 2 Areas      | `2 Bereiche` | `🔗 Vererbt`         | `🔗 Vererbt` |
+| Admin mit 1 Dept       | `Keine`      | `1 Abteilung`        | `🔗 Vererbt` |
+| Admin mit Area+Dept    | `1 Bereich`  | `1 Abtlg. + Vererbt` | `🔗 Vererbt` |
+| Admin ohne Zuweisungen | `Keine`      | `Keine Abteilungen`  | `Keine`      |
+| Full Access            | `🌍 Alle`    | `🌍 Vollzugriff`     | `🌍 Alle`    |
 
 **Employee Table:**
 
-| Szenario | Bereiche | Abteilungen | Teams |
-|----------|----------|-------------|-------|
-| Employee mit 1 Team | `🔗 Vererbt` | `🔗 Vererbt` | `1 Team` |
-| Employee mit 2 Teams | `🔗 Vererbt` | `🔗 Vererbt` | `2 Teams` |
-| Employee mit Dept-Zugehörigkeit | `🔗 Vererbt` | `1 Abteilung` | `Keine` |
-| Employee ohne Zuweisungen | `Keine` | `Keine` | `Keine` |
+| Szenario                        | Bereiche     | Abteilungen   | Teams     |
+| ------------------------------- | ------------ | ------------- | --------- |
+| Employee mit 1 Team             | `🔗 Vererbt` | `🔗 Vererbt`  | `1 Team`  |
+| Employee mit 2 Teams            | `🔗 Vererbt` | `🔗 Vererbt`  | `2 Teams` |
+| Employee mit Dept-Zugehörigkeit | `🔗 Vererbt` | `1 Abteilung` | `Keine`   |
+| Employee ohne Zuweisungen       | `Keine`      | `Keine`       | `Keine`   |
 
 ---
 
@@ -163,9 +164,9 @@ EMPLOYEE mit Team-Zuweisung:
 
 ## 4. Betroffene Dateien
 
-| Datei | Änderung |
-|-------|----------|
-| `frontend/src/scripts/manage/admins/forms.ts` | `getDepartmentsBadge()` |
+| Datei                                         | Änderung                                   |
+| --------------------------------------------- | ------------------------------------------ |
+| `frontend/src/scripts/manage/admins/forms.ts` | `getDepartmentsBadge()`                    |
 | `frontend/src/scripts/manage/employees/ui.ts` | `getAreasBadge()`, `getDepartmentsBadge()` |
 
 ---
@@ -187,6 +188,7 @@ GESAMT: 6/6 Tasks ✅
 ## 6. Implementierte Änderungen
 
 ### admins/forms.ts - getDepartmentsBadge()
+
 - Full access → "Vollzugriff" badge
 - Direct depts + areas → "X Abtlg. + Vererbt" mit Tooltip
 - Only direct depts → "X Abteilung(en)" mit Tooltip
@@ -194,12 +196,14 @@ GESAMT: 6/6 Tasks ✅
 - Nothing → "Keine Abteilungen" danger badge
 
 ### employees/ui.ts - getAreasBadge()
+
 - Full access → "Alle" badge
 - Direct areas → "X Bereich(e)" mit Tooltip
 - Teams (inherited via teams→depts→areas) → "🔗 Vererbt" mit Tooltip
 - Nothing → "Keine" secondary badge
 
 ### employees/ui.ts - getDepartmentsBadge()
+
 - Full access → "Alle" badge
 - Direct departments → "X Abteilung(en)" mit Tooltip
 - Teams (inherited via teams→depts) → "🔗 Vererbt" mit Tooltip

@@ -12,7 +12,7 @@
 ### Bereits vorhanden
 
 ✅ **CSS Variables** bereits etabliert (colors, spacing, radii, shadows)
-✅ **Glassmorphism Design System** mit --glass-* Variablen
+✅ **Glassmorphism Design System** mit --glass-\* Variablen
 ✅ **PostCSS Pipeline** mit modernen Features (Nesting, Custom Media, etc.)
 ✅ **Dark Theme** als Basis
 
@@ -78,8 +78,8 @@ theme: {
 // Auto-generiert aus Design Tokens
 export const tokens = {
   colors: {
-    primary: '#2196f3' as const
-  }
+    primary: '#2196f3' as const,
+  },
 } as const;
 
 // Tailwind Autocomplete in VS Code
