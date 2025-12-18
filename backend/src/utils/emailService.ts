@@ -7,8 +7,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import path from 'path';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Feature from '../routes/v2/features/feature.model.js';
+import featureCheck from './featureCheck.js';
 import { logger } from './logger.js';
 
 // Type definition for attachment (from nodemailer)
@@ -525,7 +524,7 @@ async function checkBulkEmailFeature(
 ): Promise<EmailResult | null> {
   if (options.tenantId == null || options.checkFeature !== true) return null;
 
-  const hasAccess = await Feature.checkTenantAccess(options.tenantId, 'email_notifications');
+  const hasAccess = await featureCheck.checkTenantAccess(options.tenantId, 'email_notifications');
   if (!hasAccess) {
     return {
       success: false,
@@ -533,7 +532,7 @@ async function checkBulkEmailFeature(
     };
   }
 
-  await Feature.logUsage(options.tenantId, 'email_notifications', options.userId, {
+  await featureCheck.logUsage(options.tenantId, 'email_notifications', options.userId, {
     recipients: userCount,
     subject: options.subject,
   });

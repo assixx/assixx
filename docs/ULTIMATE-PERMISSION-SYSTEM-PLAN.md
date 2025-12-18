@@ -404,6 +404,7 @@ DELIMITER ;
 **Datei:** `backend/src/services/hierarchyPermission.service.ts`
 
 Änderungen:
+
 - Zeile 163-167: `user_area_permissions` → `admin_area_permissions`
 - Zeile 269-272: `user_area_permissions` → `admin_area_permissions`
 - Spaltenname: `user_id` → `admin_user_id`
@@ -416,6 +417,7 @@ DELIMITER ;
 **Datei:** `backend/src/services/contentVisibility.service.ts`
 
 Änderungen:
+
 - Zeile 296-299: `user_area_permissions` → `admin_area_permissions`
 - Zeile 317: `user_area_permissions` → `admin_area_permissions`
 - Spaltenname: `user_id` → `admin_user_id`
@@ -449,7 +451,7 @@ DELIMITER ;
 **Datei:** `frontend/src/scripts/manage/admins/forms.ts`
 
 - [ ] **5.1.1** Team Multi-Select im Admin-Modal ENTFERNEN oder DEAKTIVIEREN
-       (Admin bekommt Teams über Vererbung, nicht direkt!) → MOVED TO PHASE 5
+      (Admin bekommt Teams über Vererbung, nicht direkt!) → MOVED TO PHASE 5
 - [ ] **5.1.2** Hinweistext hinzufügen: "Teams werden automatisch über Area/Department vererbt" → MOVED TO PHASE 5
 
 ### 5.2 Teams Management aktualisieren (team_lead)
@@ -559,6 +561,7 @@ Teams werden über Vererbung sichtbar:
 ```
 
 **Dateien:**
+
 - `frontend/src/pages/manage-admins.html` (Zeile 326-339 entfernen)
 - `frontend/src/scripts/manage/admins/forms.ts` (teamIds Logic entfernen)
 - `frontend/src/scripts/manage/admins/types.ts` (teamIds aus FormData entfernen)
@@ -590,6 +593,7 @@ Employee kann NUR Teams zugeordnet werden!
 ```
 
 **Dateien:**
+
 - `frontend/src/pages/manage-employees.html`
 - `frontend/src/scripts/manage/employees/forms.ts`
 - `frontend/src/scripts/manage/employees/types.ts`

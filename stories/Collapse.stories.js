@@ -10,7 +10,6 @@
  * - Keyboard navigation
  * - ARIA state management
  */
-
 import '../frontend/src/design-system/index.css';
 
 export default {
@@ -50,7 +49,8 @@ export const BasicCollapse = () => {
   const body1 = document.createElement('div');
   body1.className = 'collapse__body';
   body1.style.cssText = 'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
-  body1.innerHTML = '<p style="margin: 0;">This is hidden content that appears when you click the trigger button. Perfect for "Read more" sections, additional details, or progressive disclosure.</p>';
+  body1.innerHTML =
+    '<p style="margin: 0;">This is hidden content that appears when you click the trigger button. Perfect for "Read more" sections, additional details, or progressive disclosure.</p>';
 
   content1.appendChild(body1);
   container.appendChild(trigger1);
@@ -73,7 +73,8 @@ export const BasicCollapse = () => {
   const body2 = document.createElement('div');
   body2.className = 'collapse__body';
   body2.style.cssText = 'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
-  body2.innerHTML = '<p style="margin: 0 0 12px 0;">Configure advanced options:</p><ul style="margin: 0; padding-left: 20px;"><li>Auto-save enabled</li><li>Notification preferences</li><li>Theme customization</li></ul>';
+  body2.innerHTML =
+    '<p style="margin: 0 0 12px 0;">Configure advanced options:</p><ul style="margin: 0; padding-left: 20px;"><li>Auto-save enabled</li><li>Notification preferences</li><li>Theme customization</li></ul>';
 
   content2.appendChild(body2);
   container.appendChild(trigger2);
@@ -245,7 +246,8 @@ export const SizeVariants = () => {
 
   const content1 = document.createElement('div');
   content1.className = 'collapse__content';
-  content1.innerHTML = '<div class="collapse__body">Compact size for tight spaces or secondary information.</div>';
+  content1.innerHTML =
+    '<div class="collapse__body">Compact size for tight spaces or secondary information.</div>';
 
   wrapper1.appendChild(trigger1);
   wrapper1.appendChild(content1);
@@ -266,7 +268,8 @@ export const SizeVariants = () => {
 
   const content2 = document.createElement('div');
   content2.className = 'collapse__content';
-  content2.innerHTML = '<div class="collapse__body">Standard size for most use cases. Balanced readability and spacing.</div>';
+  content2.innerHTML =
+    '<div class="collapse__body">Standard size for most use cases. Balanced readability and spacing.</div>';
 
   wrapper2.appendChild(trigger2);
   wrapper2.appendChild(content2);
@@ -287,7 +290,8 @@ export const SizeVariants = () => {
 
   const content3 = document.createElement('div');
   content3.className = 'collapse__content';
-  content3.innerHTML = '<div class="collapse__body">Larger size for primary content or emphasis. Better for touch targets.</div>';
+  content3.innerHTML =
+    '<div class="collapse__body">Larger size for primary content or emphasis. Better for touch targets.</div>';
 
   wrapper3.appendChild(trigger3);
   wrapper3.appendChild(content3);
@@ -344,9 +348,24 @@ export const AllVariants = () => {
   }
 
   createSection('Basic', '', 'Basic unstyled collapse for flexible integration.', 'Show details');
-  createSection('Card Style', 'collapse--card', 'Glassmorphism card with hover effects.', '<span class="collapse__trigger-icon"><i class="fas fa-info-circle"></i><span>Product information</span></span>');
-  createSection('Bordered', 'collapse--bordered', 'Minimal style with bottom border.', 'Technical specifications');
-  createSection('Filled', 'collapse--filled', 'Subtle background for visual grouping.', 'Shipping information');
+  createSection(
+    'Card Style',
+    'collapse--card',
+    'Glassmorphism card with hover effects.',
+    '<span class="collapse__trigger-icon"><i class="fas fa-info-circle"></i><span>Product information</span></span>',
+  );
+  createSection(
+    'Bordered',
+    'collapse--bordered',
+    'Minimal style with bottom border.',
+    'Technical specifications',
+  );
+  createSection(
+    'Filled',
+    'collapse--filled',
+    'Subtle background for visual grouping.',
+    'Shipping information',
+  );
 
   return container;
 };

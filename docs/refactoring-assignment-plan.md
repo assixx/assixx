@@ -22,10 +22,13 @@
 ## 1. Executive Summary
 
 ### Problem
+
 Das aktuelle Assignment-System unterstützt nur Department- und Department-Group-Zuweisungen für Admins. Es fehlen Area-Zuweisungen, Team-Zuweisungen, und ein Employee-Permission-System.
 
 ### Lösung
+
 **Hybrid Hierarchical RBAC (H-RBAC)** mit:
+
 - Hierarchie-Vererbung (Area → Departments → Teams)
 - Explizite Ausnahmen für Sonderfälle
 - Code-basierte Root-Prüfung (kein DB-Eintrag nötig)
@@ -34,16 +37,17 @@ Das aktuelle Assignment-System unterstützt nur Department- und Department-Group
 - Normalisierte N:M Tabellen (keine JSON Arrays)
 
 ### Aufwand
+
 - **DB Migration:** 1 neue Tabelle, 1 neue Spalte in users
 - **Backend Code:** Neue Permission-Service Logik + Visibility-Service
 - **Keine Breaking Changes:** Bestehende Tabellen bleiben kompatibel
 
 ### Zwei Konzepte verstehen
 
-| Konzept | Frage | Beispiel |
-|---------|-------|----------|
-| **User Permissions** | Was kann User X zugreifen? | User X hat Area 1 Zugriff |
-| **Content Visibility** | Wer kann Content Y sehen? | Blackboard Y ist sichtbar für Area 1 |
+| Konzept                | Frage                      | Beispiel                             |
+| ---------------------- | -------------------------- | ------------------------------------ |
+| **User Permissions**   | Was kann User X zugreifen? | User X hat Area 1 Zugriff            |
+| **Content Visibility** | Wer kann Content Y sehen?  | Blackboard Y ist sichtbar für Area 1 |
 
 ---
 
@@ -51,30 +55,32 @@ Das aktuelle Assignment-System unterstützt nur Department- und Department-Group
 
 ### Microsoft Entra ID Best Practices
 
-| Prinzip | Bedeutung für Assixx |
-|---------|---------------------|
-| **Least Privilege** | Nur nötige Berechtigungen vergeben |
-| **Group-Based Access** | Zuweisungen über Gruppen, nicht einzelne User |
-| **Built-in + Custom Roles** | Vordefinierte Rollen + Anpassungen |
-| **JIT Access** | Zeitlich begrenzte Berechtigungen (später) |
+| Prinzip                     | Bedeutung für Assixx                          |
+| --------------------------- | --------------------------------------------- |
+| **Least Privilege**         | Nur nötige Berechtigungen vergeben            |
+| **Group-Based Access**      | Zuweisungen über Gruppen, nicht einzelne User |
+| **Built-in + Custom Roles** | Vordefinierte Rollen + Anpassungen            |
+| **JIT Access**              | Zeitlich begrenzte Berechtigungen (später)    |
 
 ### Multi-Tenant SaaS Patterns
 
-| Pattern | Anwendung |
-|---------|-----------|
-| **H-RBAC** | Hierarchische Rollen mit Vererbung |
+| Pattern                | Anwendung                                |
+| ---------------------- | ---------------------------------------- |
+| **H-RBAC**             | Hierarchische Rollen mit Vererbung       |
 | **Per-Tenant Scoping** | Alle Permissions sind tenant_id-isoliert |
-| **Policy Inheritance** | Parent-Berechtigung vererbt an Children |
+| **Policy Inheritance** | Parent-Berechtigung vererbt an Children  |
 
 ### RBAC vs. ABAC Entscheidung
 
 **Empfehlung: Hybrid RBAC-A**
+
 - RBAC für grobe Zugriffskontrolle (Area, Department, Team)
 - Attribute für Feinsteuerung (can_read, can_write, can_delete)
 
 ### Datenbank Design
 
 **Empfehlung: Normalisierte N:M Tabellen**
+
 - ✅ Referentielle Integrität
 - ✅ Effiziente Queries
 - ✅ Standard SQL Joins
@@ -86,30 +92,30 @@ Das aktuelle Assignment-System unterstützt nur Department- und Department-Group
 
 ### Was funktioniert GUT ✅
 
-| Komponente | Bewertung |
-|------------|-----------|
-| `tenant_id` Isolation | ✅ Perfekt - überall vorhanden |
-| `admin_department_permissions` | ✅ Gut - N:M mit Permissions |
-| `admin_group_permissions` | ✅ Gut - N:M mit Permissions |
-| `user_teams` | ✅ Gut - N:M für Team-Mitgliedschaft |
-| Role Enum | ✅ Gut - root/admin/employee |
-| Department Groups | ✅ Gut - Logische Gruppierung |
+| Komponente                     | Bewertung                            |
+| ------------------------------ | ------------------------------------ |
+| `tenant_id` Isolation          | ✅ Perfekt - überall vorhanden       |
+| `admin_department_permissions` | ✅ Gut - N:M mit Permissions         |
+| `admin_group_permissions`      | ✅ Gut - N:M mit Permissions         |
+| `user_teams`                   | ✅ Gut - N:M für Team-Mitgliedschaft |
+| Role Enum                      | ✅ Gut - root/admin/employee         |
+| Department Groups              | ✅ Gut - Logische Gruppierung        |
 
 ### Was FEHLT ❌
 
-| Komponente | Problem |
-|------------|---------|
-| `admin_area_permissions` | Keine Area-Zuweisung möglich |
-| Employee Permissions | Employees bypassen ALLE Checks |
-| Hierarchie-Vererbung | Nicht implementiert |
-| Team-Level Admin Access | Nur über Department möglich |
+| Komponente               | Problem                        |
+| ------------------------ | ------------------------------ |
+| `admin_area_permissions` | Keine Area-Zuweisung möglich   |
+| Employee Permissions     | Employees bypassen ALLE Checks |
+| Hierarchie-Vererbung     | Nicht implementiert            |
+| Team-Level Admin Access  | Nur über Department möglich    |
 
 ### Was GEÄNDERT werden muss ⚠️
 
-| Komponente | Änderung |
-|------------|----------|
-| `departmentAccess.ts` | Employee Bypass entfernen |
-| Permission Logic | Hierarchie-Vererbung hinzufügen |
+| Komponente            | Änderung                        |
+| --------------------- | ------------------------------- |
+| `departmentAccess.ts` | Employee Bypass entfernen       |
+| Permission Logic      | Hierarchie-Vererbung hinzufügen |
 
 ---
 
@@ -151,6 +157,7 @@ ALTER TABLE users ADD COLUMN has_full_access TINYINT(1) DEFAULT 0;
 ```
 
 **Verwendung:**
+
 - Checkbox im Admin-UI: "Zugriff auf alles"
 - Wenn aktiviert → User sieht/verwaltet ALLES im Tenant
 - Keine einzelnen Area/Department Zuweisungen nötig
@@ -184,12 +191,12 @@ visibility_id INT NULL  -- NULL bei 'tenant', sonst die spezifische ID
 
 **Visibility-Levels:**
 
-| Level | visibility_type | visibility_id | Wer sieht es? |
-|-------|-----------------|---------------|---------------|
-| Ganze Firma | 'tenant' | NULL | Alle im Tenant |
-| Ganze Area | 'area' | area_id | Alle mit Area-Zugriff |
-| Ganzes Dept | 'department' | dept_id | Alle mit Dept-Zugriff |
-| Ganzes Team | 'team' | team_id | Alle Team-Mitglieder |
+| Level       | visibility_type | visibility_id | Wer sieht es?         |
+| ----------- | --------------- | ------------- | --------------------- |
+| Ganze Firma | 'tenant'        | NULL          | Alle im Tenant        |
+| Ganze Area  | 'area'          | area_id       | Alle mit Area-Zugriff |
+| Ganzes Dept | 'department'    | dept_id       | Alle mit Dept-Zugriff |
+| Ganzes Team | 'team'          | team_id       | Alle Team-Mitglieder  |
 
 **Visibility Check Algorithmus:**
 
@@ -204,7 +211,7 @@ function canUserSeeContent(userId: number, content: Content): boolean {
 
   switch (content.visibility_type) {
     case 'tenant':
-      return true;  // Alle im Tenant sehen es
+      return true; // Alle im Tenant sehen es
 
     case 'area':
       return hasAreaAccess(userId, content.visibility_id);
@@ -220,13 +227,13 @@ function canUserSeeContent(userId: number, content: Content): boolean {
 
 **Betroffene Feature-Tabellen:**
 
-| Feature | Tabelle | Visibility hinzufügen? |
-|---------|---------|------------------------|
-| Blackboard | blackboard_entries | JA |
-| Dokumente | documents | JA (hat schon teilweise) |
-| Surveys | surveys | JA |
-| KVP | kvp_entries | JA |
-| Calendar | calendar_events | JA |
+| Feature    | Tabelle            | Visibility hinzufügen?   |
+| ---------- | ------------------ | ------------------------ |
+| Blackboard | blackboard_entries | JA                       |
+| Dokumente  | documents          | JA (hat schon teilweise) |
+| Surveys    | surveys            | JA                       |
+| KVP        | kvp_entries        | JA                       |
+| Calendar   | calendar_events    | JA                       |
 
 ### 4.5 Permission Check Algorithmus
 
@@ -281,6 +288,7 @@ CREATE INDEX idx_users_full_access ON users(tenant_id, has_full_access);
 ```
 
 **Bedeutung:**
+
 - `has_full_access = 0` → Normale Permission-Logik
 - `has_full_access = 1` → Vollzugriff auf alles im Tenant
 
@@ -322,22 +330,22 @@ CREATE TABLE user_area_permissions (
 
 ### 5.4 Übersicht: Finale Tabellen-Struktur
 
-| Tabelle | Zweck | Status |
-|---------|-------|--------|
-| `users.has_full_access` | Vollzugriff Flag | **NEUE SPALTE** |
-| `user_area_permissions` | User → Area | **NEUE TABELLE** |
-| `admin_department_permissions` | User → Department | Behalten (für alle Rollen) |
-| `admin_group_permissions` | ~~Dept Group Perms~~ | **DEPRECATED** |
-| `user_teams` | Team-Mitgliedschaft = Sichtbarkeit | Behalten |
+| Tabelle                        | Zweck                              | Status                     |
+| ------------------------------ | ---------------------------------- | -------------------------- |
+| `users.has_full_access`        | Vollzugriff Flag                   | **NEUE SPALTE**            |
+| `user_area_permissions`        | User → Area                        | **NEUE TABELLE**           |
+| `admin_department_permissions` | User → Department                  | Behalten (für alle Rollen) |
+| `admin_group_permissions`      | ~~Dept Group Perms~~               | **DEPRECATED**             |
+| `user_teams`                   | Team-Mitgliedschaft = Sichtbarkeit | Behalten                   |
 
 ### 5.5 Warum KEINE JSON Arrays?
 
-| JSON Arrays | N:M Tabellen |
-|-------------|--------------|
-| ❌ Keine Foreign Keys | ✅ Referentielle Integrität |
-| ❌ Schlechte Query-Performance | ✅ Index-optimiert |
-| ❌ Komplexe Updates | ✅ Standard SQL |
-| ❌ Keine JOINs möglich | ✅ Effiziente JOINs |
+| JSON Arrays                    | N:M Tabellen                |
+| ------------------------------ | --------------------------- |
+| ❌ Keine Foreign Keys          | ✅ Referentielle Integrität |
+| ❌ Schlechte Query-Performance | ✅ Index-optimiert          |
+| ❌ Komplexe Updates            | ✅ Standard SQL             |
+| ❌ Keine JOINs möglich         | ✅ Effiziente JOINs         |
 
 ---
 
@@ -351,7 +359,6 @@ CREATE TABLE user_area_permissions (
  * Handles all permission checks with hierarchy inheritance
  */
 class UserPermissionsService {
-
   /**
    * Check if user has access to a resource
    */
@@ -360,9 +367,8 @@ class UserPermissionsService {
     tenantId: number,
     resourceType: 'area' | 'department' | 'team' | 'machine',
     resourceId: number,
-    permission: 'read' | 'write' | 'delete'
+    permission: 'read' | 'write' | 'delete',
   ): Promise<boolean> {
-
     // 1. Get user role
     const user = await this.getUser(userId, tenantId);
 
@@ -391,9 +397,8 @@ class UserPermissionsService {
     userId: number,
     departmentId: number,
     permission: string,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
-
     // Direct department permission
     const directPerm = await this.getDirectDepartmentPermission(userId, departmentId, tenantId);
     if (directPerm && this.hasPermissionLevel(directPerm, permission)) {
@@ -424,7 +429,7 @@ class UserPermissionsService {
   async getAccessibleResources(
     userId: number,
     tenantId: number,
-    resourceType: 'area' | 'department' | 'team'
+    resourceType: 'area' | 'department' | 'team',
   ): Promise<number[]> {
     // Used for filtering lists in UI
   }
@@ -514,26 +519,31 @@ RENAME TABLE admin_group_permissions TO user_group_permissions;
 ## 8. Quellen
 
 ### Microsoft Official Documentation
+
 - [Best practices for Microsoft Entra roles](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/best-practices)
 - [Best practices for Azure RBAC](https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices)
 - [Azure identity & access security best practices](https://learn.microsoft.com/en-us/azure/security/fundamentals/identity-management-best-practices)
 
 ### Multi-Tenant SaaS Patterns
+
 - [Auth0: How to Choose Authorization Model for Multi-Tenant SaaS](https://auth0.com/blog/how-to-choose-the-right-authorization-model-for-your-multi-tenant-saas-application/)
 - [AWS: Multi-tenant SaaS authorization best practices](https://docs.aws.amazon.com/prescriptive-guidance/latest/saas-multitenant-api-access-authorization/introduction.html)
 - [Cerbos: Multi-Tenant SaaS Authorization](https://www.cerbos.dev/blog/multi-tenant-saas-authorization-role-policies-and-scoped-resource-policies)
 
 ### RBAC vs ABAC
+
 - [Okta: RBAC vs ABAC](https://www.okta.com/identity-101/role-based-access-control-vs-attribute-based-access-control/)
 - [Splunk: RBAC vs ABAC Compared](https://www.splunk.com/en_us/blog/learn/rbac-vs-abac.html)
 - [Frontegg: RBAC vs ABAC Use Cases](https://frontegg.com/guides/rbac-vs-abac)
 
 ### Database Design
+
 - [Stack Overflow: JSON vs Many-to-Many](https://stackoverflow.com/questions/15367696/storing-json-in-database-vs-having-a-new-column-for-each-key)
 - [DEV.to: When to Use JSON in Relational DB](https://dev.to/writech/when-to-use-json-data-in-a-relational-database-4i0b)
 - [Bytebase: Top 10 Database Schema Design Best Practices](https://www.bytebase.com/blog/top-database-schema-design-best-practices/)
 
 ### Hierarchical RBAC
+
 - [Satori: Comprehensive Guide to RBAC Design](https://satoricyber.com/data-access-control/a-comprehensive-guide-to-role-based-access-control-design/)
 - [H-RBAC: Hierarchical Access Control Model for SaaS](https://www.mecs-press.org/ijmecs/ijmecs-v3-n5/IJMECS-V3-N5-7.pdf)
 - [Hasura: Google Drive Style Hierarchical ACL](https://hasura.io/blog/implementing-a-google-drive-style-hierarchical-role-based-acl-system)
@@ -544,24 +554,24 @@ RENAME TABLE admin_group_permissions TO user_group_permissions;
 
 ### Kernentscheidungen
 
-| Entscheidung | Wahl | Begründung |
-|--------------|------|------------|
-| Root Handling | Code-Check | Keine DB-Einträge nötig, automatisch alles |
-| **Access All** | `has_full_access` Flag | KISS - ein Checkbox für Vollzugriff |
-| Datenstruktur | N:M Tabellen | Performance, Integrität, Standard |
-| Vererbung | Area → Dept | Nur eine Ebene Vererbung |
-| Team-Zugriff | user_teams Mitgliedschaft | KEINE separate Permission-Tabelle |
-| Dept Groups | DEPRECATED | Area-Vererbung ersetzt es |
-| **Content Visibility** | visibility_type + visibility_id | Wiederverwendbar für alle Features |
+| Entscheidung           | Wahl                            | Begründung                                 |
+| ---------------------- | ------------------------------- | ------------------------------------------ |
+| Root Handling          | Code-Check                      | Keine DB-Einträge nötig, automatisch alles |
+| **Access All**         | `has_full_access` Flag          | KISS - ein Checkbox für Vollzugriff        |
+| Datenstruktur          | N:M Tabellen                    | Performance, Integrität, Standard          |
+| Vererbung              | Area → Dept                     | Nur eine Ebene Vererbung                   |
+| Team-Zugriff           | user_teams Mitgliedschaft       | KEINE separate Permission-Tabelle          |
+| Dept Groups            | DEPRECATED                      | Area-Vererbung ersetzt es                  |
+| **Content Visibility** | visibility_type + visibility_id | Wiederverwendbar für alle Features         |
 
 ### DB-Änderungen
 
-| Was | Typ | Status |
-|-----|-----|--------|
-| `users.has_full_access` | Neue Spalte | NEU |
-| `user_area_permissions` | Neue Tabelle | NEU |
-| `admin_department_permissions` | Bestehend | Behalten |
-| `admin_group_permissions` | Bestehend | DEPRECATED |
+| Was                            | Typ          | Status     |
+| ------------------------------ | ------------ | ---------- |
+| `users.has_full_access`        | Neue Spalte  | NEU        |
+| `user_area_permissions`        | Neue Tabelle | NEU        |
+| `admin_department_permissions` | Bestehend    | Behalten   |
+| `admin_group_permissions`      | Bestehend    | DEPRECATED |
 
 ### Zwei Konzepte
 

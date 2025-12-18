@@ -4,18 +4,37 @@
 
 ---
 
+## Isolierter Test-Tenant: brunotest
+
+Tests laufen in einem **isolierten Tenant** namens `brunotest`:
+
+- **Tenant**: Bruno Test GmbH (ID: dynamisch)
+- **Admin**: admin@brunotest.de / BrunoTest123!
+- **Employee**: employee@brunotest.de / BrunoTest123!
+- **Domain**: brunotest.de
+
+**Vorteile:**
+- Test-Daten verschmutzen NICHT den Dev-Tenant
+- Reproduzierbare Tests
+- Einfaches Cleanup (nur Test-Tenant betroffen)
+
+---
+
 ## Quick Start
 
 ```bash
-# Alle API Tests ausführen
+# WICHTIG: Zuerst _setup ausführen (erstellt/initialisiert brunotest)
+cd api-tests && npx bru run _setup --env local
+
+# Alle API Tests ausführen (inkl. _setup)
+cd api-tests && npx bru run _setup auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local
+
+# Oder: Standard test:api (ohne _setup - nur für bestehenden Tenant)
 pnpm run test:api
 
-# Einzelnes Modul testen
-cd api-tests && npx bru run auth --env local
-cd api-tests && npx bru run calendar --env local
-
-# Mehrere Module
-cd api-tests && npx bru run auth users departments --env local
+# Einzelnes Modul testen (nach _setup)
+cd api-tests && npx bru run _setup auth --env local
+cd api-tests && npx bru run _setup calendar --env local
 ```
 
 ---
@@ -60,8 +79,14 @@ sleep 20 && docker-compose ps
 api-tests/
 ├── bruno.json              # Bruno Projekt-Config
 ├── environments/
-│   └── local.bru           # Variablen: base_url, auth_token
-├── auth/                   # Login/Logout/Refresh (IMMER ZUERST!)
+│   └── local.bru           # Variablen: base_url, brunotest_email, etc.
+├── _setup/                 # ZUERST: Tenant-Setup (läuft vor allen Tests!)
+│   ├── 01-check-subdomain.bru   # Prüft ob brunotest existiert
+│   ├── 02-create-tenant.bru     # Erstellt brunotest (oder 409 = OK)
+│   ├── 03-login-brunotest.bru   # Login mit brunotest Admin
+│   ├── 04-create-test-employee.bru  # Erstellt Test-Employee
+│   └── 05-get-chat-participant.bru  # Setzt chat_participant_id
+├── auth/                   # Login/Logout/Refresh
 ├── users/                  # User CRUD
 ├── departments/            # Abteilungen CRUD
 ├── teams/                  # Teams CRUD
@@ -75,9 +100,37 @@ api-tests/
 ├── settings/               # Einstellungen
 ├── roles/                  # Rollen
 ├── features/               # Feature-Flags
-├── chat/                   # Chat System
+├── chat/                   # Chat System (mit delete!)
 ├── documents/              # Dokumente
 └── shifts/                 # Schichtplanung
+```
+
+---
+
+## npm Scripts
+
+| Script | Beschreibung |
+|--------|--------------|
+| `pnpm run test:api` | Standard-Tests (ohne _setup, erwartet bestehenden Tenant) |
+| `pnpm run test:api:full` | Vollständig: _setup + alle Module (empfohlen) |
+| `pnpm run test:api:setup` | Nur _setup (erstellt brunotest Tenant) |
+| `pnpm run test:api:noclean` | Erstellt Daten OHNE zu löschen (für DB/UI Inspektion) |
+| `pnpm run test:api:auth` | Nur Auth-Tests |
+
+### Daten inspizieren (noclean)
+
+```bash
+# 1. Erstelle Test-Daten ohne Cleanup
+pnpm run test:api:noclean
+
+# 2. Prüfe in DB
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM departments WHERE tenant_id = 12;"
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM teams WHERE tenant_id = 12;"
+
+# 3. Prüfe in UI
+# Login: http://localhost:3000
+# Email: admin@brunotest.de
+# Passwort: BrunoTest123!
 ```
 
 ---
@@ -93,6 +146,7 @@ api-tests/
 ```
 
 **Warum wichtig?**
+
 - Ohne Login: alle Requests → 401 Unauthorized
 - Ohne Create: get/update/delete → 400/404 (keine ID)
 
@@ -201,29 +255,32 @@ tests {
 
 ## Verfügbare Variablen
 
-| Variable | Beschreibung | Gesetzt von |
-|----------|--------------|-------------|
-| `{{base_url}}` | `http://localhost:3000/api/v2` | environments/local.bru |
-| `{{auth_token}}` | JWT Access Token | auth/login.bru |
-| `{{refresh_token}}` | JWT Refresh Token | auth/login.bru |
-| `{{user_id}}` | Eingeloggter User ID | auth/login.bru |
-| `{{tenant_id}}` | Tenant ID | auth/login.bru |
-| `{{$timestamp}}` | Unix Timestamp | Bruno built-in |
-| `{{$randomInt}}` | Zufällige Zahl | Bruno built-in |
+| Variable                | Beschreibung                   | Gesetzt von                |
+| ----------------------- | ------------------------------ | -------------------------- |
+| `{{base_url}}`          | `http://localhost:3000/api/v2` | environments/local.bru     |
+| `{{brunotest_email}}`   | Admin Email (brunotest)        | environments/local.bru     |
+| `{{brunotest_password}}`| Admin Passwort (brunotest)     | environments/local.bru     |
+| `{{auth_token}}`        | JWT Access Token               | _setup/03-login.bru        |
+| `{{refresh_token}}`     | JWT Refresh Token              | _setup/03-login.bru        |
+| `{{user_id}}`           | Eingeloggter User ID           | _setup/03-login.bru        |
+| `{{tenant_id}}`         | Tenant ID (brunotest)          | _setup/03-login.bru        |
+| `{{chat_participant_id}}`| Test Employee ID für Chat     | _setup/05-get-chat-participant.bru |
+| `{{$timestamp}}`        | Unix Timestamp                 | Bruno built-in             |
+| `{{$randomInt}}`        | Zufällige Zahl                 | Bruno built-in             |
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Ursache | Lösung |
-|---------|---------|--------|
-| `429 Too Many Requests` | Rate Limit | `docker-compose restart` |
-| `401 Unauthorized` | Token fehlt/abgelaufen | auth/login zuerst ausführen |
-| `400 Bad Request` | Validation Error | Body-Format prüfen |
-| `404 Not Found` | Resource existiert nicht | Create zuerst ausführen |
-| `500 Internal Server Error` | Backend Bug | `docker logs assixx-backend` |
-| `ECONNREFUSED` | Backend down | `docker-compose up -d` |
-| `ECONNRESET` | Backend crashed | `docker-compose restart` |
+| Symptom                     | Ursache                  | Lösung                       |
+| --------------------------- | ------------------------ | ---------------------------- |
+| `429 Too Many Requests`     | Rate Limit               | `docker-compose restart`     |
+| `401 Unauthorized`          | Token fehlt/abgelaufen   | auth/login zuerst ausführen  |
+| `400 Bad Request`           | Validation Error         | Body-Format prüfen           |
+| `404 Not Found`             | Resource existiert nicht | Create zuerst ausführen      |
+| `500 Internal Server Error` | Backend Bug              | `docker logs assixx-backend` |
+| `ECONNREFUSED`              | Backend down             | `docker-compose up -d`       |
+| `ECONNRESET`                | Backend crashed          | `docker-compose restart`     |
 
 ### Debug: Backend Logs anzeigen
 
@@ -286,4 +343,4 @@ docker logs assixx-backend --tail 100 | grep -i error
 
 ---
 
-*Erstellt: 2025-12-09 | Branch: lint/refactoring*
+_Erstellt: 2025-12-09 | Branch: lint/refactoring_

@@ -122,18 +122,15 @@ function handleAdminPages(items, currentPage) {
 }
 
 // Helper: Handle root pages
-function handleRootPages(items, currentPage) {
+// NOTE: No intermediate dashboard breadcrumb needed!
+// "Home" already points to /root-dashboard for root users (via getHomeUrl())
+// Adding "Root Dashboard" would be redundant: Home > Root Dashboard > Page
+// Correct: Home > Page (where Home links to /root-dashboard)
+function handleRootPages(_items, currentPage) {
   const rootPages = ['/manage-root', '/root-features', '/tenant-deletion-status', '/feature-management'];
-
-  if (rootPages.includes(currentPage)) {
-    items.push({
-      label: 'Root Dashboard',
-      href: '/root-dashboard',
-      icon: 'fa-shield-alt',
-    });
-    return true;
-  }
-  return false;
+  // Return true to signal this is a root page (prevents other handlers)
+  // But do NOT add intermediate breadcrumb - Home already points to root-dashboard
+  return rootPages.includes(currentPage);
 }
 
 // Helper: Handle document pages

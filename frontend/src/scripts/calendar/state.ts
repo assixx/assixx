@@ -2,9 +2,12 @@
  * Calendar State Management
  * Centralized state for the calendar system
  * Replaces scattered global variables with a singleton class
+ *
+ * Updated for @event-calendar/core (Phase 0 Migration)
  */
 
-import type { Calendar } from '@fullcalendar/core';
+// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase class
+import type Calendar from '@event-calendar/core';
 import type { User } from '../../types/api.types';
 import type { Department, Team, FilterLevel, ViewMode } from './types';
 
@@ -12,7 +15,7 @@ import type { Department, Team, FilterLevel, ViewMode } from './types';
  * Calendar State Manager (Singleton)
  *
  * Manages all mutable state for the calendar system:
- * - FullCalendar instance
+ * - EventCalendar instance
  * - Current user info
  * - Organization data (departments, teams, employees)
  * - UI state (filters, search, selected items)
@@ -40,21 +43,23 @@ class CalendarState {
   }
 
   // ============================================================================
-  // FullCalendar Instance
+  // EventCalendar Instance
   // ============================================================================
 
   private _calendar: Calendar | null = null;
 
   /**
-   * Get FullCalendar instance
+   * Get EventCalendar instance
    */
+
   public get calendar(): Calendar | null {
     return this._calendar;
   }
 
   /**
-   * Set FullCalendar instance
+   * Set EventCalendar instance
    */
+
   public set calendar(instance: Calendar | null) {
     this._calendar = instance;
   }

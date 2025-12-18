@@ -3,6 +3,7 @@
 ## 📊 Current State Analysis
 
 ### Problems Identified
+
 - **124 !important declarations** across 20 CSS files
 - **Bootstrap loaded first**, then overridden with !important everywhere
 - **Tailwind v4.1.13 installed** but not using @layer properly
@@ -10,6 +11,7 @@
 - **Unmaintainable CSS** with cascade conflicts
 
 ### Files with Most !important Usage
+
 1. `dashboard-theme.css` - 41 occurrences
 2. `unified-navigation.css` - 36 occurrences
 3. `style.css` - 29 occurrences
@@ -20,6 +22,7 @@
 ## ✅ Migration Strategy
 
 ### Phase 1: Setup Proper Tailwind Infrastructure (Week 1)
+
 **Goal:** Establish correct Tailwind configuration without breaking existing functionality
 
 1. ✅ **Create proper tailwind.css with @layer**
@@ -27,12 +30,13 @@
    - Bootstrap-compatible utility classes included
 
 2. **Update main.css import order**
+
    ```css
    /* NEW ORDER - Tailwind AFTER Bootstrap for proper override */
-   @import "./design-system/variables-dark.css";
-   @import "./lib/bootstrap.min.css";
-   @import "./tailwind.css"; /* NEW - replaces tailwind-base.css */
-   @import "./dashboard-theme.css"; /* Will be refactored */
+   @import './design-system/variables-dark.css';
+   @import './lib/bootstrap.min.css';
+   @import './tailwind.css'; /* NEW - replaces tailwind-base.css */
+   @import './dashboard-theme.css'; /* Will be refactored */
    ```
 
 3. **Create compatibility layer**
@@ -40,9 +44,11 @@
    - Ensure no visual regression
 
 ### Phase 2: Component Migration (Weeks 2-3)
+
 **Goal:** Systematically replace Bootstrap components with Tailwind
 
 #### Priority Order (based on !important usage):
+
 1. **Navigation Components** (36 !important)
    - Replace Bootstrap navbar with Tailwind nav-glass
    - Use proper Tailwind flexbox utilities
@@ -64,9 +70,11 @@
    - Use Tailwind table utilities
 
 ### Phase 3: Remove !important Declarations (Week 4)
+
 **Goal:** Eliminate all !important by fixing specificity issues
 
 1. **Per-file cleanup approach:**
+
    ```css
    /* BEFORE - with !important */
    body {
@@ -89,6 +97,7 @@
    - Mobile responsiveness
 
 ### Phase 4: Remove Bootstrap (Week 5)
+
 **Goal:** Complete removal of Bootstrap dependency
 
 1. **Remove Bootstrap CSS import**
@@ -97,6 +106,7 @@
 4. **Remove Bootstrap JavaScript** if used
 
 ### Phase 5: Optimization (Week 6)
+
 **Goal:** Clean, maintainable CSS architecture
 
 1. **Consolidate styles:**
@@ -112,17 +122,18 @@
 ## 🔧 Implementation Steps
 
 ### Step 1: Update main.css
+
 ```css
 /* /frontend/src/styles/main.css */
 
 /* Design System Variables */
-@import "./design-system/variables-dark.css";
+@import './design-system/variables-dark.css';
 
 /* Tailwind Layers - PROPER IMPLEMENTATION */
-@import "./tailwind.css";
+@import './tailwind.css';
 
 /* Component styles (to be migrated) */
-@import "./dashboard-theme.css";
+@import './dashboard-theme.css';
 /* ... other imports ... */
 
 /* Bootstrap - TEMPORARILY at end for testing */
@@ -130,35 +141,36 @@
 ```
 
 ### Step 2: Test with One Page
+
 1. Choose `admin-dashboard.html` as pilot
 2. Replace Bootstrap classes with Tailwind
 3. Verify functionality and appearance
 4. Document any issues
 
 ### Step 3: Create Migration Script
+
 ```javascript
 // scripts/migrate-bootstrap-to-tailwind.js
 const classMap = {
   'btn btn-primary': 'btn-glass bg-primary',
   'btn btn-cancel': 'btn-glass',
   'form-control': 'input-glass',
-  'card': 'glass-card',
+  card: 'glass-card',
   'alert alert-success': 'alert-glass alert-success',
-  'container': 'container-glass',
-  'row': 'flex flex-wrap -mx-2',
+  container: 'container-glass',
+  row: 'flex flex-wrap -mx-2',
   'col-md-6': 'w-full md:w-6/12 px-2',
   // ... more mappings
 };
 ```
 
 ### Step 4: Component Templates
+
 Create reusable Tailwind components to replace Bootstrap:
 
 ```html
 <!-- Button Component -->
-<button class="btn-glass hover:scale-105 active:scale-100">
-  Click Me
-</button>
+<button class="btn-glass hover:scale-105 active:scale-100">Click Me</button>
 
 <!-- Card Component -->
 <div class="glass-card">
@@ -167,7 +179,7 @@ Create reusable Tailwind components to replace Bootstrap:
 </div>
 
 <!-- Form Input -->
-<input type="text" class="input-glass" placeholder="Enter text">
+<input type="text" class="input-glass" placeholder="Enter text" />
 
 <!-- Modal -->
 <div class="modal-glass">
@@ -180,12 +192,14 @@ Create reusable Tailwind components to replace Bootstrap:
 ## 📋 Migration Checklist
 
 ### Pre-Migration
+
 - [ ] Backup current CSS files
 - [ ] Document current Bootstrap usage
 - [ ] Create visual regression test suite
 - [ ] Set up development branch
 
 ### During Migration
+
 - [ ] Phase 1: Tailwind infrastructure
 - [ ] Phase 2: Component migration
 - [ ] Phase 3: Remove !important
@@ -193,6 +207,7 @@ Create reusable Tailwind components to replace Bootstrap:
 - [ ] Phase 5: Optimization
 
 ### Post-Migration
+
 - [ ] Cross-browser testing
 - [ ] Performance testing
 - [ ] Documentation update
@@ -229,12 +244,14 @@ Create reusable Tailwind components to replace Bootstrap:
 ## 🚦 Go/No-Go Criteria
 
 ### GO if:
+
 - [ ] Visual regression tests pass
 - [ ] Performance metrics improve
 - [ ] Team trained on Tailwind
 - [ ] Rollback plan in place
 
 ### NO-GO if:
+
 - [ ] Critical bugs in production
 - [ ] Performance degradation >10%
 - [ ] Major browser incompatibility
@@ -242,17 +259,18 @@ Create reusable Tailwind components to replace Bootstrap:
 
 ## 📅 Timeline
 
-| Week | Phase | Deliverables |
-|------|-------|-------------|
-| 1 | Infrastructure | Tailwind setup, compatibility layer |
-| 2-3 | Components | Migrated components, reduced !important |
-| 4 | Cleanup | Zero !important declarations |
-| 5 | Bootstrap Removal | Clean Tailwind-only codebase |
-| 6 | Optimization | Performance improvements, documentation |
+| Week | Phase             | Deliverables                            |
+| ---- | ----------------- | --------------------------------------- |
+| 1    | Infrastructure    | Tailwind setup, compatibility layer     |
+| 2-3  | Components        | Migrated components, reduced !important |
+| 4    | Cleanup           | Zero !important declarations            |
+| 5    | Bootstrap Removal | Clean Tailwind-only codebase            |
+| 6    | Optimization      | Performance improvements, documentation |
 
 ## 🔄 Rollback Plan
 
 If migration fails:
+
 1. Git revert to pre-migration commit
 2. Restore Bootstrap imports in main.css
 3. Re-enable bootstrap-override.css
@@ -269,6 +287,7 @@ If migration fails:
 ## 🎉 Expected Outcomes
 
 After successful migration:
+
 1. **Clean, maintainable CSS** without !important hacks
 2. **Consistent design system** with Tailwind utilities
 3. **Better performance** with optimized CSS

@@ -1,18 +1,18 @@
 /**
  * Database Table Row Types - Complete Type Definitions
  *
- * Auto-generated from MySQL schema - represents exact database structure
+ * PostgreSQL schema - represents exact database structure
  *
  * CRITICAL TYPE MAPPING RULES:
- * - `int` � `number`
- * - `varchar(n)`, `text` � `string`
- * - `tinyint(1)` � `number` (MySQL returns 0/1, NOT boolean!)
- * - `enum('a','b')` � `'a' | 'b'`
- * - `json` � `object` or specific typed interface
- * - `timestamp`, `datetime`, `date` � `Date | string` (MySQL2 parsing)
- * - `decimal(n,m)` � `number`
- * - `longblob` � `Buffer`
- * - `NULL` � `| null`
+ * - `integer`, `bigint` → `number`
+ * - `varchar(n)`, `text` → `string`
+ * - `smallint` → `number` (PostgreSQL returns 0/1 for boolean-like fields)
+ * - `enum type` → `'a' | 'b'`
+ * - `jsonb` → `object` or specific typed interface
+ * - `timestamp`, `date` → `Date | string` (pg library parsing)
+ * - `numeric(n,m)` → `number`
+ * - `bytea` → `Buffer`
+ * - `NULL` → `| null`
  *
  * USAGE EXAMPLE:
  * ```typescript

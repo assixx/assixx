@@ -74,9 +74,9 @@ export function getAttendeeStatusIcon(status: string): string {
  * Format event dates for display
  */
 export function formatEventDates(event: CalendarEvent): FormattedDates {
-  const startDate = new Date(event.start_time);
-  // Note: endDate not needed for current formatting, but kept for potential future use
-  // const endDate = new Date(event.end_time);
+  // API v2 returns camelCase, fallback to snake_case for compatibility
+  const startTime = event.startTime ?? event.start_time;
+  const startDate = new Date(startTime);
 
   const dateOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',
@@ -100,14 +100,19 @@ export function formatEventDates(event: CalendarEvent): FormattedDates {
  * Get event level text for display
  */
 export function getEventLevelText(event: CalendarEvent): string {
-  if (event.org_level === 'company') {
+  // API v2 returns camelCase, fallback to snake_case for compatibility
+  const orgLevel = event.orgLevel ?? event.org_level;
+  const departmentName = event.departmentName ?? event.department_name;
+  const teamName = event.teamName ?? event.team_name;
+
+  if (orgLevel === 'company') {
     return 'Firmentermin';
   }
-  if (event.org_level === 'department') {
-    return `Abteilungstermin${event.department_name !== undefined && event.department_name !== '' ? `: ${event.department_name}` : ''}`;
+  if (orgLevel === 'department') {
+    return `Abteilungstermin${departmentName !== undefined && departmentName !== '' ? `: ${departmentName}` : ''}`;
   }
-  if (event.org_level === 'team') {
-    return `Teamtermin${event.team_name !== undefined && event.team_name !== '' ? `: ${event.team_name}` : ''}`;
+  if (orgLevel === 'team') {
+    return `Teamtermin${teamName !== undefined && teamName !== '' ? `: ${teamName}` : ''}`;
   }
   return 'Persönlicher Termin';
 }
@@ -116,12 +121,24 @@ export function getEventLevelText(event: CalendarEvent): string {
  * Check if event is all day
  */
 export function isAllDayEvent(event: CalendarEvent): boolean {
-  return event.all_day === true || event.all_day === 1 || event.all_day === '1';
+  // API v2 returns camelCase, fallback to snake_case for compatibility
+  const allDay = event.allDay ?? event.all_day;
+  return allDay === true || allDay === 1 || allDay === '1';
 }
 
 // ============================================================================
 // Event Detail Modal Content Builders
 // ============================================================================
+
+/**
+ * Format date/time for event display
+ */
+function formatEventDateTime(date: Date, isAllDay: boolean): string {
+  const dateStr = date.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  if (isAllDay) return dateStr;
+  const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr} um ${timeStr}`;
+}
 
 /**
  * Build event details section (title, description, dates, location)
@@ -133,26 +150,11 @@ export function buildEventDetailsSection(event: CalendarEvent, _dates: Formatted
   const description =
     event.description !== undefined && event.description !== '' ? `<p>${escapeHtml(event.description)}</p>` : '';
 
-  const startDate = new Date(event.start_time);
-  const endDate = new Date(event.end_time);
-
-  const formattedStartDate = startDate.toLocaleDateString('de-DE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  const formattedEndDate = endDate.toLocaleDateString('de-DE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  const formattedStartTime = startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  const formattedEndTime = endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-
-  const startTime = isAllDay ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`;
-  const endTime = isAllDay ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`;
+  // API v2 returns camelCase, fallback to snake_case for compatibility
+  const startDate = new Date(event.startTime ?? event.start_time);
+  const endDate = new Date(event.endTime ?? event.end_time);
+  const startTime = formatEventDateTime(startDate, isAllDay);
+  const endTime = formatEventDateTime(endDate, isAllDay);
 
   const locationSection =
     event.location !== undefined && event.location !== ''
@@ -236,40 +238,6 @@ export function buildAttendeeListSection(attendees: EventAttendee[]): string {
 }
 
 /**
- * Build user response buttons
- * Shows if current user is invited
- */
-export function buildUserResponseButtons(event: CalendarEvent): string {
-  if (!event.attendees) return '';
-
-  const userAttendee = event.attendees.find((a) => {
-    const userId = a.userId ?? a.user_id;
-    return userId === state.currentUserId;
-  });
-
-  if (!userAttendee) return '';
-
-  const currentResponse = userAttendee.responseStatus ?? userAttendee.response ?? 'pending';
-
-  return `
-    <div class="response-buttons">
-      <h4>Ihre Antwort</h4>
-      <div class="btn-group">
-        <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" data-action="respond-modal" data-event-id="${event.id}" data-response="accepted">
-          <i class="fas fa-check"></i> Zusagen
-        </button>
-        <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" data-action="respond-modal" data-event-id="${event.id}" data-response="tentative">
-          <i class="fas fa-question"></i> Vielleicht
-        </button>
-        <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" data-action="respond-modal" data-event-id="${event.id}" data-response="declined">
-          <i class="fas fa-times"></i> Absagen
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-/**
  * Build action buttons (edit, delete)
  * Respects user permissions
  */
@@ -320,23 +288,26 @@ export function buildActionButtons(event: CalendarEvent): string {
  * Combines all sections into final HTML
  */
 export function buildEventModalContent(event: CalendarEvent): string {
+  // API v2 returns camelCase, fallback to snake_case for compatibility
+  const startTimeStr = event.startTime ?? event.start_time;
+  const startDate = new Date(startTimeStr);
+
   const dates: FormattedDates = {
-    dateStr: new Date(event.start_time).toLocaleDateString('de-DE', {
+    dateStr: startDate.toLocaleDateString('de-DE', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     }),
-    timeStr: new Date(event.start_time).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    timeStr: startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
   };
 
   const levelText = getEventLevelText(event);
   const detailsSection = buildEventDetailsSection(event, dates, levelText);
   const attendeeSection = buildAttendeeListSection(event.attendees ?? []);
-  const responseButtons = buildUserResponseButtons(event);
   const actionButtons = buildActionButtons(event);
 
-  return detailsSection + attendeeSection + responseButtons + actionButtons;
+  return detailsSection + attendeeSection + actionButtons;
 }
 
 // ============================================================================
@@ -406,7 +377,7 @@ function getDateTimeTemplate(): string {
           Beginn
           <span class="text-red-500">*</span>
         </label>
-        <input type="datetime-local" class="form-field__control" id="eventStart" name="start_time" required />
+        <input type="datetime-local" class="form-field__control" id="eventStart" name="start_time" lang="de" required />
       </div>
 
       <div class="form-field">
@@ -414,7 +385,7 @@ function getDateTimeTemplate(): string {
           Ende
           <span class="text-red-500">*</span>
         </label>
-        <input type="datetime-local" class="form-field__control" id="eventEnd" name="end_time" required />
+        <input type="datetime-local" class="form-field__control" id="eventEnd" name="end_time" lang="de" required />
       </div>
     </div>
 

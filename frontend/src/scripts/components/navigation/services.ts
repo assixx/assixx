@@ -80,10 +80,17 @@ export async function loadUserProfile(): Promise<UserProfileResponse | null> {
 }
 
 /**
- * Check if error is an abort error (expected during logout/navigation)
+ * Check if error is an abort/network error (expected during logout/navigation)
  */
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.message.toLowerCase().includes('aborted');
+function isAbortOrNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('aborted') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('fetch')
+  );
 }
 
 /**
@@ -108,7 +115,7 @@ export async function updateUnreadMessages(): Promise<void> {
       updateBadgeDisplay(badge, data.totalUnread);
     }
   } catch (error) {
-    if (isAbortError(error)) return;
+    if (isAbortOrNetworkError(error)) return;
     console.error('Error updating unread messages:', error);
   }
 }
@@ -163,7 +170,10 @@ export async function resetKvpBadge(): Promise<{ lastKvpClickTimestamp: number; 
       localStorage.setItem('lastKnownKvpCount', lastKnownKvpCount.toString());
     }
   } catch (error) {
-    console.error('Error fetching KVP count for baseline:', error);
+    // Suppress abort/network errors - expected during navigation
+    if (!isAbortOrNetworkError(error)) {
+      console.error('Error fetching KVP count for baseline:', error);
+    }
   }
 
   return { lastKvpClickTimestamp, lastKnownKvpCount };

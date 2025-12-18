@@ -16,10 +16,11 @@ export default {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Unified Documents Explorer View - replaces 9 separate pages with single SPA interface. Features folder tree navigation, list/grid views, upload integration (admin/root only), and smart filtering.'
-      }
-    }
-  }
+        component:
+          'Unified Documents Explorer View - replaces 9 separate pages with single SPA interface. Features folder tree navigation, list/grid views, upload integration (admin/root only), and smart filtering.',
+      },
+    },
+  },
 };
 
 /**
@@ -27,7 +28,8 @@ export default {
  */
 function createDocumentCard(category, month, isNew, showActions) {
   const card = document.createElement('div');
-  card.className = 'document-card bg-surface-2 border border-border-subtle rounded-lg p-4 hover:shadow-lg cursor-pointer transition-all duration-200';
+  card.className =
+    'document-card bg-surface-2 border border-border-subtle rounded-lg p-4 hover:shadow-lg cursor-pointer transition-all duration-200';
 
   card.innerHTML = `
     <div class="flex items-start justify-between mb-3">
@@ -38,13 +40,17 @@ function createDocumentCard(category, month, isNew, showActions) {
         </svg>
         ${isNew ? '<span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded">Neu</span>' : ''}
       </div>
-      ${showActions ? `
+      ${
+        showActions ?
+          `
         <button class="text-content-tertiary hover:text-content-primary transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
           </svg>
         </button>
-      ` : ''}
+      `
+        : ''
+      }
     </div>
     <div class="mb-3">
       <h3 class="text-sm font-medium text-content-primary truncate mb-1">${category}</h3>
@@ -64,7 +70,8 @@ function createDocumentCard(category, month, isNew, showActions) {
  */
 function createDocumentRow(name, category, date, size, isNew, showActions) {
   const row = document.createElement('div');
-  row.className = 'document-row group flex items-center gap-4 px-4 py-3 border-b border-border-subtle hover:bg-surface-2 cursor-pointer transition-colors';
+  row.className =
+    'document-row group flex items-center gap-4 px-4 py-3 border-b border-border-subtle hover:bg-surface-2 cursor-pointer transition-colors';
 
   row.innerHTML = `
     <!-- Icon & Name Column -->
@@ -95,7 +102,9 @@ function createDocumentRow(name, category, date, size, isNew, showActions) {
     </div>
 
     <!-- Actions Column -->
-    ${showActions ? `
+    ${
+      showActions ?
+        `
       <div class="w-10 flex-shrink-0">
         <button class="opacity-0 group-hover:opacity-100 text-content-tertiary hover:text-content-primary transition-all">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +112,9 @@ function createDocumentRow(name, category, date, size, isNew, showActions) {
           </svg>
         </button>
       </div>
-    ` : '<div class="w-10 flex-shrink-0"></div>'}
+    `
+      : '<div class="w-10 flex-shrink-0"></div>'
+    }
   `;
 
   return row;
@@ -143,11 +154,16 @@ function createSidebar() {
   const folderList = document.createElement('ul');
   folderList.className = 'space-y-1';
 
-  const allDocsIcon = '<svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>';
-  const personalIcon = '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
-  const teamIcon = '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>';
-  const deptIcon = '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>';
-  const companyIcon = '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>';
+  const allDocsIcon =
+    '<svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>';
+  const personalIcon =
+    '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+  const teamIcon =
+    '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>';
+  const deptIcon =
+    '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>';
+  const companyIcon =
+    '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>';
 
   folderList.appendChild(createFolderItem(allDocsIcon, 'Alle Dokumente', '156', true));
   folderList.appendChild(createFolderItem(personalIcon, 'Persönlich', '42'));
@@ -225,14 +241,18 @@ function createToolbar(showUploadButton, viewMode = 'list') {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
-        ${showUploadButton ? `
+        ${
+          showUploadButton ?
+            `
           <button id="upload-btn" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
             Dokument hochladen
           </button>
-        ` : ''}
+        `
+          : ''
+        }
       </div>
       <div class="flex items-center gap-2">
         <button class="px-3 py-2 bg-surface-2 border border-border-subtle rounded-md text-sm font-medium text-content-primary hover:bg-surface-3 transition-colors flex items-center gap-2">
@@ -287,7 +307,8 @@ export const EmployeeListView = {
 
     // Column Headers
     const headers = document.createElement('div');
-    headers.className = 'sticky top-0 bg-surface-2 border-b border-border-subtle px-4 py-2 flex items-center gap-4 text-xs font-medium text-content-tertiary uppercase tracking-wide z-10';
+    headers.className =
+      'sticky top-0 bg-surface-2 border-b border-border-subtle px-4 py-2 flex items-center gap-4 text-xs font-medium text-content-tertiary uppercase tracking-wide z-10';
     headers.innerHTML = `
       <div class="flex-1 min-w-0">Name</div>
       <div class="w-40 flex-shrink-0">Kategorie</div>
@@ -300,22 +321,96 @@ export const EmployeeListView = {
     // Document Rows
     const rowsContainer = document.createElement('div');
     const documents = [
-      { name: 'Gehaltsabrechnung_Januar_2025.pdf', category: 'Gehaltsabrechnung', date: '08.01.2025', size: '2.4 MB', isNew: true },
-      { name: 'Gehaltsabrechnung_Februar_2025.pdf', category: 'Gehaltsabrechnung', date: '07.01.2025', size: '2.3 MB', isNew: true },
-      { name: 'Vertrag_Arbeitsvertrag.pdf', category: 'Vertrag', date: '05.01.2025', size: '1.8 MB', isNew: true },
-      { name: 'Arbeitsnachweis_Dezember_2024.pdf', category: 'Arbeitsnachweis', date: '02.01.2025', size: '890 KB', isNew: false },
-      { name: 'Sonstiges_Dokument.pdf', category: 'Sonstiges', date: '28.12.2024', size: '1.2 MB', isNew: false },
-      { name: 'Gehaltsabrechnung_Dezember_2024.pdf', category: 'Gehaltsabrechnung', date: '20.12.2024', size: '2.5 MB', isNew: false },
-      { name: 'Vertrag_Zusatzvereinbarung.pdf', category: 'Vertrag', date: '15.12.2024', size: '456 KB', isNew: false },
-      { name: 'Arbeitsnachweis_November_2024.pdf', category: 'Arbeitsnachweis', date: '10.12.2024', size: '920 KB', isNew: false },
-      { name: 'Gehaltsabrechnung_November_2024.pdf', category: 'Gehaltsabrechnung', date: '05.12.2024', size: '2.4 MB', isNew: false },
-      { name: 'Sonstiges_Bescheinigung.pdf', category: 'Sonstiges', date: '01.12.2024', size: '680 KB', isNew: false },
-      { name: 'Arbeitsnachweis_Oktober_2024.pdf', category: 'Arbeitsnachweis', date: '25.11.2024', size: '910 KB', isNew: false },
-      { name: 'Gehaltsabrechnung_Oktober_2024.pdf', category: 'Gehaltsabrechnung', date: '20.11.2024', size: '2.3 MB', isNew: false },
+      {
+        name: 'Gehaltsabrechnung_Januar_2025.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '08.01.2025',
+        size: '2.4 MB',
+        isNew: true,
+      },
+      {
+        name: 'Gehaltsabrechnung_Februar_2025.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '07.01.2025',
+        size: '2.3 MB',
+        isNew: true,
+      },
+      {
+        name: 'Vertrag_Arbeitsvertrag.pdf',
+        category: 'Vertrag',
+        date: '05.01.2025',
+        size: '1.8 MB',
+        isNew: true,
+      },
+      {
+        name: 'Arbeitsnachweis_Dezember_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '02.01.2025',
+        size: '890 KB',
+        isNew: false,
+      },
+      {
+        name: 'Sonstiges_Dokument.pdf',
+        category: 'Sonstiges',
+        date: '28.12.2024',
+        size: '1.2 MB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_Dezember_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '20.12.2024',
+        size: '2.5 MB',
+        isNew: false,
+      },
+      {
+        name: 'Vertrag_Zusatzvereinbarung.pdf',
+        category: 'Vertrag',
+        date: '15.12.2024',
+        size: '456 KB',
+        isNew: false,
+      },
+      {
+        name: 'Arbeitsnachweis_November_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '10.12.2024',
+        size: '920 KB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_November_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '05.12.2024',
+        size: '2.4 MB',
+        isNew: false,
+      },
+      {
+        name: 'Sonstiges_Bescheinigung.pdf',
+        category: 'Sonstiges',
+        date: '01.12.2024',
+        size: '680 KB',
+        isNew: false,
+      },
+      {
+        name: 'Arbeitsnachweis_Oktober_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '25.11.2024',
+        size: '910 KB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_Oktober_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '20.11.2024',
+        size: '2.3 MB',
+        isNew: false,
+      },
     ];
 
-    documents.forEach(doc => {
-      rowsContainer.appendChild(createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, false));
+    documents.forEach((doc) => {
+      rowsContainer.appendChild(
+        createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, false),
+      );
     });
 
     listContainer.appendChild(rowsContainer);
@@ -325,7 +420,7 @@ export const EmployeeListView = {
     container.appendChild(main);
 
     return container;
-  }
+  },
 };
 
 /**
@@ -367,7 +462,7 @@ export const EmployeeGridView = {
     container.appendChild(main);
 
     return container;
-  }
+  },
 };
 
 /**
@@ -392,7 +487,8 @@ export const AdminListView = {
 
     // Column Headers
     const headers = document.createElement('div');
-    headers.className = 'sticky top-0 bg-surface-2 border-b border-border-subtle px-4 py-2 flex items-center gap-4 text-xs font-medium text-content-tertiary uppercase tracking-wide z-10';
+    headers.className =
+      'sticky top-0 bg-surface-2 border-b border-border-subtle px-4 py-2 flex items-center gap-4 text-xs font-medium text-content-tertiary uppercase tracking-wide z-10';
     headers.innerHTML = `
       <div class="flex-1 min-w-0">Name</div>
       <div class="w-40 flex-shrink-0">Kategorie</div>
@@ -405,22 +501,96 @@ export const AdminListView = {
     // Document Rows
     const rowsContainer = document.createElement('div');
     const documents = [
-      { name: 'Gehaltsabrechnung_Januar_2025.pdf', category: 'Gehaltsabrechnung', date: '08.01.2025', size: '2.4 MB', isNew: true },
-      { name: 'Gehaltsabrechnung_Februar_2025.pdf', category: 'Gehaltsabrechnung', date: '07.01.2025', size: '2.3 MB', isNew: true },
-      { name: 'Vertrag_Arbeitsvertrag.pdf', category: 'Vertrag', date: '05.01.2025', size: '1.8 MB', isNew: true },
-      { name: 'Arbeitsnachweis_Dezember_2024.pdf', category: 'Arbeitsnachweis', date: '02.01.2025', size: '890 KB', isNew: false },
-      { name: 'Sonstiges_Dokument.pdf', category: 'Sonstiges', date: '28.12.2024', size: '1.2 MB', isNew: false },
-      { name: 'Gehaltsabrechnung_Dezember_2024.pdf', category: 'Gehaltsabrechnung', date: '20.12.2024', size: '2.5 MB', isNew: false },
-      { name: 'Vertrag_Zusatzvereinbarung.pdf', category: 'Vertrag', date: '15.12.2024', size: '456 KB', isNew: false },
-      { name: 'Arbeitsnachweis_November_2024.pdf', category: 'Arbeitsnachweis', date: '10.12.2024', size: '920 KB', isNew: false },
-      { name: 'Gehaltsabrechnung_November_2024.pdf', category: 'Gehaltsabrechnung', date: '05.12.2024', size: '2.4 MB', isNew: false },
-      { name: 'Sonstiges_Bescheinigung.pdf', category: 'Sonstiges', date: '01.12.2024', size: '680 KB', isNew: false },
-      { name: 'Arbeitsnachweis_Oktober_2024.pdf', category: 'Arbeitsnachweis', date: '25.11.2024', size: '910 KB', isNew: false },
-      { name: 'Gehaltsabrechnung_Oktober_2024.pdf', category: 'Gehaltsabrechnung', date: '20.11.2024', size: '2.3 MB', isNew: false },
+      {
+        name: 'Gehaltsabrechnung_Januar_2025.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '08.01.2025',
+        size: '2.4 MB',
+        isNew: true,
+      },
+      {
+        name: 'Gehaltsabrechnung_Februar_2025.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '07.01.2025',
+        size: '2.3 MB',
+        isNew: true,
+      },
+      {
+        name: 'Vertrag_Arbeitsvertrag.pdf',
+        category: 'Vertrag',
+        date: '05.01.2025',
+        size: '1.8 MB',
+        isNew: true,
+      },
+      {
+        name: 'Arbeitsnachweis_Dezember_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '02.01.2025',
+        size: '890 KB',
+        isNew: false,
+      },
+      {
+        name: 'Sonstiges_Dokument.pdf',
+        category: 'Sonstiges',
+        date: '28.12.2024',
+        size: '1.2 MB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_Dezember_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '20.12.2024',
+        size: '2.5 MB',
+        isNew: false,
+      },
+      {
+        name: 'Vertrag_Zusatzvereinbarung.pdf',
+        category: 'Vertrag',
+        date: '15.12.2024',
+        size: '456 KB',
+        isNew: false,
+      },
+      {
+        name: 'Arbeitsnachweis_November_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '10.12.2024',
+        size: '920 KB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_November_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '05.12.2024',
+        size: '2.4 MB',
+        isNew: false,
+      },
+      {
+        name: 'Sonstiges_Bescheinigung.pdf',
+        category: 'Sonstiges',
+        date: '01.12.2024',
+        size: '680 KB',
+        isNew: false,
+      },
+      {
+        name: 'Arbeitsnachweis_Oktober_2024.pdf',
+        category: 'Arbeitsnachweis',
+        date: '25.11.2024',
+        size: '910 KB',
+        isNew: false,
+      },
+      {
+        name: 'Gehaltsabrechnung_Oktober_2024.pdf',
+        category: 'Gehaltsabrechnung',
+        date: '20.11.2024',
+        size: '2.3 MB',
+        isNew: false,
+      },
     ];
 
-    documents.forEach(doc => {
-      rowsContainer.appendChild(createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, true));
+    documents.forEach((doc) => {
+      rowsContainer.appendChild(
+        createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, true),
+      );
     });
 
     listContainer.appendChild(rowsContainer);
@@ -430,7 +600,7 @@ export const AdminListView = {
     container.appendChild(main);
 
     return container;
-  }
+  },
 };
 
 /**
@@ -472,5 +642,5 @@ export const AdminGridView = {
     container.appendChild(main);
 
     return container;
-  }
+  },
 };

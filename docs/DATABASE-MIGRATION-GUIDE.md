@@ -8,15 +8,15 @@
 
 ## Quick Reference
 
-| Setting | Value |
-|---------|-------|
-| **Container** | `assixx-postgres` |
-| **Port** | `5432` |
-| **Database** | `assixx` |
-| **App User** | `app_user` (RLS enforced) |
+| Setting        | Value                                |
+| -------------- | ------------------------------------ |
+| **Container**  | `assixx-postgres`                    |
+| **Port**       | `5432`                               |
+| **Database**   | `assixx`                             |
+| **App User**   | `app_user` (RLS enforced)            |
 | **Admin User** | `assixx_user` (superuser, BYPASSRLS) |
-| **Tables** | 119 total (95 with RLS, 24 global) |
-| **GUI Tool** | DBeaver (Windows) |
+| **Tables**     | 119 total (95 with RLS, 24 global)   |
+| **GUI Tool**   | DBeaver (Windows)                    |
 
 ---
 
@@ -175,19 +175,19 @@ cd /home/scs/projects/Assixx/docker && docker-compose restart backend deletion-w
 
 ## PostgreSQL vs MySQL Syntax
 
-| MySQL | PostgreSQL | Notiz |
-|-------|------------|-------|
-| `AUTO_INCREMENT` | `SERIAL` oder `GENERATED ALWAYS AS IDENTITY` | |
-| `?` Placeholder | `$1, $2, $3` | In Queries |
-| `LIMIT ?, ?` | `LIMIT $1 OFFSET $2` | |
-| `` `column` `` | `"column"` | Quoting |
-| `IFNULL(a, b)` | `COALESCE(a, b)` | |
-| `NOW()` | `NOW()` | Identisch |
-| `DATETIME` | `TIMESTAMPTZ` | Mit Timezone |
-| `TINYINT(1)` | `BOOLEAN` | |
-| `JSON` | `JSONB` | Besser! Native Indexierung |
-| `ENUM('a','b')` | `CREATE TYPE ... AS ENUM` | Eigener Typ |
-| `ON DUPLICATE KEY UPDATE` | `ON CONFLICT ... DO UPDATE` | Upsert |
+| MySQL                     | PostgreSQL                                   | Notiz                      |
+| ------------------------- | -------------------------------------------- | -------------------------- |
+| `AUTO_INCREMENT`          | `SERIAL` oder `GENERATED ALWAYS AS IDENTITY` |                            |
+| `?` Placeholder           | `$1, $2, $3`                                 | In Queries                 |
+| `LIMIT ?, ?`              | `LIMIT $1 OFFSET $2`                         |                            |
+| `` `column` ``            | `"column"`                                   | Quoting                    |
+| `IFNULL(a, b)`            | `COALESCE(a, b)`                             |                            |
+| `NOW()`                   | `NOW()`                                      | Identisch                  |
+| `DATETIME`                | `TIMESTAMPTZ`                                | Mit Timezone               |
+| `TINYINT(1)`              | `BOOLEAN`                                    |                            |
+| `JSON`                    | `JSONB`                                      | Besser! Native Indexierung |
+| `ENUM('a','b')`           | `CREATE TYPE ... AS ENUM`                    | Eigener Typ                |
+| `ON DUPLICATE KEY UPDATE` | `ON CONFLICT ... DO UPDATE`                  | Upsert                     |
 
 ---
 

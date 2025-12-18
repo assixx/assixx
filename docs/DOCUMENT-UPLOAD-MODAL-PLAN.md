@@ -17,36 +17,41 @@ User wählt Kategorie → Sichtbarkeit wird automatisch gesetzt → Keine manuel
 ## 📋 UPLOAD FLOW (Step-by-Step)
 
 ### Step 1: **File Upload** (Drag & Drop oder Click)
+
 - **Erlaubte Formate:** PDF, JPG, PNG, DOCX, XLSX
 - **Max Größe:** 5 MB
 - **Preview:** Dateiname + Größe anzeigen
 
 ### Step 2: **Kategorie Auswahl** (Dropdown mit Icons)
 
-| Kategorie | Sichtbarkeit | Icon | Access Scope |
-|-----------|--------------|------|--------------|
-| **Firma** | Alle mit tenant_id | 🏢 fa-briefcase | `company` |
-| **Abteilung** | Alle mit department_id | 🏛️ fa-building | `department` |
-| **Team** | Alle mit team_id | 👥 fa-users | `team` |
-| **Persönlich** | Nur user_id (privat) | 👤 fa-user | `personal` |
-| **Gehaltsabrechnung** | Nur user_id + Periode | 💰 fa-money-bill | `payroll` |
+| Kategorie             | Sichtbarkeit           | Icon             | Access Scope |
+| --------------------- | ---------------------- | ---------------- | ------------ |
+| **Firma**             | Alle mit tenant_id     | 🏢 fa-briefcase  | `company`    |
+| **Abteilung**         | Alle mit department_id | 🏛️ fa-building   | `department` |
+| **Team**              | Alle mit team_id       | 👥 fa-users      | `team`       |
+| **Persönlich**        | Nur user_id (privat)   | 👤 fa-user       | `personal`   |
+| **Gehaltsabrechnung** | Nur user_id + Periode  | 💰 fa-money-bill | `payroll`    |
 
 ### Step 3: **Dokumentname** (Auto-Fill mit Edit-Option)
+
 - Automatisch vom Upload erkannt (`file.name`)
 - User kann vor Speichern ändern
 - Wird als `original_name` gespeichert
 
 ### Step 4: **Beschreibung** (Optional)
+
 - Mehrzeiliges Textfeld
 - Optional, kann leer sein
 - Wird als `description` gespeichert
 
 ### Step 5: **Tags** (Optional)
+
 - Multi-Select oder Freitext
 - Optional
 - Wird als JSON Array gespeichert: `["urgent", "tax-2025"]`
 
 ### Step 6: **Speichern**
+
 - Validation durchführen
 - FormData bauen mit automatischer Sichtbarkeit
 - Upload via API POST `/api/v2/documents`
@@ -57,44 +62,44 @@ User wählt Kategorie → Sichtbarkeit wird automatisch gesetzt → Keine manuel
 
 ```typescript
 const CATEGORY_MAPPINGS = {
-  'company': {
+  company: {
     accessScope: 'company',
     requiresField: null,
-    autoPopulate: { category: 'company-document' }
+    autoPopulate: { category: 'company-document' },
   },
-  'department': {
+  department: {
     accessScope: 'department',
     requiresField: 'department_id',
     autoPopulate: {
       category: 'department-document',
-      targetDepartmentId: user.department_id
-    }
+      targetDepartmentId: user.department_id,
+    },
   },
-  'team': {
+  team: {
     accessScope: 'team',
     requiresField: 'team_id',
     autoPopulate: {
       category: 'team-document',
-      targetTeamId: user.team_id
-    }
+      targetTeamId: user.team_id,
+    },
   },
-  'personal': {
+  personal: {
     accessScope: 'personal',
     requiresField: null,
     autoPopulate: {
       category: 'personal-document',
-      ownerUserId: user.id
-    }
+      ownerUserId: user.id,
+    },
   },
-  'payroll': {
+  payroll: {
     accessScope: 'payroll',
     requiresField: null,
     requiresExtraFields: ['salary_year', 'salary_month'],
     autoPopulate: {
       category: 'payroll',
-      ownerUserId: user.id
-    }
-  }
+      ownerUserId: user.id,
+    },
+  },
 };
 ```
 
@@ -104,26 +109,27 @@ const CATEGORY_MAPPINGS = {
 
 ### FormData → Database Mapping:
 
-| Form Input | Database Column | Example |
-|------------|----------------|---------|
-| `file` | `file_content` / `file_path` | (binary/path) |
-| `category` | `access_scope` | `'team'` |
-| (auto) | `owner_user_id` | `5` (user.id) |
-| (auto) | `target_team_id` | `3` (user.team_id) |
-| (auto) | `target_department_id` | `2` (user.department_id) |
-| `documentName` | `original_name` | `'Vertrag_2025.pdf'` |
-| `description` | `description` | `'Wichtiger Vertrag...'` |
-| `tags` | `tags` | `'["urgent","contract"]'` |
-| (auto) | `tenant_id` | `1` (from auth) |
-| (auto) | `created_by` | `5` (user.id) |
-| (payroll only) | `salary_year` | `2025` |
-| (payroll only) | `salary_month` | `1` (Jan) |
+| Form Input     | Database Column              | Example                   |
+| -------------- | ---------------------------- | ------------------------- |
+| `file`         | `file_content` / `file_path` | (binary/path)             |
+| `category`     | `access_scope`               | `'team'`                  |
+| (auto)         | `owner_user_id`              | `5` (user.id)             |
+| (auto)         | `target_team_id`             | `3` (user.team_id)        |
+| (auto)         | `target_department_id`       | `2` (user.department_id)  |
+| `documentName` | `original_name`              | `'Vertrag_2025.pdf'`      |
+| `description`  | `description`                | `'Wichtiger Vertrag...'`  |
+| `tags`         | `tags`                       | `'["urgent","contract"]'` |
+| (auto)         | `tenant_id`                  | `1` (from auth)           |
+| (auto)         | `created_by`                 | `5` (user.id)             |
+| (payroll only) | `salary_year`                | `2025`                    |
+| (payroll only) | `salary_month`               | `1` (Jan)                 |
 
 ---
 
 ## 🔐 SECURITY & VALIDATION
 
 ### Client-Side Validation:
+
 ```typescript
 function validateUpload(category: string, user: User): boolean {
   const mapping = CATEGORY_MAPPINGS[category];
@@ -153,6 +159,7 @@ function validateUpload(category: string, user: User): boolean {
 ```
 
 ### Server-Side Validation (Backend):
+
 - Zod Schema prüft alle Felder
 - `accessScope` muss valid ENUM sein
 - Foreign Keys prüfen automatisch Existenz (tenant, user, team, dept)
@@ -168,7 +175,7 @@ async function buildFormData(
   category: string,
   documentName: string,
   description: string,
-  tags: string[]
+  tags: string[],
 ): Promise<FormData> {
   const user = await getCurrentUser();
   const mapping = CATEGORY_MAPPINGS[category];
@@ -281,9 +288,7 @@ async function buildFormData(
   <!-- Footer -->
   <div class="modal-footer">
     <button class="btn btn-cancel" id="cancel-btn">Abbrechen</button>
-    <button class="btn btn-primary" id="upload-btn">
-      <i class="fas fa-upload"></i> Hochladen
-    </button>
+    <button class="btn btn-primary" id="upload-btn"><i class="fas fa-upload"></i> Hochladen</button>
   </div>
 </div>
 ```
@@ -308,21 +313,25 @@ async function buildFormData(
 ## 📊 TESTING SCENARIOS
 
 ### Scenario 1: Upload Company Doc
+
 - Category: "Firma"
 - Expected DB: `access_scope='company'`, all target fields NULL
 - Who can see: All users with same `tenant_id`
 
 ### Scenario 2: Upload Team Doc
+
 - Category: "Team"
 - Expected DB: `access_scope='team'`, `target_team_id=user.team_id`
 - Who can see: All users with same `team_id`
 
 ### Scenario 3: Upload Personal Doc
+
 - Category: "Persönlich"
 - Expected DB: `access_scope='personal'`, `owner_user_id=user.id`
 - Who can see: Only `owner_user_id=user.id`
 
 ### Scenario 4: Upload Payroll Doc
+
 - Category: "Gehaltsabrechnung"
 - Extra fields: Year=2025, Month=1
 - Expected DB: `access_scope='payroll'`, `owner_user_id=user.id`, `salary_year=2025`, `salary_month=1`

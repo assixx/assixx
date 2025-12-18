@@ -20,9 +20,6 @@ export * from './response.types.js';
 // Security Types
 export * from './security.types.js';
 
-// Middleware Types
-export * from './middleware.types.js';
-
 // Database Types
 export * from './database.types.js';
 

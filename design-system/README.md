@@ -27,9 +27,10 @@ tokens/
 ### 🎯 Usage
 
 #### CSS Variables
+
 ```html
 <!-- Default Dark Theme -->
-<link rel="stylesheet" href="/design-system/build/web/css/variables-dark.css">
+<link rel="stylesheet" href="/design-system/build/web/css/variables-dark.css" />
 
 <!-- Theme Switching -->
 <body data-theme="light">
@@ -38,6 +39,7 @@ tokens/
 ```
 
 #### Tailwind
+
 ```javascript
 // tailwind.config.js
 const designTokens = require('./design-system/build/web/tailwind');
@@ -45,13 +47,14 @@ const designTokens = require('./design-system/build/web/tailwind');
 module.exports = {
   theme: {
     extend: {
-      ...designTokens.current
-    }
-  }
-}
+      ...designTokens.current,
+    },
+  },
+};
 ```
 
 #### TypeScript
+
 ```typescript
 import { tokens } from './design-system/build/web/ts';
 

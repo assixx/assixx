@@ -30,7 +30,7 @@ export const fieldMapper = {
         // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = null;
       }
-      // Handle boolean conversions (MySQL returns 0/1)
+      // Handle boolean conversions (PostgreSQL returns 0/1 for smallint)
       else if (key.startsWith('is_') || key.startsWith('has_') || key === 'active') {
         // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = Boolean(value);

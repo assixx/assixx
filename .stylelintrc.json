@@ -191,20 +191,13 @@
         "selector-pseudo-class-no-unknown": [
           true,
           {
-            "ignorePseudoClasses": [
-              "global",
-              "local",
-              "export"
-            ]
+            "ignorePseudoClasses": ["global", "local", "export"]
           }
         ],
         "function-no-unknown": [
           true,
           {
-            "ignoreFunctions": [
-              "theme",
-              "screen"
-            ]
+            "ignoreFunctions": ["theme", "screen"]
           }
         ]
       }

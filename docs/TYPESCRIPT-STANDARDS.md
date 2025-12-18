@@ -1,91 +1,94 @@
-# 📋 Assixx TypeScript Code Standards - Der definitive Style Guide
+# 📋 Assixx TypeScript Code Standards - The Definitive Style Guide
 
-> **Version:** 3.0.0
-> **Aktualisiert:** 2025-12-08
-> **Basiert auf:** ESLint & Prettier Configs + Power of Ten Rules
-> **Philosophie:** MAXIMUM STRICTNESS - Zero-Tolerance für schlechten Code
+> **Version:** 3.1.0
+> **Updated:** 2025-12-16
+> **Based on:** ESLint & Prettier Configs + Power of Ten Rules
+> **Philosophy:** MAXIMUM STRICTNESS - Zero-Tolerance for bad code
 > **Database:** PostgreSQL 17 with `pg` library (NOT MySQL!)
 
 ## 🎯 Executive Summary
 
-Dieses Dokument ist unser **Code of Conduct** - die einzige Wahrheit für TypeScript-Code im Assixx-Projekt. Es basiert direkt auf unseren ESLint und Prettier Konfigurationen und stellt sicher, dass **KEINE** ESLint-Fehler oder Warnungen entstehen.
+This document is our **Code of Conduct** - the single source of truth for TypeScript code in the Assixx project. It is based directly on our ESLint and Prettier configurations and ensures that **NO** ESLint errors or warnings occur.
 
-**Goldene Regel:** Code, der gegen diese Standards verstößt, wird NICHT gemerged.
+**Golden Rule:** Code that violates these standards will NOT be merged.
 
-> **Pflichtlektüre:** [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - 10 Regeln für Safety-Critical Code (NASA/JPL), adaptiert für TypeScript.
+> **Required Reading:** [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - 10 rules for safety-critical code (NASA/JPL), adapted for TypeScript.
 
 ---
 
 ## ⚙️ tsconfig.base.json - Power of Ten Strict Mode
 
-Unsere TypeScript-Konfiguration basiert auf den **Power of Ten Rules** (NASA/JPL). Diese Einstellungen sind **NICHT verhandelbar**:
+Our TypeScript configuration is based on the **Power of Ten Rules** (NASA/JPL). These settings are **NON-NEGOTIABLE**:
 
 ```jsonc
 {
   "compilerOptions": {
-    // === STRICT TYPE CHECKING (P10 Regel 10: Zero Warnings) ===
+    // === STRICT TYPE CHECKING (P10 Rule 10: Zero Warnings) ===
     "strict": true,
-    "strictNullChecks": true,           // null/undefined explizit behandeln
-    "strictFunctionTypes": true,         // Contravariant parameter types
-    "strictPropertyInitialization": true, // Klassen müssen initialisiert sein
-    "noImplicitAny": true,               // NIEMALS implizit any
+    "strictNullChecks": true, // Handle null/undefined explicitly
+    "strictFunctionTypes": true, // Contravariant parameter types
+    "strictPropertyInitialization": true, // Classes must be initialized
+    "noImplicitAny": true, // NEVER implicit any
     "noImplicitThis": true,
-    "useUnknownInCatchVariables": true,  // catch(error) ist unknown, NICHT any
+    "useUnknownInCatchVariables": true, // catch(error) is unknown, NOT any
 
-    // === CODE QUALITY (P10 Regel 7: Return-Values prüfen) ===
-    "noUnusedLocals": true,              // Keine ungenutzten Variablen
-    "noUnusedParameters": true,          // Keine ungenutzten Parameter
-    "noImplicitReturns": true,           // Alle Pfade müssen return haben
-    "noFallthroughCasesInSwitch": true,  // switch-case muss break/return haben
+    // === CODE QUALITY (P10 Rule 7: Check return values) ===
+    "noUnusedLocals": true, // No unused variables
+    "noUnusedParameters": true, // No unused parameters
+    "noImplicitReturns": true, // All paths must return
+    "noFallthroughCasesInSwitch": true, // switch-case must have break/return
 
-    // === ADVANCED STRICTNESS (P10 Regel 10: Höchste Strenge) ===
-    "noUncheckedIndexedAccess": true,    // arr[i] ist T | undefined!
-    "exactOptionalPropertyTypes": true,  // undefined vs "nicht definiert"
-    "noPropertyAccessFromIndexSignature": true, // obj["key"] statt obj.key
-    "noImplicitOverride": true,          // override keyword erzwingen
+    // === ADVANCED STRICTNESS (P10 Rule 10: Maximum strictness) ===
+    "noUncheckedIndexedAccess": true, // arr[i] is T | undefined!
+    "exactOptionalPropertyTypes": true, // undefined vs "not defined"
+    "noPropertyAccessFromIndexSignature": true, // obj["key"] instead of obj.key
+    "noImplicitOverride": true, // Force override keyword
 
     // === PREVENT DEAD CODE ===
     "allowUnusedLabels": false,
-    "allowUnreachableCode": false
-  }
+    "allowUnreachableCode": false,
+  },
 }
 ```
 
-### Wichtige Implikationen:
+### Important Implications:
 
 #### `noUncheckedIndexedAccess: true`
+
 ```typescript
-// ❌ FALSCH - arr[0] könnte undefined sein!
+// ❌ WRONG - arr[0] could be undefined!
 const users: User[] = await getUsers();
 const firstUser = users[0];
 console.log(firstUser.name); // Error: Object is possibly 'undefined'
 
-// ✅ RICHTIG - Explizite Prüfung
+// ✅ CORRECT - Explicit check
 const firstUser = users[0];
 if (firstUser !== undefined) {
   console.log(firstUser.name);
 }
 
-// ✅ RICHTIG - Mit optionalem Chaining
+// ✅ CORRECT - With optional chaining
 console.log(users[0]?.name ?? 'No user');
 ```
 
 #### `exactOptionalPropertyTypes: true`
+
 ```typescript
 interface User {
   name: string;
-  nickname?: string; // kann FEHLEN, aber NICHT undefined sein!
+  nickname?: string; // Can be MISSING, but NOT undefined!
 }
 
-// ❌ FALSCH
+// ❌ WRONG
 const user: User = { name: 'John', nickname: undefined }; // Error!
 
-// ✅ RICHTIG
-const user: User = { name: 'John' }; // nickname fehlt komplett
-const user2: User = { name: 'Jane', nickname: 'JJ' }; // nickname vorhanden
+// ✅ CORRECT
+const user: User = { name: 'John' }; // nickname missing completely
+const user2: User = { name: 'Jane', nickname: 'JJ' }; // nickname present
 ```
 
 #### `noPropertyAccessFromIndexSignature: true`
+
 ```typescript
 interface Config {
   [key: string]: string;
@@ -93,74 +96,149 @@ interface Config {
 
 const config: Config = { apiKey: 'secret' };
 
-// ❌ FALSCH - Sieht aus wie bekanntes Property
+// ❌ WRONG - Looks like known property
 console.log(config.apiKey); // Error!
 
-// ✅ RICHTIG - Explizit dynamischer Zugriff
+// ✅ CORRECT - Explicit dynamic access
 console.log(config['apiKey']);
+```
+
+---
+
+## 📂 Path Aliases (tsconfig)
+
+Both backend and frontend use path aliases for cleaner imports.
+
+### Backend Path Aliases (`backend/tsconfig.json`)
+
+```json
+{
+  "baseUrl": "./src",
+  "paths": {
+    "@/*": ["./*"],
+    "@controllers/*": ["controllers/*"],
+    "@models/*": ["models/*"],
+    "@middleware/*": ["middleware/*"],
+    "@services/*": ["services/*"],
+    "@utils/*": ["utils/*"],
+    "@types/*": ["types/*"]
+  }
+}
+```
+
+```typescript
+// ✅ CORRECT - Clean imports with aliases
+import { execute } from '@utils/db';
+import { security } from '@middleware/security';
+import { UserService } from '@services/user.service';
+
+// ❌ WRONG - Relative path hell
+import { execute } from '../../../utils/db';
+import { security } from '../../middleware/security';
+```
+
+### Frontend Path Aliases (`frontend/tsconfig.json`)
+
+```json
+{
+  "baseUrl": "./src",
+  "paths": {
+    "@/*": ["./*"],
+    "@scripts/*": ["scripts/*"],
+    "@styles/*": ["styles/*"],
+    "@components/*": ["components/*"],
+    "@types/*": ["types/*"]
+  }
+}
+```
+
+```typescript
+// ✅ CORRECT - Clean frontend imports
+import { showError } from '@scripts/utils/alerts';
+import type { ApiResponse } from '@types/api.types';
+
+// ❌ WRONG - Deep relative paths
+import { showError } from '../../utils/alerts';
 ```
 
 ---
 
 ## 📁 1. Prettier Code Formatting
 
-Alle Code-Formatierung wird durch Prettier automatisch gehandhabt. **KEINE** Diskussionen über Formatierung.
+All code formatting is handled automatically by Prettier. **NO** discussions about formatting.
 
 ```json
 {
-  "semi": true, // IMMER Semikolons
-  "trailingComma": "all", // IMMER trailing commas
-  "singleQuote": false, // IMMER double quotes
-  "printWidth": 80, // Max 80 Zeichen pro Zeile
-  "tabWidth": 2, // 2 Spaces Einrückung
-  "useTabs": false, // KEINE Tabs
-  "arrowParens": "always", // IMMER Klammern bei Arrow Functions
-  "endOfLine": "lf", // Unix Line Endings
-  "bracketSpacing": true // Spaces in Objekten { foo: bar }
+  "semi": true,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "jsxSingleQuote": false,
+  "quoteProps": "as-needed",
+  "experimentalTernaries": true,
+  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-css-order"],
+  "importOrder": ["^react", "^@?\\w", "^(@/|src/)", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }
 ```
 
-### Beispiele
+### Import Sorting (Auto-Organized by Prettier)
+
+The `@trivago/prettier-plugin-sort-imports` plugin automatically organizes imports in this order:
+
+1. React imports (if applicable)
+2. External packages (`@scope/package`, `package-name`)
+3. Internal aliases (`@/`, `src/`)
+4. Relative imports (`./`, `../`)
+
+### Examples
 
 ```typescript
-// ✅ RICHTIG - Prettier formatiert
+// ✅ CORRECT - Prettier formatted
 const user = {
   id: 1,
-  name: "Admin",
-  roles: ["admin", "root"],
+  name: 'Admin',
+  roles: ['admin', 'root'],
 };
 
 const calculate = (x: number): number => x * 2;
 
-// ❌ FALSCH - Wird automatisch korrigiert
-const user={id:1,name:'Admin',roles:['admin','root']}
+// ❌ WRONG - Will be auto-corrected
+const user={id:1,name:"Admin",roles:["admin","root"]}
 const calculate = x => x * 2
 ```
 
 ---
 
-## 🚫 2. TypeScript Type Safety - KEINE Kompromisse
+## 🚫 2. TypeScript Type Safety - NO Compromises
 
-### 2.1 NIEMALS `any` verwenden
+### 2.1 NEVER use `any`
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/no-explicit-any
+// ❌ WRONG - ESLint Error: @typescript-eslint/no-explicit-any
 function processData(data: any): void {
   console.log(data.value);
 }
 
-// ✅ RICHTIG - unknown mit Type Guards
+// ✅ CORRECT - unknown with Type Guards
 function processData(data: unknown): void {
   if (
-    typeof data === "object" &&
+    typeof data === 'object' &&
     data !== null &&
-    "value" in data
+    'value' in data
   ) {
     console.log((data as { value: unknown }).value);
   }
 }
 
-// ✅ RICHTIG - Spezifischer Type
+// ✅ CORRECT - Specific Type
 interface DataPayload {
   value: string;
   timestamp: number;
@@ -171,64 +249,64 @@ function processData(data: DataPayload): void {
 }
 ```
 
-### 2.2 Explizite Return Types PFLICHT
+### 2.2 Explicit Return Types REQUIRED
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/explicit-module-boundary-types
+// ❌ WRONG - ESLint Error: @typescript-eslint/explicit-module-boundary-types
 export function calculate(a: number, b: number) {
   return a + b;
 }
 
-// ✅ RICHTIG - Expliziter Return Type
+// ✅ CORRECT - Explicit Return Type
 export function calculate(a: number, b: number): number {
   return a + b;
 }
 
-// ✅ RICHTIG - Async mit Promise
+// ✅ CORRECT - Async with Promise
 export async function fetchUser(id: number): Promise<User> {
   const response = await fetch(`/api/users/${id}`);
   return response.json() as Promise<User>;
 }
 ```
 
-### 2.3 Nullish Coalescing (`??`) statt Logical OR (`||`)
+### 2.3 Nullish Coalescing (`??`) instead of Logical OR (`||`)
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/prefer-nullish-coalescing
-const port = process.env.PORT || 3000;  // Problem: "0" wird zu 3000
-const name = user.name || "Anonymous";  // Problem: "" wird zu "Anonymous"
+// ❌ WRONG - ESLint Error: @typescript-eslint/prefer-nullish-coalescing
+const port = process.env.PORT || 3000;  // Problem: "0" becomes 3000
+const name = user.name || 'Anonymous';  // Problem: "" becomes "Anonymous"
 
-// ✅ RICHTIG - Nullish Coalescing
-const port = process.env.PORT ?? 3000;  // Nur null/undefined → 3000
-const name = user.name ?? "Anonymous";  // Nur null/undefined → "Anonymous"
+// ✅ CORRECT - Nullish Coalescing
+const port = process.env.PORT ?? 3000;  // Only null/undefined → 3000
+const name = user.name ?? 'Anonymous';  // Only null/undefined → "Anonymous"
 
-// ✅ RICHTIG - Explizite Prüfung wenn || gewollt
-const displayName = user.name || user.email || "Anonymous";  // Mit Kommentar warum
+// ✅ CORRECT - Explicit check when || is intended
+const displayName = user.name || user.email || 'Anonymous';  // With comment why
 ```
 
-### 2.4 Keine Non-Null Assertions (`!`)
+### 2.4 No Non-Null Assertions (`!`)
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/no-non-null-assertion
-const userId = req.user!.id;  // Gefährlich!
+// ❌ WRONG - ESLint Error: @typescript-eslint/no-non-null-assertion
+const userId = req.user!.id;  // Dangerous!
 
-// ✅ RICHTIG - Explizite Prüfung
+// ✅ CORRECT - Explicit check
 if (!req.user) {
-  res.status(401).json({ error: "Unauthorized" });
+  res.status(401).json({ error: 'Unauthorized' });
   return;
 }
-const userId = req.user.id;  // Jetzt type-safe
+const userId = req.user.id;  // Now type-safe
 ```
 
 ### 2.5 Strict Boolean Expressions
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/strict-boolean-expressions
+// ❌ WRONG - ESLint Error: @typescript-eslint/strict-boolean-expressions
 if (user.name) {  // String in condition
   console.log(user.name);
 }
 
-if (!token) {  // Truthy check nicht erlaubt
+if (!token) {  // Truthy check not allowed
   return;
 }
 
@@ -236,23 +314,23 @@ if (items.length) {  // Number in condition
   processItems(items);
 }
 
-// ✅ RICHTIG - Explizite Boolean Checks
-if (user.name !== undefined && user.name !== null && user.name !== "") {
+// ✅ CORRECT - Explicit Boolean Checks
+if (user.name !== undefined && user.name !== null && user.name !== '') {
   console.log(user.name);
 }
 
-// ✅ RICHTIG - Null/Empty String checks
+// ✅ CORRECT - Null/Empty String checks
 const token = getAuthToken();
 if (token === null || token === '') {
   return;
 }
 
-// ✅ RICHTIG - Number comparisons
+// ✅ CORRECT - Number comparisons
 if (items.length > 0) {
   processItems(items);
 }
 
-// ✅ RICHTIG - Boolean values
+// ✅ CORRECT - Boolean values
 if (isEnabled === true) {
   enableFeature();
 }
@@ -261,101 +339,101 @@ if (isEnabled === true) {
 ### 2.6 Nullish Coalescing vs Logical OR
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/prefer-nullish-coalescing
-const name = user.name || "Anonymous";  // || für nullable values
-const count = data.count || 0;  // Problematisch wenn count === 0
+// ❌ WRONG - ESLint Error: @typescript-eslint/prefer-nullish-coalescing
+const name = user.name || 'Anonymous';  // || for nullable values
+const count = data.count || 0;  // Problematic when count === 0
 
-// ✅ RICHTIG - Nullish coalescing für null/undefined
-const name = user.name ?? "Anonymous";
+// ✅ CORRECT - Nullish coalescing for null/undefined
+const name = user.name ?? 'Anonymous';
 const count = data.count ?? 0;
 
-// ✅ RICHTIG - || nur für echte boolean logic
-const isActive = isEnabled || isForced;  // Beide sind boolean
+// ✅ CORRECT - || only for real boolean logic
+const isActive = isEnabled || isForced;  // Both are boolean
 ```
 
 ### 2.7 Safe Type Casting
 
 ```typescript
-// ❌ FALSCH - Unsafe casting
+// ❌ WRONG - Unsafe casting
 const btn = document.querySelector('btn') as HTMLButtonElement;
-btn.click();  // Crash wenn null!
+btn.click();  // Crash if null!
 
-// ✅ RICHTIG - Mit null check
+// ✅ CORRECT - With null check
 const btn = document.querySelector('btn') as HTMLButtonElement | null;
 if (btn !== null) {
   btn.click();
 }
 
-// ✅ RICHTIG - Type assertion für JSON
+// ✅ CORRECT - Type assertion for JSON
 const data = (await response.json()) as { message?: string };
-const message = data.message ?? 'Kein Text';
+const message = data.message ?? 'No text';
 ```
 
-### 2.8 Alert/Confirm vermeiden
+### 2.8 Avoid Alert/Confirm
 
 ```typescript
-// ❌ FALSCH - ESLint Error: no-alert
-alert('Fehler aufgetreten!');
-const confirmed = confirm('Wirklich löschen?');
+// ❌ WRONG - ESLint Error: no-alert
+alert('Error occurred!');
+const confirmed = confirm('Really delete?');
 
-// ✅ RICHTIG - Custom UI functions
+// ✅ CORRECT - Custom UI functions
 import { showError, showSuccess } from './auth';
-showError('Fehler aufgetreten!');
-showSuccess('Erfolgreich gespeichert');
+showError('Error occurred!');
+showSuccess('Successfully saved');
 
-// ✅ RICHTIG - Modal dialogs
-const confirmed = await showConfirmDialog('Wirklich löschen?');
+// ✅ CORRECT - Modal dialogs
+const confirmed = await showConfirmDialog('Really delete?');
 ```
 
 ---
 
-## 📝 3. Variablen und Funktionen
+## 📝 3. Variables and Functions
 
-### 3.1 Ungenutzte Variablen mit `_` Prefix
+### 3.1 Unused Variables with `_` Prefix
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/no-unused-vars
+// ❌ WRONG - ESLint Error: @typescript-eslint/no-unused-vars
 app.use((req, res, next, error) => {
-  // error nicht genutzt
+  // error not used
   console.log('Middleware');
   next();
 });
 
-// ✅ RICHTIG - Underscore für bewusst ungenutzt
+// ✅ CORRECT - Underscore for intentionally unused
 app.use((req, res, next, _error) => {
   console.log('Middleware');
   next();
 });
 
-// ✅ RICHTIG - Destructuring mit Rest
-const { id, name, ...rest } = user; // rest ignoriert ungenutzte Felder
+// ✅ CORRECT - Destructuring with Rest
+const { id, name, ...rest } = user; // rest ignores unused fields
 ```
 
-### 3.2 Const über Let, niemals Var
+### 3.2 Const over Let, never Var
 
 ```typescript
-// ❌ FALSCH - ESLint Error: prefer-const, no-var
+// ❌ WRONG - ESLint Error: prefer-const, no-var
 var oldStyle = 'bad';
-let unchanged = 42; // Wird nie geändert
+let unchanged = 42; // Never changed
 
-// ✅ RICHTIG
+// ✅ CORRECT
 const immutable = 42;
 let mutable = 0;
 mutable += 1;
 ```
 
-### 3.3 Arrow Functions bevorzugen
+### 3.3 Prefer Arrow Functions
 
 ```typescript
-// ❌ FALSCH - ESLint Warning: prefer-arrow-callback
+// ❌ WRONG - ESLint Warning: prefer-arrow-callback
 array.map(function (item) {
   return item * 2;
 });
 
-// ✅ RICHTIG - Arrow Function
+// ✅ CORRECT - Arrow Function
 array.map((item) => item * 2);
 
-// ✅ RICHTIG - Arrow mit Block wenn komplex
+// ✅ CORRECT - Arrow with block when complex
 array.map((item) => {
   const doubled = item * 2;
   console.log(`Processing: ${doubled}`);
@@ -367,52 +445,52 @@ array.map((item) => {
 
 ## 🔄 4. Async/Await Best Practices
 
-### 4.1 Promises IMMER awaiten
+### 4.1 ALWAYS await Promises
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/no-floating-promises
-fetchUser(123);  // Promise wird ignoriert!
+// ❌ WRONG - ESLint Error: @typescript-eslint/no-floating-promises
+fetchUser(123);  // Promise is ignored!
 
 async function process(): void {
-  doAsyncWork();  // Nicht geawaited!
+  doAsyncWork();  // Not awaited!
 }
 
-// ✅ RICHTIG - Await oder handle
+// ✅ CORRECT - Await or handle
 await fetchUser(123);
 
 async function process(): Promise<void> {
   await doAsyncWork();
 }
 
-// ✅ RICHTIG - Explicit void wenn Fire-and-Forget
-void fetchAnalytics();  // Explizit ignoriert
+// ✅ CORRECT - Explicit void for Fire-and-Forget
+void fetchAnalytics();  // Explicitly ignored
 ```
 
-### 4.2 Async Functions returnen Promise
+### 4.2 Async Functions return Promise
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/promise-function-async
-function fetchData(): Promise<Data> {  // Nicht async markiert
-  return fetch("/api/data").then(r => r.json());
+// ❌ WRONG - ESLint Error: @typescript-eslint/promise-function-async
+function fetchData(): Promise<Data> {  // Not marked async
+  return fetch('/api/data').then(r => r.json());
 }
 
-// ✅ RICHTIG - Async/Await
+// ✅ CORRECT - Async/Await
 async function fetchData(): Promise<Data> {
-  const response = await fetch("/api/data");
+  const response = await fetch('/api/data');
   return response.json();
 }
 ```
 
-### 4.3 Keine async in void Callbacks
+### 4.3 No async in void Callbacks
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/no-misused-promises
+// ❌ WRONG - ESLint Error: @typescript-eslint/no-misused-promises
 uploadMiddleware(req, res, async (err) => {
   // async in void callback
   await processFile();
 });
 
-// ✅ RICHTIG - Sync callback mit Promise
+// ✅ CORRECT - Sync callback with Promise
 uploadMiddleware(req, res, (err) => {
   void (async () => {
     await processFile();
@@ -427,7 +505,7 @@ uploadMiddleware(req, res, (err) => {
 ### 5.1 REST URL Patterns
 
 ```typescript
-// ✅ RICHTIG - RESTful URLs
+// ✅ CORRECT - RESTful URLs
 const API_ENDPOINTS = {
   // Collection Endpoints (Plural)
   USERS: '/api/v2/users',
@@ -439,22 +517,22 @@ const API_ENDPOINTS = {
   TEAM: '/api/v2/teams/:id',
   DOCUMENT: '/api/v2/documents/:id',
 
-  // Nested Resources (nur wenn sinnvoll)
+  // Nested Resources (only when meaningful)
   TEAM_MEMBERS: '/api/v2/teams/:id/members',
   USER_DOCUMENTS: '/api/v2/users/:id/documents',
 } as const;
 
-// ❌ FALSCH - Nicht RESTful
-('/api/v2/getUsers'); // Kein Verb in URL
-('/api/v2/user'); // Singular für Collection
-('/api/v2/User'); // Großschreibung
-('/api/v2/fetch-user-data'); // Kebab-case mit Verb
+// ❌ WRONG - Not RESTful
+('/api/v2/getUsers'); // No verb in URL
+('/api/v2/user'); // Singular for Collection
+('/api/v2/User'); // Uppercase
+('/api/v2/fetch-user-data'); // Kebab-case with verb
 ```
 
 ### 5.2 API Response Types
 
 ```typescript
-// ✅ RICHTIG - Standardisierte Response Types
+// ✅ CORRECT - Standardized Response Types
 interface ApiSuccessResponse<T> {
   success: true;
   data: T;
@@ -502,23 +580,23 @@ export async function getUsers(): Promise<User[]> {
 }
 ```
 
-### 5.3 Field Naming - IMMER camelCase
+### 5.3 Field Naming - ALWAYS camelCase
 
 ```typescript
-// ✅ RICHTIG - camelCase für alle API Fields
+// ✅ CORRECT - camelCase for all API Fields
 interface User {
   id: number;
-  firstName: string; // NICHT first_name
-  lastName: string; // NICHT last_name
-  createdAt: string; // NICHT created_at
-  updatedAt: string; // NICHT updated_at
-  isActive: boolean; // NICHT is_active
-  hasPermission: boolean; // NICHT has_permission
-  userId: number; // NICHT user_id
-  tenantId: number; // NICHT tenant_id
+  firstName: string; // NOT first_name
+  lastName: string; // NOT last_name
+  createdAt: string; // NOT created_at
+  updatedAt: string; // NOT updated_at
+  isActive: boolean; // NOT is_active
+  hasPermission: boolean; // NOT has_permission
+  userId: number; // NOT user_id
+  tenantId: number; // NOT tenant_id
 }
 
-// ❌ FALSCH - snake_case NIEMALS in API
+// ❌ WRONG - snake_case NEVER in API
 interface WrongUser {
   user_id: number; // ❌ snake_case
   first_name: string; // ❌ snake_case
@@ -529,16 +607,16 @@ interface WrongUser {
 
 ---
 
-## 🛠️ 6. Template Strings und String Handling
+## 🛠️ 6. Template Strings and String Handling
 
-### 6.1 Template Literals bevorzugen
+### 6.1 Prefer Template Literals
 
 ```typescript
-// ❌ FALSCH - ESLint Error: prefer-template
-const message = "Hello " + name + "!";
-const url = baseUrl + "/" + endpoint;
+// ❌ WRONG - ESLint Error: prefer-template
+const message = 'Hello ' + name + '!';
+const url = baseUrl + '/' + endpoint;
 
-// ✅ RICHTIG - Template Literals
+// ✅ CORRECT - Template Literals
 const message = `Hello ${name}!`;
 const url = `${baseUrl}/${endpoint}`;
 ```
@@ -546,29 +624,29 @@ const url = `${baseUrl}/${endpoint}`;
 ### 6.2 Restrict Template Expressions
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/restrict-template-expressions
+// ❌ WRONG - ESLint Error: @typescript-eslint/restrict-template-expressions
 const debug = `User: ${user}`;  // Object to string
 const flag = `Active: ${isActive}`;  // Boolean to string
 
-// ✅ RICHTIG - Explizite Konvertierung
+// ✅ CORRECT - Explicit conversion
 const debug = `User: ${JSON.stringify(user)}`;
-const flag = `Active: ${isActive ? "Yes" : "No"}`;
+const flag = `Active: ${isActive ? 'Yes' : 'No'}`;
 
-// ✅ RICHTIG - Numbers sind erlaubt
+// ✅ CORRECT - Numbers are allowed
 const price = `Price: ${amount}€`;
 ```
 
 ---
 
-## 🎨 7. Console und Error Handling
+## 🎨 7. Console and Error Handling
 
-### 7.1 Console Logs eingeschränkt
+### 7.1 Console Logs Restricted
 
 ```typescript
-// ❌ FALSCH - ESLint Error: no-console
-console.log('Debug info'); // Nicht erlaubt
+// ❌ WRONG - ESLint Error: no-console
+console.log('Debug info'); // Not allowed
 
-// ✅ RICHTIG - Erlaubte Console Methods
+// ✅ CORRECT - Allowed Console Methods
 console.warn('Warning: Deprecated API');
 console.error('Error:', error);
 console.info('Server started on port 3000');
@@ -578,33 +656,33 @@ console.debug('Debug mode:', config); // Backend only
 ### 7.2 Error Handling
 
 ```typescript
-// ❌ FALSCH - ESLint Error: prefer-promise-reject-errors
-return Promise.reject("Error occurred");  // String rejection
+// ❌ WRONG - ESLint Error: prefer-promise-reject-errors
+return Promise.reject('Error occurred');  // String rejection
 
-// ✅ RICHTIG - Error Objects
-return Promise.reject(new Error("Error occurred"));
+// ✅ CORRECT - Error Objects
+return Promise.reject(new Error('Error occurred'));
 
-// ✅ RICHTIG - Custom Error Classes
+// ✅ CORRECT - Custom Error Classes
 class ValidationError extends Error {
   constructor(public field: string, message: string) {
     super(message);
-    this.name = "ValidationError";
+    this.name = 'ValidationError';
   }
 }
 
-throw new ValidationError("email", "Invalid email format");
+throw new ValidationError('email', 'Invalid email format');
 ```
 
-### 7.3 Catch Callbacks IMMER mit `: unknown`
+### 7.3 Catch Callbacks ALWAYS with `: unknown`
 
 ```typescript
-// ❌ FALSCH - ESLint Error: @typescript-eslint/use-unknown-in-catch-callback-variable
+// ❌ WRONG - ESLint Error: @typescript-eslint/use-unknown-in-catch-callback-variable
 promise.catch((error) => {
-  // error ist implizit any
-  console.error(error.message); // Unsicher!
+  // error is implicitly any
+  console.error(error.message); // Unsafe!
 });
 
-// ✅ RICHTIG - Explizit unknown
+// ✅ CORRECT - Explicitly unknown
 promise.catch((error: unknown) => {
   if (error instanceof Error) {
     console.error(error.message);
@@ -613,7 +691,7 @@ promise.catch((error: unknown) => {
   }
 });
 
-// ✅ RICHTIG - Mit Type Guard
+// ✅ CORRECT - With Type Guard
 function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
@@ -626,70 +704,70 @@ promise.catch((error: unknown) => {
 
 ---
 
-## 🌐 7.4 DOM und Browser API Patterns
+## 🌐 7.4 DOM and Browser API Patterns
 
 ### localStorage/sessionStorage Handling
 
 ```typescript
-// ❌ FALSCH - Truthy check für nullable string
-const token = localStorage.getItem("token");
+// ❌ WRONG - Truthy check for nullable string
+const token = localStorage.getItem('token');
 if (token) {  // ESLint Error: strict-boolean-expressions
   api.setAuth(token);
 }
 
-// ✅ RICHTIG - Explizite null und empty checks
-const token = localStorage.getItem("token");
-if (token !== null && token !== "") {
+// ✅ CORRECT - Explicit null and empty checks
+const token = localStorage.getItem('token');
+if (token !== null && token !== '') {
   api.setAuth(token);
 }
 
-// 🚀 NOCH BESSER - Helper Function
+// 🚀 EVEN BETTER - Helper Function
 function getStorageValue(key: string): string | null {
   const value = localStorage.getItem(key);
-  return (value !== null && value !== "") ? value : null;
+  return (value !== null && value !== '') ? value : null;
 }
 
-const token = getStorageValue("token");
+const token = getStorageValue('token');
 if (token !== null) {
   api.setAuth(token);
 }
 ```
 
-### HTMLElement Type Guards und textContent
+### HTMLElement Type Guards and textContent
 
 ```typescript
-// ❌ FALSCH - Unsafe type assertion
-const button = document.querySelector("btn") as HTMLButtonElement;
-button.textContent = "Click";  // Crash wenn null!
+// ❌ WRONG - Unsafe type assertion
+const button = document.querySelector('btn') as HTMLButtonElement;
+button.textContent = 'Click';  // Crash if null!
 
-// ✅ RICHTIG - Mit null check
-const button = document.querySelector("btn") as HTMLButtonElement | null;
+// ✅ CORRECT - With null check
+const button = document.querySelector('btn') as HTMLButtonElement | null;
 if (button !== null) {
-  button.textContent = "Click";  // textContent ist hier string
+  button.textContent = 'Click';  // textContent is string here
 }
 
-// 🚀 NOCH BESSER - instanceof check
-const element = document.querySelector("btn");
+// 🚀 EVEN BETTER - instanceof check
+const element = document.querySelector('btn');
 if (element instanceof HTMLButtonElement) {
-  // Nach instanceof ist textContent IMMER string, nie null
-  element.textContent = "Click";  // Kein ?? oder || nötig!
+  // After instanceof, textContent is ALWAYS string, never null
+  element.textContent = 'Click';  // No ?? or || needed!
 }
 
-// WICHTIG: textContent Verhalten
-const element = document.querySelector(".class");
+// IMPORTANT: textContent behavior
+const element = document.querySelector('.class');
 if (element !== null) {
-  // textContent kann null sein wenn element kein Text hat
+  // textContent can be null if element has no text
   const text = element.textContent;  // string | null
-  if (text !== null && text !== "") {
+  if (text !== null && text !== '') {
     console.info(text);
   }
 }
 
-// ABER: Nach instanceof HTMLElement
+// BUT: After instanceof HTMLElement
 if (element instanceof HTMLElement) {
-  // textContent ist GARANTIERT string (empty string wenn kein Text)
-  const text = element.textContent;  // string, nie null!
-  if (text !== "") {
+  // textContent is GUARANTEED string (empty string if no text)
+  const text = element.textContent;  // string, never null!
+  if (text !== '') {
     console.info(text);
   }
 }
@@ -698,24 +776,24 @@ if (element instanceof HTMLElement) {
 ### Dataset Values Validation
 
 ```typescript
-// ❌ FALSCH - Unsichere Annahme über dataset
+// ❌ WRONG - Unsafe assumption about dataset
 const role = (element as HTMLElement).dataset.role as 'admin' | 'user';
 if (role) {
-  // Gefährlich!
+  // Dangerous!
   setUserRole(role);
 }
 
-// ✅ RICHTIG - Dataset validation
+// ✅ CORRECT - Dataset validation
 const element = event.target;
 if (element instanceof HTMLElement) {
   const roleValue = element.dataset.role;
-  // Dataset values sind immer string | undefined
+  // Dataset values are always string | undefined
   if (roleValue === 'admin' || roleValue === 'user') {
-    setUserRole(roleValue); // Jetzt type-safe!
+    setUserRole(roleValue); // Now type-safe!
   }
 }
 
-// 🚀 NOCH BESSER - Type Guard Function
+// 🚀 EVEN BETTER - Type Guard Function
 type UserRole = 'admin' | 'user' | 'guest';
 
 function isValidRole(value: unknown): value is UserRole {
@@ -734,28 +812,28 @@ if (element instanceof HTMLElement) {
 
 ## 🏗️ 8. Import/Export Standards
 
-### 8.1 Keine doppelten Imports
+### 8.1 No Duplicate Imports
 
 ```typescript
-// ❌ FALSCH - ESLint Error: no-duplicate-imports
-import { useState } from "react";
-import { useEffect } from "react";
+// ❌ WRONG - ESLint Error: no-duplicate-imports
+import { useState } from 'react';
+import { useEffect } from 'react';
 
-// ✅ RICHTIG - Combined Import
-import { useState, useEffect } from "react";
+// ✅ CORRECT - Combined Import
+import { useState, useEffect } from 'react';
 ```
 
 ### 8.2 Object Shorthand
 
 ```typescript
-// ❌ FALSCH - ESLint Error: object-shorthand
+// ❌ WRONG - ESLint Error: object-shorthand
 const user = {
   name: name,
   email: email,
   save: function() { }
 };
 
-// ✅ RICHTIG - Shorthand
+// ✅ CORRECT - Shorthand
 const user = {
   name,
   email,
@@ -766,15 +844,15 @@ const user = {
 ### 8.3 Operator Precedence
 
 ```typescript
-// ❌ FALSCH - ESLint Error: no-mixed-operators
+// ❌ WRONG - ESLint Error: no-mixed-operators
 const time = now.getTime() - 24 * 60 * 60 * 1000;
 const result = a + b * c - d;
 
-// ✅ RICHTIG - Mit Klammern für Klarheit
+// ✅ CORRECT - With parentheses for clarity
 const time = now.getTime() - (24 * 60 * 60 * 1000);
 const result = a + (b * c) - d;
 
-// ✅ RICHTIG - Gruppiert für Lesbarkeit
+// ✅ CORRECT - Grouped for readability
 const dayInMs = 24 * 60 * 60 * 1000;
 const time = now.getTime() - dayInMs;
 ```
@@ -783,23 +861,23 @@ const time = now.getTime() - dayInMs;
 
 ## ✅ 9. Pre-Commit Checklist
 
-Vor JEDEM Commit MUSS durchlaufen:
+Before EVERY commit, MUST run:
 
 ```bash
 # 1. Format Check
 pnpm run format
 
-# 2. Lint Check (MUSS 0 Errors zeigen)
+# 2. Lint Check (MUST show 0 Errors)
 pnpm run lint
 
-# 3. TypeScript Check (MUSS 0 Errors zeigen)
+# 3. TypeScript Check (MUST show 0 Errors)
 pnpm run type-check
 
 # 4. Build Test
 pnpm run build
 ```
 
-Automatisiert mit Git Hooks:
+Automated with Git Hooks:
 
 ```json
 // package.json
@@ -812,16 +890,16 @@ Automatisiert mit Git Hooks:
 
 ---
 
-## 🚨 10. Test File Ausnahmen
+## 🚨 10. Test File Exceptions
 
-NUR in Test-Dateien (`*.test.ts`, `*.spec.ts`) sind erlaubt:
+ONLY in test files (`*.test.ts`, `*.spec.ts`) are allowed:
 
 ```typescript
-// Test files only - Ausnahmen aktiviert
+// Test files only - Exceptions enabled
 describe('UserService', () => {
   it('should handle any data', () => {
-    const mockData: any = { test: true }; // any erlaubt in Tests
-    console.log('Test output'); // console.log erlaubt in Tests
+    const mockData: any = { test: true }; // any allowed in tests
+    console.log('Test output'); // console.log allowed in tests
 
     expect(mockData).toBeDefined();
   });
@@ -833,77 +911,107 @@ describe('UserService', () => {
 ## 📊 11. ESLint Command Reference
 
 ```bash
-# Zeige alle Errors
+# Show all errors
 pnpm run lint
 
-# Auto-Fix was möglich
+# Auto-fix what's possible
 pnpm run lint:fix
 
-# Nur TypeScript prüfen
+# TypeScript check only
 pnpm run type-check
 
-# Format mit Prettier
+# Format with Prettier
 pnpm run format
 
-# Check Format ohne Fix
+# Check format without fixing
 pnpm run format:check
 ```
 
 ---
 
+## 🔌 ESLint Plugins (Active)
+
+Our ESLint configuration uses these plugins for maximum code quality:
+
+| Plugin                         | Purpose                                      |
+| ------------------------------ | -------------------------------------------- |
+| `@typescript-eslint`           | Core TypeScript rules                        |
+| `eslint-plugin-promise`        | Promise best practices, no floating promises |
+| `eslint-plugin-sonarjs`        | Code smell detection, cognitive complexity   |
+| `eslint-plugin-unicorn`        | Modern JavaScript patterns                   |
+| `eslint-plugin-no-secrets`     | Prevents hardcoded secrets/API keys          |
+| `eslint-plugin-no-unsanitized` | XSS prevention (innerHTML, etc.)             |
+| `eslint-plugin-tsdoc`          | TSDoc comment validation                     |
+| `eslint-plugin-storybook`      | Storybook-specific rules                     |
+
+---
+
+## 🗄️ Database Layer Exceptions
+
+Files in `backend/src/database/**/*.ts` have relaxed limits due to complex query builders:
+
+| Rule                     | Standard | Database Layer |
+| ------------------------ | -------- | -------------- |
+| `max-lines`              | 800      | 1000           |
+| `max-lines-per-function` | 60       | 80             |
+
+**Rationale:** Database utilities often contain multiple related queries and helper functions that are logically grouped together.
+
+---
+
 ## 🔴 12. Absolute No-Gos
 
-Diese führen zu **sofortiger Ablehnung** im Code Review:
+These result in **immediate rejection** in code review:
 
-1. **`any` Type ohne `// eslint-disable-next-line` mit Begründung**
-2. **`||` statt `??` für Defaults**
-3. **Fehlende Return Types bei exported Functions**
-4. **Non-null Assertions (`!`)**
-5. **Ungeawaitete Promises**
-6. **snake_case in API Fields**
-7. **`var` Keyword**
-8. **`console.log` oder(info) in Production Code**
-9. **String/Number in Boolean Conditions ohne explizite Checks**
-10. **Commits mit ESLint Errors**
-11. **Catch Callbacks ohne `: unknown` Type**
-12. **localStorage/sessionStorage mit truthy checks statt `!== null`**
-13. **Type Assertions (`as`) ohne `| null` bei DOM Elements**
-14. **Dataset values ohne Validation**
-
----
-
-## 📋 13. Neue Datei Checklist
-
-Beim Erstellen neuer TypeScript-Dateien:
-
-- [ ] Datei startet mit korrektem Import-Block
-- [ ] Alle Functions haben explizite Return Types
-- [ ] Keine `any` Types
-- [ ] Interfaces/Types sind exportiert und dokumentiert
-- [ ] camelCase für alle Variablen und Properties
-- [ ] PascalCase für Types/Interfaces/Classes
-- [ ] Prettier läuft ohne Änderungen
-- [ ] ESLint zeigt 0 Errors
-- [ ] TypeScript kompiliert ohne Fehler
+1. **`any` type without `// eslint-disable-next-line` with justification**
+2. **`||` instead of `??` for defaults**
+3. **Missing return types on exported functions**
+4. **Non-null assertions (`!`)**
+5. **Unawaited promises**
+6. **snake_case in API fields**
+7. **`var` keyword**
+8. **`console.log` in production code**
+9. **String/Number in boolean conditions without explicit checks**
+10. **Commits with ESLint errors**
+11. **Catch callbacks without `: unknown` type**
+12. **localStorage/sessionStorage with truthy checks instead of `!== null`**
+13. **Type assertions (`as`) without `| null` for DOM elements**
+14. **Dataset values without validation**
 
 ---
 
-## 🎯 14. Migration von Legacy Code
+## 📋 13. New File Checklist
 
-Bei der Migration von altem Code:
+When creating new TypeScript files:
+
+- [ ] File starts with correct import block (sorted by Prettier)
+- [ ] All functions have explicit return types
+- [ ] No `any` types
+- [ ] Interfaces/Types are exported and documented
+- [ ] camelCase for all variables and properties
+- [ ] PascalCase for Types/Interfaces/Classes
+- [ ] Prettier runs without changes
+- [ ] ESLint shows 0 errors
+- [ ] TypeScript compiles without errors
+
+---
+
+## 🎯 14. Legacy Code Migration
+
+When migrating old code:
 
 ```typescript
-// Phase 1: Mark mit TODO
+// Phase 1: Mark with TODO
 // TODO: Migrate to TypeScript standards
 // @ts-expect-error - Legacy code, will be migrated
 const oldData: any = getLegacyData();
 
-// Phase 2: Schrittweise Migration
+// Phase 2: Gradual migration
 interface LegacyData {
-  [key: string]: unknown; // Besser als any
+  [key: string]: unknown; // Better than any
 }
 
-// Phase 3: Vollständige Typisierung
+// Phase 3: Full typing
 interface UserData {
   id: number;
   name: string;
@@ -915,33 +1023,30 @@ interface UserData {
 
 ## 📚 Quick Reference
 
-| Was       | Verwenden                    | Nicht verwenden         |
-| --------- | ---------------------------- | ----------------------- | --- | ----------- |
-| Types     | `unknown`, spezifische Types | `any`                   |
-| Defaults  | `??` (nullish)               | ` |     | ` (logical) |
-| Strings   | Template Literals            | String Concatenation    |
-| Functions | Arrow Functions              | function keyword        |
-| Variables | `const`, `let`               | `var`                   |
-| Async     | `async/await`                | `.then()` chains        |
-| Loops     | `for...of`, `.map()`         | `for...in`              |
-| Checks    | Explizite Boolean            | Truthy/Falsy            |
-| Exports   | Named Exports                | Default Exports (meist) |
+| Category  | Use                           | Don't Use            |
+| --------- | ----------------------------- | -------------------- |
+| Types     | `unknown`, specific types     | `any`                |
+| Defaults  | `??` (nullish coalescing)     | `\|\|` (logical or)  |
+| Strings   | Template Literals             | String Concatenation |
+| Functions | Arrow Functions               | `function` keyword   |
+| Variables | `const`, `let`                | `var`                |
+| Async     | `async/await`                 | `.then()` chains     |
+| Loops     | `for...of`, `.map()`          | `for...in`           |
+| Checks    | Explicit boolean (`!== null`) | Truthy/Falsy         |
+| Exports   | Named Exports                 | Default Exports      |
+| Quotes    | Single quotes (`'`)           | Double quotes (`"`)  |
 
 ---
 
-**Dieser Standard ist VERBINDLICH. Code, der diese Standards nicht erfüllt, wird NICHT gemerged.**
+**This standard is MANDATORY. Code that does not meet these standards will NOT be merged.**
 
-**Letzte Aktualisierung:** 2025-12-08
-**Basiert auf:** eslint.config.js + tsconfig.base.json + Power of Ten Rules + .prettierrc.json
+**Last Updated:** 2025-12-16
+**Based on:** eslint.config.js + tsconfig.base.json + Power of Ten Rules + .prettierrc.json
 **Database:** PostgreSQL 17 with `pg` library (NOT MySQL!)
 **Validation:** Zod schemas (NOT express-validator!)
 **Maintainer:** Assixx Development Team
 
 ## TypeScript Architecture Guide
-
-An Claude: Korriegire und opitmiere diese Datei ständig, wenn du meinst, dass was geändert hat oder wir es besser machen können.
-
-Achte auf eslint config im backend und frontend. Wir wollen besten typescript code der möglich ist nach best practice und nach ultimatische strengen typsicheren Regeln!!!!!!!!!! This is most important file of all with together with code of cunduct TYPESCRIPTS-STANDARDS.md!!!
 
 ## Overview
 
@@ -1080,35 +1185,33 @@ router.post(
 import { ResultSetHeader, RowDataPacket, execute, query, transaction } from '../utils/db';
 
 // SELECT queries - use $1, $2, $3 placeholders (NOT ?)
-const [rows] = await execute<RowDataPacket[]>(
-  'SELECT * FROM users WHERE id = $1 AND tenant_id = $2',
-  [userId, tenantId]
-);
+const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE id = $1 AND tenant_id = $2', [
+  userId,
+  tenantId,
+]);
 
 // INSERT with RETURNING (PostgreSQL best practice)
 const [result] = await execute<RowDataPacket[]>(
   'INSERT INTO users (email, password, tenant_id) VALUES ($1, $2, $3) RETURNING id',
-  [email, hashedPassword, tenantId]
+  [email, hashedPassword, tenantId],
 );
 const insertId = result[0]?.id;
 
 // UPDATE/DELETE queries
-const [updateResult] = await execute<ResultSetHeader>(
-  'UPDATE users SET name = $1 WHERE id = $2 AND tenant_id = $3',
-  [newName, userId, tenantId]
-);
+const [updateResult] = await execute<ResultSetHeader>('UPDATE users SET name = $1 WHERE id = $2 AND tenant_id = $3', [
+  newName,
+  userId,
+  tenantId,
+]);
 
 // Transactions with RLS context
-await transaction(async (connection) => {
-  await connection.execute(
-    'INSERT INTO users (email, tenant_id) VALUES ($1, $2) RETURNING id',
-    [email, tenantId]
-  );
-  await connection.execute(
-    'INSERT INTO profiles (user_id, tenant_id) VALUES ($1, $2)',
-    [userId, tenantId]
-  );
-}, { tenantId, userId }); // RLS context for Row Level Security
+await transaction(
+  async (connection) => {
+    await connection.execute('INSERT INTO users (email, tenant_id) VALUES ($1, $2) RETURNING id', [email, tenantId]);
+    await connection.execute('INSERT INTO profiles (user_id, tenant_id) VALUES ($1, $2)', [userId, tenantId]);
+  },
+  { tenantId, userId },
+); // RLS context for Row Level Security
 ```
 
 **PostgreSQL vs MySQL Syntax:**
@@ -1188,7 +1291,7 @@ backend/src/
 
 ## References
 
-- [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - **PFLICHTLEKTÜRE** - 10 Regeln für Safety-Critical Code (NASA/JPL)
+- [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - **REQUIRED READING** - 10 Rules for Safety-Critical Code (NASA/JPL)
 - [TypeScript Security Best Practices](../../docs/TYPESCRIPT-SECURITY-BEST-PRACTICES.md)
 - [User Update Security Fix](./USER_UPDATE_SECURITY_FIX_SUMMARY.md)
 - [Phase 2 Migration Guide](../../docs/PHASE2-MIGRATION-GUIDE.md)
@@ -1203,10 +1306,10 @@ backend/src/
 import { RowDataPacket, execute } from '../utils/db';
 
 // PostgreSQL uses $1, $2, $3 placeholders (NOT ?)
-const [users] = await execute<RowDataPacket[]>(
-  'SELECT * FROM users WHERE tenant_id = $1 AND role = $2',
-  [req.user.tenantId, 'employee']
-);
+const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = $1 AND role = $2', [
+  req.user.tenantId,
+  'employee',
+]);
 ```
 
 ### File Upload Pattern

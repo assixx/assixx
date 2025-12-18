@@ -4,11 +4,11 @@
 
 ## TL;DR - Was brauchen wir wirklich?
 
-| Situation | CSRF nötig? | Grund |
-|-----------|-------------|-------|
-| JWT im `Authorization` Header | **NEIN** | Externe Seiten können Header nicht setzen |
-| JWT im Cookie | **JA** | Browser sendet Cookies automatisch |
-| Wir aktuell | **NEIN** | JWT im Header (siehe `auth.middleware.ts`) |
+| Situation                     | CSRF nötig? | Grund                                      |
+| ----------------------------- | ----------- | ------------------------------------------ |
+| JWT im `Authorization` Header | **NEIN**    | Externe Seiten können Header nicht setzen  |
+| JWT im Cookie                 | **JA**      | Browser sendet Cookies automatisch         |
+| Wir aktuell                   | **NEIN**    | JWT im Header (siehe `auth.middleware.ts`) |
 
 **OWASP 2025:** "Placing a token in the Authorization header provides protection against CSRF"
 
@@ -35,16 +35,13 @@ pnpm add @fastify/cookie @fastify/csrf-protection
 
 ```typescript
 // backend/src/main.ts (NestJS + Fastify)
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyCsrf from '@fastify/csrf-protection';
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter()
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
   // Cookie + CSRF (Double Submit Cookie Pattern)
   await app.register(fastifyCookie, { secret: process.env.COOKIE_SECRET });
@@ -61,7 +58,7 @@ async function bootstrap() {
 export default {
   kit: {
     csrf: {
-      checkOrigin: true,  // Built-in Origin-Validierung
+      checkOrigin: true, // Built-in Origin-Validierung
     },
   },
 };
@@ -96,7 +93,7 @@ const ALLOWED_ORIGINS = ['localhost', 'assixx.com', 'assixx.de'];
 export const validateOrigin = (req: Request, res: Response, next: NextFunction): void => {
   const origin = req.headers.origin ?? req.headers.referer ?? '';
 
-  if (origin && !ALLOWED_ORIGINS.some(d => origin.includes(d))) {
+  if (origin && !ALLOWED_ORIGINS.some((d) => origin.includes(d))) {
     res.status(403).json({ error: 'Invalid origin' });
     return;
   }
@@ -106,22 +103,22 @@ export const validateOrigin = (req: Request, res: Response, next: NextFunction):
 
 ## Implementierungs-Strategie
 
-| Phase | Was | Wann | Aufwand |
-|-------|-----|------|---------|
-| **Jetzt** | Origin Validation in Express | Optional | 15min |
-| **NestJS Migration** | @fastify/csrf-protection | Phase 1 | 30min |
-| **SvelteKit Migration** | checkOrigin: true | Phase 3 | 5min |
+| Phase                   | Was                          | Wann     | Aufwand |
+| ----------------------- | ---------------------------- | -------- | ------- |
+| **Jetzt**               | Origin Validation in Express | Optional | 15min   |
+| **NestJS Migration**    | @fastify/csrf-protection     | Phase 1  | 30min   |
+| **SvelteKit Migration** | checkOrigin: true            | Phase 3  | 5min    |
 
 **KISS-Prinzip:** Keine Express CSRF-Library installieren - Migration zu NestJS steht bevor!
 
 ## Was wir NICHT brauchen
 
-| Feature | Warum nicht |
-|---------|-------------|
+| Feature                      | Warum nicht                                |
+| ---------------------------- | ------------------------------------------ |
 | URL-Token wie Google (sxsrf) | Für Cookie-Sessions, wir nutzen JWT Header |
-| iflsig Signatur | Für öffentliche Suchmaschinen |
-| csrf-csrf Package | Express-only, wir migrieren zu Fastify |
-| Signed URLs | Nur für öffentliche Download-Links nötig |
+| iflsig Signatur              | Für öffentliche Suchmaschinen              |
+| csrf-csrf Package            | Express-only, wir migrieren zu Fastify     |
+| Signed URLs                  | Nur für öffentliche Download-Links nötig   |
 
 ## Env Variables (bei NestJS-Migration hinzufügen)
 
@@ -139,4 +136,5 @@ COOKIE_SECRET=random-32-char-string-for-signed-cookies
 - [Stateless CSRF for SPAs](https://rojas.io/stateless-csrf-protection-in-an-spa/)
 
 ---
-*Plan erstellt: 2025-12-12 | Kompatibel mit: OPTIMAL-SETUP.md*
+
+_Plan erstellt: 2025-12-12 | Kompatibel mit: OPTIMAL-SETUP.md_

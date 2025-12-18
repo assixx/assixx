@@ -2,11 +2,10 @@
  * Storybook Preview Configuration
  * Global decorators, parameters, and styles
  */
-
 // Import global styles
 // NOTE: main.css already imports tailwind.css which includes design-system
-import '../frontend/src/styles/main.css';
 import '../frontend/src/styles/dashboard-theme.css';
+import '../frontend/src/styles/main.css';
 
 /** @type { import('@storybook/html-vite').Preview } */
 const preview = {
@@ -26,12 +25,12 @@ const preview = {
     // Backgrounds - Match Assixx dark theme
     backgrounds: {
       options: {
-        "assixx-dark": {
+        'assixx-dark': {
           name: 'assixx-dark',
           value: '#000000',
         },
 
-        "assixx-gradient": {
+        'assixx-gradient': {
           name: 'assixx-gradient',
           value:
             'linear-gradient(5deg, transparent 0%, rgba(0, 142, 255, 0.1) 25%, rgba(1, 0, 4, 0.51) 60%, rgba(0, 0, 4, 0.6) 90%, black 100%)',
@@ -40,8 +39,8 @@ const preview = {
         light: {
           name: 'light',
           value: '#ffffff',
-        }
-      }
+        },
+      },
     },
 
     // Viewport presets
@@ -91,9 +90,9 @@ const preview = {
 
   initialGlobals: {
     backgrounds: {
-      value: 'assixx-dark'
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 export default preview;

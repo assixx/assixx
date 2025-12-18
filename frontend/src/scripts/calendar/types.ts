@@ -225,11 +225,11 @@ export type FilterLevel = 'all' | 'company' | 'department' | 'team' | 'area' | '
 export type ViewMode = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek';
 
 // ============================================================================
-// FullCalendar Plugin Types
+// EventCalendar Plugin Types
 // ============================================================================
 
 /**
- * FullCalendar plugins bundle
+ * EventCalendar plugins bundle
  * Used for lazy loading
  */
 export interface CalendarPlugins {

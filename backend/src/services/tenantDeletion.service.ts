@@ -8,7 +8,6 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { getRedisClient } from '../config/redis.js';
-import { DbUser } from '../routes/v2/users/model/index.js';
 import {
   PoolConnection,
   ResultSetHeader,
@@ -83,6 +82,16 @@ interface LegalHoldRow extends RowDataPacket {
   tenant_id: number;
   reason?: string;
   active: number;
+}
+
+/**
+ * Minimal user interface for email notifications
+ * Only the fields needed for sending deletion warning emails
+ */
+interface DeletionWarningUser extends RowDataPacket {
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 /**
@@ -380,18 +389,20 @@ export class TenantDeletionService {
    * Send notification emails
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
-    const [admins] = await query<DbUser[]>(
-      "SELECT * FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
+    const [admins] = await query<DeletionWarningUser[]>(
+      "SELECT email, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
     for (const admin of admins) {
+      const nameParts = [admin.first_name, admin.last_name].filter(Boolean).join(' ');
+      const displayName = nameParts !== '' ? nameParts : 'Nutzer';
       await emailService.sendEmail({
         to: admin.email,
         subject: 'Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht',
         html: `
           <h2>Ihr Assixx-Konto wird gelöscht</h2>
-          <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
+          <p>Sehr geehrte/r ${displayName},</p>
           <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE')}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>

@@ -25,7 +25,7 @@
 /* ❌ FALSCH - Veralteter Ansatz */
 @media (min-width: 1600px) {
   .container {
-    max-width: 1600px;  /* Container = Breakpoint = ZU BREIT! */
+    max-width: 1600px; /* Container = Breakpoint = ZU BREIT! */
   }
 }
 ```
@@ -51,7 +51,8 @@
 
 ```html
 <!-- ❌ FALSCH -->
-<div class="max-w-card">  <!-- 1404.8px feste Breite -->
+<div class="max-w-card">
+  <!-- 1404.8px feste Breite -->
   <!-- Container kann sich nicht anpassen -->
 </div>
 ```
@@ -80,7 +81,7 @@ Statt auf **Viewport-Größe** zu reagieren (Media Queries), reagieren wir auf d
 **Vorher:**
 
 ```html
-<main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
+<main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]"></main>
 ```
 
 **Nachher:**
@@ -110,7 +111,7 @@ Statt auf **Viewport-Größe** zu reagieren (Media Queries), reagieren wir auf d
 
 ```html
 <!-- ✅ RICHTIG - Einfache .container Klasse ohne max-width -->
-<div class="container">
+<div class="container"></div>
 ```
 
 **CSS Definition:**
@@ -121,11 +122,10 @@ Statt auf **Viewport-Größe** zu reagieren (Media Queries), reagieren wir auf d
  * Uses @container queries to adapt based on available space, not viewport
  */
 .container {
-  margin: 0 auto;
-  padding: var(--spacing-6);
-
   /* Container adapts to parent container size */
   container-type: inline-size;
+  margin: 0 auto;
+  padding: var(--spacing-6);
 
   /* Responsive max-width using container queries */
   max-width: 100%;
@@ -240,13 +240,13 @@ Basierend auf Recherche wurden zusätzliche Breakpoints hinzugefügt:
  * Mobile-first approach: unprefixed = mobile, prefixes = "at breakpoint and up"
  * Research: 1440px (QHD monitors) and 1600px+ (large desktop) are critical missing ranges
  */
---breakpoint-sm: 40rem;   /* 640px - Small phones (landscape) */
---breakpoint-md: 48rem;   /* 768px - Tablets (portrait) */
---breakpoint-lg: 64rem;   /* 1024px - Tablets (landscape), small laptops */
---breakpoint-xl: 80rem;   /* 1280px - Standard laptops, HD monitors */
---breakpoint-qhd: 90rem;  /* 1440px - QHD monitors (2560×1440) - CRITICAL! */
+--breakpoint-sm: 40rem; /* 640px - Small phones (landscape) */
+--breakpoint-md: 48rem; /* 768px - Tablets (portrait) */
+--breakpoint-lg: 64rem; /* 1024px - Tablets (landscape), small laptops */
+--breakpoint-xl: 80rem; /* 1280px - Standard laptops, HD monitors */
+--breakpoint-qhd: 90rem; /* 1440px - QHD monitors (2560×1440) - CRITICAL! */
 --breakpoint-fhd: 100rem; /* 1600px - Large desktop displays */
---breakpoint-2xl: 96rem;  /* 1536px - Standard large displays (kept for compatibility) */
+--breakpoint-2xl: 96rem; /* 1536px - Standard large displays (kept for compatibility) */
 --breakpoint-3xl: 120rem; /* 1920px - Full HD wide displays, 4K scaled */
 ```
 
@@ -325,7 +325,10 @@ Container Queries werden unterstützt in:
 <main class="p-4">
   <div class="mx-auto px-4 sm:px-6 max-w-card">
     <div class="card">
-      <table class="min-w-[1100px]">
+      <table class="min-w-[1100px]"></table>
+    </div>
+  </div>
+</main>
 ```
 
 **Probleme:**
@@ -343,7 +346,10 @@ Container Queries werden unterstützt in:
 <main class="p-4 @container">
   <div class="container">
     <div class="card">
-      <table>
+      <table></table>
+    </div>
+  </div>
+</main>
 ```
 
 **Vorteile:**
@@ -360,9 +366,11 @@ Container Queries werden unterstützt in:
 ### 1. Media Queries sind nicht die Lösung für alle Responsive-Probleme
 
 **Alte Denkweise (2015-2020):**
+
 > "Ich brauche mehr Breakpoints für mehr Bildschirmgrößen!"
 
 **Moderne Denkweise (2025):**
+
 > "Ich nutze Container Queries für component-basierte Responsiveness!"
 
 ### 2. Device-Based → Content-Based
@@ -370,9 +378,15 @@ Container Queries werden unterstützt in:
 **Alt:**
 
 ```css
-@media (min-width: 1440px) { /* iPhone 14 Pro Max landscape */ }
-@media (min-width: 1600px) { /* MacBook Pro 16" */ }
-@media (min-width: 1920px) { /* Full HD */ }
+@media (min-width: 1440px) {
+  /* iPhone 14 Pro Max landscape */
+}
+@media (min-width: 1600px) {
+  /* MacBook Pro 16" */
+}
+@media (min-width: 1920px) {
+  /* Full HD */
+}
 ```
 
 **Neu:**

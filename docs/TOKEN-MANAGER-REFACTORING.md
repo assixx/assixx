@@ -24,9 +24,11 @@
 ## Executive Summary
 
 ### **The Journey:**
+
 Dieses Dokument beschreibt die **komplette Evolution** des Token & Session Management Systems in Assixx - von chaotischer Code-Duplizierung über kritische Security-Bugfixes bis hin zu professionellen UX-Enhancements und industrie-standard Token-Rotation.
 
 ### **Eight Phases:**
+
 1. **TokenManager Refactoring** - Zentralisierung & Observer Pattern
 2. **Heartbeat Bugfix** - Critical Security Fix (Background-Polling)
 3. **Dynamic Session Modal** - UX Enhancement mit Real-Time Countdown
@@ -37,6 +39,7 @@ Dieses Dokument beschreibt die **komplette Evolution** des Token & Session Manag
 8. **Refresh Token Rotation** - OWASP Best Practice Security (Reuse Detection)
 
 ### **Impact:**
+
 - ✅ **2044+ Zeilen Code** eliminiert (DRY-Prinzip)
 - ✅ **Critical Security Bugs** gefixt (Heartbeat, Role-Switch 24h→30m)
 - ✅ **Professional UX** mit Design System Integration
@@ -53,6 +56,7 @@ Dieses Dokument beschreibt die **komplette Evolution** des Token & Session Manag
 ## 🎯 Problem & Lösung
 
 ### **Problem: Code-Chaos**
+
 Token-/Session-Management-Logik war über **5+ Files verstreut** mit massiver Code-Duplizierung.
 
 ```
@@ -118,6 +122,7 @@ Token-/Session-Management-Logik war über **5+ Files verstreut** mit massiver Co
 ## 📋 TokenManager API
 
 ### **Token Lifecycle:**
+
 ```typescript
 tokenManager.getAccessToken(): string | null
 tokenManager.getRefreshToken(): string | null
@@ -127,6 +132,7 @@ tokenManager.refreshIfNeeded(): Promise<boolean>
 ```
 
 ### **Token Status:**
+
 ```typescript
 tokenManager.getRemainingTime(): number
 tokenManager.isExpiringSoon(threshold?): boolean
@@ -135,11 +141,20 @@ tokenManager.hasValidToken(): boolean
 ```
 
 ### **Observer Pattern (Event Callbacks):**
+
 ```typescript
-tokenManager.onTimerUpdate((seconds) => { /* UI update */ })
-tokenManager.onTokenRefreshed((token) => { /* ... */ })
-tokenManager.onTokenExpiringSoon(() => { /* Show warning */ })
-tokenManager.onTokenExpired(() => { /* Logout */ })
+tokenManager.onTimerUpdate((seconds) => {
+  /* UI update */
+});
+tokenManager.onTokenRefreshed((token) => {
+  /* ... */
+});
+tokenManager.onTokenExpiringSoon(() => {
+  /* Show warning */
+});
+tokenManager.onTokenExpired(() => {
+  /* Logout */
+});
 ```
 
 ---
@@ -147,6 +162,7 @@ tokenManager.onTokenExpired(() => { /* Logout */ })
 ## ⚙️ Core Functionality
 
 ### **1. Page Load Flow**
+
 ```
 Browser lädt /admin-dashboard
   ↓
@@ -165,6 +181,7 @@ tokenManager.refresh()
 ```
 
 ### **2. Timer Update (jede Sekunde)**
+
 ```
 tokenManager: tick() [interner Timer]
   ↓
@@ -196,6 +213,7 @@ if (this.isExpiringSoon(600)) {  // < 10 Min
 ```
 
 **Begründung:**
+
 - **Sicherheit:** Abgelaufene Tokens sind ungültig
 - **UX:** Verhindert "Token expired" Fehler
 - **Backend:** Würde abgelaufene Tokens sowieso ablehnen (401)
@@ -205,17 +223,20 @@ if (this.isExpiringSoon(600)) {  // < 10 Min
 ## 📈 Phase 1 Metriken
 
 ### **Code-Reduktion:**
+
 - unified-navigation.ts: 3403 → 3350 Zeilen (-53 Zeilen)
 - api-client.ts: 547 → 460 Zeilen (-87 Zeilen)
 - **Gesamt:** ~500 Zeilen gespart (inkl. neuer TokenManager)
 
 ### **Files Modified:**
+
 1. ✅ **NEU:** `frontend/src/utils/token-manager.ts` (360 Zeilen)
 2. ✅ `frontend/src/utils/api-client.ts`
 3. ✅ `frontend/src/scripts/components/unified-navigation.ts`
 4. ✅ `frontend/src/scripts/utils/session-manager.ts`
 
 ### **Code Removed:**
+
 - ❌ `decodeJWT()` aus api-client.ts
 - ❌ `decodeJWT()` aus unified-navigation.ts
 - ❌ `isTokenExpiringSoon()` aus api-client.ts
@@ -233,6 +254,7 @@ if (this.isExpiringSoon(600)) {  // < 10 Min
 ## 🚨 The Bug: "Heartbeat Keeps Session Alive"
 
 ### **User Observation:**
+
 ```
 Timer im Header: 09:45 (< 10 Minuten)
 User: KOMPLETT INAKTIV (liest nur Bildschirm)
@@ -268,6 +290,7 @@ public async updateUnreadMessages(): Promise<void> {
 ```
 
 **Flow:**
+
 ```
 User inaktiv → Token < 10 Min
   ↓
@@ -283,6 +306,7 @@ Neues Token (30:00) → Timer resettet
 ```
 
 **Why is this a bug?**
+
 - Background-Polling ist **KEINE echte User-Aktivität**
 - User kann Browser offen lassen und wird **NIE ausgeloggt**
 - **Security Issue:** Sessions bleiben ewig aktiv
@@ -303,6 +327,7 @@ window.fetch = async (...args) => {
 ```
 
 **Flow:**
+
 ```
 User inaktiv → 10 Min vergangen
   ↓
@@ -316,6 +341,7 @@ Inactivity-Timer startet von 0 neu
 ```
 
 **Doppelter Bug:**
+
 - Token-Refresh verhindert Token-Expiry-Logout
 - Activity-Reset verhindert Inactivity-Logout
 - **Ergebnis:** User wird **NIE** ausgeloggt!
@@ -329,6 +355,7 @@ Inactivity-Timer startet von 0 neu
 **File:** `frontend/src/utils/api-client.ts` (Lines 127-160)
 
 **OLD:**
+
 ```typescript
 private async proactivelyRefreshTokenIfNeeded(endpoint: string, ...): Promise<void> {
   // Skip nur Auth-Endpoints
@@ -342,6 +369,7 @@ private async proactivelyRefreshTokenIfNeeded(endpoint: string, ...): Promise<vo
 ```
 
 **NEW:**
+
 ```typescript
 private async proactivelyRefreshTokenIfNeeded(endpoint: string, ...): Promise<void> {
   // Skip Auth-Endpoints UND Background-Endpoints
@@ -363,6 +391,7 @@ private async proactivelyRefreshTokenIfNeeded(endpoint: string, ...): Promise<vo
 ```
 
 **Impact:**
+
 - ✅ Background-Polling macht **KEINEN** Token-Refresh mehr
 - ✅ Nur echte User-API-Calls (z.B. "Department erstellen") triggern Refresh
 - ✅ Token läuft normal ab bei Inaktivität
@@ -374,6 +403,7 @@ private async proactivelyRefreshTokenIfNeeded(endpoint: string, ...): Promise<vo
 **File:** `frontend/src/scripts/utils/session-manager.ts` (Lines 32-51)
 
 **OLD:**
+
 ```typescript
 private setupActivityListeners(): void {
   const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
@@ -391,6 +421,7 @@ private setupActivityListeners(): void {
 ```
 
 **NEW:**
+
 ```typescript
 private setupActivityListeners(): void {
   // Track MANUAL user activity only (mouse, keyboard, touch)
@@ -406,6 +437,7 @@ private setupActivityListeners(): void {
 ```
 
 **Impact:**
+
 - ✅ Nur **echte User-Events** (mouse, keyboard) zählen als Aktivität
 - ✅ Background-Polling resettet **NICHT** mehr lastActivityTime
 - ✅ Inactivity-Timeout funktioniert korrekt (30 Min)
@@ -415,6 +447,7 @@ private setupActivityListeners(): void {
 ## 📊 Bugfix Impact
 
 ### **Before (Broken):**
+
 ```
 Background-Polling alle 10 Min
   └─> fetch('/chat/unread-count')
@@ -427,6 +460,7 @@ ERGEBNIS: User wird NIE ausgeloggt! 🔴
 ```
 
 ### **After (Fixed):**
+
 ```
 Background-Polling alle 10 Min
   └─> fetch('/chat/unread-count')
@@ -451,6 +485,7 @@ ERGEBNIS: User wird korrekt ausgeloggt! ✅
 ## 🎯 The Enhancement
 
 ### **Problem:**
+
 ```
 ⚠️ Sitzung läuft bald ab
 Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab.
@@ -458,12 +493,14 @@ Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab.
 ```
 
 **Issues:**
+
 - ❌ Inline HTML (nicht Design System)
 - ❌ "5 Minuten" hardcoded (nicht akkurat)
 - ❌ Statischer Text (kein Countdown)
 - ❌ User weiß nicht wie viel Zeit wirklich bleibt
 
 ### **Solution:**
+
 ```
 ⚠️ Sitzung läuft bald ab
 Ihre Sitzung läuft in 04:32 aufgrund von Inaktivität ab.
@@ -475,6 +512,7 @@ Ihre Sitzung läuft in 04:32 aufgrund von Inaktivität ab.
 ```
 
 **Improvements:**
+
 - ✅ Design System `.confirm-modal--warning`
 - ✅ **Echtzeit-Countdown** (synchron mit Header-Timer)
 - ✅ **Echte verbleibende Zeit** (von TokenManager)
@@ -487,6 +525,7 @@ Ihre Sitzung läuft in 04:32 aufgrund von Inaktivität ab.
 ### **File:** `frontend/src/scripts/utils/session-manager.ts`
 
 ### **1. Modal Creation**
+
 ```typescript
 private getWarningModalHTML(): string {
   return `
@@ -514,6 +553,7 @@ private getWarningModalHTML(): string {
 ```
 
 **Key Changes:**
+
 - Uses `.confirm-modal--warning` (Design System)
 - `<strong id="session-timer-countdown">` for dynamic time
 - Button order: Cancel left, Primary right (UX best practice)
@@ -521,6 +561,7 @@ private getWarningModalHTML(): string {
 ---
 
 ### **2. Real-Time Countdown**
+
 ```typescript
 private startModalCountdown(): void {
   // Subscribe to TokenManager's timer (fires every second)
@@ -549,6 +590,7 @@ private formatTime(seconds: number): string {
 ```
 
 **How it works:**
+
 1. Subscribes to `tokenManager.onTimerUpdate()` (fires every 1 second)
 2. Gets `remainingSeconds` from TokenManager (same source as header)
 3. Updates modal element with formatted time ("04:32")
@@ -586,6 +628,7 @@ User macht nichts → 00:00 → Logout
 **Location:** `frontend/src/design-system/components/confirm-modal/confirm-modal.css`
 
 **Features:**
+
 - Glassmorphism background (`backdrop-filter: blur(10px)`)
 - Orange/yellow warning color scheme
 - FontAwesome icon support
@@ -594,6 +637,7 @@ User macht nichts → 00:00 → Logout
 - BEM CSS classes
 
 **Storybook:**
+
 ```
 http://localhost:6006/?path=/story/design-system-modals-confirm-modal--warning
 ```
@@ -610,6 +654,7 @@ http://localhost:6006/?path=/story/design-system-modals-confirm-modal--warning
 ### **Problem 1: Modal Timing Ungenau**
 
 **User Testing revealed:**
+
 ```
 Modal sollte erscheinen: Bei 05:00 Token-Zeit
 Modal erschien tatsächlich: Bei 04:31 Token-Zeit
@@ -617,6 +662,7 @@ Verzögerung: ~29 Sekunden
 ```
 
 **Root Cause:**
+
 ```typescript
 // VORHER:
 CHECK_INTERVAL = 60 * 1000  // Check alle 60 Sekunden!
@@ -629,6 +675,7 @@ T=25:30 → checkInactivity() läuft → timeSinceActivity = 25.5 Min → Modal 
 ```
 
 **Lösung: CHECK_INTERVAL auf 10 Sekunden**
+
 ```typescript
 // NACHHER (optimiert durch ESLint):
 CHECK_INTERVAL = 10 * 1000  // Check alle 10 Sekunden
@@ -641,6 +688,7 @@ CHECK_INTERVAL = 10 * 1000  // Check alle 10 Sekunden
 ### **Problem 2: Timer-Ziffern "springen"**
 
 **User Feedback:**
+
 ```
 Timer: 05:11 → 05:10 → 05:09
        ^^^^^    ^^^^^    ^^^^^
@@ -649,11 +697,13 @@ Timer: 05:11 → 05:10 → 05:09
 
 **Root Cause:**
 Proportional font (Arial/Outfit) hat variable Ziffern-Breiten:
+
 - "1" ist schmaler als "0"
 - "5:11" breiter als "5:10"
 - Text springt horizontal
 
 **Lösung: Tabular Numerals**
+
 ```html
 <!-- VORHER -->
 <strong id="session-timer-countdown">05:11</strong>
@@ -663,6 +713,7 @@ Proportional font (Arial/Outfit) hat variable Ziffern-Breiten:
 ```
 
 **Effekt:**
+
 ```
 font-variant-numeric: tabular-nums
 → Alle Ziffern haben gleiche Breite (monospace für Zahlen)
@@ -677,13 +728,14 @@ font-variant-numeric: tabular-nums
 **Challenge:** User berichtete Modal erscheint nicht → keine Diagnose-Informationen
 
 **Lösung: Comprehensive Debug Logs**
+
 ```typescript
 // Alle 10 Sekunden:
 console.log('[SessionManager] Inactivity check:', {
   timeSinceActivityMinutes: 24,
   warningThresholdMinutes: 25,
   warningShown: false,
-  shouldShowWarning: false
+  shouldShowWarning: false,
 });
 
 // Bei Modal-Trigger:
@@ -699,6 +751,7 @@ console.log('[SessionManager] 🕐 Modal timer updated: 28:52');
 ```
 
 **Benefit:**
+
 - Sofortige Diagnose bei Problemen
 - User kann Console-Logs mitschicken
 - Entwickler sieht exakt wo es scheitert
@@ -708,6 +761,7 @@ console.log('[SessionManager] 🕐 Modal timer updated: 28:52');
 ## 📊 Changes Summary
 
 **Files Modified:**
+
 ```
 frontend/src/scripts/utils/session-manager.ts
 ├─ Line 17: CHECK_INTERVAL = 10 * 1000 (statt 60 * 1000)
@@ -724,13 +778,15 @@ frontend/src/scripts/utils/session-manager.ts
 ## ✅ Final Configuration
 
 **Production Values:**
+
 ```typescript
-INACTIVITY_TIMEOUT = 30 * 60 * 1000  // 30 Minuten
-WARNING_TIME = 5 * 60 * 1000         // 5 Minuten (Modal bei 25 Min)
-CHECK_INTERVAL = 10 * 1000           // 10 Sekunden (Präzision)
+INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 Minuten
+WARNING_TIME = 5 * 60 * 1000; // 5 Minuten (Modal bei 25 Min)
+CHECK_INTERVAL = 10 * 1000; // 10 Sekunden (Präzision)
 ```
 
 **Timing Behavior:**
+
 ```
 User inaktiv 25 Minuten → Modal erscheint innerhalb von 10 Sekunden
 Token-Zeit beim Modal: ~05:00 ± 10s (statt vorher 04:31)
@@ -743,6 +799,7 @@ Automatischer Logout: Nach exakt 30 Minuten Inaktivität
 ## 🧪 Testing Results
 
 **Test Scenario:**
+
 ```
 1. Login → Dashboard
 2. Keine Aktivität (Maus, Keyboard, Scroll)
@@ -750,6 +807,7 @@ Automatischer Logout: Nach exakt 30 Minuten Inaktivität
 ```
 
 **Observed Behavior:**
+
 ```
 T=00:00 → [SessionManager] 🚀 Initialized
 T=00:10 → [SessionManager] Inactivity check: { timeSinceActivityMinutes: 0, ... }
@@ -776,6 +834,7 @@ T=01:02 → Timer zeigt: 28:50 (stabil, kein Springen!)
 ## 🎯 Problem
 
 Refresh tokens were stored only in localStorage with no server-side tracking:
+
 - No way to revoke stolen tokens
 - No detection of token theft/replay attacks
 - Single token lifetime = full exposure window
@@ -787,6 +846,7 @@ Implemented industry-standard refresh token rotation per RFC 6749/OWASP guidelin
 ## 🔧 Implementation
 
 ### **1. Database Schema**
+
 **File:** `database/migrations/20251126_add_refresh_tokens_table.sql`
 
 ```sql
@@ -812,31 +872,34 @@ CREATE TABLE refresh_tokens (
 ```
 
 ### **2. Service Layer**
+
 **File:** `backend/src/services/refreshToken.service.ts` (317 lines)
 
-| Function | Purpose |
-|----------|---------|
-| `hashToken(token)` | SHA-256 hashing (NEVER store raw tokens!) |
-| `generateTokenFamily()` | UUID for token chains |
-| `storeRefreshToken(...)` | Store in DB on login/refresh |
-| `findValidRefreshToken(hash)` | Validate token exists & not revoked |
-| `isTokenAlreadyUsed(hash)` | **CRITICAL:** Detect reuse attacks |
-| `markTokenAsUsed(hash, newHash)` | After successful rotation |
-| `revokeTokenFamily(family)` | **SECURITY:** Revoke ALL tokens in chain |
-| `revokeAllUserTokens(userId, tenantId)` | Logout/password change |
+| Function                                | Purpose                                   |
+| --------------------------------------- | ----------------------------------------- |
+| `hashToken(token)`                      | SHA-256 hashing (NEVER store raw tokens!) |
+| `generateTokenFamily()`                 | UUID for token chains                     |
+| `storeRefreshToken(...)`                | Store in DB on login/refresh              |
+| `findValidRefreshToken(hash)`           | Validate token exists & not revoked       |
+| `isTokenAlreadyUsed(hash)`              | **CRITICAL:** Detect reuse attacks        |
+| `markTokenAsUsed(hash, newHash)`        | After successful rotation                 |
+| `revokeTokenFamily(family)`             | **SECURITY:** Revoke ALL tokens in chain  |
+| `revokeAllUserTokens(userId, tenantId)` | Logout/password change                    |
 
 ### **3. Controller Changes**
+
 **File:** `backend/src/routes/v2/auth/auth.controller.ts`
 
-| Endpoint | Changes |
-|----------|---------|
-| `POST /login` | Generates token with `family` claim, stores hash in DB |
-| `POST /refresh` | Validates → Checks reuse → Rotates → Stores new token |
-| `POST /logout` | Revokes ALL user tokens |
+| Endpoint        | Changes                                                |
+| --------------- | ------------------------------------------------------ |
+| `POST /login`   | Generates token with `family` claim, stores hash in DB |
+| `POST /refresh` | Validates → Checks reuse → Rotates → Stores new token  |
+| `POST /logout`  | Revokes ALL user tokens                                |
 
 ## 🔐 Security Features
 
 ### **Token Family Tracking**
+
 ```
 Login #1 → Family: abc-123
   └─> Token A (abc-123)
@@ -848,6 +911,7 @@ Login #2 → Family: xyz-789 (NEW family!)
 ```
 
 ### **Reuse Detection Flow**
+
 ```
 1. User logs in         → Token A created (family: xyz)
 2. User refreshes       → Token A marked used, Token B issued
@@ -859,14 +923,14 @@ Login #2 → Family: xyz-789 (NEW family!)
 
 ## 🧪 Test Results (Verified 2025-11-26)
 
-| Test | Result |
-|------|--------|
-| Login stores token in DB | ✅ `token_hash`, `token_family` created |
-| Refresh rotates tokens | ✅ Old token: `used_at` set, New token created |
-| Same family preserved | ✅ Both tokens share `token_family` UUID |
-| Reuse Detection | ✅ Old token rejected with `TOKEN_REUSE` error |
-| Family Revocation | ✅ ALL tokens: `is_revoked = 1` |
-| Other families unaffected | ✅ Only target family revoked |
+| Test                      | Result                                         |
+| ------------------------- | ---------------------------------------------- |
+| Login stores token in DB  | ✅ `token_hash`, `token_family` created        |
+| Refresh rotates tokens    | ✅ Old token: `used_at` set, New token created |
+| Same family preserved     | ✅ Both tokens share `token_family` UUID       |
+| Reuse Detection           | ✅ Old token rejected with `TOKEN_REUSE` error |
+| Family Revocation         | ✅ ALL tokens: `is_revoked = 1`                |
+| Other families unaffected | ✅ Only target family revoked                  |
 
 ## 🔄 Backwards Compatibility
 
@@ -924,6 +988,7 @@ Login #2 → Family: xyz-789 (NEW family!)
 ## 🔄 Complete Flow Examples
 
 ### **Scenario 1: Active User (Normal Usage)**
+
 ```
 T=0:00  → Login, Token: 30:00
 T=20:00 → User arbeitet (klickt Buttons)
@@ -942,6 +1007,7 @@ T=21:00 → User arbeitet weiter
 ```
 
 ### **Scenario 2: Inactive User (Automatic Logout)**
+
 ```
 T=0:00  → Login, Token: 30:00
 T=10:00 → Background-Polling: GET /chat/unread-count
@@ -960,6 +1026,7 @@ T=30:00 → Token: 00:00
 ```
 
 ### **Scenario 3: User extends session**
+
 ```
 T=25:00 → Warning Modal erscheint
          → Countdown: 05:00 → 04:59 → 04:58
@@ -979,6 +1046,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ## 🧪 Complete Test Suite
 
 ### **Test 1: Token Refresh (Aktiver User)**
+
 ```
 1. Login als Admin
 2. Warte bis Timer < 10:00 zeigt
@@ -990,6 +1058,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 2: Background-Polling (Inaktiver User)**
+
 ```
 1. Login
 2. Sei KOMPLETT inaktiv (keine Klicks)
@@ -1002,6 +1071,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 3: Warning Modal mit Countdown**
+
 ```
 1. Login
 2. Sei KOMPLETT inaktiv (25 Min)
@@ -1013,6 +1083,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 4: Automatic Logout**
+
 ```
 1. Login
 2. Sei KOMPLETT inaktiv (30 Min)
@@ -1024,6 +1095,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 5: Extend Session**
+
 ```
 1. Login
 2. Warte bis Warning Modal (25 Min)
@@ -1035,6 +1107,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 6: Token Rotation (Phase 8)**
+
 ```
 1. Login als Admin
 2. Check DB: SELECT * FROM refresh_tokens WHERE user_id = X;
@@ -1049,6 +1122,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Test 7: Reuse Detection (Phase 8) - SECURITY**
+
 ```
 1. Login, kopiere refreshToken aus localStorage
 2. Warte auf automatischen Refresh (oder trigger manuell)
@@ -1069,17 +1143,20 @@ T=27:00 → User klickt "Aktiv bleiben"
 ### **2025-10-30 - Phase 1: TokenManager Refactoring**
 
 **Added:**
+
 - ✅ TokenManager Singleton-Klasse (`frontend/src/utils/token-manager.ts`)
 - ✅ Observer Pattern für UI-Updates
 - ✅ Zentrale Redirect-Logik
 - ✅ Token Lifecycle Methods
 
 **Changed:**
+
 - ✅ api-client.ts: Nutzt TokenManager statt eigene Logik
 - ✅ unified-navigation.ts: Subscribes zu TokenManager
 - ✅ session-manager.ts: Nutzt TokenManager für logout
 
 **Removed:**
+
 - ❌ Duplicate decodeJWT() implementations
 - ❌ Multiple setInterval timers
 - ❌ Inconsistent refresh logic
@@ -1089,11 +1166,13 @@ T=27:00 → User klickt "Aktiv bleiben"
 ### **2025-10-30 - Phase 2: Heartbeat Bugfix**
 
 **Fixed:**
+
 - 🔴 **CRITICAL:** Background-Polling triggerte automatischen Token-Refresh
 - 🔴 **CRITICAL:** Background-Polling resettete Inactivity-Timer
 - 🔴 **SECURITY:** User wurden nie ausgeloggt bei Inaktivität
 
 **Changed:**
+
 - ✅ api-client.ts (Lines 127-160): Background-Endpoint Blacklist
   - `/chat/unread-count` skippt Token-Refresh
   - `/notifications/stream` skippt Token-Refresh
@@ -1101,6 +1180,7 @@ T=27:00 → User klickt "Aktiv bleiben"
   - Nur manuelle User-Events zählen als Aktivität
 
 **Impact:**
+
 - ✅ Token-Expiry Logout funktioniert jetzt korrekt
 - ✅ Inactivity Timeout (30 Min) funktioniert jetzt korrekt
 - ✅ Keine "ewig offenen Sessions" mehr
@@ -1110,6 +1190,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ### **2025-10-30 - Phase 3: Dynamic Session Modal**
 
 **Added:**
+
 - ✅ Design System `.confirm-modal--warning` Integration
 - ✅ Real-time countdown timer in warning modal
 - ✅ `startModalCountdown()` method
@@ -1117,11 +1198,13 @@ T=27:00 → User klickt "Aktiv bleiben"
 - ✅ `formatTime()` method for MM:SS formatting
 
 **Changed:**
+
 - ✅ Modal HTML: Inline styles → Design System components
 - ✅ Timer: Hardcoded "5 Minuten" → Dynamic countdown ("04:32")
 - ✅ Button order: Primary left → Cancel left, Primary right (UX)
 
 **Improved:**
+
 - ✅ UX: User sees exact remaining time
 - ✅ Consistency: All modals use Design System
 - ✅ Accuracy: Timer synchronized with TokenManager
@@ -1132,21 +1215,23 @@ T=27:00 → User klickt "Aktiv bleiben"
 ## 📊 Final Metrics
 
 ### **Code Changes:**
-| Phase | Files Modified | Lines Added | Lines Removed | Net Change |
-|-------|----------------|-------------|---------------|------------|
-| Phase 1 | 4 | +360 | -140 | +220 |
-| Phase 2 | 2 | +40 | -20 | +20 |
-| Phase 3 | 1 | +80 | -60 | +20 |
-| Phase 4 | 1 | +30 | -10 | +20 |
-| Phase 5 | 5 | +50 | -1544 | -1494 |
-| Phase 6 | 1 | +60 | -20 | +40 |
-| Phase 7 | 2 | +20 | -40 | -20 |
-| Phase 8 | 3 | +400 | -50 | +350 |
-| **TOTAL** | **14** | **+1040** | **-1884** | **-844** |
+
+| Phase     | Files Modified | Lines Added | Lines Removed | Net Change |
+| --------- | -------------- | ----------- | ------------- | ---------- |
+| Phase 1   | 4              | +360        | -140          | +220       |
+| Phase 2   | 2              | +40         | -20           | +20        |
+| Phase 3   | 1              | +80         | -60           | +20        |
+| Phase 4   | 1              | +30         | -10           | +20        |
+| Phase 5   | 5              | +50         | -1544         | -1494      |
+| Phase 6   | 1              | +60         | -20           | +40        |
+| Phase 7   | 2              | +20         | -40           | -20        |
+| Phase 8   | 3              | +400        | -50           | +350       |
+| **TOTAL** | **14**         | **+1040**   | **-1884**     | **-844**   |
 
 **Net Result:** Removed 844 lines while adding OWASP-compliant security!
 
 ### **Build Status:**
+
 ```bash
 ✓ Frontend build successful (8.73s)
 ✓ unified-navigation.js: 101.00 kB │ gzip: 27.17 kB
@@ -1157,26 +1242,17 @@ T=27:00 → User klickt "Aktiv bleiben"
 ### **Files Modified (Complete List):**
 
 **Frontend (Phase 1-4, 6-7):**
+
 1. ✅ **NEW:** `frontend/src/utils/token-manager.ts`
 2. ✅ `frontend/src/utils/api-client.ts`
 3. ✅ `frontend/src/scripts/components/unified-navigation.ts`
 4. ✅ `frontend/src/scripts/utils/session-manager.ts`
 
-**Backend (Phase 5, 8):**
-5. ✅ **NEW:** `backend/src/config/token.config.ts` (Phase 5)
-6. ✅ **NEW:** `backend/src/services/refreshToken.service.ts` (Phase 8)
-7. ✅ `backend/src/routes/v2/auth/auth.controller.ts` (Phase 5, 8)
-8. ✅ `backend/src/routes/v2/role-switch/role-switch.service.ts` (Phase 5)
-9. ❌ **DELETED:** `backend/src/auth.ts` (Phase 5 - V1 cleanup)
-10. ❌ **DELETED:** `backend/src/services/auth.service.ts` (Phase 5 - V1 cleanup)
-11. ❌ **DELETED:** `backend/src/controllers/auth.controller.ts` (Phase 5 - V1 cleanup)
+**Backend (Phase 5, 8):** 5. ✅ **NEW:** `backend/src/config/token.config.ts` (Phase 5) 6. ✅ **NEW:** `backend/src/services/refreshToken.service.ts` (Phase 8) 7. ✅ `backend/src/routes/v2/auth/auth.controller.ts` (Phase 5, 8) 8. ✅ `backend/src/routes/v2/role-switch/role-switch.service.ts` (Phase 5) 9. ❌ **DELETED:** `backend/src/auth.ts` (Phase 5 - V1 cleanup) 10. ❌ **DELETED:** `backend/src/services/auth.service.ts` (Phase 5 - V1 cleanup) 11. ❌ **DELETED:** `backend/src/controllers/auth.controller.ts` (Phase 5 - V1 cleanup)
 
-**Database (Phase 8):**
-12. ✅ **NEW:** `database/migrations/20251126_add_refresh_tokens_table.sql`
+**Database (Phase 8):** 12. ✅ **NEW:** `database/migrations/20251126_add_refresh_tokens_table.sql`
 
-**Documentation:**
-13. ✅ `docs/TOKEN-MANAGER-REFACTORING.md` (this file)
-14. ✅ `docs/AUTH-TOKEN-REFACTOR-PLAN.md` (Phase 8 planning)
+**Documentation:** 13. ✅ `docs/TOKEN-MANAGER-REFACTORING.md` (this file) 14. ✅ `docs/AUTH-TOKEN-REFACTOR-PLAN.md` (Phase 8 planning)
 
 ---
 
@@ -1185,44 +1261,52 @@ T=27:00 → User klickt "Aktiv bleiben"
 ### **What We Achieved:**
 
 **Phase 1: Foundation**
+
 - ✅ Eliminated 500+ lines of duplicate code
 - ✅ Centralized token management in TokenManager
 - ✅ Implemented Observer Pattern for loose coupling
 - ✅ Clean, maintainable architecture
 
 **Phase 2: Security**
+
 - ✅ Fixed critical "heartbeat" bug
 - ✅ Users are now correctly logged out when inactive
 - ✅ No more eternal sessions
 - ✅ Proper separation of background vs. user activity
 
 **Phase 3: UX**
+
 - ✅ Professional Design System integration
 - ✅ Real-time countdown in warning modal
 - ✅ Accurate time display (not hardcoded)
 - ✅ Synchronized timers across application
 
 **Phase 4: Timing**
+
 - ✅ CHECK_INTERVAL: 60s → 10s (6x präziser)
 - ✅ Tabular numerals für stabilen Timer
 - ✅ Comprehensive Debug-Logs
 
 **Phase 5: Backend Security**
+
 - ✅ Central token config (Single Source of Truth)
 - ✅ CRITICAL FIX: Role-switch 24h → 30m
 - ✅ 1544 lines V1 dead code removed
 
 **Phase 6: Clock Skew**
+
 - ✅ Client-time-only calculation
 - ✅ Timer shows EXACTLY 30:00 (not 30:03)
 - ✅ `tokenReceivedAt` property added
 
 **Phase 7: Timer UX**
+
 - ✅ Always 1-second interval (smooth countdown)
 - ✅ Removed browser minimize/maximize refresh bug
 - ✅ Refresh only via API calls or "Stay Active"
 
 **Phase 8: Token Rotation (OWASP Best Practice)**
+
 - ✅ Refresh token rotation on every refresh
 - ✅ Token family tracking (UUID chains)
 - ✅ Reuse detection → entire family revoked
@@ -1230,6 +1314,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 - ✅ Database-backed revocation
 
 ### **Design Principles Applied:**
+
 - ✅ **DRY** - Don't Repeat Yourself
 - ✅ **SoC** - Separation of Concerns
 - ✅ **KISS** - Keep It Simple, Stupid
@@ -1238,6 +1323,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 - ✅ **Defense in Depth** - Multiple security layers
 
 ### **Quality Metrics:**
+
 - ✅ **Type-Safe:** Full TypeScript with strict mode
 - ✅ **Testable:** Clear separation, mockable dependencies
 - ✅ **Maintainable:** Single source of truth
@@ -1249,6 +1335,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 ## 🚀 Future Enhancements
 
 ### **Potential Improvements:**
+
 1. **Testing:** Unit tests für TokenManager
 2. **Monitoring:** Token-Refresh-Metriken loggen
 3. **UX:** Toast-Notification bei Refresh ("Session verlängert")
@@ -1285,6 +1372,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 → See detailed documentation in [Phase 8 Section](#phase-8-refresh-token-rotation-2025-11-26) above.
 
 **Summary:**
+
 - ✅ Database-backed token rotation per RFC 6749/OWASP
 - ✅ Token family tracking with UUID chains
 - ✅ Reuse detection triggers family-wide revocation
@@ -1432,6 +1520,7 @@ sessionManager.updateActivity()
 ```
 
 **User Observation Explained:**
+
 - Timer showed "30:02" after login (not exactly 30:00)
 - THIS IS NORMAL: 2 seconds = network + processing latency (0.11% deviation)
 - JWT generates EXACTLY 1800 seconds ✅
@@ -1440,6 +1529,7 @@ sessionManager.updateActivity()
 ---
 
 ### Phase 4 (2025-10-30 - Final Polish)
+
 ```diff
 + CHECK_INTERVAL: 60s → 10s (6x präziser)
 + font-variant-numeric: tabular-nums (stabiler Timer)
@@ -1450,6 +1540,7 @@ sessionManager.updateActivity()
 ```
 
 ### Phase 3 (2025-10-30)
+
 ```diff
 + Dynamic Session Modal mit Real-Time Countdown
 + Design System Integration (.confirm-modal--warning)
@@ -1458,6 +1549,7 @@ sessionManager.updateActivity()
 ```
 
 ### Phase 2 (2025-10-30)
+
 ```diff
 + Heartbeat Bugfix (Background-Polling Blacklist)
 + SessionManager: window.fetch patching removed
@@ -1465,6 +1557,7 @@ sessionManager.updateActivity()
 ```
 
 ### Phase 1 (2025-10-30)
+
 ```diff
 + TokenManager Singleton (360 lines)
 - 500+ lines Code-Duplizierung eliminiert

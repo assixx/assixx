@@ -2,16 +2,35 @@
 /**
  * Calendar API Module
  * Handles all HTTP requests to the backend API (v2 only)
+ *
+ * Updated for @event-calendar/core (Phase 0 Migration)
  */
 
-import type { EventInput } from '@fullcalendar/core';
 import type { User } from '../../types/api.types';
+import type { ApiResponse, ApiV2Response, CalendarEvent, Department, Team, UserData } from './types';
 import { canViewAllEmployees } from '../../utils/auth-helpers';
 import { getAuthToken } from '../auth/index';
 import { showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { ApiClient } from '../../utils/api-client';
 import { state } from './state';
-import type { ApiResponse, ApiV2Response, CalendarEvent, Department, Team, UserData } from './types';
+
+/**
+ * EventInput type for event-calendar/core
+ * Compatible with both EventCalendar and EventCalendar event formats
+ */
+export interface EventInput {
+  id: string;
+  title: string;
+  start: string | Date;
+  end?: string | Date;
+  allDay?: boolean;
+  color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  classNames?: string[];
+  extendedProps?: Record<string, unknown>;
+}
 
 // ============================================================================
 // API Response Extraction & Normalization
@@ -186,7 +205,7 @@ function buildEventQueryParams(fetchInfo: {
   end: Date;
   startStr: string;
   endStr: string;
-  timeZone: string;
+  timeZone?: string;
 }): URLSearchParams {
   const params = new URLSearchParams({
     start: fetchInfo.startStr,
@@ -226,8 +245,8 @@ export async function fetchUserData(): Promise<UserData> {
 // ============================================================================
 
 /**
- * Format event for FullCalendar display
- * Converts CalendarEvent to FullCalendar's EventInput format
+ * Format event for EventCalendar display
+ * Converts CalendarEvent to EventCalendar's EventInput format
  */
 function formatEventForCalendar(event: CalendarEvent): EventInput | null {
   // Color based on organization level - ALWAYS use org-level colors to match legend
@@ -274,7 +293,7 @@ function formatEventForCalendar(event: CalendarEvent): EventInput | null {
     backgroundColor: color,
     borderColor: color,
     textColor: '#ffffff',
-    classNames: [`fc-event-${event.org_level}`], // Add org_level as class
+    classNames: [`ec-event-${event.org_level}`], // Add org_level as class
     extendedProps: {
       description: event.description,
       location: event.location,
@@ -298,7 +317,7 @@ async function handlePermissionError(fetchInfo: {
   end: Date;
   startStr: string;
   endStr: string;
-  timeZone: string;
+  timeZone?: string;
 }): Promise<EventInput[]> {
   console.error('[CALENDAR API] Permission denied for filter:', state.currentFilter);
   state.currentFilter = 'personal';
@@ -310,14 +329,14 @@ async function handlePermissionError(fetchInfo: {
 
 /**
  * Load calendar events with filters and search
- * Returns FullCalendar-compatible event objects
+ * Returns EventCalendar-compatible event objects
  */
 export async function loadCalendarEvents(fetchInfo: {
   start: Date;
   end: Date;
   startStr: string;
   endStr: string;
-  timeZone: string;
+  timeZone?: string;
 }): Promise<EventInput[]> {
   try {
     const token = getAuthToken();
@@ -368,7 +387,7 @@ export async function loadCalendarEvents(fetchInfo: {
 
 /**
  * Load upcoming events for dashboard sidebar
- * Returns raw CalendarEvent objects (not FullCalendar format)
+ * Returns raw CalendarEvent objects (not EventCalendar format)
  */
 export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
   const token = getAuthToken();
@@ -425,43 +444,8 @@ export async function fetchEventData(eventId: number): Promise<CalendarEvent> {
 }
 
 // ============================================================================
-// Event Actions (Respond, Delete)
+// Event Actions (Delete)
 // ============================================================================
-
-/**
- * Respond to event invitation
- * Updates user's response status (accepted, declined, tentative)
- */
-export async function respondToEvent(eventId: number, response: string): Promise<boolean> {
-  try {
-    const token = getAuthToken();
-    if (token === null || token === '') return false;
-
-    const apiUrl = `/api/v2/calendar/events/${eventId}/attendees/response`;
-
-    const apiResponse = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ response }),
-    });
-
-    if (apiResponse.ok) {
-      showSuccessAlert('Ihre Antwort wurde gespeichert.');
-      return true;
-    } else {
-      const error = (await apiResponse.json()) as { message?: string };
-      showErrorAlert(error.message ?? 'Fehler beim Speichern der Antwort');
-      return false;
-    }
-  } catch (error: unknown) {
-    console.error('Error responding to event:', error);
-    showErrorAlert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-    return false;
-  }
-}
 
 /**
  * Delete event by ID
@@ -598,18 +582,18 @@ export async function saveEvent(params: EventSaveParams, eventId?: number): Prom
     });
 
     if (response.ok) {
-      // API v2 Response Format: { success: true, data: { event: { eventId: number } }, meta: {...} }
+      // API v2 Response Format: { success: true, data: { id: number, title: string, ... }, timestamp: "..." }
       const result = (await response.json()) as {
         success: boolean;
-        data?: { event?: { eventId?: number } };
+        data?: { id?: number };
         message?: string;
       };
       console.info('[CALENDAR API] Save successful:', result);
       const message = eventId !== undefined ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!';
       showSuccessAlert(message);
 
-      // Extract event ID from nested response structure
-      return result.data?.event?.eventId ?? eventId ?? null;
+      // Extract event ID from response - data IS the event object directly
+      return result.data?.id ?? eventId ?? null;
     } else {
       const error = (await response.json()) as {
         success: boolean;

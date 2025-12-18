@@ -10,34 +10,34 @@ Multi-Tenant SaaS platform for industrial companies.
 
 ### Backend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Node.js | 24.x | Runtime |
-| TypeScript | 5.x | Language |
-| Express.js | 4.x | Web framework |
-| PostgreSQL | 17.x | Database |
-| Redis | 7.x | Sessions, rate limiting |
-| Socket.io | 4.x | WebSocket |
-| Zod | 3.x | Validation |
-| pnpm | 10.x | Package manager |
+| Technology | Version | Purpose                 |
+| ---------- | ------- | ----------------------- |
+| Node.js    | 24.x    | Runtime                 |
+| TypeScript | 5.x     | Language                |
+| Express.js | 4.x     | Web framework           |
+| PostgreSQL | 17.x    | Database                |
+| Redis      | 7.x     | Sessions, rate limiting |
+| Socket.io  | 4.x     | WebSocket               |
+| Zod        | 3.x     | Validation              |
+| pnpm       | 10.x    | Package manager         |
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| TypeScript | 5.x | Language |
-| Vite | 7.x | Build tool |
-| Tailwind CSS | 4.x | Styling |
-| FullCalendar | 6.x | Calendar |
-| Socket.io Client | 4.x | WebSocket |
+| Technology       | Version | Purpose    |
+| ---------------- | ------- | ---------- |
+| TypeScript       | 5.x     | Language   |
+| Vite             | 7.x     | Build tool |
+| Tailwind CSS     | 4.x     | Styling    |
+| FullCalendar     | 6.x     | Calendar   |
+| Socket.io Client | 4.x     | WebSocket  |
 
 ### Infrastructure
 
-| Technology | Purpose |
-|------------|---------|
-| Docker | Containerization |
-| Docker Compose | Orchestration |
-| Nginx | Reverse proxy (production) |
+| Technology     | Purpose                    |
+| -------------- | -------------------------- |
+| Docker         | Containerization           |
+| Docker Compose | Orchestration              |
+| Nginx          | Reverse proxy (production) |
 
 ---
 
@@ -106,10 +106,10 @@ CREATE POLICY tenant_isolation ON users
 
 ### Database Users
 
-| User | Purpose | Access |
-|------|---------|--------|
-| `assixx_user` | Admin/migrations | Full access |
-| `app_user` | Application | RLS enforced |
+| User          | Purpose          | Access       |
+| ------------- | ---------------- | ------------ |
+| `assixx_user` | Admin/migrations | Full access  |
+| `app_user`    | Application      | RLS enforced |
 
 ---
 
@@ -130,20 +130,20 @@ CREATE POLICY tenant_isolation ON users
 
 ### Modules
 
-| Module | Endpoint | Description |
-|--------|----------|-------------|
-| Auth | `/api/v2/auth` | Login, logout, refresh |
-| Users | `/api/v2/users` | User management |
-| Departments | `/api/v2/departments` | Department CRUD |
-| Teams | `/api/v2/teams` | Team management |
-| Documents | `/api/v2/documents` | Document storage |
-| Calendar | `/api/v2/calendar` | Events, scheduling |
-| Chat | `/api/v2/chat` | Real-time messaging |
-| Blackboard | `/api/v2/blackboard` | Announcements |
-| KVP | `/api/v2/kvp` | Suggestions system |
-| Shifts | `/api/v2/shifts` | Shift planning |
-| Surveys | `/api/v2/surveys` | Survey system |
-| Notifications | `/api/v2/notifications` | Push, SSE |
+| Module        | Endpoint                | Description            |
+| ------------- | ----------------------- | ---------------------- |
+| Auth          | `/api/v2/auth`          | Login, logout, refresh |
+| Users         | `/api/v2/users`         | User management        |
+| Departments   | `/api/v2/departments`   | Department CRUD        |
+| Teams         | `/api/v2/teams`         | Team management        |
+| Documents     | `/api/v2/documents`     | Document storage       |
+| Calendar      | `/api/v2/calendar`      | Events, scheduling     |
+| Chat          | `/api/v2/chat`          | Real-time messaging    |
+| Blackboard    | `/api/v2/blackboard`    | Announcements          |
+| KVP           | `/api/v2/kvp`           | Suggestions system     |
+| Shifts        | `/api/v2/shifts`        | Shift planning         |
+| Surveys       | `/api/v2/surveys`       | Survey system          |
+| Notifications | `/api/v2/notifications` | Push, SSE              |
 
 ---
 
@@ -239,11 +239,13 @@ Assixx/
 ### Tables: 119 total
 
 **System tables (no RLS):**
+
 - `tenants` - Tenant registry
 - `features` - Feature definitions
 - `plans` - Subscription plans
 
 **Tenant tables (RLS enabled, 95 tables):**
+
 - `users` - User accounts
 - `departments` - Organization structure
 - `teams` - Team assignments
@@ -258,13 +260,13 @@ Assixx/
 
 ### Key Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | SERIAL | Primary key |
-| `tenant_id` | INTEGER | Tenant reference |
-| `is_active` | SMALLINT | 0=inactive, 1=active, 3=archived, 4=deleted |
-| `created_at` | TIMESTAMPTZ | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | Last modification |
+| Field        | Type        | Description                                 |
+| ------------ | ----------- | ------------------------------------------- |
+| `id`         | SERIAL      | Primary key                                 |
+| `tenant_id`  | INTEGER     | Tenant reference                            |
+| `is_active`  | SMALLINT    | 0=inactive, 1=active, 3=archived, 4=deleted |
+| `created_at` | TIMESTAMPTZ | Creation timestamp                          |
+| `updated_at` | TIMESTAMPTZ | Last modification                           |
 
 ---
 
@@ -283,14 +285,14 @@ Assixx/
 
 ### Implemented Measures
 
-| Measure | Implementation |
-|---------|----------------|
-| SQL Injection | Parameterized queries |
-| XSS | Input sanitization, CSP headers |
-| CSRF | SameSite cookies |
-| Tenant Isolation | PostgreSQL RLS |
-| Rate Limiting | Redis-based per IP/user |
-| Password Security | bcrypt (cost 12) |
+| Measure           | Implementation                  |
+| ----------------- | ------------------------------- |
+| SQL Injection     | Parameterized queries           |
+| XSS               | Input sanitization, CSP headers |
+| CSRF              | SameSite cookies                |
+| Tenant Isolation  | PostgreSQL RLS                  |
+| Rate Limiting     | Redis-based per IP/user         |
+| Password Security | bcrypt (cost 12)                |
 
 ---
 
@@ -298,11 +300,11 @@ Assixx/
 
 ### Containers
 
-| Container | Image | Port | Purpose |
-|-----------|-------|------|---------|
-| assixx-backend | Node 24 Alpine | 3000 | API + static files |
-| assixx-postgres | PostgreSQL 17 | 5432 | Database |
-| assixx-redis | Redis 7 Alpine | 6379 | Sessions, cache |
+| Container       | Image          | Port | Purpose            |
+| --------------- | -------------- | ---- | ------------------ |
+| assixx-backend  | Node 24 Alpine | 3000 | API + static files |
+| assixx-postgres | PostgreSQL 17  | 5432 | Database           |
+| assixx-redis    | Redis 7 Alpine | 6379 | Sessions, cache    |
 
 ### Development
 
@@ -317,9 +319,9 @@ curl http://localhost:3000/health
 
 ```yaml
 volumes:
-  postgres_data:    # Database files
-  redis_data:       # Redis persistence
-  uploads:          # User uploads
+  postgres_data: # Database files
+  redis_data: # Redis persistence
+  uploads: # User uploads
 ```
 
 ---
@@ -337,6 +339,7 @@ volumes:
 ### Database Indexes
 
 All foreign keys and commonly queried fields are indexed:
+
 - `tenant_id` on all tenant tables
 - `user_id` on user-related tables
 - `created_at` for time-based queries

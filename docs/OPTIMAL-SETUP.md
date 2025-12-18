@@ -1,29 +1,64 @@
 # ASSIXX OPTIMAL SETUP 2025
 
 > **Production-Ready Enterprise SaaS Configuration**
-> Last Updated: December 2025
-> Status: TARGET STATE (Before Production Launch)
+> Last Updated: 18. December 2025
+> Status: TARGET STATE (Phase 0-2 ✅ COMPLETE, Phase 3 Pending)
+
+---
+
+## 🟢 BACKEND + CALENDAR MIGRATION: COMPLETE 🟢
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ✅ PHASE 0: @event-calendar/core (FullCalendar ersetzt)        │
+│  ✅ PHASE 1: NESTJS CODE MIGRATION: COMPLETE                    │
+│  ✅ PHASE 1.5: FASTIFY ADAPTER: COMPLETE                        │
+│  ✅ PHASE 2: VITEST MIGRATION: COMPLETE                         │
+│                                                                 │
+│  Completed: 18. Dezember 2025                                  │
+│                                                                 │
+│  ✅ WAS ERREICHT WURDE:                                         │
+│     - FullCalendar → @event-calendar/core v3.8.1              │
+│     - 300/300 Endpoints migriert (100%)                        │
+│     - 26/26 Services Native NestJS                             │
+│     - 339 TypeScript Files in /nest/                           │
+│     - routes/v2/ komplett gelöscht (~166 Dateien)              │
+│     - middleware/ komplett gelöscht (Dead Code)                │
+│     - Express Entry-Points gelöscht (app.ts, server.ts)        │
+│     - @nestjs/platform-fastify + Fastify v5.6.2                │
+│     - Express Dependencies komplett entfernt (14 Packages)     │
+│     - Vitest 4.0.16 (Jest komplett entfernt)                   │
+│                                                                 │
+│  📄 DETAILS: docs/NESTJS-MIGRATION-PLAN.md                      │
+│  📄 FASTIFY: docs/FASTIFY-PLAN.md                               │
+│                                                                 │
+│  NÄCHSTE SCHRITTE:                                              │
+│     - Phase 3: SvelteKit Migration                             │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-| Layer | IST (Current) | SOLL (Optimal) | Verdict |
-|-------|---------------|----------------|---------|
-| **Runtime** | Node.js 24.11.1 | Node.js 24 LTS | KEEP |
-| **Package Manager** | pnpm 10.24.0 | pnpm 10.x | KEEP |
-| **Backend Framework** | Express 5.2.1 | **NestJS 11 + Fastify** | CHANGE |
-| **Frontend Framework** | Vanilla TypeScript | **SvelteKit 2 + Svelte 5** | CHANGE |
-| **Build Tool** | Vite 7.2.6 | Vite 7.x (SvelteKit native) | KEEP |
-| **CSS Framework** | Tailwind 4.1.17 | Tailwind 4.x | KEEP |
-| **Database** | PostgreSQL 17 + RLS | PostgreSQL 17 + RLS | KEEP |
-| **Cache** | Redis 7 | Redis 7 | KEEP |
-| **Validation** | Zod 4.1.13 | Zod 4.x + nestjs-zod | KEEP |
-| **Testing** | Jest 30.2.0 | **Vitest 3.x** | CHANGE |
-| **TypeScript** | 5.9.3 | 5.9.x | KEEP |
-| **ORM** | Raw SQL (pg) | Raw SQL (pg) | KEEP |
+| Layer                  | IST (Current)       | SOLL (Optimal)              | Verdict |
+| ---------------------- | ------------------- | --------------------------- | ------- |
+| **Runtime**            | Node.js 24.11.1     | Node.js 24 LTS              | ✅ KEEP |
+| **Package Manager**    | pnpm 10.24.0        | pnpm 10.x                   | ✅ KEEP |
+| **Backend Framework**  | **NestJS 11 + Fastify** | NestJS 11 + Fastify     | ✅ DONE |
+| **Frontend Framework** | Vanilla TypeScript  | **SvelteKit 2 + Svelte 5**  | CHANGE  |
+| **Build Tool**         | Vite 7.2.6          | Vite 7.x (SvelteKit native) | ✅ KEEP |
+| **CSS Framework**      | Tailwind 4.1.17     | Tailwind 4.x                | ✅ KEEP |
+| **Database**           | PostgreSQL 17 + RLS | PostgreSQL 17 + RLS         | ✅ KEEP |
+| **Cache**              | Redis 7             | Redis 7                     | ✅ KEEP |
+| **Validation**         | Zod 4.x + nestjs-zod| Zod 4.x + nestjs-zod        | ✅ KEEP |
+| **Testing**            | **Vitest 4.0.16**   | Vitest 4.x                  | ✅ DONE |
+| **TypeScript**         | 5.9.3               | 5.9.x                       | ✅ KEEP |
+| **ORM**                | Raw SQL (pg)        | Raw SQL (pg)                | ✅ KEEP |
 
-**3 Changes Required. 9 Things Already Optimal.**
+**1 Change Remaining (SvelteKit Frontend). 3 Changes COMPLETED (NestJS, Fastify, Vitest). 9 Things Already Optimal.**
+
+> 📄 **NestJS Migration Details:** [docs/NESTJS-MIGRATION-PLAN.md](./NESTJS-MIGRATION-PLAN.md)
 
 ---
 
@@ -49,17 +84,17 @@ Package Manager:
 
 ```yaml
 Backend Framework:
-  name: Express.js
-  version: 5.2.1
-  status: Current (Released October 2024)
-  problems:
-    - No native TypeScript types
-    - Manual Zod integration required
-    - No RPC capability
-    - Middleware boilerplate
-    - No architectural enforcement
-    - Hard to scale to 100 developers
-  verdict: REPLACE
+  name: NestJS
+  version: 11.x
+  status: ✅ MIGRATED (18. Dezember 2025)
+  migration_details: docs/NESTJS-MIGRATION-PLAN.md
+  achievements:
+    - 300/300 Endpoints migriert
+    - 26/26 Services Native NestJS
+    - 339 TypeScript Files
+    - Express Entry-Points gelöscht
+    - middleware/ gelöscht (Dead Code)
+  verdict: ✅ DONE
 
 API Architecture:
   style: REST
@@ -172,7 +207,7 @@ CI/CD:
 ```yaml
 Runtime:
   engine: Node.js
-  version: ">=24.11.1"
+  version: '>=24.11.1'
   reason: |
     - LTS support until April 2028
     - V8 13.6 engine
@@ -182,7 +217,7 @@ Runtime:
 
 Package Manager:
   tool: pnpm
-  version: ">=10.24.0"
+  version: '>=10.24.0'
   reason: |
     - Fastest package manager
     - Strict dependency management
@@ -228,14 +263,15 @@ onlyBuiltDependencies:
   - fsevents
 ```
 
-| Setting | Config File | Grund |
-|---------|-------------|-------|
-| `public-hoist-pattern` | **`.npmrc`** | Bug #9413 |
-| `shamefully-hoist` | **`.npmrc`** | Bug #9413 |
-| `packages` | `pnpm-workspace.yaml` | Workspace-Definition |
-| `onlyBuiltDependencies` | `pnpm-workspace.yaml` | Build-Settings |
+| Setting                 | Config File           | Grund                |
+| ----------------------- | --------------------- | -------------------- |
+| `public-hoist-pattern`  | **`.npmrc`**          | Bug #9413            |
+| `shamefully-hoist`      | **`.npmrc`**          | Bug #9413            |
+| `packages`              | `pnpm-workspace.yaml` | Workspace-Definition |
+| `onlyBuiltDependencies` | `pnpm-workspace.yaml` | Build-Settings       |
 
 **Warum nicht `shamefully-hoist=true`?**
+
 - Hoisted ALLE Packages (unsicher, kann Konflikte verursachen)
 - `public-hoist-pattern` ist gezielter und sicherer
 - Nur für spezifische problematische Packages nutzen
@@ -295,17 +331,15 @@ Why NOT Express:
 
 ```typescript
 // backend/src/main.ts - OPTIMAL SETUP
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 
+import { AppModule } from './app.module';
+
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: true })
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: true }));
 
   // Global Zod validation
   app.useGlobalPipes(new ZodValidationPipe());
@@ -686,7 +720,7 @@ ALTER TABLE users FORCE ROW LEVEL SECURITY;
 ```yaml
 Validation:
   library: Zod
-  version: ">=4.1.13"
+  version: '>=4.1.13'
   integration: nestjs-zod
 
 Best Practice:
@@ -718,6 +752,7 @@ export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
 // backend/src/modules/users/users.dto.ts
 // NestJS DTO wrapper - automatic validation!
 import { createZodDto } from 'nestjs-zod';
+
 import { CreateUserSchema, UpdateUserSchema } from './users.validation';
 
 export class CreateUserDto extends createZodDto(CreateUserSchema) {}
@@ -731,8 +766,8 @@ export class UpdateUserDto extends createZodDto(UpdateUserSchema) {}
 ```yaml
 Frontend Framework:
   name: SvelteKit
-  version: ">=2.20.0"
-  svelte: ">=5.x"
+  version: '>=2.20.0'
+  svelte: '>=5.x'
   decision: SVELTEKIT (not Next.js, not Nuxt, not Vanilla)
 
 Why SvelteKit:
@@ -761,8 +796,8 @@ Why NOT keep Vanilla TS:
 
 ```yaml
 Type-Safe API:
-  backend: "@nexica/nestjs-trpc"  # EMPFOHLEN (besser als manuell!)
-  frontend: "@trpc/client"
+  backend: '@nexica/nestjs-trpc' # EMPFOHLEN (besser als manuell!)
+  frontend: '@trpc/client'
   benefit: Full type safety like Hono RPC!
   source: https://www.nestjs-trpc.io/
 ```
@@ -780,6 +815,7 @@ pnpm add @trpc/client
 **NestJS tRPC Setup mit @nexica/nestjs-trpc:**
 
 > **Warum @nexica/nestjs-trpc statt manuell?**
+>
 > - Automatische Schema-Generierung (tRPC v11)
 > - Native Decorators: `@Router()`, `@Query()`, `@Mutation()`
 > - Fastify + WebSocket Support built-in
@@ -839,10 +875,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { TRPCModule } from '@nexica/nestjs-trpc';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter()
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
   // tRPC Endpoint registrieren
   const trpcModule = app.get(TRPCModule);
@@ -858,7 +891,10 @@ bootstrap();
 ```typescript
 // frontend/src/lib/trpc/client.ts
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import type { AppRouter } from '../../../backend/trpc-schema'; // Auto-generiert!
+
+import type { AppRouter } from '../../../backend/trpc-schema';
+
+// Auto-generiert!
 
 export const trpc = createTRPCClient<AppRouter>({
   links: [
@@ -934,11 +970,11 @@ export type AppRouter = TrpcRouter['appRouter'];
 
 **Aktuelle Assixx Dependencies - Status:**
 
-| Library | Aktuell | Svelte 5? | Aktion |
-|---------|---------|-----------|--------|
-| @fullcalendar/* | 6.1.19 | ❌ **NEIN** | → @event-calendar/core |
-| @zxcvbn-ts/* | 3.0.4 | ✅ Framework-agnostic | Behalten |
-| dompurify | 3.3.0 | ✅ Framework-agnostic | Behalten |
+| Library          | Aktuell | Svelte 5?             | Aktion                 |
+| ---------------- | ------- | --------------------- | ---------------------- |
+| @fullcalendar/\* | 6.1.19  | ❌ **NEIN**           | → @event-calendar/core |
+| @zxcvbn-ts/\*    | 3.0.4   | ✅ Framework-agnostic | Behalten               |
+| dompurify        | 3.3.0   | ✅ Framework-agnostic | Behalten               |
 
 **KRITISCH: FullCalendar Migration erforderlich!**
 
@@ -950,7 +986,7 @@ Problem:
   risk: 🔴 KRITISCH
 
 Lösung:
-  library: "@event-calendar/core"
+  library: '@event-calendar/core'
   repo: https://github.com/vkurko/calendar
   svelte5: ✅ Native Support mit Runes
   license: MIT (alles frei, keine Premium-Features)
@@ -993,31 +1029,31 @@ Lösung:
 
 ```typescript
 // svelte.config.js - OPTIMAL SETUP
-import adapter from "@sveltejs/adapter-node";
-import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter({
-      out: "build",
+      out: 'build',
       precompress: true, // Brotli + Gzip
     }),
     alias: {
-      "@/*": "./src/*",
-      "@components/*": "./src/lib/components/*",
-      "@styles/*": "./src/styles/*",
+      '@/*': './src/*',
+      '@components/*': './src/lib/components/*',
+      '@styles/*': './src/styles/*',
     },
     csrf: {
       checkOrigin: true,
     },
     csp: {
-      mode: "auto",
+      mode: 'auto',
       directives: {
-        "default-src": ["self"],
-        "script-src": ["self"],
-        "style-src": ["self", "unsafe-inline"],
+        'default-src': ['self'],
+        'script-src': ['self'],
+        'style-src': ['self', 'unsafe-inline'],
       },
     },
   },
@@ -1031,7 +1067,7 @@ export default config;
 ```yaml
 Build Tool:
   name: Vite
-  version: ">=7.2.0"
+  version: '>=7.2.0'
   status: SvelteKit uses Vite natively
 
 Configuration:
@@ -1045,7 +1081,7 @@ Configuration:
 ```yaml
 CSS Framework:
   name: Tailwind CSS
-  version: ">=4.1.0"
+  version: '>=4.1.0'
 
 v4 Best Practices:
   - Use @import "tailwindcss" (single import)
@@ -1064,7 +1100,7 @@ Design System Migration:
 ```yaml
 Testing Framework:
   name: Vitest
-  version: ">=3.x"
+  version: '>=3.x'
   decision: VITEST (not Jest)
 
 Why Vitest:
@@ -1086,22 +1122,22 @@ Migration Effort:
 
 ```typescript
 // vitest.config.ts - OPTIMAL SETUP
-import { defineConfig } from "vitest/config";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [svelte({ hot: !process.env.VITEST })],
   test: {
     globals: true,
-    environment: "jsdom",
-    include: ["src/**/*.{test,spec}.{js,ts}"],
+    environment: 'jsdom',
+    include: ['src/**/*.{test,spec}.{js,ts}'],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "html", "lcov"],
-      exclude: ["node_modules", "dist", "**/*.d.ts"],
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      exclude: ['node_modules', 'dist', '**/*.d.ts'],
     },
     // Performance
-    pool: "threads",
+    pool: 'threads',
     poolOptions: {
       threads: {
         singleThread: false,
@@ -1115,7 +1151,7 @@ export default defineConfig({
 
 ```yaml
 TypeScript:
-  version: ">=5.9.0"
+  version: '>=5.9.0'
   strictness: Maximum
 
 Your current config is OPTIMAL:
@@ -1246,37 +1282,37 @@ Pipelines:
 
 ### Production Dependencies
 
-| Package | Current | Target | Status |
-|---------|---------|--------|--------|
-| node | 24.11.1 | >=24.11.1 | KEEP |
-| pnpm | 10.24.0 | >=10.24.0 | KEEP |
-| typescript | 5.9.3 | >=5.9.0 | KEEP |
-| @nestjs/core | - | >=11.0.0 | NEW |
-| @nestjs/platform-fastify | - | >=11.0.0 | NEW |
-| @nestjs/websockets | - | >=11.0.0 | NEW |
-| @nestjs/bull | - | >=11.0.0 | NEW |
-| @trpc/server | - | >=11.0.0 | NEW |
-| nestjs-zod | - | >=4.0.0 | NEW |
-| fastify | - | >=5.0.0 | NEW |
-| zod | 4.1.13 | >=4.1.0 | KEEP |
-| pg | 8.16.3 | >=8.16.0 | KEEP |
-| redis | 5.10.0 | >=5.10.0 | KEEP |
-| @sveltejs/kit | - | >=2.20.0 | NEW |
-| svelte | - | >=5.0.0 | NEW |
-| @trpc/client | - | >=11.0.0 | NEW |
-| vite | 7.2.6 | >=7.2.0 | KEEP |
-| tailwindcss | 4.1.17 | >=4.1.0 | KEEP |
-| vitest | - | >=3.0.0 | NEW |
+| Package                  | Current | Target    | Status |
+| ------------------------ | ------- | --------- | ------ |
+| node                     | 24.11.1 | >=24.11.1 | KEEP   |
+| pnpm                     | 10.24.0 | >=10.24.0 | KEEP   |
+| typescript               | 5.9.3   | >=5.9.0   | KEEP   |
+| @nestjs/core             | -       | >=11.0.0  | NEW    |
+| @nestjs/platform-fastify | -       | >=11.0.0  | NEW    |
+| @nestjs/websockets       | -       | >=11.0.0  | NEW    |
+| @nestjs/bull             | -       | >=11.0.0  | NEW    |
+| @trpc/server             | -       | >=11.0.0  | NEW    |
+| nestjs-zod               | -       | >=4.0.0   | NEW    |
+| fastify                  | -       | >=5.0.0   | NEW    |
+| zod                      | 4.1.13  | >=4.1.0   | KEEP   |
+| pg                       | 8.16.3  | >=8.16.0  | KEEP   |
+| redis                    | 5.10.0  | >=5.10.0  | KEEP   |
+| @sveltejs/kit            | -       | >=2.20.0  | NEW    |
+| svelte                   | -       | >=5.0.0   | NEW    |
+| @trpc/client             | -       | >=11.0.0  | NEW    |
+| vite                     | 7.2.6   | >=7.2.0   | KEEP   |
+| tailwindcss              | 4.1.17  | >=4.1.0   | KEEP   |
+| vitest                   | -       | >=3.0.0   | NEW    |
 
 ### Removed Dependencies
 
-| Package | Reason |
-|---------|--------|
-| express | Replaced by NestJS + Fastify |
-| @types/express | Not needed with NestJS |
-| jest | Replaced by Vitest |
-| ts-jest | Not needed with Vitest |
-| @types/jest | Not needed with Vitest |
+| Package        | Reason                       |
+| -------------- | ---------------------------- |
+| express        | Replaced by NestJS + Fastify |
+| @types/express | Not needed with NestJS       |
+| jest           | Replaced by Vitest           |
+| ts-jest        | Not needed with Vitest       |
+| @types/jest    | Not needed with Vitest       |
 
 ---
 
@@ -1313,15 +1349,15 @@ Pipelines:
 
 ## PART 6: PERFORMANCE TARGETS
 
-| Metric | Target | How |
-|--------|--------|-----|
-| TTFB | <200ms | SvelteKit SSR + Edge caching |
-| LCP | <2.5s | Optimized images, preloading |
-| FID | <100ms | Minimal JS, Svelte 5 performance |
-| CLS | <0.1 | Reserved space for dynamic content |
-| Bundle Size | <500KB | Code splitting, tree shaking |
-| API Response | <100ms | PostgreSQL indexes, Redis caching |
-| API Throughput | 30-50k req/s | Fastify adapter |
+| Metric         | Target       | How                                |
+| -------------- | ------------ | ---------------------------------- |
+| TTFB           | <200ms       | SvelteKit SSR + Edge caching       |
+| LCP            | <2.5s        | Optimized images, preloading       |
+| FID            | <100ms       | Minimal JS, Svelte 5 performance   |
+| CLS            | <0.1         | Reserved space for dynamic content |
+| Bundle Size    | <500KB       | Code splitting, tree shaking       |
+| API Response   | <100ms       | PostgreSQL indexes, Redis caching  |
+| API Throughput | 30-50k req/s | Fastify adapter                    |
 
 ---
 
@@ -1359,18 +1395,19 @@ Your significant investments that remain unchanged:
 
 ## DECISION SUMMARY
 
-| Question | Answer | Confidence |
-|----------|--------|------------|
-| NestJS or Hono? | **NestJS + Fastify** | 95% |
-| SvelteKit or Next.js? | **SvelteKit** | 90% |
-| Vitest or Jest? | **Vitest** | 99% |
-| Keep PostgreSQL RLS? | **Yes** | 100% |
-| Keep Tailwind v4? | **Yes** | 100% |
-| Keep Zod? | **Yes** (with nestjs-zod) | 100% |
-| Keep Node.js 24? | **Yes** | 100% |
-| Keep pnpm? | **Yes** | 100% |
+| Question              | Answer                    | Confidence |
+| --------------------- | ------------------------- | ---------- |
+| NestJS or Hono?       | **NestJS + Fastify**      | 95%        |
+| SvelteKit or Next.js? | **SvelteKit**             | 90%        |
+| Vitest or Jest?       | **Vitest**                | 99%        |
+| Keep PostgreSQL RLS?  | **Yes**                   | 100%       |
+| Keep Tailwind v4?     | **Yes**                   | 100%       |
+| Keep Zod?             | **Yes** (with nestjs-zod) | 100%       |
+| Keep Node.js 24?      | **Yes**                   | 100%       |
+| Keep pnpm?            | **Yes**                   | 100%       |
 
 **Why NestJS over Hono:**
+
 - **Team Scaling**: Architectural enforcement for 100+ developers
 - **Enterprise Features**: Guards, Modules, DI, built-in patterns
 - **Performance**: Fastify is significantly faster than Hono on Node.js
@@ -1392,11 +1429,10 @@ Your significant investments that remain unchanged:
 
 #### 1. Sentry Error Tracking - KRITISCH
 
-| Aspekt | Details |
-|--------|---------|
+| Aspekt             | Details                                         |
+| ------------------ | ----------------------------------------------- |
 | **Warum PFLICHT?** | Ohne Error Tracking bist du BLIND in Production |
-| **Aufwand** | 2 Stunden |
-| **Priorität** | KRITISCH |
+| **Priorität**      | KRITISCH                                        |
 
 ```typescript
 // backend/src/infrastructure/sentry/sentry.module.ts
@@ -1453,25 +1489,25 @@ export class SentryExceptionFilter extends BaseExceptionFilter {
 ```
 
 **Package:**
+
 ```bash
 pnpm add @sentry/node
 ```
 
 > **📌 Nach SvelteKit-Migration:** Frontend-Sentry hinzufügen!
+>
 > ```bash
 > pnpm add @sentry/sveltekit
 > ```
-> **Aufwand:** +30 Minuten nach SvelteKit-Migration
 
 ---
 
 #### 2. Health Check erweitern - WICHTIG
 
-| Aspekt | Details |
-|--------|---------|
-| **Warum?** | Docker/K8s Readiness Probes brauchen DB/Redis Status |
-| **Aufwand** | 30 Minuten |
-| **Priorität** | HOCH |
+| Aspekt        | Details                                              |
+| ------------- | ---------------------------------------------------- |
+| **Warum?**    | Docker/K8s Readiness Probes brauchen DB/Redis Status |
+| **Priorität** | HOCH                                                 |
 
 ```typescript
 // backend/src/infrastructure/health/health.module.ts
@@ -1521,14 +1557,16 @@ export class HealthController {
 ```
 
 **Package:**
+
 ```bash
 pnpm add @nestjs/terminus
 ```
 
 **Docker Compose Update:**
+
 ```yaml
 healthcheck:
-  test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+  test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/health']
   interval: 30s
   timeout: 10s
   retries: 3
@@ -1539,26 +1577,23 @@ healthcheck:
 
 #### 3. Graceful Shutdown - KRITISCH
 
-| Aspekt | Details |
-|--------|---------|
+| Aspekt              | Details                                                      |
+| ------------------- | ------------------------------------------------------------ |
 | **Warum KRITISCH?** | Ohne Graceful Shutdown verlierst du Requests bei Deployments |
-| **Aufwand** | 15 Minuten |
-| **Priorität** | KRITISCH |
+| **Priorität**       | KRITISCH                                                     |
 
 ```typescript
 // backend/src/main.ts - MIT GRACEFUL SHUTDOWN
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
 import * as Sentry from '@sentry/node';
+import { ZodValidationPipe } from 'nestjs-zod';
+
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: true })
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: true }));
 
   const logger = new Logger('Bootstrap');
 
@@ -1590,6 +1625,7 @@ bootstrap();
 ```
 
 **Docker stop_grace_period:**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -1601,12 +1637,12 @@ services:
 
 ### 8.2 BEREITS VORHANDEN (Nicht ändern!)
 
-| Was | Status | Location |
-|-----|--------|----------|
-| Winston Logger | ✅ Funktioniert | `backend/src/utils/logger.ts` |
-| Sensitive Data Sanitization | ✅ Eingebaut | `sanitizeForLog()` |
-| Rate Limiting | ✅ Redis-based | Middleware |
-| Basic Health Check | ✅ Vorhanden | `backend/src/loaders/health.ts` |
+| Was                         | Status          | Location                        |
+| --------------------------- | --------------- | ------------------------------- |
+| Winston Logger              | ✅ Funktioniert | `backend/src/utils/logger.ts`   |
+| Sensitive Data Sanitization | ✅ Eingebaut    | `sanitizeForLog()`              |
+| Rate Limiting               | ✅ Redis-based  | Middleware                      |
+| Basic Health Check          | ✅ Vorhanden    | `backend/src/loaders/health.ts` |
 
 #### Winston + NestJS Integration
 
@@ -1715,17 +1751,19 @@ async function bootstrap() {
 
 ### 9.1 Pino statt Winston
 
-| Vorschlag | Winston → Pino Migration |
-|-----------|-------------------------|
-| **Empfohlen?** | ❌ NEIN (für jetzt) |
+| Vorschlag        | Winston → Pino Migration              |
+| ---------------- | ------------------------------------- |
+| **Empfohlen?**   | ❌ NEIN (für jetzt)                   |
 | **Warum nicht?** | 68 Files ändern, Winston funktioniert |
 
 **Pino ist schneller (5x), aber:**
+
 - Euer Winston hat bereits `sanitizeForLog()`
 - Migration = 68 Files ändern
 - Kein ROI bis >10.000 Requests/Sekunde
 
 **Wann doch Pino?**
+
 - Log-Volume wird zum Performance-Problem
 - Elastic/Loki-Integration zwingend JSON
 
@@ -1733,18 +1771,20 @@ async function bootstrap() {
 
 ### 9.2 Microservices statt Monolith
 
-| Vorschlag | Monolith → Microservices |
-|-----------|-------------------------|
-| **Empfohlen?** | ❌ NEIN (für jetzt) |
+| Vorschlag        | Monolith → Microservices            |
+| ---------------- | ----------------------------------- |
+| **Empfohlen?**   | ❌ NEIN (für jetzt)                 |
 | **Warum nicht?** | NestJS Monolith ist bereits modular |
 
 **NestJS Module = Microservices-Vorbereitung:**
+
 - Jedes Module ist eigenständig
 - Bei Bedarf einzeln extrahierbar
 - Monolith ist RICHTIG für Assixx-Größe
 
 **Wann doch Microservices?**
-- >50 Entwickler an gleichem Service
+
+- > 50 Entwickler an gleichem Service
 - Unterschiedliche Skalierungsanforderungen
 - Separate Deployment-Zyklen nötig
 
@@ -1752,32 +1792,35 @@ async function bootstrap() {
 
 ### 9.3 Kubernetes statt Docker Compose
 
-| Vorschlag | Docker Compose → Kubernetes |
-|-----------|----------------------------|
-| **Empfohlen?** | ❌ NEIN (für jetzt) |
+| Vorschlag        | Docker Compose → Kubernetes          |
+| ---------------- | ------------------------------------ |
+| **Empfohlen?**   | ❌ NEIN (für jetzt)                  |
 | **Warum nicht?** | Docker Compose reicht für On-Premise |
 
 **Docker Compose Vorteile:**
+
 - Einfache Installation für Kunden
 - Kein K8s-Know-how nötig
 - Perfekt für Single-Server Deployment
 
 **Wann doch Kubernetes?**
+
 - Multi-Region Deployment
 - Auto-Scaling erforderlich
-- >10 Services
+- > 10 Services
 
 ---
 
 ### 9.4 Secrets Management (Vault/Doppler)
 
-| Phase | Empfehlung | Aufwand |
-|-------|------------|---------|
-| **Launch** | Docker Secrets + .env | Minimal |
-| **Phase 2: Enterprise-Kunden** | **Vault oder Doppler** | Mittel |
-| **SOC2/ISO27001 Zertifizierung** | **Vault Pflicht** | Hoch |
+| Phase                 | Empfehlung            |
+| --------------------- | --------------------- |
+| **Launch**            | Docker Secrets + .env |
+| **Enterprise-Kunden** | Vault oder Doppler    |
+| **SOC2/ISO27001**     | Vault Pflicht         |
 
 **Für Launch reicht:**
+
 - `.env` für Development
 - Docker Secrets für Production
 - Environment Variables in CI/CD
@@ -1786,7 +1829,8 @@ async function bootstrap() {
 
 ## PART 10: ROADMAP & MIGRATION ORDER
 
-> **KRITISCH: Diese Reihenfolge einhalten! Jede Express-Zeile = Tech Debt.**
+> **KRITISCH: Diese Reihenfolge einhalten!**
+> **Keine Deadlines. Keine Zeitschätzungen. Wir sind fertig wenn wir fertig sind.**
 
 ### 10.1 MIGRATIONS-ROADMAP (Korrekte Reihenfolge)
 
@@ -1795,69 +1839,75 @@ async function bootstrap() {
 │                    ASSIXX ROADMAP 2025                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  PHASE 1: NESTJS MIGRATION (Backend)            [~140-160h]    │
-│  ════════════════════════════════════                           │
-│  ├── NestJS Projekt Setup + Fastify Adapter                    │
-│  ├── Module-Struktur erstellen (25+ Module)                    │
-│  ├── Guards implementieren (JWT, Tenant, Roles)                │
-│  ├── Services migrieren (191+ Dateien!)                        │
-│  ├── nestjs-zod Integration                                    │
-│  ├── tRPC Router erstellen                                     │
-│  ├── @nestjs/websockets für Chat                               │
-│  ├── @nestjs/bull für Deletion Worker                          │
-│  └── WARUM ZUERST: Frontend braucht tRPC Types                 │
+│  PHASE 0: FULLCALENDAR MIGRATION (SEPARAT!)                    │
+│  ═══════════════════════════════════════════                    │
+│  ├── Eigener Branch: feature/fullcalendar-migration            │
+│  ├── FullCalendar → @event-calendar/core                       │
+│  ├── Intensives Testing (Schichtplanung = kritisch!)           │
+│  ├── Merge BEVOR SvelteKit-Migration                           │
+│  └── WARUM SEPARAT: Hohes Risiko, muss isoliert getestet werden│
 │                         ↓                                       │
-│  PHASE 2: VITEST MIGRATION (Testing)            [~4h]          │
+│  PHASE 1: NESTJS MIGRATION (Backend) ✅ COMPLETE!              │
+│  ════════════════════════════════════════════════               │
+│  ├── ✅ NestJS Projekt Setup (Express Adapter)                 │
+│  ├── ✅ Module-Struktur erstellt (28 Module)                   │
+│  ├── ✅ Guards implementiert (JWT, Tenant, Roles)              │
+│  ├── ✅ Services migriert (26/26 Native, 339 Files)            │
+│  ├── ✅ nestjs-zod Integration                                 │
+│  ├── ✅ Express Entry-Points gelöscht                          │
+│  ├── ✅ middleware/ gelöscht (Dead Code)                       │
+│  ├── ✅ routes/v2/ gelöscht (~166 Dateien)                     │
+│  └── 📄 Details: docs/NESTJS-MIGRATION-PLAN.md                 │
+│                         ↓                                       │
+│  PHASE 2: VITEST MIGRATION (Testing)                           │
 │  ════════════════════════════════                               │
-│  └── jest.fn() → vi.fn()                                       │
-│  └── jest.mock() → vi.mock()                                   │
-│  └── Config anpassen                                           │
+│  ├── jest.fn() → vi.fn()                                       │
+│  ├── jest.mock() → vi.mock()                                   │
+│  ├── Config anpassen                                           │
 │  └── QUICK WIN: 95% API-kompatibel                             │
 │                         ↓                                       │
-│  PHASE 3: SVELTEKIT MIGRATION (Frontend)        [~100h]        │
+│  PHASE 3: SVELTEKIT MIGRATION (Frontend)                       │
 │  ═════════════════════════════════════                          │
-│  └── FullCalendar → @event-calendar/core (ZUERST!)             │
-│  └── Library-Kompatibilität prüfen (siehe Part 2.3.3)          │
-│  └── Page für Page migrieren                                   │
-│  └── tRPC Client einbinden                                     │
-│  └── Design System → Svelte Components                         │
+│  ├── Library-Kompatibilität prüfen (siehe Part 2.3.3)          │
+│  ├── Page für Page migrieren                                   │
+│  ├── tRPC Client einbinden                                     │
+│  ├── Design System → Svelte Components                         │
 │  └── WARUM ZULETZT: Braucht stabiles NestJS Backend            │
 │                         ↓                                       │
-│  PHASE 4: PRE-LAUNCH POLISH                     [~5h]          │
+│  PHASE 4: PRE-LAUNCH POLISH                                    │
 │  ══════════════════════════                                     │
-│  └── Sentry Error Tracking (siehe Part 8)                      │
-│  └── @nestjs/terminus Health Checks                            │
-│  └── Graceful Shutdown                                         │
+│  ├── Sentry Error Tracking (siehe Part 8)                      │
+│  ├── @nestjs/terminus Health Checks                            │
+│  ├── Graceful Shutdown                                         │
 │  └── WARUM ZULETZT: Code ist NestJS-spezifisch                 │
 │                         ↓                                       │
 │  PHASE 5: ENTERPRISE FEATURES (Nach Launch)                    │
 │  ══════════════════════════════════════════                     │
-│  └── Doppler/Infisical Secrets                                 │
-│  └── Full Observability (OpenTelemetry)                        │
+│  ├── Doppler/Infisical Secrets                                 │
+│  ├── Full Observability (OpenTelemetry)                        │
 │  └── SOC2 Compliance                                           │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 10.2 ZEIT-ÜBERSICHT
+### 10.2 PHASEN-ÜBERSICHT (OHNE Zeitschätzungen)
 
-| Phase | Aufgabe | Geschätzt | Abhängigkeit |
-|-------|---------|-----------|--------------|
-| 1 | NestJS Migration | ~140-160h | - |
-| 2 | Vitest Migration | ~4h | Phase 1 |
-| 3 | SvelteKit Migration | ~100h | Phase 1 |
-| 4 | Pre-Launch Polish | ~5h | Phase 1 |
-| 5 | Enterprise Features | ~20h | Launch |
-| | **TOTAL bis Launch** | **~250-270h** | |
+| Phase | Aufgabe                             | Abhängigkeit | Status |
+| ----- | ----------------------------------- | ------------ | ------ |
+| 0     | FullCalendar → @event-calendar/core | -            | ✅ **COMPLETE** (2025-12-18) |
+| 1     | NestJS Migration (Code)             | Phase 0      | ✅ **COMPLETE** (2025-12-18) |
+| 1.5   | Fastify Adapter (Express → Fastify) | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
+| 2     | Vitest Migration                    | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
+| 3     | SvelteKit Migration                 | Phase 1.5    | ⏳ Pending |
+| 4     | Pre-Launch Polish                   | Phase 3      | ⏳ Pending |
+| 5     | Enterprise Features                 | Launch       | ⏳ Pending |
 
-> **Hinweis:** Zeitschätzung inkl. 20-30% Puffer für:
-> - 191 Dateien × ~45min pro Datei (nicht 30min!)
-> - Modular-Architektur Setup (25+ Module)
-> - Guards System Implementation
-> - Dependency Injection Konfiguration
-> - Testing der Migration
-> - Unvorhergesehene Probleme
-> - Aber: Bessere Skalierbarkeit für 100+ Entwickler!
+> **Keine Zeitschätzungen.** Wir arbeiten bis es fertig ist.
+> Qualität > Geschwindigkeit. KISS > Deadlines.
+>
+> 📄 **Phase 0 Details:** @event-calendar/core v3.8.1 ersetzt FullCalendar
+> 📄 **Phase 1 Details:** [docs/NESTJS-MIGRATION-PLAN.md](./NESTJS-MIGRATION-PLAN.md)
+> 📄 **Phase 2 Details:** Vitest 4.0.16, Jest komplett entfernt
 
 ### 10.3 WAS SICH NICHT ÄNDERT
 
@@ -1892,16 +1942,19 @@ async function bootstrap() {
 └─────────────────────────────────────────────┘
 ```
 
-### 10.5 KRITISCHE REGEL
+### 10.5 ROLLBACK-STRATEGIE
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ⚠️  KEINE NEUEN EXPRESS-FEATURES MEHR!                        │
+│  ROLLBACK = GIT                                                 │
 │                                                                 │
-│  Jede Zeile Express-Code die du JETZT schreibst,               │
-│  musst du SPÄTER in NestJS neu schreiben.                      │
+│  - Kein Fallback-API                                           │
+│  - Keine Legacy-Endpoints                                      │
+│  - Keine Parallel-Systeme                                      │
+│  - Keine /api/v2-legacy oder ähnliches                         │
 │                                                                 │
-│  Ausnahme: Bug-Fixes im bestehenden Code                       │
+│  Bei Problemen: git revert / git reset                         │
+│  Wir migrieren KOMPLETT oder gar nicht.                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1923,6 +1976,7 @@ async function bootstrap() {
 - [OpenTelemetry Node.js Guide](https://signoz.io/opentelemetry/nodejs/)
 
 ### Svelte 5 Library Compatibility
+
 - [svelte-fullcalendar - ARCHIVIERT](https://github.com/YogliB/svelte-fullcalendar) - Nicht verwenden!
 - [@event-calendar/core - Svelte 5 Alternative](https://github.com/vkurko/calendar) - Empfohlen
 - [Svelte 5 Migration Guide](https://svelte.dev/docs/svelte/v5-migration-guide)
@@ -1934,23 +1988,23 @@ async function bootstrap() {
 
 ### A.1 Technische Skalierung
 
-| Was | Wann nötig | Aufwand |
-|-----|------------|---------|
-| **Load Balancer** | >1.000 concurrent Users | ~4h |
-| **DB Read Replicas** | >5.000 Tenants | ~8h |
-| **CDN (Cloudflare)** | Sofort sinnvoll | ~2h |
-| **Backup & DR** | ⚠️ VOR Launch! | ~4h |
-| **Uptime Monitoring** | ⚠️ VOR Launch! | ~1h |
+| Was                   | Wann nötig              |
+| --------------------- | ----------------------- |
+| **Load Balancer**     | >1.000 concurrent Users |
+| **DB Read Replicas**  | >5.000 Tenants          |
+| **CDN (Cloudflare)**  | Sofort sinnvoll         |
+| **Backup & DR**       | ⚠️ VOR Launch!          |
+| **Uptime Monitoring** | ⚠️ VOR Launch!          |
 
 ### A.2 Geschäftliche Anforderungen (was Entwickler oft vergessen!)
 
-| Was | Warum kritisch | Wann |
-|-----|----------------|------|
-| **DSGVO-Dokumentation** | Pflicht in DE | Vor Launch |
-| **AV-Verträge** | Enterprise-Kunden fordern das | Vor erstem Enterprise-Deal |
-| **SLA definieren** | "99.9% Uptime" = max 8.7h Downtime/Jahr | Vor Enterprise |
-| **Support-Prozess** | Wer antwortet wann? | Vor Launch |
-| **ISO 27001** | Manche Enterprise-Kunden fordern es | Bei >500k € ARR |
+| Was                     | Warum kritisch                          | Wann                       |
+| ----------------------- | --------------------------------------- | -------------------------- |
+| **DSGVO-Dokumentation** | Pflicht in DE                           | Vor Launch                 |
+| **AV-Verträge**         | Enterprise-Kunden fordern das           | Vor erstem Enterprise-Deal |
+| **SLA definieren**      | "99.9% Uptime" = max 8.7h Downtime/Jahr | Vor Enterprise             |
+| **Support-Prozess**     | Wer antwortet wann?                     | Vor Launch                 |
+| **ISO 27001**           | Manche Enterprise-Kunden fordern es     | Bei >500k € ARR            |
 
 ---
 
@@ -1958,18 +2012,23 @@ async function bootstrap() {
 
 ### Branch pro Phase
 
-| Phase | Branch-Name | Inhalt |
-|-------|-------------|--------|
-| 1 | `feature/nestjs-migration` | NestJS + Fastify, Guards, Module, tRPC, WebSocket, Bull |
-| 2 | `refactor/jest-to-vitest` | jest.fn() → vi.fn(), Config |
-| 3 | `feature/sveltekit-migration` | Pages, tRPC Client, Design System → Svelte |
-| 4 | `feature/pre-launch-polish` | Sentry, Health Checks, Graceful Shutdown |
-| 5 | `feature/enterprise-features` | Secrets, OpenTelemetry, SOC2 |
+| Phase | Branch-Name                      | Inhalt                                                  |
+| ----- | -------------------------------- | ------------------------------------------------------- |
+| 0     | `feature/fullcalendar-migration` | FullCalendar → @event-calendar/core (SEPARAT!)          |
+| 1     | `feature/nestjs-migration`       | NestJS + Fastify, Guards, Module, tRPC, WebSocket, Bull |
+| 2     | `refactor/jest-to-vitest`        | jest.fn() → vi.fn(), Config                             |
+| 3     | `feature/sveltekit-migration`    | Pages, tRPC Client, Design System → Svelte              |
+| 4     | `feature/pre-launch-polish`      | Sentry, Health Checks, Graceful Shutdown                |
+| 5     | `feature/enterprise-features`    | Secrets, OpenTelemetry, SOC2                            |
 
 ### Workflow
 
 ```
 master (stable)
+    │
+    ├── feature/fullcalendar-migration ► PR → master (ZUERST!)
+    │                                        │
+    │   ◄────────────────────────────────────┘
     │
     ├── feature/nestjs-migration ──────► PR → master
     │                                        │
@@ -1989,6 +2048,8 @@ master (stable)
 ### Regeln
 
 1. **Ein Branch pro Phase** - nicht mischen
-2. **Phase 1 zuerst** - Frontend braucht tRPC Types
-3. **PR nach jeder Phase** - incremental mergen
-4. **master bleibt stable** - nur getesteter Code
+2. **Phase 0 zuerst** - FullCalendar isoliert testen (hohes Risiko!)
+3. **Phase 1 vor Phase 3** - Frontend braucht tRPC Types
+4. **PR nach jeder Phase** - incremental mergen
+5. **master bleibt stable** - nur getesteter Code
+6. **KEIN Fallback/Legacy** - git revert bei Problemen

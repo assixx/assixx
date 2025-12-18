@@ -55,7 +55,7 @@ TOTAL: 253 button instances across 41 HTML files
 /* Design System (NEW) */
 .btn {
   display: inline-flex;
-  padding: 0;  /* Variants define padding */
+  padding: 0; /* Variants define padding */
   /* ... */
 }
 ```
@@ -64,26 +64,26 @@ TOTAL: 253 button instances across 41 HTML files
 
 ### 2. VARIANT NAMING MISMATCH
 
-| Bootstrap | Design System | Notes |
-|-----------|--------------|-------|
-| `btn-primary` | `btn-primary` | ✅ Match |
-| `btn-cancel` | `btn-cancel` | ✅ Match |
-| `btn-success` | `btn-success` | ✅ Match |
-| `btn-danger` | `btn-danger` | ✅ Match |
+| Bootstrap     | Design System | Notes          |
+| ------------- | ------------- | -------------- |
+| `btn-primary` | `btn-primary` | ✅ Match       |
+| `btn-cancel`  | `btn-cancel`  | ✅ Match       |
+| `btn-success` | `btn-success` | ✅ Match       |
+| `btn-danger`  | `btn-danger`  | ✅ Match       |
 | `btn-warning` | ❌ Not exists | Need to create |
-| `btn-info` | ❌ Not exists | Need to create |
-| `btn-light` | ❌ Not exists | Need to create |
-| `btn-dark` | ❌ Not exists | Need to create |
-| `btn-link` | ❌ Not exists | Need to create |
+| `btn-info`    | ❌ Not exists | Need to create |
+| `btn-light`   | ❌ Not exists | Need to create |
+| `btn-dark`    | ❌ Not exists | Need to create |
+| `btn-link`    | ❌ Not exists | Need to create |
 
 ### 3. STRUCTURAL DIFFERENCES
 
-| Aspect | Bootstrap | Design System |
-|--------|-----------|---------------|
-| Display | `inline-block` | `inline-flex` |
-| Padding | Fixed `0.375rem 0.75rem` | Variant-specific |
-| Border | `1px solid` | None (uses box-shadow) |
-| Colors | Bootstrap blue `#0d6efd` | Material blue `#2196f3` |
+| Aspect  | Bootstrap                | Design System           |
+| ------- | ------------------------ | ----------------------- |
+| Display | `inline-block`           | `inline-flex`           |
+| Padding | Fixed `0.375rem 0.75rem` | Variant-specific        |
+| Border  | `1px solid`              | None (uses box-shadow)  |
+| Colors  | Bootstrap blue `#0d6efd` | Material blue `#2196f3` |
 
 ---
 
@@ -142,19 +142,14 @@ grep -r "class=\"[^\"]*btn" frontend/src/pages/*.html | \
 
 ```markdown
 LOW RISK (Start Here):
+
 1. rate-limit.html (1 button)
 2. hilfe.html (1 button)
 3. document-upload.html (1 button)
 
-MEDIUM RISK:
-4. login.html (1 button, but critical)
-5. profile pages (4-6 buttons each)
-6. documents-*.html (2 buttons each)
+MEDIUM RISK: 4. login.html (1 button, but critical) 5. profile pages (4-6 buttons each) 6. documents-\*.html (2 buttons each)
 
-HIGH RISK (Last):
-7. blackboard.html (16 buttons)
-8. calendar.html (13 buttons)
-9. kvp.html (10 buttons)
+HIGH RISK (Last): 7. blackboard.html (16 buttons) 8. calendar.html (13 buttons) 9. kvp.html (10 buttons)
 ```
 
 #### 2.2 Migration Process Per Page
@@ -350,9 +345,7 @@ test('button visual consistency', async ({ page }) => {
   const buttons = ['primary', 'secondary', 'danger', 'success'];
 
   for (const variant of buttons) {
-    await expect(page.locator(`.btn-${variant}`)).toHaveScreenshot(
-      `button-${variant}.png`
-    );
+    await expect(page.locator(`.btn-${variant}`)).toHaveScreenshot(`button-${variant}.png`);
   }
 });
 ```
@@ -388,12 +381,12 @@ if (document.querySelectorAll('.btn-warning, .btn-info').length > 0) {
 
 ## 📝 DECISION LOG
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2025-10-03 | Keep `.btn` base class | Minimize migration effort |
-| 2025-10-03 | Add compat variants | Support all existing use cases |
-| 2025-10-03 | Progressive migration | Reduce risk, allow rollback |
-| 2025-10-03 | Page-by-page approach | Easier testing and validation |
+| Date       | Decision               | Rationale                      |
+| ---------- | ---------------------- | ------------------------------ |
+| 2025-10-03 | Keep `.btn` base class | Minimize migration effort      |
+| 2025-10-03 | Add compat variants    | Support all existing use cases |
+| 2025-10-03 | Progressive migration  | Reduce risk, allow rollback    |
+| 2025-10-03 | Page-by-page approach  | Easier testing and validation  |
 
 ---
 
@@ -469,11 +462,11 @@ Lower specificity = Easier overrides = Better maintainability
 
 ## APPENDIX C: Browser Compatibility
 
-| Feature | Chrome | Firefox | Safari | Edge |
-|---------|--------|---------|--------|------|
-| CSS Variables | ✅ 49+ | ✅ 31+ | ✅ 9.1+ | ✅ 15+ |
-| Flexbox | ✅ 21+ | ✅ 28+ | ✅ 6.1+ | ✅ 12+ |
-| Grid (future) | ✅ 57+ | ✅ 52+ | ✅ 10.1+ | ✅ 16+ |
-| Custom Properties | ✅ 49+ | ✅ 31+ | ✅ 9.1+ | ✅ 15+ |
+| Feature           | Chrome | Firefox | Safari   | Edge   |
+| ----------------- | ------ | ------- | -------- | ------ |
+| CSS Variables     | ✅ 49+ | ✅ 31+  | ✅ 9.1+  | ✅ 15+ |
+| Flexbox           | ✅ 21+ | ✅ 28+  | ✅ 6.1+  | ✅ 12+ |
+| Grid (future)     | ✅ 57+ | ✅ 52+  | ✅ 10.1+ | ✅ 16+ |
+| Custom Properties | ✅ 49+ | ✅ 31+  | ✅ 9.1+  | ✅ 15+ |
 
 **Target:** 98% browser coverage achieved ✅

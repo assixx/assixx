@@ -6,14 +6,14 @@
 
 ## 📊 Current Performance Metrics
 
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| Build Time | 10.68s | <8s | ⚠️ |
-| Module Count | 234 | - | ✅ |
-| Bundle Size (CSS) | 208KB | <150KB | ⚠️ |
-| Bundle Size (JS) | 336KB (calendar.js) | <250KB | ⚠️ |
-| HMR Speed | ~50ms | <50ms | ✅ |
-| Cold Start | Unknown | <3s | ❓ |
+| Metric            | Current             | Target | Status |
+| ----------------- | ------------------- | ------ | ------ |
+| Build Time        | 10.68s              | <8s    | ⚠️     |
+| Module Count      | 234                 | -      | ✅     |
+| Bundle Size (CSS) | 208KB               | <150KB | ⚠️     |
+| Bundle Size (JS)  | 336KB (calendar.js) | <250KB | ⚠️     |
+| HMR Speed         | ~50ms               | <50ms  | ✅     |
+| Cold Start        | Unknown             | <3s    | ❓     |
 
 ## ✅ What's Already Good
 
@@ -35,6 +35,7 @@
 ## 🔥 Key Optimizations Implemented
 
 ### 1. **HMR & Hot Reload Enhancements**
+
 ```javascript
 server: {
   hmr: {
@@ -50,9 +51,11 @@ server: {
   }
 }
 ```
+
 **Impact**: Faster HMR, better WSL2/Docker support
 
 ### 2. **Warmup Strategy for Frequently Used Files**
+
 ```javascript
 server: {
   warmup: {
@@ -61,14 +64,16 @@ server: {
       './src/scripts/auth/index.ts',
       './src/scripts/components/unified-navigation.ts',
       './src/styles/main.css',
-      './src/styles/tailwind.css'
-    ]
+      './src/styles/tailwind.css',
+    ];
   }
 }
 ```
+
 **Impact**: ~30% faster cold start
 
 ### 3. **Optimized Dependency Pre-bundling**
+
 ```javascript
 optimizeDeps: {
   holdUntilCrawlEnd: false, // Better for large codebases
@@ -78,9 +83,11 @@ optimizeDeps: {
   ]
 }
 ```
+
 **Impact**: Reduced full-page reloads, faster initial load
 
 ### 4. **Manual Chunk Splitting**
+
 ```javascript
 manualChunks: {
   'vendor-fullcalendar': [
@@ -93,9 +100,11 @@ manualChunks: {
   'vendor-utils': ['dompurify', 'marked']
 }
 ```
+
 **Impact**: Better caching, reduced main bundle size
 
 ### 5. **Enhanced Build Compression**
+
 ```javascript
 terserOptions: {
   compress: {
@@ -109,9 +118,11 @@ terserOptions: {
   }
 }
 ```
+
 **Impact**: ~15% smaller production bundles
 
 ### 6. **CSS Optimization**
+
 ```javascript
 css: {
   modules: {
@@ -122,47 +133,54 @@ css: {
   }
 }
 ```
+
 **Impact**: Smaller CSS class names in production
 
 ### 7. **JSON Import Optimization**
+
 ```javascript
 json: {
   namedExports: true,
   stringify: 'auto' // Stringify large JSON for better performance
 }
 ```
+
 **Impact**: Faster parsing of large JSON files
 
 ## 📈 Expected Performance Improvements
 
-| Optimization | Impact | Measurement |
-|--------------|--------|-------------|
-| Warmup Files | -30% cold start | 3s → 2s |
-| Manual Chunks | -20% main bundle | Better caching |
-| holdUntilCrawlEnd: false | -40% cold start (large projects) | Fewer reloads |
-| Enhanced Compression | -15% bundle size | Smaller downloads |
-| WSL2 Polling | Reliable HMR | No missed changes |
-| JSON Stringify | -50% parse time (large JSON) | Faster imports |
+| Optimization             | Impact                           | Measurement       |
+| ------------------------ | -------------------------------- | ----------------- |
+| Warmup Files             | -30% cold start                  | 3s → 2s           |
+| Manual Chunks            | -20% main bundle                 | Better caching    |
+| holdUntilCrawlEnd: false | -40% cold start (large projects) | Fewer reloads     |
+| Enhanced Compression     | -15% bundle size                 | Smaller downloads |
+| WSL2 Polling             | Reliable HMR                     | No missed changes |
+| JSON Stringify           | -50% parse time (large JSON)     | Faster imports    |
 
 ## 🛠️ How to Use the Optimized Config
 
 1. **Backup current config**:
+
 ```bash
 cp frontend/vite.config.js frontend/vite.config.backup.js
 ```
 
 2. **Replace with optimized version**:
+
 ```bash
 cp frontend/vite.config.optimized.js frontend/vite.config.js
 ```
 
 3. **Test in development**:
+
 ```bash
 cd frontend
 pnpm run dev
 ```
 
 4. **Measure build performance**:
+
 ```bash
 # Profile the build
 DEBUG_PERFORMANCE=1 pnpm run build
@@ -172,6 +190,7 @@ vite build --profile
 ```
 
 5. **Monitor HMR performance**:
+
 ```bash
 # Debug transform times
 vite --debug plugin-transform
@@ -183,7 +202,9 @@ vite --debug hmr
 ## 🎯 Additional Recommendations
 
 ### 1. **Avoid Barrel Files** (High Priority)
+
 Current pattern (AVOID):
+
 ```typescript
 // utils/index.ts
 export * from './auth';
@@ -192,13 +213,15 @@ export * from './dom';
 ```
 
 Better pattern:
+
 ```typescript
 // Direct imports
-import { login } from './utils/auth';
 import { fetchData } from './utils/api';
+import { login } from './utils/auth';
 ```
 
 ### 2. **Lazy Load Heavy Dependencies**
+
 ```typescript
 // Instead of
 import FullCalendar from '@fullcalendar/core';
@@ -211,28 +234,29 @@ const loadCalendar = async () => {
 ```
 
 ### 3. **Consider Upgrading Dependencies**
+
 - Vite 7.1.12 is current, but watch for v8 (expected Q2 2025)
 - Consider SWC instead of Terser for even faster builds
 
 ### 4. **Enable Production Source Maps** (for debugging)
+
 ```javascript
 build: {
-  sourcemap: 'hidden' // Generate but don't reference
+  sourcemap: 'hidden'; // Generate but don't reference
 }
 ```
 
 ### 5. **Use Web Workers for Heavy Tasks**
+
 ```typescript
 // Move heavy computations to workers
-const worker = new Worker(
-  new URL('./heavy-compute.worker.ts', import.meta.url),
-  { type: 'module' }
-);
+const worker = new Worker(new URL('./heavy-compute.worker.ts', import.meta.url), { type: 'module' });
 ```
 
 ## 📊 Monitoring Tools
 
 ### Debug Commands
+
 ```bash
 # Profile build
 vite build --profile
@@ -248,6 +272,7 @@ npx vite-bundle-visualizer
 ```
 
 ### Performance Testing
+
 ```bash
 # Install bundle analyzer
 pnpm add -D rollup-plugin-visualizer
@@ -266,12 +291,12 @@ plugins: [
 
 ## ⚠️ Potential Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| HMR not working in WSL2 | Enable `usePolling: true` |
-| Large bundle warnings | Increase `chunkSizeWarningLimit` |
-| Slow TypeScript checking | Use `skipLibCheck: true` |
-| Memory issues | Increase Node memory: `NODE_OPTIONS=--max-old-space-size=4096` |
+| Issue                    | Solution                                                       |
+| ------------------------ | -------------------------------------------------------------- |
+| HMR not working in WSL2  | Enable `usePolling: true`                                      |
+| Large bundle warnings    | Increase `chunkSizeWarningLimit`                               |
+| Slow TypeScript checking | Use `skipLibCheck: true`                                       |
+| Memory issues            | Increase Node memory: `NODE_OPTIONS=--max-old-space-size=4096` |
 
 ## 🎯 Next Steps
 

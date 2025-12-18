@@ -11,13 +11,13 @@
 # Tech Stack Context
 
 **NOW USING:**
+
 - API V2 (no V1 fallback)
 - PostgreSQL 17.7 + `pg` library v8.16.3
 - `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
 - `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete) - is_active ist smallint (INTEGER) mit DEFAULT 1
 
 ---
-
 
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 
@@ -135,20 +135,17 @@ docker-compose restart backend
 5. Read(~/projects/Assixx/README.md)
 6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
 7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-8. Read(~/projects/Assixx/docs/STORYBOOK.md) for UI context (read whole File)
+8. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT.md) (read whole File)
 9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
 10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
 12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
 13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-BRUNO.md) for context (read whole File)
 14. Dont do more than this and than recap fast and than ask user that youre ready.
-15. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
-16. change directory to root  Bash(cd /home/scs/projects/Assixx && pwd)
-  ⎿  /home/scs/projects/Assixx
+15. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
+    ⎿ /home/scs/projects/Assixx
 
-
-
-  docs/HOW-TO-TEST-WITH-BRUNO.md
+docs/HOW-TO-TEST-WITH-BRUNO.md
 
 ## 📊 PROGRESS DOCUMENTATION
 

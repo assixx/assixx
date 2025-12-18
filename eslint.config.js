@@ -3,6 +3,7 @@
 import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 import typescript from '@typescript-eslint/parser';
+import vitestPlugin from '@vitest/eslint-plugin';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import noSecretsPlugin from 'eslint-plugin-no-secrets';
@@ -42,8 +43,6 @@ export default [
       '!frontend/dist/**/*.js',
       '!scripts/fix-esm-imports.js',
       'scripts/fix-*.js',
-      'jest.config.js',
-      'jest.config.cjs',
       'uploads/**',
       '**/*.yml',
       '**/*.yaml',
@@ -57,11 +56,6 @@ export default [
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',
-      'backend/src/__tests__/**',
-      'backend/**/*.test.ts',
-      'backend/**/*.spec.ts',
-      'frontend/**/*.test.ts',
-      'frontend/**/*.spec.ts',
       'backend/coverage/**',
       '**/*.generated.ts',
       '**/*.config.js',
@@ -82,6 +76,7 @@ export default [
   // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx'],
+    ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
     languageOptions: {
       parser: typescript,
       parserOptions: {
@@ -109,6 +104,7 @@ export default [
         clearImmediate: 'readonly',
         Express: 'readonly',
         BigInt: 'readonly', // PostgreSQL BIGINT/BIGSERIAL Support
+        NodeJS: 'readonly', // Node.js namespace for types like NodeJS.ErrnoException
       },
     },
     plugins: {
@@ -182,7 +178,7 @@ export default [
       ],
       'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
       'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
-      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
+      'max-classes-per-file': ['error', 1], // Regel 10: Zero Warnings
 
       // Line Length Control
       'max-len': [
@@ -755,16 +751,21 @@ export default [
       // Keep essential DOM modernization
       'unicorn/prefer-modern-dom-apis': 'error', // DOM modernization
     },
-  }, // Test files configuration
+  },
+
+  // Test files configuration - Vitest (Backend)
   {
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts', '**/*.test.js', '**/*.spec.js'],
+    files: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
     languageOptions: {
       parser: typescript,
       parserOptions: {
-        ecmaVersion: 2021,
+        ecmaVersion: 2022,
         sourceType: 'module',
+        project: './backend/tsconfig.test.json',
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
+        // Vitest globals
         describe: 'readonly',
         it: 'readonly',
         test: 'readonly',
@@ -773,7 +774,8 @@ export default [
         afterAll: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
-        jest: 'readonly',
+        vi: 'readonly',
+        // Node globals
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
@@ -785,9 +787,11 @@ export default [
       '@typescript-eslint': typescriptPlugin,
       prettier,
       'import-x': importPlugin,
+      vitest: vitestPlugin,
     },
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
+      ...vitestPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'off', // In Tests oft notwendig
       '@typescript-eslint/no-non-null-assertion': 'off', // In Tests oft notwendig
@@ -798,6 +802,41 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
+      // Relaxed rules for tests
+      'max-lines-per-function': 'off',
+      'max-lines': 'off',
+      'sonarjs/no-duplicate-string': 'off',
+    },
+  },
+
+  // Test files configuration - Vitest (Other/JS)
+  {
+    files: ['**/*.test.js', '**/*.spec.js'],
+    ignores: ['backend/**'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    plugins: {
+      prettier,
+      vitest: vitestPlugin,
+    },
+    rules: {
+      ...vitestPlugin.configs.recommended.rules,
+      'prettier/prettier': 'error',
     },
   }, // Remaining configurations for JS files, configs, etc.
   // ... (Diese Teile waren bereits gut und wurden unverändert übernommen)
@@ -936,33 +975,6 @@ export default [
         process: 'readonly',
         import: 'readonly',
       },
-    },
-  },
-  {
-    files: ['**/jest.config.js', '**/jest.config.cjs'],
-    languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'module',
-      globals: {
-        module: 'readonly',
-        exports: 'writable',
-        require: 'readonly',
-        __dirname: 'readonly',
-      },
-    },
-  },
-  {
-    files: ['jest.globalSetup.js', 'jest.globalTeardown.js'],
-    languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'module',
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-      },
-    },
-    rules: {
-      'prettier/prettier': 'error',
     },
   },
   ...storybook.configs['flat/recommended'],

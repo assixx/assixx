@@ -17,10 +17,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: "4.0"
           memory: 4G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-assixx_user}
@@ -53,10 +53,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: "4.0"
           memory: 4G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -97,14 +97,12 @@ services:
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
       - ../tsconfig.json:/app/tsconfig.json:delegated
       - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
-      - ../tsconfig.test.json:/app/tsconfig.test.json:delegated
       - ../eslint.config.js:/app/eslint.config.js:delegated
-      - ../jest.config.js:/app/jest.config.js:delegated
-      - ../jest.setup.ts:/app/jest.setup.ts:delegated
-      - ../jest.globalSetup.js:/app/jest.globalSetup.js:delegated
-      - ../jest.globalTeardown.js:/app/jest.globalTeardown.js:delegated
+      - ../vitest.config.ts:/app/vitest.config.ts:delegated
+      - ../vitest.setup.ts:/app/vitest.setup.ts:delegated
       - ../.prettierignore:/app/.prettierignore:delegated
       - ../.prettierrc.json:/app/.prettierrc.json:delegated
+      - ../.npmrc:/app/.npmrc:delegated
       - ../nodemon.json:/app/nodemon.json:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
@@ -126,8 +124,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    # Development command mit auto-install - run as root but create files with user permissions
-    command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
+    # Development command - build NestJS and run (tsx doesn't support decorators)
+    command: sh -c "pnpm install --frozen-lockfile && cd backend && pnpm run build && node dist/nest/main.js"
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
@@ -139,10 +137,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
     volumes:
       - redis_data:/data
@@ -164,10 +162,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     environment:
       NODE_ENV: ${NODE_ENV:-development}

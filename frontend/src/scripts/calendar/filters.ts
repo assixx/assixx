@@ -4,7 +4,8 @@
  * Integrates with state management and calendar instance
  */
 
-import type { Calendar } from '@fullcalendar/core';
+// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase class
+import type Calendar from '@event-calendar/core';
 import { $$, $all, $$id } from '../../utils/dom-utils';
 import { state } from './state';
 import type { FilterLevel, ViewMode } from './types';
@@ -32,6 +33,7 @@ function handleFilterChange(value: string, calendar: Calendar): void {
   state.currentFilter = value as FilterLevel;
   localStorage.setItem('calendarFilter', state.currentFilter);
   console.info('[CALENDAR FILTERS] Filter changed to:', state.currentFilter);
+
   calendar.refetchEvents();
 }
 
@@ -136,7 +138,8 @@ export function setupViewButtons(calendar: Calendar): void {
     button.addEventListener('click', () => {
       console.info('[CALENDAR FILTERS] Changing view to:', view);
       state.calendarView = view;
-      calendar.changeView(view);
+
+      calendar.setOption('view', view);
       updateViewButtonStates(button);
     });
   });
@@ -166,7 +169,8 @@ export function setupLegacyViewButtons(calendar: Calendar): void {
       if (view === undefined || view === '') return;
 
       state.calendarView = view as ViewMode;
-      calendar.changeView(view);
+
+      calendar.setOption('view', view);
       updateFilterButtonState($all('.view-btn'), this);
     });
   });
@@ -196,6 +200,7 @@ export function setupSearchFunctionality(calendar: Calendar): void {
     const searchQuery = searchInput.value.trim();
     console.info('[CALENDAR FILTERS] Search triggered:', searchQuery);
     state.currentSearch = searchQuery;
+
     calendar.refetchEvents();
   });
 
@@ -205,6 +210,7 @@ export function setupSearchFunctionality(calendar: Calendar): void {
     const searchQuery = this.value.trim();
     console.info('[CALENDAR FILTERS] Search triggered (Enter key):', searchQuery);
     state.currentSearch = searchQuery;
+
     calendar.refetchEvents();
   });
 
