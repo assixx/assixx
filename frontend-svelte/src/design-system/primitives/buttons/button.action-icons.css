@@ -1,0 +1,189 @@
+/**
+ * Action Icon Buttons
+ * Icon-only buttons for table actions with color-coded hover states
+ *
+ * Usage:
+ *   <button class="action-icon action-icon--edit">
+ *     <i class="fas fa-edit"></i>
+ *   </button>
+ *   <button class="action-icon action-icon--delete">
+ *     <i class="fas fa-trash"></i>
+ *   </button>
+ */
+
+/* ========== BASE ACTION ICON ========== */
+
+.action-icon {
+  /* Reset & Base */
+  display: inline-flex;
+
+  /* Interaction */
+  position: relative;
+  justify-content: center;
+  align-items: center;
+
+  /* Effects */
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--glass-card-radius);
+
+  background: transparent;
+  padding: 0;
+
+  /* Size */
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-text-secondary);
+
+  /* Icon */
+  font-size: 0.875rem;
+}
+
+.action-icon:hover {
+  transform: scale(1.1);
+  background: rgb(255 255 255 / 5%);
+}
+
+.action-icon:active {
+  transform: scale(0.95);
+}
+
+.action-icon:disabled {
+  opacity: 40%;
+  cursor: not-allowed;
+}
+
+.action-icon:disabled:hover {
+  transform: none;
+  background: transparent;
+}
+
+/* ========== EDIT VARIANT (Yellow) ========== */
+
+.action-icon--edit:hover {
+  background: rgb(251 191 36 / 10%);
+  color: #fbbf24; /* Tailwind yellow-400 */
+}
+
+.action-icon--edit:active {
+  color: #f59e0b; /* Tailwind yellow-500 */
+}
+
+/* ========== DELETE VARIANT (Red) ========== */
+
+.action-icon--delete:hover {
+  background: rgb(239 68 68 / 10%);
+  color: #ef4444; /* Tailwind red-500 */
+}
+
+.action-icon--delete:active {
+  color: #dc2626; /* Tailwind red-600 */
+}
+
+/* ========== VIEW VARIANT (Blue) ========== */
+
+.action-icon--view:hover {
+  background: rgb(59 130 246 / 10%);
+  color: #3b82f6; /* Tailwind blue-500 */
+}
+
+.action-icon--view:active {
+  color: #2563eb; /* Tailwind blue-600 */
+}
+
+/* ========== MORE VARIANT (Neutral) ========== */
+
+.action-icon--more:hover {
+  background: rgb(255 255 255 / 10%);
+  color: var(--color-text-primary);
+}
+
+/* ========== TOGGLE VARIANT (Orange/Green) ========== */
+
+.action-icon--toggle:hover {
+  background: rgb(249 115 22 / 10%);
+  color: #f97316; /* Tailwind orange-500 */
+}
+
+.action-icon--toggle:active {
+  color: #ea580c; /* Tailwind orange-600 */
+}
+
+/* Success state for active items */
+.action-icon--toggle[data-status='inactive']:hover {
+  background: rgb(16 185 129 / 10%);
+  color: #10b981; /* Tailwind green-500 */
+}
+
+.action-icon--toggle[data-status='inactive']:active {
+  color: #059669; /* Tailwind green-600 */
+}
+
+/* ========== FOCUS STATE ========== */
+
+.action-icon:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========== TOOLTIP SUPPORT ========== */
+
+.action-icon[title] {
+  position: relative;
+}
+
+/**
+ * Custom tooltip via ::after pseudo-element
+ *
+ * WARNING: This uses position:absolute which gets clipped by overflow:auto containers!
+ * Inside .table-responsive, use native title="" attribute instead.
+ *
+ * BEST PRACTICE FOR TABLES:
+ * - Use title="Bearbeiten" for action buttons (native, never clipped)
+ * - Avoid data-tooltip in scroll containers
+ */
+.action-icon[data-tooltip]::after {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+
+  opacity: 0%;
+  z-index: 9999;
+
+  transition: opacity 0.2s ease;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 90%);
+
+  padding: 0.25rem 0.5rem;
+  pointer-events: none;
+  content: attr(data-tooltip);
+  color: var(--color-white);
+
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.action-icon[data-tooltip]:hover::after {
+  opacity: 100%;
+}
+
+/**
+ * Disable ::after tooltip inside scroll containers
+ * Native title="" attribute will be used instead (browser renders it outside scroll context)
+ */
+.table-responsive .action-icon[data-tooltip]::after {
+  display: none;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .action-icon {
+    /* Larger touch target on mobile */
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+}

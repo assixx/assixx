@@ -191,8 +191,11 @@ export class DocumentsController {
     const category = body['category'] ?? 'general';
     const finalCategory = VALID_CATEGORIES.includes(category) ? category : 'general';
 
+    // Use custom document name if provided, otherwise use original filename
+    const displayName = body['documentName']?.trim() || file.originalname;
+
     const documentData = {
-      filename: `${fileUuid}${extension}`,
+      filename: displayName,
       originalName: file.originalname,
       fileSize: file.size,
       fileContent: file.buffer,
@@ -204,14 +207,24 @@ export class DocumentsController {
       fileChecksum: checksum,
       filePath: buildStoragePath(tenantId, fileUuid, extension),
       storageType: 'filesystem' as const,
-      ...(body['targetUserId'] !== undefined && {
-        targetUserId: Number.parseInt(body['targetUserId'], 10),
+      // Parse tags if provided (JSON array)
+      ...(body['tags'] !== undefined && {
+        tags: JSON.parse(body['tags']),
+      }),
+      ...(body['ownerUserId'] !== undefined && {
+        ownerUserId: Number.parseInt(body['ownerUserId'], 10),
       }),
       ...(body['targetTeamId'] !== undefined && {
         targetTeamId: Number.parseInt(body['targetTeamId'], 10),
       }),
       ...(body['targetDepartmentId'] !== undefined && {
         targetDepartmentId: Number.parseInt(body['targetDepartmentId'], 10),
+      }),
+      ...(body['salaryYear'] !== undefined && {
+        salaryYear: Number.parseInt(body['salaryYear'], 10),
+      }),
+      ...(body['salaryMonth'] !== undefined && {
+        salaryMonth: Number.parseInt(body['salaryMonth'], 10),
       }),
     };
 

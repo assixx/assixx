@@ -1,0 +1,25 @@
+/**
+ * Manage Teams - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
+ *
+ * Migration Complete: 2025-01-28
+ * - Container → Tailwind utilities (container class)
+ * - Card → card__header, card__body (Design System)
+ * - Table → data-table--striped (Design System)
+ * - Modal → ds-modal (Design System)
+ * - Form → form-field (Design System)
+ * - Buttons → btn-* (Design System)
+ * - Floating Action Button → btn-float (Design System)
+ * - Empty State → empty-state (Design System)
+ * - Search Input → search-input (Design System)
+ * - Toggle Group → toggle-group (Design System)
+ * - Dropdown → dropdown (Design System)
+ * - Badge → badge--* (Design System)
+ * - Spinner → spinner-container (Design System)
+ *
+ * Status: 100% Design System compliant
+ * Previous: 497 lines (Bootstrap + custom CSS)
+ * Current: 0 lines (all Design System)
+ *
+ * Container now defined globally in tailwind/components/container.css
+ */

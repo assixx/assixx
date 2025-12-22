@@ -1,0 +1,123 @@
+// =============================================================================
+// MANAGE DEPARTMENTS - TYPE DEFINITIONS
+// =============================================================================
+
+/**
+ * Status values for isActive field
+ * 0 = inactive, 1 = active, 3 = archived, 4 = deleted
+ */
+export type IsActiveStatus = 0 | 1 | 3 | 4;
+
+/**
+ * Form-only status values (excludes deleted)
+ */
+export type FormIsActiveStatus = 0 | 1 | 3;
+
+/**
+ * Status filter options for list view
+ */
+export type StatusFilter = 'all' | 'active' | 'inactive' | 'archived';
+
+/**
+ * Department entity from API
+ */
+export interface Department {
+  id: number;
+  name: string;
+  description?: string | null;
+  departmentLeadId?: number | null;
+  departmentLeadName?: string | null;
+  areaId?: number | null;
+  areaName?: string | null;
+  parentId?: number | null;
+  parentName?: string | null;
+  isActive: IsActiveStatus;
+  employeeCount?: number;
+  employeeNames?: string;
+  teamCount?: number;
+  teamNames?: string;
+  machineCount?: number;
+  budget?: number;
+  costCenter?: string;
+  foundedDate?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  tenantId?: number;
+  createdBy?: number;
+}
+
+/**
+ * Area for dropdown selection
+ */
+export interface Area {
+  id: number;
+  name: string;
+  type?: string;
+  description?: string;
+}
+
+/**
+ * Admin/Root user for department lead selection
+ */
+export interface AdminUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'admin' | 'root';
+}
+
+/**
+ * Payload for creating/updating a department
+ */
+export interface DepartmentPayload {
+  name: string;
+  description?: string | null;
+  areaId?: number | null;
+  departmentLeadId?: number | null;
+  isActive: FormIsActiveStatus;
+}
+
+/**
+ * API response for departments list
+ */
+export interface DepartmentsApiResponse {
+  data?: Department[];
+  success?: boolean;
+}
+
+/**
+ * API response for areas list
+ */
+export interface AreasApiResponse {
+  data?: Area[];
+  success?: boolean;
+}
+
+/**
+ * Delete department result with potential dependency info
+ */
+export interface DeleteDepartmentResult {
+  success: boolean;
+  error: string | null;
+  hasDependencies?: boolean;
+  dependencyDetails?: DependencyDetails;
+}
+
+/**
+ * Dependency details for force delete
+ */
+export interface DependencyDetails {
+  totalDependencies?: number;
+  users?: number;
+  teams?: number;
+  machines?: number;
+  shifts?: number;
+  shiftPlans?: number;
+  kvpSuggestions?: number;
+  documents?: number;
+  calendarEvents?: number;
+  surveyAssignments?: number;
+  adminPermissions?: number;
+}

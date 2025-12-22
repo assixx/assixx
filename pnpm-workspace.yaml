@@ -1,5 +1,6 @@
 packages:
   - "frontend"
+  - "frontend-svelte"
   - "backend"
 ignoredBuiltDependencies:
   - unrs-resolver

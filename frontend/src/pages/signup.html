@@ -32,12 +32,7 @@
       <div class="signup-header">
         <div class="header-left">
           <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" data-action="reload-page" class="u-cursor-pointer" />
-          <div class="header-text">
-            <h1></h1>
-            <!-- machen wir anders spöter -->
-            <p></p>
-            <!-- machen wir anders spöter -->
-          </div>
+          <!-- header-text placeholder entfernt - a11y fix -->
         </div>
       </div>
 
@@ -85,7 +80,7 @@
               />
               <span class="subdomain-suffix">.assixx.com</span>
             </div>
-            <p id="subdomainError" class="form-field__message">Nur Kleinbuchstaben und Bindestriche</p>
+            <p id="subdomainError" class="form-field__message form-field__message--error u-hidden"></p>
           </div>
           <div class="form-field">
             <label class="form-field__label form-field__label--required" for="email">E-Mail</label>
@@ -170,7 +165,9 @@
                 required
               />
             </div>
-            <p id="phoneError" class="form-field__message">Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)</p>
+            <p id="phoneError" class="form-field__message form-field__message--error u-hidden">
+              Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)
+            </p>
           </div>
 
           <!-- Dritte Zeile -->
@@ -226,7 +223,7 @@
               placeholder=""
               autocomplete="new-password"
             />
-            <p id="passwordError" class="form-field__message">Passwörter stimmen nicht überein</p>
+            <p id="passwordError" class="form-field__message form-field__message--error u-hidden">Passwörter stimmen nicht überein</p>
           </div>
           <div class="form-field">
             <label class="form-field__label" for="planValue">Plan</label>

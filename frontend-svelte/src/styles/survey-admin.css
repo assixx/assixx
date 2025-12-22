@@ -1,0 +1,213 @@
+.survey-stats {
+  display: flex;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+}
+
+.survey-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.survey-stat-value {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.survey-stat-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.survey-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
+}
+
+/* Survey action buttons now use Design System .btn .btn-secondary */
+
+/* ========================================
+   SURVEY-SPECIFIC: Question Builder
+   ======================================== */
+
+.question-builder {
+  margin-top: var(--spacing-6);
+}
+
+.question-item {
+  position: relative;
+
+  margin-bottom: var(--spacing-4);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-6);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.question-number {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+
+  background: var(--primary-color);
+
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  font-weight: 600;
+
+  font-size: 14px;
+}
+
+.question-actions {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.question-action,
+.remove-question {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 10%);
+  padding: var(--spacing-1);
+
+  width: 32px;
+  height: 32px;
+
+  color: var(--text-secondary);
+}
+
+.question-action:hover,
+.remove-question:hover {
+  transform: scale(1.1);
+  background: rgb(244 67 54 / 30%);
+  color: #ff5252;
+}
+
+.question-action.delete:hover {
+  background: rgb(244 67 54 / 20%);
+  color: #f44336;
+}
+
+.remove-question svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ========================================
+   SURVEY-SPECIFIC: Question Options
+   ======================================== */
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.option-input {
+  flex: 1;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+
+  padding: var(--spacing-3);
+
+  color: var(--text-primary);
+}
+
+.remove-option {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: background 0.2s ease;
+  cursor: pointer;
+  border: none;
+  border-radius: 50%;
+
+  background: rgb(244 67 54 / 20%);
+  padding: var(--spacing-1);
+
+  width: 28px;
+  height: 28px;
+
+  color: #f44336;
+}
+
+.remove-option:hover {
+  background: rgb(244 67 54 / 30%);
+}
+
+.add-option-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+
+  transition: background 0.2s ease;
+  cursor: pointer;
+
+  margin-bottom: 10px;
+  border: none;
+  border-radius: var(--radius-xl);
+
+  background: rgb(76 175 80 / 20%);
+  padding: var(--spacing-3);
+  color: #4caf50;
+
+  font-size: 0.9rem;
+}
+
+.add-option-btn:hover {
+  background: rgb(76 175 80 / 30%);
+}
+
+/* ========================================
+   SURVEY-SPECIFIC: Drafts & Templates Sections
+   ======================================== */
+
+.drafts-section,
+.templates-section {
+  margin-top: var(--spacing-8);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-8);
+}
+
+.drafts-header,
+.templates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.drafts-title,
+.templates-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+/* Template grid now uses Tailwind grid utilities */
+/* Template cards now use Design System .card .card--clickable */

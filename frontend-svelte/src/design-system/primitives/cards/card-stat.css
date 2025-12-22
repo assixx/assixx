@@ -1,0 +1,73 @@
+/**
+ * Design System – Stat Card
+ *
+ * Card for displaying statistics (number + label).
+ * Use case: Dashboard KPIs, metrics, counters.
+ *
+ * NOTE: @layer removed for compatibility with legacy dashboard-theme.css
+ */
+
+/* Stat Card */
+.card-stat {
+  backdrop-filter: blur(20px) saturate(180%);
+
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px - Same as card-accent for consistency */
+
+  background: rgb(255 255 255 / 2%);
+  padding: var(--spacing-6); /* 24px */
+
+  text-align: center;
+}
+
+.card-stat:hover {
+  border-color: var(--color-icon-primary);
+}
+
+/* Stat Value (Big Number) */
+.card-stat__value {
+  margin-bottom: var(--spacing-1);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.5rem; /* 24px - Better for text and numbers */
+}
+
+/* Stat Label */
+.card-stat__label {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem; /* 14px */
+}
+
+/* With Icon */
+.card-stat__icon {
+  margin-bottom: var(--spacing-2);
+  color: var(--color-icon-primary); /* #a9d9ff - Consistent light blue for all icons */
+  font-size: 2rem; /* 40px */
+}
+
+/* Color Variants - Only for values, icons stay consistent */
+.card-stat--success .card-stat__value {
+  color: var(--color-success);
+}
+
+.card-stat--success:hover {
+  border-color: rgb(76 175 80 / 50%);
+}
+
+.card-stat--warning .card-stat__value {
+  color: var(--color-warning);
+}
+
+.card-stat--warning:hover {
+  border-color: rgb(255 152 0 / 50%);
+}
+
+.card-stat--danger .card-stat__value {
+  color: var(--color-danger);
+}
+
+.card-stat--danger:hover {
+  border-color: rgb(244 67 54 / 50%);
+}

@@ -81,9 +81,16 @@ class AccountSettingsController {
     // Delete confirmation input listener
     const deleteConfirmation = document.querySelector('#deleteConfirmation');
     if (deleteConfirmation !== null) {
-      deleteConfirmation.addEventListener('input', (e: Event) => {
-        const input = e.target as HTMLInputElement;
-        ui.updateConfirmButtonState(input);
+      deleteConfirmation.addEventListener('input', () => {
+        ui.updateConfirmButtonState();
+      });
+    }
+
+    // Delete reason input listener (min 10 chars validation)
+    const deleteReason = document.querySelector('#deleteReason');
+    if (deleteReason !== null) {
+      deleteReason.addEventListener('input', () => {
+        ui.updateReasonValidation();
       });
     }
 
@@ -104,15 +111,6 @@ class AccountSettingsController {
         }
       });
     }
-
-    const statusModal = document.querySelector('#deletionStatusModal');
-    if (statusModal !== null) {
-      statusModal.addEventListener('click', (e: Event) => {
-        if (e.target === statusModal) {
-          ui.closeDeletionStatusModal();
-        }
-      });
-    }
   }
 
   /**
@@ -122,7 +120,6 @@ class AccountSettingsController {
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         ui.closeDeleteModal();
-        ui.closeDeletionStatusModal();
       }
     });
   }
@@ -139,18 +136,6 @@ class AccountSettingsController {
       },
     ],
     ['delete-tenant', (target: HTMLElement) => this.handleDeleteTenant(target)],
-    [
-      'close-status-modal',
-      () => {
-        ui.closeDeletionStatusModal();
-      },
-    ],
-    [
-      'navigate',
-      (target: HTMLElement) => {
-        this.handleNavigation(target);
-      },
-    ],
   ]);
 
   /**
@@ -207,36 +192,21 @@ class AccountSettingsController {
 
     try {
       const reason = ui.getDeleteReason();
-      const result = await deleteTenant(reason);
+      await deleteTenant(reason);
 
       // Show success toast
       showSuccessAlert('Löschanfrage erfolgreich eingereicht! Genehmigung von zweitem Root-Benutzer erforderlich.');
 
-      // Show status modal with data from server response (API v2 camelCase)
-      ui.showDeletionStatusModal({
-        queueId: result.queueId,
-        tenantId: result.tenantId,
-      });
-
-      // Close delete confirmation modal
+      // Close delete confirmation modal and reload to show pending banner
       ui.closeDeleteModal();
+      this.checkForPendingDeletion();
+      ui.hideDeleteButton();
     } catch (error) {
       console.error('Error deleting tenant:', error);
       const message = error instanceof Error ? error.message : 'Fehler beim Löschen des Tenants';
       showErrorAlert(message);
     } finally {
       ui.setDeleteButtonLoading(false);
-    }
-  }
-
-  /**
-   * Handle navigation action
-   * Navigates to URL specified in data-href attribute
-   */
-  private handleNavigation(target: HTMLElement): void {
-    const href = target.dataset['href'];
-    if (href !== undefined && href !== '') {
-      window.location.href = href;
     }
   }
 }

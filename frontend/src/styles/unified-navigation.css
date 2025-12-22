@@ -52,13 +52,15 @@
 
 .header-actions [id="user-info"] {
   display: flex;
-  gap: var(--spacing-2);
+  gap: 0.4rem;
   align-items: center;
 
-  /* background: rgba(255, 255, 255, 0.1); */
-  padding: var(--spacing-1) var(--spacing-2);
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 20px;
+  padding: 0.2rem 0.5rem;
+  border: none;
+  border-radius: 0;
+
+  background: transparent;
+  backdrop-filter: none;
 }
 
 /* Token Timer */

@@ -1,0 +1,5 @@
+/* Outfit Font Variables
+   Note: The actual font should be loaded via <link> in HTML to prevent duplicate requests
+   Do NOT use @import here as it causes multiple font downloads */
+
+/* CSS Variables for Outfit */

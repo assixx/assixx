@@ -397,7 +397,8 @@ export class RootController {
     @Body() dto: DeletionApprovalBodyDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
-    await this.rootService.approveDeletion(params.queueId, user.id, dto.comment);
+    // SECURITY: Pass password for Two-Person-Principle verification
+    await this.rootService.approveDeletion(params.queueId, user.id, dto.password, dto.comment);
     return { message: 'Deletion approved successfully' };
   }
 

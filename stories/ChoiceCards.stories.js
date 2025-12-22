@@ -511,7 +511,7 @@ export const RadioVsCheckbox = {
 /**
  * Plan Cards - Feature/Plan Selection
  *
- * Enhanced cards for pricing/feature selection (from root-features page)
+ * Enhanced cards for pricing/feature selection (from features page)
  */
 export const PlanCards = {
   render: () => {
@@ -773,7 +773,7 @@ export const PlanCardsCompact = {
 /**
  * Feature Cards - Feature Management
  *
- * Cards for activating/deactivating features (from root-features page)
+ * Cards for activating/deactivating features (from features page)
  */
 export const FeatureCards = {
   render: () => {

@@ -2,10 +2,14 @@
  * Calendar Filters Module
  * Handles event filtering, search, and calendar view switching
  * Integrates with state management and calendar instance
+ *
+ * UPGRADE: v3 → v5 (createCalendar API) - 2025-12-22
  */
 
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase class
-import type Calendar from '@event-calendar/core';
+import type { createCalendar } from '@event-calendar/core';
+
+// v5 API: Calendar type is return type of createCalendar
+type Calendar = ReturnType<typeof createCalendar>;
 import { $$, $all, $$id } from '../../utils/dom-utils';
 import { state } from './state';
 import type { FilterLevel, ViewMode } from './types';

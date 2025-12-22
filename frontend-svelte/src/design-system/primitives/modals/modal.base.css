@@ -1,0 +1,338 @@
+/**
+ * Design System – Modal
+ *
+ * Glassmorphism modals with overlay backdrop.
+ * Header/Body/Footer structure for organized content.
+ *
+ * Use cases: Forms, Confirmations, Info dialogs, Settings
+ *
+ * Structure:
+ * - modal-overlay (backdrop)
+ * - ds-modal (container with glassmorphism - renamed to avoid legacy conflict)
+ * - ds-modal__header (title + close button)
+ * - ds-modal__body (scrollable content)
+ * - ds-modal__footer (action buttons)
+ *
+ * IMPORTANT: Uses ds-modal instead of modal to avoid collision with legacy .modal class
+ */
+
+/* ========================================
+   OVERLAY (Backdrop)
+   ======================================== */
+
+.modal-overlay {
+  /* Layout */
+  display: flex;
+
+  /* Positioning */
+  position: fixed;
+  justify-content: center;
+  align-items: center;
+
+  /* Hidden by default */
+  visibility: hidden;
+  opacity: 0%;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+
+  /* Smooth transition */
+  transition:
+    visibility 0.3s,
+    opacity 0.3s ease;
+  inset: 0;
+
+  /* Backdrop styling */
+  background: rgb(0 0 0 / 60%);
+
+  padding: var(--spacing-6); /* 24px */
+}
+
+/* Active state - visible */
+.modal-overlay--active {
+  visibility: visible;
+  opacity: 100%;
+}
+
+/* ========================================
+   MODAL CONTAINER
+   ======================================== */
+
+.ds-modal {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(20px) saturate(180%);
+
+  transition: transform 0.3s ease;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+
+  /* Schlicht & Elegant - Wie Cards */
+  border: 1px solid rgb(255 255 255 / 10%); /* Card border */
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(15 15 15 / 95%);
+
+  /* Default size */
+  width: 90%;
+  max-width: 700px; /* Default: md */
+  max-height: 85vh;
+
+  /* Animation - starts slightly scaled down and moved up */
+
+  overflow: hidden; /* Prevent content overflow */
+}
+
+/* Active state - animates to center and normal scale */
+.modal-overlay--active .ds-modal {
+  transform: translateY(0) scale(1);
+}
+
+/* ========================================
+   MODAL HEADER
+   ======================================== */
+
+.ds-modal__header {
+  /* Layout */
+  display: flex;
+  flex-shrink: 0; /* Don't shrink when body scrolls */
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+
+  /* Schlicht & Elegant - Subtiler Hintergrund */
+  background: rgb(0 0 0 / 20%);
+
+  /* Spacing */
+  padding: var(--spacing-6); /* 24px */
+}
+
+.ds-modal__title {
+  /* Typography */
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1.25rem; /* 20px */
+}
+
+/* Close button */
+.ds-modal__close {
+  /* Layout */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Smooth transition */
+  transition: all 0.2s ease;
+
+  /* Reset button styles */
+  cursor: pointer;
+  border: none;
+
+  /* Styling */
+  border-radius: var(--radius-md); /* 8px */
+
+  background: none;
+  background: rgb(255 255 255 / 3%);
+
+  /* Size */
+  width: 36px;
+  height: 36px;
+
+  color: var(--color-text-secondary);
+}
+
+.ds-modal__close:hover {
+  background: rgb(255 255 255 / 10%);
+  color: var(--color-danger);
+}
+
+.ds-modal__close:active {
+  transform: scale(0.95);
+}
+
+/* ========================================
+   MODAL BODY
+   ======================================== */
+
+.ds-modal__body {
+  /* Form field spacing - flex column with gap for consistent spacing between elements */
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-4); /* 20px between form fields and content blocks */
+
+  /* Spacing */
+  padding: var(--spacing-6); /* 24px */
+
+  min-height: 0; /* Allow flex child to shrink */
+
+  /* Scrollable content */
+  overflow-y: auto;
+}
+
+/* Hidden inputs should not affect modal layout */
+.ds-modal__body > input[type='hidden'] {
+  display: none;
+}
+
+/* Custom scrollbar for modal body */
+.ds-modal__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ds-modal__body::-webkit-scrollbar-track {
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 2%);
+}
+
+.ds-modal__body::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 10%);
+}
+
+.ds-modal__body::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+/* ========================================
+   MODAL FOOTER
+   ======================================== */
+
+.ds-modal__footer {
+  /* Layout */
+  display: flex;
+  flex-shrink: 0; /* Don't shrink */
+  justify-content: flex-end; /* Buttons right-aligned by default */
+  gap: var(--spacing-4); /* 16px */
+  border-top: 1px solid rgb(255 255 255 / 8%);
+
+  /* Schlicht & Elegant - Subtiler Hintergrund */
+  background: rgb(0 0 0 / 20%);
+
+  /* Spacing */
+  padding: var(--spacing-6); /* 24px */
+}
+
+/* Center footer variant */
+.ds-modal__footer--centered {
+  justify-content: center;
+}
+
+/* Space between footer variant */
+.ds-modal__footer--spaced {
+  justify-content: space-between;
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+/* Small modal - 500px */
+.ds-modal--sm {
+  max-width: 500px;
+}
+
+/* Medium modal - 700px (default, no class needed) */
+.ds-modal--md {
+  max-width: 700px;
+}
+
+/* Large modal - 900px */
+.ds-modal--lg {
+  max-width: 900px;
+}
+
+/* Extra large modal - 1200px */
+.ds-modal--xl {
+  max-width: 1200px;
+}
+
+/* Full width modal (with padding) */
+.ds-modal--full {
+  max-width: calc(100vw - 48px); /* Full width minus overlay padding */
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (width <= 768px) {
+  .ds-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .ds-modal__header,
+  .ds-modal__body,
+  .ds-modal__footer {
+    padding: var(--spacing-5); /* 20px on tablet */
+  }
+
+  /* All sizes become responsive on mobile */
+  .ds-modal--lg,
+  .ds-modal--xl {
+    max-width: 95%;
+  }
+}
+
+@media (width <= 480px) {
+  .modal-overlay {
+    padding: var(--spacing-4); /* 16px on mobile */
+  }
+
+  .ds-modal {
+    border-radius: var(--radius-xl); /* Smaller radius on mobile */
+    width: 100%;
+    max-height: 95vh;
+  }
+
+  .ds-modal__header,
+  .ds-modal__body,
+  .ds-modal__footer {
+    padding: var(--spacing-4); /* 16px on mobile */
+  }
+
+  .ds-modal__title {
+    font-size: 1.125rem; /* 18px on mobile */
+  }
+}
+
+/* ========================================
+   SPECIAL VARIANTS
+   ======================================== */
+
+/* Logout Modal - positioned higher on screen */
+.ds-modal--logout {
+  /* Keep it 25% higher than normal modals */
+}
+
+.modal-overlay--active .ds-modal--logout {
+  transform: translateY(-50%) scale(1);
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+/* Focus trap - prevent background scrolling when modal is active */
+body:has(.modal-overlay--active) {
+  overflow: hidden;
+}
+
+/* Reduced motion support - disable animations for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .ds-modal {
+    transition: none;
+  }
+
+  /* Start at normal position without animation */
+  .ds-modal {
+    transform: translateY(0) scale(1);
+  }
+
+  /* Stay at normal position (no animation) */
+  .modal-overlay--active .ds-modal {
+    transform: translateY(0) scale(1);
+  }
+}

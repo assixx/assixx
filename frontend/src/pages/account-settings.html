@@ -64,7 +64,7 @@
                     <strong>ALLE</strong>
                     &nbsp;Daten unwiderruflich gelöscht:
                   </p>
-                  <ul class="pl-5 mt-3 space-y-1 text-sm">
+                  <ul class="pl-5 mt-4 space-y-1 text-sm">
                     <li>Alle Administratoren und Mitarbeiter</li>
                     <li>Alle Dokumente und Dateien</li>
                     <li>Alle Nachrichten und Chats</li>
@@ -152,8 +152,17 @@
 
           <!-- Delete Reason -->
           <div class="form-field">
-            <label for="deleteReason" class="form-field__label">Grund für die Löschung (optional):</label>
-            <textarea id="deleteReason" class="form-field__control" rows="3" placeholder="Bitte geben Sie einen Grund an..."></textarea>
+            <label for="deleteReason" class="form-field__label">Grund für die Löschung (min. 10 Zeichen):</label>
+            <textarea
+              id="deleteReason"
+              class="form-field__control"
+              rows="3"
+              minlength="10"
+              placeholder="Bitte geben Sie einen Grund an (min. 10 Zeichen)..."
+            ></textarea>
+            <span class="form-field__message form-field__message--error u-hidden" id="deleteReason-error">
+              Mindestens 10 Zeichen erforderlich
+            </span>
           </div>
         </div>
 
@@ -165,65 +174,6 @@
           <button class="btn btn-danger" id="confirmDeleteBtn" data-action="delete-tenant" disabled>
             <i class="fas fa-trash-alt"></i>
             Endgültig löschen
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Deletion Status Modal -->
-    <div id="deletionStatusModal" class="modal-overlay">
-      <div class="ds-modal ds-modal--md">
-        <div class="ds-modal__header ds-modal__header--primary">
-          <h2 class="ds-modal__title">
-            <i class="fas fa-hourglass-half mr-3"></i>
-            Tenant wird zur Löschung vorbereitet
-          </h2>
-          <button class="ds-modal__close" data-action="close-status-modal" aria-label="Schließen">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <div class="ds-modal__body text-center">
-          <!-- Status Icon -->
-          <div class="deletion-status-icon mb-5">
-            <i class="fas fa-shield-alt"></i>
-          </div>
-
-          <h4 class="text-lg font-semibold mb-4">Zwei-Personen-Prinzip aktiv</h4>
-
-          <!-- Deletion Info -->
-          <div class="deletion-info mb-5">
-            <p class="mb-2">
-              <strong>Status:</strong>
-              Warte auf Genehmigung
-            </p>
-            <p class="mb-2">
-              <strong>Queue ID:</strong>
-              <span id="queueIdDisplay">-</span>
-            </p>
-            <p class="mb-2">
-              <strong>Tenant ID:</strong>
-              <span id="tenantIdDisplay">-</span>
-            </p>
-            <p class="mb-2">
-              <strong>Geplante Löschung:</strong>
-              <span id="scheduledDateDisplay">-</span>
-            </p>
-          </div>
-
-          <p class="text-sm text-gray-400">
-            Die Löschung muss von einem zweiten Root-Benutzer genehmigt werden. Nach der Genehmigung beginnt eine 30-tägige Nachfrist.
-          </p>
-        </div>
-
-        <div class="ds-modal__footer ds-modal__footer--center">
-          <button class="btn btn-cancel" data-action="close-status-modal">
-            <i class="fas fa-times"></i>
-            Schließen
-          </button>
-          <button class="btn btn-modal" data-action="navigate" data-href="/tenant-deletion-status">
-            <i class="fas fa-external-link-alt"></i>
-            Zum Löschstatus
           </button>
         </div>
       </div>

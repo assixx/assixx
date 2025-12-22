@@ -91,7 +91,7 @@ class GridViewManager {
         data-read="${doc.isRead}"
       >
         <!-- Card Header: Icon & Badge -->
-        <div class="flex items-start justify-between mb-3">
+        <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
             <i class="fas fa-file-alt flex-shrink-0" style="font-size: 40px; color: var(--color-icon-primary);"></i>
             <div class="flex flex-col gap-1">
@@ -117,7 +117,7 @@ class GridViewManager {
         </div>
 
         <!-- Card Body: Document Info -->
-        <div class="mb-3">
+        <div class="mb-4">
           <h3 class="text-sm font-medium text-content-primary truncate mb-1 ${!doc.isRead ? 'font-semibold' : ''}" title="${this.escapeHtml(this.getDisplayName(doc))}">
             ${this.truncateFilename(this.getDisplayName(doc), 40)}
           </h3>

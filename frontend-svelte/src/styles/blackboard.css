@@ -1,0 +1,1022 @@
+/* Import unified sticky-note component */
+@import '../design-system/primitives/sticky-note/sticky-note.css';
+
+/* Pinnwand Container - Glassmorphismus wie .card */
+.blackboard-container {
+  position: relative;
+  border-radius: 12px;
+  padding: 40px;
+
+  width: 100%;
+  min-height: calc(100vh - 120px);
+
+  overflow: visible;
+
+  /* Transparent wie .card - lässt body::after durchscheinen */
+}
+
+/* Korken-Muster als separater Layer ÜBER dem transparenten Background */
+.blackboard-container::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(45deg, #ffffff57 3%, #9a070700 0), linear-gradient(-45deg, #fff0 3% 0),
+    linear-gradient(45deg, #ffffffb2 3%, #fff0 0),
+    linear-gradient(-45deg, #ffffff3d 3%, #84848400 0);
+  background-position:
+    0 0,
+    -2px 4px,
+    0 0,
+    -17px -12px;
+  background-size: 30px 30px;
+  pointer-events: none;
+  content: '';
+}
+
+/* Cork texture overlay for more realism */
+.blackboard-container::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+
+  border-radius: 12px;
+
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgb(0 0 0 / 3%) 2px,
+      rgb(0 0 0 / 3%) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgb(0 0 0 / 3%) 2px,
+      rgb(0 0 0 / 3%) 4px
+    );
+  pointer-events: none;
+  content: '';
+}
+
+/* Pinboard Items Grid */
+.pinboard-grid {
+  display: flex;
+  position: relative;
+  flex-wrap: wrap;
+  justify-content: center; /* Same as mini-notes-container */
+  gap: 1rem; /* Same as mini-notes-container */
+  z-index: 2;
+}
+
+/* Base Pinboard Item (wrapper for sticky-note) */
+.pinboard-item {
+  position: relative;
+  z-index: 1;
+}
+
+.pinboard-item:hover {
+  z-index: 10;
+}
+
+/* NOTE: Sticky note styles are now in design-system/primitives/sticky-note/sticky-note.css
+   Classes: .sticky-note, .sticky-note--yellow, .sticky-note__title, etc.
+   Old classes (.pinboard-sticky, .sticky-title, etc.) are deprecated */
+
+/* Larger Note Style (A5/A4) */
+
+/* Paper lines for notes */
+
+/* Info Box Style */
+
+/* Document/PDF Preview */
+
+/* Image Style */
+
+/* Pushpin Styles - Mini-Note Pattern (right-aligned) */
+.pushpin {
+  position: absolute;
+  top: -5px;
+  right: 15px;
+  transform: rotate(-45deg);
+  z-index: 5;
+  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
+  border-radius: 50% 50% 50% 0;
+
+  background: radial-gradient(circle at 30% 30%, #f44, #c00);
+
+  width: 15px;
+  height: 15px;
+}
+
+.pushpin::after {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  border-radius: 50%;
+
+  width: 10px;
+  height: 10px;
+  content: '';
+}
+
+/* Pinboard Attachment Style */
+
+/* PDF Preview Styles */
+
+/* PDF-spezifische Attachment Styles - KEIN margin-right */
+
+/* PDF Inner Wrapper */
+
+/* PDF Overlay for click */
+
+/* Red Pushpin - simplified (uses base .pushpin styling) */
+.pushpin-red {
+  /* All styling inherited from .pushpin */
+}
+
+/* Blue Pushpin */
+
+/* Yellow Pushpin */
+
+/* Metal Thumbtack */
+
+/* Random rotation classes */
+
+/* Color Picker Update */
+/* ========================================
+   Color Picker Component
+   ======================================== */
+
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-3);
+}
+
+.color-option {
+  display: flex;
+
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+
+  background: var(--color-surface-primary);
+  padding: var(--spacing-3);
+
+  min-height: 80px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+
+  font-size: 13px;
+  user-select: none;
+}
+
+.color-option:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-hover);
+}
+
+.color-option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.color-option.active {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 4px rgb(var(--color-primary-rgb) / 10%);
+  border-color: var(--color-primary);
+}
+
+.color-option.active::after {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+  border-radius: 50%;
+
+  background: var(--color-primary);
+
+  width: 18px;
+  height: 18px;
+  content: '';
+}
+
+.color-option.active::before {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  z-index: 1;
+  content: '\2713';
+  color: #fff;
+  font-weight: 700;
+
+  font-size: 12px;
+}
+
+/* Color Swatch - Large colored circle */
+.color-option__swatch {
+  display: block;
+
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-radius: 50%;
+
+  width: 32px;
+  height: 32px;
+}
+
+/* Color Label */
+.color-option__label {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Checkbox Update */
+
+/* Button Group - Fixed at bottom */
+
+/* Custom Scrollbar */
+.entry-form-modal form::-webkit-scrollbar {
+  width: 10px;
+}
+
+.entry-form-modal form::-webkit-scrollbar-track {
+  border-radius: 5px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.entry-form-modal form::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 10%);
+  background-clip: padding-box;
+}
+
+.entry-form-modal form::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+/* Firefox Scrollbar */
+/* Removed duplicate block: Duplicate of line 909 */
+
+/* Form Hints */
+
+.form-hint {
+  display: block;
+
+  margin-top: var(--spacing-1);
+  color: rgb(255 255 255 / 60%);
+  font-style: italic;
+
+  font-size: 12px;
+}
+
+/* 2-Spalten Layout für breites Modal */
+
+/* Volle Breite für bestimmte Elemente */
+.entry-form-modal form > .form-group:nth-child(1), /* Hidden input */
+  .entry-form-modal form > .form-group:nth-child(2), /* Titel */
+  .entry-form-modal form > .form-group:nth-child(3), /* Inhalt */
+  .entry-form-modal form > .button-group {
+  grid-column: 1 / -1;
+}
+
+/* Attachment Zone auch volle Breite */
+.entry-form-modal form > .form-group:has(.attachment-upload-zone) {
+  grid-column: 1 / -1;
+}
+
+.entry-form-modal form {
+  padding: var(--spacing-3);
+}
+
+/* ===============================================
+ * Original Blackboard Content Continues
+ * =============================================== */
+
+/* Progress bar für Confirmations */
+.progress-bar-container {
+  border-radius: var(--radius-xl);
+
+  background-color: var(--background-dark);
+
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--radius-xl);
+
+  background-color: var(--primary-color);
+
+  height: 100%;
+  color: #fff;
+
+  font-size: 10px;
+}
+
+/* @keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+} */
+
+/* Blackboard Entry Styling */
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+
+  background-color: var(--background-light);
+
+  height: 100%;
+  overflow: hidden;
+}
+
+.entry-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Priority indicators - colored left border - mit Assixx Farbschema */
+.blackboard-card.priority-low {
+  border-left: 4px solid var(--success-color, #4caf50);
+}
+
+.blackboard-card.priority-normal {
+  border-left: 4px solid var(--primary-color, #2196f3);
+}
+
+.blackboard-card.priority-high {
+  border-left: 4px solid var(--warning-color, #ff9800);
+}
+
+.blackboard-card.priority-urgent {
+  border-left: 4px solid var(--error-color, #f44336);
+}
+
+/* Unread indicator */
+.blackboard-card.unread {
+  background-color: rgb(33 150 243 / 5%);
+}
+
+/* Organization level badges - mit Assixx Farbschema */
+.badge.level-company {
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--primary-color, #2196f3);
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+.badge.level-department {
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--warning-color, #ff9800);
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+.badge.level-team {
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--secondary-color, #4caf50);
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+/* Card content styles - Scoped to blackboard cards only */
+/* NOTE: .blackboard-card .card-title is page-specific override
+   Base styles from design-system/components/card/card.css (2025-11-20) */
+.blackboard-card .card-title {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.blackboard-card .card-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+
+  margin-bottom: 1rem;
+  -webkit-line-clamp: 3;
+
+  color: #555;
+  text-overflow: ellipsis;
+}
+
+.blackboard-card .card-footer {
+  border-top: 1px solid rgb(0 0 0 / 5%);
+
+  background-color: transparent;
+  padding-top: 0.75rem;
+  color: #6c757d;
+
+  font-size: 0.875rem;
+}
+
+/* Detail modal - Compact Design Standards */
+#entryDetailModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  justify-content: center;
+
+  /* display wird durch .u-hidden bzw. JavaScript gesteuert */
+  align-items: center;
+  z-index: 2000; /* Merged: was 1001, keeping higher value */
+  backdrop-filter: blur(10px);
+
+  background-color: rgb(0 0 0 / 70%);
+
+  width: 100%;
+  height: 100%;
+}
+
+/* Display flex nur wenn Modal aktiv ist */
+#entryDetailModal:not(.u-hidden) {
+  display: flex;
+}
+
+#entryDetailModal .modal-container {
+  width: 90%;
+  max-width: 600px; /* Merged: kept original max-width */
+}
+
+#entryDetailModal .modal-body {
+  padding: var(--spacing-6);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.entry-detail-header {
+  margin-bottom: var(--spacing-6);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  padding-bottom: var(--spacing-4);
+}
+
+.entry-detail-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  margin: 0;
+  color: #fff;
+  font-weight: 600;
+
+  font-size: 20px;
+}
+
+.entry-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+
+  margin-top: var(--spacing-2);
+  color: rgb(255 255 255 / 70%);
+
+  font-size: 13px;
+}
+
+.entry-detail-meta span {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.entry-detail-meta i {
+  opacity: 60%;
+  font-size: 12px;
+}
+
+.entry-detail-content {
+  margin-bottom: var(--spacing-6);
+  color: rgb(255 255 255 / 90%);
+
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+/* Entry Tags - Compact Design */
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+}
+
+.entry-tags .badge {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 20px;
+
+  background: rgb(255 255 255 / 5%);
+  padding: 4px 12px;
+  color: rgb(255 255 255 / 80%);
+  font-weight: 500;
+
+  font-size: 12px;
+}
+
+.entry-tags .badge:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
+}
+
+/* Confirmation status styles - Compact Design */
+
+/* Einfaches, übersichtliches Formular-Styling */
+
+/* Einfache Checkbox */
+/* Removed duplicate block: Duplicate of line 807 */
+/* Removed duplicate block: Duplicate of line 813 */
+/* Removed duplicate block: Duplicate of line 823 */
+
+.entry-metadata-item {
+  display: flex;
+  align-items: center;
+  margin-right: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.entry-metadata-item i {
+  margin-right: 0.5rem;
+  color: var(--primary-color, #2196f3);
+}
+
+/* Moderne Filter-Kontrollen *
+
+
+.search-field::placeholder {
+  color: var(--color-text-placeholder);
+  opacity: 100%;
+}
+
+.search-trigger {
+  cursor: pointer;
+
+  padding: 8px 16px;
+  border: none;
+  border-radius: 25px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+
+  background: var(--primary-color);
+}
+
+.search-trigger:hover {
+  background: var(--primary-dark);
+}
+
+/* Filter Pills */
+
+/* Color Picker */
+/* Removed duplicate block: Duplicate of line 765 */
+/* Removed duplicate block: Duplicate of line 771 */
+/* Removed duplicate block: Duplicate of line 791 */
+/* Removed duplicate block: Duplicate of line 796 */
+/* Removed duplicate block: Duplicate of line 802 */
+
+/* ========================================
+   ATTACHMENT UPLOAD ZONE
+   ======================================== */
+
+/* Removed duplicate block: Duplicate of line 831 */
+/* Removed duplicate block: Duplicate of line 844 */
+/* Removed duplicate block: Duplicate of line 856 */
+/* Removed duplicate block: Duplicate of line 862 */
+/* Removed duplicate block: Duplicate of line 869 */
+
+.preview-title {
+  margin-bottom: 12px;
+  color: rgb(255 255 255 / 90%);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+
+  background: rgb(255 255 255 / 5%);
+
+  padding: 10px 16px;
+}
+
+.attachment-item:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.attachment-info {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+}
+
+.attachment-name {
+  margin-bottom: 2px;
+  color: rgb(255 255 255 / 90%);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.attachment-size {
+  color: rgb(255 255 255 / 50%);
+  font-size: 12px;
+}
+
+/* Attachment Display in Entry - Compact Design */
+.entry-attachments {
+  margin-top: var(--spacing-6);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-6);
+}
+
+.entry-attachments-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  margin-bottom: var(--spacing-4);
+  color: rgb(255 255 255 / 80%);
+  font-weight: 600;
+
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.entry-attachments-title i {
+  opacity: 70%;
+  color: var(--primary-color);
+  font-size: 14px;
+}
+
+.entry-attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 100%;
+}
+
+.entry-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 3%);
+  padding: var(--spacing-3);
+  width: 100%;
+
+  color: rgb(255 255 255 / 90%);
+  text-decoration: none;
+}
+
+.entry-attachment-item:hover {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  border-color: rgb(255 255 255 / 15%);
+
+  background: rgb(255 255 255 / 6%);
+
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.entry-attachment-item i {
+  opacity: 80%;
+  font-size: 18px;
+}
+
+.entry-attachment-item i.fa-file-pdf {
+  color: #e74c3c;
+}
+
+.entry-attachment-item i.fa-file-image {
+  color: #2ecc71;
+}
+
+.entry-attachment-item span {
+  font-size: 14px;
+}
+
+/* Removed duplicate block: Duplicate of line 1824 */
+/* Highlight Effect for linked entries */
+
+/* @keyframes highlightPulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  25%,
+  75% {
+    box-shadow:
+      0 5px 20px rgba(0, 142, 255, 0.6),
+      0 0 30px rgba(0, 142, 255, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow:
+      0 5px 25px rgba(0, 142, 255, 0.8),
+      0 0 40px rgba(0, 142, 255, 0.4);
+    transform: scale(1.03);
+  }
+} */
+
+/* Attachment Preview Modal - Updated Glassmorphismus Design */
+
+/* Entry Form Modal - Glassmorphismus Design Standards */
+
+/* Entry Detail Modal - Glassmorphismus Design Standards */
+/* Removed duplicate #entryDetailModal blocks from merge - properties already merged above */
+
+/* Modal Animation */
+/* @keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} */
+
+/* Size option buttons for direct attachment */
+
+/* Hide d-none elements */
+.d-none {
+  display: none !important;
+}
+
+/* ========================================
+   Extracted CSS from blackboard.html
+   Generated: 2025-09-17
+   ======================================== */
+
+/* PDF Preview Modal - Enhanced styles from inline HTML (duplicates removed) */
+/* Note: Basic modal styles already exist above, these are additional enhancements */
+
+/* PDF.js spezifische Fixes */
+
+/* PDF.js Styling - Moderne Alternativen */
+/* Note: Shadow DOM v0 (/deep/ und ::shadow) sind seit 2014 deprecated */
+/* Direkte Manipulation von PDF.js internen Elementen ist nicht mehr möglich */
+
+/* Falls PDF.js in einem iframe läuft */
+
+/* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
+
+/* Filter Pills - Glassmorphismus - bereits bei Zeile 1514 definiert */
+
+/* Color Options - Glassmorphismus - bereits bei Zeile 783 definiert */
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  position: relative;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+  margin-left: auto;
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  background: var(--glass-bg);
+  padding: 10px;
+
+  width: fit-content;
+}
+
+.zoom-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 5%);
+
+  width: 36px;
+  height: 36px;
+  color: var(--text-primary);
+
+  font-size: 16px;
+}
+
+.zoom-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+  background: rgb(255 255 255 / 10%);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-level {
+  opacity: 80%;
+  min-width: 45px;
+  color: var(--text-primary);
+  font-weight: 500;
+
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ========================================
+   CSS Classes for Inline Styles Replacement
+   Generated: 2025-09-17
+   ======================================== */
+
+/* Filter Controls */
+
+.chevron-icon[data-expanded='true'] {
+  transform: rotate(180deg);
+}
+
+/* Controls Row */
+.controls-flex {
+  display: flex !important;
+  align-items: center;
+  gap: 1rem;
+}
+
+.zoom-controls-inline {
+  backdrop-filter: none;
+  margin: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* Empty State */
+.empty-icon {
+  opacity: 50%;
+  color: #000;
+  font-size: 48px;
+}
+
+.empty-title {
+  color: #000;
+}
+
+.empty-text {
+  color: #000;
+}
+
+/* ========================================
+   Color Swatch Variants
+   ======================================== */
+
+.color-option[data-color='yellow'] .color-option__swatch {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.color-option[data-color='pink'] .color-option__swatch {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+.color-option[data-color='blue'] .color-option__swatch {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.color-option[data-color='green'] .color-option__swatch {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.color-option[data-color='orange'] .color-option__swatch {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+/* Utility Classes */
+.ml-2 {
+  margin-left: 10px;
+}
+
+/* ========================================
+   FIX: Sort Dropdown Z-Index Bug
+   ULTRA-SPECIFIC - Only the filter card containing the dropdown
+   Modern CSS :has() selector - targets parent card
+   ======================================== */
+
+/* Allow dropdown to overflow the filter card bounds */
+.card:has(#sort-dropdown) {
+  position: relative; /* Create stacking context */
+  z-index: 100; /* Above sibling elements (controls/buttons) */
+  overflow: visible !important;
+}
+
+.card:has(#sort-dropdown) .card__body {
+  overflow: visible !important;
+}
+
+/* Ensure dropdown is above other elements within the card */
+#sort-dropdown .dropdown__menu {
+  z-index: 9999 !important;
+}
+
+/* Only hide filter content when collapsed, not the sidebar! */
+#filterContent.collapsed,
+.card-body.collapsed {
+  display: none;
+}
+
+/* ============================================================================
+   FULLSCREEN MODE - Calendar Pattern
+   Only #blackboardContainer goes fullscreen, nothing else!
+   ============================================================================ */
+
+/* Main container: Fullscreen ohne Background/Height Beschränkung */
+body.fullscreen-mode #blackboardContainer {
+  position: fixed !important;
+  z-index: 9999 !important;
+  margin: 0 !important;
+  inset: 0 !important;
+  box-shadow: none !important;
+  border: 0 !important; /* No border */
+  border-radius: 0 !important; /* No rounded corners */
+
+  background: #00000063;
+  padding: 20px !important; /* Space für Pinboard Items */
+
+  width: 100% !important;
+  min-height: 100vh !important; /* Override base min-height */
+
+  overflow-y: auto;
+}
+
+/* Kork-Texture (::after) im Fullscreen beibehalten */
+
+/* Pinboard Grid im Fullscreen: same flex layout */
+body.fullscreen-mode .pinboard-grid {
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Hide everything else in fullscreen mode */
+body.fullscreen-mode .sidebar,
+body.fullscreen-mode .header,
+body.fullscreen-mode #navigation-container,
+body.fullscreen-mode #breadcrumb-container,
+body.fullscreen-mode .card.mb-6,
+body.fullscreen-mode .flex.flex-between.mb-6,
+body.fullscreen-mode .flex.justify-between.mb-6 {
+  display: none !important;
+}
+
+/* Hide zoom controls and action buttons in fullscreen mode */
+body.fullscreen-mode .zoom-controls,
+body.fullscreen-mode #newEntryBtn {
+  display: none !important;
+}
+
+/* Modal Specific Styles */
+.modal-content-medium {
+  max-width: 600px;
+}
+
+/* Dropzone Styles */
+
+.file-size-hint {
+  font-size: 0.85rem;
+}

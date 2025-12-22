@@ -167,7 +167,7 @@ async function loadLogs() {
       <div class="spinner spinner--lg mx-auto">
         <div class="spinner__circle"></div>
       </div>
-      <p class="mt-4">Logs werden geladen...</p>
+      <p class="mt-6">Logs werden geladen...</p>
     </div>
   `,
   );

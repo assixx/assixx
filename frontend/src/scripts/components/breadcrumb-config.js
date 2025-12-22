@@ -94,7 +94,7 @@ export const urlMappings = {
   '/kvp-admin': { label: 'KVP Verwaltung', icon: ICON_TASKS },
   '/manage-root': { label: 'Root User Verwaltung', icon: ICON_USER_LOCK },
   '/root-dashboard': { label: 'Root Dashboard', icon: ICON_SHIELD_ALT },
-  '/root-features': { label: 'Root Features', icon: ICON_TOOLS },
+  '/features': { label: 'Features', icon: ICON_TOOLS },
   '/tenant-deletion-status': { label: 'Tenant Löschstatus', icon: ICON_TRASH_ALT },
   '/feature-management': { label: 'Feature Management', icon: ICON_TOGGLE_ON },
   '/org-management': { label: 'Organisation Verwaltung', icon: ICON_BUILDING },

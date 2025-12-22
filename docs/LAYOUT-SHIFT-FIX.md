@@ -77,7 +77,7 @@ Praktisch ALLE anderen HTML-Dateien im Projekt haben eine Sidebar:
 - manage-department-groups.html
 - org-management.html
 - profile.html
-- root-features.html
+- features.html
 - root-profile.html
 - salary-documents.html
 - shifts.html

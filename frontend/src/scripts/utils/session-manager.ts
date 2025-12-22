@@ -551,22 +551,51 @@ export class SessionManager {
   }
 
   public logout(isTimeout: boolean = false): void {
-    // Clear session data via TokenManager (handles tokens + redirect)
-    const reason: 'inactivity_timeout' | 'logout' = isTimeout ? 'inactivity_timeout' : 'logout';
-    tokenManager.clearTokens(reason);
+    // Stop inactivity checking FIRST (prevent race conditions)
+    this.cancelScheduledCheck();
 
-    // Clear additional session-specific data
+    // ===========================================
+    // Clear ALL session-related localStorage
+    // ===========================================
+    // AUTH TOKENS
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenReceivedAt');
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+
+    // USER DATA
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
     localStorage.removeItem('userRole');
     localStorage.removeItem('activeRole');
+    localStorage.removeItem('tenantId');
+
+    // SESSION DATA
     localStorage.removeItem('lastActivity');
     localStorage.removeItem('browserFingerprint');
     localStorage.removeItem('fingerprintTimestamp');
-    localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
 
-    // Stop inactivity checking
-    this.cancelScheduledCheck();
+    // UI STATE
+    localStorage.removeItem('sidebarCollapsed');
+    localStorage.removeItem('openSubmenu');
+    localStorage.removeItem('activeNavigation');
+    localStorage.removeItem('profilePictureCache');
 
-    // TokenManager already handles redirect to login with appropriate parameters
+    // FEATURE STATE
+    localStorage.removeItem('lastKvpClickTimestamp');
+    localStorage.removeItem('lastKnownKvpCount');
+    localStorage.removeItem('shifts_context');
+    localStorage.removeItem('rateLimitTimestamp');
+
+    // COOKIE
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+
+    // ===========================================
+    // TokenManager handles redirect to login
+    // ===========================================
+    const reason: 'inactivity_timeout' | 'logout' = isTimeout ? 'inactivity_timeout' : 'logout';
+    tokenManager.clearTokens(reason);
   }
 
   /**

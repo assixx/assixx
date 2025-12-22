@@ -1,0 +1,27 @@
+/**
+ * Manage Machines - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
+ *
+ * Migration Complete: 2025-11-01
+ * - Card → card__header, card__body (Design System)
+ * - Table → data-table--striped (Design System)
+ * - Action Buttons → action-icon (Design System)
+ * - Floating Action Button → btn-float (Design System)
+ * - Modal → ds-modal (Design System)
+ * - Delete Modal → ds-modal--sm (Design System)
+ * - Forms → form-field (Design System)
+ * - Status Filter → toggle-group (Design System)
+ * - Search Input → search-input with results dropdown (Design System)
+ * - Status Badges → badge--success/warning/danger (Design System)
+ * - Empty State → empty-state (Design System)
+ * - Loading Spinner → spinner-container (Design System)
+ * - Layout → Tailwind utilities (flex, gap, p-4, etc.)
+ * - Maintenance Warning Icons → Tailwind text utilities
+ *
+ * Status: 100% Design System compliant
+ * Previous: 461 lines of custom CSS (all unused)
+ * Current: 0 lines of custom CSS
+ *
+ * Backup: manage-machines.css.backup (2025-11-01)
+ * All styles now provided by Design System + Tailwind
+ */

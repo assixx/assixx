@@ -101,7 +101,7 @@
 - survey-details.html
 - survey-admin.html
 - documents.html
-- root-features.html
+- features.html
 - storage-upgrade.html
 
 ### 🔶 Nicht ersetzbar (3 Zeilen)

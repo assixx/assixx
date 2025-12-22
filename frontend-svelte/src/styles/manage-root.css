@@ -1,0 +1,17 @@
+/**
+ * Manage Root Users - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
+ *
+ * Migration Complete: 2025-01-20
+ * - Security Warning → alert--warning (Design System)
+ * - Table → data-table (Design System)
+ * - Buttons → btn-* (Design System)
+ * - Modal → modal (Design System)
+ * - Empty State → empty-state (Design System)
+ * - Badges → badge (Design System)
+ * - Search Input → search-input (Design System)
+ * - Toggle Group → toggle-group (Design System)
+ *
+ * Status: 100% Design System compliant
+ * Container now defined globally in tailwind/components/container.css
+ */

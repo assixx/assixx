@@ -243,6 +243,34 @@ function setupGlobalMiddleware(app: NestFastifyApplication): void {
   app.useGlobalInterceptors(new ResponseInterceptor());
 }
 
+// =============================================================================
+// GRACEFUL SHUTDOWN - Ensures port is released on exit (SIGTERM, SIGINT, SIGHUP)
+// =============================================================================
+let appInstance: NestFastifyApplication | null = null;
+
+/** Graceful shutdown handler - closes NestJS app and releases port */
+async function gracefulShutdown(signal: string): Promise<void> {
+  const logger = new Logger('Shutdown');
+  logger.log(`Received ${signal}. Starting graceful shutdown...`);
+
+  if (appInstance) {
+    try {
+      await appInstance.close();
+      logger.log('NestJS application closed successfully. Port released.');
+    } catch (error) {
+      logger.error('Error during shutdown:', error);
+    }
+  }
+
+  process.exit(0);
+}
+
+// Register signal handlers BEFORE bootstrap
+// void operator: explicitly discard Promise (fire-and-forget pattern for signal handlers)
+process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
+process.on('SIGHUP', () => void gracefulShutdown('SIGHUP'));
+
 /**
  * Bootstrap the NestJS application with Fastify
  */
@@ -259,6 +287,9 @@ async function bootstrap(): Promise<void> {
       trustProxy: true,
     }),
   );
+
+  // Store reference for graceful shutdown
+  appInstance = app;
 
   app.setGlobalPrefix('api/v2');
 

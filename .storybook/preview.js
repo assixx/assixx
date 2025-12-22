@@ -4,7 +4,6 @@
  */
 // Import global styles
 // NOTE: main.css already imports tailwind.css which includes design-system
-import '../frontend/src/styles/dashboard-theme.css';
 import '../frontend/src/styles/main.css';
 
 /** @type { import('@storybook/html-vite').Preview } */

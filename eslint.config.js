@@ -66,6 +66,9 @@ export default [
       '**/test/**',
       '**/tests/**',
       '**/*.html',
+      // SvelteKit Frontend - eigenes Linting-Setup
+      'frontend-svelte/**',
+      'frontend-svelte/.svelte-kit/**',
     ],
   }, // Base JavaScript configuration
   js.configs.recommended, // Prettier configuration

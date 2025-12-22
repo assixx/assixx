@@ -1,0 +1,89 @@
+/**
+ * Design System – Card Base
+ *
+ * Glassmorphism container for content grouping.
+ * Foundation for all card variants.
+ *
+ * NOTE: @layer removed for compatibility with legacy dashboard-theme.css
+ * Unlayered CSS has higher specificity and works with existing imports
+ */
+
+/* Base Card */
+.card {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  backdrop-filter: blur(20px) saturate(180%);
+
+  /* Spacing */
+  margin-bottom: var(--spacing-6); /* 24px */
+  box-shadow: var(--shadow-md);
+
+  /* Glassmorphism */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px - Consistent with all card components */
+
+  background: rgb(255 255 255 / 2%);
+  background-clip: border-box;
+  padding: var(--spacing-6); /* 24px */
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  overflow-wrap: break-word;
+}
+
+/* Card Header */
+.card__header {
+  margin-bottom: var(--spacing-4);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  padding-bottom: var(--spacing-3);
+}
+
+/* Card Title */
+.card__title {
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1.125rem; /* 18px */
+}
+
+/* Card Body */
+.card__body {
+  flex: 1;
+}
+
+/* Card Footer */
+.card__footer {
+  margin-top: var(--spacing-4);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-3);
+}
+
+/* Clickable Card */
+.card--clickable {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.card--clickable:hover {
+  /* Exakt wie admin-dashboard .compact-card:hover */
+  border-color: rgb(0 142 255 / 50%);
+  background: rgb(255 255 255 / 3%);
+}
+
+/* No Margin Variant (for grids) */
+.card--no-margin {
+  margin-bottom: 0;
+}
+
+/* Compact Padding */
+.card--compact {
+  padding: var(--spacing-4); /* 16px */
+}
+
+/* .card:hover {
+  border-color: var(--color-icon-primary);
+  box-shadow: var(--shadow-lg);
+} */

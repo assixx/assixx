@@ -23,6 +23,7 @@ const getHtmlInputs = () => {
 export default defineConfig({
   root: 'src',
   base: '/',
+  publicDir: '../public', // Public folder is at frontend/public, not src/public
 
   // 🔥 NEW: Cache Directory Optimization (Best Practice 2025)
   cacheDir: '../node_modules/.vite',
@@ -144,6 +145,7 @@ export default defineConfig({
 
   server: {
     port: 5173,
+    strictPort: true, // Fail if port 5173 is unavailable (don't try other ports)
 
     // 🔥 NEW: Enhanced HMR Configuration (Best Practice 2025)
     hmr: {
@@ -167,7 +169,7 @@ export default defineConfig({
     warmup: {
       clientFiles: [
         './scripts/auth/index.ts',
-        './scripts/components/unified-navigation.ts',
+        './scripts/components/navigation/index.ts',
         './styles/main.css',
         './styles/tailwind.css',
       ],
@@ -294,6 +296,81 @@ export default defineConfig({
   plugins: [
     // Tailwind CSS Plugin - MUST BE FIRST
     tailwindcss(),
+
+    // 🔥 DEV SERVER: URL Rewrite Plugin for clean URLs
+    // Maps /admin-dashboard → /pages/admin-dashboard.html (like production)
+    {
+      name: 'dev-url-rewrite',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          // Skip if not GET request or has file extension or is API/asset
+          if (
+            req.method !== 'GET' ||
+            !req.url ||
+            req.url.includes('.') ||
+            req.url.startsWith('/api') ||
+            req.url.startsWith('/uploads') ||
+            req.url.startsWith('/@') ||
+            req.url.startsWith('/node_modules')
+          ) {
+            return next();
+          }
+
+          // Known pages (auto-generated from src/pages/*.html)
+          const pages = [
+            'account-settings',
+            'admin-dashboard',
+            'admin-profile',
+            'blackboard-detail',
+            'blackboard',
+            'calendar',
+            'chat',
+            'documents-explorer',
+            'employee-dashboard',
+            'employee-profile',
+            'index',
+            'kvp-detail',
+            'kvp',
+            'login',
+            'logs',
+            'manage-admins',
+            'manage-areas',
+            'manage-departments',
+            'manage-employees',
+            'manage-machines',
+            'manage-root',
+            'manage-teams',
+            'rate-limit',
+            'root-dashboard',
+            'features',
+            'root-profile',
+            'shifts',
+            'signup',
+            'storage-upgrade',
+            'survey-admin',
+            'survey-employee',
+            'survey-results',
+            'tenant-deletion-approve',
+            'tenant-deletion-status',
+          ];
+
+          const urlPath = req.url.split('?')[0].replace(/^\//, ''); // Remove leading slash
+
+          // Root path → index
+          if (urlPath === '' || urlPath === '/') {
+            req.url = '/pages/index.html';
+            return next();
+          }
+
+          // Known page → rewrite to /pages/*.html
+          if (pages.includes(urlPath)) {
+            req.url = `/pages/${urlPath}.html`;
+          }
+
+          next();
+        });
+      },
+    },
 
     // HTML Minification Plugin - SWC-based (modern, fast)
     simpleHtmlPlugin({

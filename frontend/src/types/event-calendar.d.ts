@@ -1,6 +1,9 @@
 /**
- * Type declarations for @event-calendar packages
+ * Type declarations for @event-calendar/core v5
  * These packages don't include TypeScript definitions
+ *
+ * v5 API: createCalendar(target, plugins, options)
+ * All plugins are included in @event-calendar/core
  *
  * @see https://github.com/vkurko/calendar
  */
@@ -12,6 +15,7 @@ declare module '@event-calendar/core' {
   export interface CalendarOptions {
     view?: string;
     locale?: string | Record<string, unknown>;
+    firstDay?: number;
     headerToolbar?: {
       start?: string;
       center?: string;
@@ -24,6 +28,7 @@ declare module '@event-calendar/core' {
     dayMaxEvents?: boolean | number;
     nowIndicator?: boolean;
     height?: string | number;
+    events?: unknown[];
     eventSources?: { events: unknown }[];
     eventClick?: EventCallback;
     dateClick?: EventCallback;
@@ -36,20 +41,46 @@ declare module '@event-calendar/core' {
     [key: string]: unknown;
   }
 
-  export interface CalendarProps {
-    plugins: unknown[];
-    options: CalendarOptions;
-  }
-
-  export default class Calendar {
-    constructor(config: { target: HTMLElement; props: CalendarProps });
+  /**
+   * Calendar instance returned by createCalendar
+   */
+  export interface CalendarInstance {
     setOption(name: string, value: unknown): void;
     getOption(name: string): unknown;
     refetchEvents(): void;
     destroy(): void;
   }
+
+  /**
+   * Plugin type (opaque, used in plugins array)
+   */
+  export type Plugin = unknown;
+
+  /**
+   * v5 API: Create calendar instance
+   * @param target - DOM element to mount calendar
+   * @param plugins - Array of plugins [DayGrid, TimeGrid, etc.]
+   * @param options - Calendar configuration options
+   */
+  export function createCalendar(
+    target: HTMLElement,
+    plugins: Plugin[],
+    options: CalendarOptions,
+  ): CalendarInstance;
+
+  /**
+   * Plugins - all included in @event-calendar/core v5
+   */
+  export const DayGrid: Plugin;
+  export const TimeGrid: Plugin;
+  export const List: Plugin;
+  export const Interaction: Plugin;
 }
 
+/**
+ * Legacy module declarations (for backwards compatibility)
+ * These separate packages are no longer needed in v5 but kept for migration
+ */
 declare module '@event-calendar/day-grid' {
   const DayGrid: unknown;
   export default DayGrid;

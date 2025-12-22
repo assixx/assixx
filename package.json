@@ -9,7 +9,7 @@
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
   },
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.26.1",
   "pnpm": {
     "onlyBuiltDependencies": [],
     "overrides": {
@@ -25,7 +25,10 @@
       "esbuild@<0.27.0": ">=0.27.0",
       "tar@<7.5.2": ">=7.5.2",
       "express@>=5.0.0 <5.2.0": ">=5.2.0",
-      "jws@<3.2.3": ">=3.2.3"
+      "jws@<3.2.3": ">=3.2.3",
+      "cookie@<0.7.0": ">=0.7.0",
+      "@eslint/plugin-kit@<0.3.4": ">=0.3.4",
+      "storybook@>=10.0.0 <10.1.10": ">=10.1.10"
     }
   },
   "scripts": {
@@ -34,6 +37,9 @@
     "start:prod": "node backend/dist/nest/main.js",
     "start:express": "node backend/dist/server.js",
     "dev": "concurrently \"pnpm run dev:backend:nest\" \"pnpm run dev:frontend\"",
+    "predev:svelte": "./scripts/free-port.sh 5174",
+    "dev:svelte": "cd frontend-svelte && pnpm run dev",
+    "predev:backend:nest": "./scripts/free-port.sh 3002",
     "dev:backend:nest": "cd backend && pnpm run build && nodemon --watch src --ext ts --exec 'pnpm run build && node dist/nest/main.js'",
     "dev:backend:ts": "nodemon --exec \"tsx\" backend/src/server.ts",
     "dev:express": "nodemon --exec \"tsx\" backend/src/server.ts",
@@ -114,11 +120,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@storybook/addon-docs": "10.1.9",
-    "@storybook/addon-links": "10.1.9",
-    "@storybook/builder-vite": "10.1.9",
-    "@storybook/html-vite": "10.1.9",
-    "@swc/core": "^1.15.5",
+    "@storybook/addon-docs": "10.1.10",
+    "@storybook/addon-links": "10.1.10",
+    "@storybook/builder-vite": "10.1.10",
+    "@storybook/html-vite": "10.1.10",
+    "@swc/core": "^1.15.7",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/vite": "4.1.18",
     "@trivago/prettier-plugin-sort-imports": "^6.0.0",
@@ -136,7 +142,7 @@
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@usebruno/cli": "2.15.1",
-    "@vitest/eslint-plugin": "1.5.2",
+    "@vitest/eslint-plugin": "1.6.1",
     "@vitest/ui": "4.0.16",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
@@ -153,7 +159,7 @@
     "eslint-plugin-regexp": "^2.10.0",
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-sonarjs": "^3.0.5",
-    "eslint-plugin-storybook": "10.1.9",
+    "eslint-plugin-storybook": "10.1.10",
     "eslint-plugin-tsdoc": "^0.5.0",
     "eslint-plugin-unicorn": "^62.0.0",
     "markdownlint-cli": "^0.47.0",
@@ -161,8 +167,9 @@
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "prettier-plugin-css-order": "^2.1.2",
+    "prettier-plugin-svelte": "3.4.1",
     "purgecss": "7.0.2",
-    "storybook": "10.1.9",
+    "storybook": "^10.1.10",
     "stylelint": "^16.26.1",
     "stylelint-config-clean-order": "^8.0.0",
     "stylelint-config-standard": "^39.0.1",

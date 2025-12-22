@@ -28,7 +28,7 @@ export default {
         'custom-properties': false, // CSS Variables
         'custom-media-queries': true, // @custom-media
         'has-pseudo-class': true, // :has()
-        'is-pseudo-class': true, // :is()
+        'is-pseudo-class': false, // DISABLED - Moderne Browser unterstützen :is() nativ, verhindert Warnings bei @event-calendar v5
         'not-pseudo-class': false, // DISABLED - Tailwind v4 handles this, prevents excessive :not(#\#) selectors
         'any-link-pseudo-class': true, // :any-link
         'dir-pseudo-class': true, // :dir()

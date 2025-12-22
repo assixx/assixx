@@ -100,7 +100,7 @@ export function displayRootUsers(users: RootUser[]): void {
         </tbody>
       </table>
     </div>
-    <div class="alert alert--info mt-4">
+    <div class="alert alert--info mt-6">
       <div class="alert__icon">
         <i class="fas fa-info-circle"></i>
       </div>

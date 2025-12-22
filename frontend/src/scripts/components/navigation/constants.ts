@@ -70,7 +70,7 @@ const accessControlData: Record<string, Role[]> = {
   // Root-only pages
   [DASHBOARD_URLS.root]: ['root'],
   '/manage-root': ['root'],
-  '/root-features': ['root'],
+  '/features': ['root'],
   '/root-profile': ['root'],
   '/tenant-deletion-status': ['root'],
   '/storage-upgrade': ['root'],

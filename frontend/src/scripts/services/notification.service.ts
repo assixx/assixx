@@ -11,7 +11,7 @@ import type { Notification } from '../../types/utils.types';
 export class NotificationService {
   private container: HTMLElement | null = null;
   private notifications = new Map<string, Notification>();
-  private defaultDuration = 2000; // 2 seconds
+  private defaultDuration = 4000; // 4 seconds
 
   /**
    *
@@ -33,7 +33,7 @@ export class NotificationService {
       this.container.className = 'notification-container';
       this.container.style.cssText = `
         position: fixed;
-        top: 87px;
+        top: 92px;
         right: 20px;
         z-index: 10000;
         pointer-events: none;

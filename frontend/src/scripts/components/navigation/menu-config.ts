@@ -304,7 +304,7 @@ function getRootSystemItems(): NavItem[] {
       id: 'features',
       icon: getIcon('feature'),
       label: 'Features',
-      url: '/root-features',
+      url: '/features',
     },
     {
       id: 'logs',

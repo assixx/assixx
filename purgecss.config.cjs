@@ -53,7 +53,7 @@ module.exports = {
     'frontend/src/styles/profile-picture.css',
     'frontend/src/styles/rate-limit.css',
     'frontend/src/styles/root-dashboard.css',
-    'frontend/src/styles/root-features.css',
+    'frontend/src/styles/features.css',
     'frontend/src/styles/root-profile.css',
     'frontend/src/styles/shifts.css',
     'frontend/src/styles/signup.css',

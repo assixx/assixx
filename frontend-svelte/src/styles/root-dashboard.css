@@ -1,0 +1,32 @@
+/* Dashboard Stats Grid Container
+ * WHY: Dynamically created by root.ts loadDashboardData() (Line 261)
+ * Container for stat-card elements in root dashboard */
+#dashboard-data .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-6);
+  margin-bottom: 32px;
+}
+
+/* Stat Value - Large number display
+ * WHY: Dynamically created by root.ts (Line 263)
+ * Displays the actual count/metric value */
+#dashboard-data .stat-value {
+  margin-right: 10px;
+  margin-bottom: 8px;
+  color: var(--primary-color);
+  font-weight: 700;
+
+  font-size: 2.5rem;
+  text-shadow: 0 0 10px rgb(33 150 243 / 50%);
+}
+
+/* Stat Label - Description text
+ * WHY: Dynamically created by root.ts (Line 264)
+ * Shows label like "Admins", "Mitarbeiter", etc. */
+#dashboard-data .stat-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
