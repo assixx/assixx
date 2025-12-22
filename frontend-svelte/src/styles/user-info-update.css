@@ -1,0 +1,151 @@
+/* User Info Compact & Transparent Design Update */
+
+/* Department Badge Styles */
+.user-departments-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-top: 8px;
+
+  font-size: 0.75rem;
+}
+
+.user-departments-badge .badge {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 10%);
+  padding: 4px 12px;
+
+  font-size: 0.75rem;
+}
+
+.user-departments-badge .badge.loading {
+  opacity: 60%;
+
+  /* animation: pulse 2s infinite; */
+}
+
+.user-departments-badge .badge.badge-warning {
+  border-color: rgb(255 193 7 / 30%);
+  background: rgb(255 193 7 / 20%);
+  color: #ffc107;
+}
+
+.user-departments-badge .badge.badge-info {
+  border-color: rgb(0 123 255 / 30%);
+  background: rgb(0 123 255 / 20%);
+  color: #007bff;
+}
+
+.user-departments-badge .badge.badge-success {
+  border-color: rgb(40 167 69 / 30%);
+  background: rgb(40 167 69 / 20%);
+  color: #28a745;
+}
+
+/* @keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.6;
+  }
+} */
+
+/* Make user-info section more compact and transparent */
+/* Base styles - lowest specificity first */
+[id='user-info'],
+.user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+
+  padding: 0.2rem 0.5rem !important;
+}
+
+/* Hover states */
+[id='user-info']:hover,
+.user-info:hover {
+  background: transparent !important;
+}
+
+/* Header specific overrides - using less specific selectors */
+.header-actions [id='user-info'] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+
+  padding: 0.2rem 0.5rem !important;
+}
+
+.header-actions [id='user-info']:hover {
+  background: transparent !important;
+}
+
+/* Remove all pseudo-elements that might create extra circles */
+[id='user-info']::before,
+[id='user-info']::after,
+.user-info::before,
+.user-info::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Header specific pseudo-elements */
+.header-actions [id='user-info']::before,
+.header-actions [id='user-info']::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Avatar styles removed - handled by Design System (avatar.css)
+ * The unified-navigation.ts component now uses:
+ * - .avatar with .avatar--md size variant
+ * - .avatar__initials for text
+ * - .avatar--color-N for background colors (N = 0-9)
+ */
+
+/* Logout button styles moved to dashboard-theme.css to prevent conflicts */
+
+/* Header actions container */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Make the entire header more compact if needed */
+.header .header-actions {
+  margin-left: auto;
+}
+
+/* Responsive adjustments */
+@media (width <= 768px) {
+  [id='user-info'],
+  .user-info {
+    padding: 0.4rem 0.75rem;
+  }
+
+  [id='user-name'],
+  .user-name {
+    display: none; /* Hide name on mobile for space */
+  }
+
+  /* Logout button responsive styles moved to dashboard-theme.css */
+}

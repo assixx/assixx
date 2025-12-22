@@ -4,7 +4,7 @@
  */
 
 import { setHTML } from '../../utils/dom-utils.js';
-import type { DeletionStatusData, DeletionStatusModalData } from './types.js';
+import type { DeletionStatusData } from './types.js';
 
 /**
  * Status labels for deletion workflow states
@@ -57,7 +57,7 @@ export function showPendingDeletionBanner(data: DeletionStatusData): void {
           <strong>${statusLabel}</strong> · Queue #${String(data.queueId)} · Tenant #${String(data.tenantId)} ·
           Angefordert von ${data.requestedByName ?? 'Unbekannt'} am ${requestedDate}
         </p>
-        <a href="/tenant-deletion-status" class="btn btn-warning mt-3">
+        <a href="/tenant-deletion-status" class="btn btn-warning mt-4">
           <i class="fas fa-external-link-alt mr-2"></i>
           Details anzeigen
         </a>
@@ -143,49 +143,6 @@ export function closeDeleteModal(): void {
 }
 
 /**
- * Show the deletion status modal with queue information
- */
-export function showDeletionStatusModal(data: DeletionStatusModalData): void {
-  const modal = document.querySelector('#deletionStatusModal');
-  if (modal === null) return;
-
-  modal.classList.add('modal-overlay--active');
-
-  // Update queue ID
-  const queueIdDisplay = document.querySelector('#queueIdDisplay');
-  if (queueIdDisplay !== null) {
-    queueIdDisplay.textContent = String(data.queueId);
-  }
-
-  // Update tenant ID
-  const tenantIdDisplay = document.querySelector('#tenantIdDisplay');
-  if (tenantIdDisplay !== null) {
-    tenantIdDisplay.textContent = String(data.tenantId);
-  }
-
-  // Calculate and display scheduled deletion date (30 days from now)
-  const scheduledDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const scheduledDateDisplay = document.querySelector('#scheduledDateDisplay');
-  if (scheduledDateDisplay !== null) {
-    scheduledDateDisplay.textContent = scheduledDate.toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-}
-
-/**
- * Close the deletion status modal
- */
-export function closeDeletionStatusModal(): void {
-  const modal = document.querySelector('#deletionStatusModal');
-  if (modal === null) return;
-
-  modal.classList.remove('modal-overlay--active');
-}
-
-/**
  * Update delete button state (loading/normal)
  */
 export function setDeleteButtonLoading(loading: boolean): void {
@@ -211,6 +168,15 @@ export function isDeleteConfirmationValid(): boolean {
 }
 
 /**
+ * Check if delete reason is valid (min 10 chars)
+ * @returns true if reason has at least 10 characters
+ */
+export function isDeleteReasonValid(): boolean {
+  const textarea = document.querySelector<HTMLTextAreaElement>('#deleteReason');
+  return textarea !== null && textarea.value.length >= 10;
+}
+
+/**
  * Get delete reason from textarea
  */
 export function getDeleteReason(): string {
@@ -219,11 +185,39 @@ export function getDeleteReason(): string {
 }
 
 /**
- * Update confirm button disabled state based on confirmation input
+ * Update confirm button disabled state based on confirmation and reason input
  */
-export function updateConfirmButtonState(input: HTMLInputElement): void {
+export function updateConfirmButtonState(): void {
   const confirmBtn = document.querySelector<HTMLButtonElement>('#confirmDeleteBtn');
   if (confirmBtn === null) return;
 
-  confirmBtn.disabled = input.value !== 'LÖSCHEN';
+  const confirmationValid = isDeleteConfirmationValid();
+  const reasonValid = isDeleteReasonValid();
+
+  confirmBtn.disabled = !confirmationValid || !reasonValid;
+}
+
+/**
+ * Update reason validation message
+ */
+export function updateReasonValidation(): void {
+  const textarea = document.querySelector<HTMLTextAreaElement>('#deleteReason');
+  const errorMsg = document.querySelector<HTMLElement>('#deleteReason-error');
+
+  if (textarea === null || errorMsg === null) return;
+
+  const value = textarea.value;
+  const isValid = value.length >= 10;
+
+  if (value.length > 0 && !isValid) {
+    errorMsg.textContent = `Mindestens 10 Zeichen erforderlich (${value.length}/10)`;
+    errorMsg.classList.remove('u-hidden');
+    textarea.classList.add('form-field__control--error');
+  } else {
+    errorMsg.classList.add('u-hidden');
+    textarea.classList.remove('form-field__control--error');
+  }
+
+  // Also update button state
+  updateConfirmButtonState();
 }

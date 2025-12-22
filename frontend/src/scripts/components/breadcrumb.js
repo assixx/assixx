@@ -127,7 +127,7 @@ function handleAdminPages(items, currentPage) {
 // Adding "Root Dashboard" would be redundant: Home > Root Dashboard > Page
 // Correct: Home > Page (where Home links to /root-dashboard)
 function handleRootPages(_items, currentPage) {
-  const rootPages = ['/manage-root', '/root-features', '/tenant-deletion-status', '/feature-management'];
+  const rootPages = ['/manage-root', '/features', '/tenant-deletion-status', '/feature-management'];
   // Return true to signal this is a root page (prevents other handlers)
   // But do NOT add intermediate breadcrumb - Home already points to root-dashboard
   return rootPages.includes(currentPage);

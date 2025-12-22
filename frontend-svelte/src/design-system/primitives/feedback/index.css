@@ -1,0 +1,132 @@
+/**
+ * Design System - Feedback Components
+ *
+ * Purpose: Barrel export for all feedback & notification components
+ * Usage: @import 'design-system/primitives/feedback';
+ *
+ * Components:
+ * - Alerts: Inline messages (success, warning, error, info)
+ * - Progress: Progress bars and circular indicators
+ * - Spinners: Loading animations (circular, dots, pulse)
+ * - Skeletons: Loading placeholders
+ * - Toasts: Temporary notifications (Toastify-style)
+ *
+ * Import order:
+ * 1. Base structures
+ * 2. Variants
+ * 3. Animations
+ */
+
+/* ========== ALERTS ========== */
+
+@import './alert.base.css';
+@import './alert.variants.css';
+
+/* ========== PROGRESS BARS ========== */
+
+@import './progress.css';
+
+/* ========== SPINNERS ========== */
+
+@import './spinner.css';
+
+/* ========== SKELETONS ========== */
+
+@import './skeleton.css';
+
+/* ========== TOASTS ========== */
+
+@import './toast.css';
+
+/**
+ * QUICK REFERENCE:
+ *
+ * === ALERTS ===
+ * Inline Messages:
+ *   <div class="alert alert--success">
+ *     <div class="alert__icon"><i class="fas fa-check-circle"></i></div>
+ *     <div class="alert__content">
+ *       <div class="alert__title">Success!</div>
+ *       <div class="alert__message">Your changes have been saved.</div>
+ *     </div>
+ *     <button class="alert__close"><i class="fas fa-times"></i></button>
+ *   </div>
+ *
+ * Variants: alert--success, alert--warning, alert--error, alert--info
+ * Sizes: alert--sm, alert--lg
+ *
+ * === PROGRESS BARS ===
+ * Linear Progress:
+ *   <div class="progress">
+ *     <div class="progress__bar progress__bar--primary" style="width: 65%">65%</div>
+ *   </div>
+ *
+ * Color Variants: progress__bar--primary, --success, --warning, --danger
+ * Sizes: progress--sm, progress--md, progress--lg
+ * Special: progress--indeterminate, progress--striped-animated
+ *
+ * === SPINNERS ===
+ * Circular:
+ *   <div class="spinner"></div>
+ *
+ * Dots:
+ *   <div class="spinner-dots">
+ *     <div class="spinner-dots__dot"></div>
+ *     <div class="spinner-dots__dot"></div>
+ *     <div class="spinner-dots__dot"></div>
+ *   </div>
+ *
+ * Sizes: spinner--sm, spinner--md, spinner--lg, spinner--xl
+ * Colors: spinner--primary, --success, --warning, --danger, --white
+ *
+ * Fullscreen:
+ *   <div class="spinner-overlay">
+ *     <div class="spinner-overlay__content">
+ *       <div class="spinner spinner--lg"></div>
+ *       <div class="spinner-overlay__text">Loading...</div>
+ *     </div>
+ *   </div>
+ *
+ * === SKELETONS ===
+ * Text:
+ *   <div class="skeleton skeleton--text"></div>
+ *   <div class="skeleton skeleton--text skeleton--w-75"></div>
+ *   <div class="skeleton skeleton--text skeleton--w-50"></div>
+ *
+ * Avatar:
+ *   <div class="skeleton skeleton--avatar"></div>
+ *
+ * Card:
+ *   <div class="skeleton skeleton--rect"></div>
+ *
+ * Composite:
+ *   <div class="skeleton-user-card">
+ *     <div class="skeleton skeleton--avatar skeleton-user-card__avatar"></div>
+ *     <div class="skeleton-user-card__content">
+ *       <div class="skeleton skeleton--text"></div>
+ *       <div class="skeleton skeleton--text skeleton--w-75"></div>
+ *     </div>
+ *   </div>
+ *
+ * === TOASTS ===
+ * Container (add to body):
+ *   <div class="toast-container toast-container--top-right">
+ *     <!-- Toasts appear here -->
+ *   </div>
+ *
+ * Toast:
+ *   <div class="toast toast--success">
+ *     <div class="toast__icon"><i class="fas fa-check-circle"></i></div>
+ *     <div class="toast__content">
+ *       <div class="toast__title">Success!</div>
+ *       <div class="toast__message">Item saved successfully</div>
+ *     </div>
+ *     <button class="toast__close"><i class="fas fa-times"></i></button>
+ *     <div class="toast__progress">
+ *       <div class="toast__progress-bar" style="animation-duration: 5s"></div>
+ *     </div>
+ *   </div>
+ *
+ * Positions: toast-container--top-right, --top-left, --bottom-right, etc.
+ * Variants: toast--success, toast--warning, toast--error, toast--info
+ */

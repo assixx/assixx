@@ -58,70 +58,7 @@
   }
 } */
 
-/* Make user-info section more compact and transparent */
-/* Base styles - lowest specificity first */
-[id="user-info"],
-.user-info {
-  display: flex !important;
-  gap: 0.4rem !important;
-  align-items: center !important;
-
-  padding: 0.2rem 0.5rem !important;
-  border: none !important;
-  border-radius: 0 !important;
-
-  background: transparent !important;
-  backdrop-filter: none !important;
-}
-
-/* Hover states */
-[id="user-info"]:hover,
-.user-info:hover {
-  background: transparent !important;
-}
-
-/* Header specific overrides - using less specific selectors */
-.header-actions [id="user-info"] {
-  display: flex !important;
-  gap: 0.4rem !important;
-  align-items: center !important;
-
-  padding: 0.2rem 0.5rem !important;
-  border: none !important;
-  border-radius: 0 !important;
-
-  background: transparent !important;
-  backdrop-filter: none !important;
-}
-
-.header-actions [id="user-info"]:hover {
-  background: transparent !important;
-}
-
-/* Remove all pseudo-elements that might create extra circles */
-[id="user-info"]::before,
-[id="user-info"]::after,
-.user-info::before,
-.user-info::after {
-  content: none !important;
-  display: none !important;
-}
-
-/* Header specific pseudo-elements */
-.header-actions [id="user-info"]::before,
-.header-actions [id="user-info"]::after {
-  content: none !important;
-  display: none !important;
-}
-
-/* Avatar styles removed - handled by Design System (avatar.css)
- * The unified-navigation.ts component now uses:
- * - .avatar with .avatar--md size variant
- * - .avatar__initials for text
- * - .avatar--color-N for background colors (N = 0-9)
- */
-
-/* Logout button styles moved to dashboard-theme.css to prevent conflicts */
+/* NOTE: user-info overrides removed - unified-navigation.css now has correct styles */
 
 /* Header actions container */
 .header-actions {

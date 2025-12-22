@@ -314,7 +314,7 @@ function createEmergencyStopButton(item: DeletionStatusItem): string {
     item.status === 'processing' ? 'Stoppt den laufenden Löschvorgang' : 'Stoppt die geplante Löschung sofort';
 
   return `
-    <div class="action-buttons mt-4">
+    <div class="action-buttons mt-6">
       <button class="btn btn-warning" data-action="emergency-stop" data-queue-id="${queueIdStr}">
         <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
       </button>

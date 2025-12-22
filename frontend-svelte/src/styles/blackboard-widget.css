@@ -1,0 +1,161 @@
+/**
+ * Blackboard Widget Styles for Dashboard
+ *
+ * Extends Design System .card component with blackboard-specific styles.
+ * Base styles (glassmorphism, layout) inherited from design-system/primitives/cards/card-base.css
+ * Sticky note styles from design-system/primitives/sticky-note/sticky-note.css
+ */
+
+/* Import unified sticky-note component */
+@import '../design-system/primitives/sticky-note/sticky-note.css';
+
+/* ========================================
+   CARD MODIFIER - Blackboard Widget
+   ======================================== */
+
+/**
+ * Blackboard-specific card variant
+ * Matches .card-stat styles exactly for consistency
+ *
+ * Usage: <div class="card card--blackboard">
+ */
+/*
+.card--blackboard {
+
+  padding: var(--spacing-6);
+  border: 1px solid rgb(255 255 255 / 10.2%);
+  border-radius: var(--radius-xl);
+
+  text-align: center;
+
+  background: #ffffff05;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-md);
+
+
+  transition: all 0.2s;
+}
+*/
+
+/* Hover state - EXACT match to .card-stat:hover */
+.card--blackboard:hover {
+  border-color: var(--color-icon-primary);
+}
+
+/* After content loads */
+.card--blackboard.loaded {
+  opacity: 100%;
+}
+
+/* ========================================
+   CARD HEADER CUSTOMIZATION
+   ======================================== */
+
+/**
+ * Widget header uses card__header base
+ * Custom styling for blackboard-specific link
+ */
+.card--blackboard .card__header {
+  /* Flex layout for title and link */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  /* Remove default card header styles */
+  margin-bottom: 1rem; /* Custom spacing for widget */
+  border: none !important; /* No bottom border */
+  padding-bottom: 0; /* No bottom padding */
+
+  /* Reset text-align from parent .card--blackboard */
+  text-align: left;
+}
+
+/* Widget title styling */
+.card--blackboard .card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  font-weight: 600;
+
+  font-size: 1.2rem !important;
+  line-height: 1.5;
+}
+
+.card--blackboard .card__title i {
+  font-size: 1rem;
+}
+
+/* Widget "View All" link */
+.card--blackboard__link {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.card--blackboard__link:hover {
+  color: var(--primary-color);
+}
+
+/* ========================================
+   BLACKBOARD-SPECIFIC COMPONENTS
+   ======================================== */
+
+/* Sticky Notes Container (used by widget) */
+.sticky-notes-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+
+  min-height: 200px; /* Prevent layout shift */
+  overflow-x: auto;
+}
+
+/* Prevent layout shift during load */
+.card--blackboard__loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+
+  min-height: 200px;
+
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Empty State - Now using Design System empty-state component */
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (width <= 768px) {
+  .sticky-notes-container {
+    gap: 0.75rem;
+  }
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
+.sticky-notes-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.sticky-notes-container::-webkit-scrollbar-track {
+  border-radius: 3px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.sticky-notes-container::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgb(255 255 255 / 20%);
+}
+
+.sticky-notes-container::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 30%);
+}

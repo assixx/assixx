@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "0.1.1",
-    "@tailwindcss/forms": "0.5.10",
+    "@tailwindcss/forms": "0.5.11",
     "@tailwindcss/typography": "0.5.19",
     "@types/node": "~24.10.4",
     "autoprefixer": "^10.4.23",
@@ -32,11 +32,7 @@
     "vite-plugin-simple-html": "1.1.0"
   },
   "dependencies": {
-    "@event-calendar/core": "^3.8.1",
-    "@event-calendar/day-grid": "^3.8.1",
-    "@event-calendar/time-grid": "^3.8.1",
-    "@event-calendar/list": "^3.8.1",
-    "@event-calendar/interaction": "^3.8.1",
+    "@event-calendar/core": "~5.0.5",
     "@zxcvbn-ts/core": "3.0.4",
     "@zxcvbn-ts/language-common": "3.0.4",
     "@zxcvbn-ts/language-de": "3.0.2",

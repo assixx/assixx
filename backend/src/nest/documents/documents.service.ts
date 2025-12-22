@@ -574,7 +574,7 @@ export class DocumentsService {
     await this.databaseService.query(
       `INSERT INTO document_read_status (document_id, user_id, tenant_id, read_at)
        VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (document_id, user_id) DO UPDATE SET read_at = NOW()`,
+       ON CONFLICT (document_id, user_id, tenant_id) DO UPDATE SET read_at = NOW()`,
       [documentId, userId, tenantId],
     );
     return { success: true };
@@ -685,18 +685,19 @@ export class DocumentsService {
       await this.writeFileToDisk(data.filePath, data.fileContent);
     }
 
-    // Insert document
+    // Insert document - uuid is required (NOT NULL), file_uuid is optional
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO documents (
-        tenant_id, filename, original_name, file_size, mime_type, category,
+        uuid, tenant_id, filename, original_name, file_size, mime_type, category,
         access_scope, owner_user_id, target_team_id, target_department_id,
         description, salary_year, salary_month, blackboard_entry_id, conversation_id,
         tags, created_by, file_uuid, file_checksum, file_path, storage_type, is_active
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, 1
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+        $17, $18, $19, $20, $21, $22, 1
       ) RETURNING id`,
       [
+        data.fileUuid, // uuid column (required, use fileUuid from controller)
         tenantId,
         data.filename,
         data.originalName,
@@ -715,7 +716,7 @@ export class DocumentsService {
         data.conversationId ?? null,
         data.tags !== undefined ? JSON.stringify(data.tags) : null,
         userId,
-        data.fileUuid ?? null,
+        data.fileUuid ?? null, // file_uuid column (optional, same value)
         data.fileChecksum ?? null,
         data.filePath ?? null,
         data.storageType ?? 'filesystem',
@@ -826,6 +827,36 @@ export class DocumentsService {
   }
 
   /**
+   * Parse tags from JSONB field
+   * Handles both already-parsed arrays and string fallback
+   */
+  private parseTags(tags: unknown): string[] {
+    if (tags === null || tags === undefined) {
+      return [];
+    }
+
+    // PostgreSQL JSONB returns already-parsed objects
+    if (Array.isArray(tags)) {
+      return tags.filter((t: unknown): t is string => typeof t === 'string');
+    }
+
+    // Fallback: if somehow it's a string, try to parse
+    if (typeof tags === 'string') {
+      try {
+        const parsed: unknown = JSON.parse(tags);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((t: unknown): t is string => typeof t === 'string');
+        }
+        return [];
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
+  }
+
+  /**
    * Enrich document with metadata
    */
   private async enrichDocument(
@@ -834,25 +865,22 @@ export class DocumentsService {
     tenantId: number,
   ): Promise<DocumentResponse> {
     const isRead = await this.isDocumentRead(doc.id, userId, tenantId);
+    const tags = this.parseTags(doc.tags);
 
-    let tags: string[] = [];
-    if (doc.tags !== null) {
-      try {
-        const parsed: unknown = JSON.parse(doc.tags);
-        tags =
-          Array.isArray(parsed) ?
-            parsed.filter((t: unknown): t is string => typeof t === 'string')
-          : [];
-      } catch {
-        tags = [];
-      }
-    }
+    // Get extension from original_name for storedFilename construction
+    const extension =
+      doc.original_name !== null && doc.original_name !== '' ?
+        doc.original_name.substring(doc.original_name.lastIndexOf('.'))
+      : '';
 
     return {
       id: doc.id,
       tenantId: doc.tenant_id,
-      filename: doc.original_name ?? doc.filename,
-      storedFilename: doc.filename,
+      filename: doc.filename, // Display name (custom or original)
+      storedFilename:
+        doc.file_uuid !== null && doc.file_uuid !== '' ?
+          `${doc.file_uuid}${extension}`
+        : doc.filename,
       originalName: doc.original_name,
       fileSize: doc.file_size,
       mimeType: doc.mime_type,

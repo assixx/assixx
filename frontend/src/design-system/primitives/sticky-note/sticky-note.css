@@ -251,6 +251,12 @@
   background: #f3e8ff;
 }
 
+/* Unread indicator badge */
+.sticky-note__badge--unread {
+  color: #92400e;
+  background: #fef3c7;
+}
+
 /* ========================================
    INDICATORS (Attachments + Comments)
    ======================================== */

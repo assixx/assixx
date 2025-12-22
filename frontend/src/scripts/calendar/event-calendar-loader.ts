@@ -5,22 +5,18 @@
  * Much lighter (~35kb vs ~980kb) with native Svelte 5 support
  *
  * MIGRATION: Phase 0 - FullCalendar → @event-calendar/core
- * Date: 2025-12-18
+ * UPGRADE: v3 → v5 (createCalendar API) - 2025-12-22
  */
 
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase class constructors, cannot be changed
-import Calendar from '@event-calendar/core';
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library export
-import DayGrid from '@event-calendar/day-grid';
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library export
-import TimeGrid from '@event-calendar/time-grid';
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library export
-import List from '@event-calendar/list';
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library export
-import Interaction from '@event-calendar/interaction';
+// v5 API: All plugins included in @event-calendar/core
+// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase
+import { createCalendar, DayGrid, TimeGrid, List, Interaction } from '@event-calendar/core';
 
 // Import CSS
 import '@event-calendar/core/index.css';
+
+// Type for calendar instance returned by createCalendar
+type CalendarApi = ReturnType<typeof createCalendar>;
 
 /**
  * Supported view types (same as FullCalendar for compatibility)
@@ -31,7 +27,7 @@ export type ViewType = 'month' | 'week' | 'day' | 'list';
  * Calendar initialization result
  */
 export interface CalendarInstance {
-  calendar: Calendar;
+  calendar: CalendarApi;
   loadedPlugins: Set<string>;
 }
 
@@ -264,36 +260,29 @@ export function initializeCalendar(
     end: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
   };
 
-  // Create calendar instance
-
-  const calendar: Calendar = new Calendar({
-    target: element,
-    props: {
-      plugins,
-      options: {
-        view: getEventCalendarViewName(initialView),
-        locale: 'de', // German locale for Intl.DateTimeFormat (weekday names, etc.)
-        headerToolbar,
-        buttonText: options.buttonText ?? deLocale.buttonText,
-        firstDay: 1, // Monday as first day of week
-        editable: canEdit && (options.editable ?? true),
-        selectable: canEdit && (options.selectable ?? true),
-        selectMirror: options.selectMirror ?? true,
-        dayMaxEvents: options.dayMaxEvents ?? true,
-        nowIndicator: options.nowIndicator ?? true,
-        height: options.height ?? 'auto',
-        events: Array.isArray(options.events) ? options.events : [],
-        eventSources: typeof options.events === 'function' ? [{ events: options.events }] : [],
-        eventClick: options.eventClick,
-        dateClick: options.dateClick,
-        select: options.select,
-        eventMouseEnter: options.eventMouseEnter,
-        eventMouseLeave: options.eventMouseLeave,
-        eventDrop: options.eventDrop,
-        eventResize: options.eventResize,
-        datesSet: options.datesSet,
-      },
-    },
+  // Create calendar instance using v5 API: createCalendar(target, plugins, options)
+  const calendar = createCalendar(element, plugins, {
+    view: getEventCalendarViewName(initialView),
+    locale: 'de', // German locale for Intl.DateTimeFormat (weekday names, etc.)
+    headerToolbar,
+    buttonText: options.buttonText ?? deLocale.buttonText,
+    firstDay: 1, // Monday as first day of week
+    editable: canEdit && (options.editable ?? true),
+    selectable: canEdit && (options.selectable ?? true),
+    selectMirror: options.selectMirror ?? true,
+    dayMaxEvents: options.dayMaxEvents ?? true,
+    nowIndicator: options.nowIndicator ?? true,
+    height: options.height ?? 'auto',
+    events: Array.isArray(options.events) ? options.events : [],
+    eventSources: typeof options.events === 'function' ? [{ events: options.events }] : [],
+    eventClick: options.eventClick,
+    dateClick: options.dateClick,
+    select: options.select,
+    eventMouseEnter: options.eventMouseEnter,
+    eventMouseLeave: options.eventMouseLeave,
+    eventDrop: options.eventDrop,
+    eventResize: options.eventResize,
+    datesSet: options.datesSet,
   });
 
   console.info(`EventCalendar Initialization: ${(performance.now() - startTime).toFixed(2)}ms`);
@@ -308,7 +297,7 @@ export function initializeCalendar(
  * @param calendar - Calendar instance
  * @param newView - View to switch to
  */
-export function switchView(calendar: Calendar, newView: ViewType): void {
+export function switchView(calendar: CalendarApi, newView: ViewType): void {
   console.info(`EventCalendar: Switching to ${newView} view...`);
   const viewName = getEventCalendarViewName(newView);
 
@@ -346,7 +335,7 @@ export function preloadPlugins(_views: ViewType[], _includeInteraction: boolean 
 /**
  * Enable interaction (requires re-initialization in EventCalendar)
  */
-export function enableInteraction(_calendar: Calendar): Promise<void> {
+export function enableInteraction(_calendar: CalendarApi): Promise<void> {
   console.warn('EventCalendar: enableInteraction() requires calendar re-initialization');
   return Promise.resolve();
 }

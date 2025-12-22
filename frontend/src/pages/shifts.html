@@ -16,7 +16,6 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <!-- Theme and Components -->
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
     <!-- Shifts spezifische Styles LAST -->
     <link rel="stylesheet" href="/styles/shifts.css" />
   </head>
@@ -42,7 +41,7 @@
               <p class="text-[var(--color-text-secondary)] mt-2">Schichten planen und verwalten</p>
 
               <!-- Filter Controls - ADMIN ONLY (hidden by default, shown for admin/root) -->
-              <div id="admin-filter-controls" class="shift-info-row mt-4 u-hidden">
+              <div id="admin-filter-controls" class="shift-info-row mt-6 u-hidden">
                 <!-- 1. AREA Filter (NEU!) -->
                 <div class="info-item">
                   <div class="info-label">Bereich</div>
@@ -98,7 +97,7 @@
               </div>
 
               <!-- Employee Info Bar (shown instead of filters for employees) -->
-              <div id="employee-team-info" class="shift-info-row mt-4 u-hidden">
+              <div id="employee-team-info" class="shift-info-row mt-6 u-hidden">
                 <div class="info-item">
                   <div class="info-label">Dein Team</div>
                   <span class="badge badge--primary">
@@ -464,14 +463,14 @@
                 </div>
               </div>
               <!-- Pattern Info Alert (dynamisch je nach Auswahl) -->
-              <div id="rotation-pattern-info" class="alert alert--info mt-3 u-hidden">
+              <div id="rotation-pattern-info" class="alert alert--info mt-4 u-hidden">
                 <i class="fas fa-info-circle alert__icon"></i>
                 <div class="alert__content">
                   <span id="rotation-pattern-info-text"></span>
                 </div>
               </div>
               <!-- Wochenende Toggles -->
-              <div class="flex gap-4 mt-3">
+              <div class="flex gap-4 mt-4">
                 <label class="toggle-switch">
                   <input type="checkbox" id="rotation-skip-saturday" name="skipSaturday" class="toggle-switch__input" />
                   <span class="toggle-switch__slider"></span>
@@ -490,7 +489,7 @@
                 </label>
               </div>
               <!-- Nachtschicht Toggle -->
-              <label class="toggle-switch mt-3">
+              <label class="toggle-switch mt-4">
                 <input type="checkbox" id="rotation-night-static" name="nightShiftStatic" class="toggle-switch__input" checked />
                 <span class="toggle-switch__slider"></span>
                 <span class="toggle-switch__label">
@@ -513,8 +512,8 @@
               </div>
             </div>
 
-            <div class="form-field rotation-assignment-container mt-4">
-              <label class="form-field__label mb-3">Mitarbeiter Schichtzuweisung</label>
+            <div class="form-field rotation-assignment-container mt-6">
+              <label class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</label>
 
               <!-- Kasten 1: Verfügbare Mitarbeiter -->
               <div class="glass-card p-4 mb-4">
@@ -578,7 +577,7 @@
 
           <!-- Date Range Selection -->
           <div class="glass-card p-4 mb-4 border border-blue-500/30 bg-blue-500/5">
-            <h4 class="text-blue-400 font-medium mb-3">
+            <h4 class="text-blue-400 font-medium mb-4">
               <i class="fas fa-calendar-alt mr-2"></i>
               Zeitraum festlegen
             </h4>
@@ -606,7 +605,7 @@
 
           <!-- Schichtblock-Konfiguration -->
           <div class="glass-card p-4 mb-4 border border-emerald-500/30 bg-emerald-500/5">
-            <h4 class="text-emerald-400 font-medium mb-3">
+            <h4 class="text-emerald-400 font-medium mb-4">
               <i class="fas fa-cogs mr-2"></i>
               Schichtblock-Konfiguration
             </h4>
@@ -672,7 +671,7 @@
 
           <!-- Sonderregeln -->
           <div class="glass-card p-4 mb-4 border border-amber-500/30 bg-amber-500/5">
-            <h4 class="text-amber-400 font-medium mb-3">
+            <h4 class="text-amber-400 font-medium mb-4">
               <i class="fas fa-star mr-2"></i>
               Sonderregeln (optional)
             </h4>
@@ -722,8 +721,8 @@
           </div>
 
           <!-- Drag & Drop Employee Assignment -->
-          <div class="form-field mt-4 custom-rotation-assignment-container">
-            <label class="form-field__label mb-3">Mitarbeiter Schichtzuweisung</label>
+          <div class="form-field mt-6 custom-rotation-assignment-container">
+            <label class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</label>
 
             <!-- Available Employees -->
             <div class="glass-card mb-4 p-4">

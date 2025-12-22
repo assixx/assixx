@@ -1,0 +1,127 @@
+/**
+ * KVP Badges
+ *
+ * Used for: KVP suggestions (priority, status, visibility)
+ * Source: kvp-detail.css, kvp.css
+ */
+
+/* ========== PRIORITY BADGES ========== */
+
+/* Low Priority - Green */
+.badge--priority-low {
+  border-color: rgb(76 175 80 / 50%);
+  background: rgb(76 175 80 / 20%);
+  color: #4caf50;
+}
+
+/* Normal Priority - Blue */
+.badge--priority-normal {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 20%);
+  color: #2196f3;
+}
+
+/* High Priority - Orange */
+.badge--priority-high {
+  border-color: rgb(255 152 0 / 50%);
+  background: rgb(255 152 0 / 20%);
+  color: #ff9800;
+}
+
+/* Urgent Priority - Red */
+.badge--priority-urgent {
+  border-color: rgb(244 67 54 / 50%);
+  background: rgb(244 67 54 / 20%);
+  color: #f44336;
+}
+
+/* ========== KVP STATUS BADGES ========== */
+
+/* New - Light Blue */
+.badge--kvp-new {
+  border-color: rgb(100 181 246 / 50%);
+  background: rgb(100 181 246 / 20%);
+  color: #64b5f6;
+}
+
+/* In Review - Yellow */
+.badge--kvp-in-review,
+.badge--kvp-inreview {
+  border-color: rgb(255 193 7 / 50%);
+  background: rgb(255 193 7 / 20%);
+  color: #ffc107;
+}
+
+/* Approved - Green */
+.badge--kvp-approved {
+  border-color: rgb(76 175 80 / 50%);
+  background: rgb(76 175 80 / 20%);
+  color: #4caf50;
+}
+
+/* Implemented - Dark Green */
+.badge--kvp-implemented {
+  border-color: rgb(46 125 50 / 50%);
+  background: rgb(46 125 50 / 20%);
+  color: #2e7d32;
+}
+
+/* Rejected - Red */
+.badge--kvp-rejected {
+  border-color: rgb(244 67 54 / 50%);
+  background: rgb(244 67 54 / 20%);
+  color: #f44336;
+}
+
+/* Archived - Gray */
+.badge--kvp-archived {
+  border-color: rgb(158 158 158 / 50%);
+  background: rgb(158 158 158 / 20%);
+  color: #9e9e9e;
+}
+
+/* ========== VISIBILITY BADGES ========== */
+
+/* Team - Purple */
+.badge--visibility-team {
+  border-color: rgb(156 39 176 / 50%);
+  background: rgb(156 39 176 / 20%);
+  color: #9c27b0;
+}
+
+/* Department - Orange */
+.badge--visibility-department {
+  border-color: rgb(255 152 0 / 50%);
+  background: rgb(255 152 0 / 20%);
+  color: #ff9800;
+}
+
+/* Area - Teal */
+.badge--visibility-area {
+  border-color: rgb(0 150 136 / 50%);
+  background: rgb(0 150 136 / 20%);
+  color: #009688;
+}
+
+/* Company - Blue */
+.badge--visibility-company {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 20%);
+  color: #2196f3;
+}
+
+/* ========== ACTIVE/INACTIVE BADGES ========== */
+
+/* Active - Green */
+.badge--active {
+  border-color: rgb(76 175 80 / 50%);
+  background: rgb(76 175 80 / 20%);
+  color: #4caf50;
+}
+
+/* Inactive - Gray */
+.badge--inactive {
+  border-color: rgb(158 158 158 / 50%);
+  background: rgb(158 158 158 / 20%);
+  color: #9e9e9e;
+}

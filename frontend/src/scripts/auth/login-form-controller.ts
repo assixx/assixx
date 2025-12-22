@@ -152,12 +152,13 @@ export class LoginFormController {
     const TOAST_DURATION_SECONDS = 3;
 
     // Build toast structure programmatically (XSS-safe - no innerHTML)
-    const toast = createElement('div', { className: `toast ${isTimeout ? 'toast--warning' : 'toast--error'}` });
+    // Session expired = danger (red), Login error = error (red) - both are errors that already happened
+    const toast = createElement('div', { className: `toast ${isTimeout ? 'toast--danger' : 'toast--error'}` });
     toast.dataset['tempToast'] = 'error';
 
-    // Icon
+    // Icon - always fa-times-circle for errors (warning icon is for "will happen soon", not "already happened")
     const iconDiv = createElement('div', { className: 'toast__icon' });
-    const icon = createElement('i', { className: `fas ${isTimeout ? 'fa-exclamation-triangle' : 'fa-times-circle'}` });
+    const icon = createElement('i', { className: 'fas fa-times-circle' });
     iconDiv.appendChild(icon);
 
     // Content

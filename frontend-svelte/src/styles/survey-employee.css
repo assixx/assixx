@@ -1,0 +1,161 @@
+/* ========================================
+   SURVEY EMPLOYEE - DOMAIN-SPECIFIC STYLES
+   Design System handles: modal, progress, badges, cards
+   This file: Survey-specific layouts and behaviors
+   ======================================== */
+
+/* ========================================
+   LAYOUT
+   ======================================== */
+
+.surveys-section {
+  margin-bottom: var(--spacing-8);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+
+  margin-bottom: var(--spacing-6);
+  color: var(--text-primary);
+  font-weight: 600;
+
+  font-size: 1.5rem;
+}
+
+.surveys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-6);
+}
+
+.section-divider {
+  position: relative;
+  margin: var(--spacing-8) 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 10%), transparent);
+  height: 1px;
+}
+
+/* ========================================
+   RESPONSE VIEWING (For Completed Surveys)
+   ======================================== */
+
+.response-info {
+  margin-bottom: var(--spacing-6);
+  border: 1px solid rgb(33 150 243 / 30%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(33 150 243 / 10%);
+  padding: var(--spacing-3);
+}
+
+.response-info p {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  margin: 0;
+
+  color: var(--text-primary);
+}
+
+.response-answers {
+  padding-right: var(--spacing-2);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.response-question {
+  margin-bottom: var(--spacing-6);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  padding-bottom: var(--spacing-6);
+}
+
+.response-question:last-child {
+  border-bottom: none;
+}
+
+.response-question h4 {
+  margin-bottom: var(--spacing-4);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.response-answer {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-3);
+}
+
+.response-answer p {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  margin: 0;
+
+  color: var(--text-secondary);
+}
+
+.response-answer em {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.response-answer .fa-check-square {
+  color: var(--success-color);
+}
+
+/* ========================================
+   QUESTION DISPLAY (In Modal)
+   ======================================== */
+
+.question-item {
+  margin-bottom: var(--spacing-6);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-6);
+}
+
+.question-header {
+  display: flex;
+  align-items: start;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.question-number {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+
+  background: var(--primary-color);
+
+  width: 30px;
+  height: 30px;
+  color: #fff;
+
+  font-weight: 600;
+}
+
+.question-text {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.required-indicator {
+  margin-left: 4px;
+  color: #f44336;
+}
+
+/* Answer Types */
+.answer-container {
+  margin-top: var(--spacing-4);
+}

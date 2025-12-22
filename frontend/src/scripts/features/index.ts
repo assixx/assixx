@@ -383,8 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Only initialize on root-features page
-  if (window.location.pathname === '/root-features' || window.location.pathname.includes('root-features')) {
+  // Only initialize on features page
+  if (window.location.pathname === '/features' || window.location.pathname.includes('features')) {
     new FeaturesManager();
   }
 });

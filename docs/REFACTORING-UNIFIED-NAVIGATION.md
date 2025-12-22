@@ -294,7 +294,7 @@ export const BADGE_IDS = {
 const accessControlData: Record<string, Role[]> = {
   '/root-dashboard': ['root'],
   '/manage-root': ['root'],
-  '/root-features': ['root'],
+  '/features': ['root'],
   '/root-profile': ['root'],
   '/tenant-deletion-status': ['root'],
   '/storage-upgrade': ['root'],
@@ -852,7 +852,7 @@ export function getRootNavigationItems(): NavItem[] {
     { id: 'areas', icon: getIcon('sitemap'), label: 'Bereiche', url: '/manage-areas', section: 'areas' },
     { id: 'departments', icon: getIcon('building'), label: 'Abteilungen', url: '/manage-departments' },
     { id: 'chat', icon: getIcon('chat'), label: 'Chat', url: '/chat', badge: 'unread-messages' },
-    { id: 'features', icon: getIcon('feature'), label: 'Features', url: '/root-features' },
+    { id: 'features', icon: getIcon('feature'), label: 'Features', url: '/features' },
     { id: 'logs', icon: getIcon('logs'), label: 'System-Logs', url: '/logs' },
     { id: 'profile', icon: getIcon('user'), label: 'Mein Profil', url: '/root-profile' },
     {

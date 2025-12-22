@@ -8,7 +8,7 @@
  * Reduced from 823 lines to ~400 lines (51% reduction!)
  */
 
-@import "./user-info-update.css";
+/* NOTE: user-info-update.css removed - already imported via main.css */
 
 /* ========================================
    KVP-SPECIFIC: Suggestion Cards

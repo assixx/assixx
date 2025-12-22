@@ -62,20 +62,25 @@ export function setAuthToken(token: string, refreshToken?: string): void {
 
 // Remove authentication token
 export function removeAuthToken(): void {
-  // Clear v2 tokens
+  // ===========================================
+  // AUTH TOKENS (CRITICAL - must be cleared)
+  // ===========================================
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
+  localStorage.removeItem('tokenReceivedAt'); // Clock skew fix timestamp
+  localStorage.removeItem('token'); // Legacy v1 token
+  localStorage.removeItem('authToken'); // Legacy v1 token
 
-  // Clear v1 tokens
-  localStorage.removeItem('token');
-  localStorage.removeItem('authToken');
+  // ===========================================
+  // USER DATA
+  // ===========================================
+  localStorage.removeItem('user');
+  localStorage.removeItem('role'); // Legacy role
+  clearUserRole(); // Clears userRole + activeRole
 
-  // Clear other auth data
-  localStorage.removeItem('role');
-  clearUserRole(); // Clear role switching state and user role
-  localStorage.removeItem('user'); // Clear cached user data
-
-  // Clear cookie for server-side page protection
+  // ===========================================
+  // COOKIE CLEARING (legacy compatibility)
+  // ===========================================
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
 }
 
@@ -315,10 +320,11 @@ export async function loadUserInfo(forceRefresh: boolean = false): Promise<User>
 export async function logout(): Promise<void> {
   const token = getAuthToken();
 
-  // Call logout API to log the action
+  // ===========================================
+  // STEP 1: Call logout API (revokes DB tokens)
+  // ===========================================
   if (token !== null && token.length > 0) {
     try {
-      // Use API client for v2
       await apiClient.post('/auth/logout', {});
     } catch (error) {
       console.error('Error logging logout:', error);
@@ -326,19 +332,48 @@ export async function logout(): Promise<void> {
     }
   }
 
-  // Clear all auth data
+  // ===========================================
+  // STEP 2: Clear auth tokens (via removeAuthToken)
+  // ===========================================
   removeAuthToken();
-  clearUserRole();
+
+  // ===========================================
+  // STEP 3: Clear session data
+  // ===========================================
   localStorage.removeItem('tenantId');
+  localStorage.removeItem('lastActivity');
+
+  // ===========================================
+  // STEP 4: Clear fingerprint data
+  // ===========================================
   localStorage.removeItem('browserFingerprint');
   localStorage.removeItem('fingerprintTimestamp');
-  localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
 
-  // Clear user profile cache
+  // ===========================================
+  // STEP 5: Clear UI state (clean slate on next login)
+  // ===========================================
+  localStorage.removeItem('sidebarCollapsed');
+  localStorage.removeItem('openSubmenu');
+  localStorage.removeItem('activeNavigation');
+  localStorage.removeItem('profilePictureCache');
+
+  // ===========================================
+  // STEP 6: Clear feature-specific state
+  // ===========================================
+  localStorage.removeItem('lastKvpClickTimestamp');
+  localStorage.removeItem('lastKnownKvpCount');
+  localStorage.removeItem('shifts_context');
+  localStorage.removeItem('rateLimitTimestamp');
+
+  // ===========================================
+  // STEP 7: Clear in-memory caches
+  // ===========================================
   userProfileCache = { data: null, timestamp: 0 };
   profileLoadingPromise = null;
 
-  // Clear tokens via TokenManager (handles redirect)
+  // ===========================================
+  // STEP 8: TokenManager handles timer stop + redirect
+  // ===========================================
   tokenManager.clearTokens('logout');
 }
 

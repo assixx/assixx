@@ -4,10 +4,13 @@
  * Replaces scattered global variables with a singleton class
  *
  * Updated for @event-calendar/core (Phase 0 Migration)
+ * UPGRADE: v3 → v5 (createCalendar API) - 2025-12-22
  */
 
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase class
-import type Calendar from '@event-calendar/core';
+import type { createCalendar } from '@event-calendar/core';
+
+// v5 API: Calendar type is return type of createCalendar
+type Calendar = ReturnType<typeof createCalendar>;
 import type { User } from '../../types/api.types';
 import type { Department, Team, FilterLevel, ViewMode } from './types';
 

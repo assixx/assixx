@@ -1,0 +1,124 @@
+/**
+ * Design System - Secondary Button
+ *
+ * Purpose: Alternative/Secondary actions (same visual as upload button)
+ * Usage: Secondary actions, informational buttons, alternative options
+ *
+ * Visual: Blue gradient background - matches btn-upload exactly
+ */
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-xl);
+  background: #ffffff1a;
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+/* Hover state - Slightly darker gradient */
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-icon-primary);
+  background: var(--color-icon-primary);
+  color: var(--color-black);
+}
+
+/* Active/Pressed state */
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+/* Focus state - Accessibility */
+.btn-secondary:focus-visible {
+  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+}
+
+/* Disabled state */
+.btn-secondary:disabled {
+  opacity: 60%;
+  cursor: not-allowed;
+  background: var(--color-gray-700);
+  color: var(--color-gray-500);
+}
+
+/**
+ * WHY SAME AS BTN-UPLOAD?
+ *
+ * - Visual consistency: Same blue gradient creates unified look
+ * - Blue gradient: Premium, trustworthy look for important actions
+ * - Shadow: Creates depth in dark UI
+ * - White text: Maximum contrast for accessibility
+ * - Hover feedback: Clear interactive indication
+ *
+ * WHEN TO USE:
+ * ✅ Secondary actions (e.g., "View Details", "More Options")
+ * ✅ Informational buttons
+ * ✅ Alternative navigation options
+ * ✅ Supporting actions in button groups
+ *
+ * WHEN NOT TO USE:
+ * ❌ Primary form submit (use .btn-primary)
+ * ❌ Destructive actions (use .btn-danger)
+ * ❌ Cancel/Close actions (use .btn-cancel)
+ */
+
+/**
+ * Design System - Cancel Button
+ *
+ * Purpose: Alternative/Cancel actions
+ * Usage: Cancel, Back, Close, Secondary actions
+ *
+ * Visual: Outline style with glassmorphism
+ */
+
+.btn-cancel {
+  /* ========== VISUAL ========== */
+  backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
+
+  /* No transitions - instant response */
+  transition: none;
+
+  /* No shadow on default state (lighter weight than primary) */
+  box-shadow: none;
+  border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
+
+  background:
+    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-white); /* Primary blue text */
+}
+
+/* Hover state - Strengthen glass and border */
+.btn-cancel:hover:not(:disabled) {
+  background:
+    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box; /* Solid primary border */
+}
+
+/* Focus state */
+.btn-cancel:focus-visible {
+  box-shadow: var(--shadow-focus-primary);
+  border-color: var(--color-primary);
+}
+
+/**
+ * WHY OUTLINE STYLE?
+ *
+ * - Visual hierarchy: Less prominent than primary
+ * - Glassmorphism: Maintains design language
+ * - No shadow: Reduces visual weight
+ * - Primary color text: Still related to brand
+ *
+ * WHEN TO USE:
+ * ✅ Cancel buttons in forms/dialogs
+ * ✅ "Back" navigation buttons
+ * ✅ "More info" / "Learn more" links
+ * ✅ Secondary actions in button groups
+ *
+ * WHEN NOT TO USE:
+ * ❌ Primary form submit (use .btn-primary)
+ * ❌ Destructive actions (use .btn-danger)
+ */

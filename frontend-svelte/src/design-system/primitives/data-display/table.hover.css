@@ -1,0 +1,23 @@
+/**
+ * Table Hover Variant
+ *
+ * Enhanced hover effect with primary color
+ * Uses Design Token: --color-primary-alpha-5
+ *
+ * Usage:
+ * <table class="data-table data-table--hover">
+ */
+
+.data-table--hover tbody tr:hover {
+  cursor: pointer;
+  background: var(--color-primary-alpha-5);
+}
+
+/* Active row (if row is selected/clicked) */
+.data-table--hover tbody tr.is-active {
+  background: var(--color-primary-alpha-15);
+}
+
+.data-table--hover tbody tr.is-active:hover {
+  background: var(--color-primary-alpha-30);
+}

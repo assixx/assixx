@@ -1,0 +1,74 @@
+/**
+ * Design System - Shadow Tokens
+ *
+ * Purpose: Glassmorphism-specific shadow system
+ * Philosophy: Shadows create depth and hierarchy in dark UIs
+ *
+ * Reference:
+ * - Apple HIG: Depth through shadows
+ * - Material Design: Elevation system
+ * - Glassmorphism: Combined shadows (outer + inset)
+ *
+ * NOTE: Standard shadows are in tailwind.css @theme
+ * These are COMPONENT-SPECIFIC shadows with insets
+ */
+
+:root {
+  /* ========== BUTTON SHADOWS ========== */
+
+  /* Primary Button - Blue glow */
+  --shadow-btn-primary: 0 1px 4px rgb(33 150 243 / 30%), inset 0 1px 0 rgb(255 255 255 / 20%);
+  --shadow-btn-primary-hover:
+    0 6px 20px rgb(33 150 243 / 40%), inset 0 1px 0 rgb(255 255 255 / 20%);
+
+  /* Danger Button - Red glow */
+  --shadow-btn-danger: 0 2px 4px rgb(220 53 69 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  --shadow-btn-danger-hover: 0 4px 12px rgb(220 53 69 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+
+  /* Success Button - Green glow */
+  --shadow-btn-success: 0 2px 4px rgb(76 175 80 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  --shadow-btn-success-hover: 0 4px 12px rgb(76 175 80 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+
+  /* Status Active - Orange glow */
+  --shadow-btn-status-active: 0 2px 4px rgb(255 107 53 / 15%);
+  --shadow-btn-status-active-hover: 0 4px 12px rgb(255 107 53 / 20%);
+
+  /* Status Inactive - Green glow */
+  --shadow-btn-status-inactive: 0 2px 4px rgb(40 167 69 / 15%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px rgb(40 167 69 / 20%);
+
+  /* Warning Button - Orange glow */
+  --shadow-btn-warning: 0 2px 4px rgb(255 152 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  --shadow-btn-warning-hover: 0 4px 12px rgb(255 152 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+
+  /* Info Button - Cyan glow */
+  --shadow-btn-info: 0 2px 4px rgb(0 188 212 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  --shadow-btn-info-hover: 0 4px 12px rgb(0 188 212 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+
+  /* Light Button - Subtle shadow */
+  --shadow-btn-light: 0 1px 3px rgb(0 0 0 / 8%);
+  --shadow-btn-light-hover: 0 2px 6px rgb(0 0 0 / 12%);
+
+  /* Dark Button - Strong shadow */
+  --shadow-btn-dark: 0 2px 4px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 5%);
+  --shadow-btn-dark-hover: 0 4px 12px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+
+  /* ========== CARD/CONTAINER SHADOWS ========== */
+
+  /* Glass Card - Glassmorphism standard */
+  --shadow-glass: 0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  --shadow-glass-hover: 0 12px 40px rgb(0 0 0 / 50%), inset 0 1px 0 rgb(255 255 255 / 15%);
+
+  /* Modal Shadow - Stronger elevation */
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+
+  /* ========== FOCUS SHADOWS ========== */
+
+  /* Focus ring for accessibility */
+  --shadow-focus-primary: 0 0 0 3px rgb(33 150 243 / 20%);
+  --shadow-focus-danger: 0 0 0 3px rgb(220 53 69 / 20%);
+
+  /* ========== DROPDOWN/POPOVER SHADOWS ========== */
+
+  --shadow-dropdown: 0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+}

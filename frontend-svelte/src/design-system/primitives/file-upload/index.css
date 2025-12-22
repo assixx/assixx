@@ -1,0 +1,19 @@
+/**
+ * File Upload Component - Entry Point
+ *
+ * Modern drag & drop file upload with glassmorphism styling.
+ *
+ * COMPONENTS:
+ * - file-upload-zone: Drag & drop area
+ * - file-upload-list: File list with progress and previews
+ *
+ * USAGE:
+ *   @import 'design-system/primitives/file-upload';
+ *
+ * JAVASCRIPT (Optional):
+ *   import { initFileUpload } from 'design-system/primitives/file-upload/file-upload.js';
+ *   initFileUpload(zoneElement);
+ */
+
+@import './file-upload-zone.css';
+@import './file-upload-list.css';

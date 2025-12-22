@@ -89,6 +89,9 @@
 /* Collapse - Standalone expandable sections */
 @import "./primitives/collapse/index.css";
 
+/* Sticky Note - Blackboard/Dashboard entries */
+@import "./primitives/sticky-note/index.css";
+
 /* ========== COMPOSED COMPONENTS ========== */
 /* Higher-level components composed from primitives */
 

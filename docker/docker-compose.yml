@@ -60,6 +60,7 @@ services:
           memory: 1G
     environment:
       NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
       # PostgreSQL Connection
       DB_HOST: postgres
       DB_PORT: 5432

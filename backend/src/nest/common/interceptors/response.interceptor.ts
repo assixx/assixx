@@ -73,14 +73,18 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessRespons
     if (data === null || typeof data !== 'object' || !('pagination' in data)) {
       return false;
     }
-    // Support both 'items' and 'entries' as array property names
+    // Support 'items', 'entries', and 'data' as array property names
     const dataObj = data as Record<string, unknown>;
     const hasItems = 'items' in dataObj && Array.isArray(dataObj['items']);
     const hasEntries = 'entries' in dataObj && Array.isArray(dataObj['entries']);
-    // If entries found, normalize to items for consistent handling
+    const hasData = 'data' in dataObj && Array.isArray(dataObj['data']);
+    // Normalize all array properties to 'items' for consistent handling
     if (hasEntries && !hasItems) {
       dataObj['items'] = dataObj['entries'];
     }
-    return hasItems || hasEntries;
+    if (hasData && !hasItems) {
+      dataObj['items'] = dataObj['data'];
+    }
+    return hasItems || hasEntries || hasData;
   }
 }

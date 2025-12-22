@@ -1000,29 +1000,45 @@ Lösung:
 
 **@event-calendar/core Setup:**
 
-```typescript
-// src/lib/components/ShiftCalendar.svelte
+> **✅ AKTUELL: v5.0.5** - Upgrade durchgeführt 2025-12-22
+> Alle Plugins in `@event-calendar/core` enthalten. Neue `createCalendar()` API.
+
+```svelte
+<!-- =================================================================== -->
+<!-- VERSION 5.x (AKTUELL) - createCalendar() API                        -->
+<!-- Alle Plugins in @event-calendar/core enthalten                      -->
+<!-- =================================================================== -->
+
 <script lang="ts">
-  import Calendar from '@event-calendar/core';
-  import TimeGrid from '@event-calendar/time-grid';
-  import DayGrid from '@event-calendar/day-grid';
-  import ResourceTimeGrid from '@event-calendar/resource-time-grid';
+  import { onMount } from 'svelte';
+  import { createCalendar, TimeGrid, DayGrid, Interaction } from '@event-calendar/core';
   import '@event-calendar/core/index.css';
 
-  let plugins = [TimeGrid, DayGrid, ResourceTimeGrid];
+  // Svelte 5 Runes für lokalen State
+  let calendarEl: HTMLElement;
+  let calendarInstance: ReturnType<typeof createCalendar> | null = $state(null);
 
-  // Svelte 5 Runes - native Support!
-  let options = $state({
-    view: 'timeGridWeek',
-    events: [],
-    editable: true,
-    selectable: true,
-    eventDrop: (info) => handleEventDrop(info),
-    eventResize: (info) => handleEventResize(info),
+  const plugins = [TimeGrid, DayGrid, Interaction];
+
+  onMount(() => {
+    // v5 API: createCalendar(target, plugins, options)
+    calendarInstance = createCalendar(calendarEl, plugins, {
+      view: 'timeGridWeek',
+      events: [],
+      editable: true,
+      selectable: true,
+      eventDrop: (info) => handleEventDrop(info),
+      eventResize: (info) => handleEventResize(info),
+    });
+
+    return () => calendarInstance?.destroy();
   });
+
+  function handleEventDrop(info: unknown) { /* ... */ }
+  function handleEventResize(info: unknown) { /* ... */ }
 </script>
 
-<Calendar {plugins} {options} />
+<div bind:this={calendarEl}></div>
 ```
 
 **SvelteKit Configuration:**

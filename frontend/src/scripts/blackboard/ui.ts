@@ -271,8 +271,8 @@ function renderAttachments(attachments: BlackboardAttachment[]): string {
     .join('');
 
   return `
-    <div class="entry-detail__attachments mt-4 pt-4 border-t border-gray-200">
-      <h3 class="flex items-center gap-2 mb-3 text-lg font-semibold">
+    <div class="entry-detail__attachments mt-6 pt-4 border-t border-gray-200">
+      <h3 class="flex items-center gap-2 mb-4 text-lg font-semibold">
         <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
       </h3>
       <div class="space-y-2">

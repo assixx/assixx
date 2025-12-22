@@ -1,0 +1,198 @@
+/* Prevent flash of unstyled content (FOUC) during page load
+ * WHY: init.ts sets body.classList.add('loaded') after window load (Line 54)
+ * Disables all transitions until page is fully loaded */
+body:not(.loaded) * {
+  transition: none;
+}
+
+/* Compact Item - Dynamically injected list items
+ * WHY: Created by ui.ts createElement('div', { className: 'compact-item' })
+ * USED IN: Recent employees, documents, departments, teams lists
+ * LOCATION: Inside card-accent__content containers with space-y-2 */
+.compact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: all 0.2s ease;
+  cursor: default;
+
+  margin-bottom: 6px;
+  border: 1px solid rgb(255 255 255 / 5%);
+  border-radius: 8px;
+
+  background: rgb(255 255 255 / 2%);
+  padding: 3px 12px;
+}
+
+/* Remove bottom margin from last item to prevent extra spacing
+ * WHY: Prevents gap after last list item */
+.compact-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Hover effect for better UX
+ * WHY: Visual feedback on hover - slides right and brightens */
+.compact-item:hover {
+  transform: translateX(4px);
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 4%);
+}
+
+/* Item name with ellipsis for long text
+ * WHY: Created by ui.ts createElement('span', { className: 'compact-item-name' })
+ * Truncates long names with ellipsis */
+.compact-item-name {
+  flex: 1;
+
+  margin-right: 12px;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 500;
+
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile responsive adjustments
+ * WHY: Reduces padding and font size on very small screens (<=400px)
+ * Not handled by Tailwind - custom breakpoint for ultra-small devices */
+@media (width <= 400px) {
+  .compact-item {
+    padding: 8px 10px;
+  }
+
+  .compact-item-name {
+    font-size: 0.9rem;
+  }
+}
+
+/* Calendar Event Styles - For upcoming events widget
+ * WHY: Display calendar events in admin dashboard with same styling as main calendar
+ * LOCATION: Inside calendar-events-list container */
+.event-item {
+  display: flex;
+
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+
+  padding: 10px;
+}
+
+.event-item:last-child {
+  border-bottom: none;
+}
+
+.event-item:hover {
+  background-color: rgb(var(--primary-rgb), 0.05);
+}
+
+/* Event date section - Shows day, month, time
+ * WHY: Visual date block on left side of event */
+.event-date {
+  display: flex;
+  flex: 0 0 90px;
+  flex-direction: column;
+  justify-content: center;
+
+  margin-right: 15px;
+  border-radius: var(--radius-xl);
+
+  background-color: var(--background-dark);
+  padding: 10px;
+
+  text-align: center;
+}
+
+.event-day {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.event-month {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.event-time {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* Event details section - Title, location, level badge */
+.event-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.event-title {
+  margin-bottom: 2px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.event-location {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.event-location i {
+  margin-right: 4px;
+  color: var(--text-muted);
+}
+
+/* Event level badges - Organization level indicators */
+.event-level {
+  display: inline-block;
+
+  margin-top: 5px;
+  border-radius: var(--radius-xl);
+  padding: 2px 8px;
+  color: #fff;
+
+  font-size: 0.7rem;
+}
+
+.event-level-company {
+  background-color: #3498db;
+}
+
+.event-level-department {
+  background-color: #e67e22;
+}
+
+.event-level-team {
+  background-color: #2ecc71;
+}
+
+.event-level-area {
+  background-color: #1abc9c;
+}
+
+.event-level-personal {
+  background-color: #9b59b6;
+}
+
+/* Mobile responsive for events */
+@media (width <= 640px) {
+  .event-date {
+    flex: 0 0 70px;
+  }
+
+  .event-day {
+    font-size: 1.2rem;
+  }
+
+  .event-month {
+    font-size: 0.8rem;
+  }
+}

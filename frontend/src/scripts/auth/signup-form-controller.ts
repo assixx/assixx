@@ -93,9 +93,12 @@ export class SignupFormController {
 
         const result = validateSubdomain(value);
         if (!result.valid && value !== '') {
-          subdomainError.style.display = 'block';
+          subdomainError.textContent = result.message ?? '';
+          subdomainError.classList.remove('u-hidden');
+          subdomainInput.style.borderColor = '#ef4444';
         } else {
-          subdomainError.style.display = 'none';
+          subdomainError.classList.add('u-hidden');
+          subdomainInput.style.borderColor = '';
         }
       });
     }

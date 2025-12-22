@@ -618,7 +618,7 @@ export class AuthService {
   ): Promise<void> {
     try {
       await this.databaseService.query(
-        `INSERT INTO root_log
+        `INSERT INTO root_logs
          (tenant_id, user_id, action, entity_type, entity_id, details, new_values, ip_address, user_agent, was_role_switched)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [

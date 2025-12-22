@@ -1042,10 +1042,45 @@ export class RootService {
   }
 
   /**
-   * Approve deletion
+   * Approve deletion with password verification (Two-Person-Principle)
+   *
+   * SECURITY: The approving user must verify their identity with their password.
+   * This implements the "Zwei-Personen-Prinzip" for critical operations.
    */
-  async approveDeletion(queueId: number, userId: number, comment?: string): Promise<void> {
-    this.logger.log(`Approving deletion ${queueId}`);
+  async approveDeletion(
+    queueId: number,
+    userId: number,
+    password: string,
+    comment?: string,
+  ): Promise<void> {
+    this.logger.log(`Approving deletion ${queueId} - verifying user password`);
+
+    // SECURITY: Get user's password hash for verification
+    const users = await this.db.query<{ password: string | null }>(
+      'SELECT password FROM users WHERE id = $1',
+      [userId],
+    );
+
+    const userRecord = users[0];
+    if (userRecord === undefined) {
+      this.logger.error(`User ${userId} not found for deletion approval`);
+      throw new Error('User not found');
+    }
+
+    // SECURITY: Verify the password matches
+    const storedHash = userRecord.password;
+    if (storedHash === null || storedHash === '') {
+      this.logger.error(`User ${userId} has no password set`);
+      throw new Error('User password not configured');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, storedHash);
+    if (!isPasswordValid) {
+      this.logger.warn(`Invalid password for deletion approval by user ${userId}`);
+      throw new Error('Ungültiges Passwort');
+    }
+
+    this.logger.log(`Password verified for user ${userId}, proceeding with approval`);
     await tenantDeletionService.approveDeletion(queueId, userId, comment);
   }
 

@@ -32,7 +32,6 @@
     color: var(--form-field-text);
 
     background: var(--form-field-bg);
-    backdrop-filter: var(--glass-form-backdrop);
 
     transition: var(--form-field-transition), var(--form-field-transition-shadow);
   }
@@ -81,7 +80,6 @@
     visibility: hidden;
     opacity: 0%;
     background: rgb(30 30 30 / 95%); /* Heller als rgb(18,18,18) */
-    backdrop-filter: blur(20px) saturate(180%);
     box-shadow: var(--shadow-sm);
 
     transition: all 0.2s ease;
@@ -101,6 +99,7 @@
     align-items: center;
     justify-content: space-between;
 
+    width: 100%;
     padding: 10px 16px;
     border-bottom: 1px solid rgb(255 255 255 / 5%);
 
