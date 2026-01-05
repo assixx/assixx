@@ -1,16 +1,21 @@
 /**
  * Rotation Delete DTO
  *
- * Zod schema for deleting all rotation history.
+ * Zod schema for deleting rotation history.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 /**
- * Delete all rotation history parameters
+ * Delete rotation history parameters
+ * API v2: camelCase only
+ *
+ * - If only teamId: deletes ALL patterns for the team
+ * - If teamId + patternId: deletes ONLY that specific pattern
  */
 export const DeleteRotationHistorySchema = z.object({
-  team_id: z.coerce.number().int().positive('team_id is required'),
+  teamId: z.coerce.number().int().positive('teamId is required'),
+  patternId: z.coerce.number().int().positive().optional(),
 });
 
 export class DeleteRotationHistoryDto extends createZodDto(DeleteRotationHistorySchema) {}

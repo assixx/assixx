@@ -97,7 +97,7 @@ function createSurveyPropertiesBadges(survey: Survey): string {
   const badges: string[] = [];
 
   // Anonymous badge - ALWAYS show
-  const isAnon = survey.is_anonymous === true || survey.is_anonymous === 1 || survey.is_anonymous === '1';
+  const isAnon = survey.isAnonymous === true || survey.isAnonymous === 1 || survey.isAnonymous === '1';
   badges.push(`
     <span class="badge badge--sm ${isAnon ? 'badge--info' : 'badge--secondary'}">
       <i class="fas ${isAnon ? 'fa-user-secret' : 'fa-user'}"></i>
@@ -106,7 +106,7 @@ function createSurveyPropertiesBadges(survey: Survey): string {
   `);
 
   // Mandatory badge - ALWAYS show
-  const isMand = survey.is_mandatory === true || survey.is_mandatory === 1 || survey.is_mandatory === '1';
+  const isMand = survey.isMandatory === true || survey.isMandatory === 1 || survey.isMandatory === '1';
   badges.push(`
     <span class="badge badge--sm ${isMand ? 'badge--warning' : 'badge--success'}">
       <i class="fas ${isMand ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
@@ -130,8 +130,8 @@ function getAssignmentInfo(): string {
  * Helper: Create date range HTML
  */
 function createDateRangeHtml(survey: Survey): string {
-  const startDate = formatSurveyDate(survey.start_date);
-  const endDate = formatSurveyDate(survey.end_date);
+  const startDate = formatSurveyDate(survey.startDate);
+  const endDate = formatSurveyDate(survey.endDate);
   const dateRange = startDate !== '' && endDate !== '' ? `${startDate} - ${endDate}` : '';
 
   return dateRange !== ''
@@ -329,7 +329,7 @@ export function showResponseModal(survey: Survey, response: SurveyResponse): voi
   console.info('[SurveyEmployee] Showing response modal with:', { survey, response });
 
   const answersHtml = createAnswersHtml(response.answers);
-  const completedDate = new Date(response.completed_at).toLocaleDateString('de-DE', {
+  const completedDate = new Date(response.completedAt).toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

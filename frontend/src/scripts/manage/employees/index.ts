@@ -571,10 +571,15 @@ class EmployeesManager {
           updatedAt: user.updatedAt,
 
           // Map Employee-specific fields
-          departmentId: user.departmentId ?? undefined,
+          // exactOptionalPropertyTypes: conditional spread for array fields
+          ...(user.departmentId !== undefined && { departmentId: user.departmentId }),
           departmentName: user.departmentName,
-          teamId: user.teamId ?? undefined,
+          ...(user.departmentIds !== undefined && { departmentIds: user.departmentIds }),
+          ...(user.departmentNames !== undefined && { departmentNames: user.departmentNames }),
+          ...(user.teamId !== undefined && { teamId: user.teamId }),
           teamName: user.teamName,
+          ...(user.teamIds !== undefined && { teamIds: user.teamIds }),
+          ...(user.teamNames !== undefined && { teamNames: user.teamNames }),
           // INHERITANCE-FIX: Map inheritance chain fields
           teamDepartmentId: user.teamDepartmentId,
           teamDepartmentName: user.teamDepartmentName,

@@ -159,6 +159,27 @@ export async function fetchTeams(departmentId?: number | null): Promise<Team[]> 
 }
 
 /**
+ * Fetch single team by ID (includes leaderId for permission check)
+ */
+export async function fetchTeamById(teamId: number): Promise<Team | null> {
+  try {
+    const response = await getApiClient().request<Team>(`/teams/${String(teamId)}`, { method: 'GET' });
+    return {
+      id: response.id,
+      name: response.name,
+      departmentId: response.departmentId ?? 0,
+      leaderId: response.leaderId ?? undefined,
+      description: response.description,
+      createdAt: response.createdAt,
+      updatedAt: response.updatedAt,
+    };
+  } catch (error) {
+    console.error('Error loading team by ID:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch teams for a specific machine
  */
 export async function fetchTeamsForMachine(machineId: number): Promise<Team[]> {
@@ -177,23 +198,44 @@ export async function fetchTeamsForMachine(machineId: number): Promise<Team[]> {
   return [];
 }
 
+/** API response type for team members */
+interface TeamMemberApiResponse {
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  userRole?: string;
+  availabilityStatus?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+}
+
 /**
  * Fetch team members with availability data
  */
 export async function fetchTeamMembers(teamId: number): Promise<TeamMember[]> {
   try {
-    const response = await getApiClient().request<User[]>(`/teams/${String(teamId)}/members`, {
+    const response = await getApiClient().request<TeamMemberApiResponse[]>(`/teams/${String(teamId)}/members`, {
       method: 'GET',
     });
 
     return response.map((user) => {
+      // Build base member object with required fields
       const member: TeamMember = {
         id: user.id,
         username: user.username,
         firstName: user.firstName ?? '',
         lastName: user.lastName ?? '',
-        role: 'member' as const,
+        role: user.role === 'lead' ? 'lead' : 'member',
       };
+
+      // Only add userRole if it's a valid value (not undefined)
+      // exactOptionalPropertyTypes requires omitting the property rather than setting undefined
+      if (user.userRole === 'admin' || user.userRole === 'employee' || user.userRole === 'root') {
+        member.userRole = user.userRole;
+      }
+
       // Only add availability fields if they have values
       if (user.availabilityStatus !== undefined) {
         member.availabilityStatus = user.availabilityStatus;

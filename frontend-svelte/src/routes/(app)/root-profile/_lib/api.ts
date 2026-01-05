@@ -4,12 +4,12 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 import type {
   UserProfile,
   ApprovalItem,
   ProfileUpdatePayload,
   PasswordChangePayload,
-  UserResponse,
   ApprovalsResponse,
   PictureUploadResponse,
 } from './types';
@@ -19,6 +19,7 @@ const apiClient = getApiClient();
 
 /**
  * Load user profile data
+ * DELEGATES to shared user service (prevents duplicate /users/me calls)
  * @returns User profile or null on error
  */
 export async function loadProfile(): Promise<{
@@ -26,19 +27,8 @@ export async function loadProfile(): Promise<{
   error: string | null;
 }> {
   try {
-    const result = (await apiClient.get('/users/me')) as UserProfile | UserResponse;
-
-    let user: UserProfile | null = null;
-
-    if ('user' in result && result.user) {
-      user = result.user;
-    } else if ('data' in result && result.data) {
-      user = result.data;
-    } else if ('id' in result) {
-      user = result as UserProfile;
-    }
-
-    return { user, error: null };
+    const result = await fetchSharedUser();
+    return { user: result.user as UserProfile | null, error: null };
   } catch (err) {
     console.error('[RootProfile] Error loading profile:', err);
     return {

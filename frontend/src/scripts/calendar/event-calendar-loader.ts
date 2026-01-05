@@ -9,7 +9,7 @@
  */
 
 // v5 API: All plugins included in @event-calendar/core
-// eslint-disable-next-line @typescript-eslint/naming-convention -- External library exports PascalCase
+
 import { createCalendar, DayGrid, TimeGrid, List, Interaction } from '@event-calendar/core';
 
 // Import CSS

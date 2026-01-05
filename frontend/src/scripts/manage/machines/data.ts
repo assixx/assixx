@@ -4,13 +4,14 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import type { Machine, Department, Area, MachineFormData } from './types';
+import type { Machine, Department, Area, Team, MachineTeam, MachineFormData } from './types';
 
 // ===== GLOBAL STATE =====
 export let currentMachineId: number | null = null;
 export let machines: Machine[] = [];
 export let departments: Department[] = [];
 export let areas: Area[] = [];
+export let teams: Team[] = [];
 
 // Functions to modify state (needed for import safety)
 export function setCurrentMachineId(id: number | null): void {
@@ -27,6 +28,10 @@ export function setDepartments(newDepartments: Department[]): void {
 
 export function setAreas(newAreas: Area[]): void {
   areas = newAreas;
+}
+
+export function setTeams(newTeams: Team[]): void {
+  teams = newTeams;
 }
 
 // ===== API CLIENT =====
@@ -215,5 +220,81 @@ export async function saveMachine(formData: MachineFormData): Promise<number> {
   } else {
     const result = await createMachine(formData);
     return result.id;
+  }
+}
+
+/**
+ * Load all teams from API
+ */
+export async function loadTeams(): Promise<void> {
+  try {
+    const response = await apiClient.request<Team[] | { success: boolean; data: Team[] }>(
+      '/teams',
+      { method: 'GET' },
+      { version: 'v2' },
+    );
+
+    if (Array.isArray(response)) {
+      setTeams(response);
+    } else if ('data' in response && Array.isArray(response.data)) {
+      setTeams(response.data);
+    } else {
+      setTeams([]);
+    }
+
+    console.info('[MachinesData] Loaded teams:', teams.length);
+  } catch (error) {
+    console.error('Error loading teams:', error);
+    setTeams([]);
+    throw new Error('Fehler beim Laden der Teams');
+  }
+}
+
+/**
+ * Get teams assigned to a machine
+ */
+export async function getMachineTeams(machineId: number): Promise<MachineTeam[]> {
+  try {
+    const response = await apiClient.request<MachineTeam[] | { success: boolean; data: MachineTeam[] }>(
+      `/machines/${machineId}/teams`,
+      { method: 'GET' },
+      { version: 'v2' },
+    );
+
+    if (Array.isArray(response)) {
+      return response;
+    } else if ('data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
+  } catch (error) {
+    console.error(`Error loading teams for machine ${machineId}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Set teams for a machine (bulk operation)
+ */
+export async function setMachineTeamsApi(machineId: number, teamIds: number[]): Promise<MachineTeam[]> {
+  try {
+    const response = await apiClient.request<MachineTeam[] | { success: boolean; data: MachineTeam[] }>(
+      `/machines/${machineId}/teams`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ teamIds }),
+      },
+      { version: 'v2' },
+    );
+
+    if (Array.isArray(response)) {
+      return response;
+    } else if ('data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
+  } catch (error) {
+    console.error(`Error setting teams for machine ${machineId}:`, error);
+    throw new Error('Fehler beim Zuweisen der Teams');
   }
 }

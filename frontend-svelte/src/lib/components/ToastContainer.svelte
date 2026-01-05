@@ -70,7 +70,7 @@
 <div
   id="notification-container"
   class="notification-container"
-  style="position: fixed; top: 92px; right: 20px; z-index: 10000; pointer-events: none;"
+  style="position: fixed; top: 91px; right: 20px; z-index: 10000; pointer-events: none;"
 >
   {#each $toasts as toast (toast.id)}
     {@const colors = getNotificationColors(toast.type)}

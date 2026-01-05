@@ -126,12 +126,12 @@ export const CATEGORY_MAPPINGS: Record<string, CategoryMapping> = {
   },
   department: {
     accessScope: 'department' as AccessScope,
-    requiresField: 'department_id',
+    requiresField: 'departmentId',
     categoryValue: 'work',
   },
   team: {
     accessScope: 'team' as AccessScope,
-    requiresField: 'team_id',
+    requiresField: 'teamId',
     categoryValue: 'work',
   },
   personal: {

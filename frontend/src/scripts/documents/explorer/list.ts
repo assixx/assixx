@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Documents Explorer - List View Module
  *
@@ -8,11 +9,31 @@
  * @module explorer/list
  */
 
-import type { Document, ChatFolder } from './types';
+import type { Document, ChatFolder, CurrentUser } from './types';
 import { stateManager } from './state';
 import { sidebarManager } from './sidebar';
 import { isAdmin } from '../../../utils/auth-helpers';
 import { tokenManager } from '../../../utils/token-manager';
+import { permissionsManager } from './permissions';
+import { documentAPI } from './api';
+
+/**
+ * Data attribute name for document ID (prevents sonarjs/no-duplicate-string)
+ */
+const DATA_DOCUMENT_ID = 'data-document-id';
+
+/**
+ * DB category value labels (for display in table)
+ * Matches SvelteKit DB_CATEGORY_LABELS
+ */
+const DB_CATEGORY_LABELS: Record<string, string> = {
+  general: 'Allgemein',
+  work: 'Arbeit',
+  personal: 'Persönlich',
+  salary: 'Gehalt',
+  blackboard: 'Schwarzes Brett',
+  chat: 'Chat',
+};
 
 /**
  * List View Manager
@@ -22,6 +43,7 @@ class ListViewManager {
   private listRowsEl: HTMLElement | null = null;
   private actionMenuEl: HTMLElement | null = null;
   private currentDocumentId: string | null = null;
+  private currentUser: CurrentUser | null = null;
 
   /**
    * Initialize list view
@@ -34,7 +56,7 @@ class ListViewManager {
       return;
     }
 
-    // Setup action menu
+    // Setup action menu (legacy, still used for context menu)
     this.actionMenuEl = document.getElementById('document-action-menu');
     if (this.actionMenuEl) {
       this.setupActionMenuListeners();
@@ -42,6 +64,9 @@ class ListViewManager {
 
     // Attach event handlers once (event delegation)
     this.attachRowClickHandlers();
+
+    // Load current user for permission checks (async, non-blocking)
+    void this.loadCurrentUser();
 
     // Subscribe to state changes
     stateManager.subscribe((state) => {
@@ -54,6 +79,23 @@ class ListViewManager {
     const state = stateManager.getState();
     if (state.viewMode === 'list') {
       this.render(state.filteredDocuments, state.isLoading, state.error);
+    }
+  }
+
+  /**
+   * Load current user for permission checks
+   * NEW 2025-12-23: Like SvelteKit, needed for per-document permissions
+   */
+  private async loadCurrentUser(): Promise<void> {
+    try {
+      this.currentUser = await documentAPI.getCurrentUser();
+      // Re-render to update action buttons with correct permissions
+      const state = stateManager.getState();
+      if (state.viewMode === 'list') {
+        this.render(state.filteredDocuments, state.isLoading, state.error);
+      }
+    } catch (error) {
+      console.error('[ListView] Failed to load current user:', error);
     }
   }
 
@@ -148,6 +190,7 @@ class ListViewManager {
   /**
    * Create chat folder row HTML (folder icon style)
    * NEW 2025-12-04
+   * UPDATED 2025-12-23: 6 columns to match Tags column addition
    */
   private createChatFolderRow(folder: ChatFolder): string {
     const displayName = folder.isGroup ? (folder.groupName ?? 'Gruppenname') : folder.participantName;
@@ -178,6 +221,9 @@ class ListViewManager {
         <!-- Type Column -->
         <td>Chat-Konversation</td>
 
+        <!-- Tags Column -->
+        <td>-</td>
+
         <!-- Size Column (attachment count) -->
         <td>${folder.attachmentCount} Dateien</td>
 
@@ -193,6 +239,7 @@ class ListViewManager {
   /**
    * Create "back to folders" row for navigation
    * NEW 2025-12-04: Allows navigation back from attachments to folder view
+   * UPDATED 2025-12-23: 6 columns to match Tags column addition
    */
   private createBackToFoldersRow(): string {
     return `
@@ -208,6 +255,9 @@ class ListViewManager {
         <!-- Type Column -->
         <td class="text-content-tertiary">Übergeordneter Ordner</td>
 
+        <!-- Tags Column -->
+        <td></td>
+
         <!-- Size Column -->
         <td></td>
 
@@ -222,10 +272,12 @@ class ListViewManager {
 
   /**
    * Create placeholder row (empty row with stripes)
+   * UPDATED 2025-12-23: 6 columns to match Tags column addition
    */
   private createPlaceholderRow(): string {
     return `
       <tr class="placeholder-row">
+        <td>&nbsp;</td>
         <td>&nbsp;</td>
         <td>&nbsp;</td>
         <td>&nbsp;</td>
@@ -237,12 +289,25 @@ class ListViewManager {
 
   /**
    * Create document row HTML (proper table row)
+   * UPDATED 2025-12-23: Inline action buttons like SvelteKit with per-document permissions
+   * UPDATED 2025-12-23: Added Tags column like SvelteKit
    */
   private createDocumentRow(doc: Document): string {
     const date = this.formatDate(doc.uploadedAt);
     const size = this.formatFileSize(doc.size);
     const isNewDoc = this.isDocumentNew(doc);
     const showActions = isAdmin();
+
+    // Per-document permission checks (like SvelteKit)
+    const canEdit = permissionsManager.canEditSpecificDocument(doc, this.currentUser);
+    const canDelete = permissionsManager.canDeleteSpecificDocument(doc, this.currentUser);
+
+    // Category label (like SvelteKit DB_CATEGORY_LABELS)
+    const categoryLabel = DB_CATEGORY_LABELS[doc.category] ?? doc.category;
+
+    // Tags rendering (like SvelteKit - max 3 badges + "+X")
+    const tags = this.getDocumentTags(doc);
+    const tagsHTML = this.renderTags(tags);
 
     return `
       <tr
@@ -265,7 +330,10 @@ class ListViewManager {
         </td>
 
         <!-- Category Column -->
-        <td>${this.escapeHtml(doc.category)}</td>
+        <td>${this.escapeHtml(categoryLabel)}</td>
+
+        <!-- Tags Column (NEW like SvelteKit) -->
+        <td>${tagsHTML}</td>
 
         <!-- Size Column -->
         <td>${size}</td>
@@ -273,40 +341,210 @@ class ListViewManager {
         <!-- Date Column -->
         <td>${date}</td>
 
-        <!-- Actions Column -->
-        <td>
-          ${
-            showActions
-              ? `
-            <button
-              class="action-icon action-menu-btn"
-              data-document-id="${doc.id}"
-              title="Aktionen"
-              aria-label="Dokumentaktionen"
-            >
-              <i class="fas fa-ellipsis-v"></i>
-            </button>
-          `
-              : ''
-          }
-        </td>
+        <!-- Actions Column - Inline buttons like SvelteKit -->
+        <td>${this.createActionButtonsHTML(doc.id, showActions, canEdit, canDelete)}</td>
       </tr>
     `;
   }
 
   /**
-   * Handle action button click
+   * Create action buttons HTML for document row
+   * Extracted to reduce createDocumentRow line count
    */
-  private handleActionButtonClick(target: HTMLElement, e: Event): boolean {
-    const actionBtn = target.closest('.action-menu-btn');
-    if (!actionBtn) return false;
+  private createActionButtonsHTML(docId: number, showActions: boolean, canEdit: boolean, canDelete: boolean): string {
+    if (!showActions) return '';
+
+    const previewBtn = `<button class="action-icon action-icon--info action-preview-btn" data-document-id="${docId}" title="Vorschau" aria-label="Vorschau anzeigen"><i class="fas fa-eye"></i></button>`;
+    const downloadBtn = `<button class="action-icon action-icon--info action-download-btn" data-document-id="${docId}" title="Herunterladen" aria-label="Dokument herunterladen"><i class="fas fa-download"></i></button>`;
+    const editBtn = canEdit
+      ? `<button class="action-icon action-icon--edit action-edit-btn" data-document-id="${docId}" title="Bearbeiten" aria-label="Dokument bearbeiten"><i class="fas fa-edit"></i></button>`
+      : '';
+    const deleteBtn = canDelete
+      ? `<button class="action-icon action-icon--delete action-delete-btn" data-document-id="${docId}" title="Löschen" aria-label="Dokument löschen"><i class="fas fa-trash"></i></button>`
+      : '';
+
+    return `<div class="flex items-center gap-1">${previewBtn}${downloadBtn}${editBtn}${deleteBtn}</div>`;
+  }
+
+  /**
+   * Get document tags as array
+   * Backend may return tags as array or JSON string
+   */
+  private getDocumentTags(doc: Document): string[] {
+    const rawTags = doc.tags;
+
+    if (rawTags === undefined) return [];
+
+    if (Array.isArray(rawTags)) {
+      return rawTags.filter((t): t is string => typeof t === 'string');
+    }
+
+    if (rawTags !== '') {
+      try {
+        const parsed: unknown = JSON.parse(rawTags);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((t): t is string => typeof t === 'string');
+        }
+      } catch {
+        // Not JSON, treat as single tag
+        return [rawTags];
+      }
+    }
+
+    return [];
+  }
+
+  /**
+   * Render tags as badge HTML (like SvelteKit - max 3 + "+X")
+   */
+  private renderTags(tags: string[]): string {
+    if (tags.length === 0) {
+      return '<span class="text-content-tertiary">-</span>';
+    }
+
+    const visibleTags = tags.slice(0, 3);
+    const remainingCount = tags.length - 3;
+
+    let html = '<div class="flex flex-wrap gap-1">';
+
+    for (const tag of visibleTags) {
+      html += `<span class="badge badge--info" style="padding: 2px 6px;">${this.escapeHtml(tag)}</span>`;
+    }
+
+    if (remainingCount > 0) {
+      html += `<span class="text-xs text-content-tertiary">+${remainingCount}</span>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * Try to handle an action button click with the given selector and handler
+   * Returns true if button was found and handled, false otherwise
+   */
+  private tryHandleActionButton(
+    target: HTMLElement,
+    e: Event,
+    selector: string,
+    handler: (documentId: string, element: Element) => void,
+  ): boolean {
+    const button = target.closest(selector);
+    if (!button) return false;
 
     e.stopPropagation();
-    const documentId = actionBtn.getAttribute('data-document-id');
+    const documentId = button.getAttribute(DATA_DOCUMENT_ID);
     if (documentId !== null && documentId !== '') {
-      this.showActionMenu(documentId, actionBtn as HTMLElement);
+      handler(documentId, button);
     }
     return true;
+  }
+
+  /**
+   * Handle action button click - delegates to specific handlers
+   * UPDATED 2025-12-23: Refactored to reduce cognitive complexity
+   */
+  private handleActionButtonClick(target: HTMLElement, e: Event): boolean {
+    // Preview button
+    if (
+      this.tryHandleActionButton(target, e, '.action-preview-btn', (id) => {
+        this.openPreview(id);
+      })
+    ) {
+      return true;
+    }
+
+    // Download button
+    if (
+      this.tryHandleActionButton(target, e, '.action-download-btn', (id) => {
+        this.handleDownloadAction(id);
+      })
+    ) {
+      return true;
+    }
+
+    // Edit button
+    if (
+      this.tryHandleActionButton(target, e, '.action-edit-btn', () => {
+        alert('Bearbeiten-Funktion wird noch implementiert');
+      })
+    ) {
+      return true;
+    }
+
+    // Delete button
+    if (
+      this.tryHandleActionButton(target, e, '.action-delete-btn', (id) => {
+        this.handleDeleteDocument(id);
+      })
+    ) {
+      return true;
+    }
+
+    // Legacy: Menu button (backwards compatibility)
+    if (
+      this.tryHandleActionButton(target, e, '.action-menu-btn', (id, el) => {
+        this.showActionMenu(id, el as HTMLElement);
+      })
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Handle download action - finds document and triggers download
+   */
+  private handleDownloadAction(documentId: string): void {
+    const state = stateManager.getState();
+    const doc = state.filteredDocuments.find((d) => String(d.id) === documentId);
+    if (doc) {
+      this.downloadDocument(doc);
+    }
+  }
+
+  /**
+   * Handle delete document action
+   * NEW 2025-12-23: Like SvelteKit, with confirmation
+   */
+  private handleDeleteDocument(documentId: string): void {
+    const state = stateManager.getState();
+    const doc = state.filteredDocuments.find((d) => String(d.id) === documentId);
+    if (!doc) return;
+
+    // Permission check
+    if (!permissionsManager.canDeleteSpecificDocument(doc, this.currentUser)) {
+      alert('Sie haben keine Berechtigung, dieses Dokument zu löschen');
+      return;
+    }
+
+    // Confirmation dialog
+    const confirmed = confirm(
+      `ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!\n\nDas Dokument "${doc.filename}" wird unwiderruflich gelöscht.\n\nFortfahren?`,
+    );
+
+    if (confirmed) {
+      void this.deleteDocument(doc);
+    }
+  }
+
+  /**
+   * Delete document via API
+   * NEW 2025-12-23: Actual delete implementation
+   */
+  private async deleteDocument(doc: Document): Promise<void> {
+    try {
+      await documentAPI.deleteDocument(String(doc.id));
+      // Remove from state and re-render
+      const state = stateManager.getState();
+      const updatedDocuments = state.documents.filter((d) => d.id !== doc.id);
+      stateManager.setDocuments(updatedDocuments);
+      alert('Dokument erfolgreich gelöscht');
+    } catch (error) {
+      console.error('[ListView] Delete failed:', error);
+      alert(error instanceof Error ? error.message : 'Löschen fehlgeschlagen');
+    }
   }
 
   /**
@@ -338,7 +576,7 @@ class ListViewManager {
   private handleDocumentRowClick(target: HTMLElement): void {
     const row = target.closest('.document-row');
     if (row) {
-      const documentId = row.getAttribute('data-document-id');
+      const documentId = row.getAttribute(DATA_DOCUMENT_ID);
       if (documentId !== null && documentId !== '') {
         this.openPreview(documentId);
       }

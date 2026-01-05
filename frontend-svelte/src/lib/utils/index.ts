@@ -87,3 +87,15 @@ export { SessionManager, getSessionManager } from './session-manager';
 
 // Avatar helpers (color assignment + initials)
 export { getAvatarColor, getAvatarColorClass, getInitials } from './avatar-helpers';
+
+// Alert utilities (toast notifications + confirm dialogs)
+export {
+  showAlert,
+  showErrorAlert,
+  showSuccessAlert,
+  showWarningAlert,
+  showConfirm,
+  showConfirmDanger,
+  showConfirmWarning,
+  showInfoModal,
+} from './alerts';

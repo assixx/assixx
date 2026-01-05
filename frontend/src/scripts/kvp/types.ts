@@ -79,15 +79,13 @@ export interface StatsResponse {
 export interface UserMeResponse {
   id?: number;
   teamId?: number;
-  team_id?: number;
   teamName?: string;
   team?: { id: number };
-  teams?: { id: number; team_id?: number }[];
+  teams?: { id: number; teamId?: number }[];
 }
 
 export interface TeamResponse {
   id: number;
-  team_lead_id?: number;
   teamLeadId?: number;
   leaderId?: number;
 }

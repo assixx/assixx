@@ -3,6 +3,24 @@
 // =============================================================================
 
 /**
+ * Area interface - inherited via teams→departments→areas
+ */
+export interface Area {
+  id: number;
+  name: string;
+}
+
+/**
+ * Department interface - inherited via teams→departments
+ */
+export interface Department {
+  id: number;
+  name: string;
+  areaId?: number;
+  areaName?: string;
+}
+
+/**
  * Team interface - used for team assignment
  */
 export interface Team {
@@ -14,6 +32,7 @@ export interface Team {
 
 /**
  * Employee interface - main data model
+ * BADGE-INHERITANCE-DISPLAY: Areas and Departments are inherited from teams for employees
  */
 export interface Employee {
   id: number;
@@ -29,12 +48,34 @@ export interface Employee {
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
+
+  // Team assignments (N:M)
   teams?: Team[];
   teamIds?: number[];
+  teamNames?: string[];
+
+  // Legacy single team fields (for compatibility)
+  teamId?: number;
+  teamName?: string;
+
+  // Inherited fields from team→department→area chain
+  teamDepartmentName?: string;
+  teamAreaName?: string;
+
+  // Direct assignments (rare for employees)
+  areas?: Area[];
+  departments?: Department[];
+  departmentName?: string;
+
+  // Full access flag
+  hasFullAccess?: boolean | 1 | 0;
+
+  // Availability
   availabilityStatus?: AvailabilityStatus;
   availabilityStart?: string;
   availabilityEnd?: string;
   availabilityNotes?: string;
+
   role?: string;
 }
 

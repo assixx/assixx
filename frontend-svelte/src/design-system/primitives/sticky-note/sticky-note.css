@@ -7,8 +7,13 @@
  *     <div class="sticky-note__pin"></div>
  *     <div class="sticky-note__title">Title</div>
  *     <div class="sticky-note__content">Content text...</div>
- *     <div class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</div>
- *     <div class="sticky-note__comments"><i class="fas fa-comments"></i> 5</div>
+ *     <div class="sticky-note__indicators">
+ *       <span class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</span>
+ *       <span class="sticky-note__comments"><i class="fas fa-comments"></i> 5</span>
+ *       <span class="sticky-note__read-status sticky-note__read-status--unread">
+ *         <i class="fas fa-eye-slash"></i>
+ *       </span>
+ *     </div>
  *     <div class="sticky-note__footer">
  *       <span class="sticky-note__author"><i class="fas fa-user"></i> Name</span>
  *       <span class="sticky-note__date">26.11.2025</span>
@@ -281,6 +286,35 @@
 .sticky-note__comments i {
   color: var(--color-black, #000);
   font-size: 0.8rem;
+}
+
+/* Read Status Indicator (Eye icon) */
+.sticky-note__read-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  font-size: 0.75rem;
+}
+
+.sticky-note__read-status i {
+  font-size: 0.85rem;
+}
+
+.sticky-note__read-status--read {
+  opacity: 60%;
+}
+
+.sticky-note__read-status--read i {
+  color: var(--color-success, #4caf50);
+}
+
+.sticky-note__read-status--unread {
+  opacity: 100%;
+}
+
+.sticky-note__read-status--unread i {
+  color: var(--color-warning, #ff9800);
 }
 
 /* ========================================

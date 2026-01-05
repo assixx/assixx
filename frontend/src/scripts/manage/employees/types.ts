@@ -44,8 +44,11 @@ export interface Employee extends User {
   departments?: Department[];
   teams?: Team[];
   areaIds?: number[];
+  areaNames?: string[];
   departmentIds?: number[];
+  departmentNames?: string[];
   teamIds?: number[];
+  teamNames?: string[];
   hasFullAccess?: boolean | number; // 1 or true = full tenant access
   // position inherited from User
   hireDate?: string;

@@ -6,6 +6,7 @@
 import type { DashboardData, ActivityLog, UserData, LogsApiResponse, ApiResponse } from './types';
 import { API_ENDPOINTS, STORAGE_KEYS, MESSAGES } from './constants';
 import { isTemporaryEmployeeNumber } from './utils';
+import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 /**
  * Get access token from localStorage
@@ -96,6 +97,7 @@ export async function loadActivityLogs(): Promise<ActivityLog[]> {
 
 /**
  * Check if user has temporary employee number
+ * DELEGATES to shared user service (prevents duplicate /users/me calls)
  * @returns Object with user data and whether modal should be shown
  */
 export async function checkEmployeeNumber(): Promise<{
@@ -108,20 +110,14 @@ export async function checkEmployeeNumber(): Promise<{
   }
 
   try {
-    const response = await fetch(API_ENDPOINTS.userMe, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const result = await fetchSharedUser();
+    const userData = result.user as UserData | null;
 
-    if (!response.ok) {
+    if (userData === null) {
       return { userData: null, showModal: false };
     }
 
-    const result = (await response.json()) as ApiResponse<UserData> | UserData;
-    const userData = 'data' in result && result.data ? result.data : (result as UserData);
-
-    const employeeNumber = userData?.employeeNumber ?? userData?.employee_number ?? '';
+    const employeeNumber = userData?.employeeNumber ?? '';
     const showModal = isTemporaryEmployeeNumber(employeeNumber);
 
     return { userData, showModal };

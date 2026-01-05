@@ -151,23 +151,7 @@
             <input type="text" id="machine-serial" name="serialNumber" class="form-field__control" />
           </div>
 
-          <div class="form-field">
-            <label class="form-field__label" for="machine-department">Abteilung</label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="machine-department" name="departmentId" />
-            <!-- Custom Dropdown -->
-            <div class="dropdown" id="department-dropdown">
-              <div class="dropdown__trigger" id="department-trigger">
-                <span>Keine Abteilung</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <div class="dropdown__menu" id="department-menu">
-                <div class="dropdown__option" data-value="">Keine Abteilung</div>
-                <!-- Will be populated dynamically -->
-              </div>
-            </div>
-          </div>
-
+          <!-- HIERARCHIE: Area → Department → Team -->
           <div class="form-field">
             <label class="form-field__label" for="machine-area">Bereich</label>
             <!-- Hidden input to store the selected value -->
@@ -181,6 +165,39 @@
               <div class="dropdown__menu" id="area-menu">
                 <div class="dropdown__option" data-value="">Kein Bereich</div>
                 <!-- Will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="machine-department">Abteilung</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="machine-department" name="departmentId" />
+            <!-- Custom Dropdown - filtered by selected Area -->
+            <div class="dropdown" id="department-dropdown">
+              <div class="dropdown__trigger" id="department-trigger">
+                <span>Keine Abteilung</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="department-menu">
+                <div class="dropdown__option" data-value="">Keine Abteilung</div>
+                <!-- Will be populated dynamically, filtered by Area -->
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label">Teams</label>
+            <!-- Hidden input to store the selected values (comma-separated) -->
+            <input type="hidden" id="machine-teams" name="teamIds" />
+            <!-- Custom Dropdown with Checkboxes - filtered by selected Department -->
+            <div class="dropdown" id="teams-dropdown">
+              <div class="dropdown__trigger" id="teams-trigger">
+                <span id="teams-display">Keine Teams zugewiesen</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu dropdown__menu--scrollable" id="teams-menu">
+                <!-- Will be populated dynamically with checkboxes, filtered by Department -->
               </div>
             </div>
           </div>

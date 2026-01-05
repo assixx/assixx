@@ -145,7 +145,8 @@ async function handleTeamChange(numValue: number): Promise<void> {
   setSelectedContext({ teamId: numValue, teamLeaderId: selectedTeam?.leaderId ?? null });
 
   const members = await fetchTeamMembers(numValue);
-  const teamEmployees = members.map((m) => mapMemberToEmployee(m, numValue));
+  // Only include users with userRole='employee' (not admins/team leads)
+  const teamEmployees = members.filter((m) => m.userRole === 'employee').map((m) => mapMemberToEmployee(m, numValue));
   setEmployees(teamEmployees);
   renderEmployeesList(teamEmployees);
   showPlanningUI(getIsAdmin());

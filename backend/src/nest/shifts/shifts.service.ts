@@ -169,7 +169,6 @@ interface DbShiftRow {
   tenant_id: number;
   plan_id: number | null;
   user_id: number;
-  template_id: number | null;
   date: string | Date;
   start_time: string | Date;
   end_time: string | Date;
@@ -189,8 +188,6 @@ interface DbShiftRow {
   created_at: Date;
   updated_at: Date;
   // Joined fields
-  template_name?: string | undefined;
-  template_color?: string | undefined;
   user_name?: string | undefined;
   first_name?: string | undefined;
   last_name?: string | undefined;
@@ -282,6 +279,46 @@ export class ShiftsService {
     }
   }
 
+  /**
+   * Builds a full timestamp from date and time strings for PostgreSQL
+   * @param dateStr - Date in YYYY-MM-DD format (or ISO string)
+   * @param timeStr - Time in HH:MM format
+   * @param defaultTime - Optional default time if timeStr is invalid
+   * @returns Full timestamp string or null if inputs are invalid
+   */
+  private buildTimestamp(dateStr: unknown, timeStr: unknown, defaultTime?: string): string | null {
+    if (typeof dateStr !== 'string' || dateStr === '') return null;
+    const datePart: string = dateStr.split('T')[0] ?? dateStr;
+    if (typeof timeStr === 'string' && timeStr !== '') {
+      const timePart: string = timeStr;
+      return `${datePart}T${timePart}:00`;
+    }
+    if (defaultTime !== undefined && defaultTime !== '') {
+      const defTime: string = defaultTime;
+      return `${datePart}T${defTime}:00`;
+    }
+    return null;
+  }
+
+  /**
+   * Converts time fields in dbData to full timestamps using the provided date
+   */
+  private convertTimeFieldsToTimestamps(
+    dbData: Record<string, unknown>,
+    dateForTimestamp: string,
+  ): void {
+    const startTime = dbData['start_time'];
+    if (startTime !== undefined) {
+      const builtTime = this.buildTimestamp(dateForTimestamp, startTime);
+      if (builtTime !== null) dbData['start_time'] = builtTime;
+    }
+    const endTime = dbData['end_time'];
+    if (endTime !== undefined) {
+      const builtTime = this.buildTimestamp(dateForTimestamp, endTime);
+      if (builtTime !== null) dbData['end_time'] = builtTime;
+    }
+  }
+
   private dbShiftToApi(dbShift: DbShiftRow): ShiftResponse {
     const apiShift = dbToApi(dbShift as unknown as Record<string, unknown>) as ShiftResponse;
     const startTime = this.parseTimeFromDateTime(dbShift.start_time);
@@ -296,6 +333,14 @@ export class ShiftsService {
     if (formattedDate !== undefined && formattedDate !== '') {
       apiShift.date = formattedDate;
     }
+    // Add nested user object for frontend compatibility
+    // user_id is always defined (required field in DbShiftRow)
+    apiShift['user'] = {
+      id: dbShift.user_id,
+      username: dbShift.user_name ?? '',
+      firstName: dbShift.first_name ?? '',
+      lastName: dbShift.last_name ?? '',
+    };
     return apiShift;
   }
 
@@ -414,25 +459,29 @@ export class ShiftsService {
     this.logger.debug(`Creating shift for tenant ${tenantId} by user ${userId}`);
 
     const dbData = apiToDb(dto as unknown as Record<string, unknown>);
+
+    // Combine date + time to create full timestamps for PostgreSQL
+    const startTime = this.buildTimestamp(dbData['date'], dbData['start_time']);
+    const endTime = this.buildTimestamp(dbData['date'], dbData['end_time']);
+
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shifts (
-        tenant_id, plan_id, user_id, template_id, date, start_time, end_time,
+        tenant_id, plan_id, user_id, date, start_time, end_time,
         title, required_employees, break_minutes, status, type, notes,
         area_id, department_id, team_id, machine_id, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id`,
       [
         tenantId,
         dbData['plan_id'] ?? null,
         dbData['user_id'],
-        dbData['template_id'] ?? null,
         dbData['date'],
-        dbData['start_time'],
-        dbData['end_time'],
+        startTime,
+        endTime,
         dbData['title'] ?? null,
         dbData['required_employees'] ?? null,
         dbData['break_minutes'] ?? null,
-        dbData['status'] ?? 'scheduled',
+        dbData['status'] ?? 'planned',
         dbData['type'] ?? null,
         dbData['notes'] ?? null,
         dbData['area_id'] ?? null,
@@ -457,10 +506,19 @@ export class ShiftsService {
   ): Promise<ShiftResponse> {
     this.logger.debug(`Updating shift ${id} for tenant ${tenantId}`);
 
-    // Check if shift exists
-    await this.getShiftById(id, tenantId);
+    // Check if shift exists and get current data for date reference
+    const existingShift = await this.getShiftById(id, tenantId);
 
     const dbData = apiToDb(dto as unknown as Record<string, unknown>);
+
+    // Determine the date for timestamp construction (new date or existing)
+    const rawDate = dbData['date'];
+    const existingDate = typeof existingShift.date === 'string' ? existingShift.date : '';
+    const dateForTimestamp = typeof rawDate === 'string' ? rawDate : existingDate;
+
+    // Convert time-only fields to full timestamps
+    this.convertTimeFieldsToTimestamps(dbData, dateForTimestamp);
+
     const updates: string[] = [];
     const params: unknown[] = [];
     let paramIndex = 1;
@@ -505,6 +563,53 @@ export class ShiftsService {
     return { message: 'Shift deleted successfully' };
   }
 
+  /**
+   * Delete all shifts for a team in a date range
+   */
+  async deleteShiftsByWeek(
+    teamId: number,
+    startDate: string,
+    endDate: string,
+    tenantId: number,
+  ): Promise<{ shiftsDeleted: number }> {
+    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
+
+    const result = await this.databaseService.query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM shifts
+        WHERE tenant_id = $1 AND team_id = $2 AND date >= $3 AND date <= $4
+        RETURNING *
+      ) SELECT COUNT(*) as count FROM deleted`,
+      [tenantId, teamId, startDate, endDate],
+    );
+
+    const shiftsDeleted = Number.parseInt(result[0]?.count ?? '0', 10);
+    this.logger.debug(`Deleted ${shiftsDeleted} shifts`);
+
+    return { shiftsDeleted };
+  }
+
+  /**
+   * Delete ALL shifts for a team (no date range)
+   */
+  async deleteShiftsByTeam(teamId: number, tenantId: number): Promise<{ shiftsDeleted: number }> {
+    this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
+
+    const result = await this.databaseService.query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM shifts
+        WHERE tenant_id = $1 AND team_id = $2
+        RETURNING *
+      ) SELECT COUNT(*) as count FROM deleted`,
+      [tenantId, teamId],
+    );
+
+    const shiftsDeleted = Number.parseInt(result[0]?.count ?? '0', 10);
+    this.logger.debug(`Deleted ${shiftsDeleted} shifts for team ${teamId}`);
+
+    return { shiftsDeleted };
+  }
+
   // ============================================================
   // SHIFT PLANS
   // ============================================================
@@ -538,12 +643,13 @@ export class ShiftsService {
     const plans = await this.databaseService.query<DbShiftPlanRow>(planQuery, planParams);
     const plan = plans[0];
 
-    // Get shifts for the date range
+    // Get shifts for the date range - if we have a plan, use plan_id for more accurate filtering
     const shifts = await this.listShifts(tenantId, {
       startDate: filters.startDate,
       endDate: filters.endDate,
       departmentId: filters.departmentId,
       teamId: filters.teamId,
+      planId: plan?.id, // Filter by plan_id if plan exists
       page: 1,
       limit: 1000,
       sortBy: 'date',
@@ -564,7 +670,6 @@ export class ShiftsService {
   ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Creating shift plan for tenant ${tenantId}`);
 
-    // Create the plan
     const planUuid = uuidv7();
     const planResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_plans (
@@ -588,35 +693,54 @@ export class ShiftsService {
     );
 
     const planId = planResult[0]?.id ?? 0;
-    const shiftIds: number[] = [];
-
-    // Create shifts
-    if (dto.shifts.length > 0) {
-      for (const shift of dto.shifts) {
-        const shiftResult = await this.databaseService.query<{ id: number }>(
-          `INSERT INTO shifts (
-            tenant_id, plan_id, user_id, date, start_time, end_time, type, department_id, created_by
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-          RETURNING id`,
-          [
-            tenantId,
-            planId,
-            shift.userId,
-            shift.date,
-            shift.startTime,
-            shift.endTime,
-            shift.type,
-            dto.departmentId,
-            userId,
-          ],
-        );
-        if (shiftResult[0] !== undefined) {
-          shiftIds.push(shiftResult[0].id);
-        }
-      }
-    }
+    const shiftIds =
+      dto.shifts.length > 0 ?
+        await this.insertPlanShifts(dto.shifts, planId, tenantId, dto, userId)
+      : [];
 
     return { planId, shiftIds, message: 'Shift plan created successfully' };
+  }
+
+  /**
+   * Inserts shifts for a new plan
+   */
+  private async insertPlanShifts(
+    shifts: CreateShiftPlanDto['shifts'],
+    planId: number,
+    tenantId: number,
+    context: Pick<CreateShiftPlanDto, 'areaId' | 'departmentId' | 'teamId' | 'machineId'>,
+    createdBy: number,
+  ): Promise<number[]> {
+    const shiftIds: number[] = [];
+    for (const shift of shifts) {
+      const startTimestamp = this.buildTimestamp(shift.date, shift.startTime);
+      const endTimestamp = this.buildTimestamp(shift.date, shift.endTime);
+      const result = await this.databaseService.query<{ id: number }>(
+        `INSERT INTO shifts (
+          tenant_id, plan_id, user_id, date, start_time, end_time, type,
+          area_id, department_id, team_id, machine_id, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id`,
+        [
+          tenantId,
+          planId,
+          shift.userId,
+          shift.date,
+          startTimestamp,
+          endTimestamp,
+          shift.type,
+          context.areaId ?? null,
+          context.departmentId,
+          context.teamId ?? null,
+          context.machineId ?? null,
+          createdBy,
+        ],
+      );
+      if (result[0] !== undefined) {
+        shiftIds.push(result[0].id);
+      }
+    }
+    return shiftIds;
   }
 
   /**
@@ -632,14 +756,25 @@ export class ShiftsService {
     }[],
     planId: number,
     tenantId: number,
-    departmentId: number | undefined,
+    context: {
+      departmentId: number | undefined;
+      teamId: number | null | undefined;
+      areaId: number | null | undefined;
+      machineId: number | null | undefined;
+    },
     createdBy: number,
   ): Promise<number[]> {
     const shiftIds: number[] = [];
     for (const shift of shifts) {
+      // Combine date + time to create full timestamps for PostgreSQL (with defaults)
+      const startTimestamp = this.buildTimestamp(shift.date, shift.startTime, '08:00');
+      const endTimestamp = this.buildTimestamp(shift.date, shift.endTime, '16:00');
+
       const result = await this.databaseService.query<{ id: number }>(
-        `INSERT INTO shifts (tenant_id, plan_id, user_id, date, start_time, end_time, type, department_id, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO shifts (
+          tenant_id, plan_id, user_id, date, start_time, end_time, type,
+          area_id, department_id, team_id, machine_id, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (tenant_id, plan_id, user_id, date) DO UPDATE SET
            start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, type = EXCLUDED.type
          RETURNING id`,
@@ -648,10 +783,13 @@ export class ShiftsService {
           planId,
           shift.userId,
           shift.date,
-          shift.startTime ?? '08:00',
-          shift.endTime ?? '16:00',
+          startTimestamp,
+          endTimestamp,
           shift.type,
-          departmentId,
+          context.areaId ?? null,
+          context.departmentId,
+          context.teamId ?? null,
+          context.machineId ?? null,
           createdBy,
         ],
       );
@@ -698,19 +836,52 @@ export class ShiftsService {
       );
     }
 
-    // Upsert shifts
+    // Upsert shifts and get IDs of shifts that should exist
     const shiftIds =
       dto.shifts !== undefined && dto.shifts.length > 0 ?
         await this.upsertPlanShifts(
           dto.shifts,
           planId,
           tenantId,
-          dto.departmentId ?? plans[0]?.department_id,
+          {
+            departmentId: dto.departmentId ?? plans[0]?.department_id,
+            teamId: dto.teamId ?? plans[0]?.team_id,
+            areaId: dto.areaId ?? plans[0]?.area_id,
+            machineId: dto.machineId ?? plans[0]?.machine_id,
+          },
           userId,
         )
       : [];
 
+    // Clean up orphaned shifts (those removed by user)
+    await this.deleteOrphanedPlanShifts(planId, tenantId, shiftIds, dto.shifts?.length === 0);
+
     return { planId, shiftIds, message: 'Shift plan updated successfully' };
+  }
+
+  /**
+   * Deletes shifts that are no longer part of a plan (removed by user)
+   */
+  private async deleteOrphanedPlanShifts(
+    planId: number,
+    tenantId: number,
+    keepShiftIds: number[],
+    deleteAll: boolean,
+  ): Promise<void> {
+    if (keepShiftIds.length > 0) {
+      const placeholders = keepShiftIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
+      await this.databaseService.query(
+        `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2 AND id NOT IN (${placeholders})`,
+        [planId, tenantId, ...keepShiftIds],
+      );
+      this.logger.debug(`Cleaned up orphaned shifts for plan ${planId}`);
+    } else if (deleteAll) {
+      await this.databaseService.query(`DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`, [
+        planId,
+        tenantId,
+      ]);
+      this.logger.debug(`Deleted all shifts for plan ${planId} (empty shifts array)`);
+    }
   }
 
   async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
@@ -976,7 +1147,7 @@ export class ShiftsService {
     this.logger.debug(`Listing favorites for user ${userId} in tenant ${tenantId}`);
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
-      `SELECT * FROM shift_planning_favorites WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
+      `SELECT * FROM shift_favorites WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
       [tenantId, userId],
     );
 
@@ -993,7 +1164,7 @@ export class ShiftsService {
     this.logger.debug(`Creating favorite for user ${userId} in tenant ${tenantId}`);
 
     const result = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO shift_planning_favorites (
+      `INSERT INTO shift_favorites (
         tenant_id, user_id, name, area_id, area_name, department_id, department_name,
         machine_id, machine_name, team_id, team_name
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -1015,7 +1186,7 @@ export class ShiftsService {
 
     const favoriteId = result[0]?.id ?? 0;
     const favorites = await this.databaseService.query<DbFavoriteRow>(
-      `SELECT * FROM shift_planning_favorites WHERE id = $1 AND tenant_id = $2`,
+      `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2`,
       [favoriteId, tenantId],
     );
 
@@ -1026,7 +1197,7 @@ export class ShiftsService {
     this.logger.debug(`Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`);
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
-      `SELECT * FROM shift_planning_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
+      `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
       [favoriteId, tenantId, userId],
     );
 
@@ -1035,7 +1206,7 @@ export class ShiftsService {
     }
 
     await this.databaseService.query(
-      `DELETE FROM shift_planning_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
+      `DELETE FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
       [favoriteId, tenantId, userId],
     );
   }

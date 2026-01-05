@@ -83,6 +83,7 @@ export const MESSAGES = {
   LABEL_SERIAL: 'Seriennummer',
   LABEL_DEPARTMENT: 'Abteilung',
   LABEL_AREA: 'Bereich',
+  LABEL_TEAMS: 'Teams',
   LABEL_TYPE: 'Maschinentyp',
   LABEL_STATUS: 'Status',
   LABEL_HOURS: 'Betriebsstunden',
@@ -92,6 +93,10 @@ export const MESSAGES = {
   PLACEHOLDER_DEPARTMENT: 'Keine Abteilung',
   PLACEHOLDER_AREA: 'Kein Bereich',
   PLACEHOLDER_TYPE: 'Maschinentyp wählen',
+  PLACEHOLDER_TEAMS: 'Keine Teams zugewiesen',
+  PLACEHOLDER_SELECT_AREA_FIRST: 'Bitte zuerst Bereich wählen',
+  PLACEHOLDER_SELECT_DEPT_FIRST: 'Bitte zuerst Abteilung wählen',
+  PLACEHOLDER_NO_TEAMS_AVAILABLE: 'Keine Teams verfügbar',
 
   // Buttons
   BTN_SAVE: 'Speichern',
@@ -142,14 +147,20 @@ export const MESSAGES = {
   SUCCESS_DELETED: 'Maschine gelöscht',
 
   // Table headers
+  TH_ID: 'ID',
   TH_NAME: 'Name',
   TH_MODEL: 'Modell',
   TH_MANUFACTURER: 'Hersteller',
+  TH_AREA: 'Bereich',
   TH_DEPARTMENT: 'Abteilung',
+  TH_TEAMS: 'Teams',
   TH_STATUS: 'Status',
   TH_HOURS: 'Betriebsstunden',
   TH_MAINTENANCE: 'Nächste Wartung',
   TH_ACTIONS: 'Aktionen',
+
+  // Teams display
+  TEAMS_SELECTED: (count: number) => (count <= 2 ? '' : `${count} Teams ausgewählt`),
 } as const;
 
 /**
@@ -162,6 +173,7 @@ export const FORM_DEFAULTS = {
   serialNumber: '',
   departmentId: null as number | null,
   areaId: null as number | null,
+  teamIds: [] as number[],
   machineType: '' as string,
   status: 'operational' as MachineStatus,
   operatingHours: null as number | null,

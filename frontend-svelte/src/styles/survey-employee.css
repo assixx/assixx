@@ -159,3 +159,70 @@
 .answer-container {
   margin-top: var(--spacing-4);
 }
+
+/* ========================================
+   RATING BUTTON
+   ======================================== */
+
+.rating-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+
+  background: rgb(255 255 255 / 5%);
+
+  color: #d1d5db;
+  font-size: 1rem;
+  font-weight: 500;
+
+  transition: all 0.2s ease;
+}
+
+.rating-button:hover {
+  transform: scale(1.1);
+  border-color: rgb(96 165 250 / 50%);
+
+  background: rgb(59 130 246 / 10%);
+  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+
+  color: #60a5fa;
+}
+
+.rating-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 50%);
+}
+
+.rating-button--selected {
+  transform: scale(1.1);
+  border-color: #3b82f6 !important;
+
+  background: rgb(59 130 246 / 20%) !important;
+
+  color: #60a5fa !important;
+}
+
+/* ========================================
+   LOADING SPINNER
+   ======================================== */
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgb(255 255 255 / 10%);
+  border-top-color: var(--primary-color, #3498db);
+  border-radius: 50%;
+
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

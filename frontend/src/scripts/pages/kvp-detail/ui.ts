@@ -107,9 +107,9 @@ export interface KvpSuggestion {
 export interface Comment {
   id: number;
   suggestionId: number;
-  userId: number;
-  firstName: string;
-  lastName: string;
+  createdBy: number;
+  createdByName?: string;
+  createdByLastname?: string;
   profilePictureUrl?: string;
   comment: string;
   isInternal: boolean;
@@ -231,7 +231,10 @@ export function renderComments(comments: Comment[], container: HTMLElement): voi
     container,
     comments
       .map((comment) => {
-        const initials = `${comment.firstName[0] ?? 'U'}${comment.lastName[0] ?? 'N'}`.toUpperCase();
+        const firstName = comment.createdByName ?? 'Unbekannt';
+        const lastName = comment.createdByLastname ?? '';
+        const lastInitial = lastName.length > 0 ? lastName.charAt(0) : 'N';
+        const initials = `${firstName.charAt(0)}${lastInitial}`.toUpperCase();
         const avatarColor = comment.id % 10; // Design System: 10 color variants
         const commentClass = comment.isInternal ? 'comment-item comment-internal' : 'comment-item';
 
@@ -243,7 +246,7 @@ export function renderComments(comments: Comment[], container: HTMLElement): voi
               <span class="avatar__initials">${initials}</span>
             </div>
             <div>
-              <strong>${comment.firstName} ${comment.lastName}</strong>
+              <strong>${escapeHtml(firstName)} ${escapeHtml(lastName)}</strong>
               ${comment.isInternal ? '<span class="internal-badge">Intern</span>' : ''}
             </div>
           </div>

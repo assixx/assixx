@@ -47,6 +47,11 @@ export interface User {
   team?: string | undefined;
   teamId?: number | undefined;
   teamName?: string | undefined;
+  // N:M arrays from API (multiple team/department assignments)
+  teamIds?: number[] | undefined;
+  teamNames?: string[] | undefined;
+  departmentIds?: number[] | undefined;
+  departmentNames?: string[] | undefined;
   // INHERITANCE-FIX: Full inheritance chain from Team → Department → Area
   teamDepartmentId?: number | undefined;
   teamDepartmentName?: string | undefined;

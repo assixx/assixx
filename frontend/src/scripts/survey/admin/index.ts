@@ -3,7 +3,7 @@
  * Orchestration and event handling for survey admin functionality
  */
 
-import { showSuccessAlert, showErrorAlert, showConfirm } from '../../utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirmDanger } from '../../utils/alerts';
 import type { WindowWithExtensions } from './types';
 import {
   loadSurveys,
@@ -194,11 +194,13 @@ export class SurveyAdminManager {
   }
 
   private handleEditSurvey(surveyId: string): void {
-    const id = Number(surveyId);
-    if (!Number.isNaN(id)) {
-      setCurrentSurveyId(id);
-      showCreateModal(id);
+    // Support both numeric IDs and UUIDs (UUIDv7 format)
+    if (surveyId === '') {
+      console.warn('[SurveyAdmin] Empty survey ID provided');
+      return;
     }
+    setCurrentSurveyId(surveyId);
+    showCreateModal(surveyId);
   }
 
   private handleViewResults(surveyId: string): void {
@@ -206,13 +208,19 @@ export class SurveyAdminManager {
   }
 
   private async handleDeleteSurvey(surveyId: string): Promise<void> {
-    const confirmed = await showConfirm('Möchten Sie diese Umfrage wirklich löschen?');
+    if (surveyId === '') {
+      console.warn('[SurveyAdmin] Empty survey ID for delete');
+      return;
+    }
+
+    const confirmed = await showConfirmDanger(
+      'Diese Aktion kann nicht rückgängig gemacht werden. Alle Antworten werden ebenfalls gelöscht.',
+      'Umfrage löschen?',
+    );
     if (!confirmed) return;
 
-    const id = Number(surveyId);
-    if (Number.isNaN(id)) return;
-
-    const success = await deleteSurveyAPI(id);
+    // Support both numeric IDs and UUIDs
+    const success = await deleteSurveyAPI(surveyId);
     if (success) {
       showSuccessAlert('Umfrage erfolgreich gelöscht');
       const surveys = await loadSurveys();

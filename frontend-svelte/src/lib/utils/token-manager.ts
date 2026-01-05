@@ -106,6 +106,13 @@ export class TokenManager {
   public setTokens(access: string, refresh: string): void {
     if (!isBrowser()) return;
 
+    // SECURITY: Clear API cache from previous user before setting new tokens
+    // Prevents data leakage between different user sessions
+    import('./api-client').then(({ getApiClient }) => {
+      getApiClient().clearCache();
+      console.info('[TokenManager] API cache cleared for new session');
+    });
+
     this.accessToken = access;
     this.refreshToken = refresh;
     this.tokenReceivedAt = Date.now();
@@ -138,6 +145,12 @@ export class TokenManager {
   public clearTokens(reason: LogoutReason = 'logout'): void {
     if (!isBrowser()) return;
 
+    // SECURITY: Clear API cache to prevent data leakage to next user
+    import('./api-client').then(({ getApiClient }) => {
+      getApiClient().clearCache();
+      console.info('[TokenManager] API cache cleared on logout');
+    });
+
     this.accessToken = null;
     this.refreshToken = null;
     this.tokenReceivedAt = null;
@@ -148,6 +161,13 @@ export class TokenManager {
     localStorage.removeItem('user');
 
     this.stopTimer();
+
+    // GUARD: Don't redirect if already on login page
+    // This prevents unnecessary redirects when user is already logging in
+    if (window.location.pathname === '/login') {
+      return;
+    }
+
     this.redirectToLogin(reason);
   }
 
@@ -351,6 +371,13 @@ export class TokenManager {
   }
 
   private tick(): void {
+    // GUARD: Don't process expiry logic if there's no token
+    // This prevents false "session expired" redirects on login page
+    // when user switches tabs (visibilitychange event triggers tick())
+    if (this.accessToken === null) {
+      return;
+    }
+
     const remaining = this.getRemainingTime();
 
     this.callbacks.onTimerUpdate.forEach((callback) => {

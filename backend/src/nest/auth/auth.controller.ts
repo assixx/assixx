@@ -9,8 +9,8 @@
  * - GET  /auth/verify   - Verify current token (authenticated)
  * - GET  /auth/me       - Get current user (authenticated)
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
@@ -19,6 +19,28 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
 import type { LoginResponse, RefreshResponse } from './dto/index.js';
+
+/**
+ * Cookie configuration for SSR support
+ * httpOnly: Prevents XSS attacks (JavaScript cannot read the cookie)
+ * secure: Only sent over HTTPS (disabled in dev for localhost)
+ * sameSite: CSRF protection
+ * path: Cookie available for all routes
+ */
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env['NODE_ENV'] === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  /** Access token expires in 30 minutes */
+  maxAge: 30 * 60 * 1000,
+};
+
+const REFRESH_COOKIE_OPTIONS = {
+  ...COOKIE_OPTIONS,
+  /** Refresh token expires in 7 days */
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 /**
  * Response type for register endpoint
@@ -86,13 +108,29 @@ export class AuthController {
   /**
    * POST /auth/login
    * Authenticate user with email and password
+   *
+   * Sets httpOnly cookies for SSR support:
+   * - accessToken: For API authentication
+   * - refreshToken: For token refresh
+   *
+   * Also returns tokens in body for backwards compatibility with SPA clients.
    */
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: FastifyRequest): Promise<LoginResponse> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<LoginResponse> {
     const { ipAddress, userAgent } = getClientInfo(req);
-    return await this.authService.login(dto, ipAddress, userAgent);
+    const result = await this.authService.login(dto, ipAddress, userAgent);
+
+    // Set httpOnly cookies for SSR support
+    reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
+    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    return result;
   }
 
   /**
@@ -124,11 +162,21 @@ export class AuthController {
   /**
    * POST /auth/logout
    * Logout user and revoke all refresh tokens
+   *
+   * Clears httpOnly cookies for SSR support.
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@CurrentUser() user: NestAuthUser): Promise<LogoutResponse> {
+  async logout(
+    @CurrentUser() user: NestAuthUser,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<LogoutResponse> {
     const result = await this.authService.logout(user);
+
+    // Clear httpOnly cookies
+    reply.clearCookie('accessToken', { path: '/' });
+    reply.clearCookie('refreshToken', { path: '/' });
+
     return {
       message: 'Logged out successfully',
       tokensRevoked: result.tokensRevoked,
@@ -138,13 +186,36 @@ export class AuthController {
   /**
    * POST /auth/refresh
    * Refresh access token using refresh token
+   *
+   * Supports both:
+   * - Cookie-based refresh (SSR): reads refreshToken from cookie if body is empty
+   * - Body-based refresh (SPA): uses refreshToken from request body
+   *
+   * Updates httpOnly cookies with new tokens for SSR support.
    */
   @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshDto, @Req() req: FastifyRequest): Promise<RefreshResponse> {
+  async refresh(
+    @Body() dto: RefreshDto,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<RefreshResponse> {
     const { ipAddress, userAgent } = getClientInfo(req);
-    return await this.authService.refresh(dto, ipAddress, userAgent);
+
+    // Support cookie-based refresh for SSR: use cookie if body is empty
+    // Explicit empty string check for strict-boolean-expressions compliance
+    const refreshToken =
+      dto.refreshToken !== '' ? dto.refreshToken : (req.cookies['refreshToken'] ?? '');
+    const effectiveDto: RefreshDto = { refreshToken };
+
+    const result = await this.authService.refresh(effectiveDto, ipAddress, userAgent);
+
+    // Update httpOnly cookies with new tokens
+    reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
+    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    return result;
   }
 
   /**

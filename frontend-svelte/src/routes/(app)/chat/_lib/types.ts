@@ -262,34 +262,23 @@ export interface MessageReadData {
 }
 
 /**
- * Raw message from WebSocket (snake_case from backend)
+ * Raw message from WebSocket (API v2 camelCase)
  */
 export interface RawWebSocketMessage {
   id?: number;
-  conversation_id?: number;
   conversationId?: number;
-  sender_id?: number;
   senderId?: number;
   content?: string;
-  created_at?: string;
   createdAt?: string;
-  is_read?: boolean;
   isRead?: boolean;
   type?: string;
   attachments?: Attachment[];
-  sender_name?: string;
   senderName?: string;
-  username?: string;
   senderUsername?: string;
-  profile_picture_url?: string;
   senderProfilePicture?: string;
-  first_name?: string;
   firstName?: string;
-  last_name?: string;
   lastName?: string;
-  user_id?: number;
   userId?: number;
-  message_id?: number;
   messageId?: number;
   status?: string;
 }

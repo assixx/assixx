@@ -382,19 +382,20 @@ export class ChatWebSocketServer {
     attachments: unknown[],
   ): unknown {
     const UNKNOWN_USER = 'Unbekannter Benutzer';
+    // API v2 Standard: camelCase für alle Felder
     return {
       id: messageId,
-      conversation_id: conversationId,
+      conversationId,
       content,
-      sender_id: senderId,
-      sender_name: this.getSenderDisplayName(sender, UNKNOWN_USER),
-      first_name: sender?.first_name ?? '',
-      last_name: sender?.last_name ?? '',
-      username: sender?.username ?? '',
-      profile_picture_url: sender?.profile_picture_url ?? null,
-      created_at: new Date().toISOString(),
-      delivery_status: 'sent',
-      is_read: false,
+      senderId,
+      senderName: this.getSenderDisplayName(sender, UNKNOWN_USER),
+      firstName: sender?.first_name ?? '',
+      lastName: sender?.last_name ?? '',
+      senderUsername: sender?.username ?? '',
+      senderProfilePicture: sender?.profile_picture_url ?? null,
+      createdAt: new Date().toISOString(),
+      deliveryStatus: 'sent',
+      isRead: false,
       attachments,
     };
   }
@@ -405,7 +406,7 @@ export class ChatWebSocketServer {
   private broadcastToParticipants(participantIds: number[], type: string, data: unknown): void {
     for (const participantId of participantIds) {
       const clientWs = this.clients.get(participantId);
-      if (clientWs !== undefined && clientWs.readyState === WebSocket.OPEN) {
+      if (clientWs?.readyState === WebSocket.OPEN) {
         this.sendMessage(clientWs, { type, data });
       }
     }
@@ -507,7 +508,7 @@ export class ChatWebSocketServer {
       for (const participant of participants) {
         const userId = participant.user_id;
         const clientWs = this.clients.get(userId);
-        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+        if (clientWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: isTyping ? 'user_typing' : 'user_stopped_typing',
             data: {
@@ -553,7 +554,7 @@ export class ChatWebSocketServer {
         const senderId = messageInfo[0].sender_id;
         const senderWs = this.clients.get(senderId);
 
-        if (senderWs && senderWs.readyState === WebSocket.OPEN) {
+        if (senderWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(senderWs, {
             type: 'message_read',
             data: {
@@ -600,7 +601,7 @@ export class ChatWebSocketServer {
       for (const participant of participants) {
         const userId = participant.user_id;
         const clientWs = this.clients.get(userId);
-        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+        if (clientWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_joined_conversation',
             data: {
@@ -656,7 +657,7 @@ export class ChatWebSocketServer {
       for (const user of relatedUsers) {
         const userId = user.user_id;
         const clientWs = this.clients.get(userId);
-        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+        if (clientWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_status_changed',
             data: {

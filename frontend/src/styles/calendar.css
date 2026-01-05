@@ -23,6 +23,12 @@
   color-scheme: none !important;
 }
 
+/* Calendar main grid - rounded corners */
+.ec-main {
+  overflow: hidden; /* Ensures children respect border-radius */
+  border-radius: var(--radius-xl);
+}
+
 .ec-button {
   border-radius: 12px !important;
   box-shadow: var(--shadow-sm);
@@ -180,6 +186,11 @@
 .ec-event-team {
   border-color: #2ecc71 !important;
   background-color: #2ecc71 !important;
+}
+
+.ec-event-area {
+  border-color: #1abc9c !important;
+  background-color: #1abc9c !important;
 }
 
 .ec-event-personal {

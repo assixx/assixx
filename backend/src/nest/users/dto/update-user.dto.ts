@@ -50,7 +50,7 @@ export const UpdateUserSchema = z.object({
   position: z.string().trim().optional(),
   phone: PhoneSchema,
   address: z.string().trim().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.union([z.literal(0), z.literal(1), z.literal(3)]).optional(), // 0=inactive, 1=active, 3=archived
   employeeNumber: EmployeeNumberSchema,
   dateOfBirth: z.string().trim().optional(),
   availabilityStatus: AvailabilityStatusSchema.optional(),

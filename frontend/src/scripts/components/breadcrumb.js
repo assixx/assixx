@@ -10,14 +10,11 @@ import {
   sectionMappings,
   generateBreadcrumbDOM,
   // Constants
-  ADMIN_DASHBOARD_LABEL,
   MITARBEITER_DASHBOARD_LABEL,
   BENUTZER_VERWALTEN_LABEL,
   UMFRAGEN_LABEL,
-  ADMIN_DASHBOARD_URL,
   DOKUMENTE_LABEL,
   // Icons
-  ICON_TACHOMETER,
   ICON_POLL,
   ICON_USERS,
   ICON_FILE_ALT,
@@ -70,32 +67,13 @@ function findMapping(mappings, key) {
   return null;
 }
 
-// Helper: Add dashboard breadcrumb
-function addDashboardBreadcrumb(items, role) {
-  const dashboardMap = {
-    root: { label: 'Root Dashboard', href: '/root-dashboard', icon: 'fa-shield-alt' },
-    admin: { label: ADMIN_DASHBOARD_LABEL, href: ADMIN_DASHBOARD_URL, icon: ICON_TACHOMETER },
-    employee: { label: MITARBEITER_DASHBOARD_LABEL, href: '/employee-dashboard', icon: 'fa-user' },
-  };
-
-  // Safe lookup to avoid object injection
-  if (role === 'root' && dashboardMap.root) {
-    items.push(dashboardMap.root);
-  } else if (role === 'admin' && dashboardMap.admin) {
-    items.push(dashboardMap.admin);
-  } else if (role === 'employee' && dashboardMap.employee) {
-    items.push(dashboardMap.employee);
-  }
-}
-
 // Helper: Handle survey pages
+// NOTE: No intermediate dashboard breadcrumb needed!
+// "Home" already points to /admin-dashboard for admin users (via getHomeUrl())
+// Adding "Admin Dashboard" would be redundant: Home > Admin Dashboard > Umfragen > Page
+// Correct: Home > Umfragen > Page (where Home links to /admin-dashboard)
 function handleSurveyPages(items, currentPage) {
   if (currentPage === '/survey-create' || currentPage === '/survey-results') {
-    items.push({
-      label: ADMIN_DASHBOARD_LABEL,
-      href: ADMIN_DASHBOARD_URL,
-      icon: ICON_TACHOMETER,
-    });
     items.push({
       label: UMFRAGEN_LABEL,
       href: '/survey-admin',
@@ -107,18 +85,14 @@ function handleSurveyPages(items, currentPage) {
 }
 
 // Helper: Handle admin pages
-function handleAdminPages(items, currentPage) {
+// NOTE: No intermediate dashboard breadcrumb needed!
+// "Home" already points to /admin-dashboard for admin users (via getHomeUrl())
+function handleAdminPages(_items, currentPage) {
   // manage-admins is now standalone, not under admin-dashboard anymore
   const adminPages = ['/manage-users', '/admin-config'];
-  if (adminPages.includes(currentPage)) {
-    items.push({
-      label: ADMIN_DASHBOARD_LABEL,
-      href: ADMIN_DASHBOARD_URL,
-      icon: ICON_TACHOMETER,
-    });
-    return true;
-  }
-  return false;
+  // Return true to signal this is an admin page (prevents other handlers)
+  // But do NOT add intermediate breadcrumb - Home already points to admin-dashboard
+  return adminPages.includes(currentPage);
 }
 
 // Helper: Handle root pages
@@ -181,13 +155,9 @@ function addHomeBreadcrumb(items) {
 
 /**
  * Handle archived employees breadcrumb
+ * NOTE: No dashboard breadcrumb - Home already points to dashboard
  */
 function handleArchivedEmployees(items) {
-  items.push({
-    label: ADMIN_DASHBOARD_LABEL,
-    href: ADMIN_DASHBOARD_URL,
-    icon: ICON_TACHOMETER,
-  });
   items.push({
     label: BENUTZER_VERWALTEN_LABEL,
     href: '/manage-users',
@@ -209,10 +179,11 @@ function handleDepartmentGroups(items) {
 
 /**
  * Handle account settings breadcrumb
+ * NOTE: No dashboard breadcrumb - Home already points to dashboard
  */
-function handleAccountSettings(items) {
-  const currentUserRole = getUserRole();
-  addDashboardBreadcrumb(items, currentUserRole);
+function handleAccountSettings(_items) {
+  // No intermediate breadcrumb needed - Home links to dashboard
+  return;
 }
 
 /**

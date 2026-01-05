@@ -85,7 +85,7 @@ export async function loadCurrentPlan(): Promise<{
   // Parse addons
   const addons: TenantAddons = {};
   addonsInfo.forEach((addon) => {
-    const addonType = addon.addonType ?? addon.addon_type ?? '';
+    const addonType = addon.addonType ?? '';
     if (addonType === 'employees') addons.employees = addon.quantity;
     else if (addonType === 'admins') addons.admins = addon.quantity;
     else if (addonType === 'storage_gb') addons.storage_gb = addon.quantity;
@@ -124,7 +124,7 @@ export function applyTenantFeaturesToCategories(
     category.features.forEach((feature) => {
       const tenantFeature = tenantFeatures.find((f) => f.code === feature.code);
       if (tenantFeature) {
-        const availability = tenantFeature.is_available ?? tenantFeature.isAvailable ?? 0;
+        const availability = tenantFeature.isAvailable ?? 0;
         feature.active = availability === 1;
       }
     });

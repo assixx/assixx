@@ -3,6 +3,14 @@
 // =============================================================================
 
 /**
+ * Team info for list display (embedded in Machine for badge display)
+ */
+export interface MachineTeamInfo {
+  id: number;
+  name: string;
+}
+
+/**
  * Machine entity with all properties
  */
 export interface Machine {
@@ -33,6 +41,8 @@ export interface Machine {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+  // Teams assigned to this machine (for list display with badges)
+  teams?: MachineTeamInfo[];
 }
 
 /**
@@ -58,6 +68,7 @@ export interface Department {
   id: number;
   name: string;
   description?: string;
+  areaId?: number;
 }
 
 /**
@@ -97,4 +108,29 @@ export type MachineStatusFilter = 'all' | 'operational' | 'maintenance' | 'repai
 export interface ApiResponse<T> {
   data?: T;
   success?: boolean;
+}
+
+/**
+ * Team entity
+ */
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  departmentId?: number;
+  departmentName?: string;
+}
+
+/**
+ * Machine team assignment (from API response)
+ */
+export interface MachineTeam {
+  id: number;
+  teamId: number;
+  teamName: string;
+  departmentId?: number;
+  departmentName?: string;
+  isPrimary: boolean;
+  assignedAt?: string;
+  notes?: string;
 }

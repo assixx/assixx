@@ -23,6 +23,7 @@ export const UpdateAreaSchema = z.object({
     .string()
     .trim()
     .max(1000, 'Description must not exceed 1000 characters')
+    .nullable()
     .optional(),
   areaLeadId: z.coerce
     .number()
@@ -37,7 +38,12 @@ export const UpdateAreaSchema = z.object({
     .nonnegative('Capacity must be a non-negative integer')
     .nullable()
     .optional(),
-  address: z.string().trim().max(500, 'Address must not exceed 500 characters').optional(),
+  address: z
+    .string()
+    .trim()
+    .max(500, 'Address must not exceed 500 characters')
+    .nullable()
+    .optional(),
   isActive: z.coerce.number().int().min(0).max(4).optional(),
 });
 

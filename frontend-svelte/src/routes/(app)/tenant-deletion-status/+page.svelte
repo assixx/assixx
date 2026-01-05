@@ -1,19 +1,21 @@
 <script>
-  import { goto } from '$app/navigation';
+  import { onDestroy } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
   import { base } from '$app/paths';
-  import { onMount, onDestroy } from 'svelte';
 
   // Page-specific CSS
   import '../../../styles/tenant-deletion-status.css';
 
+  // SSR Data
+  /** @type {{ data: import('./$types').PageData }} */
+  const { data } = $props();
+
   // Local modules
   import { REFRESH_INTERVAL_MS, MESSAGES } from './_lib/constants';
   import {
-    loadDeletionStatus as apiLoadDeletionStatus,
     rejectDeletion as apiRejectDeletion,
     cancelDeletion as apiCancelDeletion,
     emergencyStop as apiEmergencyStop,
-    parseJwtToken,
   } from './_lib/api';
   import {
     getStatusText,
@@ -34,18 +36,20 @@
   /** @typedef {import('./_lib/types').ConfirmModalType} ConfirmModalType */
 
   // =============================================================================
-  // STATE
+  // DERIVED STATE (from SSR data - single source of truth)
   // =============================================================================
 
-  let loading = $state(true);
-  /** @type {string | null} */
-  let error = $state(null);
-
   /** @type {DeletionStatusItem[]} */
-  let statusData = $state([]);
+  const statusData = $derived(data?.statusData ?? []);
 
   /** @type {number | null} */
-  let currentUserId = $state(null);
+  const currentUserId = $derived(data?.currentUserId ?? null);
+
+  const hasStatusData = $derived(statusData.length > 0);
+
+  // =============================================================================
+  // UI STATE (local only)
+  // =============================================================================
 
   /** @type {ReturnType<typeof setInterval> | null} */
   let refreshTimer = $state(null);
@@ -59,19 +63,22 @@
   let confirmModalLoading = $state(false);
   let rejectReason = $state('');
 
-  // =============================================================================
-  // DERIVED STATE
-  // =============================================================================
-
-  const hasStatusData = $derived(statusData.length > 0);
   const isRejectReasonValid = $derived(rejectReason.length >= 3);
 
   // =============================================================================
   // LIFECYCLE
   // =============================================================================
 
-  onMount(() => {
-    checkAuth();
+  // Start auto-refresh on mount (auth is handled server-side)
+  $effect(() => {
+    startAutoRefresh();
+
+    // Cleanup on unmount
+    return () => {
+      if (refreshTimer !== null) {
+        clearInterval(refreshTimer);
+      }
+    };
   });
 
   onDestroy(() => {
@@ -81,51 +88,14 @@
   });
 
   // =============================================================================
-  // AUTH & DATA LOADING
+  // AUTO-REFRESH (uses invalidateAll for SSR reload)
   // =============================================================================
-
-  async function checkAuth() {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        goto(`${base}/login`);
-        return;
-      }
-
-      const payload = parseJwtToken(token);
-      if (!payload) {
-        goto(`${base}/login`);
-        return;
-      }
-
-      currentUserId = payload.id;
-
-      if (payload.role !== 'root') {
-        goto(`${base}/dashboard/${payload.role}`);
-        return;
-      }
-
-      await loadStatus();
-      startAutoRefresh();
-    } catch (err) {
-      console.error('[TenantDeletion] Auth check failed:', err);
-      goto(`${base}/login`);
-    } finally {
-      loading = false;
-    }
-  }
-
-  async function loadStatus() {
-    const result = await apiLoadDeletionStatus();
-    statusData = result.data;
-    error = result.error;
-  }
 
   function startAutoRefresh() {
     if (refreshTimer !== null) {
       clearInterval(refreshTimer);
     }
-    refreshTimer = setInterval(() => void loadStatus(), REFRESH_INTERVAL_MS);
+    refreshTimer = setInterval(() => void invalidateAll(), REFRESH_INTERVAL_MS);
   }
 
   // =============================================================================
@@ -185,7 +155,7 @@
           break;
       }
       closeConfirmModal();
-      await loadStatus();
+      await invalidateAll();
     } catch (err) {
       console.error('[TenantDeletion] Error in modal action:', err);
       const errorMessage = err instanceof Error ? err.message : MESSAGES.genericError;
@@ -214,218 +184,199 @@
 </script>
 
 <div class="container">
-  {#if loading}
-    <!-- Loading State -->
-    <div class="card">
-      <div class="card__body">
-        <div class="skeleton skeleton--text" style="width: 60%"></div>
-        <div class="skeleton skeleton--text" style="width: 80%"></div>
-        <div class="skeleton skeleton--text" style="width: 40%"></div>
-      </div>
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-trash-alt mr-2"></i>
+        Tenant Löschstatus
+      </h2>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        Übersicht aller Löschanfragen und deren Status
+      </p>
     </div>
-  {:else if error}
-    <!-- Error State -->
-    <div class="alert alert--danger">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span>{error}</span>
-    </div>
-  {:else}
-    <div class="card">
-      <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-trash-alt mr-2"></i>
-          Tenant Löschstatus
-        </h2>
-        <p class="text-[var(--color-text-secondary)] mt-2">
-          Übersicht aller Löschanfragen und deren Status
-        </p>
-      </div>
 
-      <div class="card__body">
-        <!-- Process Explanation (Compact) -->
-        <div class="process-info">
-          <h3 class="process-info__title">
-            <i class="fas fa-info-circle mr-2"></i>
-            Löschprozess (DSGVO-konform)
-          </h3>
-          <div class="process-info__content">
-            <span class="process-info__item">
-              <strong>Zwei-Personen-Prinzip:</strong> Root 1 beantragt, Root 2 genehmigt
-            </span>
-            <span class="process-info__item">
-              <strong>24h Cooling-Off</strong> vor Genehmigung
-            </span>
-            <span class="process-info__item">
-              <strong>30 Tage Grace Period</strong> nach Genehmigung
-            </span>
-            <span class="process-info__item"> <strong>Backup</strong> vor Löschung </span>
-            <span class="process-info__item">
-              <strong>Emergency Stop</strong> jederzeit möglich
-            </span>
-          </div>
+    <div class="card__body">
+      <!-- Process Explanation (Compact) -->
+      <div class="process-info">
+        <h3 class="process-info__title">
+          <i class="fas fa-info-circle mr-2"></i>
+          Löschprozess (DSGVO-konform)
+        </h3>
+        <div class="process-info__content">
+          <span class="process-info__item">
+            <strong>Zwei-Personen-Prinzip:</strong> Root 1 beantragt, Root 2 genehmigt
+          </span>
+          <span class="process-info__item">
+            <strong>24h Cooling-Off</strong> vor Genehmigung
+          </span>
+          <span class="process-info__item">
+            <strong>30 Tage Grace Period</strong> nach Genehmigung
+          </span>
+          <span class="process-info__item"> <strong>Backup</strong> vor Löschung </span>
+          <span class="process-info__item">
+            <strong>Emergency Stop</strong> jederzeit möglich
+          </span>
         </div>
+      </div>
 
-        <!-- Status Content -->
-        <div class="status-grid">
-          {#if !hasStatusData}
-            <!-- Empty State -->
-            <div class="empty-state">
-              <div class="empty-state__icon">
-                <i class="fas fa-inbox"></i>
-              </div>
-              <h3 class="empty-state__title">{MESSAGES.noRequests}</h3>
-              <p class="empty-state__description">{MESSAGES.noRequestsDescription}</p>
+      <!-- Status Content -->
+      <div class="status-grid">
+        {#if !hasStatusData}
+          <!-- Empty State -->
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-inbox"></i>
             </div>
-          {:else}
-            <!-- Status Cards -->
-            {#each statusData as item (item.queueId)}
-              {@const isCreator = isCurrentUserCreator(item, currentUserId)}
-              {@const coolingOffRemaining = calculateCoolingOff(item)}
-              {@const timeline = buildTimeline(item)}
+            <h3 class="empty-state__title">{MESSAGES.noRequests}</h3>
+            <p class="empty-state__description">{MESSAGES.noRequestsDescription}</p>
+          </div>
+        {:else}
+          <!-- Status Cards -->
+          {#each statusData as item (item.queueId)}
+            {@const isCreator = isCurrentUserCreator(item, currentUserId)}
+            {@const coolingOffRemaining = calculateCoolingOff(item)}
+            {@const timeline = buildTimeline(item)}
 
-              <div class="status-card">
-                <!-- Header with Status Badge -->
-                <div class="status-header">
-                  <div class="tenant-info">
-                    <h3>Tenant {item.tenantId}</h3>
-                    <p>Tenant ID: {item.tenantId}</p>
-                    <p>Beantragt von: {getRequesterName(item)} (User ID: {item.requestedBy})</p>
-                    <p>Beantragt am: {formatDate(new Date(item.requestedAt))}</p>
-                    <p><strong>Aktueller User ID:</strong> {currentUserId ?? 'N/A'}</p>
-                    <p>
-                      <strong>Status Info:</strong> canApprove={item.canApprove}, canCancel={item.canCancel}
-                    </p>
-                  </div>
-                  <span class="badge badge--uppercase {getBadgeClass(item.status)}">
-                    {getStatusText(item.status)}
-                  </span>
+            <div class="status-card">
+              <!-- Header with Status Badge -->
+              <div class="status-header">
+                <div class="tenant-info">
+                  <h3>Tenant {item.tenantId}</h3>
+                  <p>Tenant ID: {item.tenantId}</p>
+                  <p>Beantragt von: {getRequesterName(item)} (User ID: {item.requestedBy})</p>
+                  <p>Beantragt am: {formatDate(new Date(item.requestedAt))}</p>
+                  <p><strong>Aktueller User ID:</strong> {currentUserId ?? 'N/A'}</p>
+                  <p>
+                    <strong>Status Info:</strong> canApprove={item.canApprove}, canCancel={item.canCancel}
+                  </p>
                 </div>
-
-                <!-- Permission Info Box -->
-                {#if isCreator}
-                  <div class="info-box info-box--warning">
-                    <i class="fas fa-info-circle"></i>
-                    <div>
-                      <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br />
-                      Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung
-                      genehmigt.
-                    </div>
-                  </div>
-                {:else if item.canApprove}
-                  <div class="info-box info-box--success">
-                    <i class="fas fa-user-shield"></i>
-                    <div>
-                      <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br />
-                      Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
-                    </div>
-                  </div>
-                {/if}
-
-                <!-- Cooling-Off Warning -->
-                {#if shouldShowCoolingOff(item)}
-                  <div class="cooling-off-warning">
-                    <i class="fas fa-clock"></i>
-                    <div>
-                      <strong>Cooling-off Periode aktiv</strong><br />
-                      Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br
-                      />
-                      <small class="text-muted"
-                        >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small
-                      >
-                    </div>
-                  </div>
-                {/if}
-
-                <!-- Grace Period Info -->
-                {#if shouldShowGracePeriod(item)}
-                  <div class="info-box info-box--info">
-                    <i class="fas fa-calendar-alt"></i>
-                    <div>
-                      <strong>30 Tage Grace Period läuft!</strong>
-                      <p class="mt-2 mb-2">
-                        <strong>Geplante Löschung:</strong>
-                        {formatDateOnly(item.scheduledFor)}
-                      </p>
-                      <p class="mb-2">
-                        Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.
-                      </p>
-                      <p class="mb-2">
-                        Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche
-                        Löschung.
-                      </p>
-                      <small class="text-muted"
-                        >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small
-                      >
-                    </div>
-                  </div>
-                {/if}
-
-                <!-- Timeline -->
-                <div class="timeline">
-                  <h4>Status Timeline</h4>
-                  {#each timeline as timelineItem (timelineItem.title)}
-                    <div class="timeline-item">
-                      <div
-                        class="timeline-icon {timelineItem.completed
-                          ? 'timeline-icon--completed'
-                          : 'timeline-icon--pending'}"
-                      >
-                        <i class="fas {timelineItem.icon}"></i>
-                      </div>
-                      <div class="timeline-content">
-                        <h4>{timelineItem.title}</h4>
-                        <p>{formatDate(timelineItem.date)}</p>
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-
-                <!-- Action Buttons -->
-                {#if item.canApprove || item.canCancel}
-                  <div class="action-buttons">
-                    {#if item.canApprove}
-                      <button class="btn btn-danger" onclick={() => openRejectModal(item.queueId)}>
-                        <i class="fas fa-times mr-2"></i> Ablehnen
-                      </button>
-                      <a
-                        href="{base}/tenant-deletion-approve?queueId={item.queueId}"
-                        class="btn btn-success"
-                        data-sveltekit-reload
-                      >
-                        <i class="fas fa-check mr-2"></i> Genehmigen
-                      </a>
-                    {/if}
-                    {#if item.canCancel}
-                      <button class="btn btn-cancel" onclick={openCancelModal}>
-                        <i class="fas fa-ban mr-2"></i> Abbrechen (als Ersteller)
-                      </button>
-                    {/if}
-                  </div>
-                {/if}
-
-                <!-- Emergency Stop Button -->
-                {#if shouldShowEmergencyStop(item)}
-                  <div class="action-buttons mt-6">
-                    <button
-                      class="btn btn-warning"
-                      onclick={() => openEmergencyStopModal(item.queueId)}
-                    >
-                      <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
-                    </button>
-                    <small class="text-muted block mt-2">
-                      {item.status === 'processing'
-                        ? 'Stoppt den laufenden Löschvorgang'
-                        : 'Stoppt die geplante Löschung sofort'}
-                    </small>
-                  </div>
-                {/if}
+                <span class="badge badge--uppercase {getBadgeClass(item.status)}">
+                  {getStatusText(item.status)}
+                </span>
               </div>
-            {/each}
-          {/if}
-        </div>
+
+              <!-- Permission Info Box -->
+              {#if isCreator}
+                <div class="info-box info-box--warning">
+                  <i class="fas fa-info-circle"></i>
+                  <div>
+                    <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br />
+                    Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
+                  </div>
+                </div>
+              {:else if item.canApprove}
+                <div class="info-box info-box--success">
+                  <i class="fas fa-user-shield"></i>
+                  <div>
+                    <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br />
+                    Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
+                  </div>
+                </div>
+              {/if}
+
+              <!-- Cooling-Off Warning -->
+              {#if shouldShowCoolingOff(item)}
+                <div class="cooling-off-warning">
+                  <i class="fas fa-clock"></i>
+                  <div>
+                    <strong>Cooling-off Periode aktiv</strong><br />
+                    Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br />
+                    <small class="text-muted"
+                      >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small
+                    >
+                  </div>
+                </div>
+              {/if}
+
+              <!-- Grace Period Info -->
+              {#if shouldShowGracePeriod(item)}
+                <div class="info-box info-box--info">
+                  <i class="fas fa-calendar-alt"></i>
+                  <div>
+                    <strong>30 Tage Grace Period läuft!</strong>
+                    <p class="mt-2 mb-2">
+                      <strong>Geplante Löschung:</strong>
+                      {formatDateOnly(item.scheduledFor)}
+                    </p>
+                    <p class="mb-2">
+                      Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.
+                    </p>
+                    <p class="mb-2">
+                      Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche
+                      Löschung.
+                    </p>
+                    <small class="text-muted"
+                      >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small
+                    >
+                  </div>
+                </div>
+              {/if}
+
+              <!-- Timeline -->
+              <div class="timeline">
+                <h4>Status Timeline</h4>
+                {#each timeline as timelineItem (timelineItem.title)}
+                  <div class="timeline-item">
+                    <div
+                      class="timeline-icon {timelineItem.completed
+                        ? 'timeline-icon--completed'
+                        : 'timeline-icon--pending'}"
+                    >
+                      <i class="fas {timelineItem.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                      <h4>{timelineItem.title}</h4>
+                      <p>{formatDate(timelineItem.date)}</p>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+
+              <!-- Action Buttons -->
+              {#if item.canApprove || item.canCancel}
+                <div class="action-buttons">
+                  {#if item.canApprove}
+                    <button class="btn btn-danger" onclick={() => openRejectModal(item.queueId)}>
+                      <i class="fas fa-times mr-2"></i> Ablehnen
+                    </button>
+                    <a
+                      href="{base}/tenant-deletion-approve?queueId={item.queueId}"
+                      class="btn btn-success"
+                      data-sveltekit-reload
+                    >
+                      <i class="fas fa-check mr-2"></i> Genehmigen
+                    </a>
+                  {/if}
+                  {#if item.canCancel}
+                    <button class="btn btn-cancel" onclick={openCancelModal}>
+                      <i class="fas fa-ban mr-2"></i> Abbrechen (als Ersteller)
+                    </button>
+                  {/if}
+                </div>
+              {/if}
+
+              <!-- Emergency Stop Button -->
+              {#if shouldShowEmergencyStop(item)}
+                <div class="action-buttons mt-6">
+                  <button
+                    class="btn btn-warning"
+                    onclick={() => openEmergencyStopModal(item.queueId)}
+                  >
+                    <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
+                  </button>
+                  <small class="text-muted block mt-2">
+                    {item.status === 'processing'
+                      ? 'Stoppt den laufenden Löschvorgang'
+                      : 'Stoppt die geplante Löschung sofort'}
+                  </small>
+                </div>
+              {/if}
+            </div>
+          {/each}
+        {/if}
       </div>
     </div>
-  {/if}
+  </div>
 </div>
 
 <svelte:window on:keydown={handleKeydown} />

@@ -1,82 +1,114 @@
-<script>
+<script lang="ts">
+  /**
+   * App Layout - Dashboard Navigation
+   * @module (app)/+layout
+   *
+   * SSR ARCHITECTURE:
+   * - User/tenant data loaded ONCE in +layout.server.ts (no client-side fetch)
+   * - Auth redirects handled server-side (no window.location)
+   * - Client-side: token timer, session management, logout only
+   */
   import { onMount, onDestroy } from 'svelte';
   import { base } from '$app/paths';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import type { LayoutData } from './$types';
 
   // Components
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
 
-  // Session Manager (1:1 from Legacy - handles inactivity timeout + warning modal)
-  import { getSessionManager } from '$lib/utils/session-manager';
+  // Session Manager (handles inactivity timeout + warning modal)
+  import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
 
-  // Token Manager (singleton - manages JWT lifecycle + in-memory + localStorage)
+  // Token Manager (singleton - manages JWT lifecycle)
   import { getTokenManager } from '$lib/utils/token-manager';
 
-  // API Client (proactive token refresh on activity < 10 min)
+  // API Client (proactive token refresh on activity)
   import { getApiClient } from '$lib/utils/api-client';
   const apiClient = getApiClient();
+
+  // Shared User Service (for cache clearing on logout)
+  import { clearUserCache } from '$lib/utils/user-service';
 
   // Layout-specific CSS (shared across all dashboard pages)
   import '../../styles/unified-navigation.css';
 
   // =============================================================================
-  // SVELTE 5 RUNES - Dashboard Layout (Unified Navigation)
-  // 1:1 Copy from frontend/src/scripts/components/navigation/*
+  // SSR DATA - Loaded server-side in +layout.server.ts
+  // User/tenant data is INSTANTLY available - no loading states!
+  // Auth redirects already handled server-side - no window.location needed
   // =============================================================================
 
-  // Props - children snippet for layout
-  /** @type {{ children: import('svelte').Snippet }} */
-  const { children } = $props();
+  interface Props {
+    data: LayoutData;
+    children: import('svelte').Snippet;
+  }
 
-  // User State
-  /** @type {{ id?: number; firstName?: string; lastName?: string; email?: string; role?: 'root' | 'admin' | 'employee'; employeeNumber?: string; profilePicture?: string; position?: string } | null} */
-  let user = $state(null);
-  let _loading = $state(true);
+  const { data, children }: Props = $props();
+
+  // SSR provides isAuthenticated - if we reached this point, we're authenticated
+  // (server-side redirect already happened if not authenticated)
+  const isAuthenticated = $derived(data?.isAuthenticated ?? false);
+
+  // User from SSR (loaded once server-side, available instantly)
+  const ssrUser = $derived(data?.user ?? null);
+  const ssrTenant = $derived(data?.tenant ?? null);
+
+  // User State - initialize from SSR data
+  let user = $state<{
+    id?: number;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    role?: 'root' | 'admin' | 'employee';
+    employeeNumber?: string;
+    profilePicture?: string;
+    position?: string;
+  } | null>(null);
 
   // Role Switch State (original role vs active role after switching)
-  /** @type {'root' | 'admin' | 'employee'} */
-  let userRole = $state('employee');
-  /** @type {'root' | 'admin' | 'employee'} */
-  let activeRole = $state('employee');
+  let userRole = $state<'root' | 'admin' | 'employee'>('employee');
+  let activeRole = $state<'root' | 'admin' | 'employee'>('employee');
 
   // Sidebar State
   let sidebarCollapsed = $state(false);
-  /** @type {string | null} */
-  let openSubmenu = $state(null);
+  let openSubmenu = $state<string | null>(null);
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
   let tokenWarning = $state(false);
   let tokenExpired = $state(false);
-  /** @type {ReturnType<typeof setInterval> | null} */
-  let tokenTimerInterval = $state(null);
+  let tokenTimerInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
   // Logout Modal State
   let showLogoutModal = $state(false);
 
-  // Tenant Info
-  /** @type {{ companyName?: string } | null} */
-  let tenant = $state(null);
+  // Tenant Info - from SSR
+  let tenant = $state<{ id?: number; companyName?: string } | null>(null);
 
   // Session Manager instance (for cleanup on destroy)
-  /** @type {import('$lib/utils/session-manager').SessionManager | null} */
-  let sessionManagerInstance = $state(null);
-
+  let sessionManagerInstance = $state<SessionManager | null>(null);
 
   // Current role for navigation (uses activeRole from role switch)
   // activeRole reflects the current view, which may differ from original userRole
-  const currentRole = $derived.by(() => {
-    /** @type {'root' | 'admin' | 'employee'} */
-    return activeRole;
-  });
+  const currentRole = $derived(activeRole);
 
   // =============================================================================
   // NAVIGATION MENU CONFIG
   // =============================================================================
 
-  /** @type {Record<string, string>} */
-  const ICONS = {
+  /** Navigation item type */
+  interface NavItem {
+    id: string;
+    icon?: string;
+    label: string;
+    url?: string;
+    hasSubmenu?: boolean;
+    submenu?: NavItem[];
+  }
+
+  const ICONS: Record<string, string> = {
     home: '<i class="fas fa-home"></i>',
     pin: '<i class="fas fa-thumbtack"></i>',
     users: '<i class="fas fa-users"></i>',
@@ -100,18 +132,7 @@
     poll: '<i class="fas fa-poll"></i>',
   };
 
-  /**
-   * @typedef {Object} NavItem
-   * @property {string} id
-   * @property {string} [icon]
-   * @property {string} label
-   * @property {string} [url]
-   * @property {boolean} [hasSubmenu]
-   * @property {NavItem[]} [submenu]
-   */
-
-  /** @type {NavItem[]} */
-  const rootMenuItems = $derived([
+  const rootMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Root Dashboard', url: '/root-dashboard' },
     { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
     { id: 'root-users', icon: ICONS['user-shield'], label: 'Root User', url: '/manage-root' },
@@ -131,8 +152,7 @@
     },
   ]);
 
-  /** @type {NavItem[]} */
-  const adminMenuItems = $derived([
+  const adminMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Übersicht', url: '/admin-dashboard' },
     { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
     { id: 'employees', icon: ICONS.users, label: 'Mitarbeiter', url: '/manage-employees' },
@@ -162,8 +182,7 @@
     { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/admin-profile' },
   ]);
 
-  /** @type {NavItem[]} */
-  const employeeMenuItems = $derived([
+  const employeeMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
     { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
     {
@@ -189,8 +208,7 @@
     { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/employee-profile' },
   ]);
 
-  /** @type {NavItem[]} */
-  const menuItems = $derived(
+  const menuItems = $derived<NavItem[]>(
     currentRole === 'root'
       ? rootMenuItems
       : currentRole === 'admin'
@@ -203,7 +221,7 @@
   // =============================================================================
 
   /** Get user initials for avatar */
-  function getInitials() {
+  function getInitials(): string {
     if (!user) return 'U';
     const first = user.firstName?.charAt(0) ?? '';
     const last = user.lastName?.charAt(0) ?? '';
@@ -211,29 +229,28 @@
   }
 
   /** Get display name */
-  function getDisplayName() {
+  function getDisplayName(): string {
     if (!user) return 'User';
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     return fullName || user.email || 'User';
   }
 
   /** Get role badge class */
-  function getRoleBadgeClass() {
+  function getRoleBadgeClass(): string {
     if (currentRole === 'root') return 'badge--danger';
     if (currentRole === 'admin') return 'badge--warning';
     return 'badge--info';
   }
 
   /** Get role badge text */
-  function getRoleBadgeText() {
+  function getRoleBadgeText(): string {
     if (currentRole === 'root') return 'Root';
     if (currentRole === 'admin') return 'Admin';
     return 'Mitarbeiter';
   }
 
   /** Check if menu item is active */
-  /** @param {NavItem} item */
-  function isActive(item) {
+  function isActive(item: NavItem): boolean {
     const currentPath = $page.url.pathname;
     if (item.url) {
       return currentPath === item.url || currentPath.startsWith(item.url + '/');
@@ -251,80 +268,51 @@
   // =============================================================================
 
   /**
-   * Load user info from API
-   * Uses apiClient for proactive token refresh (auto-refresh when < 10 min)
-   */
-  async function loadUserInfo() {
-    try {
-      // apiClient handles auth + proactive token refresh
-      /** @type {{ data?: any; tenant?: any; role?: string } & { firstName?: string; lastName?: string; email?: string; role?: string; employeeNumber?: string; profilePicture?: string; position?: string }} */
-      const result = await apiClient.get('/users/me');
-
-      user = result.data ?? result;
-      tenant = result.tenant ?? result.data?.tenant ?? null;
-
-      // Update role state from user data if not already set from localStorage
-      if (user?.role) {
-        const role = /** @type {'root' | 'admin' | 'employee'} */ (user.role);
-        // If userRole wasn't in localStorage, set it from user data
-        if (!localStorage.getItem('userRole')) {
-          userRole = role;
-          localStorage.setItem('userRole', role);
-        }
-        // If activeRole wasn't in localStorage, set it from user data
-        if (!localStorage.getItem('activeRole')) {
-          activeRole = role;
-          localStorage.setItem('activeRole', role);
-        }
-      }
-    } catch (err) {
-      console.error('Error loading user:', err);
-      // apiClient handles 401/403 automatically via clearTokens()
-    } finally {
-      _loading = false;
-    }
-  }
-
-  /**
    * Logout user
-   * CRITICAL: Must use TokenManager.clearTokens() to clear BOTH in-memory AND localStorage!
-   * Direct localStorage writes don't clear the TokenManager singleton's in-memory state.
+   * Uses goto() for client-side navigation (no window.location)
    */
-  async function logout() {
+  async function logout(): Promise<void> {
     try {
       // Call logout API first (while we still have a valid token)
       await apiClient.post('/auth/logout');
     } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
-      user = null;
-      userRole = 'employee';
-      activeRole = 'employee';
-      tenant = null;
-      _loading = true;
-
-      // Clear role data from localStorage (TokenManager doesn't manage these)
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('activeRole');
-      localStorage.removeItem('token'); // Legacy token
-
-      // CRITICAL: Use TokenManager to clear BOTH in-memory AND localStorage tokens
-      // This also triggers a full page reload via window.location.replace('/login')
-      // which completely destroys all JavaScript state including the TokenManager singleton
-      getTokenManager().clearTokens('logout');
+      console.error('Logout API error (continuing with logout):', err);
     }
+
+    // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
+    user = null;
+    userRole = 'employee';
+    activeRole = 'employee';
+    tenant = null;
+
+    // Clear shared user cache (prevents stale data on re-login)
+    clearUserCache();
+
+    // Clear all tokens and role data from localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('activeRole');
+    localStorage.removeItem('token'); // Legacy token
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenReceivedAt');
+    localStorage.removeItem('user');
+
+    // Note: TokenManager in-memory state will be stale, but page navigation
+    // will reinitialize it. No need to call clearTokens() which would trigger
+    // a window.location redirect that we want to avoid.
+
+    // Use SvelteKit's goto() for client-side navigation (no full page reload)
+    await goto('/login', { replaceState: true });
   }
 
   // =============================================================================
   // TOKEN TIMER
   // =============================================================================
 
-  /** Parse JWT and get expiration */
-  /** @param {string} token */
-  function getTokenExpiration(token) {
+  /** Parse JWT and get expiration timestamp (ms) */
+  function getTokenExpiration(token: string): number | null {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
       return payload.exp ? payload.exp * 1000 : null;
     } catch {
       return null;
@@ -332,7 +320,7 @@
   }
 
   /** Update token timer display */
-  function updateTokenTimer() {
+  function updateTokenTimer(): void {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       tokenTimeLeft = '--:--';
@@ -368,30 +356,29 @@
   // =============================================================================
 
   /** Toggle sidebar collapsed state */
-  function toggleSidebar() {
+  function toggleSidebar(): void {
     sidebarCollapsed = !sidebarCollapsed;
     localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
   }
 
   /** Toggle submenu */
-  /** @param {string} itemId */
-  function toggleSubmenu(itemId) {
+  function toggleSubmenu(itemId: string): void {
     openSubmenu = openSubmenu === itemId ? null : itemId;
   }
 
   /** Handle logout button click */
-  function handleLogoutClick() {
+  function handleLogoutClick(): void {
     showLogoutModal = true;
   }
 
   /** Confirm logout */
-  function confirmLogout() {
+  function confirmLogout(): void {
     showLogoutModal = false;
-    logout();
+    void logout();
   }
 
   /** Cancel logout */
-  function cancelLogout() {
+  function cancelLogout(): void {
     showLogoutModal = false;
   }
 
@@ -400,45 +387,65 @@
   // =============================================================================
 
   /**
-   * Re-initialize state from localStorage and refetch user data
-   * Called on mount AND after navigation (to handle login → dashboard flow)
+   * Initialize client-side state from SSR data
+   * SSR provides user/tenant data - we only need to:
+   * 1. Sync SSR data to local state
+   * 2. Load UI preferences from localStorage (sidebar, role switch)
+   * 3. Start client-side services (token timer, session manager)
    */
-  function initializeState() {
-    // Load saved sidebar state
+  function initializeFromSSR(): void {
+    // 1. Sync SSR user/tenant data to local state
+    if (ssrUser) {
+      user = ssrUser;
+      tenant = ssrTenant;
+
+      // Set role from SSR user data
+      const role = ssrUser.role as 'root' | 'admin' | 'employee';
+      userRole = role;
+
+      // Check if activeRole was stored (for role switching persistence)
+      const storedActiveRole = localStorage.getItem('activeRole');
+      if (
+        storedActiveRole === 'root' ||
+        storedActiveRole === 'admin' ||
+        storedActiveRole === 'employee'
+      ) {
+        activeRole = storedActiveRole;
+      } else {
+        activeRole = role;
+      }
+
+      // Persist role to localStorage for role switching component
+      localStorage.setItem('userRole', role);
+      if (!storedActiveRole) {
+        localStorage.setItem('activeRole', role);
+      }
+    }
+
+    // 2. Load UI preferences from localStorage
     const savedCollapsed = localStorage.getItem('sidebarCollapsed');
     if (savedCollapsed === 'true') {
       sidebarCollapsed = true;
     }
-
-    // Load role switch state from localStorage
-    const storedUserRole = localStorage.getItem('userRole');
-    const storedActiveRole = localStorage.getItem('activeRole');
-    if (storedUserRole === 'root' || storedUserRole === 'admin' || storedUserRole === 'employee') {
-      userRole = storedUserRole;
-    }
-    if (
-      storedActiveRole === 'root' ||
-      storedActiveRole === 'admin' ||
-      storedActiveRole === 'employee'
-    ) {
-      activeRole = storedActiveRole;
-    } else if (storedUserRole) {
-      activeRole = /** @type {'root' | 'admin' | 'employee'} */ (storedUserRole);
-    }
-
-    // Load user info from API
-    loadUserInfo();
   }
 
   onMount(() => {
-    initializeState();
+    // Initialize state from SSR data
+    initializeFromSSR();
 
-    // Start token timer
+    // Start token timer (reads from localStorage accessToken set by login)
     updateTokenTimer();
     tokenTimerInterval = setInterval(updateTokenTimer, 1000);
 
+    // Subscribe to token expiration events
+    // If token expires during session, redirect to login
+    const tokenManager = getTokenManager();
+    tokenManager.onTokenExpired(() => {
+      console.warn('[Layout] Token expired during session, redirecting to login');
+      void goto('/login', { replaceState: true });
+    });
+
     // Initialize Session Manager (handles inactivity timeout + warning modal)
-    // 1:1 like Legacy - SessionManager subscribes to TokenManager events
     sessionManagerInstance = getSessionManager();
   });
 
@@ -453,201 +460,208 @@
   });
 </script>
 
-<!-- Header -->
-<header class="header">
-  <button class="sidebar-toggle" onclick={toggleSidebar} title="Sidebar ein-/ausklappen">
-    <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
+<!-- =============================================================================
+     SECURITY: AUTH GUARD - Block ALL content until authenticated
+     CRITICAL: Prevents sensitive data flash on browser back navigation
+     ============================================================================= -->
+{#if isAuthenticated}
+  <!-- Header -->
+  <header class="header">
+    <button class="sidebar-toggle" onclick={toggleSidebar} title="Sidebar ein-/ausklappen">
+      <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
+        {#if sidebarCollapsed}
+          <path d="M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z"></path>
+        {:else}
+          <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"></path>
+        {/if}
+      </svg>
+    </button>
+
+    <a href={`${base}/${currentRole}-dashboard`} class="logo-container">
       {#if sidebarCollapsed}
-        <path d="M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z"></path>
+        <img src="/images/logo_collapsed.png" alt="Assixx Logo" class="logo" id="header-logo" />
       {:else}
-        <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"></path>
+        <img src="/images/logo.png" alt="Assixx Logo" class="logo" id="header-logo" />
       {/if}
-    </svg>
-  </button>
+    </a>
 
-  <a href={`${base}/${currentRole}-dashboard`} class="logo-container">
-    {#if sidebarCollapsed}
-      <img src="/images/logo_collapsed.png" alt="Assixx Logo" class="logo" id="header-logo" />
-    {:else}
-      <img src="/images/logo.png" alt="Assixx Logo" class="logo" id="header-logo" />
-    {/if}
-  </a>
+    <div class="header-content">
+      <div class="header-actions">
+        <!-- Role Switch Dropdown (only for root/admin users) -->
+        {#if userRole === 'root' || userRole === 'admin'}
+          <RoleSwitch {userRole} {activeRole} />
+        {/if}
 
-  <div class="header-content">
-    <div class="header-actions">
-      <!-- Role Switch Dropdown (only for root/admin users) -->
-      {#if userRole === 'root' || userRole === 'admin'}
-        <RoleSwitch {userRole} {activeRole} />
-      {/if}
+        <span
+          class="token-timer"
+          class:token-timer--warning={tokenWarning}
+          class:token-timer--expired={tokenExpired}
+        >
+          {tokenTimeLeft}
+        </span>
 
-      <span
-        class="token-timer"
-        class:token-timer--warning={tokenWarning}
-        class:token-timer--expired={tokenExpired}
-      >
-        {tokenTimeLeft}
-      </span>
+        <div id="user-info">
+          {#if user?.profilePicture}
+            <div class="avatar avatar--md">
+              <img src={user.profilePicture} alt={getDisplayName()} class="avatar__image" />
+            </div>
+          {:else}
+            <div class="avatar avatar--md avatar--color-5">
+              <span class="avatar__initials">{getInitials()}</span>
+            </div>
+          {/if}
+          <span id="user-name">{getDisplayName()}</span>
+        </div>
 
-      <div id="user-info">
+        <button
+          id="logout-btn"
+          class="btn btn-danger"
+          onclick={handleLogoutClick}
+          title="Abmelden"
+          aria-label="Abmelden"
+        >
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="layout-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" class:collapsed={sidebarCollapsed}>
+      <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+          {#each menuItems as item (item.id)}
+            {#if item.hasSubmenu && item.submenu}
+              <li
+                class="sidebar-item has-submenu"
+                class:active={isActive(item)}
+                class:open={openSubmenu === item.id}
+              >
+                <button class="sidebar-link" onclick={() => toggleSubmenu(item.id)}>
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
+                  <span class="icon">{@html item.icon}</span>
+                  <span class="label">{item.label}</span>
+                  <span class="submenu-arrow">
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </span>
+                </button>
+                <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
+                  {#each item.submenu as subItem (subItem.id)}
+                    <li class="submenu-item">
+                      <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
+                      <a href={`${base}${subItem.url}`} class="submenu-link">{subItem.label}</a>
+                      <!-- eslint-enable svelte/no-navigation-without-resolve -->
+                    </li>
+                  {/each}
+                </ul>
+              </li>
+            {:else}
+              <li class="sidebar-item" class:active={isActive(item)}>
+                <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
+                <a href={`${base}${item.url}`} class="sidebar-link">
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
+                  <span class="icon">{@html item.icon}</span>
+                  <span class="label">{item.label}</span>
+                </a>
+                <!-- eslint-enable svelte/no-navigation-without-resolve -->
+              </li>
+            {/if}
+          {/each}
+        </ul>
+
+        <!-- Storage Widget (Root only) -->
+        {#if currentRole === 'root'}
+          <div class="storage-widget">
+            <div class="storage-header">
+              <i class="fas fa-database"></i>
+              <span>Speicherplatz</span>
+            </div>
+            <div class="storage-info">
+              <div class="storage-usage-text">
+                <span>-- GB</span> von <span>-- GB</span>
+              </div>
+              <div class="storage-progress">
+                <div class="storage-progress-bar" style="width: 0%"></div>
+              </div>
+              <div class="storage-percentage">0% belegt</div>
+            </div>
+          </div>
+        {/if}
+      </nav>
+
+      <!-- User Info Card -->
+      <div class="user-info-card">
         {#if user?.profilePicture}
           <div class="avatar avatar--md">
             <img src={user.profilePicture} alt={getDisplayName()} class="avatar__image" />
           </div>
         {:else}
-          <div class="avatar avatar--md avatar--color-5">
+          <div class="avatar avatar--md avatar--color-0">
             <span class="avatar__initials">{getInitials()}</span>
           </div>
         {/if}
-        <span id="user-name">{getDisplayName()}</span>
-      </div>
-
-      <button
-        id="logout-btn"
-        class="btn btn-danger"
-        onclick={handleLogoutClick}
-        title="Abmelden"
-        aria-label="Abmelden"
-      >
-        <i class="fas fa-sign-out-alt"></i>
-      </button>
-    </div>
-  </div>
-</header>
-
-<!-- Main Layout -->
-<div class="layout-container">
-  <!-- Sidebar -->
-  <aside class="sidebar" class:collapsed={sidebarCollapsed}>
-    <nav class="sidebar-nav">
-      <ul class="sidebar-menu">
-        {#each menuItems as item (item.id)}
-          {#if item.hasSubmenu && item.submenu}
-            <li
-              class="sidebar-item has-submenu"
-              class:active={isActive(item)}
-              class:open={openSubmenu === item.id}
-            >
-              <button class="sidebar-link" onclick={() => toggleSubmenu(item.id)}>
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                <span class="icon">{@html item.icon}</span>
-                <span class="label">{item.label}</span>
-                <span class="submenu-arrow">
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7 10l5 5 5-5z" />
-                  </svg>
-                </span>
-              </button>
-              <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
-                {#each item.submenu as subItem (subItem.id)}
-                  <li class="submenu-item">
-                    <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
-                    <a href={`${base}${subItem.url}`} class="submenu-link">{subItem.label}</a>
-                    <!-- eslint-enable svelte/no-navigation-without-resolve -->
-                  </li>
-                {/each}
-              </ul>
-            </li>
-          {:else}
-            <li class="sidebar-item" class:active={isActive(item)}>
-              <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
-              <a href={`${base}${item.url}`} class="sidebar-link">
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                <span class="icon">{@html item.icon}</span>
-                <span class="label">{item.label}</span>
-              </a>
-              <!-- eslint-enable svelte/no-navigation-without-resolve -->
-            </li>
+        <div class="user-details">
+          <div class="company-info">
+            <div class="company-name">{tenant?.companyName ?? 'Firma'}</div>
+          </div>
+          <div class="user-name">{getDisplayName()}</div>
+          {#if user?.email}
+            <div class="user-email">{user.email}</div>
           {/if}
-        {/each}
-      </ul>
-
-      <!-- Storage Widget (Root only) -->
-      {#if currentRole === 'root'}
-        <div class="storage-widget">
-          <div class="storage-header">
-            <i class="fas fa-database"></i>
-            <span>Speicherplatz</span>
-          </div>
-          <div class="storage-info">
-            <div class="storage-usage-text">
-              <span>-- GB</span> von <span>-- GB</span>
-            </div>
-            <div class="storage-progress">
-              <div class="storage-progress-bar" style="width: 0%"></div>
-            </div>
-            <div class="storage-percentage">0% belegt</div>
-          </div>
+          {#if user?.position}
+            <div class="user-position">{user.position}</div>
+          {/if}
+          {#if user?.employeeNumber}
+            <span class="employee-number__text">{user.employeeNumber}</span>
+          {/if}
+          <span class="badge badge--sm {getRoleBadgeClass()}">{getRoleBadgeText()}</span>
         </div>
-      {/if}
-    </nav>
-
-    <!-- User Info Card -->
-    <div class="user-info-card">
-      {#if user?.profilePicture}
-        <div class="avatar avatar--md">
-          <img src={user.profilePicture} alt={getDisplayName()} class="avatar__image" />
-        </div>
-      {:else}
-        <div class="avatar avatar--md avatar--color-0">
-          <span class="avatar__initials">{getInitials()}</span>
-        </div>
-      {/if}
-      <div class="user-details">
-        <div class="company-info">
-          <div class="company-name">{tenant?.companyName ?? 'Firma'}</div>
-        </div>
-        <div class="user-name">{getDisplayName()}</div>
-        {#if user?.email}
-          <div class="user-email">{user.email}</div>
-        {/if}
-        {#if user?.position}
-          <div class="user-position">{user.position}</div>
-        {/if}
-        {#if user?.employeeNumber}
-          <span class="employee-number__text">{user.employeeNumber}</span>
-        {/if}
-        <span class="badge badge--sm {getRoleBadgeClass()}">{getRoleBadgeText()}</span>
       </div>
-    </div>
-  </aside>
+    </aside>
 
-  <!-- Main Content (Child Routes) -->
-  <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
-    <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
-    <div id="breadcrumb-container">
-      <Breadcrumb userRole={currentRole} />
-    </div>
-
-    <!-- Page Content -->
-    {@render children()}
-  </main>
-</div>
-
-<!-- Logout Confirmation Modal -->
-{#if showLogoutModal}
-  <div class="modal-overlay modal-overlay--active">
-    <div class="confirm-modal confirm-modal--info">
-      <div class="confirm-modal__icon">
-        <i class="fas fa-sign-out-alt"></i>
+    <!-- Main Content (Child Routes) -->
+    <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
+      <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
+      <div id="breadcrumb-container">
+        <Breadcrumb userRole={currentRole} />
       </div>
-      <h3 class="confirm-modal__title">Abmeldung bestätigen</h3>
-      <p class="confirm-modal__message">
-        Möchten Sie sich wirklich abmelden?<br />
-        <small
-          ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.</small
-        >
-      </p>
-      <div class="confirm-modal__actions confirm-modal__actions--centered">
-        <button
-          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-          onclick={cancelLogout}
-        >
-          Abbrechen
-        </button>
-        <button class="btn btn-danger confirm-modal__btn--wide" onclick={confirmLogout}>
-          Abmelden
-        </button>
-      </div>
-    </div>
+
+      <!-- Page Content -->
+      {@render children()}
+    </main>
   </div>
+
+  <!-- Logout Confirmation Modal -->
+  {#if showLogoutModal}
+    <div class="modal-overlay modal-overlay--active">
+      <div class="confirm-modal confirm-modal--info" style="bottom: 10%;">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-sign-out-alt"></i>
+        </div>
+        <h3 class="confirm-modal__title">Abmeldung bestätigen</h3>
+        <p class="confirm-modal__message">
+          Möchten Sie sich wirklich abmelden?<br />
+          <small
+            ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.</small
+          >
+        </p>
+        <div class="confirm-modal__actions confirm-modal__actions--centered">
+          <button
+            class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
+            onclick={cancelLogout}
+          >
+            Abbrechen
+          </button>
+          <button class="btn btn-danger confirm-modal__btn--wide" onclick={confirmLogout}>
+            Abmelden
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
+<!-- END: AUTH GUARD -->

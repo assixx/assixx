@@ -8,11 +8,11 @@
  */
 
 import type { createCalendar } from '@event-calendar/core';
+import type { User } from '../../types/api.types';
+import type { Department, Team, FilterLevel, ViewMode } from './types';
 
 // v5 API: Calendar type is return type of createCalendar
 type Calendar = ReturnType<typeof createCalendar>;
-import type { User } from '../../types/api.types';
-import type { Department, Team, FilterLevel, ViewMode } from './types';
 
 /**
  * Calendar State Manager (Singleton)

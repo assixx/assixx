@@ -99,6 +99,9 @@ export interface Document {
 
   /** Preview URL (if available) */
   previewUrl?: string;
+
+  /** Document tags (optional, may come as array or JSON string from backend) */
+  tags?: string[] | string;
 }
 
 /**
@@ -284,4 +287,19 @@ export interface ChatFolder {
   attachmentCount: number;
   isGroup: boolean;
   groupName: string | null;
+}
+
+/**
+ * Current user info for permission checks
+ * Matches SvelteKit CurrentUser type for consistency
+ * NEW 2025-12-23: Added for per-document permission checks
+ */
+export interface CurrentUser {
+  id: number;
+  email: string;
+  role: 'root' | 'admin' | 'employee';
+  tenantId: number;
+  hasFullAccess?: boolean;
+  teamId?: number | null;
+  departmentId?: number | null;
 }

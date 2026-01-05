@@ -9,6 +9,8 @@
  * - POST   /machines/maintenance        - Add maintenance record (admin)
  * - GET    /machines/:id                - Get machine by ID
  * - GET    /machines/:id/maintenance    - Get maintenance history
+ * - GET    /machines/:id/teams          - Get teams assigned to machine
+ * - PUT    /machines/:id/teams          - Set teams for machine (admin)
  * - POST   /machines                    - Create machine (admin)
  * - PUT    /machines/:id                - Update machine (admin)
  * - DELETE /machines/:id                - Delete machine (admin)
@@ -37,6 +39,7 @@ import {
   AddMaintenanceRecordDto,
   CreateMachineDto,
   ListMachinesQueryDto,
+  SetMachineTeamsDto,
   UpcomingMaintenanceQueryDto,
   UpdateMachineDto,
 } from './dto/index.js';
@@ -45,6 +48,7 @@ import type {
   MachineCreateRequest,
   MachineResponse,
   MachineStatistics,
+  MachineTeamResponse,
   MachineUpdateRequest,
   MaintenanceHistoryResponse,
   MaintenanceRecordRequest,
@@ -146,6 +150,25 @@ export class MachinesController {
     @TenantId() tenantId: number,
   ): Promise<MaintenanceHistoryResponse[]> {
     return await this.machinesService.getMaintenanceHistory(id, tenantId);
+  }
+
+  @Get(':id/teams')
+  async getMachineTeams(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() tenantId: number,
+  ): Promise<MachineTeamResponse[]> {
+    return await this.machinesService.getMachineTeams(id, tenantId);
+  }
+
+  @Put(':id/teams')
+  @Roles('admin', 'root')
+  async setMachineTeams(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetMachineTeamsDto,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MachineTeamResponse[]> {
+    return await this.machinesService.setMachineTeams(id, dto.teamIds, tenantId, user.id);
   }
 
   @Post()

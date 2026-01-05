@@ -372,27 +372,30 @@ function showEmployeeTeamInfoBar(teamInfo: EmployeeTeamInfo): void {
 
 /**
  * Load team members and convert to Employee format
+ * Only includes users with userRole='employee' (not admins/team leads)
  */
 async function loadEmployeeTeamMembers(teamId: number): Promise<void> {
   try {
     const teamMembers = await fetchTeamMembers(teamId);
-    const employees = teamMembers.map((member) => ({
-      id: member.id,
-      username: member.username,
-      firstName: member.firstName,
-      lastName: member.lastName,
-      email: '',
-      role: 'employee' as const,
-      tenantId: 0,
-      isActive: 1 as const,
-      createdAt: '',
-      updatedAt: '',
-      availabilityStatus: member.availabilityStatus,
-      availabilityStart: member.availabilityStart,
-      availabilityEnd: member.availabilityEnd,
-    }));
+    const employees = teamMembers
+      .filter((member) => member.userRole === 'employee')
+      .map((member) => ({
+        id: member.id,
+        username: member.username,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: '',
+        role: 'employee' as const,
+        tenantId: 0,
+        isActive: 1 as const,
+        createdAt: '',
+        updatedAt: '',
+        availabilityStatus: member.availabilityStatus,
+        availabilityStart: member.availabilityStart,
+        availabilityEnd: member.availabilityEnd,
+      }));
     setEmployees(employees);
-    console.info('[SHIFTS] Loaded', employees.length, 'team members');
+    console.info('[SHIFTS] Loaded', employees.length, 'team members (employees only)');
   } catch (error) {
     console.error('[SHIFTS] Error loading team members:', error);
   }
@@ -593,7 +596,9 @@ function setupDragAndDrop(): void {
   setupGlobalDragOver();
   setupGlobalDragLeave();
 
-  setupGlobalDrop((employeeId, cell) => void handleShiftDrop(employeeId, cell));
+  setupGlobalDrop((employeeId, cell) => {
+    handleShiftDrop(employeeId, cell);
+  });
 }
 
 // ============== NAVIGATION ==============

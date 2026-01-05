@@ -62,11 +62,7 @@ declare module '@event-calendar/core' {
    * @param plugins - Array of plugins [DayGrid, TimeGrid, etc.]
    * @param options - Calendar configuration options
    */
-  export function createCalendar(
-    target: HTMLElement,
-    plugins: Plugin[],
-    options: CalendarOptions,
-  ): CalendarInstance;
+  export function createCalendar(target: HTMLElement, plugins: Plugin[], options: CalendarOptions): CalendarInstance;
 
   /**
    * Plugins - all included in @event-calendar/core v5

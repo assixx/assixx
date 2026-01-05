@@ -1,23 +1,26 @@
 <script lang="ts">
+  /**
+   * Blackboard Detail - Page Component
+   * SSR: Data loaded in +page.server.ts
+   * Level 3: $derived from SSR data + invalidateAll() after mutations
+   */
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { base } from '$app/paths';
-  import { sanitizeWithLineBreaks } from '$lib/utils/sanitize-html';
+  import {
+    sanitizeWithLineBreaks,
+    showConfirm,
+    showSuccessAlert,
+    showErrorAlert,
+  } from '$lib/utils';
+  import type { PageData } from './$types';
 
   // Page-specific CSS (reuses kvp-detail layout)
   import '../../../../styles/kvp-detail.css';
 
   // _lib/ imports
-  import type {
-    DetailEntry,
-    Comment,
-    Attachment,
-    PreviewAttachment,
-    CurrentUser,
-  } from './_lib/types';
+  import type { Attachment, PreviewAttachment } from './_lib/types';
   import {
-    fetchFullEntry,
-    loadCurrentUser as loadUser,
     confirmEntry as confirmApi,
     unconfirmEntry as unconfirmApi,
     addComment as addCommentApi,
@@ -40,31 +43,16 @@
   } from './_lib/utils';
 
   // =============================================================================
-  // SVELTE 5 RUNES - State
+  // SSR DATA (single source of truth via $derived)
   // =============================================================================
 
-  // Entry Data
-  let entry = $state<DetailEntry | null>(null);
-  let comments = $state<Comment[]>([]);
-  let attachments = $state<Attachment[]>([]);
+  const { data }: { data: PageData } = $props();
 
-  // Loading States
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  // User State
-  let currentUser = $state<CurrentUser | null>(null);
-
-  // Comment Form State
-  let newComment = $state('');
-  let submittingComment = $state(false);
-
-  // Confirmation State
-  let confirming = $state(false);
-
-  // Preview Modal State
-  let showPreviewModal = $state(false);
-  let previewAttachment = $state<PreviewAttachment | null>(null);
+  // Derived from SSR data
+  const entry = $derived(data?.entry ?? null);
+  const comments = $derived(data?.comments ?? []);
+  const attachments = $derived(data?.attachments ?? []);
+  const currentUser = $derived(data?.currentUser ?? null);
 
   // =============================================================================
   // DERIVED VALUES
@@ -79,48 +67,47 @@
   const otherFiles = $derived(filterOtherFiles(attachments));
 
   // =============================================================================
-  // API HANDLERS
+  // UI STATE (local only)
   // =============================================================================
 
-  async function loadEntry(): Promise<void> {
-    if (!uuid) return;
-    loading = true;
-    error = null;
+  // Comment Form State
+  let newComment = $state('');
+  let submittingComment = $state(false);
 
-    try {
-      const result = await fetchFullEntry(uuid);
-      if (!result) {
-        error = 'Eintrag nicht gefunden';
-        return;
-      }
-      entry = result.entry;
-      comments = result.comments;
-      attachments = result.attachments;
-    } catch (err) {
-      console.error('[Blackboard Detail] Error:', err);
-      error = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten';
-    } finally {
-      loading = false;
-    }
-  }
+  // Confirmation State
+  let confirming = $state(false);
 
-  async function loadCurrentUser(): Promise<void> {
-    currentUser = await loadUser();
-  }
+  // Preview Modal State
+  let showPreviewModal = $state(false);
+  let previewAttachment = $state<PreviewAttachment | null>(null);
+
+  // =============================================================================
+  // API HANDLERS (with invalidateAll after mutations)
+  // =============================================================================
 
   async function confirmEntry(): Promise<void> {
-    if (!entry || !uuid) return;
+    if (entry === null || !uuid) return;
     confirming = true;
     const success = await confirmApi(uuid);
-    if (success) entry = { ...entry, isConfirmed: true, confirmedAt: new Date().toISOString() };
+    if (success) {
+      showSuccessAlert('Eintrag als gelesen markiert');
+      await invalidateAll();
+    } else {
+      showErrorAlert('Fehler beim Markieren als gelesen');
+    }
     confirming = false;
   }
 
   async function unconfirmEntry(): Promise<void> {
-    if (!entry || !uuid) return;
+    if (entry === null || !uuid) return;
     confirming = true;
     const success = await unconfirmApi(uuid);
-    if (success) entry = { ...entry, isConfirmed: false, confirmedAt: null };
+    if (success) {
+      showSuccessAlert('Lesebestätigung zurückgenommen');
+      await invalidateAll();
+    } else {
+      showErrorAlert('Fehler beim Zurücknehmen der Lesebestätigung');
+    }
     confirming = false;
   }
 
@@ -131,15 +118,25 @@
     const success = await addCommentApi(uuid, newComment);
     if (success) {
       newComment = '';
-      await loadEntry();
+      showSuccessAlert('Kommentar hinzugefügt');
+      await invalidateAll();
+    } else {
+      showErrorAlert('Fehler beim Hinzufügen des Kommentars');
     }
     submittingComment = false;
   }
 
   async function archiveEntry(): Promise<void> {
-    if (!entry || !uuid || !confirm('Möchten Sie diesen Eintrag wirklich archivieren?')) return;
+    if (entry === null || !uuid) return;
+    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wirklich archivieren?');
+    if (!confirmed) return;
     const success = await archiveApi(uuid);
-    if (success) goto(`${base}/blackboard`);
+    if (success) {
+      showSuccessAlert('Eintrag wurde archiviert');
+      goto(`${base}/blackboard`);
+    } else {
+      showErrorAlert('Fehler beim Archivieren');
+    }
   }
 
   // =============================================================================
@@ -172,17 +169,8 @@
   }
 
   // =============================================================================
-  // LIFECYCLE
+  // EVENT HANDLERS
   // =============================================================================
-
-  let mounted = false;
-  $effect(() => {
-    if (!mounted && uuid) {
-      mounted = true;
-      loadCurrentUser();
-      loadEntry();
-    }
-  });
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape' && showPreviewModal) closePreview();
@@ -203,18 +191,7 @@
     </button>
   </div>
 
-  {#if loading}
-    <div class="text-center p-10">
-      <div class="spinner-ring spinner-ring--lg"></div>
-      <p class="mt-4 text-[var(--color-text-secondary)]">Eintrag wird geladen...</p>
-    </div>
-  {:else if error}
-    <div class="text-center p-10">
-      <i class="fas fa-exclamation-triangle text-6xl text-[var(--color-danger)] mb-4"></i>
-      <p class="text-[var(--color-text-secondary)]">{error}</p>
-      <button class="btn btn-primary mt-4" onclick={loadEntry}>Erneut versuchen</button>
-    </div>
-  {:else if entry}
+  {#if entry !== null}
     <div class="detail-container">
       <!-- Main Content -->
       <div class="detail-main">

@@ -18,7 +18,6 @@ export const CreateShiftSchema = z.object({
   endTime: TimeSchema,
   departmentId: z.number().int().positive('Department ID is required'),
   planId: z.number().int().positive().optional(),
-  templateId: z.number().int().positive().optional(),
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
   machineId: z.number().int().positive().optional(),

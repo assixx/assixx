@@ -6,7 +6,7 @@
 
 import { $, setHTML } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
-import type { Survey, SurveyQuestion, SurveyAssignment } from './types';
+import type { Survey, SurveyQuestion, SurveyAssignment, SurveyId } from './types';
 import {
   createQuestionHtml,
   createOptionHtml,
@@ -62,8 +62,9 @@ function incrementQuestionCounter(): number {
 
 /**
  * Show create/edit modal
+ * Supports both numeric IDs and UUIDs
  */
-export function showCreateModal(surveyId: number | null = null): void {
+export function showCreateModal(surveyId: SurveyId | null = null): void {
   const modalElement = $(MODAL_TEMPLATE_ID);
 
   // Reset form
@@ -192,8 +193,9 @@ export function closeModal(): void {
 
 /**
  * Load and populate survey for editing
+ * Supports both numeric IDs and UUIDs
  */
-async function loadAndPopulateSurvey(surveyId: number): Promise<void> {
+async function loadAndPopulateSurvey(surveyId: SurveyId): Promise<void> {
   const survey = await loadSurveyById(surveyId);
   if (survey === null) {
     showErrorAlert('Umfrage konnte nicht geladen werden');

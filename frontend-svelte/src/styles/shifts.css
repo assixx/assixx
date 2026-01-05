@@ -7,22 +7,11 @@
 /* Main content area - REMOVED: Migrated to Tailwind utilities in shifts.html */
 
 /* Custom styles for shift planning interface - Glassmorphismus Design */
-.shift-planning-container {
-  backdrop-filter: var(--glass-backdrop);
-
-  margin: 0 auto;
-  box-shadow: var(--shadow-sm);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
-
-  background: var(--glass-bg);
-  padding: var(--spacing-6);
-  overflow: visible;
-}
+/* NOTE: .shift-planning-container removed - not used in SvelteKit (Design System card used instead) */
 
 /* Shift Info Row Styles */
 .shift-info-row {
-  display: inline-flex;
+  display: grid;
   position: relative;
   grid-template-columns: 1fr 1fr;
   justify-content: center;
@@ -454,6 +443,7 @@
   position: absolute;
   top: -10px;
   right: -3px;
+  z-index: 10; /* Ensure button is above other elements */
   justify-content: center;
   align-items: center;
 
@@ -463,6 +453,7 @@
   border-radius: 50px;
   background: rgb(244 67 54 / 10%);
   padding: 0;
+  pointer-events: auto; /* CRITICAL: Ensure clicks work even if parent has pointer-events: none */
 
   width: 20px;
   height: 20px;
@@ -613,88 +604,11 @@
 }
 
 /* Responsive Design */
-@media (width <=768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+/* NOTE: .form-row, .filters, .calendar-grid, .calendar-day responsive rules removed
+   - These classes are not used in SvelteKit version */
 
-  .filters {
-    flex-direction: column;
-  }
-
-  .filters select,
-  .filters .date-input {
-    min-width: 100%;
-  }
-
-  .calendar-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .calendar-day {
-    min-height: 80px;
-  }
-}
-
-/* Shift Details Modal Styles (refactored - used by modals.ts) */
-.shift-details-content {
-  padding: var(--spacing-6);
-}
-
-.shift-details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  margin-bottom: var(--spacing-6);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  padding-bottom: var(--spacing-4);
-}
-
-.shift-details-header h3 {
-  margin: 0;
-  color: var(--primary-color);
-  font-weight: 600;
-  font-size: 20px;
-}
-
-.shift-details-header .shift-date {
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.shift-employees-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.shift-employee-item {
-  display: flex;
-  align-items: center;
-
-  transition: background 0.2s ease;
-  border-radius: var(--radius-md);
-
-  background: rgb(255 255 255 / 5%);
-
-  padding: var(--spacing-3) var(--spacing-4);
-  color: var(--text-primary);
-
-  font-weight: 500;
-}
-
-.shift-employee-item:hover {
-  background: rgb(255 255 255 / 10%);
-}
-
-.shift-employees-list .empty-message {
-  padding: var(--spacing-4);
-  color: var(--text-tertiary);
-  font-style: italic;
-  text-align: center;
-}
+/* NOTE: Shift Details Modal Styles removed - not implemented in SvelteKit
+   (Original: .shift-details-content, .shift-details-header, .shift-employees-list, .shift-employee-item) */
 
 /* Edit Mode Button */
 
@@ -1156,6 +1070,18 @@
   transform: translateY(0);
 }
 
+.favorite-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .remove-favorite {
   display: flex;
 
@@ -1184,6 +1110,22 @@
 .favorite-btn:hover .remove-favorite {
   visibility: visible;
   opacity: 100%;
+}
+
+.favorites-empty {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Disabled Dropdown State */
+.dropdown--disabled {
+  opacity: 50%;
+  pointer-events: none;
+}
+
+.dropdown--disabled .dropdown__trigger {
+  cursor: not-allowed;
 }
 
 .remove-favorite:hover {
@@ -1224,65 +1166,11 @@
 }
 
 /* ============ DRAG & DROP STYLES ============ */
-.member-card {
-  cursor: grab;
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(33 150 243 / 15%);
-  padding: var(--spacing-2);
-
-  min-width: 150px;
-}
-
-.member-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgb(0 0 0 / 20%);
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(33 150 243 / 25%);
-}
-
-.member-card.dragging {
-  opacity: 50%;
-  cursor: grabbing;
-}
-
-.member-name {
-  margin-bottom: 4px;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.shift-cell.drop-invalid {
-  border-width: 2px !important;
-  border-color: var(--error-color) !important;
-  background: rgb(244 67 54 / 20%) !important;
-}
-
-/* Additional employee item states */
-
-.employee-item.selected {
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-color);
-  background: rgb(33 150 243 / 20%);
-}
-
-/* Employee info in sidebar */
-
-.employee-details {
-  color: var(--text-secondary);
-  font-size: 12px;
-}
+/* NOTE: .member-card, .member-name removed - employee-card/employee-name used instead */
+/* NOTE: .drop-invalid, .employee-item.selected, .employee-details removed - not used in SvelteKit */
 
 /* ============ CORE SHIFT PLANNING STYLES ============ */
-.shift-title {
-  margin-bottom: var(--spacing-6);
-  color: var(--primary-color);
-  font-weight: 700;
-
-  font-size: 28px;
-  text-align: center;
-}
+/* NOTE: .shift-title removed - card__title from Design System used instead */
 
 /* Admin Actions Styles */
 .admin-actions {
@@ -1319,4 +1207,106 @@
 .shift-time {
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+/* =============================================================================
+   SVELTEKIT SHIFTS PAGE - Additional Styles
+   ============================================================================= */
+
+/* NOTE: .shifts-page removed - Design System container/card used instead */
+/* NOTE: Loading Spinner uses Design System .spinner-ring (see spinner.css) */
+
+/* NOTE: .employee-team-info removed - Uses Design System alert--info + badge components */
+
+/* NOTE: .filter-controls, .filters-row, .planning-grid, .shift-grid, .grid-header removed
+   - Using Design System dropdown component and Tailwind utilities instead */
+
+/* NOTE: .shift-label-cell, .day-name, .day-date, .nav-btn removed
+   - Using existing shift-label, day-header, and Design System btn instead */
+
+.shift-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Employee List */
+.employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Availability Badges */
+.availability-badge {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+}
+
+.availability-badge.badge--warning {
+  background: rgb(255 193 7 / 20%);
+  color: #ffc107;
+}
+
+.availability-badge.badge--danger {
+  background: rgb(231 76 60 / 20%);
+  color: #e74c3c;
+}
+
+.availability-badge.badge--error {
+  background: rgb(192 57 43 / 20%);
+  color: #c0392b;
+}
+
+.availability-badge.badge--info {
+  background: rgb(52 152 219 / 20%);
+  color: #3498db;
+}
+
+.availability-badge.badge--dark {
+  background: rgb(149 165 166 / 20%);
+  color: #95a5a6;
+}
+
+/* Responsive */
+@media (width <= 1024px) {
+  .planning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-sidebar {
+    max-height: 200px;
+  }
+
+  .employee-list {
+    flex-flow: row wrap;
+  }
+
+  .employee-item {
+    flex: 0 0 auto;
+  }
+}
+
+@media (width <= 768px) {
+  .filters-row {
+    flex-direction: column;
+  }
+
+  .dropdown {
+    min-width: 100%;
+  }
+
+  .shift-grid {
+    overflow-x: auto;
+  }
+
+  .grid-header,
+  .shift-row {
+    min-width: 800px;
+  }
 }

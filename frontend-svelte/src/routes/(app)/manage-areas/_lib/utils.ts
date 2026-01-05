@@ -105,7 +105,7 @@ export function getAreaLeadDisplayName(areaLeadId: number | null, areaLeads: Adm
  * @returns Array of department IDs
  */
 export function getDepartmentIdsForArea(areaId: number, departments: Department[]): number[] {
-  return departments.filter((d) => d.area_id === areaId).map((d) => d.id);
+  return departments.filter((d) => d.areaId === areaId).map((d) => d.id);
 }
 
 /**
@@ -145,12 +145,12 @@ export function populateFormFromArea(
   return {
     name: area.name,
     description: area.description ?? '',
-    areaLeadId: area.area_lead_id ?? null,
+    areaLeadId: area.areaLeadId ?? null,
     type: area.type,
     capacity: area.capacity ?? null,
     address: area.address ?? '',
     departmentIds: getDepartmentIdsForArea(area.id, departments),
-    isActive: (area.is_active === 4 ? 0 : area.is_active) as FormIsActiveStatus,
+    isActive: (area.isActive === 4 ? 0 : area.isActive) as FormIsActiveStatus,
   };
 }
 

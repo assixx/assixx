@@ -39,8 +39,12 @@ export interface TeamRow extends RowDataPacket {
   created_at: Date;
   updated_at: Date;
   department_name: string | undefined;
+  department_area_name: string | undefined;
   team_lead_name: string | undefined;
   member_count: number | undefined;
+  machine_count: number | undefined;
+  member_names: string | null;
+  machine_names: string | null;
 }
 
 /**
@@ -58,8 +62,12 @@ export interface TeamResponse {
   createdAt: string | undefined;
   updatedAt: string | undefined;
   departmentName: string | undefined;
+  departmentAreaName: string | undefined;
   leaderName: string | undefined;
   memberCount: number | undefined;
+  machineCount: number | undefined;
+  memberNames: string | undefined;
+  machineNames: string | undefined;
 }
 
 /**
@@ -74,6 +82,7 @@ export interface TeamMember {
   position: string | undefined;
   employeeId: string | undefined;
   role: string | undefined;
+  userRole: string | undefined;
   availabilityStatus: string | undefined;
   availabilityStart: string | undefined;
   availabilityEnd: string | undefined;
@@ -112,14 +121,27 @@ export class TeamsService {
 
   /**
    * SQL query for fetching teams with extended info
+   * Includes area name via department→area join for badge tooltips
+   * Includes aggregated member/machine names for tooltips
    */
   private readonly FIND_ALL_TEAMS_QUERY = `
     SELECT t.*,
       d.name as department_name,
+      a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
-      (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count
+      (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
+      (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) as machine_count,
+      (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
+       FROM user_teams mut
+       JOIN users mu ON mut.user_id = mu.id
+       WHERE mut.team_id = t.id) as member_names,
+      (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
+       FROM machine_teams mmt
+       JOIN machines mm ON mmt.machine_id = mm.id
+       WHERE mmt.team_id = t.id) as machine_names
     FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
+    LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
     WHERE t.tenant_id = $1 AND t.is_active = 1
     ORDER BY t.name`;
@@ -140,8 +162,12 @@ export class TeamsService {
       createdAt: team.created_at.toISOString(),
       updatedAt: team.updated_at.toISOString(),
       departmentName: team.department_name,
+      departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
       memberCount: team.member_count,
+      machineCount: team.machine_count,
+      memberNames: team.member_names ?? undefined,
+      machineNames: team.machine_names ?? undefined,
     };
   }
 
@@ -180,10 +206,12 @@ export class TeamsService {
     const [rows] = await execute<TeamRow[]>(
       `SELECT t.*,
         d.name as department_name,
+        a.name as department_area_name,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
         (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
+      LEFT JOIN areas a ON d.area_id = a.id
       LEFT JOIN users u ON t.team_lead_id = u.id
       WHERE t.id = $1 AND t.tenant_id = $2`,
       [id, tenantId],
@@ -458,6 +486,7 @@ export class TeamsService {
       position: string | null;
       employee_id: string | null;
       role: string | null;
+      user_role: string | null;
       availability_status: string | null;
       availability_start: string | null;
       availability_end: string | null;
@@ -465,7 +494,7 @@ export class TeamsService {
 
     const [members] = await execute<MemberRow[]>(
       `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
-              ut.role, u.availability_status, u.availability_start, u.availability_end
+              ut.role, u.role as user_role, u.availability_status, u.availability_start, u.availability_end
        FROM users u
        JOIN user_teams ut ON u.id = ut.user_id
        WHERE ut.team_id = $1`,
@@ -481,6 +510,7 @@ export class TeamsService {
       position: member.position ?? undefined,
       employeeId: member.employee_id ?? undefined,
       role: member.role ?? undefined,
+      userRole: member.user_role ?? undefined,
       availabilityStatus: member.availability_status ?? undefined,
       availabilityStart: member.availability_start ?? undefined,
       availabilityEnd: member.availability_end ?? undefined,

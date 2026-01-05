@@ -224,15 +224,8 @@ export default defineConfig({
 
   optimizeDeps: {
     // 🔥 OPTIMIZED: Include more dependencies
-    // EventCalendar replaces FullCalendar (Phase 0 Migration)
-    include: [
-      '@event-calendar/core',
-      '@event-calendar/day-grid',
-      '@event-calendar/time-grid',
-      '@event-calendar/list',
-      '@event-calendar/interaction',
-      'dompurify',
-    ],
+    // EventCalendar v5: All plugins bundled in @event-calendar/core (no separate packages!)
+    include: ['@event-calendar/core', 'svelte', 'svelte/store', 'dompurify'],
 
     // 🔥 NEW: Exclude certain packages from optimization
     // CRITICAL: Exclude zxcvbn to ensure dynamic imports work properly!
@@ -299,15 +292,18 @@ export default defineConfig({
 
     // 🔥 DEV SERVER: URL Rewrite Plugin for clean URLs
     // Maps /admin-dashboard → /pages/admin-dashboard.html (like production)
+    // Also handles direct .html access: /survey-results.html → /pages/survey-results.html
     {
       name: 'dev-url-rewrite',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          // Skip if not GET request or has file extension or is API/asset
+          // Skip if not GET request
+          if (req.method !== 'GET' || !req.url) {
+            return next();
+          }
+
+          // Skip API, uploads, Vite internals, and node_modules
           if (
-            req.method !== 'GET' ||
-            !req.url ||
-            req.url.includes('.') ||
             req.url.startsWith('/api') ||
             req.url.startsWith('/uploads') ||
             req.url.startsWith('/@') ||
@@ -316,21 +312,28 @@ export default defineConfig({
             return next();
           }
 
+          // Skip non-HTML file extensions (assets like .js, .css, .png, etc.)
+          const urlWithoutQuery = req.url.split('?')[0];
+          if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
+            return next();
+          }
+
           // Known pages (auto-generated from src/pages/*.html)
           const pages = [
             'account-settings',
             'admin-dashboard',
             'admin-profile',
-            'blackboard-detail',
             'blackboard',
+            'blackboard-detail',
             'calendar',
             'chat',
             'documents-explorer',
             'employee-dashboard',
             'employee-profile',
+            'features',
             'index',
-            'kvp-detail',
             'kvp',
+            'kvp-detail',
             'login',
             'logs',
             'manage-admins',
@@ -342,7 +345,6 @@ export default defineConfig({
             'manage-teams',
             'rate-limit',
             'root-dashboard',
-            'features',
             'root-profile',
             'shifts',
             'signup',
@@ -354,17 +356,24 @@ export default defineConfig({
             'tenant-deletion-status',
           ];
 
-          const urlPath = req.url.split('?')[0].replace(/^\//, ''); // Remove leading slash
+          // Extract page name from URL (remove leading slash and .html extension)
+          let urlPath = urlWithoutQuery.replace(/^\//, '');
+
+          // Handle .html extension: /survey-results.html → survey-results
+          if (urlPath.endsWith('.html')) {
+            urlPath = urlPath.slice(0, -5); // Remove .html
+          }
 
           // Root path → index
           if (urlPath === '' || urlPath === '/') {
-            req.url = '/pages/index.html';
+            req.url = '/pages/index.html' + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
             return next();
           }
 
           // Known page → rewrite to /pages/*.html
           if (pages.includes(urlPath)) {
-            req.url = `/pages/${urlPath}.html`;
+            const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
+            req.url = `/pages/${urlPath}.html${queryString}`;
           }
 
           next();

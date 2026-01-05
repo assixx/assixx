@@ -23,9 +23,9 @@ services:
           cpus: "1.0"
           memory: 1G
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-assixx_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AssixxP@ss2025!}
-      POSTGRES_DB: ${POSTGRES_DB:-assixx}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       TZ: Europe/Berlin
     ports:
       - "5432:5432"
@@ -49,6 +49,8 @@ services:
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
     # Resource limits prevent runaway processes (generous for dev with TypeScript)
     deploy:
       resources:
@@ -61,12 +63,13 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
-      # PostgreSQL Connection
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-app_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
-      DB_NAME: ${POSTGRES_DB:-assixx}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       SMTP_HOST: ${SMTP_HOST}
@@ -126,7 +129,8 @@ services:
       timeout: 10s
       retries: 3
     # Development command - build NestJS and run (tsx doesn't support decorators)
-    command: sh -c "pnpm install --frozen-lockfile && cd backend && pnpm run build && node dist/nest/main.js"
+    # Note: pnpm install is done during docker build, not at runtime
+    command: sh -c "cd backend && pnpm run build && node dist/nest/main.js"
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
@@ -159,6 +163,8 @@ services:
     image: assixx-backend:dev
     container_name: assixx-deletion-worker
     restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
     # Resource limits for worker process (generous for dev)
     deploy:
       resources:
@@ -170,12 +176,13 @@ services:
           memory: 512M
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      # PostgreSQL Connection
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-app_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
-      DB_NAME: ${POSTGRES_DB:-assixx}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       REDIS_HOST: redis

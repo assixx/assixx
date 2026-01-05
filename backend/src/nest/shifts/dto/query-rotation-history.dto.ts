@@ -8,13 +8,14 @@ import { ShiftDateSchema } from './common.dto.js';
 
 /**
  * Query rotation history parameters
+ * API v2: camelCase only
  */
 export const QueryRotationHistorySchema = z.object({
-  pattern_id: z.coerce.number().int().positive().optional(),
-  user_id: z.coerce.number().int().positive().optional(),
-  team_id: z.coerce.number().int().positive().optional(),
-  start_date: ShiftDateSchema.optional(),
-  end_date: ShiftDateSchema.optional(),
+  patternId: z.coerce.number().int().positive().optional(),
+  userId: z.coerce.number().int().positive().optional(),
+  teamId: z.coerce.number().int().positive().optional(),
+  startDate: ShiftDateSchema.optional(),
+  endDate: ShiftDateSchema.optional(),
   status: z.enum(['generated', 'confirmed', 'modified', 'cancelled']).optional(),
 });
 

@@ -1,6 +1,13 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
+  /**
+   * Manage Departments - Page Component
+   * @module manage-departments/+page
+   *
+   * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
+   */
+  import { invalidateAll } from '$app/navigation';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast.js';
+  import type { PageData } from './$types';
 
   // =============================================================================
   // IMPORTS FROM _LIB
@@ -16,15 +23,11 @@
   } from './_lib/types';
   import { MESSAGES } from './_lib/constants';
   import {
-    loadDepartments as apiLoadDepartments,
-    loadAreas as apiLoadAreas,
-    loadDepartmentLeads as apiLoadDepartmentLeads,
     buildDepartmentPayload,
     saveDepartment as apiSaveDepartment,
     deleteDepartment as apiDeleteDepartment,
     forceDeleteDepartment as apiForceDeleteDepartment,
     buildDependencyMessage,
-    checkSession,
   } from './_lib/api';
   import { applyAllFilters } from './_lib/filters';
   import {
@@ -34,27 +37,29 @@
     getLeadDisplay,
     getTeamCountText,
     highlightMatch,
-    getSelectedAreaName,
-    getSelectedLeadName,
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
+  import DepartmentModal from './_lib/DepartmentModal.svelte';
+  import DeleteModals from './_lib/DeleteModals.svelte';
 
   // =============================================================================
-  // STATE
+  // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
 
-  // Department Data
-  let allDepartments: Department[] = $state([]);
-  let filteredDepartments: Department[] = $state([]);
+  const { data }: { data: PageData } = $props();
 
-  // Dropdown Data
-  let allAreas: Area[] = $state([]);
-  let allDepartmentLeads: AdminUser[] = $state([]);
+  // SSR data via $derived - updates when invalidateAll() is called
+  const allDepartments = $derived<Department[]>(data?.departments ?? []);
+  const allAreas = $derived<Area[]>(data?.areas ?? []);
+  const allDepartmentLeads = $derived<AdminUser[]>(data?.departmentLeads ?? []);
 
-  // Loading and Error States
-  let loading = $state(true);
-  let error: string | null = $state(null);
+  // =============================================================================
+  // UI STATE - Filtering and form state (client-side only)
+  // =============================================================================
+
+  // Error state
+  const error = $state<string | null>(null);
 
   // Filter State
   let currentStatusFilter: StatusFilter = $state('active');
@@ -83,11 +88,6 @@
   let formDepartmentLeadId: number | null = $state(null);
   let formIsActive: FormIsActiveStatus = $state(1);
 
-  // Dropdown States
-  let areaDropdownOpen = $state(false);
-  let leadDropdownOpen = $state(false);
-  let statusDropdownOpen = $state(false);
-
   // Form Submit Loading
   let submitting = $state(false);
 
@@ -98,57 +98,22 @@
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
 
-  // Dropdown display names
-  const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
-  const selectedLeadName = $derived(getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads));
+  // Derived: Filtered departments based on current filter/search state
+  const filteredDepartments = $derived(
+    applyAllFilters(allDepartments, currentStatusFilter, currentSearchQuery),
+  );
 
   // =============================================================================
-  // FILTER FUNCTIONS
+  // API FUNCTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  function applyFilters() {
-    filteredDepartments = applyAllFilters(allDepartments, currentStatusFilter, currentSearchQuery);
-  }
-
-  // =============================================================================
-  // API FUNCTIONS
-  // =============================================================================
-
-  async function loadDepartments() {
-    loading = true;
-    error = null;
-
-    const result = await apiLoadDepartments();
-    allDepartments = result.departments;
-
-    if (result.error) {
-      error = result.error;
-    }
-
-    applyFilters();
-    loading = false;
-  }
-
-  async function loadAreas() {
-    const result = await apiLoadAreas();
-    allAreas = result.areas;
-  }
-
-  async function loadDepartmentLeads() {
-    const result = await apiLoadDepartmentLeads();
-    allDepartmentLeads = result.users;
-  }
-
-  async function saveDepartment() {
+  async function saveDepartment(): Promise<void> {
     submitting = true;
-
-    // Validate required fields
     if (!formName.trim()) {
       showWarningAlert(MESSAGES.VALIDATION_NAME_REQUIRED);
       submitting = false;
       return;
     }
-
     const payload = buildDepartmentPayload({
       name: formName,
       description: formDescription,
@@ -156,28 +121,27 @@
       departmentLeadId: formDepartmentLeadId,
       isActive: formIsActive,
     });
-
     const result = await apiSaveDepartment(payload, currentEditId);
-
     if (result.success) {
       closeDepartmentModal();
-      await loadDepartments();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
+      showSuccessAlert(isEditMode ? 'Abteilung aktualisiert' : 'Abteilung erstellt');
     } else if (result.error) {
       showErrorAlert(result.error);
     }
-
     submitting = false;
   }
 
-  async function deleteDepartment() {
+  async function deleteDepartment(): Promise<void> {
     if (deleteDepartmentId === null) return;
-
     const result = await apiDeleteDepartment(deleteDepartmentId);
-
     if (result.success) {
       showDeleteConfirmModal = false;
       deleteDepartmentId = null;
-      await loadDepartments();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
+      showSuccessAlert('Abteilung wurde gelöscht');
     } else if (result.hasDependencies && result.dependencyDetails) {
       showForceDeleteWarning(result.dependencyDetails);
     } else if (result.error) {
@@ -185,15 +149,15 @@
     }
   }
 
-  async function forceDeleteDepartment() {
+  async function forceDeleteDepartment(): Promise<void> {
     if (deleteDepartmentId === null) return;
-
     const result = await apiForceDeleteDepartment(deleteDepartmentId);
-
     if (result.success) {
       showForceDeleteModal = false;
       deleteDepartmentId = null;
-      await loadDepartments();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
+      showSuccessAlert('Abteilung wurde endgültig gelöscht');
     } else if (result.error) {
       showErrorAlert(result.error);
     }
@@ -215,14 +179,12 @@
     currentEditId = null;
     resetForm();
     showDepartmentModal = true;
-    loadAreas();
-    loadDepartmentLeads();
+    // Areas and department leads already loaded via SSR
   }
 
-  async function openEditModal(departmentId: number) {
+  function openEditModal(departmentId: number) {
     const department = allDepartments.find((d) => d.id === departmentId);
     if (!department) return;
-
     currentEditId = departmentId;
     const formData = populateFormFromDepartment(department);
     formName = formData.name;
@@ -230,9 +192,8 @@
     formAreaId = formData.areaId;
     formDepartmentLeadId = formData.departmentLeadId;
     formIsActive = formData.isActive;
-
-    await Promise.all([loadAreas(), loadDepartmentLeads()]);
     showDepartmentModal = true;
+    // Areas and department leads already loaded via SSR
   }
 
   function openDeleteModal(departmentId: number) {
@@ -274,75 +235,28 @@
     formAreaId = defaults.areaId;
     formDepartmentLeadId = defaults.departmentLeadId;
     formIsActive = defaults.isActive;
-    areaDropdownOpen = false;
-    leadDropdownOpen = false;
-    statusDropdownOpen = false;
   }
 
   // =============================================================================
-  // DROPDOWN HANDLERS
+  // EVENT HANDLERS
   // =============================================================================
 
-  function toggleAreaDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    leadDropdownOpen = false;
-    statusDropdownOpen = false;
-    areaDropdownOpen = !areaDropdownOpen;
-  }
-
-  function selectArea(areaId: number | null) {
-    formAreaId = areaId;
-    areaDropdownOpen = false;
-  }
-
-  function toggleLeadDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    areaDropdownOpen = false;
-    statusDropdownOpen = false;
-    leadDropdownOpen = !leadDropdownOpen;
-  }
-
-  function selectLead(leadId: number | null) {
-    formDepartmentLeadId = leadId;
-    leadDropdownOpen = false;
-  }
-
-  function toggleStatusDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    areaDropdownOpen = false;
-    leadDropdownOpen = false;
-    statusDropdownOpen = !statusDropdownOpen;
-  }
-
-  function selectStatus(status: FormIsActiveStatus) {
-    formIsActive = status;
-    statusDropdownOpen = false;
-  }
-
-  // =============================================================================
-  // STATUS TOGGLE HANDLER
-  // =============================================================================
-
-  function handleStatusToggle(status: StatusFilter) {
+  function handleStatusToggle(status: StatusFilter): void {
     currentStatusFilter = status;
-    applyFilters();
+    // filteredDepartments is $derived - automatically updates when filter changes
   }
 
-  // =============================================================================
-  // SEARCH HANDLERS
-  // =============================================================================
-
-  function handleSearchInput(e: Event) {
+  function handleSearchInput(e: Event): void {
     const input = e.target as HTMLInputElement;
     currentSearchQuery = input.value;
     searchOpen = currentSearchQuery.trim().length > 0;
-    applyFilters();
+    // filteredDepartments is $derived - automatically updates when search changes
   }
 
-  function clearSearch() {
+  function clearSearch(): void {
     currentSearchQuery = '';
     searchOpen = false;
-    applyFilters();
+    // filteredDepartments is $derived - automatically updates
   }
 
   function handleSearchResultClick(departmentId: number) {
@@ -361,55 +275,16 @@
   }
 
   // =============================================================================
-  // OVERLAY CLICK HANDLERS
-  // =============================================================================
-
-  function handleModalOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) closeDepartmentModal();
-  }
-
-  function handleDeleteOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) closeDeleteModalFn();
-  }
-
-  function handleDeleteConfirmOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) closeDeleteConfirmModal();
-  }
-
-  function handleForceDeleteOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) closeForceDeleteModalFn();
-  }
-
-  // =============================================================================
-  // OUTSIDE CLICK HANDLERS
+  // OUTSIDE CLICK HANDLER
   // =============================================================================
 
   $effect(() => {
-    if (areaDropdownOpen || leadDropdownOpen || statusDropdownOpen || searchOpen) {
+    if (searchOpen) {
       const handleOutsideClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-
-        if (areaDropdownOpen) {
-          const el = document.getElementById('area-dropdown');
-          if (el && !el.contains(target)) areaDropdownOpen = false;
-        }
-
-        if (leadDropdownOpen) {
-          const el = document.getElementById('lead-dropdown');
-          if (el && !el.contains(target)) leadDropdownOpen = false;
-        }
-
-        if (statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) statusDropdownOpen = false;
-        }
-
-        if (searchOpen) {
-          const el = document.querySelector('.search-input-wrapper');
-          if (el && !el.contains(target)) searchOpen = false;
-        }
+        const el = document.querySelector('.search-input-wrapper');
+        if (el && !el.contains(target)) searchOpen = false;
       };
-
       document.addEventListener('click', handleOutsideClick);
       return () => document.removeEventListener('click', handleOutsideClick);
     }
@@ -427,15 +302,6 @@
       else if (showDepartmentModal) closeDepartmentModal();
     }
   }
-
-  // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  onMount(() => {
-    if (!checkSession()) return;
-    loadDepartments();
-  });
 </script>
 
 <svelte:head>
@@ -529,24 +395,20 @@
                   class="search-input__result-item"
                   onclick={() => handleSearchResultClick(dept.id)}
                 >
-                  <div class="flex flex-col gap-1">
-                    <div class="font-medium text-[var(--color-text-primary)]">
+                  <div class="search-result-item">
+                    <div class="search-result-item__name">
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes input -->
                       {@html highlightMatch(dept.name, currentSearchQuery)}
                     </div>
-                    <div class="text-[0.813rem] text-[var(--color-text-secondary)]">
-                      {getAreaDisplay(dept.areaName)}
-                    </div>
-                    <div class="text-xs text-[var(--color-text-muted)]">
+                    <div class="search-result-item__email">{getAreaDisplay(dept.areaName)}</div>
+                    <div class="search-result-item__meta">
                       {dept.employeeCount ?? 0} Mitarbeiter
                     </div>
                   </div>
                 </button>
               {/each}
               {#if filteredDepartments.length > 5}
-                <div
-                  class="text-[0.813rem] text-[var(--color-primary)] text-center py-2 border-t border-[rgb(255_255_255/5%)]"
-                >
+                <div class="search-result-item__more py-2">
                   {MESSAGES.MORE_RESULTS(filteredDepartments.length - 5)}
                 </div>
               {/if}
@@ -557,24 +419,17 @@
     </div>
 
     <div class="card__body">
-      {#if loading}
-        <div id="departments-loading" class="spinner-container">
-          <div class="spinner-ring spinner-ring--md"></div>
-          <p class="mt-2 text-[var(--color-text-secondary)]">{MESSAGES.LOADING}</p>
-        </div>
-      {:else if error}
+      {#if error}
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => loadDepartments()}
+          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
             >{MESSAGES.BTN_RETRY}</button
           >
         </div>
       {:else if filteredDepartments.length === 0}
         <div id="departments-empty" class="empty-state">
-          <div class="empty-state__icon">
-            <i class="fas fa-building"></i>
-          </div>
+          <div class="empty-state__icon"><i class="fas fa-building"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_DEPARTMENTS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_DEPARTMENT}</p>
           <button class="btn btn-primary" onclick={openAddModal}>
@@ -601,9 +456,7 @@
                 {#each filteredDepartments as dept (dept.id)}
                   <tr>
                     <td>
-                      <div class="font-medium text-[var(--color-text-primary)]">
-                        {dept.name}
-                      </div>
+                      <div class="font-medium text-[var(--color-text-primary)]">{dept.name}</div>
                     </td>
                     <td>
                       <div class="text-[var(--color-text-secondary)] text-sm">
@@ -624,9 +477,9 @@
                       </span>
                     </td>
                     <td>
-                      <span class="text-[var(--color-text-primary)]">
-                        {getLeadDisplay(dept.departmentLeadName)}
-                      </span>
+                      <span class="text-[var(--color-text-primary)]"
+                        >{getLeadDisplay(dept.departmentLeadName)}</span
+                      >
                     </td>
                     <td>
                       <div class="text-center">
@@ -677,289 +530,32 @@
 </button>
 
 <!-- Add/Edit Department Modal -->
-<div
-  id="department-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showDepartmentModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="department-modal-title"
-  tabindex="-1"
-  onclick={handleModalOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeDepartmentModal()}
->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
-  <form
-    id="department-form"
-    class="ds-modal"
-    onclick={(e) => e.stopPropagation()}
-    onsubmit={handleFormSubmit}
-  >
-    <div class="ds-modal__header">
-      <h3 class="ds-modal__title" id="department-modal-title">{modalTitle}</h3>
-      <button
-        type="button"
-        class="ds-modal__close"
-        aria-label="Schließen"
-        onclick={closeDepartmentModal}
-      >
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="ds-modal__body">
-      <div class="form-field">
-        <label class="form-field__label" for="department-name">
-          {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="department-name"
-          name="name"
-          class="form-field__control"
-          required
-          bind:value={formName}
-        />
-      </div>
+<DepartmentModal
+  show={showDepartmentModal}
+  {isEditMode}
+  {modalTitle}
+  bind:formName
+  bind:formDescription
+  bind:formAreaId
+  bind:formDepartmentLeadId
+  bind:formIsActive
+  {allAreas}
+  {allDepartmentLeads}
+  {submitting}
+  onclose={closeDepartmentModal}
+  onsubmit={handleFormSubmit}
+/>
 
-      <div class="form-field">
-        <label class="form-field__label" for="department-description"
-          >{MESSAGES.LABEL_DESCRIPTION}</label
-        >
-        <textarea
-          id="department-description"
-          name="description"
-          class="form-field__control"
-          rows="3"
-          bind:value={formDescription}
-        ></textarea>
-      </div>
-
-      <div class="form-field">
-        <label class="form-field__label" for="department-area">{MESSAGES.LABEL_AREA}</label>
-        <div class="dropdown" id="area-dropdown">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={areaDropdownOpen}
-            onclick={toggleAreaDropdown}
-          >
-            <span>{selectedAreaName}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={areaDropdownOpen}>
-            <button type="button" class="dropdown__option" onclick={() => selectArea(null)}>
-              {MESSAGES.NO_AREA}
-            </button>
-            {#each allAreas as area (area.id)}
-              <button type="button" class="dropdown__option" onclick={() => selectArea(area.id)}>
-                {area.name}
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
-
-      <!-- svelte-ignore a11y_label_has_associated_control -->
-      <div class="form-field">
-        <label class="form-field__label">
-          <i class="fas fa-user-tie mr-1"></i>
-          {MESSAGES.LABEL_DEPARTMENT_LEAD}
-        </label>
-        <div class="dropdown" id="lead-dropdown">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={leadDropdownOpen}
-            onclick={toggleLeadDropdown}
-          >
-            <span>{selectedLeadName}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={leadDropdownOpen}>
-            <button type="button" class="dropdown__option" onclick={() => selectLead(null)}>
-              {MESSAGES.NO_DEPARTMENT_LEAD}
-            </button>
-            {#each allDepartmentLeads as lead (lead.id)}
-              <button type="button" class="dropdown__option" onclick={() => selectLead(lead.id)}>
-                {lead.firstName}
-                {lead.lastName} ({lead.role === 'root' ? 'Root' : 'Admin'})
-              </button>
-            {/each}
-          </div>
-        </div>
-        <span class="form-field__message text-[var(--color-text-secondary)]">
-          <i class="fas fa-info-circle mr-1"></i>
-          {MESSAGES.DEPARTMENT_LEAD_HINT}
-        </span>
-      </div>
-
-      {#if isEditMode}
-        <div class="form-field" id="status-field-group">
-          <label class="form-field__label" for="department-status">
-            {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
-          </label>
-          <div class="dropdown" id="status-dropdown">
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={statusDropdownOpen}
-              onclick={toggleStatusDropdown}
-            >
-              <span class="badge {getStatusBadgeClass(formIsActive)}"
-                >{getStatusLabel(formIsActive)}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div class="dropdown__menu" class:active={statusDropdownOpen}>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(1)}>
-                <span class="badge badge--success">Aktiv</span>
-              </button>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(0)}>
-                <span class="badge badge--warning">Inaktiv</span>
-              </button>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(3)}>
-                <span class="badge badge--secondary">Archiviert</span>
-              </button>
-            </div>
-          </div>
-          <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
-            {MESSAGES.STATUS_HINT}
-          </span>
-        </div>
-      {/if}
-    </div>
-
-    <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={closeDepartmentModal}
-        >{MESSAGES.BTN_CANCEL}</button
-      >
-      <button type="submit" class="btn btn-modal" disabled={submitting}>
-        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
-        {MESSAGES.BTN_SAVE}
-      </button>
-    </div>
-  </form>
-</div>
-
-<!-- Delete Modal Step 1 -->
-<div
-  id="delete-department-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showDeleteModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="delete-modal-title"
-  tabindex="-1"
-  onclick={handleDeleteOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeDeleteModalFn()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="ds-modal ds-modal--sm" onclick={(e) => e.stopPropagation()}>
-    <div class="ds-modal__header">
-      <h3 class="ds-modal__title" id="delete-modal-title">
-        <i class="fas fa-trash-alt text-red-500 mr-2"></i>
-        {MESSAGES.DELETE_TITLE}
-      </h3>
-      <button
-        type="button"
-        class="ds-modal__close"
-        aria-label="Schließen"
-        onclick={closeDeleteModalFn}
-      >
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="ds-modal__body">
-      <p class="text-[var(--color-text-secondary)]">
-        {MESSAGES.DELETE_QUESTION}
-      </p>
-    </div>
-    <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={closeDeleteModalFn}
-        >{MESSAGES.BTN_CANCEL}</button
-      >
-      <button type="button" class="btn btn-danger" onclick={proceedToDeleteConfirm}
-        >{MESSAGES.BTN_DELETE}</button
-      >
-    </div>
-  </div>
-</div>
-
-<!-- Delete Modal Step 2: Final Confirmation -->
-<div
-  id="delete-department-confirm-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showDeleteConfirmModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="delete-confirm-title"
-  tabindex="-1"
-  onclick={handleDeleteConfirmOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeDeleteConfirmModal()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="confirm-modal confirm-modal--danger" onclick={(e) => e.stopPropagation()}>
-    <div class="confirm-modal__icon">
-      <i class="fas fa-exclamation-triangle"></i>
-    </div>
-    <h3 class="confirm-modal__title" id="delete-confirm-title">{MESSAGES.DELETE_CONFIRM_TITLE}</h3>
-    <p class="confirm-modal__message">
-      <strong>ACHTUNG:</strong>
-      {MESSAGES.DELETE_CONFIRM_WARNING}
-      <br /><br />
-      {MESSAGES.DELETE_CONFIRM_MESSAGE}
-    </p>
-    <div class="confirm-modal__actions">
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick={closeDeleteConfirmModal}>{MESSAGES.BTN_CANCEL}</button
-      >
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--danger"
-        onclick={deleteDepartment}
-      >
-        {MESSAGES.BTN_DELETE_FINAL}
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Force Delete Warning Modal -->
-<div
-  id="force-delete-warning-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showForceDeleteModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="force-delete-title"
-  tabindex="-1"
-  onclick={handleForceDeleteOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeForceDeleteModalFn()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="confirm-modal confirm-modal--warning" onclick={(e) => e.stopPropagation()}>
-    <div class="confirm-modal__icon">
-      <i class="fas fa-exclamation-triangle"></i>
-    </div>
-    <h3 class="confirm-modal__title" id="force-delete-title">{MESSAGES.FORCE_DELETE_TITLE}</h3>
-    <p class="confirm-modal__message">
-      {forceDeleteMessage}
-    </p>
-    <div class="confirm-modal__actions">
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick={closeForceDeleteModalFn}>{MESSAGES.BTN_CANCEL}</button
-      >
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--confirm"
-        onclick={forceDeleteDepartment}
-      >
-        {MESSAGES.DELETE_TITLE}
-      </button>
-    </div>
-  </div>
-</div>
+<!-- Delete Modals -->
+<DeleteModals
+  {showDeleteModal}
+  {showDeleteConfirmModal}
+  {showForceDeleteModal}
+  {forceDeleteMessage}
+  onCloseDelete={closeDeleteModalFn}
+  onCloseDeleteConfirm={closeDeleteConfirmModal}
+  onCloseForceDelete={closeForceDeleteModalFn}
+  onProceedToConfirm={proceedToDeleteConfirm}
+  onConfirmDelete={deleteDepartment}
+  onForceDelete={forceDeleteDepartment}
+/>

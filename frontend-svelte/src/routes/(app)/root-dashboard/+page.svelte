@@ -1,19 +1,20 @@
-<script>
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { base, resolve } from '$app/paths';
+<script lang="ts">
+  /**
+   * Root Dashboard - Page Component
+   * @module root-dashboard/+page
+   *
+   * SSR: Data loaded in +page.server.ts (no onMount fetching)
+   */
+  import { base } from '$app/paths';
+  import { invalidateAll } from '$app/navigation';
   import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
+  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/root-dashboard.css';
 
   // Module imports
-  import {
-    loadDashboardData,
-    loadActivityLogs,
-    checkEmployeeNumber,
-    saveEmployeeNumber as saveEmployeeNumberApi,
-  } from './_lib/api';
+  import { saveEmployeeNumber as saveEmployeeNumberApi } from './_lib/api';
   import {
     getActionLabel,
     getActionBadgeClass,
@@ -24,59 +25,35 @@
   } from './_lib/utils';
   import { EMPLOYEE_NUMBER, MESSAGES } from './_lib/constants';
 
-  /** @typedef {import('./_lib/types').DashboardData} DashboardData */
-  /** @typedef {import('./_lib/types').ActivityLog} ActivityLog */
-  /** @typedef {import('./_lib/types').UserData} UserData */
-
   // =============================================================================
-  // SVELTE 5 RUNES - State
+  // SSR DATA - Loaded server-side in +page.server.ts
+  // Data is INSTANTLY available - no loading states for initial render!
   // =============================================================================
 
-  // Dashboard Data State
-  /** @type {DashboardData | null} */
-  let dashboardData = $state(null);
-  let loading = $state(true);
-  /** @type {string | null} */
-  let error = $state(null);
+  /** Props from server load function */
+  const { data }: { data: PageData } = $props();
 
-  // Activity Logs State
-  /** @type {ActivityLog[]} */
-  let activityLogs = $state([]);
-  let logsLoading = $state(true);
+  // SSR data with safe fallbacks
+  const stats = $derived(data?.stats ?? { adminCount: 0, employeeCount: 0, totalUsers: 0 });
+  const activityLogs = $derived(data?.activityLogs ?? []);
 
-  // Employee Number Modal State
+  // Employee Number Modal State (initialized from SSR, can change client-side)
   let showEmployeeModal = $state(false);
   let employeeNumberInput = $state('');
   let employeeNumberSaving = $state(false);
 
-  // =============================================================================
-  // API HANDLERS
-  // =============================================================================
-
-  async function fetchDashboardData() {
-    const result = await loadDashboardData();
-
-    if (result.unauthorized) {
-      goto(resolve('/login'));
-      return;
+  // Sync SSR showEmployeeModal to local state on first render
+  $effect(() => {
+    if (data?.showEmployeeModal) {
+      showEmployeeModal = data.showEmployeeModal;
     }
+  });
 
-    dashboardData = result.data;
-    error = result.error;
-    loading = false;
-  }
+  // =============================================================================
+  // API HANDLERS (Client-side only - for form submissions)
+  // =============================================================================
 
-  async function fetchActivityLogs() {
-    activityLogs = await loadActivityLogs();
-    logsLoading = false;
-  }
-
-  async function fetchEmployeeNumber() {
-    const result = await checkEmployeeNumber();
-    showEmployeeModal = result.showModal;
-  }
-
-  async function saveEmployeeNumber() {
+  async function saveEmployeeNumber(): Promise<void> {
     const trimmed = employeeNumberInput.trim();
     if (!trimmed) {
       showWarningAlert(MESSAGES.employeeNumberRequired);
@@ -90,6 +67,8 @@
     if (result.success) {
       showEmployeeModal = false;
       employeeNumberInput = '';
+      // Level 3: Refresh SSR data after mutation
+      await invalidateAll();
     } else if (result.error) {
       showErrorAlert(result.error);
     }
@@ -101,34 +80,16 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  /**
-   * Handle employee number input (filter invalid chars)
-   * @param {Event} e
-   */
-  function handleEmployeeNumberInput(e) {
-    const target = /** @type {HTMLInputElement} */ (e.target);
+  function handleEmployeeNumberInput(e: Event): void {
+    const target = e.target as HTMLInputElement;
     target.value = filterEmployeeNumberInput(target.value);
     employeeNumberInput = target.value;
   }
 
-  /**
-   * Handle employee number form submit
-   * @param {Event} e
-   */
-  function handleEmployeeNumberSubmit(e) {
+  function handleEmployeeNumberSubmit(e: Event): void {
     e.preventDefault();
-    saveEmployeeNumber();
+    void saveEmployeeNumber();
   }
-
-  // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  onMount(() => {
-    fetchDashboardData();
-    fetchActivityLogs();
-    fetchEmployeeNumber();
-  });
 </script>
 
 <svelte:head>
@@ -187,54 +148,31 @@
 
 <!-- Page Content (Layout provides <main> wrapper) -->
 <div class="container">
-  <!-- Dashboard Data Container -->
+  <!-- Dashboard Data Container - SSR: Data instantly available -->
   <div id="dashboard-data">
-    {#if loading}
-      <div class="stats-grid">
-        {#each [1, 2, 3] as i (i)}
-          <div class="card-stat">
-            <div class="card-stat__icon">
-              <i class="fas fa-spinner fa-spin"></i>
-            </div>
-            <div class="card-stat__value">--</div>
-            <div class="card-stat__label">{MESSAGES.loading}</div>
-          </div>
-        {/each}
+    <div class="stats-grid">
+      <div class="card-stat">
+        <div class="card-stat__icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <div class="card-stat__value">{stats.adminCount}</div>
+        <div class="card-stat__label">Admins</div>
       </div>
-    {:else if error}
-      <div class="alert alert--error">
-        <span class="alert__icon">
-          <i class="fas fa-exclamation-circle"></i>
-        </span>
-        <div class="alert__content">
-          <div class="alert__message">{error}</div>
+      <div class="card-stat">
+        <div class="card-stat__icon">
+          <i class="fas fa-users"></i>
         </div>
+        <div class="card-stat__value">{stats.employeeCount}</div>
+        <div class="card-stat__label">Mitarbeiter</div>
       </div>
-    {:else if dashboardData}
-      <div class="stats-grid">
-        <div class="card-stat">
-          <div class="card-stat__icon">
-            <i class="fas fa-user-shield"></i>
-          </div>
-          <div class="card-stat__value">{dashboardData.adminCount}</div>
-          <div class="card-stat__label">Admins</div>
+      <div class="card-stat">
+        <div class="card-stat__icon">
+          <i class="fas fa-user-friends"></i>
         </div>
-        <div class="card-stat">
-          <div class="card-stat__icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="card-stat__value">{dashboardData.employeeCount}</div>
-          <div class="card-stat__label">Mitarbeiter</div>
-        </div>
-        <div class="card-stat">
-          <div class="card-stat__icon">
-            <i class="fas fa-user-friends"></i>
-          </div>
-          <div class="card-stat__value">{dashboardData.totalUsers}</div>
-          <div class="card-stat__label">Gesamte Benutzer</div>
-        </div>
+        <div class="card-stat__value">{stats.totalUsers}</div>
+        <div class="card-stat__label">Gesamte Benutzer</div>
       </div>
-    {/if}
+    </div>
   </div>
 
   <!-- Activity Logs Card with Data Table (Design System) -->
@@ -263,14 +201,7 @@
             </tr>
           </thead>
           <tbody id="activity-logs">
-            {#if logsLoading}
-              <tr>
-                <td colspan="4" class="text-center py-8">
-                  <i class="fas fa-spinner fa-spin mr-2"></i>
-                  {MESSAGES.loading}
-                </td>
-              </tr>
-            {:else if activityLogs.length === 0}
+            {#if activityLogs.length === 0}
               <tr>
                 <td colspan="4" class="text-center text-gray-400 py-8">{MESSAGES.noActivities}</td>
               </tr>

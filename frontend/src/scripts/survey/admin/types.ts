@@ -35,6 +35,12 @@ export interface WindowWithExtensions extends Window {
 // ============================================
 
 /**
+ * Survey ID type - supports both numeric IDs and UUIDs
+ * Backend now uses UUIDv7 for external API calls (security)
+ */
+export type SurveyId = string | number;
+
+/**
  * Question option from API response (loaded from survey_question_options table)
  * Contains full database fields transformed to camelCase
  */
@@ -106,18 +112,15 @@ export interface SurveyTemplate {
 export interface Department {
   id: number;
   name: string;
-  member_count?: number;
   memberCount?: number;
-  employee_count?: number;
   employeeCount?: number;
-  can_read?: boolean;
-  can_write?: boolean;
+  canRead?: boolean;
+  canWrite?: boolean;
 }
 
 export interface Team {
   id: number;
   name: string;
-  member_count?: number;
   memberCount?: number;
 }
 

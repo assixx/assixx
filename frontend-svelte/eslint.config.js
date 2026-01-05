@@ -82,4 +82,23 @@ export default ts.config(
       'svelte/require-each-key': 'error',
     },
   },
+
+  // =============================================================================
+  // Svelte Component Size Limits
+  // Best Practice: Svelte components should be max 300-500 lines
+  // See: docs/LONG-FILES-RANKING.md for current violations
+  // =============================================================================
+  {
+    files: ['**/*.svelte'],
+    rules: {
+      'max-lines': [
+        'warn',
+        {
+          max: 700,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+    },
+  },
 );

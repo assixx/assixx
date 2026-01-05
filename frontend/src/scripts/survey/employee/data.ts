@@ -3,7 +3,7 @@
  * Handles all API calls for employee surveys
  */
 
-import type { Survey, ResponseCheck } from './types';
+import type { Survey, ResponseCheck, SurveyResponse } from './types';
 
 /**
  * API v2 Response wrapper
@@ -44,6 +44,7 @@ export async function loadSurveys(): Promise<Survey[]> {
 
 /**
  * Check if user has already responded to a survey
+ * API returns SurveyResponse directly (or null if not responded)
  */
 export async function checkUserResponse(surveyId: number): Promise<ResponseCheck> {
   try {
@@ -56,9 +57,16 @@ export async function checkUserResponse(surveyId: number): Promise<ResponseCheck
     });
 
     if (response.ok) {
-      const result = (await response.json()) as ApiResponse<ResponseCheck>;
+      const result = (await response.json()) as ApiResponse<SurveyResponse | null>;
       console.info(`[SurveyEmployee] Response check for survey ${surveyId}:`, result.data);
-      return result.data;
+
+      // API returns SurveyResponse directly, not ResponseCheck wrapper
+      // If result.data has 'id' property, user has responded
+      if (result.data !== null && typeof result.data === 'object' && 'id' in result.data) {
+        return { responded: true, response: result.data };
+      }
+
+      return { responded: false };
     } else {
       console.error(`[SurveyEmployee] Failed to check response for survey ${surveyId}:`, response.status);
     }
@@ -91,6 +99,7 @@ export async function fetchSurveyDetails(surveyId: number): Promise<Survey> {
 
 /**
  * Fetch user's response to a survey
+ * API returns SurveyResponse directly (or null if not responded)
  */
 export async function fetchUserResponse(surveyId: number): Promise<ResponseCheck | null> {
   const endpoint = `/api/v2/surveys/${surveyId}/my-response`;
@@ -105,8 +114,14 @@ export async function fetchUserResponse(surveyId: number): Promise<ResponseCheck
     return null;
   }
 
-  const data = (await response.json()) as ApiResponse<ResponseCheck>;
-  return data.data;
+  const result = (await response.json()) as ApiResponse<SurveyResponse | null>;
+
+  // API returns SurveyResponse directly, not ResponseCheck wrapper
+  if (result.data !== null && typeof result.data === 'object' && 'id' in result.data) {
+    return { responded: true, response: result.data };
+  }
+
+  return { responded: false };
 }
 
 /**

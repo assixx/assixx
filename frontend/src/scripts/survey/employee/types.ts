@@ -7,10 +7,10 @@ export interface Survey {
   title: string | BufferData;
   description: string | BufferData | null;
   status: 'draft' | 'active' | 'closed' | 'archived';
-  is_mandatory: boolean | number | string;
-  is_anonymous: boolean | number | string;
-  start_date: string | null;
-  end_date: string | null;
+  isMandatory: boolean | number | string;
+  isAnonymous: boolean | number | string;
+  startDate: string | null;
+  endDate: string | null;
   questions: Question[];
 }
 
@@ -18,8 +18,7 @@ export interface Question {
   id: number;
   questionText: string | BufferData;
   questionType: QuestionType;
-  is_required: boolean | number | string;
-  isRequired?: boolean; // Alternative property name
+  isRequired: boolean | number | string;
   options?: QuestionOption[];
 }
 
@@ -53,9 +52,9 @@ export interface ResponseCheck {
 
 export interface SurveyResponse {
   id: number;
-  survey_id: number;
-  user_id: number;
-  completed_at: string;
+  surveyId: number;
+  userId: number;
+  completedAt: string;
   answers: ResponseAnswer[];
 }
 

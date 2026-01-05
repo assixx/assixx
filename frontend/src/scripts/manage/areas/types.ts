@@ -12,19 +12,19 @@ export interface Area {
   id: number;
   name: string;
   description?: string | null;
-  area_lead_id?: number | null;
-  area_lead_name?: string | null;
+  areaLeadId?: number | null;
+  areaLeadName?: string | null;
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number | null;
   address?: string | null;
-  is_active: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
-  employee_count?: number;
-  department_count?: number;
-  department_names?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  tenant_id?: number;
-  created_by?: number;
+  isActive: 0 | 1 | 3 | 4; // Status: 0=inactive, 1=active, 3=archived, 4=deleted
+  employeeCount?: number | string;
+  departmentCount?: number | string;
+  departmentNames?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  tenantId?: number;
+  createdBy?: number;
 }
 
 /**
@@ -46,7 +46,7 @@ export type AreaStatusFilter = 'all' | 'active' | 'inactive' | 'archived';
 export interface Department {
   id: number;
   name: string;
-  area_id?: number | null;
+  areaId?: number | null;
 }
 
 export interface WindowWithAreaHandlers extends Window {

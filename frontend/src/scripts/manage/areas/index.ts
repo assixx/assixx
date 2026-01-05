@@ -290,8 +290,8 @@ class AreasManager {
       option.value = String(dept.id);
       option.textContent = dept.name;
       // Store current area_id for reference
-      if (dept.area_id !== null && dept.area_id !== undefined) {
-        option.dataset['currentAreaId'] = String(dept.area_id);
+      if (dept.areaId !== null && dept.areaId !== undefined) {
+        option.dataset['currentAreaId'] = String(dept.areaId);
       }
       select.appendChild(option);
     });
@@ -491,20 +491,20 @@ class AreasManager {
     switch (status) {
       case 'active':
         // Show only active (is_active === 1)
-        filtered = this.areas.filter((area) => area.is_active === 1);
+        filtered = this.areas.filter((area) => area.isActive === 1);
         break;
       case 'inactive':
         // Show only inactive (is_active === 0)
-        filtered = this.areas.filter((area) => area.is_active === 0);
+        filtered = this.areas.filter((area) => area.isActive === 0);
         break;
       case 'archived':
         // Show only archived (is_active === 3)
-        filtered = this.areas.filter((area) => area.is_active === 3);
+        filtered = this.areas.filter((area) => area.isActive === 3);
         break;
       case 'all':
       default:
         // Show all except deleted (is_active !== 4)
-        filtered = this.areas.filter((area) => area.is_active !== 4);
+        filtered = this.areas.filter((area) => area.isActive !== 4);
     }
 
     console.log('[AREAS] Filtered areas count:', filtered.length);

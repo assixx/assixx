@@ -236,7 +236,7 @@
   /* Container Utilities */
   @media (width >= 96rem) {
     .container {
-      max-width: 106rem;
+      max-width: 113rem;
     }
   }
 

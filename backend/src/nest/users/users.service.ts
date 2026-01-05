@@ -70,6 +70,21 @@ interface UserDepartmentRow {
 }
 
 /**
+ * User team assignment row
+ * INHERITANCE-FIX: Includes department and area info from team chain
+ */
+interface UserTeamRow {
+  user_id: number;
+  team_id: number;
+  team_name: string;
+  // Inheritance chain: Team → Department → Area
+  team_department_id: number | null;
+  team_department_name: string | null;
+  team_area_id: number | null;
+  team_area_name: string | null;
+}
+
+/**
  * Pagination result
  */
 export interface PaginatedResult<T> {
@@ -93,6 +108,7 @@ export interface TenantInfo {
 /**
  * Safe user response - API format (camelCase)
  * This is what gets returned to the frontend
+ * isActive status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 export interface SafeUserResponse {
   id: number;
@@ -102,7 +118,7 @@ export interface SafeUserResponse {
   username: string;
   firstName: string | null;
   lastName: string | null;
-  isActive: boolean;
+  isActive: number;
   lastLogin: string | null;
   createdAt: string;
   updatedAt: string | null;
@@ -120,6 +136,13 @@ export interface SafeUserResponse {
   hasFullAccess: boolean | null;
   departmentIds?: number[];
   departmentNames?: string[];
+  teamIds?: number[];
+  teamNames?: string[];
+  // INHERITANCE-FIX: Team → Department → Area chain (first team's chain)
+  teamDepartmentId?: number | null;
+  teamDepartmentName?: string | null;
+  teamAreaId?: number | null;
+  teamAreaName?: string | null;
   tenant?: TenantInfo;
 }
 
@@ -156,32 +179,8 @@ export class UsersService {
     const limit = query.limit;
     const offset = (page - 1) * limit;
 
-    // Build WHERE clause
-    const conditions: string[] = ['tenant_id = $1'];
-    const params: unknown[] = [tenantId];
-    let paramIndex = 2;
-
-    if (query.role !== undefined) {
-      conditions.push(`role = $${paramIndex}`);
-      params.push(query.role);
-      paramIndex++;
-    }
-
-    if (query.isActive !== undefined) {
-      conditions.push(`is_active = $${paramIndex}`);
-      params.push(query.isActive);
-      paramIndex++;
-    }
-
-    if (query.search !== undefined && query.search !== '') {
-      conditions.push(
-        `(first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`,
-      );
-      params.push(`%${query.search}%`);
-      paramIndex++;
-    }
-
-    const whereClause = conditions.join(' AND ');
+    // Build WHERE clause using helper
+    const { whereClause, params, paramIndex } = this.buildUserListWhereClause(tenantId, query);
 
     // Get total count
     const countResult = await this.databaseService.query<{ count: string }>(
@@ -209,8 +208,21 @@ export class UsersService {
       [...params, limit, offset],
     );
 
+    // Convert to responses
+    const responses = users.map((user: UserRow) => this.toSafeUserResponse(user));
+
+    // Fetch team assignments in batch (single query for all users)
+    const userIds = users.map((u: UserRow) => u.id);
+    const teamsByUser = await this.getUserTeamsBatch(userIds, tenantId);
+
+    // Add team info to each response
+    for (const response of responses) {
+      const teams = teamsByUser.get(response.id) ?? [];
+      this.addTeamInfo(response, teams);
+    }
+
     return {
-      data: users.map((user: UserRow) => this.toSafeUserResponse(user)),
+      data: responses,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -229,14 +241,16 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // Get department assignments and tenant info
-    const [departments, tenantInfo] = await Promise.all([
+    // Get department, team assignments and tenant info
+    const [departments, teams, tenantInfo] = await Promise.all([
       this.getUserDepartments(userId, tenantId),
+      this.getUserTeams(userId, tenantId),
       this.getTenantInfo(tenantId),
     ]);
 
     const response = this.toSafeUserResponse(user);
     this.addDepartmentInfo(response, departments);
+    this.addTeamInfo(response, teams);
 
     // Add tenant info if available
     if (tenantInfo !== null) {
@@ -418,7 +432,8 @@ export class UsersService {
 
     if (data['isActive'] !== undefined) {
       updates.push(`is_active = $${paramIndex}`);
-      params.push(data['isActive'] === true ? 1 : 0);
+      // isActive is now a number (0, 1, 3) - pass through directly
+      params.push(data['isActive']);
       paramIndex++;
     }
 
@@ -660,6 +675,40 @@ export class UsersService {
   // ============================================
 
   /**
+   * Build WHERE clause and params for user list query
+   */
+  private buildUserListWhereClause(
+    tenantId: number,
+    query: ListUsersQueryDto,
+  ): { whereClause: string; params: unknown[]; paramIndex: number } {
+    const conditions: string[] = ['tenant_id = $1'];
+    const params: unknown[] = [tenantId];
+    let paramIndex = 2;
+
+    if (query.role !== undefined) {
+      conditions.push(`role = $${paramIndex}`);
+      params.push(query.role);
+      paramIndex++;
+    }
+
+    if (query.isActive !== undefined) {
+      conditions.push(`is_active = $${paramIndex}`);
+      params.push(query.isActive);
+      paramIndex++;
+    }
+
+    if (query.search !== undefined && query.search !== '') {
+      conditions.push(
+        `(first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`,
+      );
+      params.push(`%${query.search}%`);
+      paramIndex++;
+    }
+
+    return { whereClause: conditions.join(' AND '), params, paramIndex };
+  }
+
+  /**
    * Find user by ID
    */
   private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
@@ -701,6 +750,72 @@ export class UsersService {
        WHERE ud.user_id = $1 AND d.tenant_id = $2`,
       [userId, tenantId],
     );
+  }
+
+  /**
+   * Get user team assignments
+   * INHERITANCE-FIX: Includes department and area info from team chain
+   */
+  private async getUserTeams(userId: number, tenantId: number): Promise<UserTeamRow[]> {
+    return await this.databaseService.query<UserTeamRow>(
+      `SELECT
+         ut.user_id,
+         ut.team_id,
+         t.name as team_name,
+         t.department_id as team_department_id,
+         d.name as team_department_name,
+         d.area_id as team_area_id,
+         a.name as team_area_name
+       FROM user_teams ut
+       JOIN teams t ON ut.team_id = t.id
+       LEFT JOIN departments d ON t.department_id = d.id
+       LEFT JOIN areas a ON d.area_id = a.id
+       WHERE ut.user_id = $1 AND ut.tenant_id = $2`,
+      [userId, tenantId],
+    );
+  }
+
+  /**
+   * Get team assignments for multiple users (batch query for efficiency)
+   * INHERITANCE-FIX: Includes department and area info from team chain
+   */
+  private async getUserTeamsBatch(
+    userIds: number[],
+    tenantId: number,
+  ): Promise<Map<number, UserTeamRow[]>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+
+    // Build parameterized query for user IDs
+    // INHERITANCE-FIX: JOIN departments and areas for inheritance chain
+    const placeholders = userIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+    const rows = await this.databaseService.query<UserTeamRow>(
+      `SELECT
+         ut.user_id,
+         ut.team_id,
+         t.name as team_name,
+         t.department_id as team_department_id,
+         d.name as team_department_name,
+         d.area_id as team_area_id,
+         a.name as team_area_name
+       FROM user_teams ut
+       JOIN teams t ON ut.team_id = t.id
+       LEFT JOIN departments d ON t.department_id = d.id
+       LEFT JOIN areas a ON d.area_id = a.id
+       WHERE ut.user_id IN (${placeholders}) AND ut.tenant_id = $1`,
+      [tenantId, ...userIds],
+    );
+
+    // Group by user_id
+    const teamsByUser = new Map<number, UserTeamRow[]>();
+    for (const row of rows) {
+      const existing = teamsByUser.get(row.user_id) ?? [];
+      existing.push(row);
+      teamsByUser.set(row.user_id, existing);
+    }
+
+    return teamsByUser;
   }
 
   /**
@@ -769,6 +884,24 @@ export class UsersService {
   private addDepartmentInfo(response: SafeUserResponse, departments: UserDepartmentRow[]): void {
     response.departmentIds = departments.map((d: UserDepartmentRow) => d.department_id);
     response.departmentNames = departments.map((d: UserDepartmentRow) => d.department_name);
+  }
+
+  /**
+   * Add team info to response
+   * INHERITANCE-FIX: Includes department and area info from team chain
+   */
+  private addTeamInfo(response: SafeUserResponse, teams: UserTeamRow[]): void {
+    response.teamIds = teams.map((t: UserTeamRow) => t.team_id);
+    response.teamNames = teams.map((t: UserTeamRow) => t.team_name);
+
+    // INHERITANCE-FIX: Add inherited department/area from first (primary) team
+    const primaryTeam = teams[0];
+    if (primaryTeam !== undefined) {
+      response.teamDepartmentId = primaryTeam.team_department_id;
+      response.teamDepartmentName = primaryTeam.team_department_name;
+      response.teamAreaId = primaryTeam.team_area_id;
+      response.teamAreaName = primaryTeam.team_area_name;
+    }
   }
 
   /**

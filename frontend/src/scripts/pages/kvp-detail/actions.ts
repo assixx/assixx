@@ -263,8 +263,9 @@ export class KvpDetailActions {
    */
   private async performStatusUpdate(updateData: { status: string; rejectionReason?: string }): Promise<void> {
     try {
-      const data = await this.apiClient.put<{ suggestion: KvpSuggestion }>(`/kvp/${this.suggestionId}`, updateData);
-      this.suggestion = data.suggestion;
+      // API client returns the suggestion directly (already unwrapped from { success, data } envelope)
+      const suggestion = await this.apiClient.put<KvpSuggestion>(`/kvp/${this.suggestionId}`, updateData);
+      this.suggestion = suggestion;
       this.renderer.setSuggestion(this.suggestion);
     } catch (error: unknown) {
       this.throwStatusUpdateError(error);

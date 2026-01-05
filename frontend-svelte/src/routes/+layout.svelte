@@ -29,7 +29,7 @@
   <meta name="theme-color" content="#121212" />
 </svelte:head>
 
-<!-- Global Toast Container (1:1 like legacy notification-container) -->
+<!-- Global Toast Container (1:1 like legacy #) -->
 <ToastContainer />
 
 {@render children()}

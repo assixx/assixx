@@ -1,8 +1,17 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  /**
+   * Logs Page - System Activity Logs
+   * SSR: Initial data loaded in +page.server.ts
+   * Level 3 Hybrid: SSR initial + client-side pagination/filtering
+   */
+  import { invalidateAll } from '$app/navigation';
+  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/logs.css';
+
+  // SSR Data
+  const { data }: { data: PageData } = $props();
 
   // _lib/ imports
   import type { LogEntry, PaginationInfo } from './_lib/types';
@@ -26,21 +35,43 @@
   } from './_lib/utils';
 
   // =============================================================================
-  // STATE
+  // SSR DATA (initial values from server)
   // =============================================================================
 
-  // Logs data
+  const ssrLogs = $derived(data?.logs ?? []);
+  const ssrPagination = $derived(
+    data?.pagination ?? {
+      limit: LOGS_PER_PAGE,
+      offset: 0,
+      total: 0,
+      hasMore: false,
+    },
+  );
+
+  // =============================================================================
+  // HYBRID STATE - SSR initial, client updates for pagination/filtering
+  // =============================================================================
+
+  // Logs data - starts from SSR, updated by client-side fetches
   let logs = $state<LogEntry[]>([]);
-  let loading = $state(true);
+  let loading = $state(false);
   let error = $state('');
 
-  // Pagination
+  // Pagination - starts from SSR, updated by client-side navigation
   let currentOffset = $state(0);
   let pagination = $state<PaginationInfo>({
     limit: LOGS_PER_PAGE,
     offset: 0,
     total: 0,
     hasMore: false,
+  });
+
+  // Initialize from SSR on first render
+  $effect(() => {
+    if (logs.length === 0 && ssrLogs.length > 0) {
+      logs = ssrLogs;
+      pagination = ssrPagination;
+    }
   });
 
   // Filters
@@ -127,6 +158,7 @@
       closeDeleteModal();
       filtersApplied = false;
       currentOffset = 0;
+      await invalidateAll();
       await loadLogs();
     } catch (err) {
       console.error('Error deleting logs:', err);
@@ -220,21 +252,10 @@
   });
 
   // =============================================================================
-  // LIFECYCLE
+  // LIFECYCLE - SSR: Auth checked server-side, data already loaded
   // =============================================================================
 
-  onMount(() => {
-    // Check auth (root only)
-    const token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
-
-    if (!token || userRole !== 'root') {
-      window.location.href = '/login';
-      return;
-    }
-
-    loadLogs();
-  });
+  // No onMount needed - SSR provides initial data and handles auth
 </script>
 
 <div class="container">

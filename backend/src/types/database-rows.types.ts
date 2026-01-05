@@ -654,7 +654,6 @@ export interface ShiftsRow extends RowDataPacket {
   area_id: number | null;
   plan_id: number | null;
   user_id: number;
-  template_id: number | null;
   date: Date | string;
   start_time: Date | string;
   end_time: Date | string;

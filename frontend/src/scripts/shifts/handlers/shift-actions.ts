@@ -9,24 +9,21 @@ import type { Employee } from '../types';
 import { showInfo } from '../../auth/index';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import {
-  getSelectedContext,
   getEmployees,
   getWeeklyShifts,
   getShiftDetails,
   isAdmin as getIsAdmin,
-  isEditMode as getIsEditMode,
   getCurrentPlanId,
   getMemberNameById,
   setIsEditMode,
+  isEditMode as getIsEditMode,
   getRotationHistoryMap,
   addPendingRotationDeletion,
 } from '../state';
-import { assignShift } from '../api';
 import { updateShiftCellContent, getShiftName } from '../ui';
 import { CSS_SELECTORS } from '../constants';
 import { getShiftDataFromCell } from '../drag-drop';
 import { validateEmployeeAvailability, checkDuplicateShiftAssignment } from '../validation';
-import { getShiftTimeRange } from '../utils';
 import { getShiftEmployeesForDate, addEmployeeToShift, removeEmployeeFromShift } from '../data-processing';
 import { performAutofill } from '../autofill';
 
@@ -71,10 +68,10 @@ export function validateShiftAssignmentDrop(employeeId: number, date: string, sh
 
 /**
  * Handle shift drop
- * Updates local state immediately for instant visual feedback,
- * then syncs with server
+ * Updates local state immediately for instant visual feedback.
+ * API sync happens when user clicks "Schichtplan speichern"
  */
-export async function handleShiftDrop(employeeId: number, cell: HTMLElement): Promise<void> {
+export function handleShiftDrop(employeeId: number, cell: HTMLElement): void {
   const shiftData = getShiftDataFromCell(cell);
   const date = shiftData.date;
   const shiftType = shiftData.shift ?? shiftData.shiftType;
@@ -90,59 +87,37 @@ export async function handleShiftDrop(employeeId: number, cell: HTMLElement): Pr
     return;
   }
 
-  const context = getSelectedContext();
-  const timeRange = getShiftTimeRange(shiftType);
+  // === IMMEDIATE LOCAL STATE UPDATE (NO API call - save happens on "Schichtplan speichern") ===
+  addEmployeeToShift(date, shiftType, employeeId, employee);
 
-  try {
-    await assignShift({
-      userId: employeeId,
+  // === IMMEDIATE VISUAL UPDATE OF CELL ===
+  const assignmentDiv = cell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
+  if (assignmentDiv !== null) {
+    const weeklyShifts = getWeeklyShifts();
+    const dayShifts = weeklyShifts.get(date);
+    const updatedEmployees = dayShifts?.get(shiftType) ?? [employeeId];
+    updateShiftCellContent(
+      assignmentDiv,
+      updatedEmployees,
+      getEmployees(),
+      getShiftDetails(),
       date,
-      type: shiftType,
-      departmentId: context.departmentId,
-      teamId: context.teamId,
-      machineId: context.machineId,
-      startTime: timeRange.start,
-      endTime: timeRange.end,
-    });
+      shiftType,
+      getIsAdmin(),
+      true, // isEditMode - after drop we are in edit mode
+      getCurrentPlanId(),
+    );
+  }
 
-    // === IMMEDIATE LOCAL STATE UPDATE ===
-    addEmployeeToShift(date, shiftType, employeeId, employee);
+  showSuccessAlert(`${getMemberNameById(employeeId)} zur ${getShiftName(shiftType)} hinzugefügt`);
 
-    // === IMMEDIATE VISUAL UPDATE OF CELL ===
-    const assignmentDiv = cell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
-    if (assignmentDiv !== null) {
-      const weeklyShifts = getWeeklyShifts();
-      const dayShifts = weeklyShifts.get(date);
-      const updatedEmployees = dayShifts?.get(shiftType) ?? [employeeId];
-      updateShiftCellContent(
-        assignmentDiv,
-        updatedEmployees,
-        getEmployees(),
-        getShiftDetails(),
-        date,
-        shiftType,
-        getIsAdmin(),
-        true, // isEditMode - after drop we are in edit mode
-        getCurrentPlanId(),
-      );
-    }
+  // Mark as edit mode
+  setIsEditMode(true);
 
-    showSuccessAlert(`${getMemberNameById(employeeId)} zur ${getShiftName(shiftType)} hinzugefügt`);
-
-    // Mark as edit mode
-    setIsEditMode(true);
-
-    // Trigger autofill if enabled (fills the rest of the week with same shift)
-    const dayName = cell.dataset['day'];
-    if (dayName !== undefined) {
-      performAutofill(employeeId, dayName, shiftType);
-    }
-
-    // No renderCurrentWeek() needed - state is already updated locally
-    // Server sync happens on next load or save
-  } catch (error) {
-    console.error('[SHIFTS] Failed to assign shift:', error);
-    showErrorAlert('Fehler beim Zuweisen der Schicht');
+  // Trigger autofill if enabled (fills the rest of the week with same shift)
+  const dayName = cell.dataset['day'];
+  if (dayName !== undefined) {
+    performAutofill(employeeId, dayName, shiftType);
   }
 }
 

@@ -8,6 +8,37 @@ import lodash from 'lodash';
 const camelCase = (str: string): string => lodash.camelCase(str);
 const snakeCase = (str: string): string => lodash.snakeCase(str);
 
+/**
+ * Check if key should be converted to boolean
+ * EXCEPTION: is_active uses multi-state values (0=inactive, 1=active, 3=archived, 4=deleted)
+ */
+function shouldConvertToBoolean(key: string): boolean {
+  if (key === 'is_active') return false;
+  return key.startsWith('is_') || key.startsWith('has_') || key === 'active';
+}
+
+/**
+ * Transform a single value from DB format to API format
+ */
+function transformDbValue(
+  key: string,
+  value: unknown,
+  dbToApiFn: (obj: Record<string, unknown>) => unknown,
+): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (value === null) return null;
+  if (shouldConvertToBoolean(key)) return Boolean(value);
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return dbToApiFn(value as Record<string, unknown>);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item: unknown) =>
+      item != null && typeof item === 'object' ? dbToApiFn(item as Record<string, unknown>) : item,
+    );
+  }
+  return value;
+}
+
 export const fieldMapper = {
   /**
    * Convert database object (snake_case) to API object (camelCase)
@@ -16,42 +47,12 @@ export const fieldMapper = {
     if (dbObject == null) return dbObject;
 
     const result: Record<string, unknown> = {};
+    const boundDbToApi = this.dbToApi.bind(this);
 
     for (const [key, value] of Object.entries(dbObject)) {
       const camelKey = camelCase(key);
-
-      // Handle Date objects
-      if (value instanceof Date) {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = value.toISOString();
-      }
-      // Handle null values
-      else if (value === null) {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = null;
-      }
-      // Handle boolean conversions (PostgreSQL returns 0/1 for smallint)
-      else if (key.startsWith('is_') || key.startsWith('has_') || key === 'active') {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = Boolean(value);
-      }
-      // Recursively handle nested objects
-      else if (value && typeof value === 'object' && !Array.isArray(value)) {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = this.dbToApi(value as Record<string, unknown>);
-      }
-      // Handle arrays
-      else if (Array.isArray(value)) {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = value.map((item: unknown) =>
-          item != null && typeof item === 'object' ?
-            this.dbToApi(item as Record<string, unknown>)
-          : item,
-        );
-      } else {
-        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = value;
-      }
+      // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
+      result[camelKey] = transformDbValue(key, value, boundDbToApi);
     }
 
     return result;

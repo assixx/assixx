@@ -5,6 +5,14 @@
  */
 
 /* ============================================================================
+   @EVENT-CALENDAR CSS VARIABLES (Library uses these)
+   Define here so library picks up our theme colors automatically
+   ============================================================================ */
+:root {
+  --ec-border-color: hsl(0deg 0% 83.5% / 35%); /* Light gray, 35% opacity - more visible */
+}
+
+/* ============================================================================
    @EVENT-CALENDAR BUTTON OVERRIDES
    Match Design System (btn-secondary, sidebar style)
    ============================================================================ */
@@ -15,20 +23,31 @@
   color-scheme: none !important;
 }
 
+/* Remove time grid background lines */
+.ec-time-grid .ec-body .ec-day {
+  background-image: none !important;
+}
+
+/* Calendar main grid - rounded corners */
+.ec-main {
+  overflow: hidden; /* Ensures children respect border-radius */
+  border-radius: var(--radius-xl);
+}
+
 .ec-button {
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
   border-radius: 12px !important;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
 
 .ec-button:hover {
-  background-color: var(--color-icon-primary) !important;
   color: var(--color-black) !important;
+  background-color: var(--color-icon-primary) !important;
 }
 
 .ec-active {
-  background-color: var(--color-icon-primary) !important;
   color: var(--color-black) !important;
+  background-color: var(--color-icon-primary) !important;
 }
 
 /* Button group - rounded corners on edges */
@@ -52,17 +71,17 @@
 
 .ec-toolbar {
   display: flex;
-  align-items: center;
   gap: 20px;
+  align-items: center;
 
   margin-bottom: 0.5em;
   padding: 0.5em 1em;
 }
 
 .ec-title {
-  color: var(--text-primary);
-  font-weight: 500;
   font-size: 1.5em !important;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 /* ============================================================================
@@ -70,36 +89,41 @@
    ============================================================================ */
 
 #calendar {
-  padding: 10px;
   width: 100%;
+  padding: 10px;
 }
 
-/* Grid borders for calendar structure */
-.ec-header,
-.ec-all-day,
-.ec-body,
-.ec-days,
-.ec-day,
-.ec-day-head {
-  border: 1px solid hsl(0deg 0% 83.5% / 24%);
+/* Grid borders - Override border COLOR only, keep library's border-style structure */
+.ec-day-grid .ec-header,
+.ec-day-grid .ec-all-day,
+.ec-day-grid .ec-body,
+.ec-day-grid .ec-days,
+.ec-day-grid .ec-day,
+.ec-day-grid .ec-day-head {
+  border-color: hsl(0deg 0% 83.5% / 35%);
 }
 
 .ec-day {
   position: relative;
-  background-color: transparent;
   color: var(--text-primary);
+  background-color: transparent;
 }
 
-/* Day cells in month view - proper height like original demo */
-.ec-body .ec-day[role='cell'] {
+/* Day cells in month view - proper height like original demo
+   IMPORTANT: Must override library's .ec-day-grid .ec-uniform .ec-day { min-height: 0 }
+   Using higher specificity to win regardless of CSS load order (Dev vs Prod) */
+.ec-day-grid .ec-body .ec-day[role='cell'] {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  min-height: 6em; /* Override library's min-height: 0 */
   min-block-size: 6em; /* 5em is default, 6em for more space */
 }
 
 /* Fullscreen mode: larger day cells */
-.calendar-fullscreen-mode .ec-body .ec-day[role='cell'] {
+.calendar-fullscreen-mode .ec-day-grid .ec-body .ec-day[role='cell'] {
+  min-height: 11em;
   min-block-size: 11em;
 }
 
@@ -109,12 +133,6 @@
 
 .ec-today {
   background-color: rgb(92 185 247 / 12%) !important; /* Light yellow highlight */
-}
-
-.ec-day-head {
-  position: relative !important;
-  color: var(--text-primary);
-  text-align: center;
 }
 
 .ec-other-month {
@@ -132,9 +150,9 @@
 
 .ec-event {
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
   border: none !important;
   border-radius: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .ec-event:hover {
@@ -143,14 +161,14 @@
 
 .ec-event-title {
   padding: 1px 2px;
-  font-weight: 500 !important;
   font-size: 0.85em !important;
+  font-weight: 500 !important;
 }
 
 .ec-event-time {
-  opacity: 80%;
-  font-weight: 400 !important;
   font-size: 0.8em !important;
+  font-weight: 400 !important;
+  opacity: 80%;
 }
 
 /* Event colors by organization level */
@@ -169,6 +187,11 @@
   background-color: #2ecc71 !important;
 }
 
+.ec-event-area {
+  border-color: #1abc9c !important;
+  background-color: #1abc9c !important;
+}
+
 .ec-event-personal {
   border-color: #9b59b6 !important;
   background-color: #9b59b6 !important;
@@ -180,22 +203,19 @@
 
 .shift-indicator {
   display: flex;
-  position: absolute;
-  right: 21px;
-  bottom: 6px;
-  justify-content: center;
   align-items: center;
-  z-index: 10;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
-  border-radius: 4px;
-
-  background: #ffffff0d;
+  justify-content: center;
 
   width: 20px;
   height: 20px;
+  border-radius: 4px;
+  margin-top: 3px;
+
+  font-size: 12px;
   font-weight: 700;
 
-  font-size: 16px;
+  background: #ffffff0d;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
 }
 
 .shift-indicator.shift-F {
@@ -215,14 +235,14 @@
    ============================================================================ */
 
 .upcoming-events {
-  max-height: 300px;
   overflow-y: auto;
+  max-height: 300px;
 }
 
 .event-item {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
   padding: 10px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .event-item:last-child {
@@ -240,31 +260,31 @@
   justify-content: center;
 
   margin-right: 15px;
+  padding: 10px;
   border-radius: var(--radius-xl);
 
-  background-color: var(--background-dark);
-  padding: 10px;
-
   text-align: center;
+
+  background-color: var(--background-dark);
 }
 
 .event-day {
-  color: var(--primary-color);
-  font-weight: 700;
   font-size: 1.5rem;
+  font-weight: 700;
   line-height: 1;
+  color: var(--primary-color);
 }
 
 .event-month {
-  color: var(--text-secondary);
   font-size: 0.8rem;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .event-time {
   margin-top: 5px;
-  color: var(--text-secondary);
   font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .event-details {
@@ -273,16 +293,16 @@
 
 .event-title {
   margin-bottom: 5px;
-  color: var(--text-primary);
-  font-weight: 600;
   font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .event-location {
   display: flex;
   align-items: center;
-  color: var(--text-secondary);
   font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .event-location i {
@@ -293,11 +313,11 @@
   display: inline-block;
 
   margin-top: 5px;
-  border-radius: var(--radius-xl);
   padding: 2px 8px;
-  color: #fff;
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
+  color: #fff;
 }
 
 .event-level-company {
@@ -338,10 +358,10 @@
 }
 
 .legend-color {
-  margin-right: 5px;
-  border-radius: 3px;
   width: 14px;
   height: 14px;
+  margin-right: 5px;
+  border-radius: 3px;
 }
 
 .legend-company {
@@ -370,25 +390,25 @@
 
 #eventDetailContent h3 {
   margin-bottom: 20px;
-  border-bottom: 2px solid rgb(255 255 255 / 10%);
   padding-bottom: 15px;
-  color: var(--primary-color);
-  font-weight: 600;
+  border-bottom: 2px solid rgb(255 255 255 / 10%);
 
   font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
 #eventDetailContent p {
   margin-bottom: 20px;
+  padding: 15px;
   border-left: 3px solid var(--primary-color);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 2%);
-  padding: 15px;
-  color: var(--text-secondary);
-
   font-size: 1rem;
   line-height: 1.6;
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .event-details-grid {
@@ -397,20 +417,20 @@
   gap: 15px;
 
   margin: 20px 0;
+  padding: 24px;
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  padding: 24px;
 }
 
 .detail-item {
   display: flex;
-  align-items: center;
   gap: 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  align-items: center;
 
   padding: 10px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
 }
 
 .detail-item:last-child {
@@ -419,51 +439,51 @@
 
 .detail-item:hover {
   margin: 0 -10px;
+  padding-right: 10px;
+  padding-left: 10px;
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  padding-right: 10px;
-  padding-left: 10px;
 }
 
 .detail-item i {
   flex-shrink: 0;
 
   width: 20px;
-  color: var(--primary-color);
 
   font-size: 1rem;
+  color: var(--primary-color);
   text-align: center;
 }
 
 .detail-item span {
   flex: 1;
-  color: var(--text-primary);
   font-size: 0.95rem;
+  color: var(--text-primary);
 }
 
 /* Attendee List Styling */
 #eventDetailContent h4 {
   display: flex;
-  align-items: center;
   gap: 10px;
+  align-items: center;
 
   margin-top: 30px;
   margin-bottom: 15px;
-  color: var(--text-primary);
-  font-weight: 600;
 
   font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 #eventDetailContent h4::before {
-  border-radius: 2px;
-
-  background: var(--primary-color);
+  content: '';
 
   width: 4px;
   height: 20px;
-  content: '';
+  border-radius: 2px;
+
+  background: var(--primary-color);
 }
 
 .attendee-list {
@@ -475,14 +495,14 @@
 
 .attendee-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 15px;
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
-
-  padding: 10px 15px;
 }
 
 .attendee-item:hover {
@@ -493,12 +513,12 @@
 /* Modal Actions */
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 10px;
+  justify-content: flex-end;
 
   margin-top: 30px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
   padding-top: 20px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 .modal-actions .btn {
@@ -518,28 +538,28 @@
 .calendar-fullscreen-mode #calendarContainer {
   position: fixed !important;
   z-index: 9999 !important;
-  margin: 0 !important;
   inset: 0 !important;
+
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
   border: 0;
   border-radius: 0 !important;
 
   background: none;
-
-  width: 100% !important;
-  height: 100% !important;
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__header {
   position: fixed !important;
+  z-index: 10000 !important;
   top: 0 !important;
   right: 0 !important;
-  z-index: 10000 !important;
+
+  width: auto !important;
+  padding: 1rem !important;
   border: 0 !important;
 
   background: transparent !important;
-  padding: 1rem !important;
-
-  width: auto !important;
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__title {
@@ -555,8 +575,8 @@
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__header .btn {
-  backdrop-filter: blur(10px);
   border: 1px solid rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__header .btn:hover {
@@ -564,8 +584,8 @@
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__body {
-  height: 100vh !important;
   overflow-y: auto;
+  height: 100vh !important;
 }
 
 .calendar-fullscreen-mode #calendar {
@@ -574,8 +594,8 @@
 
 .calendar-fullscreen-mode .ec td,
 .calendar-fullscreen-mode .ec th {
-  vertical-align: top;
   padding-bottom: 65px;
+  vertical-align: top;
 }
 
 .calendar-fullscreen-mode .sidebar,
@@ -588,6 +608,15 @@
 
 .calendar-fullscreen-mode .ec-body {
   width: 100% !important;
+}
+
+/* Modal must appear ABOVE fullscreen calendar AND notification-container (z-index: 1000000) */
+.calendar-fullscreen-mode .modal-overlay {
+  z-index: 1000001 !important;
+}
+
+.calendar-fullscreen-mode .ds-modal {
+  z-index: 1000002 !important;
 }
 
 /* ============================================================================
