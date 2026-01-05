@@ -93,20 +93,24 @@
             <textarea id="surveyDescription" name="description" class="form-field__control" rows="3"></textarea>
           </div>
 
-          <!-- Settings - Design System Form Field -->
+          <!-- Settings - Design System Toggle Switches -->
           <div class="form-field">
             <label class="form-field__label">Einstellungen</label>
-            <div class="flex items-center gap-3 mt-2">
-              <input type="checkbox" id="isAnonymous" name="is_anonymous" class="w-5 h-5 cursor-pointer" />
-              <label for="isAnonymous" class="cursor-pointer">
-                Anonyme Umfrage (Antworten können nicht zu Mitarbeitern zurückverfolgt werden)
+            <div class="mt-3">
+              <label class="toggle-switch toggle-switch--info">
+                <input type="checkbox" class="toggle-switch__input" id="isAnonymous" name="is_anonymous" />
+                <span class="toggle-switch__slider"></span>
+                <span class="toggle-switch__label">Anonyme Umfrage</span>
               </label>
             </div>
-            <div class="flex items-center gap-3 mt-2">
-              <input type="checkbox" id="isMandatory" name="is_mandatory" class="w-5 h-5 cursor-pointer" />
-              <label for="isMandatory" class="cursor-pointer">Verpflichtende Teilnahme</label>
+            <div class="mt-3">
+              <label class="toggle-switch toggle-switch--warning">
+                <input type="checkbox" class="toggle-switch__input" id="isMandatory" name="is_mandatory" />
+                <span class="toggle-switch__slider"></span>
+                <span class="toggle-switch__label">Verpflichtende Teilnahme</span>
+              </label>
             </div>
-            <p class="mt-2 text-secondary text-sm">
+            <p class="mt-3 text-secondary text-sm">
               <i class="fas fa-info-circle"></i>
               Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie können nicht sehen, wer geantwortet hat.
             </p>

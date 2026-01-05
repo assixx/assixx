@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Machines Service (Native NestJS)
  *
@@ -47,6 +48,14 @@ type MaintenanceType =
 type StatusAfter = 'operational' | 'needs_repair' | 'decommissioned';
 
 /**
+ * Team info for list display (embedded in machine response)
+ */
+interface MachineTeamInfo {
+  id: number;
+  name: string;
+}
+
+/**
  * Database row for machines table
  */
 interface DbMachineRow {
@@ -60,6 +69,7 @@ interface DbMachineRow {
   department_id: number | null;
   department_name?: string;
   area_id: number | null;
+  area_name?: string;
   location: string | null;
   machine_type: MachineType;
   status: MachineStatus;
@@ -81,6 +91,8 @@ interface DbMachineRow {
   updated_by: number | null;
   updated_by_name?: string;
   is_active: boolean | number;
+  // Teams as JSON array from subquery
+  teams?: MachineTeamInfo[] | string;
 }
 
 /**
@@ -133,6 +145,20 @@ interface DbCategoryRow {
 }
 
 /**
+ * Database row for machine_teams join
+ */
+interface DbMachineTeamRow {
+  id: number;
+  team_id: number;
+  team_name: string;
+  department_id: number | null;
+  department_name: string | null;
+  is_primary: boolean;
+  assigned_at: Date | null;
+  notes: string | null;
+}
+
+/**
  * Machine filters
  */
 export interface MachineFilters {
@@ -158,6 +184,7 @@ export interface MachineResponse {
   departmentId?: number;
   departmentName?: string;
   areaId?: number;
+  areaName?: string;
   location?: string;
   machineType: MachineType;
   status: MachineStatus;
@@ -179,6 +206,8 @@ export interface MachineResponse {
   updatedBy?: number;
   updatedByName?: string;
   isActive: boolean;
+  // Teams assigned to this machine (for list display)
+  teams?: MachineTeamInfo[];
 }
 
 /**
@@ -282,6 +311,20 @@ export interface MachineCategory {
   isActive: boolean;
 }
 
+/**
+ * Machine team assignment response
+ */
+export interface MachineTeamResponse {
+  id: number;
+  teamId: number;
+  teamName: string;
+  departmentId?: number;
+  departmentName?: string;
+  isPrimary: boolean;
+  assignedAt?: string;
+  notes?: string;
+}
+
 @Injectable()
 export class MachinesService {
   private readonly logger = new Logger(MachinesService.name);
@@ -347,6 +390,25 @@ export class MachinesService {
   }
 
   /**
+   * Parse teams JSON from database (string or already parsed array)
+   */
+  private parseTeamsJson(
+    teams: MachineTeamInfo[] | string | undefined,
+  ): MachineTeamInfo[] | undefined {
+    if (teams === undefined) {
+      return undefined;
+    }
+    if (typeof teams !== 'string') {
+      return teams;
+    }
+    try {
+      return JSON.parse(teams) as MachineTeamInfo[];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Build optional reference fields from machine row
    */
   private buildMachineReferenceFields(row: DbMachineRow): Partial<MachineResponse> {
@@ -354,11 +416,14 @@ export class MachinesService {
     if (row.department_id !== null) fields.departmentId = row.department_id;
     if (row.department_name !== undefined) fields.departmentName = row.department_name;
     if (row.area_id !== null) fields.areaId = row.area_id;
+    if (row.area_name !== undefined) fields.areaName = row.area_name;
     if (row.operating_hours !== null) fields.operatingHours = row.operating_hours;
     if (row.created_by !== null) fields.createdBy = row.created_by;
     if (row.created_by_name !== undefined) fields.createdByName = row.created_by_name;
     if (row.updated_by !== null) fields.updatedBy = row.updated_by;
     if (row.updated_by_name !== undefined) fields.updatedByName = row.updated_by_name;
+    const parsedTeams = this.parseTeamsJson(row.teams);
+    if (parsedTeams !== undefined) fields.teams = parsedTeams;
     return fields;
   }
 
@@ -443,10 +508,19 @@ export class MachinesService {
     let sql = `
       SELECT m.*,
              d.name as department_name,
+             a.name as area_name,
              u1.username as created_by_name,
-             u2.username as updated_by_name
+             u2.username as updated_by_name,
+             COALESCE(
+               (SELECT json_agg(json_build_object('id', t.id, 'name', t.name))
+                FROM machine_teams mt
+                JOIN teams t ON mt.team_id = t.id
+                WHERE mt.machine_id = m.id),
+               '[]'
+             ) as teams
       FROM machines m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
+      LEFT JOIN areas a ON m.area_id = a.id AND a.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
       WHERE m.tenant_id = $1
@@ -973,5 +1047,97 @@ export class MachinesService {
 
       return category;
     });
+  }
+
+  /**
+   * Get teams assigned to a machine
+   */
+  async getMachineTeams(machineId: number, tenantId: number): Promise<MachineTeamResponse[]> {
+    this.logger.log(`Getting teams for machine ${machineId}`);
+
+    await this.getMachineById(machineId, tenantId);
+
+    const rows = await this.db.query<DbMachineTeamRow>(
+      `
+      SELECT mt.id, mt.team_id, t.name as team_name,
+             t.department_id, d.name as department_name,
+             mt.is_primary, mt.assigned_at, mt.notes
+      FROM machine_teams mt
+      JOIN teams t ON mt.team_id = t.id
+      LEFT JOIN departments d ON t.department_id = d.id
+      WHERE mt.machine_id = $1 AND mt.tenant_id = $2
+      ORDER BY mt.is_primary DESC, t.name ASC
+      `,
+      [machineId, tenantId],
+    );
+
+    return rows.map((row: DbMachineTeamRow) => {
+      const team: MachineTeamResponse = {
+        id: row.id,
+        teamId: row.team_id,
+        teamName: row.team_name,
+        isPrimary: row.is_primary,
+      };
+
+      if (row.department_id !== null) team.departmentId = row.department_id;
+      if (row.department_name !== null) team.departmentName = row.department_name;
+      if (row.assigned_at !== null) team.assignedAt = row.assigned_at.toISOString();
+      if (row.notes !== null) team.notes = row.notes;
+
+      return team;
+    });
+  }
+
+  /**
+   * Set teams for a machine (bulk operation - replaces all existing assignments)
+   */
+  async setMachineTeams(
+    machineId: number,
+    teamIds: number[],
+    tenantId: number,
+    userId: number,
+  ): Promise<MachineTeamResponse[]> {
+    this.logger.log(`Setting ${teamIds.length} teams for machine ${machineId}`);
+
+    await this.getMachineById(machineId, tenantId);
+
+    if (teamIds.length > 0) {
+      const placeholders = teamIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+      const validTeams = await this.db.query<{ id: number }>(
+        `SELECT id FROM teams WHERE id IN (${placeholders}) AND tenant_id = $1`,
+        [tenantId, ...teamIds],
+      );
+
+      if (validTeams.length !== teamIds.length) {
+        throw new BadRequestException('One or more team IDs are invalid');
+      }
+    }
+
+    await this.db.query('DELETE FROM machine_teams WHERE machine_id = $1 AND tenant_id = $2', [
+      machineId,
+      tenantId,
+    ]);
+
+    if (teamIds.length > 0) {
+      const values: unknown[] = [];
+      const valuePlaceholders: string[] = [];
+      let paramIndex = 1;
+
+      for (const teamId of teamIds) {
+        valuePlaceholders.push(
+          `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, false)`,
+        );
+        values.push(tenantId, machineId, teamId, userId);
+        paramIndex += 4;
+      }
+
+      await this.db.query(
+        `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, is_primary)
+         VALUES ${valuePlaceholders.join(', ')}`,
+        values,
+      );
+    }
+
+    return await this.getMachineTeams(machineId, tenantId);
   }
 }

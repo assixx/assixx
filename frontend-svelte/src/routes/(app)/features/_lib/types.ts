@@ -45,7 +45,6 @@ export type AddonType = 'employees' | 'admins' | 'storage';
 
 /** JWT payload structure */
 export interface JwtPayload {
-  tenant_id?: number;
   tenantId?: number;
   [key: string]: unknown;
 }
@@ -60,13 +59,11 @@ export interface ApiResponse<T> {
 /** Addon info from API */
 export interface AddonInfo {
   addonType?: string;
-  addon_type?: string;
   quantity: number;
 }
 
 /** Tenant feature from API */
 export interface TenantFeature {
   code: string;
-  is_available?: number;
   isAvailable?: number;
 }

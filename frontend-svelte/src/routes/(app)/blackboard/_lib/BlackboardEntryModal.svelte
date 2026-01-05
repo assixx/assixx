@@ -1,0 +1,355 @@
+<script lang="ts">
+  import type { Priority, EntryColor, Department, Team, Area, FormMode } from './types';
+  import { COLOR_OPTIONS, PRIORITY_OPTIONS, MESSAGES, FILE_UPLOAD_CONFIG } from './constants';
+  import { getPriorityLabel } from './utils';
+
+  interface Props {
+    mode: FormMode;
+    title: string;
+    content: string;
+    priority: Priority;
+    color: EntryColor;
+    expiresAt: string;
+    companyWide: boolean;
+    departmentIds: number[];
+    teamIds: number[];
+    areaIds: number[];
+    attachmentFiles: FileList | null;
+    departments: Department[];
+    teams: Team[];
+    areas: Area[];
+    onclose: () => void;
+    onsubmit: (e: Event) => void;
+    ontitlechange: (value: string) => void;
+    oncontentchange: (value: string) => void;
+    onprioritychange: (value: Priority) => void;
+    oncolorchange: (value: EntryColor) => void;
+    onexpireschange: (value: string) => void;
+    oncompanywidechange: (value: boolean) => void;
+    ondepartmentschange: (value: number[]) => void;
+    onteamschange: (value: number[]) => void;
+    onareaschange: (value: number[]) => void;
+    onfileschange: (files: FileList | null) => void;
+  }
+
+  const {
+    mode,
+    title,
+    content,
+    priority,
+    color,
+    expiresAt,
+    companyWide,
+    departmentIds,
+    teamIds,
+    areaIds,
+    attachmentFiles,
+    departments,
+    teams,
+    areas,
+    onclose,
+    onsubmit,
+    ontitlechange,
+    oncontentchange,
+    onprioritychange,
+    oncolorchange,
+    onexpireschange,
+    oncompanywidechange,
+    ondepartmentschange,
+    onteamschange,
+    onareaschange,
+    onfileschange,
+  }: Props = $props();
+
+  let priorityDropdownOpen = $state(false);
+
+  const priorityLabel = $derived(getPriorityLabel(priority));
+
+  function setPriority(value: Priority): void {
+    onprioritychange(value);
+    priorityDropdownOpen = false;
+  }
+
+  function removeAttachment(index: number): void {
+    if (!attachmentFiles) return;
+    const dt = new DataTransfer();
+    for (let i = 0; i < attachmentFiles.length; i++) {
+      if (i !== index) dt.items.add(attachmentFiles[i]);
+    }
+    onfileschange(dt.files);
+  }
+
+  function handleClickOutside(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (!target.closest('#entry-priority-dropdown')) priorityDropdownOpen = false;
+  }
+
+  function handleKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      priorityDropdownOpen = false;
+      onclose();
+    }
+  }
+</script>
+
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeyDown} />
+
+<div
+  class="modal-overlay modal-overlay--active"
+  onclick={onclose}
+  onkeydown={(e) => e.key === 'Escape' && onclose()}
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+>
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <form
+    class="ds-modal ds-modal--lg"
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
+    {onsubmit}
+  >
+    <div class="ds-modal__header">
+      <h3 class="ds-modal__title">
+        {mode === 'edit' ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_CREATE}
+      </h3>
+      <button type="button" class="ds-modal__close" onclick={onclose} aria-label="Schließen">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="ds-modal__body">
+      <div class="form-field">
+        <label for="entryTitle" class="form-field__label">Titel</label>
+        <input
+          type="text"
+          class="form-field__control"
+          id="entryTitle"
+          required
+          placeholder="Was ist das Thema?"
+          value={title}
+          oninput={(e) => ontitlechange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+      <div class="form-field">
+        <label for="entryContent" class="form-field__label">Inhalt</label>
+        <textarea
+          class="form-field__control"
+          id="entryContent"
+          rows="6"
+          required
+          placeholder="Ihre Nachricht hier..."
+          value={content}
+          oninput={(e) => oncontentchange((e.target as HTMLTextAreaElement).value)}
+        ></textarea>
+      </div>
+
+      <!-- Visibility -->
+      <div class="form-field">
+        <span class="form-field__label">Wer soll den Eintrag sehen?</span>
+        <p class="form-field__hint">{MESSAGES.MULTI_SELECT_HINT}</p>
+      </div>
+      <div class="form-field">
+        <label class="toggle-switch toggle-switch--danger">
+          <input
+            type="checkbox"
+            class="toggle-switch__input"
+            checked={companyWide}
+            onchange={(e) => oncompanywidechange((e.target as HTMLInputElement).checked)}
+          />
+          <span class="toggle-switch__slider"></span>
+          <span class="toggle-switch__label"><i class="fas fa-building mr-2"></i>Ganze Firma</span>
+        </label>
+        <span class="form-field__message form-field__message--warning">
+          <i class="fas fa-exclamation-triangle mr-1"></i>{MESSAGES.COMPANY_WIDE_WARNING}
+        </span>
+      </div>
+
+      {#if !companyWide}
+        <div class="form-field">
+          <label for="entry-area-select" class="form-field__label">
+            <i class="fas fa-map-marked-alt mr-1"></i>Bereiche
+          </label>
+          <select
+            id="entry-area-select"
+            multiple
+            class="form-field__control form-field__control--multiselect"
+            value={areaIds}
+            onchange={(e) => {
+              const select = e.target as HTMLSelectElement;
+              onareaschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+            }}
+          >
+            {#each areas as area (area.id)}
+              <option value={area.id}>{area.name}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="entry-department-select" class="form-field__label">
+            <i class="fas fa-sitemap mr-1"></i>Abteilungen
+          </label>
+          <select
+            id="entry-department-select"
+            multiple
+            class="form-field__control form-field__control--multiselect"
+            value={departmentIds}
+            onchange={(e) => {
+              const select = e.target as HTMLSelectElement;
+              ondepartmentschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+            }}
+          >
+            {#each departments as dept (dept.id)}
+              <option value={dept.id}>{dept.name}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="entry-team-select" class="form-field__label">
+            <i class="fas fa-users mr-1"></i>Teams
+          </label>
+          <select
+            id="entry-team-select"
+            multiple
+            class="form-field__control form-field__control--multiselect"
+            value={teamIds}
+            onchange={(e) => {
+              const select = e.target as HTMLSelectElement;
+              onteamschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+            }}
+          >
+            {#each teams as team (team.id)}
+              <option value={team.id}>{team.name}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
+
+      <!-- Priority -->
+      <div class="form-field">
+        <span class="form-field__label">Priorität</span>
+        <div class="dropdown" id="entry-priority-dropdown" role="listbox">
+          <div
+            class="dropdown__trigger"
+            onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === 'Enter' && (priorityDropdownOpen = !priorityDropdownOpen)}
+          >
+            <span>{priorityLabel}</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          {#if priorityDropdownOpen}
+            <div class="dropdown__menu active">
+              {#each PRIORITY_OPTIONS as opt (opt.value)}
+                <div
+                  class="dropdown__option"
+                  onclick={() => setPriority(opt.value)}
+                  onkeydown={(e) => e.key === 'Enter' && setPriority(opt.value)}
+                  role="option"
+                  tabindex="0"
+                  aria-selected={priority === opt.value}
+                >
+                  {opt.label}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Expires -->
+      <div class="form-field">
+        <label for="entryExpiresAt" class="form-field__label">Gültig bis (optional)</label>
+        <input
+          type="date"
+          class="form-field__control"
+          id="entryExpiresAt"
+          value={expiresAt}
+          oninput={(e) => onexpireschange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+
+      <!-- Color Picker -->
+      <div class="form-field">
+        <span class="form-field__label"><i class="fas fa-palette mr-2"></i>Farbe</span>
+        <div class="color-picker" role="radiogroup">
+          {#each COLOR_OPTIONS as opt (opt.value)}
+            <button
+              type="button"
+              class="color-option"
+              class:active={color === opt.value}
+              data-color={opt.value}
+              onclick={() => oncolorchange(opt.value)}
+              role="radio"
+              aria-checked={color === opt.value}
+            >
+              <span class="color-option__swatch"></span>
+              <span class="color-option__label">{opt.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- File Upload -->
+      <div class="form-field">
+        <span class="form-field__label">Anhänge (optional)</span>
+        <div class="file-upload-zone file-upload-zone--compact">
+          <input
+            type="file"
+            class="file-upload-zone__input"
+            id="attachmentInput"
+            multiple
+            accept={FILE_UPLOAD_CONFIG.ACCEPTED_TYPES}
+            onchange={(e) => onfileschange((e.target as HTMLInputElement).files)}
+          />
+          <label for="attachmentInput" class="file-upload-zone__label">
+            <div class="file-upload-zone__icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <div class="file-upload-zone__text">
+              <p class="file-upload-zone__title">Dateien hierher ziehen</p>
+            </div>
+          </label>
+        </div>
+        {#if attachmentFiles && attachmentFiles.length > 0}
+          <div class="file-upload-list file-upload-list--compact">
+            {#each Array.from(attachmentFiles) as file, i (i)}
+              <div class="file-upload-list__item">
+                <i class="fas fa-file file-upload-list__icon"></i>
+                <span class="file-upload-list__name">{file.name}</span>
+                <span class="file-upload-list__size">{(file.size / 1024 / 1024).toFixed(2)} MB</span
+                >
+                <button
+                  type="button"
+                  class="file-upload-list__remove"
+                  onclick={() => removeAttachment(i)}
+                  aria-label="Datei entfernen"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+    <div class="ds-modal__footer ds-modal__footer--right">
+      <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
+      <button type="submit" class="btn btn-modal">Speichern</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-field__hint {
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .form-field__message--warning {
+    color: var(--color-danger);
+  }
+
+  .form-field__control--multiselect {
+    min-height: 120px;
+  }
+</style>

@@ -8,7 +8,7 @@
 import type { Employee, ShiftFavorite } from '../types';
 import { $$id, setData } from '../../../utils/dom-utils';
 import { setSelectedContext, setEmployees, isAdmin as getIsAdmin, getSelectedContext, getFavorites } from '../state';
-import { fetchTeamMembers } from '../api';
+import { fetchTeamMembers, fetchTeamById } from '../api';
 import { updateDropdownDisplay, showPlanningUI, showEditRotationButton, renderEmployeesList } from '../ui';
 import { checkRotationPatternExists } from '../rotation';
 import { renderAddFavoriteButton } from '../favorites';
@@ -50,11 +50,16 @@ function mapMemberToEmployee(member: { id: number; firstName: string; lastName: 
  * Load a favorite and set all dropdowns accordingly
  */
 export async function loadFavoriteWithDropdowns(favorite: ShiftFavorite): Promise<void> {
+  // Fetch team to get leaderId for permission check
+  const team = await fetchTeamById(favorite.teamId);
+  const teamLeaderId = team?.leaderId ?? null;
+
   setSelectedContext({
     areaId: favorite.areaId,
     departmentId: favorite.departmentId,
     machineId: favorite.machineId,
     teamId: favorite.teamId,
+    teamLeaderId,
   });
 
   updateDropdownDisplay('area', favorite.areaName);
@@ -73,7 +78,10 @@ export async function loadFavoriteWithDropdowns(favorite: ShiftFavorite): Promis
   if (teamDisplay !== null) setData(teamDisplay, 'value', String(favorite.teamId));
 
   const teamMembers = await fetchTeamMembers(favorite.teamId);
-  const teamEmployees = teamMembers.map((m) => ({ ...mapMemberToEmployee(m), teamId: favorite.teamId }));
+  // Only include users with userRole='employee' (not admins/team leads)
+  const teamEmployees = teamMembers
+    .filter((m) => m.userRole === 'employee')
+    .map((m) => ({ ...mapMemberToEmployee(m), teamId: favorite.teamId }));
 
   setEmployees(teamEmployees);
   renderEmployeesList(teamEmployees);

@@ -1,10 +1,11 @@
 /**
  * Admin Dashboard - API Functions
  * @module admin-dashboard/_lib/api
+ *
+ * PERFORMANCE: Uses centralized apiClient with caching
  */
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
+import { getApiClient } from '$lib/utils/api-client';
 import type { User, Document, Department, Team, CalendarEvent, BlackboardEntry } from './types';
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './constants';
 
@@ -15,33 +16,13 @@ export function getAuthToken(): string | null {
 
 /**
  * Make authenticated API request
+ * PERFORMANCE: Uses apiClient with built-in caching
  * @param endpoint - API endpoint (without /api/v2 prefix)
  * @returns API response data
  */
 export async function apiGet<T>(endpoint: string): Promise<T> {
-  const token = getAuthToken();
-  if (!token) {
-    goto(resolve('/login'));
-    throw new Error('No auth token');
-  }
-
-  const response = await fetch(`/api/v2${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('accessToken');
-      goto(resolve('/login'));
-      throw new Error('Unauthorized');
-    }
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  const result = await response.json();
-  return (result.data ?? result) as T;
+  const apiClient = getApiClient();
+  return await apiClient.get<T>(endpoint);
 }
 
 /**

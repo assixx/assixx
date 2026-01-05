@@ -76,7 +76,7 @@ function createQuestionElement(question: Question, index: number): HTMLElement {
   const div = document.createElement('div');
   div.className = 'question-item';
 
-  const isRequired = isQuestionRequired(question.is_required);
+  const isRequired = isQuestionRequired(question.isRequired);
 
   const questionHtml = `
     <div class="question-header">
@@ -129,7 +129,7 @@ function createAnswerInput(question: Question): string {
  * Create text area input with Design System classes
  */
 function createTextInput(question: Question): string {
-  const isRequired = isQuestionRequired(question.is_required);
+  const isRequired = isQuestionRequired(question.isRequired);
   return `<div class="form-field">
             <textarea class="form-field__control form-field__control--textarea"
                       data-question-id="${question.id}"
@@ -156,7 +156,7 @@ function createChoiceOption(
   const inputType = type === 'single' ? 'radio' : 'checkbox';
   const nameAttr = type === 'single' ? `name="question_${question.id}"` : '';
   const dataAttr = type === 'multiple' ? `data-question-id="${question.id}"` : '';
-  const isRequired = isQuestionRequired(question.is_required);
+  const isRequired = isQuestionRequired(question.isRequired);
 
   return `
     <label class="choice-card">
@@ -203,7 +203,7 @@ function createRatingInput(question: Question): string {
  * IMPORTANT: Uses 1-based values (1=Ja, 2=Nein) because backend requires positive integers (> 0)
  */
 function createYesNoInput(question: Question): string {
-  const isRequired = isQuestionRequired(question.is_required);
+  const isRequired = isQuestionRequired(question.isRequired);
   return `
     <div class="choice-group">
       <label class="choice-card">
@@ -236,7 +236,7 @@ function createYesNoInput(question: Question): string {
  * Create simple input (number, date) with Design System form-field
  */
 function createSimpleInput(type: string, question: Question): string {
-  const isRequired = isQuestionRequired(question.is_required);
+  const isRequired = isQuestionRequired(question.isRequired);
   const placeholder = type === 'number' ? 'Zahl eingeben...' : 'Datum wählen...';
   return `<div class="form-field">
             <input type="${type}"
@@ -414,7 +414,7 @@ export async function handleSubmit(e: Event): Promise<void> {
   // Validate all required questions are answered
   const unansweredRequired: string[] = [];
   currentSurvey.questions.forEach((question, index) => {
-    if (isQuestionRequired(question.is_required) && !(question.id in answers)) {
+    if (isQuestionRequired(question.isRequired) && !(question.id in answers)) {
       unansweredRequired.push(`Frage ${index + 1}`);
     }
   });

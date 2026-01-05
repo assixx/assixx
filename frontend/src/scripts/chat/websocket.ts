@@ -249,7 +249,7 @@ function updateConnectionStatus(connected: boolean): void {
 export function sendWebSocketMessage(type: string, data: unknown): boolean {
   const state = getChatState();
 
-  if (state.ws === null || state.ws.readyState !== WebSocket.OPEN) {
+  if (state.ws?.readyState !== WebSocket.OPEN) {
     return false;
   }
 

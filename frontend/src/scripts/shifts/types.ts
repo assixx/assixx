@@ -107,6 +107,7 @@ export interface TeamMember {
   firstName: string;
   lastName: string;
   role: 'member' | 'lead';
+  userRole?: 'admin' | 'employee' | 'root';
   availabilityStatus?: string;
   availabilityStart?: string;
   availabilityEnd?: string;

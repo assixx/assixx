@@ -192,7 +192,9 @@ export class DocumentsController {
     const finalCategory = VALID_CATEGORIES.includes(category) ? category : 'general';
 
     // Use custom document name if provided, otherwise use original filename
-    const displayName = body['documentName']?.trim() || file.originalname;
+    const trimmedDocName = body['documentName']?.trim();
+    const displayName =
+      trimmedDocName !== undefined && trimmedDocName !== '' ? trimmedDocName : file.originalname;
 
     const documentData = {
       filename: displayName,
@@ -209,7 +211,12 @@ export class DocumentsController {
       storageType: 'filesystem' as const,
       // Parse tags if provided (JSON array)
       ...(body['tags'] !== undefined && {
-        tags: JSON.parse(body['tags']),
+        tags: (() => {
+          const parsed: unknown = JSON.parse(body['tags']);
+          return Array.isArray(parsed) ?
+              parsed.filter((t: unknown): t is string => typeof t === 'string')
+            : [];
+        })(),
       }),
       ...(body['ownerUserId'] !== undefined && {
         ownerUserId: Number.parseInt(body['ownerUserId'], 10),

@@ -26,6 +26,13 @@ COPY backend/package.json ./backend/
 # onlyBuiltDependencies in package.json verhindert build scripts während Docker build
 RUN pnpm install --frozen-lockfile
 
+# Create writable directories and fix permissions
+# Only chown specific dirs (not node_modules - would take 100+ seconds!)
+RUN mkdir -p /app/logs /app/backend/logs /app/backend/dist && \
+    chown -R 1000:1000 /app/logs /app/backend/logs /app/backend/dist && \
+    # Make /app writable for pnpm temp files (shallow, not recursive)
+    chown 1000:1000 /app
+
 # Der Rest wird über Volumes gemountet
 
 # Port

@@ -2,7 +2,9 @@
 // DOCUMENTS EXPLORER - API FUNCTIONS
 // =============================================================================
 
+import { browser } from '$app/environment';
 import { getApiClient } from '$lib/utils/api-client';
+import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 import type {
   Document,
   ChatFolder,
@@ -178,7 +180,7 @@ export async function uploadDocument(
   }
 
   // Use fetch with progress tracking
-  const token = localStorage.getItem('accessToken');
+  const token = browser ? localStorage.getItem('accessToken') : null;
   const xhr = new XMLHttpRequest();
 
   return new Promise((resolve, reject) => {
@@ -220,19 +222,11 @@ export async function uploadDocument(
 
 /**
  * Get current user info
+ * DELEGATES to shared user service (prevents duplicate /users/me calls)
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  try {
-    const result = (await apiClient.get('/users/me')) as CurrentUser | ApiResponse<CurrentUser>;
-
-    if ('id' in result) {
-      return result;
-    }
-    return result.data ?? null;
-  } catch (error) {
-    console.error('[API] Failed to get current user:', error);
-    return null;
-  }
+  const result = await fetchSharedUser();
+  return result.user as CurrentUser | null;
 }
 
 // =============================================================================

@@ -7,7 +7,7 @@
  * @module explorer/permissions
  */
 
-import type { Document, UserRole } from './types';
+import type { Document, UserRole, CurrentUser } from './types';
 import { getUserRole, isAdmin } from '../../../utils/auth-helpers';
 
 /**
@@ -65,15 +65,60 @@ class PermissionsManager {
   }
 
   /**
-   * Check if user can delete a document
-   * Rules:
-   * - Only Root and Admin can delete documents
-   * - Employees cannot delete any documents
-   *
+   * Check if user can delete a document (legacy global check)
+   * @deprecated Use canDeleteSpecificDocument for per-document checks
    * @returns true if user can delete documents
    */
   public canDeleteDocument(): boolean {
     return isAdmin();
+  }
+
+  /**
+   * Check if user can edit a specific document
+   * NEW 2025-12-23: Per-document permission check like SvelteKit
+   *
+   * Permission logic:
+   * - root: can edit all documents
+   * - admin with hasFullAccess=true: can edit all documents
+   * - admin with hasFullAccess=false: can only edit own documents
+   * - employee: can only edit own documents
+   *
+   * @param doc - The document to check
+   * @param user - Current user (null if not loaded)
+   * @returns true if user can edit
+   */
+  public canEditSpecificDocument(doc: Document, user: CurrentUser | null): boolean {
+    if (user === null) return false;
+
+    // root can edit everything
+    if (user.role === 'root') return true;
+
+    // Owner can always edit their own documents
+    if (doc.uploadedBy === user.id) return true;
+
+    // admin with hasFullAccess can edit all documents
+    if (user.role === 'admin' && user.hasFullAccess === true) return true;
+
+    return false;
+  }
+
+  /**
+   * Check if user can delete a specific document
+   * NEW 2025-12-23: Per-document permission check like SvelteKit
+   *
+   * Permission logic (same as edit):
+   * - root: can delete all documents
+   * - admin with hasFullAccess=true: can delete all documents
+   * - admin with hasFullAccess=false: can only delete own documents
+   * - employee: can only delete own documents
+   *
+   * @param doc - The document to check
+   * @param user - Current user (null if not loaded)
+   * @returns true if user can delete
+   */
+  public canDeleteSpecificDocument(doc: Document, user: CurrentUser | null): boolean {
+    // Same logic as edit for now
+    return this.canEditSpecificDocument(doc, user);
   }
 
   /**
@@ -237,7 +282,7 @@ class PermissionsManager {
     return {
       role,
       canUpload: this.canUploadDocuments(),
-      canDelete: this.canDeleteDocument(),
+      canDelete: isAdmin(), // Global capability check (per-document uses canDeleteSpecificDocument)
       canSeeActions: this.canSeeActionMenu(),
       allowedRecipientTypes: this.getAllowedRecipientTypes(),
     };

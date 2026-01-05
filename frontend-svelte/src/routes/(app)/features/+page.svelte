@@ -1,7 +1,11 @@
 <script>
-  import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
-  import { onMount } from 'svelte';
+  /**
+   * Features Page - Plan & Feature Management
+   * @module features/+page
+   *
+   * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
+   */
+  import { invalidateAll } from '$app/navigation';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast.js';
 
   // Page-specific CSS
@@ -10,7 +14,6 @@
   // Local modules
   import { FEATURE_CATEGORIES, DEFAULT_TENANT_NAME } from './_lib/constants';
   import {
-    parseJwt,
     canActivateFeature,
     isFeatureIncludedInPlan,
     getPlanBadge,
@@ -22,14 +25,18 @@
     cloneFeatureCategories,
   } from './_lib/utils';
   import {
-    loadPlans as apiLoadPlans,
-    loadCurrentPlan as apiLoadCurrentPlan,
-    loadTenantFeatures as apiLoadTenantFeatures,
     applyTenantFeaturesToCategories,
     changePlan as apiChangePlan,
     toggleFeature as apiToggleFeature,
     saveAddons as apiSaveAddons,
   } from './_lib/api';
+
+  // =============================================================================
+  // SSR DATA - Level 3: $derived from props (single source of truth)
+  // =============================================================================
+
+  /** @type {{ data: import('./$types').PageData }} */
+  const { data } = $props();
 
   /** @typedef {import('./_lib/types').Plan} Plan */
   /** @typedef {import('./_lib/types').FeatureCategory} FeatureCategory */
@@ -37,27 +44,32 @@
   /** @typedef {import('./_lib/types').FeatureFilter} FeatureFilter */
   /** @typedef {import('./_lib/types').Feature} Feature */
 
-  // =============================================================================
-  // STATE
-  // =============================================================================
-
+  // SSR data via $derived - updates when invalidateAll() is called
   /** @type {Record<string, Plan>} */
-  let plans = $state({});
-  let currentPlan = $state('basic');
-
-  /** @type {Record<string, FeatureCategory>} */
-  let featureCategories = $state(cloneFeatureCategories(FEATURE_CATEGORIES));
-
-  /** @type {TenantAddons} */
-  let tenantAddons = $state({});
-
-  const tenantName = $state(DEFAULT_TENANT_NAME);
+  const plans = $derived(data?.plans ?? {});
+  const currentPlan = $derived(data?.currentPlanCode ?? 'basic');
+  const tenantFeatures = $derived(data?.tenantFeatures ?? []);
   /** @type {number | null} */
-  let currentTenantId = $state(null);
+  const currentTenantId = $derived(data?.tenantId ?? null);
 
-  let loading = $state(true);
+  // Derived: Feature categories with tenant data applied
+  /** @type {Record<string, FeatureCategory>} */
+  const featureCategories = $derived(
+    applyTenantFeaturesToCategories(cloneFeatureCategories(FEATURE_CATEGORIES), tenantFeatures),
+  );
+
+  // =============================================================================
+  // UI STATE - Local state for pending edits before save
+  // =============================================================================
+
+  // Addons - writable $derived (Svelte 5.25+): syncs from SSR, can be locally edited
+  /** @type {TenantAddons} */
+  let pendingAddons = $derived({ ...(data?.addons ?? {}) });
+
+  const tenantName = DEFAULT_TENANT_NAME;
+
   /** @type {string | null} */
-  let error = $state(null);
+  const error = $state(null);
 
   /** @type {FeatureFilter} */
   let currentFilter = $state('all');
@@ -69,7 +81,7 @@
   const currentPlanData = $derived(plans[currentPlan]);
   const currentPlanName = $derived(currentPlanData?.name ?? currentPlan);
   const activeFeatureCount = $derived(countActiveFeatures(featureCategories, currentPlan));
-  const totalCost = $derived(calculateTotalCost(currentPlanData, tenantAddons));
+  const totalCost = $derived(calculateTotalCost(currentPlanData, pendingAddons));
 
   // =============================================================================
   // FILTER LOGIC
@@ -93,39 +105,8 @@
   }
 
   // =============================================================================
-  // API ACTIONS
+  // API ACTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
-
-  async function loadInitialData() {
-    loading = true;
-    error = null;
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const decoded = parseJwt(token);
-        if (decoded) {
-          currentTenantId = decoded.tenant_id ?? decoded.tenantId ?? null;
-        }
-      }
-
-      const [loadedPlans, planInfo] = await Promise.all([apiLoadPlans(), apiLoadCurrentPlan()]);
-
-      if (Object.keys(loadedPlans).length > 0) {
-        plans = loadedPlans;
-      }
-      currentPlan = planInfo.planCode;
-      tenantAddons = planInfo.addons;
-
-      const tenantFeatures = await apiLoadTenantFeatures();
-      featureCategories = applyTenantFeaturesToCategories(featureCategories, tenantFeatures);
-    } catch (err) {
-      console.error('[Features] Error loading initial data:', err);
-      error = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten';
-    } finally {
-      loading = false;
-    }
-  }
 
   /** @param {string} newPlanCode */
   async function changePlan(newPlanCode) {
@@ -138,9 +119,8 @@
 
     try {
       await apiChangePlan(currentTenantId, newPlanCode);
-      currentPlan = newPlanCode;
-      const tenantFeatures = await apiLoadTenantFeatures();
-      featureCategories = applyTenantFeaturesToCategories(featureCategories, tenantFeatures);
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
     } catch (err) {
       console.error('[Features] Error changing plan:', err);
       showErrorAlert('Fehler beim Plan-Wechsel');
@@ -154,12 +134,8 @@
   async function toggleFeature(featureCode, activate) {
     try {
       await apiToggleFeature(currentTenantId, featureCode, activate);
-
-      Object.values(featureCategories).forEach((category) => {
-        const feature = category.features.find((f) => f.code === featureCode);
-        if (feature) feature.active = activate;
-      });
-      featureCategories = { ...featureCategories };
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
     } catch (err) {
       console.error('[Features] Error toggling feature:', err);
       showErrorAlert('Fehler beim Ändern des Features');
@@ -167,24 +143,27 @@
   }
 
   /**
+   * Adjust pending addon values (local state, not saved yet)
    * @param {'employees' | 'admins' | 'storage'} type
    * @param {number} change
    */
   function adjustAddon(type, change) {
     if (type === 'employees') {
-      tenantAddons.employees = Math.max(0, (tenantAddons.employees ?? 0) + change);
+      pendingAddons.employees = Math.max(0, (pendingAddons.employees ?? 0) + change);
     } else if (type === 'admins') {
-      tenantAddons.admins = Math.max(0, (tenantAddons.admins ?? 0) + change);
+      pendingAddons.admins = Math.max(0, (pendingAddons.admins ?? 0) + change);
     } else if (type === 'storage') {
-      tenantAddons.storage_gb = Math.max(0, (tenantAddons.storage_gb ?? 0) + change);
+      pendingAddons.storage_gb = Math.max(0, (pendingAddons.storage_gb ?? 0) + change);
     }
-    tenantAddons = { ...tenantAddons };
+    pendingAddons = { ...pendingAddons };
   }
 
   async function saveChanges() {
     try {
-      await apiSaveAddons(tenantAddons);
+      await apiSaveAddons(pendingAddons);
       showSuccessAlert('Änderungen erfolgreich gespeichert!');
+      // Level 3: Trigger SSR refetch to sync saved values
+      await invalidateAll();
     } catch (err) {
       console.error('[Features] Error saving changes:', err);
       showErrorAlert('Fehler beim Speichern der Änderungen');
@@ -207,20 +186,11 @@
   }
 
   // =============================================================================
-  // LIFECYCLE
+  // LIFECYCLE - SSR: Auth handled by server, data already loaded
   // =============================================================================
 
-  onMount(() => {
-    const token = localStorage.getItem('accessToken');
-    const userRole = localStorage.getItem('userRole');
-
-    if (!token || userRole !== 'root') {
-      goto(`${base}/login`);
-      return;
-    }
-
-    loadInitialData();
-  });
+  // onMount not needed for initial data - SSR provides everything
+  // Auth check is done server-side in +page.server.ts
 </script>
 
 <svelte:head>
@@ -260,44 +230,37 @@
       </p>
     </div>
     <div class="card__body">
-      {#if loading}
-        <div class="spinner-container">
-          <div class="spinner-ring spinner-ring--md"></div>
-          <p class="mt-2 text-[var(--color-text-secondary)]">Pläne werden geladen...</p>
-        </div>
-      {:else}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plans-container">
-          {#each ['basic', 'professional', 'enterprise'] as planCode (planCode)}
-            {@const plan = plans[planCode]}
-            {#if plan}
-              {@const isCurrent = planCode === currentPlan}
-              {@const isRecommended = planCode === 'professional'}
-              <label class="choice-card plan-card" class:plan-card--recommended={isRecommended}>
-                <input
-                  type="radio"
-                  class="choice-card__input"
-                  name="plan-selection"
-                  value={planCode}
-                  checked={isCurrent}
-                  onchange={handlePlanChange}
-                />
-                <div class="plan-card__content">
-                  <div class="plan-card__header">
-                    <h4 class="plan-card__title">{plan.name}</h4>
-                    <span class="plan-card__price">{plan.basePrice.toFixed(0)}/Monat</span>
-                  </div>
-                  <p class="plan-card__description">Für kleine bis mittlere Teams</p>
-                  <ul class="plan-card__features">
-                    <li class="plan-card__feature">{plan.maxEmployees ?? ''} Mitarbeiter</li>
-                    <li class="plan-card__feature">{plan.maxAdmins ?? ''} Admins</li>
-                    <li class="plan-card__feature">Alle Basis-Features</li>
-                  </ul>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plans-container">
+        {#each ['basic', 'professional', 'enterprise'] as planCode (planCode)}
+          {@const plan = plans[planCode]}
+          {#if plan}
+            {@const isCurrent = planCode === currentPlan}
+            {@const isRecommended = planCode === 'professional'}
+            <label class="choice-card plan-card" class:plan-card--recommended={isRecommended}>
+              <input
+                type="radio"
+                class="choice-card__input"
+                name="plan-selection"
+                value={planCode}
+                checked={isCurrent}
+                onchange={handlePlanChange}
+              />
+              <div class="plan-card__content">
+                <div class="plan-card__header">
+                  <h4 class="plan-card__title">{plan.name}</h4>
+                  <span class="plan-card__price">{plan.basePrice.toFixed(0)}/Monat</span>
                 </div>
-              </label>
-            {/if}
-          {/each}
-        </div>
-      {/if}
+                <p class="plan-card__description">Für kleine bis mittlere Teams</p>
+                <ul class="plan-card__features">
+                  <li class="plan-card__feature">{plan.maxEmployees ?? ''} Mitarbeiter</li>
+                  <li class="plan-card__feature">{plan.maxAdmins ?? ''} Admins</li>
+                  <li class="plan-card__feature">Alle Basis-Features</li>
+                </ul>
+              </div>
+            </label>
+          {/if}
+        {/each}
+      </div>
     </div>
   </div>
 
@@ -358,16 +321,11 @@
     </div>
 
     <div class="card__body">
-      {#if loading}
-        <div class="spinner-container">
-          <div class="spinner-ring spinner-ring--md"></div>
-          <p class="mt-2 text-[var(--color-text-secondary)]">Features werden geladen...</p>
-        </div>
-      {:else if error}
+      {#if error}
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => loadInitialData()}>
+          <button class="btn btn-primary mt-4" onclick={() => window.location.reload()}>
             Erneut versuchen
           </button>
         </div>
@@ -445,7 +403,7 @@
           <div class="addon-price">5</div>
           <div class="addon-unit">pro Mitarbeiter/Monat</div>
           <div class="addon-current">
-            Aktuell: <strong>{tenantAddons.employees ?? 0}</strong> zusätzlich
+            Aktuell: <strong>{pendingAddons.employees ?? 0}</strong> zusätzlich
           </div>
           <div class="addon-controls">
             <button
@@ -455,7 +413,7 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{tenantAddons.employees ?? 0}</span>
+            <span class="addon-value">{pendingAddons.employees ?? 0}</span>
             <button
               class="addon-btn"
               onclick={() => adjustAddon('employees', 1)}
@@ -473,7 +431,7 @@
           <div class="addon-price">10</div>
           <div class="addon-unit">pro Admin/Monat</div>
           <div class="addon-current">
-            Aktuell: <strong>{tenantAddons.admins ?? 0}</strong> zusätzlich
+            Aktuell: <strong>{pendingAddons.admins ?? 0}</strong> zusätzlich
           </div>
           <div class="addon-controls">
             <button
@@ -483,7 +441,7 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{tenantAddons.admins ?? 0}</span>
+            <span class="addon-value">{pendingAddons.admins ?? 0}</span>
             <button
               class="addon-btn"
               onclick={() => adjustAddon('admins', 1)}
@@ -511,7 +469,7 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{tenantAddons.storage_gb ?? 0}GB</span>
+            <span class="addon-value">{pendingAddons.storage_gb ?? 0}GB</span>
             <button
               class="addon-btn"
               onclick={() => adjustAddon('storage', 100)}

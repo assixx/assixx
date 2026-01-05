@@ -40,6 +40,7 @@ export interface Team {
   leaderName?: string;
   departmentId?: number;
   departmentName?: string;
+  departmentAreaName?: string;
   areaId?: number;
   shiftModelId?: number;
   memberCount?: number;
@@ -64,6 +65,8 @@ export interface Team {
 export interface Department {
   id: number;
   name: string;
+  areaId?: number;
+  areaName?: string;
 }
 
 export interface Machine {

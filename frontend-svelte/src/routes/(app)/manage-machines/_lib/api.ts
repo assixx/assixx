@@ -3,7 +3,15 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { Machine, Department, Area, MachineFormData, ApiResponse } from './types';
+import type {
+  Machine,
+  Department,
+  Area,
+  Team,
+  MachineTeam,
+  MachineFormData,
+  ApiResponse,
+} from './types';
 
 const apiClient = getApiClient();
 
@@ -63,6 +71,42 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadAreas(): Promise<Area[]> {
   const result = (await apiClient.get('/areas')) as Area[] | ApiResponse<Area[]>;
+  return Array.isArray(result) ? result : (result.data ?? []);
+}
+
+/**
+ * Load all teams from API
+ */
+export async function loadTeams(): Promise<Team[]> {
+  const result = (await apiClient.get('/teams')) as Team[] | ApiResponse<Team[]>;
+  return Array.isArray(result) ? result : (result.data ?? []);
+}
+
+/**
+ * Get teams assigned to a machine
+ */
+export async function getMachineTeams(machineId: number): Promise<MachineTeam[]> {
+  try {
+    const result = (await apiClient.get(`/machines/${machineId}/teams`)) as
+      | MachineTeam[]
+      | ApiResponse<MachineTeam[]>;
+    return Array.isArray(result) ? result : (result.data ?? []);
+  } catch (error) {
+    console.error(`Error loading teams for machine ${machineId}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Set teams for a machine (bulk operation - replaces all existing)
+ */
+export async function setMachineTeams(
+  machineId: number,
+  teamIds: number[],
+): Promise<MachineTeam[]> {
+  const result = (await apiClient.put(`/machines/${machineId}/teams`, { teamIds })) as
+    | MachineTeam[]
+    | ApiResponse<MachineTeam[]>;
   return Array.isArray(result) ? result : (result.data ?? []);
 }
 

@@ -9,7 +9,7 @@
 
 import { ApiClient } from '../../../utils/api-client';
 import { tokenManager } from '../../../utils/token-manager';
-import type { Document, ApiResponse, UploadFormData, UploadProgressCallback } from './types';
+import type { Document, ApiResponse, UploadFormData, UploadProgressCallback, CurrentUser } from './types';
 
 /**
  * API Base URL
@@ -19,18 +19,22 @@ const API_BASE = '/api/v2';
 /**
  * Map backend response to frontend Document type
  * Backend field names differ from frontend Document interface
+ *
+ * IMPORTANT: Do NOT override storedFilename - backend returns UUID-based filename
+ * which is needed for file type detection in preview modal
  */
 function mapBackendDocument(backendDoc: Record<string, unknown>): Document {
   return {
     ...backendDoc,
     // Map backend field names to frontend Document interface
-    filename: backendDoc['originalName'] ?? backendDoc['filename'] ?? 'Unknown',
-    storedFilename: backendDoc['filename'] ?? '',
+    // storedFilename comes from backend via spread (UUID + extension, e.g. "abc123.pdf")
+    // filename is the display name (custom or original)
+    filename: (backendDoc['filename'] ?? 'Unknown') as string,
     size: typeof backendDoc['fileSize'] === 'number' ? backendDoc['fileSize'] : 0,
-    uploadedAt: backendDoc['uploadedAt'] ?? backendDoc['createdAt'] ?? new Date().toISOString(),
-    uploaderName: backendDoc['uploaderName'] ?? 'System',
-    isRead: backendDoc['isRead'] ?? false,
-    accessScope: backendDoc['accessScope'] ?? 'chat',
+    uploadedAt: (backendDoc['uploadedAt'] ?? backendDoc['createdAt'] ?? new Date().toISOString()) as string,
+    uploaderName: (backendDoc['uploaderName'] ?? 'System') as string,
+    isRead: (backendDoc['isRead'] ?? false) as boolean,
+    accessScope: (backendDoc['accessScope'] ?? 'personal') as string,
   } as Document;
 }
 
@@ -322,6 +326,28 @@ class DocumentAPI {
     } catch (error) {
       console.error('Failed to fetch chat attachments:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get current user info for permission checks
+   * NEW 2025-12-23: Added for per-document permission checks like SvelteKit
+   */
+  public async getCurrentUser(): Promise<CurrentUser | null> {
+    try {
+      const result = await this.apiClient.request<CurrentUser | { id?: number }>('/users/me', {
+        method: 'GET',
+      });
+
+      // Check if result has required id field
+      if (result.id !== undefined) {
+        return result as CurrentUser;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+      return null;
     }
   }
 }

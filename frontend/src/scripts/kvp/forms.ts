@@ -69,13 +69,7 @@ export class KvpFormsManager {
   private extractTeamId(userInfo: UserMeResponse): number | undefined {
     console.log('User /me response:', userInfo);
 
-    return (
-      userInfo.teamId ??
-      userInfo.team_id ??
-      userInfo.team?.id ??
-      userInfo.teams?.[0]?.id ??
-      userInfo.teams?.[0]?.team_id
-    );
+    return userInfo.teamId ?? userInfo.team?.id ?? userInfo.teams?.[0]?.id;
   }
 
   /**
@@ -117,9 +111,7 @@ export class KvpFormsManager {
     console.log('Checking if user is team lead. User ID:', userId);
     console.log('Teams response:', teamsResponse);
 
-    return teamsResponse.find(
-      (team) => team.team_lead_id === userId || team.teamLeadId === userId || team.leaderId === userId,
-    );
+    return teamsResponse.find((team) => team.teamLeadId === userId || team.leaderId === userId);
   }
 
   /**

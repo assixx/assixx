@@ -24,23 +24,23 @@ export type StatusFilter = 'all' | 'active' | 'inactive' | 'archived';
 export type AreaType = 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
 
 /**
- * Area entity from API
+ * Area entity from API (camelCase to match NestJS response)
  */
 export interface Area {
   id: number;
   name: string;
   description?: string | null;
-  area_lead_id?: number | null;
-  area_lead_name?: string | null;
+  areaLeadId?: number | null;
+  areaLeadName?: string | null;
   type: AreaType;
   capacity?: number | null;
   address?: string | null;
-  is_active: IsActiveStatus;
-  employee_count?: number;
-  department_count?: number;
-  department_names?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  isActive: IsActiveStatus;
+  employeeCount?: number | string;
+  departmentCount?: number | string;
+  departmentNames?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -60,7 +60,7 @@ export interface AdminUser {
 export interface Department {
   id: number;
   name: string;
-  area_id?: number | null;
+  areaId?: number | null;
 }
 
 /**

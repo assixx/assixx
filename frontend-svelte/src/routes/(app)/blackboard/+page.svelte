@@ -1,16 +1,26 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  /**
+   * Blackboard - Page Component (Level 3: SvelteKit-native SSR)
+   *
+   * Pattern:
+   * - All SSR data via $derived (single source of truth)
+   * - URL params = filter/sort/page state
+   * - Mutations trigger invalidateAll() for server refetch
+   * - No client-side data fetching
+   */
+  import { goto, invalidateAll } from '$app/navigation';
+  import { page } from '$app/stores';
   import { base } from '$app/paths';
-  import { SvelteURLSearchParams } from 'svelte/reactivity';
+  import type { PageData } from './$types';
 
-  // API Client (proactive token refresh on activity < 10 min)
+  // API Client (for mutations only)
   import { getApiClient } from '$lib/utils/api-client';
-  import { showErrorAlert } from '$lib/stores/toast.js';
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast.js';
 
   // Page-specific CSS
   import '../../../styles/blackboard.css';
 
-  // _lib/ imports (Refactored Pattern)
+  // _lib/ imports
   import type {
     BlackboardEntry,
     Department,
@@ -20,13 +30,8 @@
     EntryColor,
     FormMode,
   } from './_lib/types';
-  import {
-    ZOOM_CONFIG,
-    ENTRIES_PER_PAGE,
-    COLOR_OPTIONS,
-    SORT_OPTIONS,
-    MESSAGES,
-  } from './_lib/constants';
+  import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
+  import BlackboardEntryModal from './_lib/BlackboardEntryModal.svelte';
   import {
     formatDateShort,
     truncateText,
@@ -37,30 +42,52 @@
     getSortLabel,
   } from './_lib/utils';
 
+  // =============================================================================
+  // SSR DATA - All via $derived (Level 3: Single Source of Truth)
+  // =============================================================================
+
+  const { data }: { data: PageData } = $props();
+
+  // SSR data as derived - updates automatically when data changes
+  const entries = $derived<BlackboardEntry[]>(data?.entries ?? []);
+  const totalPages = $derived(data?.totalPages ?? 1);
+  const departments = $derived<Department[]>(data?.departments ?? []);
+  const teams = $derived<Team[]>(data?.teams ?? []);
+  const areas = $derived<Area[]>(data?.areas ?? []);
+
+  // API Client for mutations
   const apiClient = getApiClient();
 
   // =============================================================================
-  // SVELTE 5 RUNES - State
+  // URL-BASED STATE (Level 3: URL is source of truth for filters)
   // =============================================================================
 
-  // Filter State
-  let searchQuery = $state('');
-  let levelFilter = $state<'all' | 'company' | 'department' | 'team' | 'area'>('all');
-  let sortBy = $state('created_at');
-  let sortDir = $state<'ASC' | 'DESC'>('DESC');
-  let filterExpanded = $state(false);
+  // Read current filter state from URL
+  const currentPage = $derived(Number($page.url.searchParams.get('page') ?? '1'));
+  const sortBy = $derived($page.url.searchParams.get('sortBy') ?? 'created_at');
+  const sortDir = $derived<'ASC' | 'DESC'>(
+    ($page.url.searchParams.get('sortDir') as 'ASC' | 'DESC') ?? 'DESC',
+  );
+  const levelFilter = $derived<'all' | 'company' | 'department' | 'team' | 'area'>(
+    ($page.url.searchParams.get('filter') as 'all' | 'company' | 'department' | 'team' | 'area') ??
+      'all',
+  );
+  const searchQuery = $derived($page.url.searchParams.get('search') ?? '');
+
+  // Derived UI state
+  const sortLabel = $derived(getSortLabel(`${sortBy}|${sortDir}`));
+
+  // =============================================================================
+  // CLIENT-ONLY STATE (UI state, not from SSR)
+  // =============================================================================
 
   // Zoom State
   let zoomLevel = $state(ZOOM_CONFIG.DEFAULT);
+  let filterExpanded = $state(false);
 
-  // Entries State
-  let entries = $state<BlackboardEntry[]>([]);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  // Pagination State
-  let currentPage = $state(1);
-  let totalPages = $state(1);
+  // Loading state for mutations
+  let loading = $state(false);
+  const error = $state<string | null>(null);
 
   // Modal State
   let showEntryModal = $state(false);
@@ -82,103 +109,75 @@
   let formAreaIds = $state<number[]>([]);
   let attachmentFiles = $state<FileList | null>(null);
 
-  // Organization Data (for dropdowns)
-  let departments = $state<Department[]>([]);
-  let teams = $state<Team[]>([]);
-  let areas = $state<Area[]>([]);
-
-  // User State
+  // User State (client-side only - from localStorage)
   let userRole = $state<string | null>(null);
 
   // Dropdown State
   let sortDropdownOpen = $state(false);
-  let priorityDropdownOpen = $state(false);
+
+  // Search input - writable $derived (Svelte 5.25+): syncs from URL, can be locally overridden
+  let searchInput = $derived(searchQuery);
 
   // =============================================================================
   // DERIVED VALUES
   // =============================================================================
 
   const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
-  const sortLabel = $derived(getSortLabel(`${sortBy}|${sortDir}`));
-  const priorityLabel = $derived(getPriorityLabel(formPriority));
 
   // =============================================================================
-  // HELPER: Extract OrgItem array from API response
+  // URL NAVIGATION HELPERS (Level 3: goto() instead of fetchEntries())
   // =============================================================================
 
-  function extractOrgItems<T>(result: unknown): T[] {
-    if (Array.isArray(result)) return result;
-    if (
-      result &&
-      typeof result === 'object' &&
-      'data' in result &&
-      Array.isArray((result as { data: T[] }).data)
-    ) {
-      return (result as { data: T[] }).data;
-    }
-    return [];
-  }
-
-  // =============================================================================
-  // API FUNCTIONS
-  // =============================================================================
-
-  async function fetchEntries(): Promise<void> {
-    loading = true;
-    error = null;
-
-    try {
-      const params = new SvelteURLSearchParams();
-      params.append('status', 'active');
-      params.append('page', currentPage.toString());
-      params.append('limit', ENTRIES_PER_PAGE.toString());
-      params.append('sortBy', sortBy);
-      params.append('sortDir', sortDir);
-
-      if (levelFilter !== 'all') params.append('filter', levelFilter);
-      if (searchQuery.trim()) params.append('search', searchQuery.trim());
-
-      const result = await apiClient.get<
-        | {
-            entries?: BlackboardEntry[];
-            data?: BlackboardEntry[];
-            meta?: { pagination?: { totalPages: number; total: number } };
-          }
-        | BlackboardEntry[]
-      >(`/blackboard/entries?${params.toString()}`);
-
-      if (Array.isArray(result)) {
-        entries = result;
+  function buildUrl(params: Record<string, string | number | undefined>): string {
+    const url = new URL($page.url);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '' && value !== 'all') {
+        url.searchParams.set(key, String(value));
       } else {
-        entries = result.entries ?? result.data ?? [];
-        if (result.meta?.pagination) {
-          totalPages = result.meta.pagination.totalPages;
-        }
+        url.searchParams.delete(key);
       }
-    } catch (err) {
-      console.error('[Blackboard] Error fetching entries:', err);
-      error = err instanceof Error ? err.message : MESSAGES.ERROR_LOADING;
-    } finally {
-      loading = false;
+    });
+    return url.pathname + url.search;
+  }
+
+  async function navigateWithParams(params: Record<string, string | number | undefined>) {
+    await goto(buildUrl(params), { replaceState: true, noScroll: true });
+  }
+
+  // =============================================================================
+  // FILTER/SORT/PAGE HANDLERS (Level 3: URL-based)
+  // =============================================================================
+
+  function toggleFilter(): void {
+    filterExpanded = !filterExpanded;
+  }
+
+  async function setLevelFilter(level: typeof levelFilter): Promise<void> {
+    await navigateWithParams({ filter: level, page: 1 });
+  }
+
+  async function setSort(value: string): Promise<void> {
+    const [by, dir] = value.split('|');
+    sortDropdownOpen = false;
+    await navigateWithParams({ sortBy: by, sortDir: dir, page: 1 });
+  }
+
+  async function handleSearch(): Promise<void> {
+    await navigateWithParams({ search: searchInput.trim(), page: 1 });
+  }
+
+  async function goToPage(pageNum: number): Promise<void> {
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      await navigateWithParams({ page: pageNum });
     }
   }
 
-  async function fetchOrganizations(): Promise<void> {
-    try {
-      const [deptResult, teamResult, areaResult] = await Promise.all([
-        apiClient.get('/departments'),
-        apiClient.get('/teams'),
-        apiClient.get('/areas'),
-      ]);
-      departments = extractOrgItems<Department>(deptResult);
-      teams = extractOrgItems<Team>(teamResult);
-      areas = extractOrgItems<Area>(areaResult);
-    } catch (err) {
-      console.error('[Blackboard] Error fetching organizations:', err);
-    }
-  }
+  // =============================================================================
+  // MUTATIONS (Level 3: invalidateAll() after success)
+  // =============================================================================
 
   async function saveEntry(): Promise<void> {
+    loading = true;
     try {
       const payload = {
         title: formTitle,
@@ -193,66 +192,44 @@
 
       if (entryModalMode === 'edit') {
         await apiClient.put(`/blackboard/entries/${editingEntryId}`, payload);
+        showSuccessAlert('Eintrag aktualisiert');
       } else {
         await apiClient.post('/blackboard/entries', payload);
+        showSuccessAlert('Eintrag erstellt');
       }
 
       closeEntryModal();
-      await fetchEntries();
+      await invalidateAll(); // Level 3: Server refetches data
     } catch (err) {
       console.error('[Blackboard] Error saving entry:', err);
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.SAVE_ERROR);
+    } finally {
+      loading = false;
     }
   }
 
   async function deleteEntry(): Promise<void> {
     if (!deletingEntryId) return;
 
+    loading = true;
     try {
       await apiClient.delete(`/blackboard/entries/${deletingEntryId}`);
       showDeleteConfirmModal = false;
       showDeleteModal = false;
       deletingEntryId = null;
-      await fetchEntries();
+      showSuccessAlert('Eintrag gelöscht');
+      await invalidateAll(); // Level 3: Server refetches data
     } catch (err) {
       console.error('[Blackboard] Error deleting entry:', err);
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.DELETE_ERROR);
+    } finally {
+      loading = false;
     }
   }
 
   // =============================================================================
-  // EVENT HANDLERS
+  // UI HANDLERS
   // =============================================================================
-
-  function toggleFilter(): void {
-    filterExpanded = !filterExpanded;
-  }
-
-  function setLevelFilter(level: typeof levelFilter): void {
-    levelFilter = level;
-    currentPage = 1;
-    fetchEntries();
-  }
-
-  function setSort(value: string): void {
-    const [by, dir] = value.split('|');
-    sortBy = by ?? 'created_at';
-    sortDir = (dir as 'ASC' | 'DESC') ?? 'DESC';
-    sortDropdownOpen = false;
-    fetchEntries();
-  }
-
-  function handleSearch(): void {
-    currentPage = 1;
-    fetchEntries();
-  }
-
-  function goToPage(page: number): void {
-    if (page >= 1 && page <= totalPages) {
-      currentPage = page;
-      fetchEntries();
-    }
-  }
 
   // Zoom handlers
   function zoomIn(): void {
@@ -299,6 +276,7 @@
     showEntryModal = false;
     editingEntryId = null;
   }
+
   function proceedDelete(): void {
     showDeleteModal = false;
     showDeleteConfirmModal = true;
@@ -308,44 +286,27 @@
     e.preventDefault();
     saveEntry();
   }
+
   function goToDetail(uuid: string): void {
     goto(`${base}/blackboard/${uuid}`);
-  }
-  function setColor(color: EntryColor): void {
-    formColor = color;
-  }
-  function setPriority(priority: Priority): void {
-    formPriority = priority;
-    priorityDropdownOpen = false;
-  }
-
-  function removeAttachment(index: number): void {
-    if (!attachmentFiles) return;
-    const dt = new DataTransfer();
-    for (let i = 0; i < attachmentFiles.length; i++) {
-      if (i !== index) dt.items.add(attachmentFiles[i]);
-    }
-    attachmentFiles = dt.files;
   }
 
   // =============================================================================
   // LIFECYCLE
   // =============================================================================
 
+  // Set userRole from localStorage (client-side only for isAdmin check)
   let mounted = false;
   $effect(() => {
     if (!mounted) {
       mounted = true;
       userRole = localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
-      fetchEntries();
-      fetchOrganizations();
     }
   });
 
   function handleClickOutside(e: MouseEvent): void {
     const target = e.target as HTMLElement;
     if (!target.closest('#sort-dropdown')) sortDropdownOpen = false;
-    if (!target.closest('#entry-priority-dropdown')) priorityDropdownOpen = false;
   }
 
   function handleKeyDown(e: KeyboardEvent): void {
@@ -354,7 +315,6 @@
       else if (showDeleteModal) showDeleteModal = false;
       else if (showEntryModal) closeEntryModal();
       sortDropdownOpen = false;
-      priorityDropdownOpen = false;
     }
   }
 </script>
@@ -396,7 +356,7 @@
                 id="searchInput"
                 class="form-field__control pl-10"
                 placeholder="Blackboard durchsuchen..."
-                bind:value={searchQuery}
+                bind:value={searchInput}
                 onkeydown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -443,7 +403,7 @@
                       onkeydown={(e) => e.key === 'Enter' && setSort(opt.value)}
                       role="option"
                       tabindex="0"
-                      aria-selected={sortBy === opt.value}
+                      aria-selected={`${sortBy}|${sortDir}` === opt.value}
                     >
                       {opt.label}
                     </div>
@@ -473,7 +433,7 @@
         >
       </div>
       {#if isAdmin}
-        <button class="btn btn-primary" onclick={openCreateModal}
+        <button class="btn btn-primary" onclick={openCreateModal} disabled={loading}
           ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
         >
       {/if}
@@ -491,7 +451,9 @@
       <div class="text-center p-5">
         <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
         <p class="text-[var(--color-text-secondary)]">{error}</p>
-        <button class="btn btn-primary mt-4" onclick={fetchEntries}>{MESSAGES.RETRY}</button>
+        <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+          >{MESSAGES.RETRY}</button
+        >
       </div>
     {:else if entries.length === 0}
       <div class="text-center p-5">
@@ -530,6 +492,14 @@
                     ><i class="fas fa-paperclip"></i> {entry.attachmentCount}</span
                   >
                 {/if}
+                <span
+                  class="sticky-note__read-status"
+                  class:sticky-note__read-status--read={entry.isConfirmed}
+                  class:sticky-note__read-status--unread={!entry.isConfirmed}
+                  title={entry.isConfirmed ? 'Gelesen' : 'Ungelesen'}
+                >
+                  <i class="fas {entry.isConfirmed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </span>
               </div>
               <div class="sticky-note__footer">
                 <div class="sticky-note__badges">
@@ -539,11 +509,6 @@
                   <span class="sticky-note__badge {getOrgLevelClass(entry.orgLevel)}"
                     >{getOrgLevelLabel(entry.orgLevel)}</span
                   >
-                  {#if !entry.isConfirmed}
-                    <span class="sticky-note__badge sticky-note__badge--unread" title="Ungelesen"
-                      ><i class="fas fa-eye-slash"></i></span
-                    >
-                  {/if}
                 </div>
                 <div class="sticky-note__footer-row">
                   <span class="sticky-note__author"
@@ -591,259 +556,34 @@
 
 <!-- Entry Form Modal -->
 {#if showEntryModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={closeEntryModal}
-    onkeydown={(e) => e.key === 'Escape' && closeEntryModal()}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-      class="ds-modal ds-modal--lg"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-      onsubmit={handleEntrySubmit}
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          {entryModalMode === 'edit' ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_CREATE}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closeEntryModal}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body">
-        <div class="form-field">
-          <label for="entryTitle" class="form-field__label">Titel</label>
-          <input
-            type="text"
-            class="form-field__control"
-            id="entryTitle"
-            required
-            placeholder="Was ist das Thema?"
-            bind:value={formTitle}
-          />
-        </div>
-        <div class="form-field">
-          <label for="entryContent" class="form-field__label">Inhalt</label>
-          <textarea
-            class="form-field__control"
-            id="entryContent"
-            rows="6"
-            required
-            placeholder="Ihre Nachricht hier..."
-            bind:value={formContent}
-          ></textarea>
-        </div>
-
-        <!-- Visibility -->
-        <div class="form-field">
-          <span class="form-field__label">Wer soll den Eintrag sehen?</span>
-          <p class="mb-2 text-[var(--color-text-secondary)] text-sm">
-            Wählen Sie keine Organisation für firmenweite Einträge.
-          </p>
-        </div>
-        <div class="form-field">
-          <label class="toggle-switch toggle-switch--danger">
-            <input type="checkbox" class="toggle-switch__input" bind:checked={formCompanyWide} />
-            <span class="toggle-switch__slider"></span>
-            <span class="toggle-switch__label"><i class="fas fa-building mr-2"></i>Ganze Firma</span
-            >
-          </label>
-          <span class="form-field__message text-[var(--color-danger)]"
-            ><i class="fas fa-exclamation-triangle mr-1"></i>{MESSAGES.COMPANY_WIDE_WARNING}</span
-          >
-        </div>
-
-        {#if !formCompanyWide}
-          <div class="form-field">
-            <label for="entry-area-select" class="form-field__label"
-              ><i class="fas fa-map-marked-alt mr-1"></i>Bereiche</label
-            >
-            <select
-              id="entry-area-select"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formAreaIds}
-            >
-              {#each areas as area (area.id)}<option value={area.id}>{area.name}</option>{/each}
-            </select>
-            <span class="form-field__message text-[var(--color-text-secondary)]"
-              >{MESSAGES.MULTI_SELECT_HINT}</span
-            >
-          </div>
-          <div class="form-field">
-            <label for="entry-department-select" class="form-field__label"
-              ><i class="fas fa-sitemap mr-1"></i>Abteilungen</label
-            >
-            <select
-              id="entry-department-select"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formDepartmentIds}
-            >
-              {#each departments as dept (dept.id)}<option value={dept.id}>{dept.name}</option
-                >{/each}
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="entry-team-select" class="form-field__label"
-              ><i class="fas fa-users mr-1"></i>Teams</label
-            >
-            <select
-              id="entry-team-select"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formTeamIds}
-            >
-              {#each teams as team (team.id)}<option value={team.id}>{team.name}</option>{/each}
-            </select>
-          </div>
-        {/if}
-
-        <!-- Priority -->
-        <div class="form-field">
-          <span class="form-field__label">Priorität</span>
-          <div class="dropdown" id="entry-priority-dropdown" role="listbox">
-            <div
-              class="dropdown__trigger"
-              onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
-              role="button"
-              tabindex="0"
-              onkeydown={(e) => e.key === 'Enter' && (priorityDropdownOpen = !priorityDropdownOpen)}
-            >
-              <span>{priorityLabel}</span><i class="fas fa-chevron-down"></i>
-            </div>
-            {#if priorityDropdownOpen}
-              <div class="dropdown__menu active">
-                <div
-                  class="dropdown__option"
-                  onclick={() => setPriority('low')}
-                  onkeydown={(e) => e.key === 'Enter' && setPriority('low')}
-                  role="option"
-                  tabindex="0"
-                  aria-selected={formPriority === 'low'}
-                >
-                  Niedrig
-                </div>
-                <div
-                  class="dropdown__option"
-                  onclick={() => setPriority('medium')}
-                  onkeydown={(e) => e.key === 'Enter' && setPriority('medium')}
-                  role="option"
-                  tabindex="0"
-                  aria-selected={formPriority === 'medium'}
-                >
-                  Normal
-                </div>
-                <div
-                  class="dropdown__option"
-                  onclick={() => setPriority('high')}
-                  onkeydown={(e) => e.key === 'Enter' && setPriority('high')}
-                  role="option"
-                  tabindex="0"
-                  aria-selected={formPriority === 'high'}
-                >
-                  Hoch
-                </div>
-                <div
-                  class="dropdown__option"
-                  onclick={() => setPriority('urgent')}
-                  onkeydown={(e) => e.key === 'Enter' && setPriority('urgent')}
-                  role="option"
-                  tabindex="0"
-                  aria-selected={formPriority === 'urgent'}
-                >
-                  Dringend
-                </div>
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Expires -->
-        <div class="form-field">
-          <label for="entryExpiresAt" class="form-field__label">Gültig bis (optional)</label>
-          <input
-            type="date"
-            class="form-field__control"
-            id="entryExpiresAt"
-            bind:value={formExpiresAt}
-          />
-        </div>
-
-        <!-- Color Picker -->
-        <div class="form-field">
-          <span class="form-field__label"><i class="fas fa-palette mr-2"></i>Farbe</span>
-          <div class="color-picker" role="radiogroup">
-            {#each COLOR_OPTIONS as opt (opt.value)}
-              <button
-                type="button"
-                class="color-option"
-                class:active={formColor === opt.value}
-                data-color={opt.value}
-                onclick={() => setColor(opt.value)}
-                role="radio"
-                aria-checked={formColor === opt.value}
-              >
-                <span class="color-option__swatch"></span>
-                <span class="color-option__label">{opt.label}</span>
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <!-- File Upload -->
-        <div class="form-field">
-          <span class="form-field__label">Anhänge (optional)</span>
-          <div class="file-upload-zone file-upload-zone--compact">
-            <input
-              type="file"
-              class="file-upload-zone__input"
-              id="attachmentInput"
-              multiple
-              accept=".pdf,.jpg,.jpeg,.png,.gif"
-              bind:files={attachmentFiles}
-            />
-            <label for="attachmentInput" class="file-upload-zone__label">
-              <div class="file-upload-zone__icon"><i class="fas fa-cloud-upload-alt"></i></div>
-              <div class="file-upload-zone__text">
-                <p class="file-upload-zone__title">Dateien hierher ziehen</p>
-              </div>
-            </label>
-          </div>
-          {#if attachmentFiles && attachmentFiles.length > 0}
-            <div class="file-upload-list file-upload-list--compact">
-              {#each Array.from(attachmentFiles) as file, i (i)}
-                <div class="file-upload-list__item">
-                  <i class="fas fa-file file-upload-list__icon"></i>
-                  <span class="file-upload-list__name">{file.name}</span>
-                  <span class="file-upload-list__size"
-                    >{(file.size / 1024 / 1024).toFixed(2)} MB</span
-                  >
-                  <button
-                    type="button"
-                    class="file-upload-list__remove"
-                    onclick={() => removeAttachment(i)}
-                    aria-label="Datei entfernen"><i class="fas fa-times"></i></button
-                  >
-                </div>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-      <div class="ds-modal__footer ds-modal__footer--right">
-        <button type="button" class="btn btn-cancel" onclick={closeEntryModal}>Abbrechen</button>
-        <button type="submit" class="btn btn-modal">Speichern</button>
-      </div>
-    </form>
-  </div>
+  <BlackboardEntryModal
+    mode={entryModalMode}
+    title={formTitle}
+    content={formContent}
+    priority={formPriority}
+    color={formColor}
+    expiresAt={formExpiresAt}
+    companyWide={formCompanyWide}
+    departmentIds={formDepartmentIds}
+    teamIds={formTeamIds}
+    areaIds={formAreaIds}
+    {attachmentFiles}
+    {departments}
+    {teams}
+    {areas}
+    onclose={closeEntryModal}
+    onsubmit={handleEntrySubmit}
+    ontitlechange={(v) => (formTitle = v)}
+    oncontentchange={(v) => (formContent = v)}
+    onprioritychange={(v) => (formPriority = v)}
+    oncolorchange={(v) => (formColor = v)}
+    onexpireschange={(v) => (formExpiresAt = v)}
+    oncompanywidechange={(v) => (formCompanyWide = v)}
+    ondepartmentschange={(v) => (formDepartmentIds = v)}
+    onteamschange={(v) => (formTeamIds = v)}
+    onareaschange={(v) => (formAreaIds = v)}
+    onfileschange={(v) => (attachmentFiles = v)}
+  />
 {/if}
 
 <!-- Delete Modal Step 1 -->
@@ -921,15 +661,10 @@
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={deleteEntry}>Endgültig löschen</button
+          onclick={deleteEntry}
+          disabled={loading}>Endgültig löschen</button
         >
       </div>
     </div>
   </div>
 {/if}
-
-<style>
-  .rotate-180 {
-    transform: rotate(180deg);
-  }
-</style>

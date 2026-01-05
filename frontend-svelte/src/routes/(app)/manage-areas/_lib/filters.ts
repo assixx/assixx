@@ -13,21 +13,21 @@ import type { Area, StatusFilter } from './types';
 export function filterByStatus(areas: Area[], status: StatusFilter): Area[] {
   switch (status) {
     case 'active':
-      return areas.filter((a) => a.is_active === 1);
+      return areas.filter((a) => a.isActive === 1);
     case 'inactive':
-      return areas.filter((a) => a.is_active === 0);
+      return areas.filter((a) => a.isActive === 0);
     case 'archived':
-      return areas.filter((a) => a.is_active === 3);
+      return areas.filter((a) => a.isActive === 3);
     case 'all':
     default:
       // Show all (including archived but not deleted)
-      return areas.filter((a) => a.is_active !== 4);
+      return areas.filter((a) => a.isActive !== 4);
   }
 }
 
 /**
  * Filter areas by search query
- * Searches in: name, description, address, area_lead_name
+ * Searches in: name, description, address, areaLeadName
  * @param areas - Areas to filter
  * @param query - Search query string
  * @returns Filtered areas array
@@ -40,7 +40,7 @@ export function filterBySearch(areas: Area[], query: string): Area[] {
     const name = a.name.toLowerCase();
     const description = (a.description ?? '').toLowerCase();
     const address = (a.address ?? '').toLowerCase();
-    const areaLeadName = (a.area_lead_name ?? '').toLowerCase();
+    const areaLeadName = (a.areaLeadName ?? '').toLowerCase();
 
     return (
       name.includes(term) ||

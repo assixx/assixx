@@ -404,6 +404,43 @@ export class ShiftsController {
   }
 
   /**
+   * DELETE /api/v2/shifts/week
+   * Delete all shifts for a team in a date range (admin only)
+   */
+  @Delete('week')
+  @Roles('admin', 'root')
+  async deleteShiftsByWeek(
+    @Query('teamId', ParseIntPipe) teamId: number,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
+    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
+    const result = await this.shiftsService.deleteShiftsByWeek(
+      teamId,
+      startDate,
+      endDate,
+      user.tenantId,
+    );
+    return { success: true, data: result };
+  }
+
+  /**
+   * DELETE /api/v2/shifts/team
+   * Delete ALL shifts for a team (admin only)
+   */
+  @Delete('team')
+  @Roles('admin', 'root')
+  async deleteShiftsByTeam(
+    @Query('teamId', ParseIntPipe) teamId: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
+    this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
+    const result = await this.shiftsService.deleteShiftsByTeam(teamId, user.tenantId);
+    return { success: true, data: result };
+  }
+
+  /**
    * DELETE /api/v2/shifts/:id
    * Delete shift (admin only)
    */

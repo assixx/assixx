@@ -1,11 +1,13 @@
 <script>
   import { base } from '$app/paths';
-  import { page } from '$app/stores';
-  import { onMount } from 'svelte';
 
-  // API Client
+  // API Client (for approve action only)
   import { getApiClient } from '$lib/utils/api-client';
   const apiClient = getApiClient();
+
+  // SSR Data
+  /** @type {{ data: import('./$types').PageData }} */
+  const { data } = $props();
 
   // =============================================================================
   // TYPES
@@ -22,21 +24,25 @@
    */
 
   // =============================================================================
-  // STATE
+  // SSR DATA (via $derived - single source of truth)
   // =============================================================================
 
   /** @type {number | null} */
-  let queueId = $state(null);
+  const queueId = $derived(data?.queueId ?? null);
 
-  let loading = $state(true);
+  /** @type {DeletionStatusData | null} */
+  const queueData = $derived(data?.queueData ?? null);
+
+  // =============================================================================
+  // UI STATE (client-side only)
+  // =============================================================================
+
+  const loading = $state(false);
   let submitting = $state(false);
   let success = $state(false);
 
-  /** @type {string | null} */
-  let errorMessage = $state(null);
-
-  /** @type {DeletionStatusData | null} */
-  let queueData = $state(null);
+  /** @type {string | null} - writable $derived: syncs from SSR, can be locally overridden */
+  let errorMessage = $derived(data?.error ?? null);
 
   // Form inputs
   let confirmationInput = $state('');
@@ -51,73 +57,8 @@
   const canSubmit = $derived(isConfirmationValid && isPasswordValid && !submitting);
 
   // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  onMount(() => {
-    // Get queueId from URL
-    const queueIdParam = $page.url.searchParams.get('queueId');
-
-    if (!queueIdParam) {
-      errorMessage = 'Keine Queue-ID in der URL gefunden';
-      loading = false;
-      return;
-    }
-
-    const parsedId = Number.parseInt(queueIdParam, 10);
-    if (Number.isNaN(parsedId)) {
-      errorMessage = 'Ungültige Queue-ID';
-      loading = false;
-      return;
-    }
-
-    queueId = parsedId;
-    loadQueueData();
-  });
-
-  // =============================================================================
   // API FUNCTIONS
   // =============================================================================
-
-  /**
-   * Load queue data from API
-   */
-  async function loadQueueData() {
-    try {
-      /** @type {DeletionStatusData | { data?: null; message?: string } | null} */
-      const response = await apiClient.get('/root/tenant/deletion-status');
-
-      // Check if response has queueId (indicates valid deletion data)
-      if (!response || !('queueId' in response)) {
-        errorMessage = 'Keine Löschanfrage gefunden';
-        loading = false;
-        return;
-      }
-
-      const statusData = /** @type {DeletionStatusData} */ (response);
-
-      // Verify queue ID matches
-      if (statusData.queueId !== queueId) {
-        errorMessage = 'Queue-ID stimmt nicht überein';
-        loading = false;
-        return;
-      }
-
-      // Check if user can approve
-      if (!statusData.canApprove) {
-        errorMessage = 'Sie können diese Löschanfrage nicht genehmigen (Zwei-Personen-Prinzip)';
-        loading = false;
-        return;
-      }
-
-      queueData = statusData;
-      loading = false;
-    } catch (err) {
-      console.error('[TenantDeletionApprove] Error loading queue data:', err);
-      errorMessage = 'Fehler beim Laden der Löschanfrage';
-      loading = false;
-    }
-  }
 
   /**
    * Approve deletion

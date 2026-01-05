@@ -191,13 +191,13 @@ export function setAreaLeadDropdown(area: Area): void {
     return;
   }
 
-  const leadValue = area.area_lead_id !== null && area.area_lead_id !== undefined ? String(area.area_lead_id) : '';
+  const leadValue = area.areaLeadId !== null && area.areaLeadId !== undefined ? String(area.areaLeadId) : '';
   leadInput.value = leadValue;
 
   const leadTriggerSpan = leadTrigger.querySelector('span');
   if (leadTriggerSpan !== null) {
     // Use || instead of ?? to handle empty strings and whitespace-only names
-    const displayName = area.area_lead_name?.trim();
+    const displayName = area.areaLeadName?.trim();
     leadTriggerSpan.textContent = displayName !== '' && displayName !== undefined ? displayName : 'Kein Bereichsleiter';
   }
 }

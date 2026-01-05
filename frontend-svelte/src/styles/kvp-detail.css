@@ -10,11 +10,8 @@
    DESIGN SYSTEM IMPORTS
    ======================================== */
 
-@import '../design-system/primitives/avatar/avatar.css';
-@import '../design-system/primitives/badges/badge.base.css';
-@import '../design-system/primitives/badges/badge.kvp.css';
-@import '../design-system/primitives/badges/badge.count.css';
-@import '../design-system/primitives/choice-cards/choice-card.base.css';
+/* Design System imports - using $lib alias doesn't work in CSS,
+   so these styles are imported via the main design-system/index.css */
 
 /* ========================================
    LAYOUT - Domain-Specific
@@ -75,7 +72,9 @@
 /* Header with Status */
 .detail-header {
   display: flex;
-  align-items: start;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: var(--spacing-8);
 }
@@ -119,7 +118,9 @@
 /* Status and Priority Container */
 .status-priority {
   display: flex;
-  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: var(--spacing-3);
   align-items: center;
 }
 

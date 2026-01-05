@@ -225,11 +225,11 @@ export class RotationController {
     this.logger.debug(`Getting rotation history for tenant ${user.tenantId}`);
 
     const filters = {
-      patternId: query.pattern_id,
-      userId: query.user_id,
-      teamId: query.team_id,
-      startDate: query.start_date,
-      endDate: query.end_date,
+      patternId: query.patternId,
+      userId: query.userId,
+      teamId: query.teamId,
+      startDate: query.startDate,
+      endDate: query.endDate,
       status: query.status,
     };
 
@@ -239,7 +239,9 @@ export class RotationController {
 
   /**
    * DELETE /api/v2/shifts/rotation/history
-   * Delete all rotation history for a team (admin only)
+   * Delete rotation history for a team (admin only)
+   * - If patternId provided: deletes ONLY that pattern
+   * - If only teamId: deletes ALL patterns for the team
    */
   @Delete('history')
   @Roles('admin', 'root')
@@ -247,18 +249,26 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryDto,
   ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
-    this.logger.debug(`Deleting rotation history for team ${query.team_id}`);
+    const { teamId, patternId } = query;
+    const hasPatternId = patternId !== undefined;
+    this.logger.debug(
+      hasPatternId ?
+        `Deleting rotation pattern ${patternId} for team ${teamId}`
+      : `Deleting ALL rotation data for team ${teamId}`,
+    );
     const deletedCounts = await this.rotationService.deleteRotationHistory(
       user.tenantId,
-      query.team_id,
+      teamId,
       user.role,
+      patternId, // Optional: if provided, only delete this pattern
     );
+    const message =
+      hasPatternId ?
+        `Successfully deleted rotation pattern ${patternId} for team ${teamId}`
+      : `Successfully deleted all rotation data for team ${teamId}`;
     return {
       success: true,
-      data: {
-        message: `Successfully deleted rotation data for team ${query.team_id}`,
-        deletedCounts,
-      },
+      data: { message, deletedCounts },
     };
   }
 
@@ -273,19 +283,19 @@ export class RotationController {
     @Query() query: DeleteRotationHistoryByDateRangeDto,
   ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
     this.logger.debug(
-      `Deleting rotation history for team ${query.team_id} from ${query.start_date} to ${query.end_date}`,
+      `Deleting rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
     );
     const deletedCounts = await this.rotationService.deleteRotationHistoryByDateRange(
       user.tenantId,
-      query.team_id,
-      query.start_date,
-      query.end_date,
+      query.teamId,
+      query.startDate,
+      query.endDate,
       user.role,
     );
     return {
       success: true,
       data: {
-        message: `Successfully deleted rotation history for team ${query.team_id} from ${query.start_date} to ${query.end_date}`,
+        message: `Successfully deleted rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
         deletedCounts,
       },
     };

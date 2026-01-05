@@ -1,12 +1,19 @@
-<script>
-  import { goto } from '$app/navigation';
+<script lang="ts">
+  /**
+   * Account Settings - Page Component
+   * @module account-settings/+page
+   *
+   * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
+   */
+  import { invalidateAll } from '$app/navigation';
   import { base } from '$app/paths';
+  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/account-settings.css';
 
   // Module imports
-  import { loadDeletionStatus, getRootUserCount, deleteTenant, checkAuthRole } from './_lib/api';
+  import { getRootUserCount, deleteTenant } from './_lib/api';
   import { formatDate, getStatusLabel, showToast } from './_lib/utils';
   import {
     DELETE_CONFIRMATION_TEXT,
@@ -14,22 +21,21 @@
     MIN_ROOT_USERS,
     MESSAGES,
   } from './_lib/constants';
-
-  /** @typedef {import('./_lib/types').DeletionStatusData} DeletionStatusData */
+  import type { DeletionStatusData } from './_lib/types';
 
   // =============================================================================
-  // SVELTE 5 RUNES - State
+  // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
 
-  // Page State
-  let loading = $state(true);
-  /** @type {string | null} */
-  const error = $state(null);
+  const { data }: { data: PageData } = $props();
 
-  // Pending Deletion State
-  /** @type {DeletionStatusData | null} */
-  let pendingDeletion = $state(/** @type {DeletionStatusData | null} */ (null));
+  // SSR data via $derived - updates when invalidateAll() is called
+  const pendingDeletion = $derived<DeletionStatusData | null>(data?.pendingDeletion ?? null);
   const hasPendingDeletion = $derived(pendingDeletion !== null);
+
+  // =============================================================================
+  // UI STATE - Client-side only
+  // =============================================================================
 
   // Delete Modal State
   let showDeleteModal = $state(false);
@@ -44,42 +50,6 @@
   const isDeleteConfirmationValid = $derived(deleteConfirmation === DELETE_CONFIRMATION_TEXT);
   const isReasonValid = $derived(deleteReason.length >= MIN_REASON_LENGTH);
   const canDelete = $derived(isDeleteConfirmationValid && isReasonValid);
-
-  // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  $effect(() => {
-    checkAuth();
-  });
-
-  // =============================================================================
-  // AUTH CHECK
-  // =============================================================================
-
-  async function checkAuth() {
-    try {
-      const { isAuthenticated, role } = checkAuthRole();
-
-      if (!isAuthenticated) {
-        goto(`${base}/login`);
-        return;
-      }
-
-      // Only root can access this page
-      if (role !== 'root') {
-        goto(`${base}/dashboard/${role}`);
-        return;
-      }
-
-      pendingDeletion = await loadDeletionStatus();
-    } catch (err) {
-      console.error('[AccountSettings] Auth check failed:', err);
-      goto(`${base}/login`);
-    } finally {
-      loading = false;
-    }
-  }
 
   // =============================================================================
   // HANDLERS
@@ -115,7 +85,7 @@
   /**
    * Handle delete tenant confirmation
    */
-  async function handleDeleteTenant() {
+  async function handleDeleteTenant(): Promise<void> {
     if (!canDelete || deleteLoading) return;
 
     deleteLoading = true;
@@ -124,9 +94,9 @@
       await deleteTenant(deleteReason);
       showToast(MESSAGES.deletionRequested, 'success');
 
-      // Close modal and reload deletion status to show banner
+      // Close modal and trigger SSR refetch
       showDeleteModal = false;
-      pendingDeletion = await loadDeletionStatus();
+      await invalidateAll();
     } catch (err) {
       console.error('[AccountSettings] Error deleting tenant:', err);
       const message = err instanceof Error ? err.message : MESSAGES.deletionError;
@@ -147,9 +117,8 @@
 
   /**
    * Handle keyboard events for modals
-   * @param {KeyboardEvent} event
    */
-  function handleKeydown(event) {
+  function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && showDeleteModal) {
       closeDeleteModal();
     }
@@ -157,9 +126,8 @@
 
   /**
    * Handle backdrop click
-   * @param {MouseEvent} event
    */
-  function handleBackdropClick(event) {
+  function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget && showDeleteModal) {
       closeDeleteModal();
     }
@@ -169,88 +137,71 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="container">
-  {#if loading}
-    <!-- Loading State -->
-    <div class="card">
-      <div class="card__body">
-        <div class="skeleton skeleton--text" style="width: 60%"></div>
-        <div class="skeleton skeleton--text" style="width: 80%"></div>
-        <div class="skeleton skeleton--text" style="width: 40%"></div>
-      </div>
+  <div class="card card--danger-border">
+    <!-- Card Header -->
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        Kontoeinstellungen
+      </h2>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        Tenant-Verwaltung und Löschoptionen (Zwei-Personen-Prinzip)
+      </p>
     </div>
-  {:else if error}
-    <!-- Error State -->
-    <div class="alert alert--danger">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span>{error}</span>
-    </div>
-  {:else}
-    <div class="card card--danger-border">
-      <!-- Card Header -->
-      <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-exclamation-triangle mr-2"></i>
-          Kontoeinstellungen
-        </h2>
-        <p class="text-[var(--color-text-secondary)] mt-2">
-          Tenant-Verwaltung und Löschoptionen (Zwei-Personen-Prinzip)
-        </p>
-      </div>
 
-      <div class="card__body">
-        <!-- Pending Deletion Banner -->
-        {#if hasPendingDeletion && pendingDeletion}
-          <div class="alert alert--warning mb-6">
-            <div class="alert__icon">
-              <i class="fas fa-hourglass-half"></i>
-            </div>
-            <div class="alert__content flex-1">
-              <p class="alert__title">Löschanfrage aktiv</p>
-              <p class="alert__message">
-                <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue #{pendingDeletion.queueId}
-                · Tenant #{pendingDeletion.tenantId} · Angefordert von {pendingDeletion.requestedByName ??
-                  'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
-              </p>
-              <a href="{base}/tenant-deletion-status" class="btn btn-warning mt-4">
-                <i class="fas fa-external-link-alt mr-2"></i>
-                Details anzeigen
-              </a>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Danger Zone Warning Alert -->
-        <div class="alert alert--danger mb-6">
+    <div class="card__body">
+      <!-- Pending Deletion Banner -->
+      {#if hasPendingDeletion && pendingDeletion}
+        <div class="alert alert--warning mb-6">
           <div class="alert__icon">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-hourglass-half"></i>
           </div>
-          <div class="alert__content">
-            <p class="alert__title">Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+          <div class="alert__content flex-1">
+            <p class="alert__title">Löschanfrage aktiv</p>
             <p class="alert__message">
-              Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich gelöscht:
+              <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue #{pendingDeletion.queueId}
+              · Tenant #{pendingDeletion.tenantId} · Angefordert von {pendingDeletion.requestedByName ??
+                'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
             </p>
-            <ul class="pl-5 mt-4 space-y-1 text-sm">
-              <li>Alle Administratoren und Mitarbeiter</li>
-              <li>Alle Dokumente und Dateien</li>
-              <li>Alle Nachrichten und Chats</li>
-              <li>Alle Einstellungen und Konfigurationen</li>
-              <li>Die gesamte Firmenstruktur</li>
-            </ul>
+            <a href="{base}/tenant-deletion-status" class="btn btn-warning mt-4">
+              <i class="fas fa-external-link-alt mr-2"></i>
+              Details anzeigen
+            </a>
           </div>
         </div>
+      {/if}
 
-        <!-- Action Button -->
-        {#if !hasPendingDeletion}
-          <div class="flex gap-3">
-            <button class="btn btn-danger" onclick={handleShowDeleteModal}>
-              <i class="fas fa-trash-alt"></i>
-              Tenant komplett löschen
-            </button>
-          </div>
-        {/if}
+      <!-- Danger Zone Warning Alert -->
+      <div class="alert alert--danger mb-6">
+        <div class="alert__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="alert__content">
+          <p class="alert__title">Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+          <p class="alert__message">
+            Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich gelöscht:
+          </p>
+          <ul class="pl-5 mt-4 space-y-1 text-sm">
+            <li>Alle Administratoren und Mitarbeiter</li>
+            <li>Alle Dokumente und Dateien</li>
+            <li>Alle Nachrichten und Chats</li>
+            <li>Alle Einstellungen und Konfigurationen</li>
+            <li>Die gesamte Firmenstruktur</li>
+          </ul>
+        </div>
       </div>
+
+      <!-- Action Button -->
+      {#if !hasPendingDeletion}
+        <div class="flex gap-3">
+          <button class="btn btn-danger" onclick={handleShowDeleteModal}>
+            <i class="fas fa-trash-alt"></i>
+            Tenant komplett löschen
+          </button>
+        </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 </div>
 
 <!-- Delete Confirmation Modal -->

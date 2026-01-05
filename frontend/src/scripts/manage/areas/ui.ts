@@ -135,13 +135,13 @@ function createAreaActionButtons(area: Area): string {
  * UPDATED: Using unified is_active status (2025-12-02)
  */
 export function createAreaRow(area: Area): string {
-  const statusBadge = getStatusBadgeClass(area.is_active);
-  const statusLabel = getStatusLabel(area.is_active);
+  const statusBadge = getStatusBadgeClass(area.isActive);
+  const statusLabel = getStatusLabel(area.isActive);
 
   // NOTE: parent_id display removed (2025-11-29) - areas are now flat (non-hierarchical)
   const areaLeadDisplay =
-    area.area_lead_name !== null && area.area_lead_name !== undefined && area.area_lead_name.trim() !== ''
-      ? escapeHtml(area.area_lead_name)
+    area.areaLeadName !== null && area.areaLeadName !== undefined && area.areaLeadName.trim() !== ''
+      ? escapeHtml(area.areaLeadName)
       : '-';
 
   return `
@@ -173,7 +173,10 @@ export function createAreaRow(area: Area): string {
         </div>
       </td>
       <td>
-        ${createDepartmentsBadge(area.department_count, area.department_names)}
+        ${createDepartmentsBadge(
+          typeof area.departmentCount === 'string' ? Number.parseInt(area.departmentCount, 10) : area.departmentCount,
+          area.departmentNames,
+        )}
       </td>
       <td>
         <span class="badge ${statusBadge}">${statusLabel}</span>
@@ -291,14 +294,14 @@ export function populateAreaForm(area: Area): void {
   // Status dropdown (custom) - UPDATED for unified is_active (2025-12-02)
   // Status: 0=inactive, 1=active, 3=archived, 4=deleted
   const statusValue =
-    area.is_active === 1 ? 'active' : area.is_active === 0 ? 'inactive' : area.is_active === 3 ? 'archived' : 'active';
+    area.isActive === 1 ? 'active' : area.isActive === 0 ? 'inactive' : area.isActive === 3 ? 'archived' : 'active';
   setInputValue('area-status', statusValue);
-  setInputValue('area-is-active', area.is_active);
+  setInputValue('area-is-active', area.isActive);
 
   const statusTrigger = document.querySelector<HTMLElement>('#status-trigger span');
   if (statusTrigger !== null) {
-    const badgeClass = getStatusBadgeClass(area.is_active);
-    const badgeText = getStatusLabel(area.is_active);
+    const badgeClass = getStatusBadgeClass(area.isActive);
+    const badgeText = getStatusLabel(area.isActive);
     setSafeHTML(statusTrigger, `<span class="badge ${badgeClass}">${badgeText}</span>`);
   }
 
@@ -414,8 +417,8 @@ export function renderSearchResults(areas: Area[], query: string): void {
   const resultsHTML = limitedResults
     .map((area) => {
       const typeLabel = getTypeLabel(area.type);
-      const statusBadge = getStatusBadgeClass(area.is_active);
-      const statusLabel = getStatusLabel(area.is_active);
+      const statusBadge = getStatusBadgeClass(area.isActive);
+      const statusLabel = getStatusLabel(area.isActive);
 
       return `
         <div class="search-input__result-item" data-area-id="${String(area.id)}" data-action="edit-from-search">

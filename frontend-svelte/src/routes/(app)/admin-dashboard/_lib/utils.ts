@@ -1,8 +1,12 @@
 /**
  * Admin Dashboard - Utility Functions
  * @module admin-dashboard/_lib/utils
+ *
+ * IMPORTANT: Use SvelteKit's goto() for navigation to enable client-side routing.
+ * Never use window.location for internal navigation - it causes full page reloads!
  */
 
+import { goto } from '$app/navigation';
 import type { User, Priority, OrgLevel, BlackboardOrgLevel, FormattedEventDate } from './types';
 import { ORG_LEVEL_LABELS, BLACKBOARD_ORG_LABELS, PRIORITY_LABELS } from './constants';
 
@@ -120,23 +124,25 @@ export function isAllDay(allDay: boolean | number): boolean {
 
 /**
  * Navigate to blackboard entry detail
+ * Uses SvelteKit's goto() for client-side navigation (no full page reload)
  * @param uuid - Entry UUID
  */
 export function openBlackboardEntry(uuid: string): void {
-  window.location.href = `/blackboard/${uuid}`;
+  void goto(`/blackboard/${uuid}`);
 }
 
 /**
- * Navigate to URL (for legacy routes not yet in SvelteKit)
- * @param url - Target URL
+ * Navigate to URL using SvelteKit client-side routing
+ * @param url - Target URL (internal routes only)
  */
 export function navigateTo(url: string): void {
-  window.location.href = url;
+  void goto(url);
 }
 
 /**
  * Navigate to calendar page
+ * Uses SvelteKit's goto() for client-side navigation
  */
 export function goToCalendar(): void {
-  window.location.href = '/calendar';
+  void goto('/calendar');
 }

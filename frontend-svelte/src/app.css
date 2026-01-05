@@ -180,6 +180,12 @@
    ============================================================ */
 @import './design-system/index.css';
 
+/* Alerts & Confirmation Dialog Container Styles */
+@import './styles/alerts.css';
+
+/* Blackboard Widget (Dashboard) */
+@import './styles/blackboard-widget.css';
+
 /* ============================================================
    STEP 6: Global Helper Classes (text-secondary, etc.)
    Must come AFTER Design System to override with !important

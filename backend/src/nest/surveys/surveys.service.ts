@@ -541,6 +541,26 @@ export class SurveysService {
     return survey;
   }
 
+  /**
+   * Resolves a survey by UUID or numeric ID, throwing NotFoundException if not found.
+   * Consolidates resolution logic to reduce cognitive complexity in calling methods.
+   */
+  private async resolveSurveyOrThrow(
+    surveyIdOrUuid: number | string,
+    tenantId: number,
+  ): Promise<{ survey: DbSurvey; surveyId: number }> {
+    const survey =
+      typeof surveyIdOrUuid === 'string' ?
+        await this.getSurveyByUUID(surveyIdOrUuid, tenantId)
+      : await this.getSurveyByNumericId(surveyIdOrUuid, tenantId);
+
+    if (survey === null) {
+      throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
+    }
+
+    return { survey, surveyId: survey.id };
+  }
+
   /** Groups options by question_id into a Map */
   private buildOptionsMap(
     optionRows: DbSurveyQuestionOption[],
@@ -889,13 +909,16 @@ export class SurveysService {
   }
 
   async getStatistics(
-    surveyId: number,
+    surveyIdOrUuid: number | string,
     tenantId: number,
     userId: number,
     userRole: string,
   ): Promise<SurveyStatisticsResponse> {
-    this.logger.log(`Getting statistics for survey ${surveyId}`);
-    await this.getSurveyById(surveyId, tenantId, userId, userRole);
+    this.logger.log(`Getting statistics for survey ${String(surveyIdOrUuid)}`);
+
+    const { survey, surveyId } = await this.resolveSurveyOrThrow(surveyIdOrUuid, tenantId);
+
+    await this.checkSurveyAccess(surveyId, tenantId, userId, userRole);
     if (userRole === 'employee') {
       throw new ForbiddenException('Only admins can view survey statistics');
     }
@@ -916,9 +939,6 @@ export class SurveysService {
     const statsRow = statsRows[0];
     const totalResponses = this.parseDbCount(statsRow?.total_responses);
     const completedResponses = this.parseDbCount(statsRow?.completed_responses);
-
-    const survey = await this.getSurveyByNumericId(surveyId, tenantId);
-    if (survey === null) throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
 
     const response: SurveyStatisticsResponse = {
       surveyId,
@@ -1395,5 +1415,21 @@ export class SurveysService {
       throw new BadRequestException('ID must be a positive integer or valid UUID');
     }
     return numericId;
+  }
+
+  /**
+   * Resolves a UUID or numeric ID to a numeric survey ID.
+   * If UUID is provided, looks up the survey and returns its numeric ID.
+   */
+  async resolveToNumericId(idOrUuid: number | string, tenantId: number): Promise<number> {
+    if (typeof idOrUuid === 'number') {
+      return idOrUuid;
+    }
+    // UUID provided - fetch survey to get numeric ID
+    const survey = await this.getSurveyByUUID(idOrUuid, tenantId);
+    if (survey === null) {
+      throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
+    }
+    return survey.id;
   }
 }

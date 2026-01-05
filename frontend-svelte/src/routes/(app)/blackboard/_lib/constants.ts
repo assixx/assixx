@@ -40,6 +40,18 @@ export const PRIORITY_BADGE_CLASSES: Record<Priority, string> = {
   urgent: 'sticky-note__badge--priority-urgent',
 };
 
+export interface PriorityOption {
+  value: Priority;
+  label: string;
+}
+
+export const PRIORITY_OPTIONS: PriorityOption[] = [
+  { value: 'low', label: 'Niedrig' },
+  { value: 'medium', label: 'Normal' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'urgent', label: 'Dringend' },
+];
+
 // ============================================================================
 // Org Level Labels & Classes
 // ============================================================================

@@ -74,6 +74,19 @@ export const AVAILABILITY_LABELS: Record<AvailabilityStatus, string> = {
 };
 
 /**
+ * Availability status labels for planned availability display
+ * (Alias for AVAILABILITY_LABELS - used in getPlannedAvailability)
+ */
+export const AVAILABILITY_STATUS_LABELS: Record<AvailabilityStatus, string> = {
+  available: 'Verfügbar',
+  vacation: 'Urlaub',
+  sick: 'Krank',
+  unavailable: 'Nicht verfügbar',
+  training: 'Schulung',
+  other: 'Sonstiges',
+};
+
+/**
  * Password strength labels
  */
 export const PASSWORD_STRENGTH_LABELS: readonly string[] = [

@@ -1,22 +1,12 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
+  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/admin-dashboard.css';
 
   // Local modules
-  import { DEFAULT_STATS, MESSAGES } from './_lib/constants';
-  import {
-    getAuthToken,
-    loadEmployees,
-    loadDocuments,
-    loadDepartments,
-    loadTeams,
-    loadUpcomingEvents,
-    loadBlackboard,
-  } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
   import {
     getEmployeeName,
     getOrgLevelText,
@@ -33,94 +23,34 @@
     goToCalendar,
   } from './_lib/utils';
 
-  /** @typedef {import('./_lib/types').DashboardStats} DashboardStats */
-  /** @typedef {import('./_lib/types').User} User */
-  /** @typedef {import('./_lib/types').Document} Document */
-  /** @typedef {import('./_lib/types').Department} Department */
-  /** @typedef {import('./_lib/types').Team} Team */
-  /** @typedef {import('./_lib/types').CalendarEvent} CalendarEvent */
-  /** @typedef {import('./_lib/types').BlackboardEntry} BlackboardEntry */
-
   // =============================================================================
-  // STATE
+  // SSR DATA - Loaded server-side in +page.server.ts
+  // Data is INSTANTLY available - no loading states needed!
   // =============================================================================
 
-  let statsLoading = $state(true);
+  /** Props from server load function */
+  const { data }: { data: PageData } = $props();
 
-  /** @type {DashboardStats} */
-  const stats = $state({ ...DEFAULT_STATS });
-
-  /** @type {User[]} */
-  let recentEmployees = $state([]);
-  /** @type {Document[]} */
-  let recentDocuments = $state([]);
-  /** @type {Department[]} */
-  let departments = $state([]);
-  /** @type {Team[]} */
-  let teams = $state([]);
-  /** @type {CalendarEvent[]} */
-  let upcomingEvents = $state([]);
-  /** @type {BlackboardEntry[]} */
-  let blackboardEntries = $state([]);
-  let blackboardLoading = $state(true);
+  // Destructure with safe fallbacks (handles undefined during hydration edge cases)
+  const stats = $derived(
+    data?.stats ?? { employeeCount: 0, documentCount: 0, departmentCount: 0, teamCount: 0 },
+  );
+  const recentEmployees = $derived(data?.recentEmployees ?? []);
+  const recentDocuments = $derived(data?.recentDocuments ?? []);
+  const departments = $derived(data?.departments ?? []);
+  const teams = $derived(data?.teams ?? []);
+  const upcomingEvents = $derived(data?.upcomingEvents ?? []);
+  const blackboardEntries = $derived(data?.blackboardEntries ?? []);
 
   // =============================================================================
-  // DATA LOADING
-  // =============================================================================
-
-  async function loadInitialData() {
-    statsLoading = true;
-
-    try {
-      // Load blackboard first (most visible)
-      blackboardEntries = await loadBlackboard();
-      blackboardLoading = false;
-
-      // Load all other data in parallel
-      const [employeeData, documentData, departmentData, teamData, events] = await Promise.all([
-        loadEmployees(),
-        loadDocuments(),
-        loadDepartments(),
-        loadTeams(),
-        loadUpcomingEvents(),
-      ]);
-
-      recentEmployees = employeeData.recent;
-      stats.employeeCount = employeeData.count;
-
-      recentDocuments = documentData.recent;
-      stats.documentCount = documentData.count;
-
-      departments = departmentData.list;
-      stats.departmentCount = departmentData.count;
-
-      teams = teamData.list;
-      stats.teamCount = teamData.count;
-
-      upcomingEvents = events;
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
-    } finally {
-      statsLoading = false;
-    }
-  }
-
-  // =============================================================================
-  // LIFECYCLE
+  // LIFECYCLE - Only for DOM manipulation, NOT data loading
   // =============================================================================
 
   onMount(() => {
-    const token = getAuthToken();
-    if (!token) {
-      goto(resolve('/login'));
-      return;
-    }
-
+    // Add loaded class for CSS animations (after hydration)
     setTimeout(() => {
       document.body.classList.add('loaded');
     }, 100);
-
-    loadInitialData();
   });
 </script>
 
@@ -132,49 +62,41 @@
 <div class="container">
   <!-- Dashboard Section -->
   <section id="dashboard-section" class="content-section">
-    <!-- Dashboard Stats Grid -->
+    <!-- Dashboard Stats Grid - SSR: Data instantly available, no loading states -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-users"></i>
         </div>
-        <div class="card-stat__value">
-          {statsLoading ? '--' : stats.employeeCount}
-        </div>
+        <div class="card-stat__value">{stats.employeeCount}</div>
         <div class="card-stat__label">Mitarbeiter</div>
       </div>
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-file-alt"></i>
         </div>
-        <div class="card-stat__value">
-          {statsLoading ? '--' : stats.documentCount}
-        </div>
+        <div class="card-stat__value">{stats.documentCount}</div>
         <div class="card-stat__label">Dokumente</div>
       </div>
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-building"></i>
         </div>
-        <div class="card-stat__value">
-          {statsLoading ? '--' : stats.departmentCount}
-        </div>
+        <div class="card-stat__value">{stats.departmentCount}</div>
         <div class="card-stat__label">Abteilungen</div>
       </div>
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-user-friends"></i>
         </div>
-        <div class="card-stat__value">
-          {statsLoading ? '--' : stats.teamCount}
-        </div>
+        <div class="card-stat__value">{stats.teamCount}</div>
         <div class="card-stat__label">Teams</div>
       </div>
     </div>
 
-    <!-- Blackboard Widget -->
+    <!-- Blackboard Widget - SSR: Data instantly available -->
     <div id="blackboard-widget-container" class="mt-8">
-      <div class="card card--blackboard" class:loaded={!blackboardLoading}>
+      <div class="card card--blackboard loaded">
         <div class="card__header">
           <h3 class="card__title">
             <i class="fas fa-thumbtack"></i>
@@ -186,12 +108,7 @@
           </a>
         </div>
         <div id="blackboard-widget-content">
-          {#if blackboardLoading}
-            <div class="card--blackboard__loading">
-              <div class="spinner-ring spinner-ring--md"></div>
-              <p>{MESSAGES.loadingEntries}</p>
-            </div>
-          {:else if blackboardEntries.length === 0}
+          {#if blackboardEntries.length === 0}
             <div class="empty-state">
               <div class="empty-state__icon"><i class="fas fa-sticky-note"></i></div>
               <h3 class="empty-state__title">{MESSAGES.noBlackboard}</h3>
@@ -212,14 +129,22 @@
                   <div class="sticky-note__pin"></div>
                   <div class="sticky-note__title">{entry.title}</div>
                   <div class="sticky-note__content">{truncateContent(contentText)}</div>
-                  {#if (entry.commentCount ?? 0) > 0}
-                    <div class="sticky-note__indicators">
+                  <div class="sticky-note__indicators">
+                    {#if (entry.commentCount ?? 0) > 0}
                       <div class="sticky-note__comments">
                         <i class="fas fa-comments"></i>
                         <span>{entry.commentCount}</span>
                       </div>
-                    </div>
-                  {/if}
+                    {/if}
+                    <span
+                      class="sticky-note__read-status"
+                      class:sticky-note__read-status--read={entry.isConfirmed}
+                      class:sticky-note__read-status--unread={!entry.isConfirmed}
+                      title={entry.isConfirmed ? 'Gelesen' : 'Ungelesen'}
+                    >
+                      <i class="fas {entry.isConfirmed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                    </span>
+                  </div>
                   <div class="sticky-note__footer">
                     <div class="sticky-note__badges">
                       <span

@@ -80,7 +80,7 @@ interface DbAttachment {
   file_type: string;
   file_size: number;
   uploaded_by: number;
-  uploaded_at: Date;
+  uploaded_at: Date | null; // Can be NULL in database
 }
 
 interface DbDashboardStats {
@@ -837,7 +837,8 @@ export class KvpService {
       fileSize: row.file_size,
       uploadedBy: row.uploaded_by,
       fileUuid: row.file_uuid,
-      createdAt: row.uploaded_at.toISOString(),
+      createdAt:
+        row.uploaded_at !== null ? row.uploaded_at.toISOString() : new Date().toISOString(),
     }));
   }
 

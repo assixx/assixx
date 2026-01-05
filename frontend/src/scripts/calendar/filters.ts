@@ -7,12 +7,12 @@
  */
 
 import type { createCalendar } from '@event-calendar/core';
-
-// v5 API: Calendar type is return type of createCalendar
-type Calendar = ReturnType<typeof createCalendar>;
 import { $$, $all, $$id } from '../../utils/dom-utils';
 import { state } from './state';
 import type { FilterLevel, ViewMode } from './types';
+
+// v5 API: Calendar type is return type of createCalendar
+type Calendar = ReturnType<typeof createCalendar>;
 
 // ============================================================================
 // Filter Management

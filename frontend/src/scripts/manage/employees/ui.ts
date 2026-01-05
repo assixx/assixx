@@ -258,14 +258,21 @@ function checkEmployeeFullAccess(employee: Employee): boolean {
 
 /** Check if employee has team assignments (array or legacy single) */
 function hasTeamAssignments(employee: Employee): { hasTeams: boolean; hasArray: boolean } {
-  const hasArray = (employee.teams?.length ?? 0) > 0;
+  const hasTeamsArray = (employee.teams?.length ?? 0) > 0;
+  const hasTeamIdsArray = (employee.teamIds?.length ?? 0) > 0;
   const hasLegacy = employee.teamId != null && employee.teamId > 0;
+  const hasArray = hasTeamsArray || hasTeamIdsArray;
   return { hasTeams: hasArray || hasLegacy, hasArray };
 }
 
 /** Get team names string for tooltip (from array or legacy field) */
 function getTeamNamesString(employee: Employee, hasArray: boolean): string {
   if (hasArray) {
+    // Prefer teamNames array (new API format: teamIds + teamNames)
+    if ((employee.teamNames?.length ?? 0) > 0) {
+      return employee.teamNames?.join(', ') ?? '';
+    }
+    // Fallback to teams array of objects
     return employee.teams?.map((team) => team.name).join(', ') ?? '';
   }
   return employee.teamName ?? '';
@@ -305,7 +312,9 @@ export function getAreasBadge(employee: Employee): string {
 
 /** Build area badge showing inherited area name from team chain */
 function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): string {
-  const { teamAreaName, teamDepartmentName, teamName } = employee;
+  const { teamAreaName, teamDepartmentName } = employee;
+  // Derive teamName from teamNames array if available, else use legacy teamName
+  const teamName = (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
   if (teamAreaName != null && teamAreaName !== '') {
     const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
@@ -313,8 +322,8 @@ function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): string 
   }
 
   // Fallback: generic "Vererbt"
-  const teamNames = getTeamNamesString(employee, hasArray);
-  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNames}`);
+  const teamNamesStr = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNamesStr}`);
 }
 
 /**
@@ -351,7 +360,9 @@ export function getDepartmentsBadge(employee: Employee): string {
 
 /** Build department badge showing inherited dept name from team */
 function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): string {
-  const { teamDepartmentName, teamName } = employee;
+  const { teamDepartmentName } = employee;
+  // Derive teamName from teamNames array if available, else use legacy teamName
+  const teamName = (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
   if (teamDepartmentName != null && teamDepartmentName !== '') {
     const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
@@ -359,8 +370,25 @@ function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): string 
   }
 
   // Fallback: generic "Vererbt"
-  const teamNames = getTeamNamesString(employee, hasArray);
-  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNames}`);
+  const teamNamesStr = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNamesStr}`);
+}
+
+/**
+ * Check if employee has valid team arrays (teamIds + teamNames)
+ */
+function hasValidTeamArrays(teamIds: number[] | undefined, teamNames: string[] | undefined): teamNames is string[] {
+  return Array.isArray(teamIds) && teamIds.length > 0 && Array.isArray(teamNames) && teamNames.length > 0;
+}
+
+/**
+ * Build badge from team arrays
+ */
+function buildTeamArrayBadge(teamNames: string[]): string {
+  const count = teamNames.length;
+  const names = teamNames.join(', ');
+  const displayText = count === 1 ? (teamNames[0] ?? '') : `${count} Teams`;
+  return `<span class="badge badge--info" title="${names}">${displayText}</span>`;
 }
 
 /**
@@ -370,27 +398,26 @@ function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): string 
 export function getTeamsBadge(employee: Employee): string {
   const hasFullAccess = employee.hasFullAccess === true || employee.hasFullAccess === 1;
 
-  // Full access = "Alle" badge
   if (hasFullAccess) {
     return '<span class="badge badge--primary" title="Voller Zugriff auf alle Teams"><i class="fas fa-globe mr-1"></i>Alle</span>';
   }
 
-  // No teams assigned
-  if (employee.teams === undefined || employee.teams.length === 0) {
-    // Fallback to legacy teamName if available
-    // Note: Check for null explicitly - API may return null which becomes string "null" in template
-    if (employee.teamName != null && employee.teamName !== '') {
-      return `<span class="badge badge--info" title="${employee.teamName}">${employee.teamName}</span>`;
-    }
-    return '<span class="badge badge--secondary" title="Kein Team zugewiesen">Keine</span>';
+  if (hasValidTeamArrays(employee.teamIds, employee.teamNames)) {
+    return buildTeamArrayBadge(employee.teamNames);
   }
 
-  // Show team count with tooltip
-  const count = employee.teams.length;
-  const label = count === 1 ? 'Team' : 'Teams';
-  const teamNames = employee.teams.map((team) => team.name).join(', ');
+  if (Array.isArray(employee.teams) && employee.teams.length > 0) {
+    const count = employee.teams.length;
+    const label = count === 1 ? 'Team' : 'Teams';
+    const names = employee.teams.map((team) => team.name).join(', ');
+    return `<span class="badge badge--info" title="${names}">${String(count)} ${label}</span>`;
+  }
 
-  return `<span class="badge badge--info" title="${teamNames}">${String(count)} ${label}</span>`;
+  if (employee.teamName !== undefined && employee.teamName !== '') {
+    return `<span class="badge badge--info" title="${employee.teamName}">${employee.teamName}</span>`;
+  }
+
+  return '<span class="badge badge--secondary" title="Kein Team zugewiesen">Keine</span>';
 }
 
 /**

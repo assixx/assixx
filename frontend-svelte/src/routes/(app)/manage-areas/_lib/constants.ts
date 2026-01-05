@@ -141,6 +141,11 @@ export const MESSAGES = {
   ERROR_LOADING: 'Fehler beim Laden der Bereiche',
   ERROR_SAVING: 'Fehler beim Speichern',
   ERROR_DELETING: 'Fehler beim Löschen',
+
+  // Success messages
+  SUCCESS_CREATED: 'Bereich erfolgreich erstellt',
+  SUCCESS_UPDATED: 'Bereich erfolgreich aktualisiert',
+  SUCCESS_DELETED: 'Bereich erfolgreich gelöscht',
 } as const;
 
 /**

@@ -1,0 +1,191 @@
+// =============================================================================
+// KVP - UTILITY FUNCTIONS
+// =============================================================================
+
+import {
+  STATUS_BADGE_CLASSES,
+  STATUS_TEXT,
+  VISIBILITY_BADGE_CLASSES,
+  VISIBILITY_INFO,
+  UPLOAD_CONFIG,
+} from './constants';
+import type { KvpSuggestion, KvpStatus, OrgLevel } from './types';
+
+/**
+ * Get status badge CSS class
+ */
+export function getStatusBadgeClass(status: KvpStatus): string {
+  return STATUS_BADGE_CLASSES[status] ?? 'badge--kvp-new';
+}
+
+/**
+ * Get status display text
+ */
+export function getStatusText(status: KvpStatus): string {
+  return STATUS_TEXT[status] ?? status;
+}
+
+/**
+ * Get visibility badge CSS class
+ */
+export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
+  return VISIBILITY_BADGE_CLASSES[orgLevel] ?? 'badge--visibility-team';
+}
+
+/**
+ * Get visibility info (icon + text) for suggestion
+ * Shows "Privat" for non-shared, org-level name for shared
+ */
+export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
+  // If not shared (private)
+  if (suggestion.isShared === 0) {
+    return { icon: 'fa-lock', text: 'Privat' };
+  }
+
+  // If shared, show org level info
+  const info = VISIBILITY_INFO[suggestion.orgLevel];
+  if (info === undefined) {
+    return { icon: 'fa-users', text: 'Team' };
+  }
+
+  // Use specific name if available
+  let text = info.text;
+  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
+    text = suggestion.departmentName;
+  } else if (suggestion.orgLevel === 'area' && suggestion.areaName !== undefined) {
+    text = suggestion.areaName;
+  } else if (suggestion.orgLevel === 'team' && suggestion.teamName !== undefined) {
+    text = suggestion.teamName;
+  }
+
+  return { icon: info.icon, text };
+}
+
+/**
+ * Format date for display (German locale)
+ */
+export function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('de-DE');
+}
+
+/**
+ * Format currency for display (German locale)
+ */
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+}
+
+/**
+ * Escape HTML for safe rendering
+ */
+export function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Truncate text with ellipsis
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+/**
+ * Validate photo file
+ */
+export function validatePhotoFile(file: File): { valid: boolean; error?: string } {
+  const allowedTypes: readonly string[] = UPLOAD_CONFIG.ALLOWED_TYPES;
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: 'Nur JPG und PNG Dateien sind erlaubt' };
+  }
+
+  if (file.size > UPLOAD_CONFIG.MAX_FILE_SIZE) {
+    return { valid: false, error: 'Datei ist zu gross (max. 10MB)' };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Read file as data URL for preview
+ */
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        resolve(result);
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Debounce function for search input
+ */
+export function debounce<T extends (...args: unknown[]) => void>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<T>) => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+}
+
+/**
+ * Check if user can share suggestion (admin only, department level)
+ */
+export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: string): boolean {
+  return (
+    (effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department'
+  );
+}
+
+/**
+ * Check if user can unshare suggestion
+ */
+export function canUnshareSuggestion(
+  suggestion: KvpSuggestion,
+  effectiveRole: string,
+  currentUserId: number | undefined,
+): boolean {
+  return (
+    suggestion.orgLevel === 'company' &&
+    (effectiveRole === 'root' || suggestion.sharedBy === currentUserId)
+  );
+}
+
+/**
+ * Get shared by info text
+ */
+export function getSharedByInfo(suggestion: KvpSuggestion): string {
+  if (suggestion.sharedByName !== undefined && suggestion.sharedByName !== '') {
+    return ` - Geteilt von ${suggestion.sharedByName}`;
+  }
+  return '';
+}
+
+/**
+ * Get attachment count text
+ */
+export function getAttachmentText(count: number | undefined): string {
+  if (count === undefined || count === 0) return '';
+  return `${count} Foto${count > 1 ? 's' : ''}`;
+}

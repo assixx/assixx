@@ -86,6 +86,29 @@ function createCountBadge(count: number, names: string, singular: string, plural
 }
 
 /**
+ * Helper: Create department badge with area hierarchy tooltip
+ * BADGE-INHERITANCE-DISPLAY: Shows department with area hierarchy
+ */
+function createDepartmentBadge(team: Team): string {
+  const deptName = team.departmentName;
+  const areaName = team.departmentAreaName;
+
+  // No department assigned (type is string | undefined, never null)
+  if (deptName === undefined || deptName === '') {
+    return '<span class="badge badge--secondary" title="Keine Abteilung zugewiesen">-</span>';
+  }
+
+  // Has department AND area - show inheritance tooltip with sitemap icon
+  if (areaName !== undefined && areaName !== '') {
+    const tooltip = `${escapeHtml(deptName)} (gehört zu: ${escapeHtml(areaName)})`;
+    return `<span class="badge badge--info" title="${tooltip}"><i class="fas fa-sitemap mr-1"></i>${escapeHtml(deptName)}</span>`;
+  }
+
+  // Has department but no area
+  return `<span class="badge badge--info" title="${escapeHtml(deptName)}">${escapeHtml(deptName)}</span>`;
+}
+
+/**
  * Get empty state title based on filter
  */
 function getEmptyStateTitle(statusFilter: 'all' | 'active' | 'inactive' | 'archived'): string {
@@ -236,7 +259,7 @@ export function createTeamRow(team: Team): string {
         </div>
       </td>
       <td>
-        ${team.departmentName ?? '-'}
+        ${createDepartmentBadge(team)}
       </td>
       <td>
         ${team.leaderName ?? '-'}

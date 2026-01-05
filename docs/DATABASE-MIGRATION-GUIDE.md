@@ -1,6 +1,6 @@
 # Database Migration Guide - PostgreSQL
 
-> **Last Update:** 2025-11-30
+> **Last Update:** 2026-01-05
 > **Database:** PostgreSQL 17 with Row Level Security (RLS)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
 
@@ -22,17 +22,14 @@
 
 ## Credentials
 
-```bash
-# Application User (für Backend - unterliegt RLS)
-DB_USER=app_user
-DB_PASSWORD=AppUserP@ss2025!
+Siehe `docker/.env` für Passwörter.
 
-# Admin User (für Migrationen - BYPASSRLS)
-POSTGRES_USER=assixx_user
-POSTGRES_PASSWORD=AssixxP@ss2025!
-```
+| User | Zweck | RLS |
+|------|-------|-----|
+| `app_user` | Backend-Verbindung | Ja (unterliegt RLS) |
+| `assixx_user` | Migrationen, Admin | Nein (BYPASSRLS) |
 
-> **WICHTIG:** `app_user` unterliegt Row Level Security. Für Migrationen `assixx_user` verwenden!
+Für Migrationen immer `assixx_user` verwenden.
 
 ---
 
@@ -50,6 +47,53 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/$(basename $MI
 # 3. Verifizieren (30 Sekunden)
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
 ```
+
+---
+
+## Migration Workflow
+
+### System-Tabellen (Seed-Daten)
+
+Diese Tabellen enthalten globale Konfiguration und unterliegen NICHT der RLS:
+
+| Tabelle | Beschreibung | RLS |
+|---------|--------------|-----|
+| `plans` | Subscription-Pläne (Basic, Professional, Enterprise) | Nein |
+| `features` | Verfügbare Features | Nein |
+| `plan_features` | Zuordnung Plan zu Features | Nein |
+
+Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security.
+
+### Migrations-Dateien
+
+Pfad: `/database/migrations/`
+
+| Datei | Inhalt |
+|-------|--------|
+| `001_baseline_complete_schema.sql` | Komplettes Schema (Tabellen, Indexes, RLS, Triggers) |
+| `002_seed_data.sql` | System-Tabellen Daten |
+| `003_xxx.sql` | Inkrementelle Änderungen |
+
+### Workflow: Schema oder Seed ändern
+
+```bash
+# 1. Backup erstellen (PFLICHT)
+cd /home/scs/projects/Assixx/docker
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx --schema-only > ../database/backups/schema_${TIMESTAMP}.sql
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx --data-only --inserts -t plans -t features -t plan_features > ../database/backups/seed_${TIMESTAMP}.sql
+
+# 2. Migration erstellen und ausführen
+docker cp ../database/migrations/003_name.sql assixx-postgres:/tmp/
+docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/003_name.sql
+
+# 3. Backend neustarten
+docker-compose restart backend
+```
+
+### Backup-Verzeichnis
+
+Pfad: `/database/backups/` - Schema und Seed Backups vor Änderungen.
 
 ---
 
@@ -78,7 +122,7 @@ Host: localhost
 Port: 5432
 Database: assixx
 User: assixx_user (Admin) oder app_user (RLS)
-Password: [siehe oben]
+Password: siehe docker/.env
 ```
 
 > **Tipp:** DBeaver auf Windows installieren, NICHT in WSL. Docker exposed Ports automatisch.

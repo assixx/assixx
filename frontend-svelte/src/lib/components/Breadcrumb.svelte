@@ -75,6 +75,18 @@
     { pattern: /^\/kvp\/[^/]+$/, label: 'KVP-Details', icon: 'fa-info-circle' },
   ];
 
+  /**
+   * Pages that need an intermediate breadcrumb
+   * Key: current page path, Value: intermediate breadcrumb to insert
+   * @type {Record<string, { label: string; href: string; icon: string }>}
+   */
+  const intermediateBreadcrumbs = {
+    '/survey-results': { label: 'Umfragen', href: '/survey-admin', icon: 'fa-poll' },
+    '/survey-create': { label: 'Umfragen', href: '/survey-admin', icon: 'fa-poll' },
+    '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
+    '/blackboard-detail': { label: 'Schwarzes Brett', href: '/blackboard', icon: 'fa-clipboard' },
+  };
+
   // =============================================================================
   // HELPER FUNCTIONS
   // =============================================================================
@@ -88,7 +100,7 @@
 
   /**
    * Generate breadcrumb items from current URL
-   * 1:1 like legacy: Home (link) > Current Page (active)
+   * Structure: Home > [Intermediate] > Current Page
    * @returns {Array<{ label: string; href?: string; icon?: string; current?: boolean }>}
    */
   function generateBreadcrumbItems() {
@@ -102,6 +114,16 @@
       href: `${base}${getHomeUrl()}`,
       icon: 'fa-home',
     });
+
+    // Check for intermediate breadcrumb (e.g., Umfragen for survey-results)
+    const intermediate = intermediateBreadcrumbs[currentPath];
+    if (intermediate) {
+      items.push({
+        label: intermediate.label,
+        href: `${base}${intermediate.href}`,
+        icon: intermediate.icon,
+      });
+    }
 
     // Find mapping for current page
     const mapping = urlMappings[currentPath];
@@ -118,6 +140,17 @@
       const dynamicMatch = dynamicRoutes.find((route) => route.pattern.test(currentPath));
 
       if (dynamicMatch) {
+        // For dynamic routes, also check for intermediate based on base path
+        const basePath = '/' + currentPath.split('/')[1];
+        const dynamicIntermediate = intermediateBreadcrumbs[basePath + '-detail'];
+        if (dynamicIntermediate && !intermediate) {
+          items.push({
+            label: dynamicIntermediate.label,
+            href: `${base}${dynamicIntermediate.href}`,
+            icon: dynamicIntermediate.icon,
+          });
+        }
+
         items.push({
           label: dynamicMatch.label,
           icon: dynamicMatch.icon,

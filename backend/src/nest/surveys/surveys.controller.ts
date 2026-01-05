@@ -152,7 +152,7 @@ export class SurveysController {
 
   /**
    * PUT /surveys/:id
-   * Update a survey
+   * Update a survey (supports both numeric ID and UUID)
    */
   @Put(':id')
   @UseGuards(RolesGuard)
@@ -165,10 +165,8 @@ export class SurveysController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ): Promise<unknown> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Survey update requires numeric ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.updateSurvey(
       surveyId,
       dto,
@@ -182,7 +180,7 @@ export class SurveysController {
 
   /**
    * DELETE /surveys/:id
-   * Delete a survey
+   * Delete a survey (supports both numeric ID and UUID)
    */
   @Delete(':id')
   @UseGuards(RolesGuard)
@@ -194,10 +192,8 @@ export class SurveysController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ): Promise<MessageResponse> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Survey delete requires numeric ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.deleteSurvey(
       surveyId,
       tenantId,
@@ -210,7 +206,7 @@ export class SurveysController {
 
   /**
    * GET /surveys/:id/statistics
-   * Get survey statistics
+   * Get survey statistics (supports both numeric ID and UUID)
    */
   @Get(':id/statistics')
   @UseGuards(RolesGuard)
@@ -221,15 +217,12 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<SurveyStatisticsResponse> {
     const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Statistics requires numeric ID');
-    }
     return await this.surveysService.getStatistics(surveyId, tenantId, user.id, user.role);
   }
 
   /**
    * POST /surveys/:id/responses
-   * Submit a response to a survey
+   * Submit a response to a survey (supports both numeric ID and UUID)
    */
   @Post(':id/responses')
   @HttpCode(HttpStatus.CREATED)
@@ -239,10 +232,8 @@ export class SurveysController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ responseId: number }> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Submit response requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const responseId = await this.surveysService.submitResponse(
       surveyId,
       user.id,
@@ -254,7 +245,7 @@ export class SurveysController {
 
   /**
    * GET /surveys/:id/responses
-   * Get all responses for a survey (admin only)
+   * Get all responses for a survey (admin only, supports both numeric ID and UUID)
    */
   @Get(':id/responses')
   @UseGuards(RolesGuard)
@@ -265,10 +256,8 @@ export class SurveysController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<PaginatedResponsesResult> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Get responses requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.getAllResponses(surveyId, tenantId, user.role, user.id, {
       page: query.page,
       limit: query.limit,
@@ -277,7 +266,7 @@ export class SurveysController {
 
   /**
    * GET /surveys/:id/my-response
-   * Get user's own response to a survey
+   * Get user's own response to a survey (supports both numeric ID and UUID)
    */
   @Get(':id/my-response')
   async getMyResponse(
@@ -285,16 +274,14 @@ export class SurveysController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SurveyResponse | null> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Get my response requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.getMyResponse(surveyId, user.id, tenantId);
   }
 
   /**
    * GET /surveys/:id/export
-   * Export survey responses
+   * Export survey responses (supports both numeric ID and UUID)
    */
   @Get(':id/export')
   @UseGuards(RolesGuard)
@@ -306,10 +293,8 @@ export class SurveysController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Export requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
 
     const format = query.format ?? 'csv';
     const buffer = await this.surveysService.exportResponses(
@@ -337,7 +322,7 @@ export class SurveysController {
 
   /**
    * GET /surveys/:id/responses/:responseId
-   * Get a specific response by ID
+   * Get a specific response by ID (supports both numeric ID and UUID)
    */
   @Get(':id/responses/:responseId')
   async getResponseById(
@@ -346,10 +331,8 @@ export class SurveysController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SurveyResponse> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Get response requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const numericResponseId = Number.parseInt(responseId, 10);
     return await this.surveysService.getResponseById(
       surveyId,
@@ -362,7 +345,7 @@ export class SurveysController {
 
   /**
    * PUT /surveys/:id/responses/:responseId
-   * Update a response (if allowed)
+   * Update a response (if allowed, supports both numeric ID and UUID)
    */
   @Put(':id/responses/:responseId')
   async updateResponse(
@@ -372,10 +355,8 @@ export class SurveysController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    const surveyId = this.surveysService.parseIdParam(id);
-    if (typeof surveyId === 'string') {
-      throw new Error('Update response requires numeric survey ID');
-    }
+    const parsedId = this.surveysService.parseIdParam(id);
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const numericResponseId = Number.parseInt(responseId, 10);
     return await this.surveysService.updateResponse(
       surveyId,

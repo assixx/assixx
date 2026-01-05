@@ -40,21 +40,21 @@ export function buildWebSocketUrl(token: string): string {
 export function transformRawMessage(raw: RawWebSocketMessage): Message {
   return {
     id: raw.id ?? 0,
-    conversationId: raw.conversation_id ?? raw.conversationId ?? 0,
-    senderId: raw.sender_id ?? raw.senderId ?? 0,
+    conversationId: raw.conversationId ?? 0,
+    senderId: raw.senderId ?? 0,
     content: raw.content ?? '',
-    createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
-    isRead: raw.is_read ?? raw.isRead ?? false,
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+    isRead: raw.isRead ?? false,
     type: (raw.type as Message['type']) ?? 'text',
     attachments: raw.attachments ?? [],
-    senderName: raw.sender_name ?? raw.senderName,
-    senderUsername: raw.username ?? raw.senderUsername,
-    senderProfilePicture: raw.profile_picture_url ?? raw.senderProfilePicture,
+    senderName: raw.senderName,
+    senderUsername: raw.senderUsername,
+    senderProfilePicture: raw.senderProfilePicture,
     sender: {
-      id: raw.sender_id ?? raw.senderId ?? 0,
-      firstName: raw.first_name ?? raw.firstName ?? '',
-      lastName: raw.last_name ?? raw.lastName ?? '',
-      username: raw.username ?? '',
+      id: raw.senderId ?? 0,
+      firstName: raw.firstName ?? '',
+      lastName: raw.lastName ?? '',
+      username: raw.senderUsername ?? '',
     },
   };
 }
@@ -66,8 +66,8 @@ export function transformRawMessage(raw: RawWebSocketMessage): Message {
  */
 export function extractTypingData(raw: RawWebSocketMessage): TypingData {
   return {
-    userId: raw.user_id ?? raw.userId ?? 0,
-    conversationId: raw.conversation_id ?? raw.conversationId ?? 0,
+    userId: raw.userId ?? 0,
+    conversationId: raw.conversationId ?? 0,
   };
 }
 
@@ -78,7 +78,7 @@ export function extractTypingData(raw: RawWebSocketMessage): TypingData {
  */
 export function extractStatusData(raw: RawWebSocketMessage): StatusChangeData {
   return {
-    userId: raw.user_id ?? raw.userId ?? 0,
+    userId: raw.userId ?? 0,
     status: (raw.status ?? 'offline') as UserStatus,
   };
 }
@@ -90,8 +90,8 @@ export function extractStatusData(raw: RawWebSocketMessage): StatusChangeData {
  */
 export function extractReadData(raw: RawWebSocketMessage): MessageReadData {
   return {
-    messageId: raw.message_id ?? raw.messageId ?? 0,
-    userId: raw.user_id ?? raw.userId ?? 0,
+    messageId: raw.messageId ?? 0,
+    userId: raw.userId ?? 0,
   };
 }
 

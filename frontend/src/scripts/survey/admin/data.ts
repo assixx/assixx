@@ -4,10 +4,10 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import type { Survey, SurveyTemplate, Department, Team, Area, SurveyAssignment } from './types';
+import type { Survey, SurveyTemplate, Department, Team, Area, SurveyAssignment, SurveyId } from './types';
 
 // ===== GLOBAL STATE =====
-export let currentSurveyId: number | null = null;
+export let currentSurveyId: SurveyId | null = null;
 export let surveys: Survey[] = [];
 export let templates: SurveyTemplate[] = [];
 export let departments: Department[] = [];
@@ -15,7 +15,7 @@ export let teams: Team[] = [];
 export let areas: Area[] = [];
 
 // Functions to modify state (needed for import safety)
-export function setCurrentSurveyId(id: number | null): void {
+export function setCurrentSurveyId(id: SurveyId | null): void {
   currentSurveyId = id;
 }
 
@@ -132,7 +132,7 @@ export async function loadUserAreas(): Promise<Area[]> {
  * Save survey (create or update)
  * Note: apiClient.request returns the unwrapped data object directly, not the full API response
  */
-export async function saveSurvey(surveyData: Survey): Promise<number | null> {
+export async function saveSurvey(surveyData: Survey): Promise<SurveyId | null> {
   try {
     const isUpdate = currentSurveyId !== null && currentSurveyId !== 0;
     const endpoint = isUpdate ? `/surveys/${String(currentSurveyId)}` : '/surveys';
@@ -156,9 +156,10 @@ export async function saveSurvey(surveyData: Survey): Promise<number | null> {
 
 /**
  * Delete survey
+ * Supports both numeric IDs and UUIDs
  * Note: apiClient throws on error, so we just need to catch exceptions
  */
-export async function deleteSurvey(surveyId: number): Promise<boolean> {
+export async function deleteSurvey(surveyId: SurveyId): Promise<boolean> {
   try {
     await apiClient.request(`/surveys/${String(surveyId)}`, { method: 'DELETE' }, { version: 'v2' });
     return true;
@@ -170,9 +171,10 @@ export async function deleteSurvey(surveyId: number): Promise<boolean> {
 
 /**
  * Load survey by ID (for editing)
+ * Supports both numeric IDs and UUIDs
  * Note: apiClient returns the unwrapped data object directly
  */
-export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
+export async function loadSurveyById(surveyId: SurveyId): Promise<Survey | null> {
   try {
     return await apiClient.request<Survey>(`/surveys/${String(surveyId)}`, { method: 'GET' }, { version: 'v2' });
   } catch (error) {

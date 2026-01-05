@@ -239,10 +239,7 @@ export function validateUserForCategory(
     return { valid: true };
   }
 
-  if (
-    mapping.requiresField === 'team_id' &&
-    (user.team_id === null || user.team_id === undefined)
-  ) {
+  if (mapping.requiresField === 'teamId' && (user.teamId === null || user.teamId === undefined)) {
     return {
       valid: false,
       error: 'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
@@ -250,8 +247,8 @@ export function validateUserForCategory(
   }
 
   if (
-    mapping.requiresField === 'department_id' &&
-    (user.department_id === null || user.department_id === undefined)
+    mapping.requiresField === 'departmentId' &&
+    (user.departmentId === null || user.departmentId === undefined)
   ) {
     return {
       valid: false,
@@ -302,13 +299,13 @@ export function buildUploadFormData(
       uploadData.ownerUserId = user.id;
       break;
     case 'team':
-      if (user.team_id !== null && user.team_id !== undefined) {
-        uploadData.targetTeamId = user.team_id;
+      if (user.teamId !== null && user.teamId !== undefined) {
+        uploadData.targetTeamId = user.teamId;
       }
       break;
     case 'department':
-      if (user.department_id !== null && user.department_id !== undefined) {
-        uploadData.targetDepartmentId = user.department_id;
+      if (user.departmentId !== null && user.departmentId !== undefined) {
+        uploadData.targetDepartmentId = user.departmentId;
       }
       break;
   }

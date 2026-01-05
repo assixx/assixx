@@ -141,8 +141,9 @@ docker-compose restart backend
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
 12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
 13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-BRUNO.md) for context (read whole File)
-14. Dont do more than this and than recap fast and than ask user that youre ready.
-15. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
+14. Always fetch original docs: like fetch this: https://svelte.dev/docs/svelte/overview and https://svelte.dev/docs/svelte/what-are-runes
+15. Dont do more than this and than recap fast and than ask user that youre ready.
+16. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
     ⎿ /home/scs/projects/Assixx
 
 docs/HOW-TO-TEST-WITH-BRUNO.md

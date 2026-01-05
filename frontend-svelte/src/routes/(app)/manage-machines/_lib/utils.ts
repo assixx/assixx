@@ -2,8 +2,27 @@
 // MANAGE MACHINES - UTILITY FUNCTIONS
 // =============================================================================
 
-import type { Machine, MachineFormData, MachineStatus, MachineStatusFilter } from './types';
+import type {
+  Machine,
+  MachineFormData,
+  MachineStatus,
+  MachineStatusFilter,
+  MachineTeamInfo,
+} from './types';
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, MACHINE_TYPE_LABELS, MESSAGES } from './constants';
+
+// =============================================================================
+// BADGE DATA TYPES
+// =============================================================================
+
+/**
+ * Badge data for rendering
+ */
+export interface BadgeData {
+  class: string;
+  text: string;
+  tooltip: string;
+}
 
 // =============================================================================
 // STATUS HELPERS
@@ -21,6 +40,71 @@ export function getStatusBadgeClass(status: MachineStatus): string {
  */
 export function getStatusLabel(status: MachineStatus): string {
   return STATUS_LABELS[status] ?? status;
+}
+
+// =============================================================================
+// BADGE HELPERS (for Table Display)
+// =============================================================================
+
+/**
+ * Generate Teams badge data for table display
+ * Following ASSIXX badge standard: count + tooltip with names
+ */
+export function getTeamsBadgeData(teams?: MachineTeamInfo[]): BadgeData {
+  const teamList = teams ?? [];
+  const count = teamList.length;
+  const names = teamList.map((t) => t.name).join(', ');
+
+  if (count === 0) {
+    return {
+      class: 'badge--secondary',
+      text: 'Keine',
+      tooltip: 'Keine Teams zugewiesen',
+    };
+  }
+
+  const label = count === 1 ? 'Team' : 'Teams';
+  return {
+    class: 'badge--info',
+    text: `${count} ${label}`,
+    tooltip: names,
+  };
+}
+
+/**
+ * Generate Area badge data for table display
+ */
+export function getAreaBadgeData(areaName?: string): BadgeData {
+  if (areaName !== undefined && areaName !== '') {
+    return {
+      class: 'badge--info',
+      text: '1 Bereich',
+      tooltip: areaName,
+    };
+  }
+  return {
+    class: 'badge--secondary',
+    text: 'Keine',
+    tooltip: 'Kein Bereich zugewiesen',
+  };
+}
+
+/**
+ * Generate Department badge data for table display
+ */
+export function getDepartmentBadgeData(departmentName?: string): BadgeData {
+  if (departmentName !== undefined && departmentName !== '') {
+    return {
+      class: 'badge--info',
+      text: '1 Abteilung',
+      tooltip: departmentName,
+    };
+  }
+  return {
+    class: 'badge--secondary',
+    text: 'Keine',
+    tooltip: 'Keine Abteilung zugewiesen',
+  };
 }
 
 // =============================================================================

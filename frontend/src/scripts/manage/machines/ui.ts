@@ -94,6 +94,55 @@ function generateMachineActionButtons(machineId: number): string {
 }
 
 /**
+ * Helper: Create count badge with native title tooltip
+ * ASSIXX STANDARD: Follows BADGE-ASSIGNMENT-SYSTEM.md
+ */
+function createCountBadge(count: number, names: string, singular: string, plural?: string): string {
+  if (count === 0) {
+    return `<span class="badge badge--secondary" title="Keine ${plural ?? singular + 's'} zugewiesen">Keine</span>`;
+  }
+
+  const label = count === 1 ? singular : (plural ?? `${singular}s`);
+
+  // If no names available, just show count without tooltip
+  if (names === '' || names.trim() === '') {
+    return `<span class="badge badge--info">${String(count)} ${label}</span>`;
+  }
+
+  // Return badge with native title tooltip
+  return `<span class="badge badge--info" title="${escapeHtml(names)}">${String(count)} ${label}</span>`;
+}
+
+/**
+ * Generate Teams badge HTML following ASSIXX badge standard
+ */
+function generateTeamsBadge(machine: Machine): string {
+  const teams = machine.teams ?? [];
+  const teamNames = teams.map((t) => t.name).join(', ');
+  return createCountBadge(teams.length, teamNames, 'Team', 'Teams');
+}
+
+/**
+ * Generate Area badge HTML following ASSIXX badge standard
+ */
+function generateAreaBadge(machine: Machine): string {
+  if (machine.areaName !== undefined && machine.areaName !== '') {
+    return `<span class="badge badge--info" title="${escapeHtml(machine.areaName)}">1 Bereich</span>`;
+  }
+  return '<span class="badge badge--secondary" title="Kein Bereich zugewiesen">Keine</span>';
+}
+
+/**
+ * Generate Department badge HTML following ASSIXX badge standard
+ */
+function generateDepartmentBadge(machine: Machine): string {
+  if (machine.departmentName !== undefined && machine.departmentName !== '') {
+    return `<span class="badge badge--info" title="${escapeHtml(machine.departmentName)}">1 Abteilung</span>`;
+  }
+  return '<span class="badge badge--secondary" title="Keine Abteilung zugewiesen">Keine</span>';
+}
+
+/**
  * Generate HTML for a single machine table row
  */
 export function generateMachineRow(machine: Machine): string {
@@ -111,12 +160,15 @@ export function generateMachineRow(machine: Machine): string {
 
   return `
     <tr>
+      <td><code class="text-muted">${machine.id}</code></td>
       <td>
         <strong>${escapeHtml(machine.name)}</strong>
       </td>
       <td>${escapeHtml(machine.model ?? '-')}</td>
       <td>${escapeHtml(machine.manufacturer ?? '-')}</td>
-      <td>${escapeHtml(machine.departmentName ?? '-')}</td>
+      <td>${generateAreaBadge(machine)}</td>
+      <td>${generateDepartmentBadge(machine)}</td>
+      <td>${generateTeamsBadge(machine)}</td>
       <td>
         <span class="badge ${statusBadgeClass}">
           ${escapeHtml(statusLabel)}
@@ -246,10 +298,13 @@ export function renderMachinesTable(
       <table class="data-table data-table--striped">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Name</th>
             <th>Modell</th>
             <th>Hersteller</th>
+            <th>Bereich</th>
             <th>Abteilung</th>
+            <th>Teams</th>
             <th>Status</th>
             <th>Betriebsstunden</th>
             <th>Nächste Wartung</th>

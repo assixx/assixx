@@ -8,11 +8,12 @@ import { ShiftDateSchema } from './common.dto.js';
 
 /**
  * Delete rotation history by date range parameters
+ * API v2: camelCase only
  */
 export const DeleteRotationHistoryByDateRangeSchema = z.object({
-  team_id: z.coerce.number().int().positive('team_id is required'),
-  start_date: ShiftDateSchema,
-  end_date: ShiftDateSchema,
+  teamId: z.coerce.number().int().positive('teamId is required'),
+  startDate: ShiftDateSchema,
+  endDate: ShiftDateSchema,
 });
 
 export class DeleteRotationHistoryByDateRangeDto extends createZodDto(

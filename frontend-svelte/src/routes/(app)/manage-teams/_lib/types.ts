@@ -3,11 +3,23 @@
 // =============================================================================
 
 /**
- * Department interface
+ * Department interface - with area hierarchy info
  */
 export interface Department {
   id: number;
   name: string;
+  areaId?: number;
+  areaName?: string;
+}
+
+/**
+ * Badge info for display with tooltip
+ * BADGE-INHERITANCE-DISPLAY: Used for showing hierarchy tooltips
+ */
+export interface BadgeInfo {
+  class: string;
+  text: string;
+  title: string;
 }
 
 /**

@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
-  import { onMount } from 'svelte';
+  /**
+   * Manage Teams - Page Component
+   * @module manage-teams/+page
+   *
+   * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
+   */
+  import { invalidateAll } from '$app/navigation';
   import { showErrorAlert } from '$lib/stores/toast.js';
+  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/manage-teams.css';
@@ -19,17 +24,13 @@
   } from './_lib/types';
   import { MESSAGES } from './_lib/constants';
   import {
-    loadTeams as apiLoadTeams,
-    loadDepartments as apiLoadDepartments,
-    loadAdmins as apiLoadAdmins,
-    loadEmployees as apiLoadEmployees,
-    loadMachines as apiLoadMachines,
     saveTeam as apiSaveTeam,
     deleteTeam as apiDeleteTeam,
     forceDeleteTeam as apiForceDeleteTeam,
     updateTeamRelations,
     buildTeamPayload,
-    checkSessionExpired,
+    fetchTeamMembers,
+    fetchTeamMachines,
   } from './_lib/api';
   import { applyAllFilters } from './_lib/filters';
   import {
@@ -37,32 +38,33 @@
     getStatusLabel,
     formatDate,
     highlightMatch,
-    getMembersDisplayText,
-    getMachinesDisplayText,
-    getDepartmentDisplayText,
-    getLeaderDisplayText,
-    populateFormFromTeam,
     getDefaultFormValues,
-    toggleIdInArray,
+    getDepartmentBadge,
+    getMembersBadge,
+    getMachinesBadge,
   } from './_lib/utils';
+  import TeamFormModal from './_lib/TeamFormModal.svelte';
+  import TeamDeleteModals from './_lib/TeamDeleteModals.svelte';
 
   // =============================================================================
-  // SVELTE 5 RUNES - State
+  // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
 
-  // Team Data
-  let allTeams = $state<Team[]>([]);
-  let filteredTeams = $state<Team[]>([]);
+  const { data }: { data: PageData } = $props();
 
-  // Reference Data
-  let allDepartments = $state<Department[]>([]);
-  let allAdmins = $state<Admin[]>([]);
-  let allEmployees = $state<TeamMember[]>([]);
-  let allMachines = $state<Machine[]>([]);
+  // SSR data via $derived - updates when invalidateAll() is called
+  const allTeams = $derived<Team[]>(data?.teams ?? []);
+  const allDepartments = $derived<Department[]>(data?.departments ?? []);
+  const allAdmins = $derived<Admin[]>(data?.admins ?? []);
+  const allEmployees = $derived<TeamMember[]>(data?.employees ?? []);
+  const allMachines = $derived<Machine[]>(data?.machines ?? []);
 
-  // Loading and Error States
-  let loading = $state(true);
-  let error = $state<string | null>(null);
+  // =============================================================================
+  // UI STATE - Filtering and form state (client-side only)
+  // =============================================================================
+
+  // Error state
+  const error = $state<string | null>(null);
 
   // Filter State
   let currentStatusFilter = $state<StatusFilter>('active');
@@ -91,13 +93,6 @@
   let formMachineIds = $state<number[]>([]);
   let formIsActive = $state<FormIsActiveStatus>(1);
 
-  // Dropdown States
-  let departmentDropdownOpen = $state(false);
-  let leaderDropdownOpen = $state(false);
-  let membersDropdownOpen = $state(false);
-  let machinesDropdownOpen = $state(false);
-  let statusDropdownOpen = $state(false);
-
   // Form Submit Loading
   let submitting = $state(false);
 
@@ -108,65 +103,44 @@
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
 
-  // =============================================================================
-  // DATA LOADING
-  // =============================================================================
-
-  async function loadTeams(): Promise<void> {
-    loading = true;
-    error = null;
-
-    try {
-      allTeams = await apiLoadTeams();
-      applyFilters();
-    } catch (err) {
-      console.error('[ManageTeams] Error loading teams:', err);
-      if (checkSessionExpired(err)) return;
-      error = err instanceof Error ? err.message : MESSAGES.ERROR_LOADING;
-    } finally {
-      loading = false;
-    }
-  }
-
-  async function loadReferenceData(): Promise<void> {
-    allDepartments = await apiLoadDepartments();
-    allAdmins = await apiLoadAdmins();
-    allEmployees = await apiLoadEmployees();
-    allMachines = await apiLoadMachines();
-  }
+  // Derived: Filtered teams based on current filter/search state
+  const filteredTeams = $derived(
+    applyAllFilters(allTeams, currentStatusFilter, currentSearchQuery),
+  );
 
   // =============================================================================
-  // FILTER APPLICATION
+  // API FUNCTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  function applyFilters(): void {
-    filteredTeams = applyAllFilters(allTeams, currentStatusFilter, currentSearchQuery);
-  }
-
-  // =============================================================================
-  // SAVE & DELETE OPERATIONS
-  // =============================================================================
-
-  async function saveTeam(): Promise<void> {
+  async function handleFormSubmit(formData: {
+    name: string;
+    description: string;
+    departmentId: number | null;
+    leaderId: number | null;
+    memberIds: number[];
+    machineIds: number[];
+    isActive: FormIsActiveStatus;
+  }): Promise<void> {
     submitting = true;
 
     try {
       const payload = buildTeamPayload({
-        name: formName,
-        description: formDescription,
-        departmentId: formDepartmentId,
-        leaderId: formLeaderId,
-        isActive: formIsActive,
+        name: formData.name,
+        description: formData.description,
+        departmentId: formData.departmentId,
+        leaderId: formData.leaderId,
+        isActive: formData.isActive,
       });
 
       const teamId = await apiSaveTeam(payload, currentEditId);
 
       if (teamId) {
-        await updateTeamRelations(teamId, formMemberIds, formMachineIds, isEditMode);
+        await updateTeamRelations(teamId, formData.memberIds, formData.machineIds, isEditMode);
       }
 
       closeTeamModal();
-      await loadTeams();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
     } catch (err) {
       console.error('[ManageTeams] Error saving team:', err);
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVING);
@@ -184,7 +158,8 @@
       if (result.success) {
         showDeleteConfirmModal = false;
         deleteTeamId = null;
-        await loadTeams();
+        // Level 3: Trigger SSR refetch
+        await invalidateAll();
       } else if (result.hasMembers) {
         forceDeleteMemberCount = result.memberCount;
         showDeleteConfirmModal = false;
@@ -203,7 +178,8 @@
       await apiForceDeleteTeam(deleteTeamId);
       showForceDeleteModal = false;
       deleteTeamId = null;
-      await loadTeams();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
     } catch (err) {
       console.error('[ManageTeams] Error force deleting team:', err);
       showErrorAlert(MESSAGES.ERROR_DELETING);
@@ -220,20 +196,35 @@
     showTeamModal = true;
   }
 
-  function openEditModal(teamId: number): void {
+  /**
+   * Open edit modal - fetches members and machines from separate endpoints
+   * The /teams list endpoint only returns summary data (memberCount, memberNames)
+   * but NOT the full members[] and machines[] arrays needed for form population.
+   * Backend exposes separate endpoints: /teams/:id/members and /teams/:id/machines
+   */
+  async function openEditModal(teamId: number): Promise<void> {
     const team = allTeams.find((t) => t.id === teamId);
     if (!team) return;
 
     currentEditId = teamId;
-    const formData = populateFormFromTeam(team);
 
-    formName = formData.name;
-    formDescription = formData.description;
-    formDepartmentId = formData.departmentId;
-    formLeaderId = formData.leaderId;
-    formMemberIds = formData.memberIds;
-    formMachineIds = formData.machineIds;
-    formIsActive = formData.isActive;
+    // Fetch members and machines from separate endpoints in parallel
+    const [members, machines] = await Promise.all([
+      fetchTeamMembers(teamId),
+      fetchTeamMachines(teamId),
+    ]);
+
+    // Populate form from basic team data
+    formName = team.name;
+    formDescription = team.description ?? '';
+    formDepartmentId = team.departmentId ?? null;
+    formLeaderId = team.leaderId ?? null;
+    formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
+
+    // Set member and machine IDs from fetched data
+    formMemberIds = members.map((m) => m.id);
+    formMachineIds = machines.map((m) => m.id);
+
     showTeamModal = true;
   }
 
@@ -278,76 +269,6 @@
     formMemberIds = defaults.memberIds;
     formMachineIds = defaults.machineIds;
     formIsActive = defaults.isActive;
-    departmentDropdownOpen = false;
-    leaderDropdownOpen = false;
-    membersDropdownOpen = false;
-    machinesDropdownOpen = false;
-    statusDropdownOpen = false;
-  }
-
-  // =============================================================================
-  // DROPDOWN HANDLERS
-  // =============================================================================
-
-  function closeOtherDropdowns(except: string): void {
-    if (except !== 'department') departmentDropdownOpen = false;
-    if (except !== 'leader') leaderDropdownOpen = false;
-    if (except !== 'members') membersDropdownOpen = false;
-    if (except !== 'machines') machinesDropdownOpen = false;
-    if (except !== 'status') statusDropdownOpen = false;
-  }
-
-  function toggleDepartmentDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    closeOtherDropdowns('department');
-    departmentDropdownOpen = !departmentDropdownOpen;
-  }
-
-  function selectDepartment(id: number | null): void {
-    formDepartmentId = id;
-    departmentDropdownOpen = false;
-  }
-
-  function toggleLeaderDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    closeOtherDropdowns('leader');
-    leaderDropdownOpen = !leaderDropdownOpen;
-  }
-
-  function selectLeader(id: number | null): void {
-    formLeaderId = id;
-    leaderDropdownOpen = false;
-  }
-
-  function toggleMembersDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    closeOtherDropdowns('members');
-    membersDropdownOpen = !membersDropdownOpen;
-  }
-
-  function toggleMember(id: number): void {
-    formMemberIds = toggleIdInArray(formMemberIds, id);
-  }
-
-  function toggleMachinesDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    closeOtherDropdowns('machines');
-    machinesDropdownOpen = !machinesDropdownOpen;
-  }
-
-  function toggleMachine(id: number): void {
-    formMachineIds = toggleIdInArray(formMachineIds, id);
-  }
-
-  function toggleStatusDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    closeOtherDropdowns('status');
-    statusDropdownOpen = !statusDropdownOpen;
-  }
-
-  function selectStatus(status: FormIsActiveStatus): void {
-    formIsActive = status;
-    statusDropdownOpen = false;
   }
 
   // =============================================================================
@@ -356,7 +277,7 @@
 
   function handleStatusToggle(status: StatusFilter): void {
     currentStatusFilter = status;
-    applyFilters();
+    // filteredTeams is $derived - automatically updates when filter changes
   }
 
   // =============================================================================
@@ -367,13 +288,13 @@
     const input = e.target as HTMLInputElement;
     currentSearchQuery = input.value;
     searchOpen = currentSearchQuery.trim().length > 0;
-    applyFilters();
+    // filteredTeams is $derived - automatically updates when search changes
   }
 
   function clearSearch(): void {
     currentSearchQuery = '';
     searchOpen = false;
-    applyFilters();
+    // filteredTeams is $derived - automatically updates
   }
 
   function handleSearchResultClick(teamId: number): void {
@@ -383,79 +304,15 @@
   }
 
   // =============================================================================
-  // FORM SUBMIT HANDLER
-  // =============================================================================
-
-  function handleFormSubmit(e: Event): void {
-    e.preventDefault();
-    saveTeam();
-  }
-
-  // =============================================================================
-  // OVERLAY CLICK HANDLERS
-  // =============================================================================
-
-  function handleModalOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) closeTeamModal();
-  }
-
-  function handleDeleteOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) closeDeleteModal();
-  }
-
-  function handleDeleteConfirmOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) closeDeleteConfirmModal();
-  }
-
-  function handleForceDeleteOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) closeForceDeleteModal();
-  }
-
-  // =============================================================================
-  // OUTSIDE CLICK HANDLERS
+  // OUTSIDE CLICK HANDLER FOR SEARCH
   // =============================================================================
 
   $effect(() => {
-    if (
-      departmentDropdownOpen ||
-      leaderDropdownOpen ||
-      membersDropdownOpen ||
-      machinesDropdownOpen ||
-      statusDropdownOpen ||
-      searchOpen
-    ) {
+    if (searchOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
-
-        if (departmentDropdownOpen) {
-          const el = document.getElementById('department-dropdown');
-          if (el && !el.contains(target)) departmentDropdownOpen = false;
-        }
-
-        if (leaderDropdownOpen) {
-          const el = document.getElementById('team-lead-dropdown');
-          if (el && !el.contains(target)) leaderDropdownOpen = false;
-        }
-
-        if (membersDropdownOpen) {
-          const el = document.getElementById('team-members-dropdown');
-          if (el && !el.contains(target)) membersDropdownOpen = false;
-        }
-
-        if (machinesDropdownOpen) {
-          const el = document.getElementById('team-machines-dropdown');
-          if (el && !el.contains(target)) machinesDropdownOpen = false;
-        }
-
-        if (statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) statusDropdownOpen = false;
-        }
-
-        if (searchOpen) {
-          const el = document.querySelector('.search-input-wrapper');
-          if (el && !el.contains(target)) searchOpen = false;
-        }
+        const el = document.querySelector('.search-input-wrapper');
+        if (el && !el.contains(target)) searchOpen = false;
       };
 
       document.addEventListener('click', handleOutsideClick);
@@ -475,24 +332,6 @@
       else if (showTeamModal) closeTeamModal();
     }
   }
-
-  // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  onMount(() => {
-    const token = localStorage.getItem('accessToken');
-    const activeRole = localStorage.getItem('activeRole');
-
-    // Admin or Root can manage teams
-    if (!token || (activeRole !== 'admin' && activeRole !== 'root')) {
-      goto(`${base}/login`);
-      return;
-    }
-
-    loadTeams();
-    loadReferenceData();
-  });
 </script>
 
 <svelte:head>
@@ -603,16 +442,13 @@
     </div>
 
     <div class="card__body">
-      {#if loading}
-        <div id="teams-loading" class="spinner-container">
-          <div class="spinner-ring spinner-ring--md"></div>
-          <p class="mt-2 text-[var(--color-text-secondary)]">{MESSAGES.LOADING_TEAMS}</p>
-        </div>
-      {:else if error}
+      {#if error}
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => loadTeams()}>Erneut versuchen</button>
+          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+            >Erneut versuchen</button
+          >
         </div>
       {:else if filteredTeams.length === 0}
         <div id="teams-empty" class="empty-state">
@@ -644,6 +480,9 @@
               </thead>
               <tbody>
                 {#each filteredTeams as team (team.id)}
+                  {@const deptBadge = getDepartmentBadge(team, allDepartments)}
+                  {@const membersBadge = getMembersBadge(team)}
+                  {@const machinesBadge = getMachinesBadge(team)}
                   <tr>
                     <td>
                       <div class="flex items-center gap-2">
@@ -651,22 +490,23 @@
                         <span class="font-medium">{team.name}</span>
                       </div>
                     </td>
-                    <td>{team.departmentName ?? '-'}</td>
+                    <td>
+                      <span class="badge {deptBadge.class}" title={deptBadge.title}>
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        {@html deptBadge.text}
+                      </span>
+                    </td>
                     <td>{team.leaderName ?? '-'}</td>
                     <td>
-                      <span
-                        class="badge badge--info"
-                        title={team.memberNames ?? 'Keine Mitglieder'}
-                      >
-                        {team.memberCount ?? 0}
+                      <span class="badge {membersBadge.class}" title={membersBadge.title}>
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        {@html membersBadge.text}
                       </span>
                     </td>
                     <td>
-                      <span
-                        class="badge badge--secondary"
-                        title={team.machineNames ?? 'Keine Maschinen'}
-                      >
-                        {team.machineCount ?? 0}
+                      <span class="badge {machinesBadge.class}" title={machinesBadge.title}>
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        {@html machinesBadge.text}
                       </span>
                     </td>
                     <td>
@@ -712,364 +552,37 @@
 </button>
 
 <!-- Add/Edit Team Modal -->
-<div
-  id="team-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showTeamModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="team-modal-title"
-  tabindex="-1"
-  onclick={handleModalOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeTeamModal()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-  <form
-    id="team-form"
-    class="ds-modal"
-    onclick={(e) => e.stopPropagation()}
+{#if showTeamModal}
+  <TeamFormModal
+    {isEditMode}
+    {modalTitle}
+    {formName}
+    {formDescription}
+    {formDepartmentId}
+    {formLeaderId}
+    {formMemberIds}
+    {formMachineIds}
+    {formIsActive}
+    {allDepartments}
+    {allAdmins}
+    {allEmployees}
+    {allMachines}
+    {submitting}
+    onclose={closeTeamModal}
     onsubmit={handleFormSubmit}
-  >
-    <div class="ds-modal__header">
-      <h3 class="ds-modal__title" id="team-modal-title">{modalTitle}</h3>
-      <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={closeTeamModal}>
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="ds-modal__body">
-      <div class="form-field">
-        <label class="form-field__label" for="team-name">
-          Name <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="team-name"
-          name="name"
-          class="form-field__control"
-          required
-          bind:value={formName}
-        />
-      </div>
+  />
+{/if}
 
-      <div class="form-field">
-        <label class="form-field__label" for="team-description">Beschreibung</label>
-        <textarea
-          id="team-description"
-          name="description"
-          class="form-field__control"
-          rows="3"
-          bind:value={formDescription}
-        ></textarea>
-      </div>
-
-      <div class="form-field">
-        <label class="form-field__label" for="team-department">Abteilung</label>
-        <input
-          type="hidden"
-          id="team-department"
-          name="departmentId"
-          value={formDepartmentId ?? ''}
-        />
-        <div class="dropdown" id="department-dropdown">
-          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-          <div
-            class="dropdown__trigger"
-            class:active={departmentDropdownOpen}
-            onclick={toggleDepartmentDropdown}
-          >
-            <span>{getDepartmentDisplayText(formDepartmentId, allDepartments)}</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="dropdown__menu" class:active={departmentDropdownOpen}>
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div class="dropdown__option" onclick={() => selectDepartment(null)}>
-              {MESSAGES.NO_DEPARTMENT}
-            </div>
-            {#each allDepartments as dept (dept.id)}
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectDepartment(dept.id)}>
-                {dept.name}
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label class="form-field__label" for="team-lead">Team-Leiter (Admin)</label>
-        <input type="hidden" id="team-lead" name="leaderId" value={formLeaderId ?? ''} />
-        <div class="dropdown" id="team-lead-dropdown">
-          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-          <div
-            class="dropdown__trigger"
-            class:active={leaderDropdownOpen}
-            onclick={toggleLeaderDropdown}
-          >
-            <span>{getLeaderDisplayText(formLeaderId, allAdmins)}</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="dropdown__menu" class:active={leaderDropdownOpen}>
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div class="dropdown__option" onclick={() => selectLeader(null)}>
-              {MESSAGES.NO_LEADER}
-            </div>
-            {#each allAdmins as admin (admin.id)}
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectLeader(admin.id)}>
-                {admin.firstName}
-                {admin.lastName}
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label class="form-field__label" for="team-members">Team-Mitglieder</label>
-        <input type="hidden" id="team-members" name="memberIds" value={formMemberIds.join(',')} />
-        <div class="dropdown" id="team-members-dropdown">
-          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-          <div
-            class="dropdown__trigger"
-            class:active={membersDropdownOpen}
-            onclick={toggleMembersDropdown}
-          >
-            <span>{getMembersDisplayText(formMemberIds, allEmployees)}</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="dropdown__menu dropdown__menu--scrollable" class:active={membersDropdownOpen}>
-            {#each allEmployees as employee (employee.id)}
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div
-                class="dropdown__option dropdown__option--checkbox"
-                onclick={() => toggleMember(employee.id)}
-              >
-                <input
-                  type="checkbox"
-                  checked={formMemberIds.includes(employee.id)}
-                  class="mr-2"
-                  onclick={(e) => e.stopPropagation()}
-                  onchange={() => toggleMember(employee.id)}
-                />
-                {employee.firstName}
-                {employee.lastName}
-              </div>
-            {/each}
-            {#if allEmployees.length === 0}
-              <div class="dropdown__option dropdown__option--disabled">
-                {MESSAGES.NO_EMPLOYEES_AVAILABLE}
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label class="form-field__label" for="team-machines">Zugewiesene Maschinen</label>
-        <input
-          type="hidden"
-          id="team-machines"
-          name="machineIds"
-          value={formMachineIds.join(',')}
-        />
-        <div class="dropdown" id="team-machines-dropdown">
-          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-          <div
-            class="dropdown__trigger"
-            class:active={machinesDropdownOpen}
-            onclick={toggleMachinesDropdown}
-          >
-            <span>{getMachinesDisplayText(formMachineIds, allMachines)}</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div
-            class="dropdown__menu dropdown__menu--scrollable"
-            class:active={machinesDropdownOpen}
-          >
-            {#each allMachines as machine (machine.id)}
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div
-                class="dropdown__option dropdown__option--checkbox"
-                onclick={() => toggleMachine(machine.id)}
-              >
-                <input
-                  type="checkbox"
-                  checked={formMachineIds.includes(machine.id)}
-                  class="mr-2"
-                  onclick={(e) => e.stopPropagation()}
-                  onchange={() => toggleMachine(machine.id)}
-                />
-                {machine.name}
-              </div>
-            {/each}
-            {#if allMachines.length === 0}
-              <div class="dropdown__option dropdown__option--disabled">
-                {MESSAGES.NO_MACHINES_AVAILABLE}
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
-
-      {#if isEditMode}
-        <div class="form-field mt-6" id="status-field-group">
-          <label class="form-field__label" for="team-is-active">
-            Status <span class="text-red-500">*</span>
-          </label>
-          <input type="hidden" id="team-is-active" name="isActive" value={formIsActive} />
-          <div class="dropdown" id="status-dropdown">
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={statusDropdownOpen}
-              onclick={toggleStatusDropdown}
-            >
-              <span class="badge {getStatusBadgeClass(formIsActive)}"
-                >{getStatusLabel(formIsActive)}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="dropdown__menu" class:active={statusDropdownOpen}>
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectStatus(1)}>
-                <span class="badge badge--success">Aktiv</span>
-              </div>
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectStatus(0)}>
-                <span class="badge badge--warning">Inaktiv</span>
-              </div>
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectStatus(3)}>
-                <span class="badge badge--error">Archiviert</span>
-              </div>
-            </div>
-          </div>
-          <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
-            {MESSAGES.STATUS_HINT}
-          </span>
-        </div>
-      {/if}
-    </div>
-
-    <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={closeTeamModal}>Abbrechen</button>
-      <button type="submit" class="btn btn-modal" disabled={submitting}>
-        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
-        Speichern
-      </button>
-    </div>
-  </form>
-</div>
-
-<!-- Delete Modal Step 1 -->
-<div
-  id="delete-team-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showDeleteModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="delete-modal-title"
-  tabindex="-1"
-  onclick={handleDeleteOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="ds-modal ds-modal--sm" onclick={(e) => e.stopPropagation()}>
-    <div class="ds-modal__header">
-      <h3 class="ds-modal__title" id="delete-modal-title">
-        <i class="fas fa-trash-alt text-red-500 mr-2"></i>
-        {MESSAGES.DELETE_TITLE}
-      </h3>
-      <button
-        type="button"
-        class="ds-modal__close"
-        aria-label="Schließen"
-        onclick={closeDeleteModal}
-      >
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="ds-modal__body">
-      <p class="text-[var(--color-text-secondary)]">Möchten Sie dieses Team wirklich löschen?</p>
-    </div>
-    <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
-      <button type="button" class="btn btn-danger" onclick={proceedToDeleteConfirm}>Löschen</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Modal Step 2 -->
-<div
-  id="delete-team-confirm-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showDeleteConfirmModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="delete-confirm-title"
-  tabindex="-1"
-  onclick={handleDeleteConfirmOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeDeleteConfirmModal()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="confirm-modal confirm-modal--danger" onclick={(e) => e.stopPropagation()}>
-    <div class="confirm-modal__icon">
-      <i class="fas fa-exclamation-triangle"></i>
-    </div>
-    <h3 class="confirm-modal__title" id="delete-confirm-title">{MESSAGES.DELETE_CONFIRM_TITLE}</h3>
-    <p class="confirm-modal__message">
-      <strong>ACHTUNG:</strong>
-      {MESSAGES.DELETE_CONFIRM_MESSAGE}
-    </p>
-    <div class="confirm-modal__actions">
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick={closeDeleteConfirmModal}>Abbrechen</button
-      >
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--danger"
-        onclick={deleteTeam}
-      >
-        Endgültig löschen
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Force Delete Warning Modal -->
-<div
-  id="force-delete-warning-modal"
-  class="modal-overlay"
-  class:modal-overlay--active={showForceDeleteModal}
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="force-delete-title"
-  tabindex="-1"
-  onclick={handleForceDeleteOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && closeForceDeleteModal()}
->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="confirm-modal confirm-modal--warning" onclick={(e) => e.stopPropagation()}>
-    <div class="confirm-modal__icon">
-      <i class="fas fa-exclamation-triangle"></i>
-    </div>
-    <h3 class="confirm-modal__title" id="force-delete-title">{MESSAGES.FORCE_DELETE_TITLE}</h3>
-    <p class="confirm-modal__message">
-      {MESSAGES.FORCE_DELETE_MESSAGE(forceDeleteMemberCount)}
-    </p>
-    <div class="confirm-modal__actions">
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick={closeForceDeleteModal}>Abbrechen</button
-      >
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--confirm"
-        onclick={forceDeleteTeam}>Team löschen</button
-      >
-    </div>
-  </div>
-</div>
+<!-- Delete Modals -->
+<TeamDeleteModals
+  {showDeleteModal}
+  {showDeleteConfirmModal}
+  {showForceDeleteModal}
+  {forceDeleteMemberCount}
+  oncloseDelete={closeDeleteModal}
+  oncloseDeleteConfirm={closeDeleteConfirmModal}
+  oncloseForceDelete={closeForceDeleteModal}
+  onproceedToConfirm={proceedToDeleteConfirm}
+  onconfirmDelete={deleteTeam}
+  onforceDelete={forceDeleteTeam}
+/>

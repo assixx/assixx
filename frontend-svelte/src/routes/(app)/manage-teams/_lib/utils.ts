@@ -10,6 +10,7 @@ import type {
   Machine,
   Admin,
   Department,
+  BadgeInfo,
 } from './types';
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './constants';
 
@@ -33,6 +34,100 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive] ?? 'Unbekannt';
+}
+
+// =============================================================================
+// DEPARTMENT BADGE HELPERS (BADGE-INHERITANCE-DISPLAY)
+// =============================================================================
+
+/**
+ * Get department badge info for team table
+ * Shows department name with tooltip showing area hierarchy
+ * BADGE-INHERITANCE-DISPLAY: Departments are linked to areas
+ * @param team - Team object with departmentId and departmentName
+ * @param allDepartments - All available departments with area info
+ * @returns Badge info with class, text, and title
+ */
+export function getDepartmentBadge(team: Team, allDepartments: Department[]): BadgeInfo {
+  if (team.departmentId === undefined || team.departmentId === null) {
+    return {
+      class: 'badge--secondary',
+      text: 'Keine Abteilung',
+      title: 'Keine Abteilung zugewiesen',
+    };
+  }
+
+  const dept = allDepartments.find((d) => d.id === team.departmentId);
+  const deptName = dept?.name ?? team.departmentName ?? 'Unbekannt';
+  const areaName = dept?.areaName;
+
+  if (areaName !== undefined && areaName !== null && areaName !== '') {
+    // Show hierarchy: Team → Abteilung → Bereich
+    const tooltip = `${deptName} (gehört zu: ${areaName})`;
+    return {
+      class: 'badge--info',
+      text: `<i class="fas fa-sitemap mr-1"></i>${deptName}`,
+      title: tooltip,
+    };
+  }
+
+  return {
+    class: 'badge--info',
+    text: deptName,
+    title: deptName,
+  };
+}
+
+/**
+ * Get members badge info for team table
+ * Shows member count with tooltip listing member names
+ * @param team - Team object with memberCount and memberNames
+ * @returns Badge info with class, text, and title
+ */
+export function getMembersBadge(team: Team): BadgeInfo {
+  const count = team.memberCount ?? 0;
+  const names = team.memberNames ?? '';
+
+  if (count === 0) {
+    return {
+      class: 'badge--secondary',
+      text: '0',
+      title: 'Keine Mitglieder zugewiesen',
+    };
+  }
+
+  const label = count === 1 ? 'Mitglied' : 'Mitglieder';
+  return {
+    class: 'badge--info',
+    text: `<i class="fas fa-users mr-1"></i>${count}`,
+    title: `${count} ${label}: ${names}`,
+  };
+}
+
+/**
+ * Get machines badge info for team table
+ * Shows machine count with tooltip listing machine names
+ * @param team - Team object with machineCount and machineNames
+ * @returns Badge info with class, text, and title
+ */
+export function getMachinesBadge(team: Team): BadgeInfo {
+  const count = team.machineCount ?? 0;
+  const names = team.machineNames ?? '';
+
+  if (count === 0) {
+    return {
+      class: 'badge--secondary',
+      text: '0',
+      title: 'Keine Maschinen zugewiesen',
+    };
+  }
+
+  const label = count === 1 ? 'Maschine' : 'Maschinen';
+  return {
+    class: 'badge--secondary',
+    text: `<i class="fas fa-cog mr-1"></i>${count}`,
+    title: `${count} ${label}: ${names}`,
+  };
 }
 
 // =============================================================================

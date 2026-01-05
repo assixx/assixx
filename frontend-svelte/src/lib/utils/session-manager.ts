@@ -129,7 +129,14 @@ export class SessionManager {
     }
 
     this.lastActivityTime = now;
-    this.warningShown = false;
+
+    // CRITICAL: Do NOT reset warningShown if modal is currently displayed!
+    // The modal should only be dismissed by:
+    // 1. User clicking "Aktiv bleiben" (calls extendSession())
+    // 2. User clicking "Abmelden" (calls logout())
+    // 3. Timer expiring (handled by handleSessionTimeout())
+    // Random clicks should NOT hide the warning modal or reset this flag.
+    // Note: warningShown is reset in extendSession() and handleCrossTabActivity()
 
     // Use RequestIdleCallback for non-critical updates
     if ('requestIdleCallback' in window) {
@@ -154,11 +161,29 @@ export class SessionManager {
       this.scheduleNextCheck();
     }
 
-    // REMOVED: Automatic token refresh on user interaction
-    // Token refresh should ONLY happen via:
-    // 1. API calls (api-client.ts does proactive refresh)
-    // 2. Manual "Stay Active" button in warning modal (extendSession)
-    // User events (mouse, keyboard) should NOT trigger token refresh!
+    // Restore token refresh on ACTIVE user interaction (click, keydown, touchstart)
+    // This ensures the timer resets when user is genuinely active
+    // Only refresh if token is expiring soon (< 10 min remaining)
+    // CRITICAL: Do NOT auto-refresh when warning modal is shown!
+    // User must explicitly click "Aktiv bleiben" to extend session.
+    if (isActiveInteraction && !this.warningShown) {
+      const tokenManager = getTokenManager();
+      const remaining = tokenManager.getRemainingTime();
+
+      // Token < 10 minutes (600s) AND user actively interacting → refresh
+      if (remaining > 0 && remaining < 600) {
+        if (this.DEBUG_MODE) {
+          console.log(
+            `[SessionManager] 🔄 Active interaction + token < 10min (${remaining}s) → refreshing`,
+          );
+        }
+        void tokenManager.refresh();
+      }
+    } else if (isActiveInteraction && this.warningShown && this.DEBUG_MODE) {
+      console.log(
+        '[SessionManager] ⏸️ Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben".',
+      );
+    }
   }
 
   /**

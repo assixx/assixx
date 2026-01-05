@@ -6,6 +6,14 @@
 /**
  * Machine entity with all properties
  */
+/**
+ * Team assignment info (embedded in Machine for list display)
+ */
+export interface MachineTeamInfo {
+  id: number;
+  name: string;
+}
+
 export interface Machine {
   id: number;
   name: string;
@@ -34,6 +42,8 @@ export interface Machine {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+  // Teams assigned to this machine (for list display)
+  teams?: MachineTeamInfo[];
 }
 
 /**
@@ -43,6 +53,7 @@ export interface Department {
   id: number;
   name: string;
   description?: string;
+  areaId?: number;
 }
 
 /**
@@ -53,6 +64,31 @@ export interface Area {
   name: string;
   description?: string;
   type?: string;
+}
+
+/**
+ * Team entity
+ */
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  departmentId?: number;
+  departmentName?: string;
+}
+
+/**
+ * Machine team assignment (from API response)
+ */
+export interface MachineTeam {
+  id: number;
+  teamId: number;
+  teamName: string;
+  departmentId?: number;
+  departmentName?: string;
+  isPrimary: boolean;
+  assignedAt?: string;
+  notes?: string;
 }
 
 /**
@@ -69,6 +105,7 @@ export interface MachineFormData {
   status: string;
   operatingHours?: number;
   nextMaintenance?: string;
+  teamIds?: number[];
 }
 
 /**

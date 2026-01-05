@@ -66,7 +66,7 @@ export const SURVEY_STATUS = {
 // KVP Status
 export const KVP_STATUS = {
   SUBMITTED: 'eingereicht',
-  IN_REVIEW: 'in_pruefung',
+  IN_REVIEW: 'in_Prüfung',
   APPROVED: 'genehmigt',
   REJECTED: 'abgelehnt',
   IMPLEMENTED: 'umgesetzt',

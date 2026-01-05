@@ -310,8 +310,7 @@ export function displayDepartmentOptions(departments: Department[]): void {
 
   const optionsHtml = departments
     .map((dept) => {
-      // Try different possible field names for member count
-      const memberCount = dept.employeeCount ?? dept.employee_count ?? dept.member_count ?? dept.memberCount ?? 0;
+      const memberCount = dept.employeeCount ?? dept.memberCount ?? 0;
       return `<option value="${dept.id}">${escapeHtml(dept.name)} (${memberCount} Mitglieder)</option>`;
     })
     .join('');
@@ -324,8 +323,7 @@ export function displayTeamOptions(teams: Team[]): void {
 
   const optionsHtml = teams
     .map((team) => {
-      // Try different possible field names for member count
-      const memberCount = team.member_count ?? team.memberCount ?? 0;
+      const memberCount = team.memberCount ?? 0;
       return `<option value="${team.id}">${escapeHtml(team.name)} (${memberCount} Mitglieder)</option>`;
     })
     .join('');

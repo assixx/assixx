@@ -16,6 +16,7 @@ import {
   STATUS_LABELS,
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_LABELS,
+  AVAILABILITY_STATUS_LABELS,
   PASSWORD_STRENGTH_LABELS,
   PASSWORD_CRACK_TIMES,
   MESSAGES,
@@ -73,25 +74,58 @@ export function getInitials(firstName: string, lastName: string): string {
 
 /**
  * Get teams badge info for display
+ * Uses teamIds/teamNames from API response (flat arrays)
+ * Falls back to legacy teams array if available
  * @param employee - Employee object
  * @returns Badge info with class, text, and title
  */
 export function getTeamsBadge(employee: Employee): BadgeInfo {
-  if (!employee.teams || employee.teams.length === 0) {
+  // Check for teamIds/teamNames (API response format)
+  const teamIds = employee.teamIds;
+  const teamNames = employee.teamNames;
+
+  if (
+    Array.isArray(teamIds) &&
+    teamIds.length > 0 &&
+    Array.isArray(teamNames) &&
+    teamNames.length > 0
+  ) {
+    const count = teamIds.length;
+    const names = teamNames.join(', ');
+    const firstTeamName = teamNames[0] ?? '';
+
     return {
-      class: 'badge--secondary',
-      text: MESSAGES.NO_TEAM,
-      title: MESSAGES.NO_TEAM_TITLE,
+      class: 'badge--info',
+      text: count === 1 ? firstTeamName : `${count} Teams`,
+      title: names,
     };
   }
 
-  const count = employee.teams.length;
-  const names = employee.teams.map((t) => t.name).join(', ');
+  // Fallback: check legacy teams array (array of Team objects)
+  if (Array.isArray(employee.teams) && employee.teams.length > 0) {
+    const count = employee.teams.length;
+    const names = employee.teams.map((t) => t.name).join(', ');
+
+    return {
+      class: 'badge--info',
+      text: count === 1 ? (employee.teams[0]?.name ?? '') : `${count} Teams`,
+      title: names,
+    };
+  }
+
+  // Fallback: legacy single teamName
+  if (employee.teamName !== undefined && employee.teamName !== null && employee.teamName !== '') {
+    return {
+      class: 'badge--info',
+      text: employee.teamName,
+      title: employee.teamName,
+    };
+  }
 
   return {
-    class: 'badge--info',
-    text: count === 1 ? employee.teams[0].name : `${count} Teams`,
-    title: names,
+    class: 'badge--secondary',
+    text: MESSAGES.NO_TEAM,
+    title: MESSAGES.NO_TEAM_TITLE,
   };
 }
 
@@ -288,4 +322,241 @@ export function validateEmailMatch(email: string, emailConfirm: string): boolean
 export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
   if (!passwordConfirm) return true;
   return password === passwordConfirm;
+}
+
+// =============================================================================
+// AREAS BADGE HELPERS (BADGE-INHERITANCE-DISPLAY)
+// =============================================================================
+
+/**
+ * Check if employee has full tenant access
+ */
+function checkEmployeeFullAccess(employee: Employee): boolean {
+  return employee.hasFullAccess === true || employee.hasFullAccess === 1;
+}
+
+/**
+ * Check if employee has team assignments (array or legacy single)
+ */
+function hasTeamAssignments(employee: Employee): { hasTeams: boolean; hasArray: boolean } {
+  const hasTeamsArray = (employee.teams?.length ?? 0) > 0;
+  const hasTeamIdsArray = (employee.teamIds?.length ?? 0) > 0;
+  const hasLegacy = (employee.teamId ?? 0) > 0;
+  const hasArray = hasTeamsArray || hasTeamIdsArray;
+  return { hasTeams: hasArray || hasLegacy, hasArray };
+}
+
+/**
+ * Get team names string for tooltip (from array or legacy field)
+ */
+function getTeamNamesString(employee: Employee, hasArray: boolean): string {
+  if (hasArray) {
+    // Prefer teamNames array (new API format: teamIds + teamNames)
+    if ((employee.teamNames?.length ?? 0) > 0) {
+      return employee.teamNames?.join(', ') ?? '';
+    }
+    // Fallback to teams array of objects
+    return employee.teams?.map((team) => team.name).join(', ') ?? '';
+  }
+  return employee.teamName ?? '';
+}
+
+/**
+ * Build inherited badge HTML string
+ */
+function buildInheritedBadge(displayText: string, tooltip: string): BadgeInfo {
+  return {
+    class: 'badge--info',
+    text: `<i class="fas fa-sitemap mr-1"></i>${displayText}`,
+    title: tooltip,
+  };
+}
+
+/**
+ * Get areas badge info for employee table
+ * Shows count with tooltip listing area names
+ * BADGE-INHERITANCE-DISPLAY: Areas are inherited from teams→departments→areas for employees
+ */
+export function getAreasBadge(employee: Employee): BadgeInfo {
+  if (checkEmployeeFullAccess(employee)) {
+    return {
+      class: 'badge--primary',
+      text: '<i class="fas fa-globe mr-1"></i>Alle',
+      title: 'Voller Zugriff auf alle Bereiche',
+    };
+  }
+
+  // Direct area assignments (rare for employees)
+  if ((employee.areas?.length ?? 0) > 0) {
+    const count = employee.areas?.length ?? 0;
+    const label = count === 1 ? 'Bereich' : 'Bereiche';
+    const areaNames = employee.areas?.map((area) => area.name).join(', ') ?? '';
+    return {
+      class: 'badge--info',
+      text: `${count} ${label}`,
+      title: areaNames,
+    };
+  }
+
+  // Inherited via teams→departments→areas
+  const { hasTeams, hasArray } = hasTeamAssignments(employee);
+  if (hasTeams) {
+    return buildAreaInheritedBadge(employee, hasArray);
+  }
+
+  return {
+    class: 'badge--secondary',
+    text: 'Keine',
+    title: 'Kein Bereich zugewiesen',
+  };
+}
+
+/**
+ * Build area badge showing inherited area name from team chain
+ */
+function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
+  const { teamAreaName, teamDepartmentName } = employee;
+  // Derive teamName from teamNames array if available, else use legacy teamName
+  const teamName =
+    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
+
+  if (teamAreaName !== undefined && teamAreaName !== null && teamAreaName !== '') {
+    const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
+    return buildInheritedBadge(teamAreaName, tooltip);
+  }
+
+  // Fallback: generic "Vererbt"
+  const teamNamesStr = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNamesStr}`);
+}
+
+// =============================================================================
+// DEPARTMENTS BADGE HELPERS (BADGE-INHERITANCE-DISPLAY)
+// =============================================================================
+
+/**
+ * Get departments badge info for employee table
+ * Shows count with tooltip listing department names
+ * BADGE-INHERITANCE-DISPLAY: Departments are inherited from teams for employees
+ */
+export function getDepartmentsBadge(employee: Employee): BadgeInfo {
+  if (checkEmployeeFullAccess(employee)) {
+    return {
+      class: 'badge--primary',
+      text: '<i class="fas fa-globe mr-1"></i>Alle',
+      title: 'Voller Zugriff auf alle Abteilungen',
+    };
+  }
+
+  // Direct department assignments (user_departments table)
+  if ((employee.departments?.length ?? 0) > 0) {
+    const count = employee.departments?.length ?? 0;
+    const label = count === 1 ? 'Abteilung' : 'Abteilungen';
+    const deptNames = employee.departments?.map((dept) => dept.name).join(', ') ?? '';
+    return {
+      class: 'badge--info',
+      text: `${count} ${label}`,
+      title: deptNames,
+    };
+  }
+
+  // Inherited via teams→departments
+  const { hasTeams, hasArray } = hasTeamAssignments(employee);
+  if (hasTeams) {
+    return buildDeptInheritedBadge(employee, hasArray);
+  }
+
+  // Legacy departmentName fallback
+  if (
+    employee.departmentName !== undefined &&
+    employee.departmentName !== null &&
+    employee.departmentName !== ''
+  ) {
+    return {
+      class: 'badge--info',
+      text: employee.departmentName,
+      title: employee.departmentName,
+    };
+  }
+
+  return {
+    class: 'badge--secondary',
+    text: 'Keine',
+    title: 'Keine Abteilung zugewiesen',
+  };
+}
+
+/**
+ * Build department badge showing inherited dept name from team
+ */
+function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
+  const { teamDepartmentName } = employee;
+  // Derive teamName from teamNames array if available, else use legacy teamName
+  const teamName =
+    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
+
+  if (
+    teamDepartmentName !== undefined &&
+    teamDepartmentName !== null &&
+    teamDepartmentName !== ''
+  ) {
+    const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
+    return buildInheritedBadge(teamDepartmentName, tooltip);
+  }
+
+  // Fallback: generic "Vererbt"
+  const teamNamesStr = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNamesStr}`);
+}
+
+// =============================================================================
+// PLANNED AVAILABILITY HELPERS
+// =============================================================================
+
+/**
+ * Format date to German format (DD.MM.YYYY)
+ */
+function formatDateGerman(dateStr?: string): string {
+  if (dateStr === undefined || dateStr === '') return '?';
+  const date = new Date(dateStr);
+  return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+}
+
+/**
+ * Get the planned availability period text
+ * Shows status with date range if specified
+ */
+export function getPlannedAvailability(employee: Employee): string {
+  const status = (employee.availabilityStatus ?? 'available') as AvailabilityStatus;
+
+  // If available, return dash
+  if (status === 'available') {
+    return '-';
+  }
+
+  // Get status label
+  const statusText = AVAILABILITY_STATUS_LABELS[status] ?? status;
+
+  // Format dates if available
+  const startDate = employee.availabilityStart;
+  const endDate = employee.availabilityEnd;
+
+  if (startDate !== undefined || endDate !== undefined) {
+    const startFormatted = formatDateGerman(startDate);
+    const endFormatted = formatDateGerman(endDate);
+    return `${statusText}: ${startFormatted} - ${endFormatted}`;
+  }
+
+  return statusText;
+}
+
+/**
+ * Get truncated notes with full text as title
+ */
+export function getTruncatedNotes(notes?: string, maxLength = 20): { text: string; title: string } {
+  const text = notes ?? '-';
+  return {
+    text: text.length > maxLength ? text.substring(0, maxLength) + '...' : text,
+    title: text,
+  };
 }

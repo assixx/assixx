@@ -167,6 +167,8 @@ export interface DeleteHistoryCountsResponse {
   patterns: number;
   assignments: number;
   history: number;
+  shifts?: number; // Shifts deleted that were in rotation_history
+  plans?: number; // Shift plans deleted for the team
 }
 
 // ============================================================
@@ -801,6 +803,49 @@ export class RotationService {
     return index >= 0 ? index : 0;
   }
 
+  /**
+   * Check if a date should be skipped based on special rules
+   * Example: "Jeder 2. Freitag im Monat frei" → skip every 2nd Friday
+   */
+  private shouldSkipBySpecialRules(
+    date: Date,
+    specialRules?: { type: string; weekday: number; n: number }[],
+  ): boolean {
+    if (!specialRules || specialRules.length === 0) {
+      return false;
+    }
+
+    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const dayOfMonth = date.getDate();
+
+    for (const rule of specialRules) {
+      if (rule.type === 'nth_weekday_free') {
+        // Check if this day is the correct weekday
+        if (dayOfWeek !== rule.weekday) {
+          continue;
+        }
+
+        // Calculate which occurrence of this weekday in the month
+        // Example: Jan 9 is a Friday, dayOfMonth=9
+        // First Friday of Jan 2026 is Jan 2 (day 2)
+        // To find nth occurrence: count how many of this weekday came before + 1
+        // Formula: ceil(dayOfMonth / 7) works for most cases but is not exact
+        // Exact: floor((dayOfMonth - 1) / 7) + 1
+        const nthOccurrence = Math.floor((dayOfMonth - 1) / 7) + 1;
+
+        if (nthOccurrence === rule.n) {
+          const dateStr = date.toISOString().split('T')[0] ?? 'unknown';
+          this.logger.debug(
+            `Special rule match: ${dateStr} is ${rule.n}. weekday ${rule.weekday} - SKIPPING`,
+          );
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   /** Validates that team exists and is active */
   private async validateTeamExists(
     teamId: number | null | undefined,
@@ -903,6 +948,69 @@ export class RotationService {
     );
   }
 
+  /** Advances cycle state and returns updated values */
+  private advanceCycleState(
+    dayInCycle: number,
+    currentShiftIndex: number,
+    cycleLength: number,
+  ): { dayInCycle: number; currentShiftIndex: number } {
+    const newDayInCycle = dayInCycle + 1;
+    if (newDayInCycle >= cycleLength) {
+      return { dayInCycle: 0, currentShiftIndex: currentShiftIndex + 1 };
+    }
+    return { dayInCycle: newDayInCycle, currentShiftIndex };
+  }
+
+  /** Generates shift history entries for a single user assignment */
+  private async generateUserShiftHistory(params: {
+    assignmentId: number;
+    userId: number;
+    startGroup: 'F' | 'S' | 'N';
+    patternId: number;
+    teamId: number | null | undefined;
+    config: GenerateRotationFromConfigDto['config'];
+    start: Date;
+    totalDays: number;
+    tenantId: number;
+  }): Promise<number> {
+    const { config, start, totalDays, tenantId, patternId, teamId, assignmentId, userId } = params;
+    const { shiftBlockLength, freeDays, shiftSequence, specialRules } = config;
+    const cycleLength = shiftBlockLength + freeDays;
+    const typedRules = specialRules as { type: string; weekday: number; n: number }[] | undefined;
+
+    let currentShiftIndex = this.getGroupStartIndex(params.startGroup, shiftSequence);
+    let dayInCycle = 0;
+    let shiftCount = 0;
+
+    for (let dayOffset = 0; dayOffset < totalDays; dayOffset++) {
+      const currentDate = new Date(start);
+      currentDate.setDate(start.getDate() + dayOffset);
+      const isWorkDay = dayInCycle % cycleLength < shiftBlockLength;
+      const shouldSkip = this.shouldSkipBySpecialRules(currentDate, typedRules);
+
+      if (isWorkDay && !shouldSkip) {
+        const shiftType = shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
+        await this.insertHistoryEntry({
+          tenantId,
+          patternId,
+          assignmentId,
+          visitorUserId: userId,
+          teamId,
+          dateStr: currentDate.toISOString().split('T')[0] ?? '',
+          shiftType,
+          weekNumber: this.getWeekNumber(currentDate),
+        });
+        shiftCount++;
+      }
+      ({ dayInCycle, currentShiftIndex } = this.advanceCycleState(
+        dayInCycle,
+        currentShiftIndex,
+        cycleLength,
+      ));
+    }
+    return shiftCount;
+  }
+
   /** Creates assignment and history entries for a single user, returns shift count */
   private async createAssignmentWithHistory(
     assignment: { userId: number; startGroup: 'F' | 'S' | 'N' },
@@ -933,39 +1041,17 @@ export class RotationService {
     );
     const assignmentId = assignmentResult[0]?.id ?? 0;
 
-    const { shiftBlockLength, freeDays, shiftSequence } = config;
-    const cycleLength = shiftBlockLength + freeDays;
-    let currentShiftIndex = this.getGroupStartIndex(assignment.startGroup, shiftSequence);
-    let dayInCycle = 0;
-    let shiftCount = 0;
-
-    for (let dayOffset = 0; dayOffset < totalDays; dayOffset++) {
-      const currentDate = new Date(start);
-      currentDate.setDate(start.getDate() + dayOffset);
-      const positionInCycle = dayInCycle % cycleLength;
-
-      if (positionInCycle < shiftBlockLength) {
-        const shiftType = shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
-        await this.insertHistoryEntry({
-          tenantId,
-          patternId,
-          assignmentId,
-          visitorUserId: assignment.userId,
-          teamId,
-          dateStr: currentDate.toISOString().split('T')[0] ?? '',
-          shiftType,
-          weekNumber: this.getWeekNumber(currentDate),
-        });
-        shiftCount++;
-      }
-
-      dayInCycle++;
-      if (dayInCycle >= cycleLength) {
-        dayInCycle = 0;
-        currentShiftIndex++;
-      }
-    }
-    return shiftCount;
+    return await this.generateUserShiftHistory({
+      assignmentId,
+      userId: assignment.userId,
+      startGroup: assignment.startGroup,
+      patternId,
+      teamId,
+      config,
+      start,
+      totalDays,
+      tenantId,
+    });
   }
 
   /**
@@ -1102,58 +1188,83 @@ export class RotationService {
     );
   }
 
+  /** Helper: Execute DELETE query and return count */
+  private async executeDeleteWithCount(query: string, params: unknown[]): Promise<number> {
+    const result = await this.databaseService.query<{ count: string }>(query, params);
+    return Number.parseInt(result[0]?.count ?? '0', 10);
+  }
+
+  /** Helper: Build shifts delete query based on pattern filter */
+  private buildShiftsDeleteQuery(hasPatternId: boolean): string {
+    const patternFilter = hasPatternId ? 'AND h.pattern_id = $3' : '';
+    return `WITH to_delete AS (
+      SELECT DISTINCT h.user_id, h.shift_date FROM shift_rotation_history h
+      WHERE h.tenant_id = $1 AND h.team_id = $2 ${patternFilter}
+    ), deleted AS (
+      DELETE FROM shifts s USING to_delete td
+      WHERE s.tenant_id = $1 AND s.team_id = $2 AND s.user_id = td.user_id AND s.date = td.shift_date
+      RETURNING s.*
+    ) SELECT COUNT(*) as count FROM deleted`;
+  }
+
   /**
-   * Delete all rotation history for a team
+   * Delete rotation history for a team
+   * @param patternId - Optional: if provided, only delete this specific pattern
    */
   async deleteRotationHistory(
     tenantId: number,
     teamId: number,
     userRole: string,
+    patternId?: number,
   ): Promise<DeleteHistoryCountsResponse> {
-    this.logger.debug(`Deleting rotation history for team ${teamId} in tenant ${tenantId}`);
+    const hasPatternId = patternId !== undefined;
+    this.logger.debug(
+      `Deleting ${hasPatternId ? `pattern ${patternId}` : 'all patterns'} for team ${teamId}`,
+    );
 
     if (userRole !== 'admin' && userRole !== 'root') {
       throw new ForbiddenException('Only admins can delete rotation history');
     }
 
-    // Use transaction for consistency
     await this.databaseService.query('BEGIN', []);
 
     try {
-      // 1. Delete history
-      const historyResult = await this.databaseService.query<{ count: string }>(
-        `WITH deleted AS (
-          DELETE FROM shift_rotation_history WHERE tenant_id = $1 AND team_id = $2 RETURNING *
-        ) SELECT COUNT(*) as count FROM deleted`,
-        [tenantId, teamId],
-      );
-      const historyDeleted = Number.parseInt(historyResult[0]?.count ?? '0', 10);
+      const params = hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
+      const patternCond = hasPatternId ? 'AND pattern_id = $3' : '';
 
-      // 2. Delete assignments
-      const assignmentsResult = await this.databaseService.query<{ count: string }>(
-        `WITH deleted AS (
-          DELETE FROM shift_rotation_assignments WHERE tenant_id = $1 AND team_id = $2 RETURNING *
-        ) SELECT COUNT(*) as count FROM deleted`,
-        [tenantId, teamId],
+      // Delete in order: shifts → history → assignments → patterns → plans
+      const shifts = await this.executeDeleteWithCount(
+        this.buildShiftsDeleteQuery(hasPatternId),
+        params,
       );
-      const assignmentsDeleted = Number.parseInt(assignmentsResult[0]?.count ?? '0', 10);
 
-      // 3. Delete patterns
-      const patternsResult = await this.databaseService.query<{ count: string }>(
-        `WITH deleted AS (
-          DELETE FROM shift_rotation_patterns WHERE tenant_id = $1 AND team_id = $2 RETURNING *
-        ) SELECT COUNT(*) as count FROM deleted`,
-        [tenantId, teamId],
+      const history = await this.executeDeleteWithCount(
+        `WITH d AS (DELETE FROM shift_rotation_history WHERE tenant_id=$1 AND team_id=$2 ${patternCond} RETURNING *) SELECT COUNT(*) as count FROM d`,
+        params,
       );
-      const patternsDeleted = Number.parseInt(patternsResult[0]?.count ?? '0', 10);
+
+      const assignments = await this.executeDeleteWithCount(
+        `WITH d AS (DELETE FROM shift_rotation_assignments WHERE tenant_id=$1 AND team_id=$2 ${patternCond} RETURNING *) SELECT COUNT(*) as count FROM d`,
+        params,
+      );
+
+      const patternQuery =
+        hasPatternId ?
+          `WITH d AS (DELETE FROM shift_rotation_patterns WHERE tenant_id=$1 AND team_id=$2 AND id=$3 RETURNING *) SELECT COUNT(*) as count FROM d`
+        : `WITH d AS (DELETE FROM shift_rotation_patterns WHERE tenant_id=$1 AND team_id=$2 RETURNING *) SELECT COUNT(*) as count FROM d`;
+      const patterns = await this.executeDeleteWithCount(patternQuery, params);
+
+      // Delete plans only when deleting ALL patterns
+      let plans = 0;
+      if (!hasPatternId) {
+        plans = await this.executeDeleteWithCount(
+          `WITH d AS (DELETE FROM shift_plans WHERE tenant_id=$1 AND team_id=$2 RETURNING *) SELECT COUNT(*) as count FROM d`,
+          [tenantId, teamId],
+        );
+      }
 
       await this.databaseService.query('COMMIT', []);
-
-      return {
-        patterns: patternsDeleted,
-        assignments: assignmentsDeleted,
-        history: historyDeleted,
-      };
+      return { patterns, assignments, history, shifts, plans };
     } catch (error) {
       await this.databaseService.query('ROLLBACK', []);
       throw error;

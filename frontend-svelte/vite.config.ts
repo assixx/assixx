@@ -54,28 +54,39 @@ export default defineConfig({
 
   // Build Optimierungen
   build: {
-    // Chunk Strategy wie im Original
     rollupOptions: {
       output: {
+        // Targeted chunking - only split heavy libraries, let SvelteKit handle the rest
         manualChunks(id) {
-          // EventCalendar Bundle
+          // EventCalendar is the heaviest dependency (~236 kB)
           if (id.includes('@event-calendar/')) {
-            return 'event-calendar';
+            return 'calendar';
           }
-          // Marked.js für Markdown
+          // Markdown processing
           if (id.includes('marked')) {
-            return 'marked';
+            return 'markdown';
           }
-          // DOMPurify
+          // HTML sanitization
           if (id.includes('dompurify')) {
-            return 'vendor-utils';
+            return 'sanitize';
           }
-          // tRPC
+          // tRPC client
           if (id.includes('@trpc/')) {
             return 'trpc';
           }
+          // superjson (tRPC serialization)
+          if (id.includes('superjson')) {
+            return 'superjson';
+          }
+          // Let Vite/SvelteKit handle everything else automatically
         },
       },
     },
+    // SvelteKit SSR bundles are large due to:
+    // 1. Svelte runtime (~400 kB) shared across all routes
+    // 2. Component hydration code bundled together for efficiency
+    // Gzipped sizes are acceptable: 361 kB + 229 kB = ~590 kB total
+    // For internal SaaS app, this is fine. Public-facing would need dynamic imports.
+    chunkSizeWarningLimit: 850,
   },
 });

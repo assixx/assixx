@@ -12,7 +12,6 @@ import type {
   TeamMember,
   Machine,
   TeamPayload,
-  TeamDetails,
   ApiErrorWithDetails,
 } from './types';
 import { API_ENDPOINTS } from './constants';
@@ -107,14 +106,34 @@ export async function loadMachines(): Promise<Machine[]> {
 }
 
 /**
- * Get team details with members and machines
+ * Fetch team members from /teams/:id/members endpoint
+ * Returns array of member objects with id
  */
-export async function getTeamDetails(teamId: number): Promise<TeamDetails> {
+export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]> {
   try {
-    return (await apiClient.get(API_ENDPOINTS.TEAM(teamId))) as TeamDetails;
+    const result = (await apiClient.get(API_ENDPOINTS.TEAM_MEMBERS(teamId))) as
+      | { id: number }[]
+      | { data?: { id: number }[] };
+    return Array.isArray(result) ? result : (result.data ?? []);
   } catch (err) {
-    console.error('[ManageTeams] Error getting team details:', err);
-    return { members: [], machines: [] };
+    console.error('[ManageTeams] Error fetching team members:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch team machines from /teams/:id/machines endpoint
+ * Returns array of machine objects with id
+ */
+export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[]> {
+  try {
+    const result = (await apiClient.get(API_ENDPOINTS.TEAM_MACHINES(teamId))) as
+      | { id: number }[]
+      | { data?: { id: number }[] };
+    return Array.isArray(result) ? result : (result.data ?? []);
+  } catch (err) {
+    console.error('[ManageTeams] Error fetching team machines:', err);
+    return [];
   }
 }
 
@@ -194,9 +213,13 @@ export async function updateTeamRelations(
   let currentMachines: number[] = [];
 
   if (isEditMode) {
-    const team = await getTeamDetails(teamId);
-    currentMembers = (team.members ?? []).map((m) => m.id);
-    currentMachines = (team.machines ?? []).map((m) => m.id);
+    // Fetch current members and machines from separate endpoints
+    const [members, machines] = await Promise.all([
+      fetchTeamMembers(teamId),
+      fetchTeamMachines(teamId),
+    ]);
+    currentMembers = members.map((m) => m.id);
+    currentMachines = machines.map((m) => m.id);
   }
 
   // Update members

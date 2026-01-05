@@ -168,7 +168,7 @@ export interface UploadFormData {
  */
 export interface CategoryMapping {
   accessScope: AccessScope;
-  requiresField?: 'team_id' | 'department_id';
+  requiresField?: 'teamId' | 'departmentId';
   requiresPayrollPeriod?: boolean;
   categoryValue: string;
 }
@@ -178,9 +178,9 @@ export interface CategoryMapping {
  */
 export interface CurrentUser {
   id: number;
-  tenant_id: number;
-  department_id?: number | null;
-  team_id?: number | null;
+  tenantId: number;
+  departmentId?: number | null;
+  teamId?: number | null;
   role: string;
   /** Admin: 1 = full access to all documents, 0 = limited access */
   hasFullAccess?: boolean | null;
