@@ -14,23 +14,24 @@
 /* ========== ACTIVE STATE (Shows "Deaktivieren") ========== */
 
 .btn-status-active {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-btn-status-active);
   border: 1px solid var(--color-status-active);
-
-  color: var(--color-status-active); /* Deep red text */
 
   /* Current state: Active → Action: Deactivate */
   background: transparent;
-  backdrop-filter: blur(var(--blur-md));
-  box-shadow: var(--shadow-btn-status-active);
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-status-active); /* Deep red text */
 }
 
 .btn-status-active:hover:not(:disabled) {
-  border-color: var(--color-status-active-hover);
-  color: var(--color-status-active-hover);
-  background: rgb(198 40 40 / 10%); /* Subtle red tint */
   box-shadow: var(--shadow-btn-status-active-hover);
+  border-color: var(--color-status-active-hover);
+  background: rgb(198 40 40 / 10%); /* Subtle red tint */
+  color: var(--color-status-active-hover);
 }
 
 .btn-status-active:focus-visible {
@@ -42,23 +43,24 @@
 /* ========== INACTIVE STATE (Shows "Aktivieren") ========== */
 
 .btn-status-inactive {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-btn-status-inactive);
   border: 1px solid var(--color-status-inactive);
-
-  color: var(--color-status-inactive); /* Green text */
 
   /* Current state: Inactive → Action: Activate */
   background: transparent;
-  backdrop-filter: blur(var(--blur-md));
-  box-shadow: var(--shadow-btn-status-inactive);
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-status-inactive); /* Green text */
 }
 
 .btn-status-inactive:hover:not(:disabled) {
-  border-color: var(--color-status-inactive-hover);
-  color: var(--color-status-inactive-hover);
-  background: rgb(40 167 69 / 10%); /* Subtle green tint */
   box-shadow: var(--shadow-btn-status-inactive-hover);
+  border-color: var(--color-status-inactive-hover);
+  background: rgb(40 167 69 / 10%); /* Subtle green tint */
+  color: var(--color-status-inactive-hover);
 }
 
 .btn-status-inactive:focus-visible {

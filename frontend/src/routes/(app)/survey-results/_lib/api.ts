@@ -1,0 +1,153 @@
+// =============================================================================
+// SURVEY-RESULTS - API FUNCTIONS
+// Based on: frontend/src/scripts/survey/results/data.ts
+// =============================================================================
+
+import { getApiClient } from '$lib/utils/api-client';
+import { API_ENDPOINTS } from './constants';
+import type { Survey, SurveyQuestion, SurveyStatistics, ResponsesData } from './types';
+import { goto } from '$app/navigation';
+import { base } from '$app/paths';
+import { browser } from '$app/environment';
+
+const apiClient = getApiClient();
+
+// =============================================================================
+// SESSION HANDLING
+// =============================================================================
+
+/**
+ * Check if error is a session expired error
+ */
+function isSessionExpiredError(err: unknown): boolean {
+  return (
+    err !== null &&
+    typeof err === 'object' &&
+    'code' in err &&
+    (err as { code: string }).code === 'SESSION_EXPIRED'
+  );
+}
+
+/**
+ * Handle session expired error
+ */
+export function handleSessionExpired(): void {
+  goto(`${base}/login?session=expired`);
+}
+
+/**
+ * Check for session expired and redirect
+ */
+export function checkSessionExpired(err: unknown): boolean {
+  if (isSessionExpiredError(err)) {
+    handleSessionExpired();
+    return true;
+  }
+  return false;
+}
+
+// =============================================================================
+// SURVEY DATA
+// =============================================================================
+
+/**
+ * Load survey details from API v2
+ */
+export async function loadSurveyDetails(surveyId: string): Promise<Survey | null> {
+  try {
+    const survey = await apiClient.get<Survey>(API_ENDPOINTS.SURVEY_BY_ID(surveyId));
+    console.info('[Survey Results] Survey loaded:', surveyId);
+    return survey;
+  } catch (err) {
+    console.error('[Survey Results] Error loading survey:', err);
+    checkSessionExpired(err);
+    return null;
+  }
+}
+
+/**
+ * Load survey questions if not included in survey data
+ */
+export async function loadSurveyQuestions(surveyId: string): Promise<SurveyQuestion[]> {
+  try {
+    const questions = await apiClient.get<SurveyQuestion[]>(
+      API_ENDPOINTS.SURVEY_QUESTIONS(surveyId),
+    );
+    console.info('[Survey Results] Questions loaded:', questions.length);
+    return questions;
+  } catch (err) {
+    console.error('[Survey Results] Error loading questions:', err);
+    checkSessionExpired(err);
+    return [];
+  }
+}
+
+/**
+ * Load survey statistics from API v2
+ */
+export async function loadSurveyStatistics(surveyId: string): Promise<SurveyStatistics | null> {
+  try {
+    const stats = await apiClient.get<SurveyStatistics>(API_ENDPOINTS.SURVEY_STATISTICS(surveyId));
+    console.info('[Survey Results] Statistics loaded');
+    return stats;
+  } catch (err) {
+    console.error('[Survey Results] Error loading statistics:', err);
+    checkSessionExpired(err);
+    return null;
+  }
+}
+
+/**
+ * Load individual responses (admin only)
+ */
+export async function loadSurveyResponses(surveyId: string): Promise<ResponsesData | null> {
+  try {
+    const responses = await apiClient.get<ResponsesData>(API_ENDPOINTS.SURVEY_RESPONSES(surveyId));
+    console.info('[Survey Results] Responses loaded:', responses.responses?.length ?? 0);
+    return responses;
+  } catch (err) {
+    console.warn(
+      '[Survey Results] Could not load individual responses (might not have permission):',
+      err,
+    );
+    return null;
+  }
+}
+
+/**
+ * Export survey results to Excel (triggers download)
+ */
+export async function exportToExcel(surveyId: string): Promise<boolean> {
+  if (!browser) return false;
+
+  try {
+    const endpoint = API_ENDPOINTS.SURVEY_EXPORT(surveyId, 'excel');
+    const token = localStorage.getItem('token') ?? '';
+
+    const response = await fetch(`/api/v2${endpoint}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Fehler beim Excel-Export');
+    }
+
+    // Download the file
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `umfrage-${surveyId}-ergebnisse.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    return true;
+  } catch (err) {
+    console.error('[Survey Results] Error exporting to Excel:', err);
+    return false;
+  }
+}

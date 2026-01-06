@@ -18,17 +18,17 @@
   /* Layout */
   display: inline-block;
 
-  /* Size (default: medium) */
-  width: 40px;
-  height: 40px;
+  /* Animation */
+  animation: spinner-rotate 0.8s linear infinite;
 
   /* Appearance */
   border: 3px solid rgb(255 255 255 / 10%);
   border-top-color: var(--color-primary);
   border-radius: 50%;
 
-  /* Animation */
-  animation: spinner-rotate 0.8s linear infinite;
+  /* Size (default: medium) */
+  width: 40px;
+  height: 40px;
 }
 
 @keyframes spinner-rotate {
@@ -45,30 +45,30 @@
 
 /* Small */
 .spinner--sm {
+  border-width: 2px;
   width: 20px !important;
   height: 20px !important;
-  border-width: 2px;
 }
 
 /* Medium (default) */
 .spinner--md {
+  border-width: 3px;
   width: 40px !important;
   height: 40px !important;
-  border-width: 3px;
 }
 
 /* Large */
 .spinner--lg {
+  border-width: 4px;
   width: 60px !important;
   height: 60px !important;
-  border-width: 4px;
 }
 
 /* Extra large */
 .spinner--xl {
+  border-width: 5px;
   width: 80px !important;
   height: 80px !important;
-  border-width: 5px;
 }
 
 /* ========== COLOR VARIANTS ========== */
@@ -103,23 +103,23 @@
 .spinner-dots {
   /* Layout */
   display: inline-flex;
-  gap: 8px;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .spinner-dots__dot {
-  /* Size */
-  width: 10px;
-  height: 10px;
+  /* Animation */
+  animation: spinner-dots-bounce 1.4s ease-in-out infinite;
 
   /* Appearance */
   border-radius: 50%;
 
   background: var(--color-primary);
 
-  /* Animation */
-  animation: spinner-dots-bounce 1.4s ease-in-out infinite;
+  /* Size */
+  width: 10px;
+  height: 10px;
 }
 
 .spinner-dots__dot:nth-child(1) {
@@ -179,9 +179,10 @@
 /* ========== PULSE SPINNER ========== */
 
 .spinner-pulse {
+  display: inline-block;
+
   /* Layout */
   position: relative;
-  display: inline-block;
 
   /* Size */
   width: 40px;
@@ -190,25 +191,24 @@
 
 .spinner-pulse::before,
 .spinner-pulse::after {
-  content: "";
-
   /* Position */
   position: absolute;
   top: 0;
   left: 0;
 
-  /* Size */
-  width: 100%;
-  height: 100%;
+  opacity: 0%;
+
+  /* Animation */
+  animation: spinner-pulse 2s ease-out infinite;
 
   /* Appearance */
   border: 2px solid var(--color-primary);
   border-radius: 50%;
 
-  opacity: 0%;
-
-  /* Animation */
-  animation: spinner-pulse 2s ease-out infinite;
+  /* Size */
+  width: 100%;
+  height: 100%;
+  content: '';
 }
 
 .spinner-pulse::after {
@@ -260,9 +260,8 @@
   /* Layout */
   display: inline-block;
 
-  /* Size */
-  width: 40px;
-  height: 40px;
+  /* Animation */
+  animation: spinner-rotate 0.8s linear infinite;
 
   /* Appearance */
   border: 3px solid transparent;
@@ -270,21 +269,22 @@
   border-right: 3px solid var(--color-primary);
   border-radius: 50%;
 
-  /* Animation */
-  animation: spinner-rotate 0.8s linear infinite;
+  /* Size */
+  width: 40px;
+  height: 40px;
 }
 
 /* Ring size variants */
 .spinner-ring--sm {
+  border-width: 2px;
   width: 20px;
   height: 20px;
-  border-width: 2px;
 }
 
 .spinner-ring--lg {
+  border-width: 4px;
   width: 60px;
   height: 60px;
-  border-width: 4px;
 }
 
 /* Ring color variants */
@@ -316,49 +316,49 @@
 /* ========== OVERLAY SPINNER (FULLSCREEN) ========== */
 
 .spinner-overlay {
-  /* Position */
-  position: fixed;
-  z-index: 9999;
-  top: 0;
-  left: 0;
-
   /* Layout */
   display: flex;
-  align-items: center;
+
+  /* Position */
+  position: fixed;
+  top: 0;
+  left: 0;
   justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+
+  /* Appearance */
+  background: rgb(0 0 0 / 60%);
 
   /* Size */
   width: 100%;
   height: 100%;
-
-  /* Appearance */
-  background: rgb(0 0 0 / 60%);
-  backdrop-filter: blur(4px);
 }
 
 .spinner-overlay__content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
   align-items: center;
+  gap: var(--spacing-4);
 }
 
 .spinner-overlay__text {
-  font-size: 14px;
-  font-weight: 500;
   color: #fff;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 /* ========== INLINE SPINNER (BUTTON USAGE) ========== */
 
 .spinner-inline {
+  /* Vertical alignment */
+  vertical-align: middle;
+  border-width: 2px;
+
   /* Size for inline use */
   width: 16px;
   height: 16px;
-  border-width: 2px;
-
-  /* Vertical alignment */
-  vertical-align: middle;
 }
 
 /* Usage in buttons */
@@ -371,16 +371,16 @@
 .spinner-container {
   /* Layout */
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+
+  /* Spacing */
+  padding: var(--spacing-6);
 
   width: 100%;
 
   /* Size */
   min-height: 200px;
-
-  /* Spacing */
-  padding: var(--spacing-6);
 }
 
 .spinner-container--sm {
@@ -397,9 +397,9 @@
 @media (prefers-reduced-motion: reduce) {
   .spinner,
   .spinner-ring {
-    border-color: var(--color-primary);
-    border-style: dashed;
     animation: none;
+    border-style: dashed;
+    border-color: var(--color-primary);
   }
 
   .spinner-dots__dot {
@@ -419,15 +419,15 @@
 .spinner__sr-text {
   position: absolute;
 
-  overflow: hidden;
+  clip-path: inset(50%);
+  margin: -1px;
+  border: 0;
+  padding: 0;
 
   width: 1px;
   height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
+
+  overflow: hidden;
 
   white-space: nowrap;
-
-  clip-path: inset(50%);
 }

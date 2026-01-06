@@ -35,20 +35,20 @@
    ======================================== */
 
 .status-card {
-  padding: var(--spacing-6);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-6);
 }
 
 .status-header {
   display: flex;
-  gap: var(--spacing-4);
-  align-items: start;
   justify-content: space-between;
+  align-items: start;
+  gap: var(--spacing-4);
 
   margin-bottom: var(--spacing-6);
 }
@@ -59,15 +59,15 @@
 
 .tenant-info h3 {
   margin: 0 0 var(--spacing-2);
-  font-size: 1.25rem;
-  font-weight: 600;
   color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 1.25rem;
 }
 
 .tenant-info p {
   margin: var(--spacing-1) 0;
-  font-size: 14px;
   color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 /* ========================================
@@ -76,28 +76,28 @@
 
 .process-info {
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-4);
   border: 1px solid rgb(33 150 243 / 20%);
   border-radius: var(--radius-lg);
 
   background: rgb(33 150 243 / 5%);
+  padding: var(--spacing-4);
 }
 
 .process-info__title {
   margin-bottom: var(--spacing-3);
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .process-info__content {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-2) var(--spacing-4);
+  color: var(--color-text-secondary);
 
   font-size: 13px;
   line-height: 1.5;
-  color: var(--color-text-secondary);
 }
 
 .process-info__item {
@@ -105,12 +105,12 @@
 }
 
 .process-info__item::after {
-  content: " · ";
+  content: ' · ';
   color: var(--color-text-muted);
 }
 
 .process-info__item:last-child::after {
-  content: "";
+  content: '';
 }
 
 /* Legacy grid support (hidden by default) */
@@ -124,18 +124,18 @@
 
 .process-info__heading {
   margin-bottom: var(--spacing-2);
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .process-info__list {
   margin: 0;
   padding-left: var(--spacing-5);
+  color: var(--color-text-secondary);
 
   font-size: 14px;
   line-height: 1.6;
-  color: var(--color-text-secondary);
 }
 
 .process-info__list li {
@@ -148,12 +148,12 @@
 
 .info-box {
   display: flex;
-  gap: var(--spacing-3);
   align-items: flex-start;
+  gap: var(--spacing-3);
 
   margin: var(--spacing-4) 0;
-  padding: var(--spacing-4);
   border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
 }
 
 .info-box i {
@@ -203,21 +203,21 @@
 
 .cooling-off-warning {
   display: flex;
-  gap: var(--spacing-3);
   align-items: center;
+  gap: var(--spacing-3);
 
   margin-top: var(--spacing-4);
-  padding: var(--spacing-4);
   border: 1px solid rgb(255 152 0 / 30%);
   border-radius: var(--radius-lg);
 
   background: rgb(255 152 0 / 10%);
+  padding: var(--spacing-4);
 }
 
 .cooling-off-warning i {
   flex-shrink: 0;
-  font-size: 1.25rem;
   color: var(--color-warning);
+  font-size: 1.25rem;
 }
 
 .cooling-off-warning strong {
@@ -237,9 +237,9 @@
 
 .progress-section h4 {
   margin-bottom: var(--spacing-3);
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 /* ========================================
@@ -252,39 +252,39 @@
 
 .timeline > h4 {
   margin-bottom: var(--spacing-4);
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .timeline-item {
   display: flex;
-  gap: var(--spacing-4);
   align-items: flex-start;
+  gap: var(--spacing-4);
   margin-bottom: var(--spacing-4);
 }
 
 .timeline-icon {
   display: flex;
   flex-shrink: 0;
-  align-items: center;
   justify-content: center;
-
-  width: 40px;
-  height: 40px;
+  align-items: center;
   border-radius: 50%;
 
   background: rgb(255 255 255 / 5%);
+
+  width: 40px;
+  height: 40px;
 }
 
 .timeline-icon--completed {
-  color: var(--color-success);
   background: rgb(76 175 80 / 20%);
+  color: var(--color-success);
 }
 
 .timeline-icon--pending {
-  color: var(--color-warning);
   background: rgb(255 193 7 / 20%);
+  color: var(--color-warning);
 }
 
 .timeline-content {
@@ -293,15 +293,15 @@
 
 .timeline-content h4 {
   margin: 0 0 var(--spacing-1);
-  font-size: 1rem;
-  font-weight: 500;
   color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 1rem;
 }
 
 .timeline-content p {
   margin: 0;
-  font-size: 14px;
   color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 /* ========================================
@@ -312,8 +312,8 @@
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-3);
   align-items: center;
+  gap: var(--spacing-3);
 
   margin-top: var(--spacing-6);
 }

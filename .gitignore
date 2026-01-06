@@ -23,8 +23,9 @@ uploads/
 # Build outputs
 frontend/dist/
 frontend/build/
-frontend-svelte/build/
-frontend-svelte/.svelte-kit/
+frontend/.svelte-kit/
+frontend/stats.html
+frontend-legacy/
 *.min.js
 *.min.css
 dist/

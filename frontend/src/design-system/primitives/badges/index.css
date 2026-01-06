@@ -14,16 +14,16 @@
  */
 
 /* Foundation - Core badge structure */
-@import "./badge.base.css";
+@import './badge.base.css';
 
 /* Variants - Visual appearances */
-@import "./badge.status.css";
-@import "./badge.action.css";
-@import "./badge.role.css";
-@import "./badge.kvp.css";
-@import "./badge.process.css";
-@import "./badge.workflow.css";
-@import "./badge.count.css";
+@import './badge.status.css';
+@import './badge.action.css';
+@import './badge.role.css';
+@import './badge.kvp.css';
+@import './badge.process.css';
+@import './badge.workflow.css';
+@import './badge.count.css';
 
 /**
  * QUICK REFERENCE:

@@ -7,39 +7,27 @@
 /* Main content area - REMOVED: Migrated to Tailwind utilities in shifts.html */
 
 /* Custom styles for shift planning interface - Glassmorphismus Design */
-.shift-planning-container {
-  overflow: visible;
-
-  margin: 0 auto;
-  padding: var(--spacing-6);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
-
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
-}
+/* NOTE: .shift-planning-container removed - not used in SvelteKit (Design System card used instead) */
 
 /* Shift Info Row Styles */
 .shift-info-row {
-  position: relative;
-  z-index: 1;
-
   display: grid;
+  position: relative;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-6);
   justify-content: center;
+  gap: var(--spacing-6);
+  z-index: 1;
+  backdrop-filter: blur(10px);
 
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-6);
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 5%);
+  padding: var(--spacing-6);
 }
 
 @media (width >=768px) and (width <=1200px) {
@@ -55,9 +43,8 @@
 }
 
 .info-item {
-  position: relative;
-
   display: flex;
+  position: relative;
   flex-direction: column;
   align-items: center;
 
@@ -66,12 +53,12 @@
 
 .info-label {
   margin-bottom: var(--spacing-1);
+  color: var(--text-secondary);
+  font-weight: 500;
 
   font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Dropdown styles now provided by Design System (custom-dropdown.css) */
@@ -79,20 +66,20 @@
 /* Week Navigation */
 .week-navigation {
   display: flex;
-  gap: var(--spacing-6);
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: var(--spacing-6);
+  backdrop-filter: blur(10px);
 
   margin-bottom: var(--spacing-8);
-  padding: var(--spacing-6);
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 5%);
+  padding: var(--spacing-6);
 }
 
 /* DEPRECATED: .week-nav-btn - Use Design System buttons instead:
@@ -100,9 +87,9 @@
    See: design-system/primitives/buttons/button.css */
 
 .week-info {
-  font-size: 18px;
-  font-weight: 600;
   color: var(--primary-color);
+  font-weight: 600;
+  font-size: 18px;
 }
 
 /* Main Planning Area */
@@ -114,13 +101,12 @@
 
 /* Week Schedule */
 .week-schedule {
-  overflow: hidden;
-
-  padding: 10px;
+  box-shadow: var(--shadow-sm);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  box-shadow: var(--shadow-sm);
+  padding: 10px;
+  overflow: hidden;
 }
 
 .schedule-header {
@@ -130,21 +116,21 @@
 
   padding-top: 10px;
   padding-bottom: 10px;
+  color: var(--text-primary);
 
   font-weight: 600;
-  color: var(--text-primary);
 }
 
 .day-header {
-  padding: var(--spacing-4) var(--spacing-1);
+  backdrop-filter: blur(5px);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
+  background: rgb(255 255 255 / 4%);
+  padding: var(--spacing-4) var(--spacing-1);
+
   color: var(--primary-color);
   text-align: center;
-
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
 }
 
 .shift-row {
@@ -152,30 +138,30 @@
   grid-template-columns: 120px repeat(7, 1fr);
   gap: 2px;
 
+  background: transparent;
+
   padding-top: 2px;
   padding-bottom: 2px;
-
-  background: transparent;
 }
 
 .shift-label {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-
-  min-height: 85px;
-  padding: var(--spacing-3);
+  align-items: center;
+  backdrop-filter: blur(5px);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-align: center;
-
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(5px);
+  padding: var(--spacing-3);
+
+  min-height: 85px;
+  color: var(--text-primary);
+  font-weight: 600;
+
+  font-size: 13px;
+  text-align: center;
 }
 
 /* Shift type colors */
@@ -201,22 +187,21 @@
 
 /* Shift cells */
 .shift-cell {
-  cursor: pointer;
-
   position: relative;
-
-  min-height: 85px;
+  backdrop-filter: blur(5px);
+  cursor: pointer;
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: blur(5px);
+
+  min-height: 85px;
 }
 
 .shift-cell:hover {
+  box-shadow: var(--shadow-sm);
   border-color: var(--primary-color);
   background: rgb(33 150 243 / 10%);
-  box-shadow: var(--shadow-sm);
 }
 
 .shift-cell.assigned {
@@ -225,9 +210,9 @@
 }
 
 .shift-cell.drag-over {
+  box-shadow: 0 0 0 2px rgb(76 175 80 / 30%);
   border-color: var(--success-color);
   background: rgb(76 175 80 / 20%);
-  box-shadow: 0 0 0 2px rgb(76 175 80 / 30%);
 }
 
 /* Locked shift cell - read-only mode (plan exists, not in edit mode) */
@@ -247,6 +232,7 @@
 
 .shift-cell.locked:hover {
   cursor: not-allowed;
+  box-shadow: none; /* Override hover effect - no visual feedback when locked */
   border-color: rgb(255 255 255 / 10%);
   background:
     repeating-linear-gradient(
@@ -257,7 +243,6 @@
       rgb(255 255 255 / 3%) 20px
     ),
     var(--glass-bg);
-  box-shadow: none; /* Override hover effect - no visual feedback when locked */
 }
 
 .shift-cell.locked .remove-btn {
@@ -270,54 +255,54 @@
 
 /* Week 2 cells for Kontischicht mode (NO inline styles - all styling via CSS) */
 .shift-cell.week-2-cell {
-  min-height: 85px;
+  backdrop-filter: blur(5px);
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: blur(5px);
+  min-height: 85px;
 }
 
 /* Employee Assignment */
 .employee-assignment {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  padding: var(--spacing-3);
 
   height: 100%;
-  padding: var(--spacing-3);
 
   text-align: center;
 }
 
 .employee-name {
   padding: 5px;
-  font-size: 14px;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .empty-slot {
-  font-size: 12px;
-  font-style: italic;
   color: var(--text-secondary);
+  font-style: italic;
+  font-size: 12px;
 }
 
 /* Shift Info Area */
 .shift-info-area {
   display: flex;
   flex-direction: column;
-
-  min-height: 120px;
+  backdrop-filter: blur(10px);
   margin-top: 2px;
-  padding: var(--spacing-3);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+  padding: var(--spacing-3);
+
+  min-height: 120px;
 }
 
 .shift-info-area-full {
@@ -328,38 +313,37 @@
 
 .shift-info-title {
   display: flex;
-  gap: var(--spacing-1);
   align-items: center;
+  gap: var(--spacing-1);
 
   margin-bottom: var(--spacing-2);
+  color: var(--primary-color);
+  font-weight: 600;
 
   font-size: 14px;
-  font-weight: 600;
-  color: var(--primary-color);
 }
 
 .shift-info-textarea {
-  resize: vertical;
-
   flex: 1;
-
-  min-height: 300px;
-  padding: var(--spacing-3);
+  backdrop-filter: blur(5px);
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--text-primary);
-
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(5px);
+  padding: var(--spacing-3);
+
+  min-height: 300px;
+  resize: vertical;
+  color: var(--text-primary);
+  font-size: 13px;
+
+  font-family: inherit;
 }
 
 .shift-info-textarea:focus {
-  border-color: var(--primary-color);
   outline: none;
   box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+  border-color: var(--primary-color);
 }
 
 .shift-info-textarea::placeholder {
@@ -368,72 +352,71 @@
 
 /* Department Notice */
 .department-notice {
-  max-width: 600px;
+  backdrop-filter: var(--glass-backdrop);
   margin: var(--spacing-8) auto;
-  padding: var(--spacing-8) var(--spacing-6);
+  box-shadow: var(--shadow-sm);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  text-align: center;
-
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-8) var(--spacing-6);
+  max-width: 600px;
+
+  text-align: center;
 }
 
 .department-notice .notice-icon {
-  margin-bottom: var(--spacing-6);
-  font-size: 48px;
-  color: var(--primary-color);
   opacity: 80%;
+  margin-bottom: var(--spacing-6);
+  color: var(--primary-color);
+  font-size: 48px;
 }
 
 .department-notice h3 {
   margin-bottom: var(--spacing-4);
-  font-size: 24px;
   color: var(--text-primary);
+  font-size: 24px;
 }
 
 .department-notice p {
+  color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.5;
-  color: var(--text-secondary);
 }
 
 /* Employee Sidebar */
 .employee-sidebar {
-  padding: var(--spacing-6);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--shadow-sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-6);
 }
 
 .shift-sidebar-title {
   margin-bottom: var(--spacing-6);
+  color: rgb(255 255 255);
+  font-weight: 500;
 
   font-size: 17px;
-  font-weight: 500;
-  color: rgb(255 255 255);
   text-align: center;
 }
 
 /* Employee Card Styles */
 .employee-card {
-  position: relative;
-
   display: flex;
+  position: relative;
   flex-direction: column;
   gap: 2px;
 
   margin: 2px 0;
-  padding: 6px 8px;
   border: 1px solid rgb(33 150 243 / 30%);
   border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 15%);
+  padding: 6px 8px;
 }
 
 .employee-card:hover {
@@ -443,38 +426,39 @@
 
 .employee-card .employee-name {
   padding: 5px;
-  font-size: 14px;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .employee-card .employee-position {
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.2;
-  color: var(--text-secondary);
 }
 
 .employee-card .remove-btn {
-  cursor: pointer;
+  display: flex;
 
   position: absolute;
   top: -10px;
   right: -3px;
-
-  display: flex;
-  align-items: center;
+  z-index: 10; /* Ensure button is above other elements */
   justify-content: center;
+  align-items: center;
+
+  opacity: 0%;
+  cursor: pointer;
+  border: 2px solid rgb(244 67 54);
+  border-radius: 50px;
+  background: rgb(244 67 54 / 10%);
+  padding: 0;
+  pointer-events: auto; /* CRITICAL: Ensure clicks work even if parent has pointer-events: none */
 
   width: 20px;
   height: 20px;
-  padding: 0;
-  border: 2px solid rgb(244 67 54);
-  border-radius: 50px;
 
   color: rgb(244 67 54);
-
-  opacity: 0%;
-  background: rgb(244 67 54 / 10%);
 }
 
 .employee-card:hover .remove-btn {
@@ -496,8 +480,8 @@
 
 /* Employee Availability Status Styles */
 .employee-item.unavailable {
-  cursor: not-allowed;
   opacity: 70%;
+  cursor: not-allowed;
 }
 
 .employee-item.status-vacation {
@@ -524,50 +508,50 @@
 }
 
 .employee-info .employee-name {
-  font-size: 14px;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 /* Status badge styles within employee items */
 .employee-info .badge {
   display: inline-flex;
   align-items: center;
+  margin-top: 2px;
+  border-radius: 4px;
+  padding: 2px 6px;
 
   width: fit-content;
-  margin-top: 2px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-weight: 600;
 
   font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Adjust badge colors for better visibility in employee list */
 .employee-info .badge-success {
   border: 1px solid rgb(76 175 80 / 30%);
-  color: rgb(76 175 80 / 95%);
   background: rgb(76 175 80 / 15%);
+  color: rgb(76 175 80 / 95%);
 }
 
 .employee-info .badge-warning {
   border: 1px solid rgb(255 193 7 / 30%);
-  color: rgb(255 193 7 / 95%);
   background: rgb(255 193 7 / 15%);
+  color: rgb(255 193 7 / 95%);
 }
 
 .employee-info .badge-danger {
   border: 1px solid rgb(220 53 69 / 30%);
-  color: rgb(220 53 69 / 95%);
   background: rgb(220 53 69 / 15%);
+  color: rgb(220 53 69 / 95%);
 }
 
 .employee-info .badge-secondary {
   border: 1px solid rgb(108 117 125 / 30%);
-  color: rgb(108 117 125 / 95%);
   background: rgb(108 117 125 / 15%);
+  color: rgb(108 117 125 / 95%);
 }
 
 /* Status icon positioning */
@@ -594,114 +578,37 @@
 }
 
 /* Prevent dragging unavailable employees */
-.employee-item[draggable="false"] {
+.employee-item[draggable='false'] {
   user-select: none;
 
   -webkit-user-drag: none;
 }
 
-.employee-item[draggable="false"]:hover {
+.employee-item[draggable='false']:hover {
   cursor: not-allowed;
 }
 
 /* Locked employee items - read-only mode (plan exists, not in edit mode) */
 .employee-item.locked {
-  cursor: not-allowed;
   opacity: 75%;
+  cursor: not-allowed;
 
   -webkit-user-drag: none;
 }
 
 .employee-item.locked:hover {
-  cursor: not-allowed;
   transform: none;
-  background: inherit;
+  cursor: not-allowed;
   box-shadow: none; /* Override hover effect - no visual feedback when locked */
+  background: inherit;
 }
 
 /* Responsive Design */
-@media (width <=768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+/* NOTE: .form-row, .filters, .calendar-grid, .calendar-day responsive rules removed
+   - These classes are not used in SvelteKit version */
 
-  .filters {
-    flex-direction: column;
-  }
-
-  .filters select,
-  .filters .date-input {
-    min-width: 100%;
-  }
-
-  .calendar-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .calendar-day {
-    min-height: 80px;
-  }
-}
-
-/* Shift Details Modal Styles (refactored - used by modals.ts) */
-.shift-details-content {
-  padding: var(--spacing-6);
-}
-
-.shift-details-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: var(--spacing-6);
-  padding-bottom: var(--spacing-4);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.shift-details-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.shift-details-header .shift-date {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.shift-employees-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.shift-employee-item {
-  display: flex;
-  align-items: center;
-
-  padding: var(--spacing-3) var(--spacing-4);
-  border-radius: var(--radius-md);
-
-  font-weight: 500;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-
-  transition: background 0.2s ease;
-}
-
-.shift-employee-item:hover {
-  background: rgb(255 255 255 / 10%);
-}
-
-.shift-employees-list .empty-message {
-  padding: var(--spacing-4);
-  font-style: italic;
-  color: var(--text-tertiary);
-  text-align: center;
-}
+/* NOTE: Shift Details Modal Styles removed - not implemented in SvelteKit
+   (Original: .shift-details-content, .shift-details-header, .shift-employees-list, .shift-employee-item) */
 
 /* Edit Mode Button */
 
@@ -712,27 +619,26 @@
 /* When Custom Rotation is active */
 .week-schedule.custom-rotation-active {
   position: relative;
+  padding-bottom: 15px;
+
+  max-width: 100%;
 
   overflow-x: auto !important;
   overflow-y: hidden;
-
-  max-width: 100%;
-  padding-bottom: 15px;
 
   /* Space for scrollbar */
 }
 
 /* Horizontal Scroll Container for Schedule Header */
 .custom-rotation-scroll-container {
+  overflow-x: auto !important;
+  overflow-y: hidden;
   scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
   scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
   /* Make scrollbar visible and styled */
   scrollbar-width: auto;
-  scroll-snap-type: x proximity;
-
-  overflow-x: auto !important;
-  overflow-y: hidden;
 
   -webkit-overflow-scrolling: touch;
 }
@@ -749,10 +655,10 @@
 }
 
 .custom-rotation-scroll-container::-webkit-scrollbar-thumb {
+  transition: background 0.3s ease;
   border: 2px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
   background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
-  transition: background 0.3s ease;
 }
 
 .custom-rotation-scroll-container::-webkit-scrollbar-thumb:hover {
@@ -764,8 +670,8 @@
 .week-2-header {
   position: relative;
   border: 1px solid rgb(255 152 0 / 15%);
-  color: rgb(255 152 0 / 90%);
   background: rgb(255 152 0 / 8%);
+  color: rgb(255 152 0 / 90%);
 }
 
 .week-2-header:hover {
@@ -774,46 +680,44 @@
 }
 
 .week-2-header::before {
-  content: "";
-
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
 
   height: 2px;
+  content: '';
 }
 
 /* Enhanced Week Headers Layout for 14-day View */
 .custom-rotation-scroll-container .day-header {
-  scroll-snap-align: start;
   flex-shrink: 0;
   min-width: 120px;
+  scroll-snap-align: start;
 }
 
 /* Make "Schicht" header same size as shift labels */
 .custom-rotation-scroll-container .day-header:first-child {
   position: sticky;
-  z-index: 10;
   left: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+
+  background: rgb(30 39 46 / 95%);
 
   width: 120px;
   min-width: 120px;
-
-  background: rgb(30 39 46 / 95%);
-  backdrop-filter: blur(10px);
 }
 
 /* Apply horizontal scroll to shift rows when Custom Rotation is active */
 .shift-row.custom-rotation-scroll-container {
+  overflow-x: auto !important;
+  overflow-y: hidden;
   scroll-behavior: smooth;
   scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
   /* Make scrollbar visible and styled */
   scrollbar-width: auto;
-
-  overflow-x: auto !important;
-  overflow-y: hidden;
 
   -webkit-overflow-scrolling: touch;
 }
@@ -839,16 +743,16 @@
 /* Make shift label sticky like the Schicht header and same size */
 .shift-row.custom-rotation-scroll-container .shift-label {
   position: sticky;
-  z-index: 9;
   left: 0;
 
   flex-shrink: 0;
+  z-index: 9;
+  backdrop-filter: blur(10px);
+
+  background: rgb(30 39 46 / 95%);
 
   width: 120px;
   min-width: 120px;
-
-  background: rgb(30 39 46 / 95%);
-  backdrop-filter: blur(10px);
 }
 
 /* Ensure shift cells have same width as headers */
@@ -888,14 +792,14 @@
 
 .employee-item {
   cursor: grab;
-  user-select: none;
 
   margin: 5px 0;
-  padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
+  padding: 8px 12px;
+  user-select: none;
 }
 
 .employee-item:hover {
@@ -904,14 +808,14 @@
 }
 
 .employee-item.dragging {
-  cursor: grabbing;
   opacity: 50%;
+  cursor: grabbing;
 }
 
 .shift-assignment-table {
   display: flex;
-  gap: 15px;
   justify-content: space-between;
+  gap: 15px;
 }
 
 .shift-column {
@@ -920,27 +824,27 @@
 }
 
 .column-header {
-  padding: 10px;
   border-radius: 4px 4px 0 0;
 
-  font-weight: 500;
-  color: #fff;
-  text-align: center;
-
   background: var(--primary);
+  padding: 10px;
+  color: #fff;
+
+  font-weight: 500;
+  text-align: center;
 }
 
 .drop-zone {
-  overflow-y: auto;
-
-  min-height: 150px;
-  max-height: 250px;
-  padding: 10px;
   border: 2px dashed rgb(255 255 255 / 20%);
   border-top: none;
   border-radius: 0 0 4px 4px;
 
   background: rgb(0 0 0 / 30%);
+  padding: 10px;
+
+  min-height: 150px;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .drop-zone.drag-over {
@@ -960,43 +864,41 @@
 
 /* Remove button for employees in drop zones */
 .btn-remove-rotation {
-  cursor: pointer;
+  display: flex;
 
   position: absolute;
   top: 50%;
   right: 8px;
+  justify-content: center;
+  align-items: center;
   transform: translateY(-50%);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 20px;
-  height: 20px;
-  padding: 0;
+  transition: all 0.2s;
+  cursor: pointer;
   border: none;
   border-radius: 50%;
 
-  font-size: 12px;
+  background: rgb(255 0 0 / 30%);
+  padding: 0;
+
+  width: 20px;
+  height: 20px;
   color: rgb(255 255 255 / 70%);
 
-  background: rgb(255 0 0 / 30%);
-
-  transition: all 0.2s;
+  font-size: 12px;
 }
 
 .btn-remove-rotation:hover {
-  color: #fff;
   background: rgb(255 0 0 / 60%);
+  color: #fff;
 }
 
 /* Ensure employee-item in drop zone has relative positioning */
 .drop-zone .employee-item.in-drop-zone {
-  position: relative;
-
   display: flex;
-  align-items: center;
+  position: relative;
   justify-content: space-between;
+  align-items: center;
 
   padding-right: 35px;
 }
@@ -1033,22 +935,22 @@
 .controls-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-4);
   align-items: center;
-
-  padding: var(--spacing-4);
+  gap: var(--spacing-4);
+  backdrop-filter: blur(10px);
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(10px);
+
+  padding: var(--spacing-4);
 }
 
 .divider {
-  width: 1px;
-  height: 40px;
   margin: 0 var(--spacing-2);
   background: rgb(255 255 255 / 10%);
+  width: 1px;
+  height: 40px;
 }
 
 .rotation-edit-btn {
@@ -1061,14 +963,14 @@
 @media (width <=768px) {
   .controls-group {
     flex-direction: column;
-    gap: var(--spacing-2);
     align-items: flex-start;
+    gap: var(--spacing-2);
   }
 
   .divider {
+    margin: var(--spacing-2) 0;
     width: 100%;
     height: 1px;
-    margin: var(--spacing-2) 0;
   }
 }
 
@@ -1091,43 +993,43 @@
 /* Toggle hint for Design System toggle-switch */
 .toggle-hint {
   display: block;
-  font-size: 11px;
-  font-weight: 400;
   color: var(--color-text-muted, rgb(255 255 255 / 50%));
+  font-weight: 400;
+  font-size: 11px;
 }
 
 /* ============ FAVORITES STYLES ============ */
 .favorites-container {
+  backdrop-filter: var(--glass-backdrop);
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-4);
 }
 
 .favorites-header {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-4);
   align-items: center;
+  gap: var(--spacing-4);
 }
 
 .favorites-label {
-  font-size: 14px;
-  font-weight: 600;
   color: var(--text-primary);
-  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 14px;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .favorites-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 18px;
 }
 
 .favorites-list {
@@ -1138,66 +1040,92 @@
 }
 
 .favorite-btn {
-  cursor: pointer;
+  display: flex;
 
   position: relative;
-
-  display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
 
-  padding: 8px 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
   border: 1px solid rgb(76 175 80 / 40%);
   border-radius: var(--radius-xl);
 
-  font-size: 13px;
-  font-weight: 600;
-  color: #4caf50;
-
   background: linear-gradient(135deg, rgb(76 175 80 / 20%), rgb(76 175 80 / 10%));
 
-  transition: all 0.3s ease;
+  padding: 8px 16px;
+  color: #4caf50;
+  font-weight: 600;
+
+  font-size: 13px;
 }
 
 .favorite-btn:hover {
+  box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
   border-color: rgb(76 175 80 / 60%);
   background: linear-gradient(135deg, rgb(76 175 80 / 30%), rgb(76 175 80 / 20%));
-  box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
 }
 
 .favorite-btn:active {
   transform: translateY(0);
 }
 
-.remove-favorite {
+.favorite-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
+}
+
+.remove-favorite {
+  display: flex;
 
   position: absolute;
   top: -10px;
   right: -3px;
-
-  display: flex;
-  align-items: center;
   justify-content: center;
-
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgb(244 67 54);
-  border-radius: 50%;
-
-  font-size: 11px;
-  color: rgb(244 67 54);
+  align-items: center;
 
   visibility: hidden;
   opacity: 0%;
-  background: rgb(244 67 54 / 10%);
 
   transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid rgb(244 67 54);
+  border-radius: 50%;
+  background: rgb(244 67 54 / 10%);
+
+  width: 20px;
+  height: 20px;
+  color: rgb(244 67 54);
+
+  font-size: 11px;
 }
 
 .favorite-btn:hover .remove-favorite {
   visibility: visible;
   opacity: 100%;
+}
+
+.favorites-empty {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Disabled Dropdown State */
+.dropdown--disabled {
+  opacity: 50%;
+  pointer-events: none;
+}
+
+.dropdown--disabled .dropdown__trigger {
+  cursor: not-allowed;
 }
 
 .remove-favorite:hover {
@@ -1207,31 +1135,30 @@
 }
 
 .add-favorite-btn {
-  cursor: pointer;
-
   display: inline-block;
+
+  transition: all 0.3s ease;
+  cursor: pointer;
 
   margin-top: var(--spacing-4);
   margin-bottom: var(--spacing-4);
-  padding: 10px 20px;
+  box-shadow: var(--shadow-sm);
   border: 1px solid rgb(76 175 80 / 40%);
   border-radius: var(--radius-xl);
 
-  font-size: 14px;
-  font-weight: 700;
-  color: #4caf50;
-
   background: linear-gradient(135deg, rgb(76 175 80 / 20%), rgb(76 175 80 / 10%));
-  box-shadow: var(--shadow-sm);
+  padding: 10px 20px;
+  color: #4caf50;
+  font-weight: 700;
 
-  transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .add-favorite-btn:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
   border-color: rgb(76 175 80 / 60%);
   background: linear-gradient(135deg, rgb(76 175 80 / 30%), rgb(76 175 80 / 20%));
-  box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
 }
 
 .add-favorite-btn:active {
@@ -1239,82 +1166,28 @@
 }
 
 /* ============ DRAG & DROP STYLES ============ */
-.member-card {
-  cursor: grab;
-
-  min-width: 150px;
-  padding: var(--spacing-2);
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(33 150 243 / 15%);
-}
-
-.member-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(33 150 243 / 25%);
-  box-shadow: 0 4px 8px rgb(0 0 0 / 20%);
-}
-
-.member-card.dragging {
-  cursor: grabbing;
-  opacity: 50%;
-}
-
-.member-name {
-  margin-bottom: 4px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.shift-cell.drop-invalid {
-  border-color: var(--error-color) !important;
-  border-width: 2px !important;
-  background: rgb(244 67 54 / 20%) !important;
-}
-
-/* Additional employee item states */
-
-.employee-item.selected {
-  border-color: var(--primary-color);
-  background: rgb(33 150 243 / 20%);
-  box-shadow: var(--shadow-md);
-}
-
-/* Employee info in sidebar */
-
-.employee-details {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
+/* NOTE: .member-card, .member-name removed - employee-card/employee-name used instead */
+/* NOTE: .drop-invalid, .employee-item.selected, .employee-details removed - not used in SvelteKit */
 
 /* ============ CORE SHIFT PLANNING STYLES ============ */
-.shift-title {
-  margin-bottom: var(--spacing-6);
-
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--primary-color);
-  text-align: center;
-}
+/* NOTE: .shift-title removed - card__title from Design System used instead */
 
 /* Admin Actions Styles */
 .admin-actions {
   justify-content: center;
+  backdrop-filter: blur(10px);
 
   margin-top: var(--spacing-8);
-  padding: var(--spacing-6);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
-
-  text-align: center;
-
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
   box-shadow:
     0 4px 16px rgb(0 0 0 / 30%),
     inset 0 1px 0 rgb(255 255 255 / 5%);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  background: var(--glass-bg);
+  padding: var(--spacing-6);
+
+  text-align: center;
 }
 
 /* DEPRECATED: .admin-btn - Use Design System buttons instead:
@@ -1332,6 +1205,108 @@
 /* Additional shift row rules - see main definition at line 271 */
 
 .shift-time {
-  font-size: 11px;
   color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* =============================================================================
+   SVELTEKIT SHIFTS PAGE - Additional Styles
+   ============================================================================= */
+
+/* NOTE: .shifts-page removed - Design System container/card used instead */
+/* NOTE: Loading Spinner uses Design System .spinner-ring (see spinner.css) */
+
+/* NOTE: .employee-team-info removed - Uses Design System alert--info + badge components */
+
+/* NOTE: .filter-controls, .filters-row, .planning-grid, .shift-grid, .grid-header removed
+   - Using Design System dropdown component and Tailwind utilities instead */
+
+/* NOTE: .shift-label-cell, .day-name, .day-date, .nav-btn removed
+   - Using existing shift-label, day-header, and Design System btn instead */
+
+.shift-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Employee List */
+.employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Availability Badges */
+.availability-badge {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+}
+
+.availability-badge.badge--warning {
+  background: rgb(255 193 7 / 20%);
+  color: #ffc107;
+}
+
+.availability-badge.badge--danger {
+  background: rgb(231 76 60 / 20%);
+  color: #e74c3c;
+}
+
+.availability-badge.badge--error {
+  background: rgb(192 57 43 / 20%);
+  color: #c0392b;
+}
+
+.availability-badge.badge--info {
+  background: rgb(52 152 219 / 20%);
+  color: #3498db;
+}
+
+.availability-badge.badge--dark {
+  background: rgb(149 165 166 / 20%);
+  color: #95a5a6;
+}
+
+/* Responsive */
+@media (width <= 1024px) {
+  .planning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-sidebar {
+    max-height: 200px;
+  }
+
+  .employee-list {
+    flex-flow: row wrap;
+  }
+
+  .employee-item {
+    flex: 0 0 auto;
+  }
+}
+
+@media (width <= 768px) {
+  .filters-row {
+    flex-direction: column;
+  }
+
+  .dropdown {
+    min-width: 100%;
+  }
+
+  .shift-grid {
+    overflow-x: auto;
+  }
+
+  .grid-header,
+  .shift-row {
+    min-width: 800px;
+  }
 }

@@ -18,52 +18,52 @@
 /* ========== BASE FLOATING BUTTON ========== */
 
 .btn-float {
-  /* Reset button styles */
-  cursor: pointer;
+  /* Layout */
+  display: flex;
 
   /* Position */
   position: fixed;
-  z-index: 1000; /* Above most content, below modals */
   right: 30px;
   bottom: 30px;
-
-  /* Layout */
-  display: flex;
-  align-items: center;
   justify-content: center;
-
-  /* Size */
-  width: 60px;
-  height: 60px;
-  border: none;
-
-  /* Appearance */
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: 50%;
-
-  font-size: 24px;
-  font-weight: 400;
-  color: var(--color-primary);
-
-  /* Glassmorphism with primary color */
-  background: rgb(33 150 243 / 20%);
+  align-items: center;
+  z-index: 1000; /* Above most content, below modals */
   backdrop-filter: blur(20px);
-  outline: none;
-  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
 
   /* Smooth transitions */
   transition:
     transform 0.2s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
+
+  /* Reset button styles */
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+  border: none;
+
+  /* Appearance */
+  border: 1px solid rgb(33 150 243 / 30%);
+  border-radius: 50%;
+
+  /* Glassmorphism with primary color */
+  background: rgb(33 150 243 / 20%);
+
+  /* Size */
+  width: 60px;
+  height: 60px;
+  color: var(--color-primary);
+  font-weight: 400;
+
+  font-size: 24px;
 }
 
 /* ========== HOVER STATE ========== */
 
 .btn-float:hover {
   transform: scale(1.1);
-  background: rgb(33 150 243 / 30%);
   box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
+  background: rgb(33 150 243 / 30%);
 }
 
 /* ========== ACTIVE STATE ========== */
@@ -82,15 +82,15 @@
 /* ========== DISABLED STATE ========== */
 
 .btn-float:disabled {
-  cursor: not-allowed;
   transform: none;
   opacity: 50%;
+  cursor: not-allowed;
 }
 
 .btn-float:disabled:hover {
   transform: none;
-  background: rgb(33 150 243 / 20%);
   box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+  background: rgb(33 150 243 / 20%);
 }
 
 /* ========== SIZE VARIANTS ========== */
@@ -117,41 +117,41 @@
 
 /* Success variant (green) */
 .btn-float--success {
-  border-color: rgb(76 175 80 / 30%);
-  color: var(--color-success);
-  background: rgb(76 175 80 / 20%);
   box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
+  border-color: rgb(76 175 80 / 30%);
+  background: rgb(76 175 80 / 20%);
+  color: var(--color-success);
 }
 
 .btn-float--success:hover {
-  background: rgb(76 175 80 / 30%);
   box-shadow: 0 6px 24px rgb(76 175 80 / 40%);
+  background: rgb(76 175 80 / 30%);
 }
 
 /* Danger variant (red) */
 .btn-float--danger {
-  border-color: rgb(244 67 54 / 30%);
-  color: var(--color-danger);
-  background: rgb(244 67 54 / 20%);
   box-shadow: 0 4px 16px rgb(244 67 54 / 30%);
+  border-color: rgb(244 67 54 / 30%);
+  background: rgb(244 67 54 / 20%);
+  color: var(--color-danger);
 }
 
 .btn-float--danger:hover {
-  background: rgb(244 67 54 / 30%);
   box-shadow: 0 6px 24px rgb(244 67 54 / 40%);
+  background: rgb(244 67 54 / 30%);
 }
 
 /* Warning variant (orange) */
 .btn-float--warning {
-  border-color: rgb(255 152 0 / 30%);
-  color: var(--color-warning);
-  background: rgb(255 152 0 / 20%);
   box-shadow: 0 4px 16px rgb(255 152 0 / 30%);
+  border-color: rgb(255 152 0 / 30%);
+  background: rgb(255 152 0 / 20%);
+  color: var(--color-warning);
 }
 
 .btn-float--warning:hover {
-  background: rgb(255 152 0 / 30%);
   box-shadow: 0 6px 24px rgb(255 152 0 / 40%);
+  background: rgb(255 152 0 / 30%);
 }
 
 /* ========== POSITION VARIANTS ========== */
@@ -178,11 +178,11 @@
 /* Extended FAB with text label */
 .btn-float--extended {
   gap: 8px;
+  border-radius: 28px; /* Pill shape */
+  padding: 0 24px;
 
   width: auto;
   min-width: 60px;
-  padding: 0 24px;
-  border-radius: 28px; /* Pill shape */
 }
 
 .btn-float--extended .btn-float__icon {
@@ -190,8 +190,8 @@
 }
 
 .btn-float__label {
-  font-size: 14px;
   font-weight: 600;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -199,25 +199,24 @@
 
 /* Notification badge on FAB */
 .btn-float__badge {
+  display: flex;
   position: absolute;
   top: -4px;
   right: -4px;
-
-  display: flex;
-  align-items: center;
   justify-content: center;
-
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  align-items: center;
   border: 2px solid #000;
   border-radius: 10px;
 
-  font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-
   background: var(--color-danger);
+  padding: 0 6px;
+
+  min-width: 20px;
+  height: 20px;
+  color: #fff;
+  font-weight: 600;
+
+  font-size: 11px;
 }
 
 /* ========== RESPONSIVE ========== */
@@ -247,8 +246,8 @@
 
   /* Extended FAB becomes regular FAB on mobile */
   .btn-float--extended {
-    width: 56px;
     padding: 0;
+    width: 56px;
   }
 
   .btn-float--extended .btn-float__label {
@@ -273,15 +272,15 @@
 .btn-float .sr-only {
   position: absolute;
 
-  overflow: hidden;
+  clip-path: inset(50%);
+  margin: -1px;
+  border-width: 0;
+  padding: 0;
 
   width: 1px;
   height: 1px;
-  margin: -1px;
-  padding: 0;
-  border-width: 0;
+
+  overflow: hidden;
 
   white-space: nowrap;
-
-  clip-path: inset(50%);
 }

@@ -9,32 +9,38 @@
  */
 
 .btn-edit {
-  /* Padding - matches other variants */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid rgb(251 191 36); /* Solid yellow border - matches action-icon--edit */
-
-  /* Colors */
-  color: var(--color-white);
   background: linear-gradient(
     145deg,
     rgb(251 191 36 / 11%),
     rgb(245 158 11 / 15%)
   ); /* Yellow-400 to Yellow-500 - subtle */
 
+  /* Padding - matches other variants */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Colors */
+  color: var(--color-white);
+
   /* Shadow */
 }
 
 /* Hover State - Brighten the gradient */
 .btn-edit:hover:not(:disabled) {
+  background: linear-gradient(
+    145deg,
+    rgb(251 191 36 / 18%),
+    rgb(245 158 11 / 25%)
+  ); /* Intensiver */
+
   color: var(--color-white);
-  background: linear-gradient(145deg, rgb(251 191 36 / 18%), rgb(245 158 11 / 25%)); /* Intensiver */
 }
 
 /* Active/Pressed State */
 .btn-edit:active:not(:disabled) {
   transform: translateY(0);
-  background: #d97706; /* Yellow-600 */
   box-shadow: var(--shadow-btn-edit-active, 0 1px 4px rgb(251 191 36 / 30%));
+  background: #d97706; /* Yellow-600 */
 }
 
 /* Focus State */
@@ -49,13 +55,12 @@
 /* Disabled State */
 .btn-edit:disabled,
 .btn-edit.disabled {
+  opacity: 60%;
   cursor: not-allowed;
+  box-shadow: none;
+  background: #fef3c7; /* Yellow-100 */
 
   color: rgb(255 255 255 / 50%);
-
-  opacity: 60%;
-  background: #fef3c7; /* Yellow-100 */
-  box-shadow: none;
 }
 
 /* Loading State */
@@ -65,21 +70,20 @@
 }
 
 .btn-edit.loading::after {
-  content: "";
-
   position: absolute;
   top: 50%;
   left: 50%;
 
-  width: 16px;
-  height: 16px;
+  animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
   border: 2px solid var(--color-white);
   border-top-color: transparent;
   border-radius: 50%;
 
-  animation: spin 0.6s linear infinite;
+  width: 16px;
+  height: 16px;
+  content: '';
 }
 
 /* Loading spinner animation */

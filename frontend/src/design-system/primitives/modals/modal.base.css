@@ -21,30 +21,30 @@
    ======================================== */
 
 .modal-overlay {
-  /* Positioning */
-  position: fixed;
-  z-index: 2000;
-  inset: 0;
-
   /* Layout */
   display: flex;
-  align-items: center;
-  justify-content: center;
 
-  padding: var(--spacing-6); /* 24px */
+  /* Positioning */
+  position: fixed;
+  justify-content: center;
+  align-items: center;
 
   /* Hidden by default */
   visibility: hidden;
   opacity: 0%;
-
-  /* Backdrop styling */
-  background: rgb(0 0 0 / 60%);
+  z-index: 2000;
   backdrop-filter: blur(8px);
 
   /* Smooth transition */
   transition:
     visibility 0.3s,
     opacity 0.3s ease;
+  inset: 0;
+
+  /* Backdrop styling */
+  background: rgb(0 0 0 / 60%);
+
+  padding: var(--spacing-6); /* 24px */
 }
 
 /* Active state - visible */
@@ -58,28 +58,28 @@
    ======================================== */
 
 .ds-modal {
-  /* Animation - starts slightly scaled down and moved up */
-
-  overflow: hidden; /* Prevent content overflow */
-
   /* Layout */
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(20px) saturate(180%);
 
-  /* Default size */
-  width: 90%;
-  max-width: 700px; /* Default: md */
-  max-height: 85vh;
+  transition: transform 0.3s ease;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
 
   /* Schlicht & Elegant - Wie Cards */
   border: 1px solid rgb(255 255 255 / 10%); /* Card border */
   border-radius: var(--radius-xl); /* 12px */
 
   background: rgb(15 15 15 / 95%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
 
-  transition: transform 0.3s ease;
+  /* Default size */
+  width: 90%;
+  max-width: 700px; /* Default: md */
+  max-height: 85vh;
+
+  /* Animation - starts slightly scaled down and moved up */
+
+  overflow: hidden; /* Prevent content overflow */
 }
 
 /* Active state - animates to center and normal scale */
@@ -95,55 +95,55 @@
   /* Layout */
   display: flex;
   flex-shrink: 0; /* Don't shrink when body scrolls */
-  align-items: center;
   justify-content: space-between;
-
-  /* Spacing */
-  padding: var(--spacing-6); /* 24px */
+  align-items: center;
   border-bottom: 1px solid rgb(255 255 255 / 8%);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
   background: rgb(0 0 0 / 20%);
+
+  /* Spacing */
+  padding: var(--spacing-6); /* 24px */
 }
 
 .ds-modal__title {
   /* Typography */
   margin: 0;
-  font-size: 1.25rem; /* 20px */
-  font-weight: 600;
   color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1.25rem; /* 20px */
 }
 
 /* Close button */
 .ds-modal__close {
-  /* Reset button styles */
-  cursor: pointer;
-
   /* Layout */
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  /* Size */
-  width: 36px;
-  height: 36px;
+  /* Smooth transition */
+  transition: all 0.2s ease;
+
+  /* Reset button styles */
+  cursor: pointer;
   border: none;
 
   /* Styling */
   border-radius: var(--radius-md); /* 8px */
 
-  color: var(--color-text-secondary);
-
   background: none;
   background: rgb(255 255 255 / 3%);
 
-  /* Smooth transition */
-  transition: all 0.2s ease;
+  /* Size */
+  width: 36px;
+  height: 36px;
+
+  color: var(--color-text-secondary);
 }
 
 .ds-modal__close:hover {
-  color: var(--color-danger);
   background: rgb(255 255 255 / 10%);
+  color: var(--color-danger);
 }
 
 .ds-modal__close:active {
@@ -155,23 +155,23 @@
    ======================================== */
 
 .ds-modal__body {
-  /* Scrollable content */
-  overflow-y: auto;
-
   /* Form field spacing - flex column with gap for consistent spacing between elements */
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--spacing-4); /* 20px between form fields and content blocks */
 
-  min-height: 0; /* Allow flex child to shrink */
-
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
+
+  min-height: 0; /* Allow flex child to shrink */
+
+  /* Scrollable content */
+  overflow-y: auto;
 }
 
 /* Hidden inputs should not affect modal layout */
-.ds-modal__body > input[type="hidden"] {
+.ds-modal__body > input[type='hidden'] {
   display: none;
 }
 
@@ -202,15 +202,15 @@
   /* Layout */
   display: flex;
   flex-shrink: 0; /* Don't shrink */
-  gap: var(--spacing-4); /* 16px */
   justify-content: flex-end; /* Buttons right-aligned by default */
-
-  /* Spacing */
-  padding: var(--spacing-6); /* 24px */
+  gap: var(--spacing-4); /* 16px */
   border-top: 1px solid rgb(255 255 255 / 8%);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
   background: rgb(0 0 0 / 20%);
+
+  /* Spacing */
+  padding: var(--spacing-6); /* 24px */
 }
 
 /* Center footer variant */
@@ -281,9 +281,9 @@
   }
 
   .ds-modal {
+    border-radius: var(--radius-xl); /* Smaller radius on mobile */
     width: 100%;
     max-height: 95vh;
-    border-radius: var(--radius-xl); /* Smaller radius on mobile */
   }
 
   .ds-modal__header,

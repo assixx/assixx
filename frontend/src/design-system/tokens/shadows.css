@@ -18,7 +18,8 @@
 
   /* Primary Button - Blue glow */
   --shadow-btn-primary: 0 1px 4px rgb(33 150 243 / 30%), inset 0 1px 0 rgb(255 255 255 / 20%);
-  --shadow-btn-primary-hover: 0 6px 20px rgb(33 150 243 / 40%), inset 0 1px 0 rgb(255 255 255 / 20%);
+  --shadow-btn-primary-hover:
+    0 6px 20px rgb(33 150 243 / 40%), inset 0 1px 0 rgb(255 255 255 / 20%);
 
   /* Danger Button - Red glow */
   --shadow-btn-danger: 0 2px 4px rgb(220 53 69 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);

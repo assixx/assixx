@@ -2,44 +2,43 @@
 
 /* Back Button - Glassmorphismus Style */
 .back-button {
+  display: flex;
   position: fixed;
-  z-index: 1001;
   top: 20px;
   left: 20px;
-
-  display: flex;
-  gap: 10px;
   align-items: center;
-
-  padding: 10px 20px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-
-  background: rgb(255 255 255 / 2%);
+  gap: 10px;
+  z-index: 1001;
   backdrop-filter: blur(20px) saturate(180%);
+
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:
     0 4px 16px rgb(0 0 0 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
 
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgb(255 255 255 / 2%);
+
+  padding: 10px 20px;
+  color: var(--text-secondary);
+  font-weight: 500;
+
+  font-size: 14px;
+  text-decoration: none;
 }
 
 .back-button:hover {
   transform: translateX(-5px);
-
-  border-color: rgb(255 255 255 / 15%);
-
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
   box-shadow:
     0 6px 24px rgb(0 0 0 / 30%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+
+  border-color: rgb(255 255 255 / 15%);
+
+  background: rgb(255 255 255 / 5%);
+
+  color: var(--text-primary);
 }
 
 .back-button:active {
@@ -47,8 +46,8 @@
 }
 
 .back-button .icon {
-  font-size: 18px;
   transition: transform 0.3s ease;
+  font-size: 18px;
 }
 
 .back-button:hover .icon {
@@ -60,11 +59,11 @@
 .login-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  padding: var(--spacing-6);
 
   min-height: 85vh;
-  padding: var(--spacing-6);
 }
 
 /* Logo now inside card */
@@ -74,14 +73,13 @@
 }
 
 .login-logo {
-  cursor: pointer;
-
   display: block;
+
+  transition: transform 0.3s ease;
+  cursor: pointer;
 
   width: 120px;
   height: auto;
-
-  transition: transform 0.3s ease;
 }
 
 .login-logo:hover {
@@ -89,15 +87,15 @@
 }
 
 .login-card {
-  width: 100%;
-  max-width: 450px;
-  padding: var(--spacing-8);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-8);
+  width: 100%;
+  max-width: 450px;
 
   /* animation: fadeInUp 0.6s ease-out; */
 }
@@ -109,19 +107,20 @@
 
 .login-footer {
   margin-top: var(--spacing-6);
-  padding-top: var(--spacing-6);
   border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-6);
   text-align: center;
 }
 
 .login-footer a {
+  transition: color 0.3s ease;
   color: var(--primary-color);
   text-decoration: none;
-  transition: color 0.3s ease;
 }
 
 .login-footer a + a {
-  margin-left: var(--spacing-5);
+  /* Use fixed value - Tailwind v4 may override --spacing-5 */
+  margin-left: 20px;
 }
 
 .login-footer a:hover {
@@ -143,58 +142,57 @@
 
 /* Help Button - Glassmorphismus wie in signup? */
 .help-button {
-  cursor: pointer;
+  display: flex;
 
   position: fixed;
-  z-index: 100;
   top: 20px;
   right: 20px;
-
-  display: flex;
-  align-items: center;
   justify-content: center;
-
-  width: 36px;
-  height: 36px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: 50%;
-
-  font-size: 19px;
-  color: var(--text-secondary);
-
-  background: rgb(255 255 255 / 8%);
+  align-items: center;
+  z-index: 100;
   backdrop-filter: blur(10px);
+  cursor: pointer;
   box-shadow:
     0 4px 12px rgb(0 0 0 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 8%);
+
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
+
+  font-size: 19px;
 }
 
 .help-button:hover {
   transform: scale(1.1);
-
-  border-color: var(--primary-color);
-
-  color: var(--primary-color);
-
-  background: rgb(33 150 243 / 15%);
   box-shadow:
     0 6px 16px rgb(33 150 243 / 30%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+
+  border-color: var(--primary-color);
+
+  background: rgb(33 150 243 / 15%);
+
+  color: var(--primary-color);
 }
 
 /* Alert Styles - Design System BEM */
 .alert {
   display: flex;
-  gap: var(--spacing-3);
   align-items: flex-start;
-
-  margin-bottom: var(--spacing-4);
-  padding: var(--spacing-3);
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
+  gap: var(--spacing-3);
 
   backdrop-filter: blur(20px);
+
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-3);
+
+  font-size: 14px;
 }
 
 /* BEM: Alert Icon */
@@ -217,52 +215,52 @@
 }
 
 .alert__message {
-  font-size: 14px;
   opacity: 90%;
+  font-size: 14px;
 }
 
 /* BEM: Alert Variants */
 .alert--warning {
-  border: 1px solid rgb(255 149 0 / 30%);
-  color: #ff9500;
-  background: rgb(255 149 0 / 10%);
   box-shadow:
     0 4px 6px rgb(0 0 0 / 10%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 149 0 / 30%);
+  background: rgb(255 149 0 / 10%);
+  color: #ff9500;
 }
 
 .alert--error {
-  border: 1px solid rgb(255 59 48 / 30%);
-  color: #ff3b30;
-  background: rgb(255 59 48 / 10%);
   box-shadow:
     0 4px 6px rgb(0 0 0 / 10%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 59 48 / 30%);
+  background: rgb(255 59 48 / 10%);
+  color: #ff3b30;
 }
 
 .alert--success {
-  border: 1px solid rgb(52 199 89 / 30%);
-  color: #34c759;
-  background: rgb(52 199 89 / 10%);
   box-shadow:
     0 4px 6px rgb(0 0 0 / 10%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(52 199 89 / 30%);
+  background: rgb(52 199 89 / 10%);
+  color: #34c759;
 }
 
 /* Legacy non-BEM (for backwards compatibility) */
 .alert-error {
-  border: 1px solid rgb(255 59 48 / 30%);
-  color: #ff3b30;
-  background: rgb(255 59 48 / 10%);
   box-shadow:
     0 0 0 rgb(255 72 0 / 0%),
     inset 0 0 0 2px rgb(255 0 0 / 82%);
+  border: 1px solid rgb(255 59 48 / 30%);
+  background: rgb(255 59 48 / 10%);
+  color: #ff3b30;
 }
 
 .alert-timeout {
   border: 1px solid rgb(255 149 0 / 30%);
-  color: #ff9500;
   background: rgb(255 149 0 / 10%);
+  color: #ff9500;
 }
 
 .alert-content {

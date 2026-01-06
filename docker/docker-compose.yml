@@ -190,7 +190,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DELETION_WORKER_HEALTH_PORT: 3001
+      DELETION_WORKER_HEALTH_PORT: 3002
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
@@ -201,7 +201,7 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
     ports:
-      - "3001:3001" # Health check port
+      - "3002:3002" # Health check port (changed from 3001 - SvelteKit uses 3001)
     volumes:
       - ../backend:/app/backend:delegated
       - ../scripts:/app/scripts:delegated
@@ -231,7 +231,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+          "require('http').get('http://localhost:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
         ]
       interval: 30s
       timeout: 10s
@@ -239,7 +239,81 @@ services:
     # Worker command - use tsx directly
     command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
-  # Optional: Nginx als Reverse Proxy (für Production)
+  # ===========================================================================
+  # SvelteKit Frontend (Production)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: assixx-frontend:prod
+    container_name: assixx-frontend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ORIGIN: ${ORIGIN:-http://localhost}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+      # API URL for SSR server-side fetches (inside Docker network)
+      API_URL: http://backend:3000/api/v2
+    ports:
+      - "3001:3001" # Direct access for debugging
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+
+  # ===========================================================================
+  # Nginx Reverse Proxy (Production)
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: assixx-nginx
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 64M
+    ports:
+      - "80:80"
+      # - "443:443"  # Uncomment for HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+
+  # Optional: Nginx als Reverse Proxy (für Production) - REPLACED by above
   # nginx:
   #   image: nginx:alpine
   #   container_name: assixx-nginx

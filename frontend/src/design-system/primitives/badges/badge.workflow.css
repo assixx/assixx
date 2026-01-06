@@ -10,36 +10,36 @@
 /* Todo - Blue */
 .badge--todo {
   border-color: rgb(33 150 243 / 30%);
-  color: #2196f3;
   background: rgb(33 150 243 / 20%);
+  color: #2196f3;
 }
 
 /* In Progress - Orange */
 .badge--in-progress {
   border-color: rgb(255 152 0 / 30%);
-  color: #ff9800;
   background: rgb(255 152 0 / 20%);
+  color: #ff9800;
 }
 
 /* Done - Green */
 .badge--done {
   border-color: rgb(76 175 80 / 30%);
-  color: #4caf50;
   background: rgb(76 175 80 / 20%);
+  color: #4caf50;
 }
 
 /* Blocked - Red */
 .badge--blocked {
   border-color: rgb(244 67 54 / 30%);
-  color: #f44336;
   background: rgb(244 67 54 / 20%);
+  color: #f44336;
 }
 
 /* On Hold - Gray */
 .badge--on-hold {
   border-color: rgb(158 158 158 / 30%);
-  color: #9e9e9e;
   background: rgb(158 158 158 / 20%);
+  color: #9e9e9e;
 }
 
 /* ========== DOCUMENT STATUS ========== */
@@ -47,29 +47,29 @@
 /* Draft - Gray */
 .badge--draft {
   border-color: rgb(158 158 158 / 30%);
-  color: #9e9e9e;
   background: rgb(158 158 158 / 20%);
+  color: #9e9e9e;
 }
 
 /* Published - Green */
 .badge--published {
   border-color: rgb(76 175 80 / 30%);
-  color: #4caf50;
   background: rgb(76 175 80 / 20%);
+  color: #4caf50;
 }
 
 /* Expired - Red */
 .badge--expired {
   border-color: rgb(244 67 54 / 30%);
-  color: #f44336;
   background: rgb(244 67 54 / 20%);
+  color: #f44336;
 }
 
 /* Under Review - Yellow */
 .badge--under-review {
   border-color: rgb(255 193 7 / 30%);
-  color: #ffc107;
   background: rgb(255 193 7 / 20%);
+  color: #ffc107;
 }
 
 /* ========== SEVERITY LEVELS ========== */
@@ -77,22 +77,22 @@
 /* Critical - Deep Red */
 .badge--critical {
   border-color: rgb(183 28 28 / 40%);
-  color: #b71c1c;
   background: rgb(183 28 28 / 25%);
+  color: #b71c1c;
 }
 
 /* Major - Orange */
 .badge--major {
   border-color: rgb(255 152 0 / 30%);
-  color: #ff9800;
   background: rgb(255 152 0 / 20%);
+  color: #ff9800;
 }
 
 /* Minor - Yellow */
 .badge--minor {
   border-color: rgb(255 193 7 / 30%);
-  color: #ffc107;
   background: rgb(255 193 7 / 20%);
+  color: #ffc107;
 }
 
 /* ========== HEALTH STATUS ========== */
@@ -100,29 +100,29 @@
 /* Online - Green */
 .badge--online {
   border-color: rgb(76 175 80 / 30%);
-  color: #4caf50;
   background: rgb(76 175 80 / 20%);
+  color: #4caf50;
 }
 
 /* Offline - Gray */
 .badge--offline {
   border-color: rgb(158 158 158 / 30%);
-  color: #9e9e9e;
   background: rgb(158 158 158 / 20%);
+  color: #9e9e9e;
 }
 
 /* Degraded - Orange */
 .badge--degraded {
   border-color: rgb(255 152 0 / 30%);
-  color: #ff9800;
   background: rgb(255 152 0 / 20%);
+  color: #ff9800;
 }
 
 /* Maintenance - Blue */
 .badge--maintenance {
   border-color: rgb(33 150 243 / 30%);
-  color: #2196f3;
   background: rgb(33 150 243 / 20%);
+  color: #2196f3;
 }
 
 /* ========== OTHER STATES ========== */
@@ -130,27 +130,27 @@
 /* Verified - Green with checkmark */
 .badge--verified {
   border-color: rgb(76 175 80 / 30%);
-  color: #4caf50;
   background: rgb(76 175 80 / 20%);
+  color: #4caf50;
 }
 
 /* Unread - Blue */
 .badge--unread {
   border-color: rgb(33 150 243 / 30%);
-  color: #2196f3;
   background: rgb(33 150 243 / 20%);
+  color: #2196f3;
 }
 
 /* Beta - Purple */
 .badge--beta {
   border-color: rgb(103 58 183 / 30%);
-  color: #673ab7;
   background: rgb(103 58 183 / 20%);
+  color: #673ab7;
 }
 
 /* Premium - Gold */
 .badge--premium {
   border-color: rgb(255 193 7 / 40%);
-  color: #ffc107;
   background: rgb(255 193 7 / 25%);
+  color: #ffc107;
 }

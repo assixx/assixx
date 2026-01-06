@@ -253,11 +253,22 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
         <label class="form-field__label">Berechtigungstyp</label>
         <div class="choice-group">
           <label class="choice-card">
-            <input type="radio" class="choice-card__input" name="permission-type" value="none" checked />
+            <input
+              type="radio"
+              class="choice-card__input"
+              name="permission-type"
+              value="none"
+              checked
+            />
             <span class="choice-card__text">Keine Abteilungen</span>
           </label>
           <label class="choice-card">
-            <input type="radio" class="choice-card__input" name="permission-type" value="specific" />
+            <input
+              type="radio"
+              class="choice-card__input"
+              name="permission-type"
+              value="specific"
+            />
             <span class="choice-card__text">Spezifische Abteilungen</span>
           </label>
           <label class="choice-card">
@@ -286,7 +297,9 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       <span class="choice-card__text">
         <i class="fas fa-gift"></i>
         Free Plan
-        <span class="choice-card__description"> Up to 5 users • Basic features • Email support </span>
+        <span class="choice-card__description">
+          Up to 5 users • Basic features • Email support
+        </span>
       </span>
     </label>
     <label class="choice-card choice-card--lg">
@@ -294,7 +307,9 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       <span class="choice-card__text">
         <i class="fas fa-star"></i>
         Pro Plan
-        <span class="choice-card__description"> Up to 50 users • Advanced features • Priority support </span>
+        <span class="choice-card__description">
+          Up to 50 users • Advanced features • Priority support
+        </span>
       </span>
     </label>
     <label class="choice-card choice-card--lg">
@@ -302,7 +317,9 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       <span class="choice-card__text">
         <i class="fas fa-building"></i>
         Enterprise Plan
-        <span class="choice-card__description"> Unlimited users • All features • Dedicated support </span>
+        <span class="choice-card__description">
+          Unlimited users • All features • Dedicated support
+        </span>
       </span>
     </label>
   </div>

@@ -8,9 +8,9 @@
  */
 
 .data-table--bordered {
-  overflow: hidden;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
 .data-table--bordered th,

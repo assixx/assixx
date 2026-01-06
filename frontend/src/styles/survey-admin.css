@@ -11,14 +11,14 @@
 }
 
 .survey-stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
   color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 
 .survey-stat-label {
-  font-size: 0.8rem;
   color: var(--text-secondary);
+  font-size: 0.8rem;
   text-transform: uppercase;
 }
 
@@ -42,34 +42,34 @@
   position: relative;
 
   margin-bottom: var(--spacing-4);
-  padding: var(--spacing-6);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-6);
 }
 
 .question-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-4);
 }
 
 .question-number {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+
+  background: var(--primary-color);
 
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
 
   font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-
-  background: var(--primary-color);
 }
 
 .question-actions {
@@ -79,35 +79,34 @@
 
 .question-action,
 .remove-question {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  width: 32px;
-  height: 32px;
-  padding: var(--spacing-1);
+  transition: all 0.2s ease;
+  cursor: pointer;
   border: none;
   border-radius: 50%;
 
-  color: var(--text-secondary);
-
   background: rgb(255 255 255 / 10%);
+  padding: var(--spacing-1);
 
-  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+
+  color: var(--text-secondary);
 }
 
 .question-action:hover,
 .remove-question:hover {
   transform: scale(1.1);
-  color: #ff5252;
   background: rgb(244 67 54 / 30%);
+  color: #ff5252;
 }
 
 .question-action.delete:hover {
-  color: #f44336;
   background: rgb(244 67 54 / 20%);
+  color: #f44336;
 }
 
 .remove-question svg {
@@ -121,41 +120,40 @@
 
 .option-item {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
   margin-bottom: var(--spacing-2);
 }
 
 .option-input {
   flex: 1;
-
-  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: var(--radius-xl);
 
-  color: var(--text-primary);
-
   background: rgb(255 255 255 / 5%);
+
+  padding: var(--spacing-3);
+
+  color: var(--text-primary);
 }
 
 .remove-option {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  width: 28px;
-  height: 28px;
-  padding: var(--spacing-1);
+  transition: background 0.2s ease;
+  cursor: pointer;
   border: none;
   border-radius: 50%;
 
-  color: #f44336;
-
   background: rgb(244 67 54 / 20%);
+  padding: var(--spacing-1);
 
-  transition: background 0.2s ease;
+  width: 28px;
+  height: 28px;
+
+  color: #f44336;
 }
 
 .remove-option:hover {
@@ -163,23 +161,22 @@
 }
 
 .add-option-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+
+  transition: background 0.2s ease;
   cursor: pointer;
 
-  display: flex;
-  gap: var(--spacing-1);
-  align-items: center;
-
   margin-bottom: 10px;
-  padding: var(--spacing-3);
   border: none;
   border-radius: var(--radius-xl);
 
-  font-size: 0.9rem;
+  background: rgb(76 175 80 / 20%);
+  padding: var(--spacing-3);
   color: #4caf50;
 
-  background: rgb(76 175 80 / 20%);
-
-  transition: background 0.2s ease;
+  font-size: 0.9rem;
 }
 
 .add-option-btn:hover {
@@ -193,23 +190,23 @@
 .drafts-section,
 .templates-section {
   margin-top: var(--spacing-8);
-  padding-top: var(--spacing-8);
   border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-8);
 }
 
 .drafts-header,
 .templates-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-6);
 }
 
 .drafts-title,
 .templates-title {
-  font-size: 1.5rem;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.5rem;
 }
 
 /* Template grid now uses Tailwind grid utilities */

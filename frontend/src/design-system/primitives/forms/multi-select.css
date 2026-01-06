@@ -9,41 +9,40 @@
  */
 
 .multi-select {
-  scrollbar-color: var(--color-border) transparent;
-
-  /* Remove default scrollbar styling in favor of custom */
-  scrollbar-width: thin;
-
   /* Base form-field styling */
   display: block;
-
-  width: 100%;
-  min-height: 150px; /* Minimum 5-6 items visible */
-  padding: var(--spacing-2);
-
-  /* Border */
-  border: 1px solid var(--color-border);
-  border-radius: var(--glass-card-radius);
-
-  /* Typography */
-  font-family: var(--font-family);
-  font-size: var(--font-size-base);
-  line-height: 1.5;
-
-  /* Colors */
-  color: var(--color-text-primary);
 
   /* Transition */
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+
+  /* Border */
+  border: 1px solid var(--color-border);
+  border-radius: var(--glass-card-radius);
+  padding: var(--spacing-2);
+
+  width: 100%;
+  min-height: 150px; /* Minimum 5-6 items visible */
+  scrollbar-color: var(--color-border) transparent;
+
+  /* Remove default scrollbar styling in favor of custom */
+  scrollbar-width: thin;
+
+  /* Colors */
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+
+  /* Typography */
+  font-family: var(--font-family);
 }
 
 /* Focus State */
 .multi-select:focus {
-  border-color: var(--color-primary);
   outline: none;
   box-shadow: 0 0 0 3px rgb(33 150 243 / 20%); /* Primary blue focus ring */
+  border-color: var(--color-primary);
 }
 
 /* Hover State */
@@ -53,39 +52,39 @@
 
 /* Disabled State */
 .multi-select:disabled {
-  cursor: not-allowed;
   opacity: 60%;
+  cursor: not-allowed;
   background: var(--color-surface-secondary);
 }
 
 /* Options Styling */
 .multi-select option {
+  transition: background-color 0.15s ease;
   cursor: pointer;
-
-  padding: var(--spacing-2);
   border-radius: var(--glass-card-radius);
-
-  color: var(--color-text-primary);
-
-  background-color: transparent; /* Override browser defaults */
   background-image: none; /* Remove any browser gradients */
 
-  transition: background-color 0.15s ease;
+  background-color: transparent; /* Override browser defaults */
+
+  padding: var(--spacing-2);
+
+  color: var(--color-text-primary);
 }
 
 /* Selected Option */
 .multi-select option:checked {
-  font-weight: 500;
-  color: #0df; /* Cyan blue */
-
   /* Browser workaround: linear-gradient overrides browser !important defaults */
-  background: rgb(0 221 255 / 10%) linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
+  background: rgb(0 221 255 / 10%)
+    linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
+  color: #0df; /* Cyan blue */
+  font-weight: 500;
 }
 
 /* Selected Option (when select has focus) - Important for browser override */
 .multi-select:focus option:checked {
+  background: rgb(0 221 255 / 10%)
+    linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
   color: #0df;
-  background: rgb(0 221 255 / 10%) linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
 }
 
 /* Hover on option (Firefox/Chrome) */
@@ -105,12 +104,12 @@
 
 /* Error State */
 .multi-select.error,
-.multi-select[aria-invalid="true"] {
+.multi-select[aria-invalid='true'] {
   border-color: var(--color-danger);
 }
 
 .multi-select.error:focus,
-.multi-select[aria-invalid="true"]:focus {
+.multi-select[aria-invalid='true']:focus {
   box-shadow: 0 0 0 3px rgb(244 67 54 / 20%); /* Danger red focus ring */
 }
 
@@ -140,8 +139,8 @@
 .multi-select__hint {
   display: block;
   margin-top: var(--spacing-1);
-  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .multi-select__hint i {

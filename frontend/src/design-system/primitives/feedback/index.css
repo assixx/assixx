@@ -19,24 +19,24 @@
 
 /* ========== ALERTS ========== */
 
-@import "./alert.base.css";
-@import "./alert.variants.css";
+@import './alert.base.css';
+@import './alert.variants.css';
 
 /* ========== PROGRESS BARS ========== */
 
-@import "./progress.css";
+@import './progress.css';
 
 /* ========== SPINNERS ========== */
 
-@import "./spinner.css";
+@import './spinner.css';
 
 /* ========== SKELETONS ========== */
 
-@import "./skeleton.css";
+@import './skeleton.css';
 
 /* ========== TOASTS ========== */
 
-@import "./toast.css";
+@import './toast.css';
 
 /**
  * QUICK REFERENCE:

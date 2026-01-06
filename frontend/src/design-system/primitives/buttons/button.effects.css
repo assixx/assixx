@@ -33,19 +33,18 @@
 /* Add shine to primary buttons */
 .btn-primary::before,
 .btn-primary-first::before {
-  pointer-events: none; /* Don't block clicks */
-  content: "";
-
   position: absolute;
   top: 0;
   left: -100%; /* Start off-screen left */
 
-  width: 100%;
-  height: 100%;
+  transition: left var(--duration-shine) var(--ease-out);
 
   background: var(--gradient-shine); /* transparent → white → transparent */
 
-  transition: left var(--duration-shine) var(--ease-out);
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Don't block clicks */
+  content: '';
 }
 
 /* Trigger shine on hover */
@@ -71,16 +70,15 @@
  */
 
 .btn .ripple {
-  pointer-events: none;
-
   position: absolute;
   transform: scale(0);
+
+  animation: ripple-animation var(--duration-slow) var(--ease-out);
 
   border-radius: 50%;
 
   background: rgb(255 255 255 / 50%);
-
-  animation: ripple-animation var(--duration-slow) var(--ease-out);
+  pointer-events: none;
 }
 
 @keyframes ripple-animation {
@@ -152,19 +150,18 @@
  */
 
 /* Progress bar variant (optional) */
-.btn[data-loading="progress"]::before {
-  content: "";
-
+.btn[data-loading='progress']::before {
   position: absolute;
   bottom: 0;
   left: 0;
 
-  width: var(--progress, 0%); /* Set via JS: style="--progress: 50%" */
-  height: 2px;
+  transition: width var(--duration-normal) var(--ease-out);
 
   background: rgb(255 255 255 / 50%);
 
-  transition: width var(--duration-normal) var(--ease-out);
+  width: var(--progress, 0%); /* Set via JS: style="--progress: 50%" */
+  height: 2px;
+  content: '';
 }
 
 /**
@@ -190,8 +187,8 @@
   .btn-pulse,
   .btn-glow,
   .btn .ripple {
-    transition: none;
     animation: none;
+    transition: none;
   }
 
   /* Keep functional transitions (hover) */

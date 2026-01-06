@@ -34,6 +34,8 @@ export default [
       'backend/src/routes/v1/**',
       'backend/archive/**', // Archived code - not actively maintained
       'frontend/dist/**',
+      'frontend/.svelte-kit/**',
+      '**/.svelte-kit/**',
       'coverage/**',
       '*.log',
       'backend/logs/**',
@@ -66,9 +68,8 @@ export default [
       '**/test/**',
       '**/tests/**',
       '**/*.html',
-      // SvelteKit Frontend - eigenes Linting-Setup
-      'frontend-svelte/**',
-      'frontend-svelte/.svelte-kit/**',
+      // Legacy Frontend - archived
+      'frontend-legacy/**',
     ],
   }, // Base JavaScript configuration
   js.configs.recommended, // Prettier configuration

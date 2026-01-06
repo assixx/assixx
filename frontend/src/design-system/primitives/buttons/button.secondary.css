@@ -8,17 +8,17 @@
  */
 
 .btn-secondary {
-  padding: var(--spacing-2) var(--spacing-4);
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: var(--radius-xl);
   background: #ffffff1a;
+  padding: var(--spacing-2) var(--spacing-4);
 }
 
 /* Hover state - Slightly darker gradient */
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--color-icon-primary);
-  color: var(--color-black);
   background: var(--color-icon-primary);
+  color: var(--color-black);
 }
 
 /* Active/Pressed state */
@@ -34,10 +34,10 @@
 
 /* Disabled state */
 .btn-secondary:disabled {
-  cursor: not-allowed;
-  color: var(--color-gray-500);
   opacity: 60%;
+  cursor: not-allowed;
   background: var(--color-gray-700);
+  color: var(--color-gray-500);
 }
 
 /**
@@ -71,24 +71,24 @@
  */
 
 .btn-cancel {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-  border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
+  /* ========== VISUAL ========== */
+  backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
 
-  color: var(--color-white); /* Primary blue text */
+  /* No transitions - instant response */
+  transition: none;
+
+  /* No shadow on default state (lighter weight than primary) */
+  box-shadow: none;
+  border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
 
   background:
     linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
     linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
 
-  /* ========== VISUAL ========== */
-  backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
-  /* No shadow on default state (lighter weight than primary) */
-  box-shadow: none;
-
-  /* No transitions - instant response */
-  transition: none;
+  color: var(--color-white); /* Primary blue text */
 }
 
 /* Hover state - Strengthen glass and border */
@@ -100,8 +100,8 @@
 
 /* Focus state */
 .btn-cancel:focus-visible {
-  border-color: var(--color-primary);
   box-shadow: var(--shadow-focus-primary);
+  border-color: var(--color-primary);
 }
 
 /**

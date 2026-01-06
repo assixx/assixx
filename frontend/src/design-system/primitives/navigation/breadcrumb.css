@@ -24,8 +24,8 @@
 
 .breadcrumb {
   display: flex;
-  gap: var(--spacing-2, 8px);
   align-items: center;
+  gap: var(--spacing-2, 8px);
 
   padding: var(--spacing-0, 6px) var(--spacing-5, 20px);
 
@@ -43,29 +43,30 @@
   display: inline-flex;
   align-items: center;
 
-  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
   border-radius: var(--radius-3xl, 9999px);
+
+  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
 
   /* Links are BLUE (primary color) - !important to override @layer base */
   color: var(--color-icon-primary);
   text-decoration: none;
-
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
 }
 
 .breadcrumb .breadcrumb__item:hover,
 .breadcrumb a.breadcrumb__item:hover {
+  background: rgb(33 150 243 / 10%);
+
   /* Lighter blue on hover */
   color: var(--color-primary-hover, #42a5f5) !important;
-  background: rgb(33 150 243 / 10%);
 }
 
 .breadcrumb .breadcrumb__item--active {
   pointer-events: none;
-  font-weight: 600;
   color: var(--text-primary, var(--color-text-primary, #fff)) !important;
+  font-weight: 600;
 }
 
 .breadcrumb .breadcrumb__item--active:hover {
@@ -77,15 +78,14 @@
    ============================================================================= */
 
 .breadcrumb .breadcrumb__separator {
-  user-select: none;
-
   display: flex;
   align-items: center;
 
-  font-size: 12px;
-
   /* Separator (arrow) is WHITE */
   color: rgb(255 255 255 / 100%) !important;
+
+  font-size: 12px;
+  user-select: none;
 }
 
 /* =============================================================================

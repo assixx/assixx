@@ -4,25 +4,25 @@
 
 /* ===== CONTAINER WIDTH ===== */
 .profile-card {
-  max-width: 800px;
   margin-right: auto;
   margin-left: auto;
+  max-width: 800px;
 }
 
 /* ===== PROFILE PICTURE LAYOUT ===== */
 .profile-picture-section {
   display: flex;
-  gap: var(--spacing-8);
   align-items: center;
+  gap: var(--spacing-8);
   margin-bottom: var(--spacing-8);
 }
 
 /* Blue border ring around avatar (page-specific decoration) */
 .profile-picture-container {
-  padding: 3px;
   border: 3px solid rgb(0 142 255 / 30%);
   border-radius: 50%;
   background: transparent;
+  padding: 3px;
 }
 
 /* Button stack (vertical layout) */
@@ -43,23 +43,23 @@
 /* ===== APPROVAL SECTION ===== */
 .approval-section {
   margin-bottom: var(--spacing-8);
-  padding: var(--spacing-6);
   border: 1px solid rgb(255 193 7 / 20%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 193 7 / 5%);
+  padding: var(--spacing-6);
 }
 
 .approval-header {
   display: flex;
-  gap: var(--spacing-4);
   align-items: center;
+  gap: var(--spacing-4);
   margin-bottom: var(--spacing-6);
 }
 
 .approval-header i {
-  font-size: 24px;
   color: var(--color-warning);
+  font-size: 24px;
 }
 
 .approval-list {
@@ -69,13 +69,12 @@
 }
 
 .approval-item {
-  padding: var(--spacing-3);
+  transition: all var(--transition-fast);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-
-  transition: all var(--transition-fast);
+  padding: var(--spacing-3);
 }
 
 .approval-item:hover {
@@ -85,8 +84,8 @@
 
 .approval-item-header {
   display: flex;
-  align-items: start;
   justify-content: space-between;
+  align-items: start;
   margin-bottom: var(--spacing-2);
 }
 
@@ -101,33 +100,33 @@
 
 .approval-status {
   display: inline-block;
-
-  padding: 4px 12px;
   border-radius: 12px;
 
-  font-size: 12px;
+  padding: 4px 12px;
   font-weight: 600;
+
+  font-size: 12px;
   text-transform: uppercase;
 }
 
 .approval-status.pending {
-  color: var(--color-warning);
   background: rgb(255 193 7 / 20%);
+  color: var(--color-warning);
 }
 
 .cooling-off-warning {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
   margin-top: var(--spacing-2);
-  padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
   border-radius: var(--radius-xl);
 
-  font-size: 13px;
-
   background: rgb(255 152 0 / 10%);
+  padding: var(--spacing-3);
+
+  font-size: 13px;
 }
 
 .cooling-off-warning i {

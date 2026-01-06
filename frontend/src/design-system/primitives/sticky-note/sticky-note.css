@@ -7,8 +7,13 @@
  *     <div class="sticky-note__pin"></div>
  *     <div class="sticky-note__title">Title</div>
  *     <div class="sticky-note__content">Content text...</div>
- *     <div class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</div>
- *     <div class="sticky-note__comments"><i class="fas fa-comments"></i> 5</div>
+ *     <div class="sticky-note__indicators">
+ *       <span class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</span>
+ *       <span class="sticky-note__comments"><i class="fas fa-comments"></i> 5</span>
+ *       <span class="sticky-note__read-status sticky-note__read-status--unread">
+ *         <i class="fas fa-eye-slash"></i>
+ *       </span>
+ *     </div>
  *     <div class="sticky-note__footer">
  *       <span class="sticky-note__author"><i class="fas fa-user"></i> Name</span>
  *       <span class="sticky-note__date">26.11.2025</span>
@@ -22,22 +27,21 @@
    ======================================== */
 
 .sticky-note {
-  cursor: pointer;
-
   position: relative;
-
-  width: 250px;
-  min-height: 120px;
-  padding: 1rem;
-  border-radius: 8px;
-
-  color: var(--color-black);
-
-  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
 
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
+  cursor: pointer;
+
+  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
+  border-radius: 8px;
+  padding: 1rem;
+
+  width: 250px;
+  min-height: 120px;
+
+  color: var(--color-black);
 }
 
 .sticky-note:hover {
@@ -101,25 +105,24 @@
   top: -5px;
   right: 15px;
   transform: rotate(-45deg);
-
-  width: 15px;
-  height: 15px;
+  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
   border-radius: 50% 50% 50% 0;
 
   background: radial-gradient(circle at 30% 30%, #f44, #c00);
-  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
+
+  width: 15px;
+  height: 15px;
 }
 
 .sticky-note__pin::after {
-  content: "";
-
   position: absolute;
   top: 5px;
   left: 5px;
+  border-radius: 50%;
 
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  content: '';
 }
 
 /* ========================================
@@ -127,20 +130,19 @@
    ======================================== */
 
 .sticky-note__title {
-  overflow: hidden;
-
   margin-top: 0.3em;
   margin-bottom: 0.5rem;
+  overflow: hidden;
+  font-weight: 600;
 
   font-size: 0.9rem;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .sticky-note__content {
-  overflow: hidden;
   display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 
@@ -154,45 +156,44 @@
    ======================================== */
 
 .sticky-note__footer {
+  display: flex;
   position: absolute;
   right: 1rem;
   bottom: 0.5rem;
   left: 1rem;
-
-  display: flex;
   flex-direction: column;
   gap: 0.15rem;
 
-  font-size: 0.7rem;
-
   opacity: 70%;
+
+  font-size: 0.7rem;
 }
 
 /* Top row: Badges only (right aligned) */
 .sticky-note__badges {
   display: flex;
   flex-flow: row nowrap;
-  gap: 0.25rem;
   justify-content: flex-end;
+  gap: 0.25rem;
 }
 
 /* Bottom row: Author + Date */
 .sticky-note__footer-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 
 .sticky-note__author,
 .sticky-note__date {
   display: flex;
-  gap: 0.25rem;
   align-items: center;
+  gap: 0.25rem;
 }
 
 .sticky-note__author i {
-  font-size: 0.65rem;
   opacity: 60%;
+  font-size: 0.65rem;
 }
 
 /* ========================================
@@ -200,61 +201,61 @@
    ======================================== */
 
 .sticky-note__badge {
-  padding: 0.1rem 0.35rem;
   border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-weight: 600;
 
   font-size: 0.55rem;
-  font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 /* Priority badges */
 .sticky-note__badge--priority-low {
-  color: #166534;
   background: #dcfce7;
+  color: #166534;
 }
 
 .sticky-note__badge--priority-medium {
-  color: #1e40af;
   background: #dbeafe;
+  color: #1e40af;
 }
 
 .sticky-note__badge--priority-high {
-  color: #9a3412;
   background: #ffedd5;
+  color: #9a3412;
 }
 
 .sticky-note__badge--priority-urgent {
-  color: #991b1b;
   background: #fee2e2;
+  color: #991b1b;
 }
 
 /* Org Level badges */
 .sticky-note__badge--org-company {
-  color: #1e40af;
   background: #dbeafe;
+  color: #1e40af;
 }
 
 .sticky-note__badge--org-department {
-  color: #9a3412;
   background: #ffedd5;
+  color: #9a3412;
 }
 
 .sticky-note__badge--org-team {
-  color: #166534;
   background: #dcfce7;
+  color: #166534;
 }
 
 .sticky-note__badge--org-area {
-  color: #6b21a8;
   background: #f3e8ff;
+  color: #6b21a8;
 }
 
 /* Unread indicator badge */
 .sticky-note__badge--unread {
-  color: #92400e;
   background: #fef3c7;
+  color: #92400e;
 }
 
 /* ========================================
@@ -262,30 +263,58 @@
    ======================================== */
 
 .sticky-note__indicators {
+  display: flex;
   position: absolute;
   bottom: 1.8rem; /* Above footer */
   left: 1rem;
-
-  display: flex;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.75rem;
 }
 
 .sticky-note__attachments,
 .sticky-note__comments {
   display: flex;
-  gap: 0.25rem;
   align-items: center;
-
-  font-size: 0.75rem;
+  gap: 0.25rem;
 
   opacity: 80%;
+
+  font-size: 0.75rem;
 }
 
 .sticky-note__attachments i,
 .sticky-note__comments i {
-  font-size: 0.8rem;
   color: var(--color-black, #000);
+  font-size: 0.8rem;
+}
+
+/* Read Status Indicator (Eye icon) */
+.sticky-note__read-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  font-size: 0.75rem;
+}
+
+.sticky-note__read-status i {
+  font-size: 0.85rem;
+}
+
+.sticky-note__read-status--read {
+  opacity: 60%;
+}
+
+.sticky-note__read-status--read i {
+  color: var(--color-success, #4caf50);
+}
+
+.sticky-note__read-status--unread {
+  opacity: 100%;
+}
+
+.sticky-note__read-status--unread i {
+  color: var(--color-warning, #ff9800);
 }
 
 /* ========================================
@@ -293,11 +322,10 @@
    ======================================== */
 
 .sticky-note__actions {
+  display: flex;
   position: absolute;
   top: 0.5rem;
   right: 2rem; /* Space for pushpin */
-
-  display: flex;
   gap: 0.5rem;
 
   opacity: 0%;
@@ -310,25 +338,24 @@
 }
 
 .sticky-note__action {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  width: 28px;
-  height: 28px;
-  padding: 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
   border: none;
   border-radius: 50%;
 
-  font-size: 0.75rem;
+  background: rgb(255 255 255 / 70%);
+  padding: 0;
+
+  width: 28px;
+  height: 28px;
   color: var(--color-black);
 
-  background: rgb(255 255 255 / 70%);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
-
-  transition: all 0.2s ease;
+  font-size: 0.75rem;
 }
 
 .sticky-note__action:hover {
@@ -350,9 +377,9 @@
 
 .sticky-note__attachment-preview {
   position: relative;
-  overflow: hidden;
   margin: 0.5rem 0;
   border-radius: 4px;
+  overflow: hidden;
 }
 
 .sticky-note__attachment-preview img {

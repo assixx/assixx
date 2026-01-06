@@ -38,7 +38,7 @@
 
 /* Blackboard - spezifischer Abstand */
 .blackboard-page #breadcrumb-container + *,
-body[data-page="blackboard"] #breadcrumb-container + * {
+body[data-page='blackboard'] #breadcrumb-container + * {
   margin-top: -13px !important;
 }
 

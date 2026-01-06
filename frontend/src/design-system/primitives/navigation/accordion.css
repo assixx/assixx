@@ -42,15 +42,15 @@
 /* ========== ACCORDION ITEM ========== */
 
 .accordion__item {
-  overflow: hidden;
+  backdrop-filter: blur(10px);
+
+  transition: all 0.2s ease;
 
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-
-  transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .accordion__item:hover {
@@ -61,24 +61,23 @@
 /* ========== ACCORDION HEADER ========== */
 
 .accordion__header {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: space-between;
-
-  width: 100%;
-  padding: var(--spacing-4);
-  border: none;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  text-align: left;
-
-  background: transparent;
+  align-items: center;
 
   transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+
+  background: transparent;
+  padding: var(--spacing-4);
+
+  width: 100%;
+  color: var(--color-text-primary);
+  font-weight: 500;
+
+  font-size: 14px;
+  text-align: left;
 }
 
 .accordion__header:hover {
@@ -92,9 +91,9 @@
 
 /* Chevron icon */
 .accordion__icon {
-  font-size: 12px;
-  color: var(--color-text-secondary);
   transition: transform 0.3s ease;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 /* ========== ACCORDION CONTENT ========== */
@@ -106,10 +105,10 @@
 }
 
 .accordion__body {
-  overflow: hidden;
   padding: 0 var(--spacing-4);
-  line-height: 1.6;
+  overflow: hidden;
   color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 /* ========== ACTIVE STATE ========== */
@@ -139,8 +138,8 @@
 /* ========== DISABLED STATE ========== */
 
 .accordion__item--disabled {
-  pointer-events: none;
   opacity: 50%;
+  pointer-events: none;
 }
 
 /* ========== FLUSH VARIANT (no borders between items) ========== */
@@ -156,8 +155,8 @@
 }
 
 .accordion--flush .accordion__item:first-child {
-  border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-lg);
 }
 
 .accordion--flush .accordion__item:last-child {
@@ -192,41 +191,41 @@
 }
 
 .accordion--bordered .accordion__item--active {
-  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+  border-color: var(--color-primary);
 }
 
 /* ========== WITH ICONS ========== */
 
 .accordion__header-icon {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 }
 
 .accordion__header-icon i:first-child {
-  font-size: 16px;
   color: var(--color-primary);
+  font-size: 16px;
 }
 
 /* ========== WITH BADGES ========== */
 
 .accordion__badge {
   display: inline-flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  margin-left: var(--spacing-2);
+  border-radius: 50%;
+
+  background: var(--color-primary);
+  padding: 0 6px;
 
   min-width: 22px;
   height: 22px;
-  margin-left: var(--spacing-2);
-  padding: 0 6px;
-  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
 
   font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-
-  background: var(--color-primary);
 }
 
 /* ========== ALWAYS OPEN VARIANT ========== */

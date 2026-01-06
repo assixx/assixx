@@ -475,7 +475,11 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, description, action, size = 'md' }: EmptyStateProps) {
-  const className = cn('empty-state', size === 'sm' && 'empty-state--sm', size === 'lg' && 'empty-state--lg');
+  const className = cn(
+    'empty-state',
+    size === 'sm' && 'empty-state--sm',
+    size === 'lg' && 'empty-state--lg',
+  );
 
   return (
     <div className={className}>
@@ -572,7 +576,9 @@ export function DataList({ items, layout = 'default', borderless }: DataListProp
     <i class="fas fa-users"></i>
   </div>
   <div class="empty-state__title">Keine Mitarbeiter gefunden</div>
-  <div class="empty-state__description">Fügen Sie Ihren ersten Mitarbeiter hinzu, um loszulegen</div>
+  <div class="empty-state__description">
+    Fügen Sie Ihren ersten Mitarbeiter hinzu, um loszulegen
+  </div>
   <button class="btn btn-primary empty-state__action">
     <i class="fas fa-plus"></i>
     Mitarbeiter hinzufügen

@@ -9,22 +9,22 @@
  */
 
 .btn-manage {
+  background: #a9d9ff2b; /* Blue with 10% opacity */
   padding: var(--spacing-2) var(--spacing-4);
   color: var(--color-white);
-  background: #a9d9ff2b; /* Blue with 10% opacity */
 }
 
 /* Hover State - Increase blue opacity */
 .btn-manage:hover:not(:disabled) {
-  color: var(--color-white);
   background: #2196f330; /* Blue with 19% opacity */
+  color: var(--color-white);
 }
 
 /* Active/Pressed State */
 .btn-manage:active:not(:disabled) {
   transform: translateY(0);
-  background: #2196f340; /* Blue with 25% opacity */
   box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
+  background: #2196f340; /* Blue with 25% opacity */
 }
 
 /* Focus State */
@@ -39,13 +39,12 @@
 /* Disabled State */
 .btn-manage:disabled,
 .btn-manage.disabled {
+  opacity: 60%;
   cursor: not-allowed;
+  box-shadow: none;
+  background: var(--color-gray-600);
 
   color: var(--color-gray-400);
-
-  opacity: 60%;
-  background: var(--color-gray-600);
-  box-shadow: none;
 }
 
 /* Loading State */
@@ -55,21 +54,20 @@
 }
 
 .btn-manage.loading::after {
-  content: "";
-
   position: absolute;
   top: 50%;
   left: 50%;
 
-  width: 16px;
-  height: 16px;
+  animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
   border: 2px solid var(--color-white);
   border-top-color: transparent;
   border-radius: 50%;
 
-  animation: spin 0.6s linear infinite;
+  width: 16px;
+  height: 16px;
+  content: '';
 }
 
 /* Loading spinner animation */

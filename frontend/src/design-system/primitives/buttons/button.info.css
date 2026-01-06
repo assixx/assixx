@@ -9,30 +9,38 @@
  */
 
 .btn-info {
+  /* Shadow */
+  box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
+  border: 1px solid rgb(0 172 193); /* Solid cyan border - avatar style */
+
+  background: linear-gradient(
+    145deg,
+    rgb(129 212 250 / 11%),
+    rgb(0 176 255 / 15%)
+  ); /* Subtle cyan gradient */
+
   /* Padding - matches other variants */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-  border: 1px solid rgb(0 172 193); /* Solid cyan border - avatar style */
 
   /* Colors - Cyan/Light Blue */
   color: var(--color-white);
-
-  background: linear-gradient(145deg, rgb(129 212 250 / 11%), rgb(0 176 255 / 15%)); /* Subtle cyan gradient */
-
-  /* Shadow */
-  box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
 }
 
 /* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
-  background: linear-gradient(145deg, rgb(129 212 250 / 18%), rgb(0 176 255 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
+  background: linear-gradient(
+    145deg,
+    rgb(129 212 250 / 18%),
+    rgb(0 176 255 / 25%)
+  ); /* Intensiver */
 }
 
 /* Active/Pressed State */
 .btn-info:active:not(:disabled) {
   transform: translateY(0);
-  background: #0097a7; /* Cyan 700 */
   box-shadow: var(--shadow-btn-info-active, 0 1px 4px rgb(0 188 212 / 30%));
+  background: #0097a7; /* Cyan 700 */
 }
 
 /* Focus State */
@@ -47,13 +55,12 @@
 /* Disabled State */
 .btn-info:disabled,
 .btn-info.disabled {
+  opacity: 60%;
   cursor: not-allowed;
+  box-shadow: none;
+  background: #b2ebf2; /* Cyan 100 */
 
   color: rgb(255 255 255 / 50%);
-
-  opacity: 60%;
-  background: #b2ebf2; /* Cyan 100 */
-  box-shadow: none;
 }
 
 /* Loading State */
@@ -63,21 +70,20 @@
 }
 
 .btn-info.loading::after {
-  content: "";
-
   position: absolute;
   top: 50%;
   left: 50%;
 
-  width: 16px;
-  height: 16px;
+  animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
   border: 2px solid var(--color-white);
   border-top-color: transparent;
   border-radius: 50%;
 
-  animation: spin 0.6s linear infinite;
+  width: 16px;
+  height: 16px;
+  content: '';
 }
 
 /* Loading spinner animation */

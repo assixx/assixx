@@ -10,13 +10,14 @@ RUN apk add --no-cache curl jq && \
 # tsx and nodemon are in devDependencies - no need to install globally!
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.26.0
+RUN npm install -g npm@latest pnpm@10.27.0
 
 # Arbeitsverzeichnis
 WORKDIR /app
 
 # Package files kopieren - pnpm workspace braucht alle package.json VORHER
 COPY package.json ./
+COPY .npmrc ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
