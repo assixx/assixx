@@ -24,9 +24,9 @@
 /* Icon with pulse animation */
 .rate-limit-icon {
   display: inline-block;
-  animation: pulse 2s infinite;
   margin-bottom: var(--spacing-6);
   font-size: 64px;
+  animation: pulse 2s infinite;
 }
 
 @keyframes pulse {

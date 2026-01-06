@@ -70,14 +70,6 @@ export default defineConfig({
           if (id.includes('dompurify')) {
             return 'sanitize';
           }
-          // tRPC client
-          if (id.includes('@trpc/')) {
-            return 'trpc';
-          }
-          // superjson (tRPC serialization)
-          if (id.includes('superjson')) {
-            return 'superjson';
-          }
           // Let Vite/SvelteKit handle everything else automatically
         },
       },

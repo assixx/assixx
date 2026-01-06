@@ -23,6 +23,8 @@ import { ChatModule } from './chat/chat.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
+// CustomThrottlerGuard is NOT global - applied selectively via @AuthThrottle(), @UploadThrottle()
+// Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor.js';
 import { AppConfigModule } from './config/config.module.js';
@@ -44,6 +46,7 @@ import { ShiftsModule } from './shifts/shifts.module.js';
 import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
 import { TeamsModule } from './teams/teams.module.js';
+import { AppThrottlerModule } from './throttler/throttler.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -90,6 +93,9 @@ import { UsersModule } from './users/users.module.js';
     // Database module (raw PostgreSQL with pg)
     DatabaseModule,
 
+    // Rate Limiting Module (Redis-backed)
+    AppThrottlerModule,
+
     // Feature modules
     AdminPermissionsModule,
     AreasModule,
@@ -118,6 +124,10 @@ import { UsersModule } from './users/users.module.js';
     ChatModule,
   ],
   providers: [
+    // NOTE: Throttler Guard is NOT global - applied selectively via decorators
+    // @AuthThrottle() on login/signup, @UploadThrottle() on file uploads
+    // See: docs/RATE-LIMITING-NESTJS-PLAN.md for details
+
     // Global JWT Auth Guard
     {
       provide: APP_GUARD,

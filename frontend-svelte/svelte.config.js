@@ -20,7 +20,6 @@ const config = {
       $layout: 'src/lib/components/layout',
       $features: 'src/lib/components/features',
       $stores: 'src/lib/stores',
-      $trpc: 'src/lib/trpc',
       $utils: 'src/lib/utils',
       $types: 'src/lib/types',
       $styles: 'src/styles',
