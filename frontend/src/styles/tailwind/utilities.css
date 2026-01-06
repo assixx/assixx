@@ -150,15 +150,15 @@
 
   /* Truncate Utilities */
   .line-clamp-2 {
-    overflow: hidden;
     display: -webkit-box;
+    overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
 
   .line-clamp-3 {
-    overflow: hidden;
     display: -webkit-box;
+    overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
@@ -229,14 +229,14 @@
 
   /* Selection */
   .select-primary::selection {
-    color: #fff;
     background-color: var(--color-primary);
+    color: #fff;
   }
 
   /* Container Utilities */
   @media (width >= 96rem) {
     .container {
-      max-width: 106rem;
+      max-width: 113rem;
     }
   }
 

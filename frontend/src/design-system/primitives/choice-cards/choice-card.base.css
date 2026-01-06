@@ -41,19 +41,19 @@
    ======================================== */
 
 .choice-card {
-  /* Reset label defaults */
-  cursor: pointer;
+  display: flex;
 
   /* Layout */
   position: relative;
-
-  display: flex;
   align-items: center;
 
-  margin: 0;
+  /* Smooth transitions */
+  transition: all 0.2s ease;
 
-  /* Spacing */
-  padding: 10px var(--spacing-4); /* 10px 16px */
+  /* Reset label defaults */
+  cursor: pointer;
+
+  margin: 0;
 
   /* Glassmorphism */
   border: 1px solid rgb(255 255 255 / 10%);
@@ -61,8 +61,8 @@
 
   background: rgb(255 255 255 / 3%);
 
-  /* Smooth transitions */
-  transition: all 0.2s ease;
+  /* Spacing */
+  padding: 10px var(--spacing-4); /* 10px 16px */
 }
 
 /* Hover state */
@@ -73,9 +73,9 @@
 
 /* Active/Checked state - when input is checked */
 .choice-card:has(.choice-card__input:checked) {
+  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
   border-color: rgb(33 150 243 / 50%);
   background: rgb(33 150 243 / 10%);
-  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
 }
 
 /* Focus state - accessibility */
@@ -89,37 +89,36 @@
    ======================================== */
 
 .choice-card__input {
-  cursor: pointer;
-
   /* Layout */
   position: relative;
 
   flex-shrink: 0;
 
-  /* Size */
-  width: 20px;
-  height: 20px;
+  /* Reset browser default */
+  appearance: none;
+
+  /* Transition */
+  transition: all 0.2s ease;
+  cursor: pointer;
   margin: 0;
   margin-right: var(--spacing-3); /* 12px gap from text */
 
   /* Base styling */
   border: 2px solid rgb(255 255 255 / 30%);
-
-  /* Reset browser default */
-  appearance: none;
   background: transparent;
 
-  /* Transition */
-  transition: all 0.2s ease;
+  /* Size */
+  width: 20px;
+  height: 20px;
 }
 
 /* Radio variant - circle */
-.choice-card__input[type="radio"] {
+.choice-card__input[type='radio'] {
   border-radius: 50%;
 }
 
 /* Checkbox variant - square */
-.choice-card__input[type="checkbox"] {
+.choice-card__input[type='checkbox'] {
   border-radius: var(--radius-sm); /* 4px */
 }
 
@@ -139,27 +138,27 @@
    RADIO INDICATOR (Inner dot)
    ======================================== */
 
-.choice-card__input[type="radio"]:checked::after {
-  /* Dot element */
-  content: "";
-
+.choice-card__input[type='radio']:checked::after {
   /* Positioning */
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 
-  /* Size */
-  width: 8px;
-  height: 8px;
+  /* Animation */
+  animation: choice-radio-check 0.3s ease;
 
   /* Styling */
   border-radius: 50%;
 
   background: var(--color-primary);
 
-  /* Animation */
-  animation: choice-radio-check 0.3s ease;
+  /* Size */
+  width: 8px;
+  height: 8px;
+
+  /* Dot element */
+  content: '';
 }
 
 @keyframes choice-radio-check {
@@ -182,10 +181,7 @@
    CHECKBOX INDICATOR (Checkmark)
    ======================================== */
 
-.choice-card__input[type="checkbox"]:checked::after {
-  /* Checkmark */
-  content: "";
-
+.choice-card__input[type='checkbox']:checked::after {
   /* Positioning */
   position: absolute;
   top: 2px;
@@ -194,14 +190,17 @@
   /* Rotate to create checkmark */
   transform: rotate(45deg);
 
-  /* Checkmark shape using borders */
-  width: 5px;
-  height: 10px;
+  /* Animation */
+  animation: choice-checkbox-check 0.3s ease;
   border: solid var(--color-primary);
   border-width: 0 2px 2px 0;
 
-  /* Animation */
-  animation: choice-checkbox-check 0.3s ease;
+  /* Checkmark shape using borders */
+  width: 5px;
+  height: 10px;
+
+  /* Checkmark */
+  content: '';
 }
 
 @keyframes choice-checkbox-check {
@@ -225,20 +224,20 @@
    ======================================== */
 
 .choice-card__text {
-  /* Typography */
-  font-size: 0.875rem; /* 14px */
-  font-weight: 400;
-  line-height: 1.4;
-  color: var(--color-text-secondary);
-
   /* Smooth transition */
   transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+
+  /* Typography */
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.4;
 }
 
 /* Text when checked */
 .choice-card:has(.choice-card__input:checked) .choice-card__text {
-  font-weight: 500;
   color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 /* ========================================
@@ -248,8 +247,8 @@
 /* Choice card with icon */
 .choice-card--with-icon .choice-card__text {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 }
 
 /* Choice card with description */
@@ -257,10 +256,10 @@
   display: block;
 
   margin-top: var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-weight: 400;
 
   font-size: 0.75rem; /* 12px */
-  font-weight: 400;
-  color: var(--color-text-tertiary);
 }
 
 /* Large choice card (more padding) */
@@ -273,9 +272,9 @@
    ======================================== */
 
 .choice-card:has(.choice-card__input:disabled) {
-  pointer-events: none;
-  cursor: not-allowed;
   opacity: 50%;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .choice-card__input:disabled {
@@ -292,9 +291,9 @@
   }
 
   .choice-card__input {
+    margin-right: var(--spacing-2); /* 8px on mobile */
     width: 18px;
     height: 18px;
-    margin-right: var(--spacing-2); /* 8px on mobile */
   }
 
   .choice-card__text {

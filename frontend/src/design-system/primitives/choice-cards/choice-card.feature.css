@@ -23,21 +23,12 @@
    ============================================================ */
 
 .feature-card {
+  display: flex;
+
   /* Layout */
   position: relative;
-
-  display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-
-  /* Spacing */
-  padding: 24px;
-
-  /* Glassmorphism */
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 5%);
   backdrop-filter: blur(10px);
 
   /* Transition */
@@ -46,24 +37,33 @@
     border-color var(--duration-fast) var(--ease-out),
     background var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-normal) var(--ease-out);
+
+  /* Glassmorphism */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+
+  /* Spacing */
+  padding: 24px;
 }
 
 /* Hover state */
 .feature-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 10%);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
 }
 
 /* Active state (feature is enabled) */
 .feature-card.active {
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--glass-card-radius);
 
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--card-shadow);
 }
 
 .feature-card.active:hover {
@@ -73,8 +73,8 @@
 
 /* Inactive/Disabled state */
 .feature-card.inactive {
-  border-color: rgb(255 255 255 / 5%);
   opacity: 70%;
+  border-color: rgb(255 255 255 / 5%);
   background: rgb(255 255 255 / 3%);
 }
 
@@ -86,26 +86,26 @@
   position: absolute;
   top: 12px;
   right: 12px;
-
-  padding: 4px 12px;
   border-radius: var(--radius-full);
 
-  font-size: 11px;
+  padding: 4px 12px;
   font-weight: 600;
-  text-transform: uppercase;
+
+  font-size: 11px;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .feature-status.status-active {
-  color: #fff;
-  background: linear-gradient(135deg, var(--color-success) 0%, rgb(56 142 60) 100%);
   box-shadow: 0 2px 8px rgb(76 175 80 / 30%);
+  background: linear-gradient(135deg, var(--color-success) 0%, rgb(56 142 60) 100%);
+  color: #fff;
 }
 
 .feature-status.status-inactive {
   border: 1px solid rgb(255 255 255 / 10%);
-  color: var(--color-text-secondary);
   background: rgb(255 255 255 / 5%);
+  color: var(--color-text-secondary);
 }
 
 /* ============================================================
@@ -115,17 +115,17 @@
 .feature-name {
   margin: 0;
   margin-top: var(--spacing-2);
+  color: var(--color-text-primary);
+  font-weight: 600;
 
   font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text-primary);
 }
 
 .feature-description {
   margin: 0;
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.5;
-  color: var(--color-text-secondary);
 }
 
 /* ============================================================
@@ -134,22 +134,22 @@
 
 .feature-plan-badge {
   display: inline-flex;
-  gap: var(--spacing-1);
   align-items: center;
-
-  padding: 4px 10px;
+  gap: var(--spacing-1);
   border: 1px solid rgb(33 150 243 / 20%);
   border-radius: var(--radius-md);
 
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-primary);
-
   background: rgb(33 150 243 / 10%);
+
+  padding: 4px 10px;
+  color: var(--color-primary);
+  font-weight: 500;
+
+  font-size: 12px;
 }
 
 .feature-plan-badge::before {
-  content: "★";
+  content: '★';
   font-size: 14px;
 }
 
@@ -223,37 +223,36 @@
 
 .feature-card--premium .feature-plan-badge {
   border-color: rgb(255 215 0 / 30%);
-  color: rgb(255 215 0);
   background: rgb(255 215 0 / 10%);
+  color: rgb(255 215 0);
 }
 
 .feature-card--premium .feature-plan-badge::before {
-  content: "⭐";
+  content: '⭐';
 }
 
 /* Coming soon */
 .feature-card--coming-soon {
-  pointer-events: none;
   opacity: 60%;
+  pointer-events: none;
 }
 
 .feature-card--coming-soon::after {
-  content: "Demnächst";
-
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-5deg);
-
-  padding: 8px 16px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
   border-radius: var(--radius-xl);
 
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-
   background: rgb(0 0 0 / 80%);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+
+  padding: 8px 16px;
+  content: 'Demnächst';
+  color: #fff;
+  font-weight: 600;
+
+  font-size: 14px;
 }
 
 /* ============================================================

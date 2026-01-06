@@ -598,7 +598,9 @@ All components are **WCAG AAA compliant**:
 <div class="alert alert--error" role="alert" aria-live="polite">Error message</div>
 
 <!-- Toast -->
-<div class="toast toast--success" role="status" aria-live="polite" aria-atomic="true">Success toast</div>
+<div class="toast toast--success" role="status" aria-live="polite" aria-atomic="true">
+  Success toast
+</div>
 
 <!-- Spinner -->
 <div class="spinner" role="status" aria-label="Loading">

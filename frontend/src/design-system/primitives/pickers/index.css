@@ -12,6 +12,6 @@
  * @see README.md for full documentation
  */
 
-@import "./date-picker.css";
-@import "./time-picker.css";
-@import "./date-range.css";
+@import './date-picker.css';
+@import './time-picker.css';
+@import './date-range.css';

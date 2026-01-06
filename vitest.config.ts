@@ -12,9 +12,9 @@ const rootDir = import.meta.dirname;
  */
 export default defineConfig({
   test: {
-    // API port for Vitest UI (avoid Windows reserved port range 49152-65535)
+    // API port for Vitest UI (avoid conflict with dev server on 5173)
     api: {
-      port: 5174,
+      port: 5175,
     },
 
     // Test environment for Node.js backend

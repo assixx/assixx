@@ -37,12 +37,12 @@ export class RoleSwitchController {
    * POST /api/v2/role-switch/to-original
    *
    * Switch back to original role.
-   * Only admin and root users can use this endpoint.
+   * NOTE: No Roles decorator - service validates using DB role (not JWT activeRole).
+   * This allows role-switched users (activeRole=employee) to switch back.
    *
    * @returns New JWT token with activeRole=originalRole and isRoleSwitched=false
    */
   @Post('to-original')
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.OK)
   async switchToOriginal(@CurrentUser() user: NestAuthUser): Promise<RoleSwitchResult> {
     return await this.roleSwitchService.switchToOriginal(user.id, user.tenantId);

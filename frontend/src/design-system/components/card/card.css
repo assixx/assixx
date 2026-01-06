@@ -29,33 +29,34 @@
    ======================================== */
 
 .profile-card {
+  display: flex;
+
   /* Layout Structure */
   position: relative;
-
-  overflow: hidden;
-  display: flex;
   flex-direction: column;
+  backdrop-filter: blur(20px) saturate(180%);
 
-  min-width: 0;
+  /* Transitions */
+  transition: all var(--transition-normal);
 
   /* Spacing */
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-8);
+  box-shadow: var(--shadow-sm);
 
   /* Borders & Radius */
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
-  /* Text Wrapping */
-  overflow-wrap: break-word;
-
   /* Glassmorphism */
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-8);
 
-  /* Transitions */
-  transition: all var(--transition-normal);
+  min-width: 0;
+
+  overflow: hidden;
+
+  /* Text Wrapping */
+  overflow-wrap: break-word;
 }
 
 .profile-card:hover {
@@ -69,26 +70,26 @@
 .card__title,
 .card-title {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
   margin: 0 0 var(--spacing-6) 0;
+  color: var(--color-text-primary);
+  font-weight: 600;
 
   font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
 }
 
 /* Accent bar (left gradient border) */
 .card__title::before,
 .card-title::before {
-  content: "";
-
-  width: 4px;
-  height: 24px;
   border-radius: 2px;
 
   background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+
+  width: 4px;
+  height: 24px;
+  content: '';
 }
 
 /* ========================================
@@ -105,8 +106,8 @@
 
 .card__footer {
   margin-top: var(--spacing-6);
-  padding-top: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-6);
 }
 
 /* ========================================

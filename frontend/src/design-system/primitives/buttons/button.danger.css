@@ -8,21 +8,22 @@
  */
 
 .btn-danger {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  box-shadow: var(--shadow-btn-danger);
   border: 1px solid rgb(229 57 53); /* Solid red border - avatar style */
-
-  color: var(--color-white);
 
   /* ========== VISUAL ========== */
   background: linear-gradient(145deg, #f44336b0, #ff000052);
-  box-shadow: var(--shadow-btn-danger);
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-white);
 }
 
 /* Hover state - Brighten the gradient */
 .btn-danger:hover:not(:disabled) {
-  background: linear-gradient(145deg, #ff1100b0, #ff000052);
   box-shadow: var(--shadow-btn-danger-hover);
+  background: linear-gradient(145deg, #ff1100b0, #ff000052);
 }
 
 /* Focus state - Red focus ring */

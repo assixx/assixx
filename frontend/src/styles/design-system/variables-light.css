@@ -39,8 +39,9 @@
   --font-size-base: 16px;
   --font-size-sm: 14px;
   --font-size-xs: 12px;
-  --font-family-mono: "SF Mono", monaco, consolas, "Liberation Mono", "Courier New", monospace;
-  --font-family-sans: outfit, -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+  --font-family-mono: 'SF Mono', monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-family-sans:
+    outfit, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
   --spacing-32: 128px;
   --spacing-28: 112px;
   --spacing-24: 96px;

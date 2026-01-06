@@ -1,98 +1,178 @@
-/**
- * Type declarations for @event-calendar/core v5
- * These packages don't include TypeScript definitions
- *
- * v5 API: createCalendar(target, plugins, options)
- * All plugins are included in @event-calendar/core
- *
- * @see https://github.com/vkurko/calendar
- */
-
+// Type declarations for @event-calendar/core v5
 declare module '@event-calendar/core' {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- External library without official types; callbacks accept various info objects
-  type EventCallback = ((info: any) => void) | undefined;
+  import type { SvelteComponent } from 'svelte';
+
+  // Calendar Svelte component
+  export const Calendar: typeof SvelteComponent<{
+    plugins: unknown[];
+    options: CalendarOptions;
+  }>;
+
+  export function createCalendar(
+    target: HTMLElement,
+    plugins: unknown[],
+    options: CalendarOptions,
+  ): CalendarInstance;
+
+  export const DayGrid: unknown;
+  export const TimeGrid: unknown;
+  export const List: unknown;
+  export const Interaction: unknown;
+  export const Resource: unknown;
+
+  export interface CalendarInstance {
+    destroy: () => void;
+    setOption: (name: string, value: unknown) => void;
+    getOption: (name: string) => unknown;
+    refetchEvents: () => void;
+    getEvents: () => CalendarEvent[];
+    getEventById: (id: string) => CalendarEvent | null;
+    addEvent: (event: EventInput) => CalendarEvent;
+    updateEvent: (event: EventInput) => void;
+    removeEventById: (id: string) => void;
+    getView: () => CalendarView;
+    next: () => void;
+    prev: () => void;
+    today: () => void;
+    unselect: () => void;
+  }
 
   export interface CalendarOptions {
     view?: string;
-    locale?: string | Record<string, unknown>;
-    firstDay?: number;
+    locale?: string;
     headerToolbar?: {
       start?: string;
       center?: string;
       end?: string;
     };
     buttonText?: Record<string, string>;
+    firstDay?: number;
     editable?: boolean;
     selectable?: boolean;
     selectMirror?: boolean;
     dayMaxEvents?: boolean | number;
     nowIndicator?: boolean;
     height?: string | number;
-    events?: unknown[];
-    eventSources?: { events: unknown }[];
-    eventClick?: EventCallback;
-    dateClick?: EventCallback;
-    select?: EventCallback;
-    eventMouseEnter?: EventCallback;
-    eventMouseLeave?: EventCallback;
-    eventDrop?: EventCallback;
-    eventResize?: EventCallback;
-    datesSet?: EventCallback;
+    events?: EventInput[] | EventSourceFunc;
+    eventSources?: EventSource[];
+    eventClick?: (info: EventClickInfo) => void;
+    dateClick?: (info: DateClickInfo) => void;
+    select?: (info: SelectInfo) => void;
+    eventMouseEnter?: (info: EventHoverInfo) => void;
+    eventMouseLeave?: (info: EventHoverInfo) => void;
+    eventDrop?: (info: EventDropInfo) => void;
+    eventResize?: (info: EventResizeInfo) => void;
+    datesSet?: (info: DatesSetInfo) => void;
     [key: string]: unknown;
   }
 
-  /**
-   * Calendar instance returned by createCalendar
-   */
-  export interface CalendarInstance {
-    setOption(name: string, value: unknown): void;
-    getOption(name: string): unknown;
-    refetchEvents(): void;
-    destroy(): void;
+  export interface EventInput {
+    id?: string;
+    title?: string;
+    start?: string | Date;
+    end?: string | Date;
+    allDay?: boolean;
+    color?: string;
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+    classNames?: string[];
+    editable?: boolean;
+    display?: string;
+    extendedProps?: Record<string, unknown>;
+    [key: string]: unknown;
   }
 
-  /**
-   * Plugin type (opaque, used in plugins array)
-   */
-  export type Plugin = unknown;
+  export interface CalendarEvent {
+    id: string;
+    title: string;
+    start: Date;
+    end: Date;
+    allDay: boolean;
+    color?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    classNames: string[];
+    extendedProps: Record<string, unknown>;
+  }
 
-  /**
-   * v5 API: Create calendar instance
-   * @param target - DOM element to mount calendar
-   * @param plugins - Array of plugins [DayGrid, TimeGrid, etc.]
-   * @param options - Calendar configuration options
-   */
-  export function createCalendar(target: HTMLElement, plugins: Plugin[], options: CalendarOptions): CalendarInstance;
+  export interface CalendarView {
+    type: string;
+    title: string;
+    activeStart: Date;
+    activeEnd: Date;
+    currentStart: Date;
+    currentEnd: Date;
+  }
 
-  /**
-   * Plugins - all included in @event-calendar/core v5
-   */
-  export const DayGrid: Plugin;
-  export const TimeGrid: Plugin;
-  export const List: Plugin;
-  export const Interaction: Plugin;
-}
+  export interface EventFetchInfo {
+    start: Date;
+    startStr: string;
+    end: Date;
+    endStr: string;
+    timeZone?: string;
+  }
 
-/**
- * Legacy module declarations (for backwards compatibility)
- * These separate packages are no longer needed in v5 but kept for migration
- */
-declare module '@event-calendar/day-grid' {
-  const DayGrid: unknown;
-  export default DayGrid;
-}
+  export type EventSourceFunc = (
+    info: EventFetchInfo,
+    successCallback: (events: EventInput[]) => void,
+    failureCallback: (error: Error) => void,
+  ) => void;
 
-declare module '@event-calendar/time-grid' {
-  const TimeGrid: unknown;
-  export default TimeGrid;
-}
+  export interface EventSource {
+    events: EventSourceFunc | EventInput[];
+    [key: string]: unknown;
+  }
 
-declare module '@event-calendar/list' {
-  const List: unknown;
-  export default List;
-}
+  export interface EventClickInfo {
+    el: HTMLElement;
+    event: CalendarEvent;
+    jsEvent: MouseEvent;
+    view: CalendarView;
+  }
 
-declare module '@event-calendar/interaction' {
-  const Interaction: unknown;
-  export default Interaction;
+  export interface DateClickInfo {
+    date: Date;
+    dateStr: string;
+    allDay: boolean;
+    dayEl: HTMLElement;
+    jsEvent: MouseEvent;
+    view: CalendarView;
+  }
+
+  export interface SelectInfo {
+    start: Date;
+    startStr: string;
+    end: Date;
+    endStr: string;
+    allDay: boolean;
+    view: CalendarView;
+  }
+
+  export interface EventHoverInfo {
+    el: HTMLElement;
+    event: CalendarEvent;
+    jsEvent: MouseEvent;
+    view: CalendarView;
+  }
+
+  export interface EventDropInfo {
+    event: CalendarEvent;
+    oldEvent: CalendarEvent;
+    delta: { days: number; milliseconds: number };
+    revert: () => void;
+  }
+
+  export interface EventResizeInfo {
+    event: CalendarEvent;
+    oldEvent: CalendarEvent;
+    endDelta: { days: number; milliseconds: number };
+    revert: () => void;
+  }
+
+  export interface DatesSetInfo {
+    start: Date;
+    end: Date;
+    view: CalendarView;
+  }
 }

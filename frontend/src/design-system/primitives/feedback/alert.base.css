@@ -10,33 +10,33 @@
 /* ========== BASE STRUCTURE ========== */
 
 .alert {
+  display: flex;
+
   /* Layout */
   position: relative;
-
-  display: flex;
-  gap: var(--spacing-3);
   align-items: flex-start;
-
-  /* Size */
-  padding: var(--spacing-4) var(--spacing-5);
-
-  /* Appearance */
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  /* Typography */
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-text-primary);
-
-  /* Glassmorphism base */
-  background: rgb(255 255 255 / 5%);
+  gap: var(--spacing-3);
   backdrop-filter: blur(10px);
 
   /* Transition */
   transition:
     opacity var(--duration-normal) var(--ease-standard),
     transform var(--duration-normal) var(--ease-standard);
+
+  /* Appearance */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  /* Glassmorphism base */
+  background: rgb(255 255 255 / 5%);
+
+  /* Size */
+  padding: var(--spacing-4) var(--spacing-5);
+  color: var(--color-text-primary);
+
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* ========== ICON ========== */
@@ -45,18 +45,18 @@
   /* Layout */
   display: flex;
   flex-shrink: 0;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
   /* Size */
   width: 20px;
   height: 20px;
 
-  /* Typography */
-  font-size: 16px;
-
   /* Inherit color from variant */
   color: currentcolor;
+
+  /* Typography */
+  font-size: 16px;
 }
 
 /* ========== CONTENT ========== */
@@ -68,43 +68,43 @@
 
 .alert__title {
   margin: 0 0 var(--spacing-1);
-  font-size: 14px;
-  font-weight: 600;
   color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .alert__message {
   margin: 0;
-  font-size: 13px;
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 /* ========== CLOSE BUTTON ========== */
 
 .alert__close {
-  /* Reset button styles */
-  cursor: pointer;
-
   /* Layout */
   display: flex;
   flex-shrink: 0;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+
+  /* Transition */
+  transition: color var(--duration-fast) var(--ease-standard);
+
+  /* Reset button styles */
+  cursor: pointer;
+  border: none;
+
+  background: transparent;
+  padding: 0;
 
   /* Size */
   width: 20px;
   height: 20px;
-  padding: 0;
-  border: none;
+  color: var(--color-text-secondary);
 
   /* Appearance */
   font-size: 14px;
-  color: var(--color-text-secondary);
-
-  background: transparent;
-
-  /* Transition */
-  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 .alert__close:hover {
@@ -112,9 +112,9 @@
 }
 
 .alert__close:focus-visible {
-  border-radius: 4px;
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ========== ACTIONS ========== */

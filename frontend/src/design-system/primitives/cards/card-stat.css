@@ -9,17 +9,17 @@
 
 /* Stat Card */
 .card-stat {
-  padding: var(--spacing-6); /* 24px */
+  backdrop-filter: blur(20px) saturate(180%);
+
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl); /* 12px - Same as card-accent for consistency */
 
-  text-align: center;
-
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-md);
+  padding: var(--spacing-6); /* 24px */
 
-  transition: all 0.2s ease;
+  text-align: center;
 }
 
 .card-stat:hover {
@@ -29,22 +29,22 @@
 /* Stat Value (Big Number) */
 .card-stat__value {
   margin-bottom: var(--spacing-1);
-  font-size: 1.5rem; /* 24px - Better for text and numbers */
-  font-weight: 700;
   color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.5rem; /* 24px - Better for text and numbers */
 }
 
 /* Stat Label */
 .card-stat__label {
-  font-size: 0.875rem; /* 14px */
   color: var(--color-text-secondary);
+  font-size: 0.875rem; /* 14px */
 }
 
 /* With Icon */
 .card-stat__icon {
   margin-bottom: var(--spacing-2);
-  font-size: 2rem; /* 40px */
   color: var(--color-icon-primary); /* #a9d9ff - Consistent light blue for all icons */
+  font-size: 2rem; /* 40px */
 }
 
 /* Color Variants - Only for values, icons stay consistent */

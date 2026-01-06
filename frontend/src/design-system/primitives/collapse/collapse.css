@@ -33,23 +33,22 @@
 /* ========== COLLAPSE TRIGGER (Button) ========== */
 
 .collapse__trigger {
-  cursor: pointer;
-
   display: inline-flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
-  padding: 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
   border: none;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-primary);
-  text-align: left;
 
   background: transparent;
 
-  transition: all 0.2s ease;
+  padding: 0;
+  color: var(--color-primary);
+  font-weight: 500;
+
+  font-size: 14px;
+  text-align: left;
 }
 
 .collapse__trigger:hover {
@@ -63,33 +62,33 @@
 
 /* Trigger icon */
 .collapse__icon {
-  font-size: 12px;
   transition: transform 0.3s ease;
+  font-size: 12px;
 }
 
 /* Active state */
-.collapse__trigger[aria-expanded="true"] .collapse__icon {
+.collapse__trigger[aria-expanded='true'] .collapse__icon {
   transform: rotate(180deg);
 }
 
 /* ========== COLLAPSE CONTENT ========== */
 
 .collapse__content {
-  overflow: hidden;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.3s ease;
+  overflow: hidden;
 }
 
 .collapse__body {
   overflow: hidden;
-  line-height: 1.6;
   color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 /* Active/Open state */
 .collapse__content.show,
-.collapse__content[aria-hidden="false"] {
+.collapse__content[aria-hidden='false'] {
   grid-template-rows: 1fr;
 }
 
@@ -97,12 +96,12 @@
 
 /* Card variant - with border and padding */
 .collapse--card {
-  padding: var(--spacing-4);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
+  padding: var(--spacing-4);
 }
 
 .collapse--card:hover {
@@ -116,8 +115,8 @@
 
 /* Bordered variant */
 .collapse--bordered {
-  padding-bottom: var(--spacing-3);
   border-bottom: 1px solid var(--glass-border);
+  padding-bottom: var(--spacing-3);
 }
 
 .collapse--bordered .collapse__body {
@@ -126,9 +125,9 @@
 
 /* Filled variant */
 .collapse--filled {
-  padding: var(--spacing-3) var(--spacing-4);
   border-radius: var(--radius-md);
   background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-3) var(--spacing-4);
 }
 
 .collapse--filled .collapse__body {
@@ -167,40 +166,39 @@
 
 .collapse__trigger-icon {
   display: inline-flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 }
 
 .collapse__trigger-icon i:first-child {
-  font-size: 16px;
   color: var(--color-primary);
+  font-size: 16px;
 }
 
 /* ========== DISABLED STATE ========== */
 
 .collapse--disabled,
 .collapse__trigger:disabled {
-  pointer-events: none;
   opacity: 50%;
+  pointer-events: none;
 }
 
 /* ========== LOADING STATE ========== */
 
 .collapse--loading .collapse__body {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   padding: var(--spacing-4);
 }
 
 .collapse__spinner {
-  width: 24px;
-  height: 24px;
+  animation: spin 0.8s linear infinite;
   border: 3px solid rgb(255 255 255 / 20%);
   border-top-color: var(--color-primary);
   border-radius: 50%;
-
-  animation: spin 0.8s linear infinite;
+  width: 24px;
+  height: 24px;
 }
 
 @keyframes spin {

@@ -10,20 +10,19 @@ body:not(.loaded) * {
  * USED IN: Recent employees, documents, departments, teams lists
  * LOCATION: Inside card-accent__content containers with space-y-2 */
 .compact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: all 0.2s ease;
   cursor: default;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
   margin-bottom: 6px;
-  padding: 3px 12px;
   border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 8px;
 
   background: rgb(255 255 255 / 2%);
-
-  transition: all 0.2s ease;
+  padding: 3px 12px;
 }
 
 /* Remove bottom margin from last item to prevent extra spacing
@@ -44,14 +43,14 @@ body:not(.loaded) * {
  * WHY: Created by ui.ts createElement('span', { className: 'compact-item-name' })
  * Truncates long names with ellipsis */
 .compact-item-name {
-  overflow: hidden;
   flex: 1;
 
   margin-right: 12px;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 500;
 
   font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -73,14 +72,13 @@ body:not(.loaded) * {
  * WHY: Display calendar events in admin dashboard with same styling as main calendar
  * LOCATION: Inside calendar-events-list container */
 .event-item {
-  cursor: pointer;
-
   display: flex;
 
-  padding: 10px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
   border-bottom: 1px solid var(--border-color);
 
-  transition: background-color 0.2s ease;
+  padding: 10px;
 }
 
 .event-item:last-child {
@@ -100,30 +98,30 @@ body:not(.loaded) * {
   justify-content: center;
 
   margin-right: 15px;
-  padding: 10px;
   border-radius: var(--radius-xl);
 
-  text-align: center;
-
   background-color: var(--background-dark);
+  padding: 10px;
+
+  text-align: center;
 }
 
 .event-day {
-  font-size: 1.5rem;
-  font-weight: 700;
   color: var(--primary);
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 
 .event-month {
-  font-size: 0.9rem;
   color: var(--text-secondary);
+  font-size: 0.9rem;
   text-transform: uppercase;
 }
 
 .event-time {
   margin-top: 4px;
-  font-size: 0.75rem;
   color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 /* Event details section - Title, location, level badge */
@@ -136,15 +134,15 @@ body:not(.loaded) * {
 
 .event-title {
   margin-bottom: 2px;
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .event-location {
   margin-top: 2px;
-  font-size: 0.85rem;
   color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .event-location i {
@@ -157,11 +155,11 @@ body:not(.loaded) * {
   display: inline-block;
 
   margin-top: 5px;
-  padding: 2px 8px;
   border-radius: var(--radius-xl);
+  padding: 2px 8px;
+  color: #fff;
 
   font-size: 0.7rem;
-  color: #fff;
 }
 
 .event-level-company {

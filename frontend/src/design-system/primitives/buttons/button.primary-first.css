@@ -12,17 +12,18 @@
  */
 
 .btn-primary-first {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  box-shadow: var(--shadow-btn-primary);
 
   /* No border - shadow is the visual boundary */
   border: none;
 
-  color: var(--color-white);
-
   /* ========== VISUAL ========== */
   background: none !important; /* CRITICAL: No background! */
-  box-shadow: var(--shadow-btn-primary);
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-white);
 }
 
 /* Hover state - Same as primary but NO background */

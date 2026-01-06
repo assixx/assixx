@@ -1,18 +1,10 @@
-# Frontend Rename Migration Plan (REVISED v2.0)
+# Frontend Rename Migration Plan (REVISED v3.0)
 
 > **Date**: 2026-01-06
 > **Branch**: feature/nestjs-migration
 > **Author**: Claude Code / System Engineer
-> **Status**: PLAN REVISED - CRITICAL ISSUES FOUND
-> **Revision**: 2.0 (Complete rewrite after double-check)
-
----
-
-## CRITICAL WARNING
-
-**THE ORIGINAL PLAN WAS INCOMPLETE!**
-
-After thorough double-checking, critical issues were found that MUST be addressed before migration.
+> **Status**: COMPLETE PLAN WITH PRODUCTION DOCKER SETUP
+> **Revision**: 3.0 (Added Option 1: Separate Container Architecture)
 
 ---
 
@@ -22,55 +14,47 @@ This document provides a **zero-error migration plan** to:
 1. Archive the legacy `frontend/` directory to `frontend-legacy/`
 2. Create a ZIP backup of the archived folder
 3. Rename `frontend-svelte/` to `frontend/`
-4. Update ALL configuration references (MORE than originally identified!)
-5. Address the **CRITICAL backend incompatibility** with SvelteKit
+4. Update ALL configuration references
+5. **Setup Production Docker Architecture (Option 1 - Best Practice)**
 
 ---
 
-## CRITICAL ARCHITECTURAL ISSUE
+## Architecture Overview
 
-### The Problem
+### Target Architecture (Option 1 - Separate Containers)
 
-The backend (`backend/src/nest/main.ts`) is hardcoded to serve the **legacy Vite frontend**:
-
-```typescript
-// backend/src/nest/main.ts - Lines 84-98
-const frontendPath = path.join(projectRoot, 'frontend');
-const distPath = path.join(frontendPath, 'dist');      // SvelteKit uses 'build/'!
-
-return {
-  distPath,
-  publicPath: path.join(frontendPath, 'public'),      // SvelteKit uses 'static/'!
-  srcPath: path.join(frontendPath, 'src'),
-  pagesPath: path.join(distPath, 'pages'),            // SvelteKit has NO static HTML pages!
-};
+```
+                        ┌─────────────────────────────────────┐
+                        │           Nginx :80                 │
+                        │        (Reverse Proxy)              │
+                        └──────────────┬──────────────────────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+         ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+         │    SvelteKit     │ │     Backend      │ │   PostgreSQL     │
+         │  (Frontend)      │ │   (NestJS API)   │ │                  │
+         │     :3001        │ │     :3000        │ │     :5432        │
+         └──────────────────┘ └──────────────────┘ └──────────────────┘
+                    │                  │                  │
+                    └──────────────────┴──────────────────┘
+                                       │
+                              ┌────────┴────────┐
+                              │     Redis       │
+                              │     :6379       │
+                              └─────────────────┘
 ```
 
-### Structure Comparison
+### Routing (via Nginx)
 
-| Component | Legacy Frontend (Vite) | SvelteKit Frontend |
-|-----------|------------------------|-------------------|
-| Build Output | `dist/` | `build/` |
-| Static Assets | `public/` | `static/` |
-| HTML Pages | `dist/pages/*.html` (static) | **SSR - No static HTML!** |
-| Adapter | N/A | `@sveltejs/adapter-node` |
-| Server Type | Static files | Node.js server |
-
-### Consequence
-
-**The backend CANNOT serve SvelteKit directly!** SvelteKit produces a Node.js application, NOT static HTML files.
-
-### Required Decision
-
-You must choose ONE of these options BEFORE proceeding:
-
-| Option | Description | Effort | Recommended |
-|--------|-------------|--------|-------------|
-| **A** | Run SvelteKit as separate container/process | Medium | **YES - Dev Mode** |
-| **B** | Update backend to proxy to SvelteKit | High | For Production |
-| **C** | Switch to `@sveltejs/adapter-static` | High | NO - Loses SSR |
-
-**Recommended Path**: Continue with **Option A** for development. Address backend integration in a separate task after directory rename.
+| Path | Destination | Description |
+|------|-------------|-------------|
+| `/api/*` | backend:3000 | All API calls |
+| `/uploads/*` | backend:3000 | Uploaded files |
+| `/health` | backend:3000 | Backend health check |
+| `/chat-ws` | backend:3000 | WebSocket for chat |
+| `/*` | frontend:3001 | All other requests (SvelteKit SSR) |
 
 ---
 
@@ -83,162 +67,11 @@ Before executing ANY commands, verify:
 - [ ] Git status is clean (all changes committed)
 - [ ] pnpm-lock.yaml has no pending changes
 - [ ] Database backup exists (precautionary)
-- [ ] **DECISION MADE**: Which architectural option (A/B/C)?
+- [ ] Read and understood complete plan
 
 ---
 
-## COMPLETE File Reference Analysis
-
-### Files WITH "frontend-svelte" References (MUST UPDATE)
-
-| Priority | File | Line(s) | Current Value | New Value |
-|----------|------|---------|---------------|-----------|
-| HIGH | `pnpm-workspace.yaml` | 3 | `- "frontend-svelte"` | REMOVE |
-| HIGH | `package.json` (root) | 41 | `"predev:svelte": "./scripts/free-port.sh 5174"` | Change to 5173 |
-| HIGH | `package.json` (root) | 42 | `"dev:svelte": "cd frontend-svelte && pnpm run dev"` | Change to `frontend` |
-| HIGH | `eslint.config.js` | 70-71 | `'frontend-svelte/**'`, `'frontend-svelte/.svelte-kit/**'` | `'frontend-legacy/**'` |
-| HIGH | `.gitignore` | 26-27 | `frontend-svelte/build/`, `frontend-svelte/.svelte-kit/` | `frontend/build/`, `frontend/.svelte-kit/` |
-| HIGH | `frontend-svelte/package.json` | 2 | `"name": "assixx-frontend-svelte"` | `"name": "assixx-frontend"` |
-| HIGH | `frontend-svelte/vite.config.ts` | 13, 14, 19 | `port: 5174` | `port: 5173` |
-| MEDIUM | `vitest.config.ts` | 17 | `port: 5174` | `port: 5173` (optional - Vitest UI) |
-| LOW | `frontend-svelte/src/lib/utils/avatar-helpers.ts` | 6 | Comment: `@see frontend-svelte/...` | Update comment |
-
-### Files WITH Port 5174 References (MUST UPDATE)
-
-| File | Line(s) | Description |
-|------|---------|-------------|
-| `package.json` (root) | 41 | `predev:svelte` script |
-| `frontend-svelte/vite.config.ts` | 13, 14, 19 | Dev server + HMR port |
-| `vitest.config.ts` | 17 | Vitest UI API port |
-
-### Files WITHOUT "frontend-svelte" BUT Need Attention
-
-| File | Status | Issue |
-|------|--------|-------|
-| `backend/src/nest/main.ts` | **CRITICAL** | Hardcoded paths for legacy frontend structure |
-| `docker/docker-compose.yml` | OK | Uses `../frontend:/app/frontend` - will work |
-| `docker/Dockerfile.dev` | OK | Copies `frontend/package.json` - will work |
-| `tsconfig.json` (root) | **VERIFY** | References `./frontend` - needs verification with SvelteKit |
-
-### Files AUTO-UPDATED (Do Not Edit Manually)
-
-| File | Action |
-|------|--------|
-| `pnpm-lock.yaml` | Will regenerate via `pnpm install` |
-
-### Documentation Files (Update Later - Non-Critical)
-
-These files contain historical references to `frontend-svelte/`:
-- `docs/SVELTEKIT-MIGRATION-PLAN.md` (50+ references)
-- `docs/ARCHITECTURE-DECISION-NO-TRPC.md`
-- `docs/SVELTEKIT-REFACTORING-CHECKLIST.md`
-- `frontend-svelte/docs/LEVEL3-REFACTOR-TRACKER.md`
-
-**Action**: Update these AFTER successful migration as a separate task.
-
----
-
-## Backend Incompatibility Details
-
-### Current Backend Static File Serving
-
-The backend serves these routes (from `main.ts`):
-
-```typescript
-// Line 115-158 - setupStaticAssets()
-// Main dist directory (Vite build output)
-await app.register(fastifyStatic, {
-  root: distPath,  // = frontend/dist/ - SvelteKit has frontend/build/!
-  prefix: '/',
-});
-
-// Source assets (non-bundled)
-await app.register(fastifyStatic, {
-  root: path.join(srcPath, 'assets'),  // = frontend/src/assets/
-  prefix: '/assets/',
-});
-
-// Public folder
-await app.register(fastifyStatic, {
-  root: publicPath,  // = frontend/public/ - SvelteKit has frontend/static/!
-  prefix: '/public/',
-});
-```
-
-### Current Backend HTML Routes
-
-```typescript
-// Line 162-214 - setupHtmlRoutes()
-// Serves static HTML files from frontend/dist/pages/
-fastify.get('/', async (request, reply) => {
-  const indexPath = path.join(pagesPath, 'index.html');  // DOESN'T EXIST IN SVELTEKIT!
-  // ...
-});
-```
-
-### Impact After Migration
-
-| Route | Legacy (Works) | SvelteKit (After Migration) |
-|-------|----------------|----------------------------|
-| `/` | Serves `dist/pages/index.html` | **404 - File doesn't exist** |
-| `/dashboard` | Serves `dist/pages/dashboard.html` | **404 - File doesn't exist** |
-| `/api/v2/*` | Works | Works (no change) |
-| `/uploads/*` | Works | Works (no change) |
-
-### Solution
-
-**For Development (Immediate)**:
-- Run SvelteKit on port 5173 as separate process
-- Backend serves only API (`/api/v2/*`) and uploads
-- Access app via `http://localhost:5173` (SvelteKit)
-- SvelteKit proxies API calls to backend (already configured)
-
-**For Production (Future Task)**:
-- Add SvelteKit container to docker-compose
-- Use nginx as reverse proxy
-- OR update backend to proxy to SvelteKit
-
----
-
-## Port Configuration
-
-### Current Ports
-
-| Service | Port | Server |
-|---------|------|--------|
-| Legacy Frontend (Vite) | 5173 | `vite dev` |
-| SvelteKit Frontend | 5174 | `vite dev` (SvelteKit) |
-| NestJS Backend | 3000 | `node dist/nest/main.js` |
-
-### After Migration
-
-| Service | Port | Server |
-|---------|------|--------|
-| Frontend (SvelteKit) | 5173 | Changed from 5174 |
-| Legacy Frontend | ARCHIVED | No longer running |
-| NestJS Backend | 3000 | Unchanged (API only in dev) |
-
-### SvelteKit Proxy (Already Configured)
-
-```typescript
-// frontend-svelte/vite.config.ts - Lines 25-38
-proxy: {
-  '/api': {
-    target: 'http://localhost:3000',
-    changeOrigin: true,
-  },
-  '/uploads': {
-    target: 'http://localhost:3000',
-    changeOrigin: true,
-  },
-}
-```
-
-This means in dev mode, SvelteKit proxies API calls to backend automatically!
-
----
-
-## Step-by-Step Migration Commands
+## PART 1: Directory Rename (Development)
 
 ### Phase 1: Preparation
 
@@ -301,364 +134,642 @@ ls -la frontend/
 
 ### Phase 4: Update Configuration Files
 
-#### 4.1 Update pnpm-workspace.yaml
+#### 4.1 pnpm-workspace.yaml
 
 **File**: `/home/scs/projects/Assixx/pnpm-workspace.yaml`
 
-**FROM:**
 ```yaml
-packages:
-  - "frontend"
-  - "frontend-svelte"
-  - "backend"
-```
-
-**TO:**
-```yaml
+# REMOVE the "frontend-svelte" line
 packages:
   - "frontend"
   - "backend"
+ignoredBuiltDependencies:
+  - unrs-resolver
+onlyBuiltDependencies:
+  - "@swc/core"
+  - "esbuild"
 ```
 
-#### 4.2 Update package.json (root) - TWO CHANGES
+#### 4.2 package.json (root) - Lines 41-42
 
 **File**: `/home/scs/projects/Assixx/package.json`
 
-**Change 1 - Line 41:**
 ```json
-// FROM:
-"predev:svelte": "./scripts/free-port.sh 5174",
-
-// TO:
 "predev:svelte": "./scripts/free-port.sh 5173",
-```
-
-**Change 2 - Line 42:**
-```json
-// FROM:
-"dev:svelte": "cd frontend-svelte && pnpm run dev",
-
-// TO:
 "dev:svelte": "cd frontend && pnpm run dev",
 ```
 
-#### 4.3 Update eslint.config.js
+#### 4.3 eslint.config.js - Lines 70-71
 
 **File**: `/home/scs/projects/Assixx/eslint.config.js`
 
-**FROM (lines 70-71):**
 ```javascript
-'frontend-svelte/**',
-'frontend-svelte/.svelte-kit/**',
-```
-
-**TO:**
-```javascript
+// Replace frontend-svelte with frontend-legacy
 'frontend-legacy/**',
 ```
 
-#### 4.4 Update .gitignore
+#### 4.4 .gitignore - Lines 26-27
 
 **File**: `/home/scs/projects/Assixx/.gitignore`
 
-**FROM (lines 26-27):**
-```
-frontend-svelte/build/
-frontend-svelte/.svelte-kit/
-```
-
-**TO:**
 ```
 frontend/build/
 frontend/.svelte-kit/
 frontend-legacy/
 ```
 
-#### 4.5 Update frontend/package.json (was frontend-svelte/package.json)
+#### 4.5 frontend/package.json - Line 2
 
 **File**: `/home/scs/projects/Assixx/frontend/package.json`
 
-**FROM (line 2):**
-```json
-"name": "assixx-frontend-svelte",
-```
-
-**TO:**
 ```json
 "name": "assixx-frontend",
 ```
 
-#### 4.6 Update frontend/vite.config.ts - THREE CHANGES
+#### 4.6 frontend/vite.config.ts - Lines 13, 14, 19
 
 **File**: `/home/scs/projects/Assixx/frontend/vite.config.ts`
 
-**Change 1 - Line 13:**
 ```typescript
-// FROM:
-port: 5174,
+server: {
+  port: 5173,
+  strictPort: true, // Fail if port 5173 is unavailable
 
-// TO:
-port: 5173,
+  hmr: {
+    overlay: true,
+    port: 5173,
+    // ...
+  },
+}
 ```
 
-**Change 2 - Line 14:**
-```typescript
-// FROM:
-strictPort: true, // Fail if port 5174 is unavailable (5173 = legacy Vite)
-
-// TO:
-strictPort: true, // Fail if port 5173 is unavailable
-```
-
-**Change 3 - Line 19:**
-```typescript
-// FROM:
-port: 5174,
-
-// TO:
-port: 5173,
-```
-
-#### 4.7 Update vitest.config.ts (Optional but Recommended)
+#### 4.7 vitest.config.ts - Line 17 (Recommended)
 
 **File**: `/home/scs/projects/Assixx/vitest.config.ts`
 
-**FROM (line 17):**
 ```typescript
-port: 5174,
+api: {
+  port: 5175, // Avoid conflict with dev server
+},
 ```
 
-**TO:**
-```typescript
-port: 5175, // Avoid conflict with dev server
-```
-
-#### 4.8 Update frontend/src/lib/utils/avatar-helpers.ts (Optional)
-
-**File**: `/home/scs/projects/Assixx/frontend/src/lib/utils/avatar-helpers.ts`
-
-**FROM (line 6):**
-```typescript
-* @see frontend-svelte/src/design-system/primitives/avatar/avatar.css
-```
-
-**TO:**
-```typescript
-* @see frontend/src/design-system/primitives/avatar/avatar.css
-```
-
-### Phase 5: Verify tsconfig References
-
-The root `tsconfig.json` references `./frontend`:
-
-```json
-"references": [{ "path": "./backend" }, { "path": "./frontend" }],
-```
-
-**Issue**: The SvelteKit `frontend/tsconfig.json` extends `./.svelte-kit/tsconfig.json`.
-
-**Action**: After rename, verify:
-```bash
-cd /home/scs/projects/Assixx/frontend
-cat tsconfig.json
-# Should extend "./.svelte-kit/tsconfig.json"
-
-# Regenerate SvelteKit config
-pnpm exec svelte-kit sync
-```
-
-### Phase 6: Regenerate Dependencies
+### Phase 5: Regenerate Dependencies
 
 ```bash
 cd /home/scs/projects/Assixx
 
-# 6.1 Remove old node_modules (clean slate)
+# 5.1 Remove old node_modules
 rm -rf node_modules
 rm -rf frontend/node_modules
 rm -rf frontend-legacy/node_modules
 rm -rf backend/node_modules
 
-# 6.2 Remove pnpm-lock.yaml (will regenerate)
+# 5.2 Remove pnpm-lock.yaml
 rm pnpm-lock.yaml
 
-# 6.3 Reinstall all dependencies
+# 5.3 Reinstall all dependencies
 pnpm install
 
-# 6.4 Verify workspace packages
+# 5.4 Verify workspace packages
 pnpm list --depth 0
-# Should show: assixx, assixx-frontend, assixx-backend
 ```
 
-### Phase 7: Verification
+### Phase 6: Development Verification
 
 ```bash
 cd /home/scs/projects/Assixx
 
-# 7.1 Verify ESLint works
+# 6.1 Verify ESLint
 pnpm run lint
 
-# 7.2 Verify SvelteKit sync
+# 6.2 Verify SvelteKit
 cd frontend
 pnpm exec svelte-kit sync
-
-# 7.3 Verify SvelteKit check
 pnpm run check
-
-# 7.4 Verify frontend build
 pnpm run build
 
-# 7.5 Start dev server
+# 6.3 Test dev server
 pnpm run dev
-# Should start on http://localhost:5173
-# Open browser and verify pages load
-```
-
-### Phase 8: Docker Verification
-
-**Note**: Backend will NOT serve frontend pages after migration! Only API works.
-
-```bash
-cd /home/scs/projects/Assixx/docker
-
-# 8.1 Rebuild and start Docker containers
-docker-compose up -d --build
-
-# 8.2 Check container status
-docker-compose ps
-
-# 8.3 Verify backend health (API only)
-curl -s http://localhost:3000/health | jq '.'
-
-# 8.4 Verify API works
-curl -s http://localhost:3000/api/v2/auth/check
-
-# 8.5 Check Docker logs
-docker-compose logs backend --tail=50
-
-# EXPECTED BEHAVIOR:
-# - http://localhost:3000/ → 404 (no static HTML)
-# - http://localhost:3000/api/v2/* → Works
-# - http://localhost:5173/ → Works (run SvelteKit separately)
+# → http://localhost:5173
 ```
 
 ---
 
-## Development Workflow After Migration
+## PART 2: Production Docker Setup (Option 1)
 
-### Running in Development
+### Phase 7: Create Dockerfile.frontend
+
+**NEW FILE**: `/home/scs/projects/Assixx/docker/Dockerfile.frontend`
+
+```dockerfile
+# =============================================================================
+# Assixx SvelteKit Frontend - Production Dockerfile
+# =============================================================================
+# Multi-stage build for optimal image size
+# Uses @sveltejs/adapter-node for SSR
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Build
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm@10.27.0
+
+WORKDIR /app
+
+# Copy package files first (better layer caching)
+COPY frontend/package.json ./
+COPY pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY frontend/ ./
+
+# Build SvelteKit application
+RUN pnpm run build
+
+# -----------------------------------------------------------------------------
+# Stage 2: Production
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS production
+
+# Security: Run as non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S sveltekit -u 1001
+
+WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder --chown=sveltekit:nodejs /app/build ./build
+COPY --from=builder --chown=sveltekit:nodejs /app/package.json ./
+
+# Install production dependencies only
+RUN npm install -g pnpm@10.27.0 && \
+    pnpm install --prod --frozen-lockfile
+
+# Switch to non-root user
+USER sveltekit
+
+# SvelteKit adapter-node default port
+EXPOSE 3001
+
+# Environment variables for SvelteKit
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV ORIGIN=http://localhost
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+# Start SvelteKit server
+CMD ["node", "build"]
+```
+
+### Phase 8: Create Nginx Configuration
+
+**NEW FILE**: `/home/scs/projects/Assixx/docker/nginx/nginx.conf`
+
+```nginx
+# =============================================================================
+# Assixx Nginx Reverse Proxy Configuration
+# =============================================================================
+# Routes traffic between SvelteKit frontend and NestJS backend
+# =============================================================================
+
+upstream frontend {
+    server frontend:3001;
+    keepalive 32;
+}
+
+upstream backend {
+    server backend:3000;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name localhost;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml;
+
+    # Client body size (for file uploads)
+    client_max_body_size 100M;
+
+    # =========================================================================
+    # API Routes → Backend (NestJS)
+    # =========================================================================
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # =========================================================================
+    # Uploads → Backend
+    # =========================================================================
+    location /uploads/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Caching for static uploads
+        proxy_cache_valid 200 1d;
+        expires 1d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # =========================================================================
+    # Health Check → Backend
+    # =========================================================================
+    location /health {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    # =========================================================================
+    # WebSocket (Chat) → Backend
+    # =========================================================================
+    location /chat-ws {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket timeouts
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    # =========================================================================
+    # All Other Routes → SvelteKit Frontend
+    # =========================================================================
+    location / {
+        proxy_pass http://frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+### Phase 9: Update docker-compose.yml
+
+**FILE**: `/home/scs/projects/Assixx/docker/docker-compose.yml`
+
+**ADD these services** (after existing services):
+
+```yaml
+  # ===========================================================================
+  # SvelteKit Frontend (Production)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: assixx-frontend:prod
+    container_name: assixx-frontend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ORIGIN: ${ORIGIN:-http://localhost}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+      # API URL for server-side fetches
+      PUBLIC_API_URL: http://backend:3000
+    ports:
+      - "3001:3001"  # Direct access for debugging
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # Nginx Reverse Proxy
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: assixx-nginx
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 64M
+    ports:
+      - "80:80"
+      # - "443:443"  # Uncomment for HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+### Phase 10: Update Backend to Remove Static File Serving
+
+**FILE**: `/home/scs/projects/Assixx/backend/src/nest/main.ts`
+
+The backend no longer needs to serve frontend files. Update these functions:
+
+```typescript
+// REMOVE or COMMENT OUT these sections:
+
+// 1. Remove getProjectPaths() frontend paths (keep only uploads)
+function getProjectPaths(): ProjectPaths {
+  const projectRoot = path.resolve(process.cwd(), '..');
+  return {
+    projectRoot,
+    uploadsPath: path.join(projectRoot, 'uploads'),
+    // REMOVED: distPath, publicPath, srcPath, pagesPath, storybookPath
+  };
+}
+
+// 2. Simplify setupStaticAssets() - only serve uploads
+async function setupStaticAssets(app: NestFastifyApplication, paths: ProjectPaths): Promise<void> {
+  // Only uploads (user-generated content)
+  await app.register(fastifyStatic, {
+    root: paths.uploadsPath,
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
+}
+
+// 3. REMOVE setupHtmlRoutes() entirely
+// Frontend is now served by SvelteKit container
+
+// 4. Update bootstrap() to not call setupHtmlRoutes()
+```
+
+**Alternative (Minimal Change)**: Keep the static file serving but it will 404 gracefully since files don't exist.
+
+### Phase 11: Add SvelteKit Health Endpoint
+
+**NEW FILE**: `/home/scs/projects/Assixx/frontend/src/routes/health/+server.ts`
+
+```typescript
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+
+export const GET: RequestHandler = async () => {
+  return json({
+    status: 'ok',
+    service: 'sveltekit-frontend',
+    timestamp: new Date().toISOString(),
+  });
+};
+```
+
+### Phase 12: Create nginx Directory
 
 ```bash
-# Terminal 1: Start Docker (Backend + DB + Redis)
+mkdir -p /home/scs/projects/Assixx/docker/nginx
+```
+
+---
+
+## PART 3: Verification & Deployment
+
+### Phase 13: Build and Test Production
+
+```bash
+cd /home/scs/projects/Assixx/docker
+
+# 13.1 Build all images
+docker-compose build
+
+# 13.2 Start all services
+docker-compose up -d
+
+# 13.3 Check status
+docker-compose ps
+
+# 13.4 Check logs
+docker-compose logs -f
+
+# 13.5 Test endpoints
+curl -s http://localhost/health | jq '.'           # Backend health
+curl -s http://localhost/api/v2/auth/check         # API
+curl -s http://localhost                            # Frontend (via nginx)
+curl -s http://localhost:3001                       # Frontend (direct)
+curl -s http://localhost:3000/health | jq '.'       # Backend (direct)
+```
+
+### Expected Results
+
+| URL | Response |
+|-----|----------|
+| `http://localhost/` | SvelteKit Login Page |
+| `http://localhost/health` | `{"status":"ok","framework":"NestJS+Fastify"}` |
+| `http://localhost/api/v2/auth/check` | Auth response |
+| `http://localhost:3001/` | SvelteKit (direct) |
+| `http://localhost:3000/health` | Backend health (direct) |
+
+---
+
+## Development vs Production Workflow
+
+### Development (Local)
+
+```bash
+# Terminal 1: Docker (Backend + DB + Redis)
+cd /home/scs/projects/Assixx/docker
+docker-compose up -d postgres redis backend
+
+# Terminal 2: SvelteKit with HMR
+cd /home/scs/projects/Assixx
+pnpm run dev:svelte
+# → http://localhost:5173 (with hot reload)
+```
+
+### Production (Docker)
+
+```bash
+# Start everything
 cd /home/scs/projects/Assixx/docker
 docker-compose up -d
 
-# Terminal 2: Start SvelteKit Frontend
-cd /home/scs/projects/Assixx
-pnpm run dev:svelte
-# Opens http://localhost:5173
+# Access via Nginx
+# → http://localhost (or your domain)
 ```
 
-### Access Points
+### Production Build Command
 
-| URL | Service |
-|-----|---------|
-| `http://localhost:5173` | SvelteKit Frontend (development) |
-| `http://localhost:3000/api/v2/*` | NestJS Backend API |
-| `http://localhost:3000/health` | Backend health check |
-| `http://localhost:3000/uploads/*` | Uploaded files |
+```bash
+# Build frontend container
+docker-compose build frontend
+
+# Or rebuild all
+docker-compose build --no-cache
+```
+
+---
+
+## Files Summary
+
+### NEW Files to Create
+
+| # | File | Purpose |
+|---|------|---------|
+| 1 | `docker/Dockerfile.frontend` | SvelteKit production build |
+| 2 | `docker/nginx/nginx.conf` | Reverse proxy config |
+| 3 | `frontend/src/routes/health/+server.ts` | Health endpoint |
+
+### Files to Modify
+
+| # | File | Changes |
+|---|------|---------|
+| 1 | `pnpm-workspace.yaml` | Remove `frontend-svelte` |
+| 2 | `package.json` (root) | Update scripts |
+| 3 | `eslint.config.js` | Update ignores |
+| 4 | `.gitignore` | Update paths |
+| 5 | `frontend/package.json` | Rename package |
+| 6 | `frontend/vite.config.ts` | Change ports |
+| 7 | `vitest.config.ts` | Change port |
+| 8 | `docker/docker-compose.yml` | Add frontend + nginx services |
+| 9 | `backend/src/nest/main.ts` | Remove static file serving (optional) |
+
+### Directories to Create
+
+```bash
+mkdir -p /home/scs/projects/Assixx/docker/nginx
+```
 
 ---
 
 ## Rollback Plan
-
-If anything fails, execute these commands:
 
 ```bash
 # ROLLBACK - Execute only if migration fails!
 
 cd /home/scs/projects/Assixx
 
-# 1. Restore frontend directories
+# 1. Stop all containers
+cd docker && docker-compose down
+
+# 2. Restore frontend directories
+cd ..
 mv frontend frontend-broken
 mv frontend-legacy frontend
-# Optionally restore frontend-svelte from broken state
 mv frontend-broken frontend-svelte
 
-# 2. Git reset configuration changes
+# 3. Remove new Docker files
+rm -f docker/Dockerfile.frontend
+rm -rf docker/nginx
+
+# 4. Git reset configuration changes
 git checkout -- pnpm-workspace.yaml
 git checkout -- package.json
 git checkout -- eslint.config.js
 git checkout -- .gitignore
 git checkout -- vitest.config.ts
+git checkout -- docker/docker-compose.yml
 
-# 3. Remove broken state
+# 5. Reinstall dependencies
 rm -rf node_modules
-
-# 4. Reinstall dependencies
 pnpm install
 
-# 5. Verify rollback
+# 6. Verify rollback
 pnpm run lint
 cd frontend && pnpm run build
 ```
 
 ---
 
-## Post-Migration Tasks (Future Work)
+## Port Reference
 
-### Immediate (After Migration)
+### Development
 
-1. Test all 34 SvelteKit pages manually
-2. Verify API calls work through proxy
-3. Test file uploads
-4. Test WebSocket chat functionality
+| Service | Port | URL |
+|---------|------|-----|
+| SvelteKit (dev) | 5173 | `http://localhost:5173` |
+| Backend (Docker) | 3000 | `http://localhost:3000` |
+| PostgreSQL | 5432 | - |
+| Redis | 6379 | - |
+| Vitest UI | 5175 | `http://localhost:5175` |
 
-### Short-Term
+### Production
 
-1. **Update Documentation**: Replace all `frontend-svelte` references in docs
-2. **Backend Integration Decision**: Choose Option A, B, or C for production
-
-### Long-Term
-
-1. **Docker Production Setup**: Add SvelteKit container
-2. **CI/CD Pipeline**: Update build scripts
-3. **Remove frontend-legacy**: After 30 days of stable operation
-
----
-
-## Summary: Files to Edit
-
-### CRITICAL (6 files, 10 changes)
-
-| # | File | Changes |
-|---|------|---------|
-| 1 | `pnpm-workspace.yaml` | Remove `"frontend-svelte"` line |
-| 2 | `package.json` (root) | Line 41: 5174→5173, Line 42: frontend-svelte→frontend |
-| 3 | `eslint.config.js` | Lines 70-71: frontend-svelte→frontend-legacy |
-| 4 | `.gitignore` | Lines 26-27: frontend-svelte→frontend, add frontend-legacy |
-| 5 | `frontend/package.json` | Line 2: name change |
-| 6 | `frontend/vite.config.ts` | Lines 13, 14, 19: 5174→5173 |
-
-### RECOMMENDED (2 files, 2 changes)
-
-| # | File | Changes |
-|---|------|---------|
-| 7 | `vitest.config.ts` | Line 17: 5174→5175 |
-| 8 | `frontend/src/lib/utils/avatar-helpers.ts` | Line 6: comment update |
+| Service | Port | URL |
+|---------|------|-----|
+| Nginx | 80 | `http://localhost` |
+| SvelteKit | 3001 | `http://localhost:3001` (internal) |
+| Backend | 3000 | `http://localhost:3000` (internal) |
+| PostgreSQL | 5432 | - |
+| Redis | 6379 | - |
 
 ---
 
-## Approval Signature
+## Approval Checklist
 
-- [ ] **CRITICAL ISSUE ACKNOWLEDGED**: Backend incompatibility understood
-- [ ] **DECISION MADE**: Development workflow (Option A) accepted
-- [ ] **User Approval Required Before Execution**
-- [ ] All 10 file changes reviewed
+- [ ] **PART 1**: Directory rename plan understood
+- [ ] **PART 2**: Production Docker setup reviewed
+- [ ] **PART 3**: Verification steps clear
+- [ ] All 9 file modifications reviewed
+- [ ] All 3 new files reviewed
 - [ ] Backup strategy confirmed
 - [ ] Rollback plan understood
 
 ---
 
-**Document Version**: 2.0.0
+**Document Version**: 3.0.0
 **Last Updated**: 2026-01-06
-**Revision Reason**: Complete rewrite after double-check - found 4 missed files and critical backend incompatibility
+**Architecture**: Option 1 - Separate Containers (Best Practice)

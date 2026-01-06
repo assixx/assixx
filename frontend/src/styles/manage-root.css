@@ -12,6 +12,43 @@
  * - Search Input → search-input (Design System)
  * - Toggle Group → toggle-group (Design System)
  *
+ * Updated: 2025-12-30
+ * - Added search result item classes (replaced inline styles)
+ *
  * Status: 100% Design System compliant
  * Container now defined globally in tailwind/components/container.css
  */
+
+/* =============================================================================
+ * Search Result Items (replaces inline styles)
+ * ============================================================================= */
+
+.search-result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result-item__name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.search-result-item__email {
+  font-size: 0.813rem;
+  color: var(--color-text-secondary);
+}
+
+.search-result-item__meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 8px;
+}
+
+.search-result-item__more {
+  font-size: 0.813rem;
+  color: var(--color-primary);
+  text-align: center;
+  border-top: 1px solid rgb(255 255 255 / 5%);
+}

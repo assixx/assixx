@@ -85,10 +85,10 @@ export function getColorClass(username) {
  * @param {string} name - Full name
  * @param {string} username - Username for color assignment
  * @param {Object} options - Configuration options
- * @param {string} options.size - Size variant (xs, sm, md, lg, xl)
- * @param {string} options.status - Status indicator (online, offline, busy, away)
- * @param {string} options.shape - Shape variant (circle, square)
- * @param {string} options.imageUrl - Optional image URL
+ * @param {string} [options.size] - Size variant (xs, sm, md, lg, xl)
+ * @param {string|null} [options.status] - Status indicator (online, offline, busy, away)
+ * @param {string} [options.shape] - Shape variant (circle, square)
+ * @param {string|null} [options.imageUrl] - Optional image URL
  * @returns {HTMLElement} Avatar element
  */
 export function createAvatar(name, username, options = {}) {

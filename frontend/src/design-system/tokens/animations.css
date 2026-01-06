@@ -58,7 +58,8 @@
 
   /* Color changes (hover states) */
   --transition-colors:
-    color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);
 
   /* Shadow transitions (subtle depth changes) */

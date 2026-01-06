@@ -4,8 +4,8 @@
  * Barrel export for all navigation primitives
  */
 
-@import "./breadcrumb.css";
-@import "./pagination.css";
-@import "./tabs.css";
-@import "./stepper.css";
-@import "./accordion.css";
+@import './breadcrumb.css';
+@import './pagination.css';
+@import './tabs.css';
+@import './stepper.css';
+@import './accordion.css';

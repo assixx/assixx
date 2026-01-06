@@ -14,11 +14,11 @@
 /* ========================================
    TAILWIND v4 + DESIGN SYSTEM
    ======================================== */
-@import "./tailwind.css";
+@import './tailwind.css';
 
 /* Design System Variables - DARK THEME by default - SINGLE SOURCE OF TRUTH
    IMPORTANT: Must come AFTER Tailwind to override Tailwind's theme variables */
-@import "./design-system/variables-dark.css";
+@import './design-system/variables-dark.css';
 
 /* NOTE: Design System components are loaded via tailwind.css → design-system/index.css
    Previously imported directly here (card-base, card-stat, card-accent, card.css)
@@ -26,26 +26,26 @@
    Migrated: 2025-11-22 */
 
 /* Design System Modal Component */
-@import "../design-system/primitives/modals/modal.base.css";
+@import '../design-system/primitives/modals/modal.base.css';
 
 /* Design System Choice Cards Component */
-@import "../design-system/primitives/choice-cards/choice-card.base.css";
-@import "../design-system/primitives/choice-cards/choice-card.feature.css";
-@import "../design-system/primitives/choice-cards/choice-card.plan.css";
+@import '../design-system/primitives/choice-cards/choice-card.base.css';
+@import '../design-system/primitives/choice-cards/choice-card.feature.css';
+@import '../design-system/primitives/choice-cards/choice-card.plan.css';
 
 /* FontAwesome - loaded globally (91% of pages need it, browser caches it)
    Previously loaded individually in each HTML file which caused:
    - Forgotten imports (login.html bug)
    - Duplicate imports (some pages loaded it 2x)
    Now centralized here for consistency */
-@import "./lib/fontawesome.min.css";
+@import './lib/fontawesome.min.css';
 
 /* Theme and core styles */
 /* NOTE: dashboard-theme.css DELETED 2025-12-12 - All styles migrated to:
    - Tailwind native utilities (mt-*, mb-*, gap-*, flex, text-center)
    - Design System (card__header, badge--*, glass-card, data-table, ds-modal)
    - tailwind/components/container.css (.container) */
-@import "./style.css";
+@import './style.css';
 
 /* ========================================
    PAGE-SPECIFIC CSS REMOVED FROM GLOBAL
@@ -59,11 +59,11 @@
    ======================================== */
 
 /* Truly global components (used across multiple pages) */
-@import "./blackboard-widget.css"; /* Dashboard widgets */
-@import "./profile-picture.css"; /* User profile component */
-@import "./user-info-update.css"; /* User info modal */
+@import './blackboard-widget.css'; /* Dashboard widgets */
+@import './profile-picture.css'; /* User profile component */
+@import './user-info-update.css'; /* User info modal */
 
 /* Modal styles are imported via tailwind.css → design-system/index.css to avoid duplication */
 
 /* Container Padding Fix - WICHTIG: Am Ende laden */
-@import "./container-padding-fix.css";
+@import './container-padding-fix.css';
