@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteMap } from 'svelte/reactivity';
   import type { Message, ScheduledMessage } from './types';
   import { MESSAGES } from './constants';
   import {
@@ -36,6 +37,86 @@
   /* eslint-enable prefer-const */
 
   let containerRef: HTMLDivElement | null = $state(null);
+
+  // ==========================================================================
+  // PERFORMANCE: Pre-processed message data
+  // Computed once when messages change, not on every render
+  // ==========================================================================
+
+  interface ProcessedMessage extends Message {
+    /** Pre-formatted time string */
+    formattedTime: string;
+    /** Pre-computed linkified content (HTML) */
+    linkifiedContent: string;
+    /** Whether this message is from current user */
+    isOwn: boolean;
+    /** Whether to show date separator before this message */
+    showDateSeparator: boolean;
+    /** Pre-formatted date separator text */
+    dateSeparatorText: string;
+    /** Whether this message has attachments */
+    hasAttachments: boolean;
+  }
+
+  /**
+   * Pre-process messages for optimal rendering
+   * This runs once when messages array changes, not on every render cycle
+   */
+  const processedMessages = $derived.by<ProcessedMessage[]>(() => {
+    if (messages.length === 0) return [];
+
+    const startTime = performance.now();
+
+    const result = messages.map((message, index) => {
+      const prevMessage = messages[index - 1];
+      const showDateSeparator = shouldShowDateSeparator(prevMessage, message);
+
+      return {
+        ...message,
+        formattedTime: formatMessageTime(message.createdAt),
+        linkifiedContent: linkify(message.content),
+        isOwn: message.senderId === currentUserId,
+        showDateSeparator,
+        dateSeparatorText: showDateSeparator ? formatDateSeparator(message.createdAt) : '',
+        hasAttachments: Boolean(message.attachments && message.attachments.length > 0),
+      };
+    });
+
+    const duration = performance.now() - startTime;
+    if (duration > 10) {
+      console.log(
+        `[MessagesArea] Processed ${messages.length} messages in ${duration.toFixed(2)}ms`,
+      );
+    }
+
+    return result;
+  });
+
+  /**
+   * Messages with search highlighting applied
+   * Only recomputes when searchQuery changes
+   */
+  const searchHighlightedMessages = $derived.by<SvelteMap<number, string>>(() => {
+    if (!searchQuery.trim()) return new SvelteMap();
+
+    const startTime = performance.now();
+    const highlights = new SvelteMap<number, string>();
+
+    for (const msg of processedMessages) {
+      if (messageMatchesQuery(msg.content, searchQuery)) {
+        highlights.set(msg.id, highlightSearchInMessage(msg.content, searchQuery));
+      }
+    }
+
+    const duration = performance.now() - startTime;
+    if (duration > 5) {
+      console.log(
+        `[MessagesArea] Search highlighting took ${duration.toFixed(2)}ms for ${highlights.size} matches`,
+      );
+    }
+
+    return highlights;
+  });
 
   export function scrollToBottom(): void {
     if (containerRef) {
@@ -88,32 +169,29 @@
       </div>
     {/each}
 
-    <!-- Regular Messages -->
-    {#each messages as message, i (message.id)}
-      {@const prevMessage = messages[i - 1]}
-      {@const isOwn = message.senderId === currentUserId}
-
-      {#if shouldShowDateSeparator(prevMessage, message)}
+    <!-- Regular Messages (using pre-processed data for performance) -->
+    {#each processedMessages as message (message.id)}
+      {#if message.showDateSeparator}
         <div class="date-separator">
-          <span>{formatDateSeparator(message.createdAt)}</span>
+          <span>{message.dateSeparatorText}</span>
         </div>
       {/if}
 
-      <div class="message" class:own={isOwn} data-message-id={message.id}>
+      <div class="message" class:own={message.isOwn} data-message-id={message.id}>
         <div class="message-bubble">
           <div class="message-content">
             <!-- eslint-disable svelte/no-at-html-tags -- Content from API is trusted -->
             <p class="message-text">
-              {#if messageMatchesQuery(message.content, searchQuery)}
-                {@html highlightSearchInMessage(message.content, searchQuery)}
+              {#if searchHighlightedMessages.has(message.id)}
+                {@html searchHighlightedMessages.get(message.id)}
               {:else}
-                {@html linkify(message.content)}
+                {@html message.linkifiedContent}
               {/if}
             </p>
             <!-- eslint-enable svelte/no-at-html-tags -->
 
-            <!-- Attachments -->
-            {#if message.attachments && message.attachments.length > 0}
+            <!-- Attachments (only render block if hasAttachments) -->
+            {#if message.hasAttachments}
               {#each message.attachments as att (att.id)}
                 {#if att.mimeType.startsWith('image/')}
                   <div class="attachment image-attachment">
@@ -122,6 +200,7 @@
                         src={att.downloadUrl ??
                           `/api/v2/chat/attachments/${att.fileUuid}/download?inline=true`}
                         alt={att.fileName}
+                        loading="lazy"
                       />
                       <div class="attachment-overlay">
                         <i class="fas fa-search-plus"></i>
@@ -166,10 +245,10 @@
               </a>
             {/if}
 
-            <!-- Time + Read Indicator -->
+            <!-- Time + Read Indicator (using pre-formatted time) -->
             <div class="message-time">
-              {formatMessageTime(message.createdAt)}
-              {#if isOwn}
+              {message.formattedTime}
+              {#if message.isOwn}
                 <span class="read-indicator" class:read={message.isRead}>
                   {#if message.isRead}✓✓{:else}✓{/if}
                 </span>
@@ -193,6 +272,36 @@
 </div>
 
 <style>
+  /* ==========================================================================
+   * PERFORMANCE OPTIMIZATIONS
+   * - content-visibility: auto → skips rendering of off-screen messages
+   * - contain-intrinsic-size → provides estimated height for layout stability
+   * - contain: layout style paint → isolates repaints to individual messages
+   * ========================================================================== */
+
+  .messages-container {
+    /* Enable smooth scrolling with GPU acceleration */
+    will-change: scroll-position;
+    /* Contain layout calculations to this element */
+    contain: strict;
+  }
+
+  /* Individual message optimization */
+  .message {
+    /* Skip rendering of off-screen messages (native browser virtualization) */
+    content-visibility: auto;
+    /* Estimated height for messages - prevents layout shift */
+    contain-intrinsic-size: auto 60px;
+    /* Isolate repaints */
+    contain: layout style paint;
+  }
+
+  /* Date separators also need content-visibility */
+  .date-separator {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 32px;
+  }
+
   .loading-spinner {
     display: flex;
     align-items: center;

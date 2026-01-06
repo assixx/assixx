@@ -94,7 +94,27 @@
   let isLoadingMessages = $state(false);
   let messageInput = $state('');
   let showSearchBar = $state(false);
-  let searchQuery = $state('');
+
+  // ==========================================================================
+  // PERFORMANCE: Debounced search - prevents re-render on every keystroke
+  // ==========================================================================
+  let searchQuery = $state(''); // Raw input (bound to input field)
+  let debouncedSearchQuery = $state(''); // Actual query used for filtering
+  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Debounce search query changes (300ms delay)
+  $effect(() => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+
+    searchDebounceTimer = setTimeout(() => {
+      debouncedSearchQuery = searchQuery;
+    }, 300);
+
+    return () => {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    };
+  });
+
   let currentSearchIndex = $state(0);
 
   // User search
@@ -139,7 +159,8 @@
     getChatPartnerName(chatPartner, activeConversation?.name),
   );
   const chatPartnerStatus = $derived.by(() => (chatPartner?.status ?? 'offline') as UserStatus);
-  const filteredMessages = $derived.by(() => filterMessagesByQuery(messages, searchQuery));
+  // Use debounced query for filtering (prevents re-render on every keystroke)
+  const filteredMessages = $derived.by(() => filterMessagesByQuery(messages, debouncedSearchQuery));
   const searchResultCount = $derived(filteredMessages.length);
 
   // ==========================================================================
@@ -172,10 +193,34 @@
     handlers.disconnectWebSocket();
   });
 
+  // ==========================================================================
+  // PERFORMANCE: Smart scroll - only scroll on NEW messages, not isRead updates
+  // ==========================================================================
+  let previousMessageCount = $state(0);
+  let lastMessageId = $state<number | null>(null);
+
   $effect(() => {
-    if (messages.length > 0 && messagesAreaRef) {
-      setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
+    const currentCount = messages.length;
+    const currentLastId = messages[messages.length - 1]?.id ?? null;
+
+    // Only scroll if:
+    // 1. New message added (count increased AND last message ID changed)
+    // 2. Initial load (previousCount was 0)
+    const hasNewMessage =
+      currentCount > previousMessageCount ||
+      (currentCount > 0 && previousMessageCount === 0) ||
+      (currentLastId !== null && currentLastId !== lastMessageId);
+
+    if (hasNewMessage && messagesAreaRef) {
+      // Use requestAnimationFrame for smoother scroll
+      requestAnimationFrame(() => {
+        messagesAreaRef?.scrollToBottom();
+      });
     }
+
+    // Update tracking state (must be after the check)
+    previousMessageCount = currentCount;
+    lastMessageId = currentLastId;
   });
 
   // ==========================================================================
@@ -524,7 +569,7 @@
           {messages}
           {scheduledMessages}
           currentUserId={currentUser?.id ?? 0}
-          {searchQuery}
+          searchQuery={debouncedSearchQuery}
           {typingUsers}
           isLoading={isLoadingMessages}
           oncancelscheduled={cancelScheduled}

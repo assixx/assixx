@@ -9,12 +9,24 @@
  * - GET  /auth/verify   - Verify current token (authenticated)
  * - GET  /auth/me       - Get current user (authenticated)
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { AuthThrottle } from '../common/decorators/throttle.decorators.js';
+import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
@@ -117,6 +129,8 @@ export class AuthController {
    */
   @Post('login')
   @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 5 requests per 15 minutes - brute force protection
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
@@ -195,6 +209,8 @@ export class AuthController {
    */
   @Post('refresh')
   @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 5 requests per 15 minutes - prevent token refresh abuse
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() dto: RefreshDto,

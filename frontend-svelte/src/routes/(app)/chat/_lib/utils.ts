@@ -1,9 +1,61 @@
 // =============================================================================
 // CHAT PAGE - UTILITY FUNCTIONS (Pure Functions)
+// Performance optimized with caching and memoization
 // =============================================================================
 
 import type { Conversation, Message, ConversationParticipant, UserStatus } from './types';
 import { FILE_SIZE_UNITS, MIME_TYPE_ICONS, MESSAGES } from './constants';
+
+// =============================================================================
+// PERFORMANCE: CACHED REGEX & MEMOIZATION
+// =============================================================================
+
+/** Pre-compiled URL regex - avoids recompilation on every call */
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+/** Pre-compiled search escape regex */
+const SEARCH_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
+
+/**
+ * Simple LRU-like cache for expensive computations
+ * Max 500 entries to prevent memory bloat
+ */
+class SimpleCache<T> {
+  private cache = new Map<string, T>();
+  private readonly maxSize: number;
+
+  constructor(maxSize = 500) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): T | undefined {
+    return this.cache.get(key);
+  }
+
+  set(key: string, value: T): void {
+    if (this.cache.size >= this.maxSize) {
+      // Delete oldest entry (first key)
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, value);
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Caches for expensive operations
+const linkifyCache = new SimpleCache<string>(200);
+const dateStringCache = new SimpleCache<string>(100);
+const timeSeparatorCache = new SimpleCache<string>(50);
 
 // =============================================================================
 // FILE HANDLING
@@ -56,69 +108,145 @@ export function isImageFile(file: File): boolean {
 // =============================================================================
 
 /**
- * Convert URLs in text to clickable links
+ * Convert URLs in text to clickable links (CACHED)
  * @param text - Text containing URLs
  * @returns HTML string with anchor tags
  */
 export function linkify(text: string): string {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return text.replace(
-    urlRegex,
+  // Check cache first
+  const cached = linkifyCache.get(text);
+  if (cached !== undefined) return cached;
+
+  // Reset lastIndex for global regex reuse
+  URL_REGEX.lastIndex = 0;
+
+  const result = text.replace(
+    URL_REGEX,
     (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
   );
+
+  linkifyCache.set(text, result);
+  return result;
+}
+
+/** Cache for compiled search regexes - avoids recompilation */
+const searchRegexCache = new SimpleCache<RegExp>(20);
+
+/**
+ * Get or create cached regex for search term
+ */
+function getSearchRegex(searchTerm: string): RegExp {
+  const cached = searchRegexCache.get(searchTerm);
+  if (cached !== undefined) {
+    cached.lastIndex = 0; // Reset for reuse
+    return cached;
+  }
+
+  SEARCH_ESCAPE_REGEX.lastIndex = 0;
+  const escaped = searchTerm.replace(SEARCH_ESCAPE_REGEX, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  searchRegexCache.set(searchTerm, regex);
+  return regex;
 }
 
 /**
- * Highlight search term in text
+ * Highlight search term in text (OPTIMIZED)
  * @param text - Text to search in
  * @param searchTerm - Term to highlight
  * @returns HTML string with highlighted matches
  */
 export function highlightSearchTerm(text: string, searchTerm: string): string {
   if (!searchTerm.trim()) return text;
-
-  const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-
+  const regex = getSearchRegex(searchTerm);
   return text.replace(regex, '<strong>$1</strong>');
 }
 
 /**
- * Highlight search term with mark tag (for message search)
+ * Highlight search term with mark tag (for message search) (OPTIMIZED)
  * @param text - Text to search in
  * @param searchTerm - Term to highlight
  * @returns HTML string with <mark> tags
  */
 export function highlightSearchInMessage(text: string, searchTerm: string): string {
   if (!searchTerm.trim()) return text;
-
-  const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-
+  const regex = getSearchRegex(searchTerm);
   return text.replace(regex, '<mark class="search-highlight">$1</mark>');
 }
 
 // =============================================================================
-// DATE/TIME FORMATTING
+// DATE/TIME FORMATTING (CACHED)
 // =============================================================================
 
+/** Cache for formatted message times */
+const messageTimeCache = new SimpleCache<string>(300);
+
+/** Cache for conversation times */
+const conversationTimeCache = new SimpleCache<string>(100);
+
+/** Cached today/yesterday date strings - regenerated when day changes */
+let cachedToday = '';
+let cachedYesterday = '';
+let lastDateCheck = 0;
+
 /**
- * Format message timestamp (HH:MM)
+ * Update cached date strings if day has changed
+ */
+function updateCachedDates(): void {
+  const now = Date.now();
+  // Check every 60 seconds max
+  if (now - lastDateCheck < 60000) return;
+
+  const today = new Date();
+  const todayStr = today.toDateString();
+
+  if (cachedToday !== todayStr) {
+    cachedToday = todayStr;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    cachedYesterday = yesterday.toDateString();
+    // Clear date separator cache when day changes
+    timeSeparatorCache.clear();
+  }
+  lastDateCheck = now;
+}
+
+/**
+ * Get date string for a date (CACHED)
+ */
+function getDateString(dateStr: string): string {
+  const cached = dateStringCache.get(dateStr);
+  if (cached !== undefined) return cached;
+
+  const result = new Date(dateStr).toDateString();
+  dateStringCache.set(dateStr, result);
+  return result;
+}
+
+/**
+ * Format message timestamp (HH:MM) (CACHED)
  * @param dateStr - ISO date string
  * @returns Formatted time string
  */
 export function formatMessageTime(dateStr: string): string {
+  const cached = messageTimeCache.get(dateStr);
+  if (cached !== undefined) return cached;
+
   const date = new Date(dateStr);
-  return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const result = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  messageTimeCache.set(dateStr, result);
+  return result;
 }
 
 /**
- * Format conversation time (DD.MM.YYYY HH:MM)
+ * Format conversation time (DD.MM.YYYY HH:MM) (CACHED)
  * @param dateStr - ISO date string
  * @returns Formatted date/time string
  */
 export function formatConversationTime(dateStr: string): string {
   if (!dateStr) return '';
+
+  const cached = conversationTimeCache.get(dateStr);
+  if (cached !== undefined) return cached;
 
   const date = new Date(dateStr);
   const day = date.getDate().toString().padStart(2, '0');
@@ -127,7 +255,9 @@ export function formatConversationTime(dateStr: string): string {
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
 
-  return `${day}.${month}.${year} ${hours}:${minutes}`;
+  const result = `${day}.${month}.${year} ${hours}:${minutes}`;
+  conversationTimeCache.set(dateStr, result);
+  return result;
 }
 
 /**
@@ -146,32 +276,40 @@ export function formatScheduleTime(date: Date): string {
 }
 
 /**
- * Format date separator (Heute, Gestern, or full date)
+ * Format date separator (Heute, Gestern, or full date) (CACHED)
  * @param dateStr - ISO date string
  * @returns Localized date string
  */
 export function formatDateSeparator(dateStr: string): string {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const cached = timeSeparatorCache.get(dateStr);
+  if (cached !== undefined) return cached;
 
-  if (date.toDateString() === today.toDateString()) {
-    return MESSAGES.dateToday;
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return MESSAGES.dateYesterday;
+  updateCachedDates();
+
+  const dateString = getDateString(dateStr);
+  let result: string;
+
+  if (dateString === cachedToday) {
+    result = MESSAGES.dateToday;
+  } else if (dateString === cachedYesterday) {
+    result = MESSAGES.dateYesterday;
   } else {
-    return date.toLocaleDateString('de-DE', {
+    const date = new Date(dateStr);
+    result = date.toLocaleDateString('de-DE', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
   }
+
+  timeSeparatorCache.set(dateStr, result);
+  return result;
 }
 
 /**
- * Check if date separator should be shown between messages
+ * Check if date separator should be shown between messages (OPTIMIZED)
+ * Uses cached date strings instead of creating new Date objects
  * @param prev - Previous message (or undefined)
  * @param current - Current message
  * @returns true if dates differ
@@ -179,8 +317,8 @@ export function formatDateSeparator(dateStr: string): string {
 export function shouldShowDateSeparator(prev: Message | undefined, current: Message): boolean {
   if (!prev) return true;
 
-  const prevDate = new Date(prev.createdAt).toDateString();
-  const currentDate = new Date(current.createdAt).toDateString();
+  const prevDate = getDateString(prev.createdAt);
+  const currentDate = getDateString(current.createdAt);
 
   return prevDate !== currentDate;
 }

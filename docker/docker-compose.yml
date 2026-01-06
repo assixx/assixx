@@ -83,6 +83,9 @@ services:
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
       SCARF_ANALYTICS: false
       DO_NOT_TRACK: 1
+      # Redis Connection (for rate limiting)
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "3000:3000"
     volumes:

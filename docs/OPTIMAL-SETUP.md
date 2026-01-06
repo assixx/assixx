@@ -100,7 +100,7 @@ API Architecture:
   style: REST
   version: v2 (no v1 fallback)
   validation: Zod 4.1.13
-  verdict: KEEP (aber tRPC ergänzen)
+  verdict: ✅ OPTIMAL (tRPC REJECTED - see ADR)
 
 Database:
   engine: PostgreSQL
@@ -240,7 +240,6 @@ Package Manager:
 # .npmrc - PFLICHT für Hoisting (Bug #9413!)
 # Diese Settings MÜSSEN hier sein, funktionieren NICHT in pnpm-workspace.yaml!
 public-hoist-pattern[]=@nestjs/*
-public-hoist-pattern[]=@trpc/*
 public-hoist-pattern[]=fastify
 public-hoist-pattern[]=@fastify/*
 public-hoist-pattern[]=*types*
@@ -304,7 +303,6 @@ Why NestJS + Fastify:
     - @nestjs/websockets: Native WebSocket support (we have chat!)
     - @nestjs/bull: Production-ready job queues (deletion worker!)
     - nestjs-zod: Full Zod integration with existing schemas
-    - @nexica/nestjs-trpc: Type-safe API for SvelteKit (better than manual setup)
     # NOTE: @avallone-io/rls existiert, aber nutzt TypeORM - wir nutzen Raw SQL
 
   deployment:
@@ -377,7 +375,6 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 // Infrastructure
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
-import { TrpcModule } from './infrastructure/trpc/trpc.module';
 
 @Module({
   imports: [
@@ -776,7 +773,7 @@ Why SvelteKit:
   - TypeScript: First-class support
   - Vite: Native Vite integration (you keep Vite!)
   - SSR/SSG: Built-in server-side rendering
-  - tRPC: Perfect NestJS-tRPC integration
+  - REST: api-client.ts with Zod type safety
   - Size: Smallest bundle sizes of any framework
   - DX: Best developer experience in 2025
 
@@ -792,176 +789,23 @@ Why NOT keep Vanilla TS:
   - No state: Self-built state management
 ```
 
-#### 2.3.2 Type-Safe API: @nexica/nestjs-trpc + tRPC-SvelteKit
+#### ~~2.3.2 Type-Safe API: tRPC~~ ❌ REJECTED
 
-```yaml
-Type-Safe API:
-  backend: '@nexica/nestjs-trpc' # EMPFOHLEN (besser als manuell!)
-  frontend: '@trpc/client'
-  benefit: Full type safety like Hono RPC!
-  source: https://www.nestjs-trpc.io/
-```
-
-**Installation:**
-
-```bash
-# Backend
-pnpm add @nexica/nestjs-trpc @trpc/server zod
-
-# Frontend (SvelteKit)
-pnpm add @trpc/client
-```
-
-**NestJS tRPC Setup mit @nexica/nestjs-trpc:**
-
-> **Warum @nexica/nestjs-trpc statt manuell?**
+> **Status:** REJECTED (2026-01-06)
+> **Decision:** See [ARCHITECTURE-DECISION-NO-TRPC.md](./ARCHITECTURE-DECISION-NO-TRPC.md)
 >
-> - Automatische Schema-Generierung (tRPC v11)
-> - Native Decorators: `@Router()`, `@Query()`, `@Mutation()`
-> - Fastify + WebSocket Support built-in
-> - Zod Integration out-of-the-box
-> - Letztes Update: vor 4 Monaten (aktiv maintained)
-
-```typescript
-// backend/src/infrastructure/trpc/trpc.module.ts
-import { Module } from '@nestjs/common';
-import { TRPCModule } from '@nexica/nestjs-trpc';
-import { UsersRouter } from './routers/users.router';
-import { ShiftsRouter } from './routers/shifts.router';
-
-@Module({
-  imports: [
-    TRPCModule.forRoot({
-      autoSchemaFile: './trpc-schema.ts', // Automatische Type-Generierung!
-    }),
-  ],
-  providers: [UsersRouter, ShiftsRouter],
-})
-export class TrpcModule {}
-```
-
-```typescript
-// backend/src/infrastructure/trpc/routers/users.router.ts
-import { Router, Query, Mutation, Input } from '@nexica/nestjs-trpc';
-import { z } from 'zod';
-import { UsersService } from '../../../modules/users/users.service';
-
-const CreateUserSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(12),
-});
-
-@Router({ alias: 'users' })
-export class UsersRouter {
-  constructor(private usersService: UsersService) {}
-
-  @Query()
-  async list() {
-    return this.usersService.findAll();
-  }
-
-  @Mutation()
-  @Input(CreateUserSchema)
-  async create(input: z.infer<typeof CreateUserSchema>) {
-    return this.usersService.create(input);
-  }
-}
-```
-
-```typescript
-// backend/src/main.ts - Fastify Adapter mit tRPC
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { TRPCModule } from '@nexica/nestjs-trpc';
-
-async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
-
-  // tRPC Endpoint registrieren
-  const trpcModule = app.get(TRPCModule);
-  await trpcModule.applyMiddleware(app);
-
-  await app.listen(3000, '0.0.0.0');
-}
-bootstrap();
-```
-
-**SvelteKit tRPC Client:**
-
-```typescript
-// frontend/src/lib/trpc/client.ts
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
-
-import type { AppRouter } from '../../../backend/trpc-schema';
-
-// Auto-generiert!
-
-export const trpc = createTRPCClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: '/api/trpc',
-    }),
-  ],
-});
-
-// Usage in Svelte component:
-// const users = await trpc.users.list.query();
-// const newUser = await trpc.users.create.mutate({ email, password });
-```
-
-**Alternative: Manuelle Integration (falls @nexica/nestjs-trpc nicht passt)**
-
-<details>
-<summary>Klicken für manuelle tRPC Integration</summary>
-
-```typescript
-// backend/src/infrastructure/trpc/trpc.service.ts
-import { Injectable } from '@nestjs/common';
-import { initTRPC } from '@trpc/server';
-
-@Injectable()
-export class TrpcService {
-  trpc = initTRPC.create();
-  procedure = this.trpc.procedure;
-  router = this.trpc.router;
-}
-```
-
-```typescript
-// backend/src/infrastructure/trpc/trpc.router.ts
-import { Injectable } from '@nestjs/common';
-import { TrpcService } from './trpc.service';
-import { z } from 'zod';
-import { UsersService } from '../../modules/users/users.service';
-
-@Injectable()
-export class TrpcRouter {
-  constructor(
-    private trpc: TrpcService,
-    private usersService: UsersService,
-  ) {}
-
-  appRouter = this.trpc.router({
-    users: this.trpc.router({
-      list: this.trpc.procedure.query(async () => {
-        return this.usersService.findAll();
-      }),
-      create: this.trpc.procedure
-        .input(z.object({
-          email: z.string().email(),
-          password: z.string().min(12),
-        }))
-        .mutation(async ({ input }) => {
-          return this.usersService.create(input);
-        }),
-    }),
-  });
-}
-
-export type AppRouter = TrpcRouter['appRouter'];
-```
-
-</details>
+> **Reason:** REST API with `api-client.ts` (684 LOC) already provides:
+> - Type safety via Zod + TypeScript
+> - Caching, token refresh, error handling
+> - Mobile/external client compatibility
+> - 20+ tested REST controllers
+>
+> **Current Stack (OPTIMAL):**
+> ```yaml
+> Backend: NestJS + Fastify + REST Controllers + Zod DTOs
+> Frontend: SvelteKit + api-client.ts (REST)
+> Type Safety: Zod schemas shared between layers
+> ```
 
 #### ⚠️ 2.3.3 SVELTE 5 LIBRARY-KOMPATIBILITÄT (KRITISCH!)
 
@@ -1261,11 +1105,11 @@ Pipelines:
 │  │  SvelteKit 2 + Svelte 5 + Vite 7 + Tailwind 4          │   │
 │  │  • SSR/SSG for SEO                                      │   │
 │  │  • Svelte 5 Runes for reactivity                        │   │
-│  │  • Type-safe tRPC client                                │   │
+│  │  • Type-safe REST (api-client.ts + Zod)                 │   │
 │  │  • Your Design System (29+ components)                  │   │
 │  └─────────────────────────┬───────────────────────────────┘   │
 │                            │                                     │
-│                    Type-Safe tRPC                               │
+│                    Type-Safe REST API                           │
 │                            │                                     │
 │  ┌─────────────────────────▼───────────────────────────────┐   │
 │  │                    BACKEND                               │   │
@@ -1307,7 +1151,6 @@ Pipelines:
 | @nestjs/platform-fastify | -       | >=11.0.0  | NEW    |
 | @nestjs/websockets       | -       | >=11.0.0  | NEW    |
 | @nestjs/bull             | -       | >=11.0.0  | NEW    |
-| @trpc/server             | -       | >=11.0.0  | NEW    |
 | nestjs-zod               | -       | >=4.0.0   | NEW    |
 | fastify                  | -       | >=5.0.0   | NEW    |
 | zod                      | 4.1.13  | >=4.1.0   | KEEP   |
@@ -1315,7 +1158,6 @@ Pipelines:
 | redis                    | 5.10.0  | >=5.10.0  | KEEP   |
 | @sveltejs/kit            | -       | >=2.20.0  | NEW    |
 | svelte                   | -       | >=5.0.0   | NEW    |
-| @trpc/client             | -       | >=11.0.0  | NEW    |
 | vite                     | 7.2.6   | >=7.2.0   | KEEP   |
 | tailwindcss              | 4.1.17  | >=4.1.0   | KEEP   |
 | vitest                   | -       | >=3.0.0   | NEW    |
@@ -1399,7 +1241,6 @@ Your significant investments that remain unchanged:
 - [NestJS Documentation](https://docs.nestjs.com/)
 - [NestJS Fastify Adapter](https://docs.nestjs.com/techniques/performance)
 - [nestjs-zod GitHub](https://github.com/risen228/nestjs-zod)
-- [NestJS-tRPC Integration](https://github.com/trpc/trpc/tree/main/examples/nestjs)
 - [Fastify Benchmarks](https://www.fastify.io/benchmarks/)
 - [Vitest vs Jest 2025](https://betterstack.com/community/guides/scaling-nodejs/vitest-vs-jest/)
 - [SvelteKit Enterprise Best Practices](https://zxce3.net/posts/sveltekit-2025-modern-development-trends-and-best-practices/)
@@ -1428,7 +1269,7 @@ Your significant investments that remain unchanged:
 - **Enterprise Features**: Guards, Modules, DI, built-in patterns
 - **Performance**: Fastify is significantly faster than Hono on Node.js
   (Hono uses adapter overhead for Web Standard APIs)
-- **Ecosystem**: @nestjs/websockets, @nestjs/bull, nestjs-zod, @nexica/nestjs-trpc
+- **Ecosystem**: @nestjs/websockets, @nestjs/bull, nestjs-zod
 - **Deployment**: Perfect for on-premise enterprise installations
 
 **Total Changes: 3 (Backend Framework, Frontend Framework, Testing)**
@@ -1886,7 +1727,7 @@ async function bootstrap() {
 │  ═════════════════════════════════════                          │
 │  ├── Library-Kompatibilität prüfen (siehe Part 2.3.3)          │
 │  ├── Page für Page migrieren                                   │
-│  ├── tRPC Client einbinden                                     │
+│  ├── api-client.ts integrieren (REST)                          │
 │  ├── Design System → Svelte Components                         │
 │  └── WARUM ZULETZT: Braucht stabiles NestJS Backend            │
 │                         ↓                                       │
@@ -1983,10 +1824,9 @@ async function bootstrap() {
 - [NestJS Fastify Adapter](https://docs.nestjs.com/techniques/performance)
 - [nestjs-zod GitHub](https://github.com/risen228/nestjs-zod)
 - [Fastify vs Hono Benchmarks](https://www.fastify.io/benchmarks/)
-- [tRPC Documentation](https://trpc.io/)
 - [Sentry NestJS Integration](https://docs.sentry.io/platforms/node/guides/nestjs/)
 - [NestJS Terminus Health Checks](https://docs.nestjs.com/recipes/terminus)
-- [SvelteKit + tRPC Integration](https://trpc.io/docs/client/svelte)
+- [ADR: No tRPC](./ARCHITECTURE-DECISION-NO-TRPC.md)
 - [Vitest vs Jest 2025](https://betterstack.com/community/guides/scaling-nodejs/vitest-vs-jest/)
 - [PostgreSQL RLS Multi-Tenant Guide](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/)
 - [OpenTelemetry Node.js Guide](https://signoz.io/opentelemetry/nodejs/)
@@ -2031,9 +1871,9 @@ async function bootstrap() {
 | Phase | Branch-Name                      | Inhalt                                                  |
 | ----- | -------------------------------- | ------------------------------------------------------- |
 | 0     | `feature/fullcalendar-migration` | FullCalendar → @event-calendar/core (SEPARAT!)          |
-| 1     | `feature/nestjs-migration`       | NestJS + Fastify, Guards, Module, tRPC, WebSocket, Bull |
+| 1     | `feature/nestjs-migration`       | NestJS + Fastify, Guards, Module, WebSocket, Bull       |
 | 2     | `refactor/jest-to-vitest`        | jest.fn() → vi.fn(), Config                             |
-| 3     | `feature/sveltekit-migration`    | Pages, tRPC Client, Design System → Svelte              |
+| 3     | `feature/sveltekit-migration`    | Pages, api-client.ts, Design System → Svelte            |
 | 4     | `feature/pre-launch-polish`      | Sentry, Health Checks, Graceful Shutdown                |
 | 5     | `feature/enterprise-features`    | Secrets, OpenTelemetry, SOC2                            |
 
@@ -2065,7 +1905,7 @@ master (stable)
 
 1. **Ein Branch pro Phase** - nicht mischen
 2. **Phase 0 zuerst** - FullCalendar isoliert testen (hohes Risiko!)
-3. **Phase 1 vor Phase 3** - Frontend braucht tRPC Types
+3. **Phase 1 vor Phase 3** - Frontend braucht stabiles Backend
 4. **PR nach jeder Phase** - incremental mergen
 5. **master bleibt stable** - nur getesteter Code
 6. **KEIN Fallback/Legacy** - git revert bei Problemen
