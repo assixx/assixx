@@ -1,10 +1,20 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   import { resolve } from '$app/paths';
 
   import '../styles/index.css';
 
   // Modal state
   let showSignupModal: boolean = $state(false);
+
+  // Add class to body for landing page (disables global gradient)
+  onMount(() => {
+    document.body.classList.add('landing-page-active');
+    return () => {
+      document.body.classList.remove('landing-page-active');
+    };
+  });
 
   function handleReloadPage(): void {
     window.location.reload();
