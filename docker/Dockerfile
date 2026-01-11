@@ -13,6 +13,7 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
@@ -52,6 +53,7 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
