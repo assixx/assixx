@@ -90,7 +90,7 @@ Fertig. Mehr nicht nötig.
 | manage-employees.html       | ✅ Lokal    | Ja (1x)           | ✅ OK  |
 | kvp.html                    | ✅ Lokal    | Ja (1x)           | ✅ OK  |
 | login.html                  | ✅ Lokal    | Ja (1x)           | ✅ OK  |
-| root-features.html          | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| features.html               | ✅ Lokal    | Ja (1x)           | ✅ OK  |
 | root-profile.html           | ✅ Lokal    | Ja (3x)           | ✅ OK  |
 | salary-documents.html       | ✅ Lokal    | Ja (3x)           | ✅ OK  |
 | signup.html                 | ❌ Entfernt | Nein              | ✅ OK  |

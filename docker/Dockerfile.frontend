@@ -1,0 +1,77 @@
+# =============================================================================
+# Assixx SvelteKit Frontend - Production Dockerfile
+# =============================================================================
+# Multi-stage build for optimal image size
+# Uses @sveltejs/adapter-node for SSR
+# Uses pnpm deploy for proper dependency resolution in pnpm workspaces
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Build
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm@10.27.0
+
+WORKDIR /app
+
+# Copy root package files for workspace resolution
+COPY package.json ./
+COPY pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml ./
+COPY .npmrc ./
+
+# Copy frontend package.json
+COPY frontend/package.json ./frontend/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source code
+COPY frontend/ ./frontend/
+
+# Build SvelteKit application
+WORKDIR /app/frontend
+RUN pnpm run build
+
+# Use pnpm deploy to create a self-contained deployment
+# This properly resolves pnpm workspace symlinks into real files
+WORKDIR /app
+RUN pnpm deploy --filter=assixx-frontend --prod /deploy
+
+# -----------------------------------------------------------------------------
+# Stage 2: Production
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS production
+
+# Security: Run as non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S sveltekit -u 1001
+
+WORKDIR /app
+
+# Copy pnpm deployed package (includes properly resolved node_modules)
+COPY --from=builder --chown=sveltekit:nodejs /deploy/node_modules ./node_modules
+COPY --from=builder --chown=sveltekit:nodejs /deploy/package.json ./
+
+# Copy built SvelteKit application
+COPY --from=builder --chown=sveltekit:nodejs /app/frontend/build ./build
+
+# Switch to non-root user
+USER sveltekit
+
+# SvelteKit adapter-node port
+EXPOSE 3001
+
+# Environment variables for SvelteKit
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV ORIGIN=http://localhost
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "const http = require('http'); http.get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+
+# Start SvelteKit server
+CMD ["node", "build"]

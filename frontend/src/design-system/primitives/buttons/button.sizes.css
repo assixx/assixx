@@ -10,8 +10,8 @@
 /* Small Size - Compact for tables/lists */
 .btn-sm,
 .btn.btn-sm {
-  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
   border-radius: var(--radius-md); /* 6px - smaller radius */
+  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
   font-size: var(--font-size-sm); /* 13px */
   line-height: var(--line-height-tight); /* 1.25 */
 }
@@ -26,8 +26,8 @@
 /* Large Size - Prominent CTAs */
 .btn-lg,
 .btn.btn-lg {
-  padding: var(--spacing-3) var(--spacing-6); /* 12px 24px */
   border-radius: var(--radius-xl); /* 12px - larger radius */
+  padding: var(--spacing-3) var(--spacing-6); /* 12px 24px */
   font-size: var(--font-size-lg); /* 16px */
   line-height: var(--line-height-normal); /* 1.5 */
 }
@@ -41,8 +41,8 @@
 /* Icon-only buttons (square aspect ratio) */
 .btn-icon,
 .btn.btn-icon {
-  aspect-ratio: 1; /* Perfect square */
   padding: var(--spacing-3); /* 8px all sides */
+  aspect-ratio: 1; /* Perfect square */
 }
 
 .btn-icon.btn-sm {

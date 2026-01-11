@@ -17,14 +17,14 @@ EMPLOYEE    → Admin vergibt Zugriff
 
 ## 2. Entities im System
 
-| Entity | Tabelle | Hat Hierarchie? |
-|--------|---------|-----------------|
-| Area | `areas` | Ja (parent_id) |
-| Department | `departments` | Nein (nur area_id) |
-| Department Group | `department_groups` | Ja (parent_group_id) |
-| Team | `teams` | Nein (nur department_id) |
-| Machine | `machines` | Nein (area_id + department_id) |
-| User | `users` | Nein (nur department_id) |
+| Entity           | Tabelle             | Hat Hierarchie?                |
+| ---------------- | ------------------- | ------------------------------ |
+| Area             | `areas`             | Ja (parent_id)                 |
+| Department       | `departments`       | Nein (nur area_id)             |
+| Department Group | `department_groups` | Ja (parent_group_id)           |
+| Team             | `teams`             | Nein (nur department_id)       |
+| Machine          | `machines`          | Nein (area_id + department_id) |
+| User             | `users`             | Nein (nur department_id)       |
 
 ---
 
@@ -32,19 +32,19 @@ EMPLOYEE    → Admin vergibt Zugriff
 
 ### Was EXISTIERT:
 
-| Tabelle | Zweck | Felder |
-|---------|-------|--------|
+| Tabelle                        | Zweck              | Felder                                              |
+| ------------------------------ | ------------------ | --------------------------------------------------- |
 | `admin_department_permissions` | Admin → Department | admin_user_id, department_id, can_read/write/delete |
-| `admin_group_permissions` | Admin → Dept Group | admin_user_id, group_id, can_read/write/delete |
-| `user_teams` | User → Team | user_id, team_id, role (member/lead) |
-| `users.department_id` | User → Department | Direkt in users Tabelle (1:1) |
+| `admin_group_permissions`      | Admin → Dept Group | admin_user_id, group_id, can_read/write/delete      |
+| `user_teams`                   | User → Team        | user_id, team_id, role (member/lead)                |
+| `users.department_id`          | User → Department  | Direkt in users Tabelle (1:1)                       |
 
 ### Was FEHLT:
 
-| Tabelle | Zweck |
-|---------|-------|
-| `admin_area_permissions` | Admin → Area |
-| `admin_team_permissions` | Admin → Team |
+| Tabelle                  | Zweck                   |
+| ------------------------ | ----------------------- |
+| `admin_area_permissions` | Admin → Area            |
+| `admin_team_permissions` | Admin → Team            |
 | `employee_*_permissions` | Employee Berechtigungen |
 
 ---
@@ -56,12 +56,13 @@ EMPLOYEE    → Admin vergibt Zugriff
 ```typescript
 // Root and employees bypass department checks
 if (user.role === 'root' || user.role === 'employee') {
-  next();  // KEIN CHECK!
+  next(); // KEIN CHECK!
   return;
 }
 ```
 
 **Bedeutung:**
+
 - ROOT: Bypassed alle Checks ✅ (gewollt)
 - EMPLOYEE: Bypassed alle Checks ❌ (Problem?)
 - ADMIN: Wird gegen `admin_department_permissions` geprüft ✅
@@ -117,12 +118,14 @@ TENANT
 ## 7. Zusammenfassung
 
 ### Funktioniert:
+
 - Admin → Department Zuweisung
 - Admin → Department Group Zuweisung
 - User → Team Mitgliedschaft
 - User → Department Zuordnung (1:1)
 
 ### Fehlt:
+
 - Admin → Area Zuweisung
 - Admin → Team Zuweisung
 - Employee Permission System

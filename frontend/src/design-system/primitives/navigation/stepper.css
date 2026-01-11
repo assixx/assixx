@@ -36,8 +36,8 @@
 
 .stepper {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: var(--spacing-6) 0;
 }
 
@@ -47,32 +47,31 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
   text-align: center;
 }
 
 /* Step indicator circle */
 .stepper__indicator {
-  position: relative;
-
   display: flex;
-  align-items: center;
+  position: relative;
   justify-content: center;
+  align-items: center;
 
-  width: 40px;
-  height: 40px;
+  transition: all 0.3s ease;
   border: 2px solid var(--glass-border);
   border-radius: 50%;
 
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-
   background: rgb(255 255 255 / 5%);
 
-  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+
+  font-size: 14px;
 }
 
 /* Step number */
@@ -82,26 +81,25 @@
 
 /* Checkmark icon (hidden by default) */
 .stepper__check {
-  position: absolute;
   display: none;
+  position: absolute;
   font-size: 16px;
 }
 
 /* Step label */
 .stepper__label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-
   transition: color 0.2s ease;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 /* Optional description */
 .stepper__description {
-  font-size: 12px;
-  color: var(--color-text-secondary);
   opacity: 70%;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 /* ========== CONNECTOR LINE ========== */
@@ -109,12 +107,12 @@
 .stepper__connector {
   flex: 1;
 
-  height: 2px;
+  transition: background 0.3s ease;
   margin: 0 var(--spacing-2);
 
   background: var(--glass-border);
 
-  transition: background 0.3s ease;
+  height: 2px;
 }
 
 /* ========== STEP STATES ========== */
@@ -122,8 +120,8 @@
 /* Completed step */
 .stepper__step--completed .stepper__indicator {
   border-color: var(--color-success);
-  color: #fff;
   background: var(--color-success);
+  color: #fff;
 }
 
 .stepper__step--completed .stepper__number {
@@ -141,15 +139,15 @@
 
 /* Active (current) step */
 .stepper__step--active .stepper__indicator {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: rgb(33 150 243 / 10%);
   box-shadow: 0 0 0 4px rgb(33 150 243 / 10%);
+  border-color: var(--color-primary);
+  background: rgb(33 150 243 / 10%);
+  color: var(--color-primary);
 }
 
 .stepper__step--active .stepper__label {
-  font-weight: 600;
   color: var(--color-primary);
+  font-weight: 600;
 }
 
 /* Inactive (upcoming) step */
@@ -164,8 +162,8 @@
 /* Error step */
 .stepper__step--error .stepper__indicator {
   border-color: var(--color-danger);
-  color: var(--color-danger);
   background: rgb(244 67 54 / 10%);
+  color: var(--color-danger);
 }
 
 .stepper__step--error .stepper__label {
@@ -214,9 +212,9 @@
 }
 
 .stepper--vertical .stepper__connector {
+  margin: var(--spacing-2) 0 var(--spacing-2) 19px;
   width: 2px;
   height: 60px;
-  margin: var(--spacing-2) 0 var(--spacing-2) 19px;
 }
 
 /* ========== COMPACT VARIANT ========== */
@@ -283,9 +281,9 @@
     }
 
     .stepper__connector {
+      margin: 0 0 0 15px;
       width: 2px;
       height: 40px;
-      margin: 0 0 0 15px;
     }
   }
 }

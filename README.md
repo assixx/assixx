@@ -57,12 +57,12 @@ Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 ## 📚 Dokumentation
 
-| Dokument | Beschreibung |
-| --- | --- |
-| [FEATURES.md](./docs/FEATURES.md) | Feature-Übersicht & Preise |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technische Architektur |
-| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup |
-| [TODO.md](./TODO.md) | Aktuelle Aufgaben |
+| Dokument                                  | Beschreibung               |
+| ----------------------------------------- | -------------------------- |
+| [FEATURES.md](./docs/FEATURES.md)         | Feature-Übersicht & Preise |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technische Architektur     |
+| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup               |
+| [TODO.md](./TODO.md)                      | Aktuelle Aufgaben          |
 
 ## 🐳 Docker Commands
 

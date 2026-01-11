@@ -80,7 +80,7 @@
 }
 
 .storage-features li::before {
-  content: "✓";
+  content: '✓';
 
   position: absolute;
   left: 0;
@@ -147,7 +147,7 @@
 }
 
 .usage-progress-bar::after {
-  content: "";
+  content: '';
 
   position: absolute;
   inset: 0;

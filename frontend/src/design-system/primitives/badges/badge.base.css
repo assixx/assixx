@@ -17,45 +17,45 @@
 .badge {
   /* ========== LAYOUT ========== */
   display: inline-flex;
-  gap: var(--spacing-2); /* Space between icon and text */
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2); /* Space between icon and text */
 
-  /* ========== SIZING ========== */
-  width: fit-content; /* Prevent stretching in grid/flex containers */
-
-  /* ========== SPACING ========== */
-  padding: 4px 12px;
+  /* ========== TRANSITIONS ========== */
+  transition: all 0.2s ease;
 
   /* ========== VISUAL ========== */
   border: 1px solid transparent; /* Variants define border color */
   border-radius: 12px;
 
+  /* ========== SPACING ========== */
+  padding: 4px 12px;
+
+  /* ========== SIZING ========== */
+  width: fit-content; /* Prevent stretching in grid/flex containers */
+  font-weight: 500;
+
   /* ========== TYPOGRAPHY ========== */
   font-size: 14px;
-  font-weight: 500;
   text-align: center;
   white-space: nowrap;
-
-  /* ========== TRANSITIONS ========== */
-  transition: all 0.2s ease;
 }
 
 /* ========== SIZE VARIANTS ========== */
 
 /* Small - Compact badges (roles, tags) */
 .badge--sm {
-  padding: 2px 8px;
   border-radius: 8px;
+  padding: 2px 8px;
   font-size: 11px;
 }
 
 /* Large - Prominent badges */
 .badge--lg {
-  padding: 6px 16px;
   border-radius: 14px;
-  font-size: 13px;
+  padding: 6px 16px;
   font-weight: 600;
+  font-size: 13px;
 }
 
 /* ========== WITH DOT INDICATOR ========== */
@@ -65,20 +65,20 @@
 }
 
 .badge--dot::before {
-  content: "";
-
-  width: 6px;
-  height: 6px;
   border-radius: 50%;
 
   background: currentcolor;
+
+  width: 6px;
+  height: 6px;
+  content: '';
 }
 
 /* ========== UPPERCASE VARIANT ========== */
 
 .badge--uppercase {
-  font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  font-size: 11px;
   letter-spacing: 0.8px;
+  text-transform: uppercase;
 }

@@ -21,10 +21,10 @@ Aktuell wird die `.btn` Base-Klasse an **23 verschiedenen Stellen** lokal übers
 
 Diese Dateien definieren `.btn` LEGITIM und bleiben unverändert:
 
-| Datei | Zeile | Zweck | Status |
-|-------|-------|-------|--------|
-| `frontend/src/design-system/primitives/buttons/button.base.css` | ~10 | Globale Base Definition | ✅ BEHALTEN |
-| `frontend/src/design-system/primitives/buttons/button.effects.css` | ~5 | Globale Hover/Focus Effects | ✅ BEHALTEN |
+| Datei                                                              | Zeile | Zweck                       | Status      |
+| ------------------------------------------------------------------ | ----- | --------------------------- | ----------- |
+| `frontend/src/design-system/primitives/buttons/button.base.css`    | ~10   | Globale Base Definition     | ✅ BEHALTEN |
+| `frontend/src/design-system/primitives/buttons/button.effects.css` | ~5    | Globale Hover/Focus Effects | ✅ BEHALTEN |
 
 **Begründung:** Dies ist das Design System - die EINZIGE legitime Quelle für Button-Styles.
 
@@ -36,46 +36,46 @@ Diese 23 Dateien überschreiben `.btn` unnötig und müssen bereinigt werden:
 
 ### Dashboard & Profile Seiten
 
-| # | Datei | Zeile | Lines | Redundanz |
-|---|-------|-------|-------|-----------|
-| 1 | `frontend/src/styles/employee-dashboard.css` | 777 | ~10 | ✅ Komplett redundant |
-| 2 | `frontend/src/styles/admin-profile.css` | 61 | ~15 | ✅ Komplett redundant |
-| 3 | `frontend/src/styles/root-profile.css` | 136 | ~15 | ✅ Komplett redundant |
-| 4 | `frontend/src/styles/root-dashboard.css` | 171 | ~15 | ✅ Komplett redundant |
-| 5 | `frontend/src/styles/account-settings.css` | 165 | ~15 | ✅ Komplett redundant |
+| #   | Datei                                        | Zeile | Lines | Redundanz             |
+| --- | -------------------------------------------- | ----- | ----- | --------------------- |
+| 1   | `frontend/src/styles/employee-dashboard.css` | 777   | ~10   | ✅ Komplett redundant |
+| 2   | `frontend/src/styles/admin-profile.css`      | 61    | ~15   | ✅ Komplett redundant |
+| 3   | `frontend/src/styles/root-profile.css`       | 136   | ~15   | ✅ Komplett redundant |
+| 4   | `frontend/src/styles/root-dashboard.css`     | 171   | ~15   | ✅ Komplett redundant |
+| 5   | `frontend/src/styles/account-settings.css`   | 165   | ~15   | ✅ Komplett redundant |
 
 ### Management Seiten
 
-| # | Datei | Zeile | Lines | Redundanz |
-|---|-------|-------|-------|-----------|
-| 6 | `frontend/src/styles/manage-admins.css` | 292 | ~15 | ✅ Komplett redundant |
-| 7 | `frontend/src/styles/manage-root-users.css` | 309 | ~15 | ✅ Komplett redundant |
-| 8 | `frontend/src/styles/manage-teams.css` | 34 | ~15 | ✅ Komplett redundant |
-| 9 | `frontend/src/styles/manage-employees.css` | 214 | ~15 | ✅ Komplett redundant |
-| 10 | `frontend/src/styles/manage-departments.css` | 171 | ~15 | ✅ Komplett redundant |
-| 11 | `frontend/src/styles/manage-areas.css` | 24 | ~15 | ✅ Komplett redundant |
-| 12 | `frontend/src/styles/manage-machines.css` | 10 | ~15 | ✅ Komplett redundant |
+| #   | Datei                                        | Zeile | Lines | Redundanz             |
+| --- | -------------------------------------------- | ----- | ----- | --------------------- |
+| 6   | `frontend/src/styles/manage-admins.css`      | 292   | ~15   | ✅ Komplett redundant |
+| 7   | `frontend/src/styles/manage-root-users.css`  | 309   | ~15   | ✅ Komplett redundant |
+| 8   | `frontend/src/styles/manage-teams.css`       | 34    | ~15   | ✅ Komplett redundant |
+| 9   | `frontend/src/styles/manage-employees.css`   | 214   | ~15   | ✅ Komplett redundant |
+| 10  | `frontend/src/styles/manage-departments.css` | 171   | ~15   | ✅ Komplett redundant |
+| 11  | `frontend/src/styles/manage-areas.css`       | 24    | ~15   | ✅ Komplett redundant |
+| 12  | `frontend/src/styles/manage-machines.css`    | 10    | ~15   | ✅ Komplett redundant |
 
 ### Dokumente & Features
 
-| # | Datei | Zeile | Lines | Redundanz |
-|---|-------|-------|-------|-----------|
-| 13 | `frontend/src/styles/documents.css` | 695 | ~15 | ✅ Komplett redundant |
-| 14 | `frontend/src/styles/document-upload.css` | 386 | ~15 | ✅ Komplett redundant |
-| 15 | `frontend/src/styles/blackboard.css` | 2024 | ~10 | ✅ Komplett redundant |
-| 16 | `frontend/src/styles/feature-management.css` | ? | ~15 | ✅ Komplett redundant |
-| 17 | `frontend/src/styles/tenant-deletion-status.css` | 197 | ~17 | ✅ Komplett redundant |
+| #   | Datei                                            | Zeile | Lines | Redundanz             |
+| --- | ------------------------------------------------ | ----- | ----- | --------------------- |
+| 13  | `frontend/src/styles/documents.css`              | 695   | ~15   | ✅ Komplett redundant |
+| 14  | `frontend/src/styles/document-upload.css`        | 386   | ~15   | ✅ Komplett redundant |
+| 15  | `frontend/src/styles/blackboard.css`             | 2024  | ~10   | ✅ Komplett redundant |
+| 16  | `frontend/src/styles/feature-management.css`     | ?     | ~15   | ✅ Komplett redundant |
+| 17  | `frontend/src/styles/tenant-deletion-status.css` | 197   | ~17   | ✅ Komplett redundant |
 
 ### KVP & Surveys
 
-| # | Datei | Zeile | Lines | Redundanz |
-|---|-------|-------|-------|-----------|
-| 18 | `frontend/src/styles/kvp.css` | 647 | ~15 | ✅ Komplett redundant |
-| 19 | `frontend/src/styles/kvp-detail.css` | 574 | ~15 | ✅ Komplett redundant |
-| 20 | `frontend/src/styles/survey-admin.css` | 513 | ~15 | ✅ Komplett redundant |
-| 21 | `frontend/src/styles/survey-employee.css` | 645 | ~15 | ✅ Komplett redundant |
-| 22 | `frontend/src/styles/survey-results.css` | 183 | ~15 | ✅ Komplett redundant |
-| 23 | `frontend/src/styles/survey-details.css` | 155 | ~15 | ✅ Komplett redundant |
+| #   | Datei                                     | Zeile | Lines | Redundanz             |
+| --- | ----------------------------------------- | ----- | ----- | --------------------- |
+| 18  | `frontend/src/styles/kvp.css`             | 647   | ~15   | ✅ Komplett redundant |
+| 19  | `frontend/src/styles/kvp-detail.css`      | 574   | ~15   | ✅ Komplett redundant |
+| 20  | `frontend/src/styles/survey-admin.css`    | 513   | ~15   | ✅ Komplett redundant |
+| 21  | `frontend/src/styles/survey-employee.css` | 645   | ~15   | ✅ Komplett redundant |
+| 22  | `frontend/src/styles/survey-results.css`  | 183   | ~15   | ✅ Komplett redundant |
+| 23  | `frontend/src/styles/survey-details.css`  | 155   | ~15   | ✅ Komplett redundant |
 
 ---
 
@@ -88,17 +88,17 @@ In JEDER dieser 23 Dateien wird die komplette `.btn { ... }` Block-Definition ge
 ```css
 /* WIRD ENTFERNT ❌ */
 .btn {
-  cursor: pointer;
   display: inline-flex;
-  gap: 8px;
-  align-items: center;
   justify-content: center;
-  padding: 10px 24px;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
   border: none;
   border-radius: var(--radius-xl);
-  font-size: 14px;
+  padding: 10px 24px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  font-size: 14px;
 }
 ```
 

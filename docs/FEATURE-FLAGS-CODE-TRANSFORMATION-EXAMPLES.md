@@ -5,6 +5,7 @@
 ## Pattern 1: Simple useV2 Declaration
 
 ### ❌ BEFORE (with feature flag)
+
 ```typescript
 // File: frontend/src/scripts/admin/dashboard/services.ts
 const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
@@ -13,6 +14,7 @@ const response = await fetch(endpoint, options);
 ```
 
 ### ✅ AFTER (v2 only)
+
 ```typescript
 // File: frontend/src/scripts/admin/dashboard/services.ts
 const endpoint = '/api/v2/users';
@@ -22,6 +24,7 @@ const response = await fetch(endpoint, options);
 ## Pattern 2: Conditional API Path Selection
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/auth/index.ts
 export async function login(credentials: LoginCredentials) {
@@ -32,13 +35,14 @@ export async function login(credentials: LoginCredentials) {
   } else {
     return fetch('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials)
+      body: JSON.stringify(credentials),
     });
   }
 }
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/auth/index.ts
 export async function login(credentials: LoginCredentials) {
@@ -49,6 +53,7 @@ export async function login(credentials: LoginCredentials) {
 ## Pattern 3: Response Structure Handling
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/admin/dashboard/services.ts
 const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
@@ -65,6 +70,7 @@ if (useV2) {
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/admin/dashboard/services.ts
 const response = await fetch(endpoint);
@@ -76,6 +82,7 @@ return data.data || [];
 ## Pattern 4: Field Name Mapping
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/pages/admin-dashboard.html
 const firstName = employee.firstName || employee.first_name || '';
@@ -84,6 +91,7 @@ const isActive = employee.isActive ?? employee.is_active;
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/pages/admin-dashboard.html
 // v2 always uses camelCase
@@ -95,6 +103,7 @@ const isActive = employee.isActive;
 ## Pattern 5: Complex Conditional with Different Logic
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/pages/kvp-api.ts
 export class KvpApi {
@@ -118,6 +127,7 @@ export class KvpApi {
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/pages/kvp-api.ts
 export class KvpApi {
@@ -137,15 +147,15 @@ export class KvpApi {
 ## Pattern 6: Token Handling
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/utils/api-client.ts
 const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
-const token = useV2
-  ? localStorage.getItem('accessToken')
-  : localStorage.getItem('token');
+const token = useV2 ? localStorage.getItem('accessToken') : localStorage.getItem('token');
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/utils/api-client.ts
 // v2 uses accessToken
@@ -155,14 +165,17 @@ const token = localStorage.getItem('accessToken');
 ## Pattern 7: Error Message Handling
 
 ### ❌ BEFORE
+
 ```javascript
 // File: frontend/src/pages/admin-dashboard.html
-const errorMessage = window.FEATURE_FLAGS?.USE_API_V2_USERS
-  ? errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden'
+const errorMessage =
+  window.FEATURE_FLAGS?.USE_API_V2_USERS ?
+    errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden'
   : errorData.message || 'Status konnte nicht aktualisiert werden';
 ```
 
 ### ✅ AFTER
+
 ```javascript
 // File: frontend/src/pages/admin-dashboard.html
 // v2 error format
@@ -172,6 +185,7 @@ const errorMessage = errorData.error?.message || errorData.message || 'Status ko
 ## Pattern 8: Removing Import Statements
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/dashboard/common.ts
 import { isFeatureEnabled } from '../utils/feature-flags';
@@ -187,6 +201,7 @@ export function initDashboard() {
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/dashboard/common.ts
 // Remove feature flag imports completely
@@ -199,6 +214,7 @@ export function initDashboard() {
 ## Pattern 9: URL Construction
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/documents/upload.ts
 const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
@@ -207,6 +223,7 @@ const uploadUrl = `${baseUrl}/documents/upload`;
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/documents/upload.ts
 const baseUrl = '/api/v2';
@@ -216,10 +233,11 @@ const uploadUrl = `${baseUrl}/documents/upload`;
 ## Pattern 10: HTML Script Tag
 
 ### ❌ BEFORE
+
 ```html
 <!-- File: frontend/src/pages/admin-dashboard.html -->
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Admin Dashboard</title>
   <!-- Feature Flags -->
   <script src="/feature-flags.js"></script>
@@ -228,10 +246,11 @@ const uploadUrl = `${baseUrl}/documents/upload`;
 ```
 
 ### ✅ AFTER
+
 ```html
 <!-- File: frontend/src/pages/admin-dashboard.html -->
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Admin Dashboard</title>
   <!-- Feature flags removed - all APIs use v2 -->
   <!-- Rest of head -->
@@ -241,6 +260,7 @@ const uploadUrl = `${baseUrl}/documents/upload`;
 ## Pattern 11: Window Type Extensions
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/types/global.d.ts
 declare global {
@@ -259,6 +279,7 @@ declare global {
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/types/global.d.ts
 declare global {
@@ -272,13 +293,14 @@ declare global {
 ## Pattern 12: Test Files
 
 ### ❌ BEFORE
+
 ```typescript
 // File: frontend/src/scripts/__tests__/api-client.test.ts
 describe('ApiClient', () => {
   beforeEach(() => {
     window.FEATURE_FLAGS = {
       USE_API_V2_AUTH: true,
-      USE_API_V2_USERS: false
+      USE_API_V2_USERS: false,
     };
   });
 
@@ -295,6 +317,7 @@ describe('ApiClient', () => {
 ```
 
 ### ✅ AFTER
+
 ```typescript
 // File: frontend/src/scripts/__tests__/api-client.test.ts
 describe('ApiClient', () => {
@@ -311,6 +334,7 @@ describe('ApiClient', () => {
 ## Common Pitfalls to Avoid
 
 ### ⚠️ Don't Leave Empty Conditionals
+
 ```typescript
 // BAD - Empty if block
 if (true) {
@@ -322,6 +346,7 @@ return apiClient.get('/api/v2/users');
 ```
 
 ### ⚠️ Don't Forget to Remove Variables
+
 ```typescript
 // BAD - Unused variable
 const useV2 = true; // Always true now
@@ -332,6 +357,7 @@ const endpoint = '/api/v2/users';
 ```
 
 ### ⚠️ Don't Keep Fallback Logic
+
 ```typescript
 // BAD - Keeping unnecessary fallback
 const data = response.data || response;
@@ -341,6 +367,7 @@ const data = response.data;
 ```
 
 ### ⚠️ Don't Mix v1 and v2 Field Names
+
 ```typescript
 // BAD - Still checking both formats
 const name = user.firstName || user.first_name;

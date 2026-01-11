@@ -11,44 +11,48 @@ Der Algorithmus soll aus minimalen Benutzereingaben einen vollständigen Schicht
 Basierend auf Recherche zu industriellen Schichtmodellen in Deutschland lassen sich folgende Hauptkategorien identifizieren:
 
 ### Kategorie A: Einfache X/Y-Rhythmen
+
 Der häufigste Typ. Eine feste Anzahl Arbeitstage, gefolgt von einer festen Anzahl freier Tage.
 
-| Bezeichnung | Arbeitstage | Freie Tage | Typische Branche |
-|-------------|-------------|------------|------------------|
-| 4/4-Rhythmus | 4 | 4 | Industrie, Produktion |
-| 5/2-Rhythmus | 5 | 2 | Klassische Woche |
-| 6/3-Rhythmus | 6 | 3 | Vollkonti-Betrieb |
-| 6/4-Rhythmus | 6 | 4 | Industrie, Logistik, Pflege |
-| 7/7-Rhythmus | 7 | 7 | Offshore, Bergbau |
-| 14/14-Rhythmus | 14 | 14 | Offshore-Plattformen |
-| 21/7-Rhythmus | 21 | 7 | Offshore, Auslandseinsätze |
+| Bezeichnung    | Arbeitstage | Freie Tage | Typische Branche            |
+| -------------- | ----------- | ---------- | --------------------------- |
+| 4/4-Rhythmus   | 4           | 4          | Industrie, Produktion       |
+| 5/2-Rhythmus   | 5           | 2          | Klassische Woche            |
+| 6/3-Rhythmus   | 6           | 3          | Vollkonti-Betrieb           |
+| 6/4-Rhythmus   | 6           | 4          | Industrie, Logistik, Pflege |
+| 7/7-Rhythmus   | 7           | 7          | Offshore, Bergbau           |
+| 14/14-Rhythmus | 14          | 14         | Offshore-Plattformen        |
+| 21/7-Rhythmus  | 21          | 7          | Offshore, Auslandseinsätze  |
 
 ### Kategorie B: Kurze Wechselrhythmen (2-2-3)
+
 Speziell für 12-Stunden-Schichten entwickelt, um jedes zweite Wochenende frei zu haben.
 
-| Bezeichnung | Muster | Beschreibung |
-|-------------|--------|--------------|
+| Bezeichnung    | Muster                                | Beschreibung             |
+| -------------- | ------------------------------------- | ------------------------ |
 | 2-2-3-Rhythmus | 2 Arbeit → 2 frei → 3 Arbeit → 2 frei | Jedes 2. Wochenende frei |
-| Panama-Plan | Variation des 2-2-3 | 4 Teams rotieren |
+| Panama-Plan    | Variation des 2-2-3                   | 4 Teams rotieren         |
 
 ### Kategorie C: Wöchentlicher Wechsel
+
 Die Schicht wechselt im Wochenrhythmus, nicht nach Freiphase.
 
-| Bezeichnung | Beschreibung |
-|-------------|--------------|
+| Bezeichnung               | Beschreibung                                          |
+| ------------------------- | ----------------------------------------------------- |
 | Klassischer Wochenwechsel | Mo-Fr Früh → nächste Woche Spät → nächste Woche Nacht |
-| Zwei-Wochen-Wechsel | 2 Wochen Früh → 2 Wochen Spät → 2 Wochen Nacht |
+| Zwei-Wochen-Wechsel       | 2 Wochen Früh → 2 Wochen Spät → 2 Wochen Nacht        |
 
 **Hinweis:** Diese Kategorie ist laut Aufgabenstellung bereits separat implementiert und muss hier nicht behandelt werden.
 
 ### Kategorie D: Feste Schicht ohne Wechsel
+
 Manche Mitarbeiter arbeiten dauerhaft in einer Schicht.
 
-| Bezeichnung | Beschreibung |
-|-------------|--------------|
-| Dauerfrüh | Nur Frühschicht |
-| Dauerspät | Nur Spätschicht |
-| Dauernacht | Nur Nachtschicht |
+| Bezeichnung | Beschreibung     |
+| ----------- | ---------------- |
+| Dauerfrüh   | Nur Frühschicht  |
+| Dauerspät   | Nur Spätschicht  |
+| Dauernacht  | Nur Nachtschicht |
 
 ---
 
@@ -57,20 +61,24 @@ Manche Mitarbeiter arbeiten dauerhaft in einer Schicht.
 Dies ist die wichtigste konzeptionelle Frage des Algorithmus.
 
 ### Option 1: Schichtwechsel nach jedem Zyklus (empfohlen für diesen Algorithmus)
+
 Nach Abschluss eines kompletten Rhythmus-Zyklus (Arbeit + Frei) wechselt die Schicht zur nächsten in der Reihenfolge.
 
 **Beispiel 4/4-Rhythmus mit Schichtwechsel:**
+
 ```
 Zyklus 1: 4× Früh → 4× frei
-Zyklus 2: 4× Spät → 4× frei  
+Zyklus 2: 4× Spät → 4× frei
 Zyklus 3: 4× Nacht → 4× frei
 Zyklus 4: 4× Früh → 4× frei (von vorne)
 ```
 
 ### Option 2: Keine Rotation (feste Schicht)
+
 Der Mitarbeiter/das Team bleibt dauerhaft in einer Schicht.
 
 **Beispiel 6/4-Rhythmus ohne Wechsel:**
+
 ```
 Zyklus 1: 6× Früh → 4× frei
 Zyklus 2: 6× Früh → 4× frei
@@ -79,9 +87,11 @@ Zyklus 3: 6× Früh → 4× frei
 ```
 
 ### Option 3: Wechsel nach X Zyklen
+
 Die Schicht wechselt erst nach einer bestimmten Anzahl von Zyklen.
 
 **Beispiel: Wechsel nach 2 Zyklen:**
+
 ```
 Zyklus 1: 4× Früh → 4× frei
 Zyklus 2: 4× Früh → 4× frei
@@ -90,7 +100,9 @@ Zyklus 4: 4× Spät → 4× frei
 ```
 
 ### Empfehlung für den Algorithmus
+
 Der Benutzer sollte wählen können:
+
 1. **Schichtwechsel aktiviert?** (Ja/Nein)
 2. **Wenn ja: Nach wie vielen Zyklen?** (Standard: 1)
 3. **Schicht-Reihenfolge?** (Standard: Früh → Spät → Nacht)
@@ -101,20 +113,20 @@ Der Benutzer sollte wählen können:
 
 ### Pflichtfelder (Minimum für Generierung)
 
-| Feld | Beschreibung | Beispiel |
-|------|--------------|----------|
-| Startdatum | Beginn des Schichtplans | 01.01.2025 |
-| Enddatum | Ende des Schichtplans | 31.12.2025 |
-| Startschicht | Welche Schicht am ersten Tag? | Früh |
-| Schichtblock-Länge | Wie viele Tage in derselben Schicht? | 10 |
-| Freie Tage | Freie Tage zwischen Schichtwechseln | 2 |
-| Schicht-Reihenfolge | Rotations-Reihenfolge (Dropdown) | Früh → Spät → Nacht |
+| Feld                | Beschreibung                         | Beispiel            |
+| ------------------- | ------------------------------------ | ------------------- |
+| Startdatum          | Beginn des Schichtplans              | 01.01.2025          |
+| Enddatum            | Ende des Schichtplans                | 31.12.2025          |
+| Startschicht        | Welche Schicht am ersten Tag?        | Früh                |
+| Schichtblock-Länge  | Wie viele Tage in derselben Schicht? | 10                  |
+| Freie Tage          | Freie Tage zwischen Schichtwechseln  | 2                   |
+| Schicht-Reihenfolge | Rotations-Reihenfolge (Dropdown)     | Früh → Spät → Nacht |
 
 ### Optionale Felder
 
-| Feld | Beschreibung | Standardwert |
-|------|--------------|--------------|
-| Sonderregeln | Jeden N-ten Wochentag frei | Keine |
+| Feld         | Beschreibung               | Standardwert |
+| ------------ | -------------------------- | ------------ |
+| Sonderregeln | Jeden N-ten Wochentag frei | Keine        |
 
 ### Feld-Erklärung mit Beispiel
 
@@ -143,24 +155,31 @@ Tag 37-46: FRÜH (10×)  ← Zyklus wiederholt
 ## 5. Algorithmus-Logik in Textform
 
 ### Schritt 1: Validierung
+
 Bevor der Algorithmus startet, werden die Eingaben geprüft:
 
 **Bedingung 1:** Startdatum muss vor Enddatum liegen.
+
 - Falls nicht erfüllt → Fehlermeldung: "Startdatum muss vor Enddatum liegen"
 
 **Bedingung 2:** Schichtblock-Länge muss mindestens 1 sein.
+
 - Falls nicht erfüllt → Fehlermeldung: "Mindestens 1 Tag pro Schichtblock"
 
 **Bedingung 3:** Freie Tage müssen mindestens 0 sein.
+
 - 0 freie Tage sind erlaubt (direkter Schichtwechsel ohne Pause)
 
 **Bedingung 4:** Startschicht muss gültig sein (Früh, Spät oder Nacht).
+
 - Falls nicht erfüllt → Fehlermeldung: "Ungültiger Schichttyp"
 
 **Bedingung 5:** Schicht-Reihenfolge muss 3 Elemente haben.
+
 - Falls nicht erfüllt → Fehlermeldung: "Ungültige Schicht-Reihenfolge"
 
 ### Schritt 2: Block-Länge berechnen
+
 ```typescript
 // Ein "Block" = Schichtblock + Freitage
 const blockLength: number = shiftBlockLength + freeDays;
@@ -171,6 +190,7 @@ const fullCycleLength: number = blockLength * 3;
 **Beispiel:** 10 Tage Schicht + 2 Tage frei → Block = 12 Tage, Zyklus = 36 Tage
 
 ### Schritt 3: Initialisierung
+
 Der Algorithmus beginnt mit folgenden Startwerten:
 
 ```typescript
@@ -181,9 +201,9 @@ interface AlgorithmState {
   currentDate: Date;
   currentPhase: PhaseType;
   dayInPhase: number;
-  shiftIndex: number;           // 0, 1, 2 → Index in shiftSequence
+  shiftIndex: number; // 0, 1, 2 → Index in shiftSequence
   currentShift: ShiftType;
-  blockNumber: number;          // Welcher Block im Zyklus?
+  blockNumber: number; // Welcher Block im Zyklus?
 }
 
 const initialState: AlgorithmState = {
@@ -191,12 +211,13 @@ const initialState: AlgorithmState = {
   currentPhase: 'shift',
   dayInPhase: 1,
   shiftIndex: 0,
-  currentShift: startShift,     // Vom Benutzer gewählt
+  currentShift: startShift, // Vom Benutzer gewählt
   blockNumber: 1,
 };
 ```
 
 ### Schritt 4: Hauptschleife
+
 Für jeden Tag im Zeitraum (vom Startdatum bis Enddatum):
 
 ```typescript
@@ -247,7 +268,9 @@ function advanceToNextDay(state: AlgorithmState, config: ShiftPlanConfig): void 
 ```
 
 ### Schritt 5: Ausgabe
+
 Nach Abschluss der Schleife wird der generierte Plan zurückgegeben:
+
 - Liste aller Tage mit Datum, Status, Schicht
 - Zusammenfassung (Gesamtarbeitstage, Gesamtfreie Tage, Anzahl Zyklen)
 
@@ -258,12 +281,15 @@ Nach Abschluss der Schleife wird der generierte Plan zurückgegeben:
 ### Unterstützte Sonderregel-Typen
 
 #### Typ 1: Bestimmter Wochentag immer frei
+
 **Beschreibung:** Ein bestimmter Wochentag ist immer frei, unabhängig vom Rhythmus.
 **Beispiel:** "Jeder Sonntag ist frei"
 **Parameter:**
+
 - Wochentag (0 = Sonntag, 1 = Montag, ..., 6 = Samstag)
 
 **Logik:**
+
 ```typescript
 // ESLint-konform: strict-boolean-expressions
 function isWeekdayFree(date: Date, targetWeekday: number): boolean {
@@ -272,13 +298,16 @@ function isWeekdayFree(date: Date, targetWeekday: number): boolean {
 ```
 
 #### Typ 2: Jeder N-te Wochentag im Monat frei
+
 **Beschreibung:** Ein bestimmter Wochentag ist nur dann frei, wenn er der N-te im Monat ist.
 **Beispiel:** "Jeder 4. Sonntag im Monat ist frei"
 **Parameter:**
+
 - Wochentag (0-6)
 - N (1-5)
 
 **Logik:**
+
 ```typescript
 // ESLint-konform: explicit-function-return-type, strict-boolean-expressions
 function isNthWeekdayFree(date: Date, targetWeekday: number, n: number): boolean {
@@ -300,12 +329,15 @@ function getWeekdayPositionInMonth(date: Date): number {
 ```
 
 #### Typ 3: Bestimmte Daten frei
+
 **Beschreibung:** Spezifische Kalenderdaten sind frei.
 **Beispiel:** Feiertage wie 25.12., 01.01., etc.
 **Parameter:**
+
 - Liste von Daten
 
 **Logik:**
+
 ```typescript
 // ESLint-konform: prefer-nullish-coalescing nicht nötig bei boolean
 function isSpecificDateFree(date: Date, freeDates: Date[]): boolean {
@@ -315,14 +347,18 @@ function isSpecificDateFree(date: Date, freeDates: Date[]): boolean {
 ```
 
 #### Typ 4: Feiertage frei (automatisch)
+
 **Beschreibung:** Gesetzliche Feiertage werden automatisch als frei markiert.
 **Parameter:**
+
 - Bundesland (für regionale Feiertage)
 
 **Hinweis:** Erfordert eine Feiertags-Datenbank oder API. Kann als Erweiterung implementiert werden.
 
 ### Priorität bei mehreren Sonderregeln
+
 Wenn mehrere Sonderregeln für denselben Tag zutreffen, gilt:
+
 1. Alle "Frei"-Regeln werden angewendet
 2. Eine "Frei"-Regel überschreibt immer einen Arbeitstag
 3. Keine Konflikte möglich, da Sonderregeln nur "Frei" setzen können
@@ -332,18 +368,22 @@ Wenn mehrere Sonderregeln für denselben Tag zutreffen, gilt:
 ## 7. Warnungen und Hinweise
 
 ### Warnung 1: Langer Zeitraum
+
 **Bedingung:** Zeitraum > 365 Tage
 **Hinweis:** "Der gewählte Zeitraum umfasst mehr als ein Jahr. Die Berechnung kann einen Moment dauern."
 
 ### Warnung 2: Viele aufeinanderfolgende Arbeitstage
+
 **Bedingung:** Arbeitstage > 14
 **Hinweis:** "Sie haben mehr als 14 aufeinanderfolgende Arbeitstage gewählt. Bitte prüfen Sie, ob dies den arbeitsrechtlichen Bestimmungen entspricht."
 
 ### Warnung 3: Keine freien Tage
+
 **Bedingung:** Freie Tage = 0
 **Hinweis:** "Sie haben 0 freie Tage gewählt. Der Plan enthält keine Ruhephasen zwischen Zyklen."
 
 ### Warnung 4: Sehr kurzer Rhythmus
+
 **Bedingung:** Zyklus-Länge < 3 Tage
 **Hinweis:** "Der gewählte Rhythmus ist sehr kurz. Dies ist ungewöhnlich für industrielle Schichtpläne."
 
@@ -353,20 +393,22 @@ Wenn mehrere Sonderregeln für denselben Tag zutreffen, gilt:
 
 Um die Eingabe zu erleichtern, sollte der Benutzer aus Vorlagen wählen können:
 
-| Vorlage | Arbeitstage | Freie Tage | Schichtwechsel | Beschreibung |
-|---------|-------------|------------|----------------|--------------|
-| 4/4 Standard | 4 | 4 | Nach jedem Zyklus | Klassischer Industrierhythmus |
-| 5/2 Woche | 5 | 2 | Nach jedem Zyklus | Normale Arbeitswoche |
-| 6/4 Vollkonti | 6 | 4 | Nach jedem Zyklus | 24/7-Betrieb |
-| 6/3 Kompakt | 6 | 3 | Nach jedem Zyklus | Verdichteter Vollkonti |
-| 7/7 Offshore | 7 | 7 | Nach jedem Zyklus | Offshore/Bergbau |
-| 14/14 Rotation | 14 | 14 | Nach jedem Zyklus | Lange Einsätze |
-| 21/7 Ausland | 21 | 7 | Nach jedem Zyklus | Auslandseinsätze |
-| 2-2-3 Panama | Speziell | Speziell | Nach Muster | 12h-Schichten |
-| Dauerschicht | Beliebig | Beliebig | Nie | Keine Rotation |
+| Vorlage        | Arbeitstage | Freie Tage | Schichtwechsel    | Beschreibung                  |
+| -------------- | ----------- | ---------- | ----------------- | ----------------------------- |
+| 4/4 Standard   | 4           | 4          | Nach jedem Zyklus | Klassischer Industrierhythmus |
+| 5/2 Woche      | 5           | 2          | Nach jedem Zyklus | Normale Arbeitswoche          |
+| 6/4 Vollkonti  | 6           | 4          | Nach jedem Zyklus | 24/7-Betrieb                  |
+| 6/3 Kompakt    | 6           | 3          | Nach jedem Zyklus | Verdichteter Vollkonti        |
+| 7/7 Offshore   | 7           | 7          | Nach jedem Zyklus | Offshore/Bergbau              |
+| 14/14 Rotation | 14          | 14         | Nach jedem Zyklus | Lange Einsätze                |
+| 21/7 Ausland   | 21          | 7          | Nach jedem Zyklus | Auslandseinsätze              |
+| 2-2-3 Panama   | Speziell    | Speziell   | Nach Muster       | 12h-Schichten                 |
+| Dauerschicht   | Beliebig    | Beliebig   | Nie               | Keine Rotation                |
 
 ### Hinweis zum 2-2-3-Rhythmus
+
 Dieser Rhythmus ist komplexer und erfordert eine erweiterte Phasen-Definition:
+
 ```
 Phase 1: 2 Tage Arbeit
 Phase 2: 2 Tage frei
@@ -374,6 +416,7 @@ Phase 3: 3 Tage Arbeit
 Phase 4: 2 Tage frei
 (Zyklus wiederholt sich)
 ```
+
 Dies kann durch ein erweitertes Phasen-Array abgebildet werden (siehe Abschnitt 9).
 
 ---
@@ -383,12 +426,13 @@ Dies kann durch ein erweitertes Phasen-Array abgebildet werden (siehe Abschnitt 
 Für Rhythmen, die nicht dem einfachen X/Y-Muster folgen, kann ein Phasen-Array verwendet werden:
 
 ### Konzept
+
 Statt nur "Arbeitstage" und "Freie Tage" definiert der Benutzer eine Sequenz von Phasen:
 
 ```typescript
 // ESLint-konform: camelCase, PascalCase für Types, explicit types
 interface Phase {
-  type: PhaseType;   // 'work' | 'free'
+  type: PhaseType; // 'work' | 'free'
   days: number;
 }
 
@@ -402,6 +446,7 @@ const phases: Phase[] = [
 ```
 
 ### Angepasste Algorithmus-Logik
+
 ```typescript
 // ESLint-konform: max-lines-per-function 60, max-depth 4
 function generateComplexPlan(config: ComplexShiftConfig): GeneratedDay[] {
@@ -444,6 +489,7 @@ function navigateToNextPhase(
 ```
 
 ### Wann ist diese Erweiterung nötig?
+
 - 2-2-3-Rhythmen
 - Ungleichmäßige Arbeit/Frei-Verteilungen
 - Spezielle Betriebsvereinbarungen
@@ -458,11 +504,13 @@ Für 99% der Anwendungsfälle reicht das einfache Schichtblock-Modell.
 > **Siehe Sektion 20 für das aktuelle UI-Design.**
 
 Das Modal integriert sich in den bestehenden Custom Rotation-Flow:
+
 - Toggle "Benutzerdefiniert" aktiviert das Modal
 - Konfiguration erfolgt in EINEM Schritt (kein Wizard)
 - Danach erscheint das 14-Tage Grid zum Ausfüllen
 
 **Warum kein Wizard?**
+
 - Zu viele Klicks für den User
 - Der Flow existiert bereits (Toggle → Modal → Grid)
 - KISS-Prinzip: Einfacher ist besser
@@ -472,24 +520,26 @@ Das Modal integriert sich in den bestehenden Custom Rotation-Flow:
 ## 11. Ausgabe-Format
 
 ### TypeScript Interface für generierte Tage:
+
 ```typescript
 // ESLint-konform: PascalCase für Types, explicit union types
 type ShiftType = 'early' | 'late' | 'night';
 type DayStatus = 'work' | 'free';
 
 interface GeneratedDay {
-  date: string;                    // ISO-Format: "2025-01-01"
-  weekday: number;                 // 0-6 (0 = Sonntag)
-  weekdayName: string;             // "Montag", "Dienstag", etc.
+  date: string; // ISO-Format: "2025-01-01"
+  weekday: number; // 0-6 (0 = Sonntag)
+  weekdayName: string; // "Montag", "Dienstag", etc.
   status: DayStatus;
-  shift: ShiftType | null;         // null wenn status === 'free'
+  shift: ShiftType | null; // null wenn status === 'free'
   cycleNumber: number;
   specialRuleApplied: boolean;
-  specialRuleName?: string;        // Optional: welche Regel
+  specialRuleName?: string; // Optional: welche Regel
 }
 ```
 
 ### Beispiel-Ausgabe (Januar 2025, 4/4-Rhythmus, Start: early):
+
 ```
 date       | weekdayName | status | shift | cycleNumber
 -----------|-------------|--------|-------|------------
@@ -511,26 +561,31 @@ date       | weekdayName | status | shift | cycleNumber
 ## 12. Edge Cases und Fehlerbehandlung
 
 ### Fall 1: Zeitraum kürzer als ein Zyklus
+
 **Situation:** Benutzer wählt 5 Tage Zeitraum bei 4/4-Rhythmus (8 Tage Zyklus)
 **Verhalten:** Algorithmus füllt nur die vorhandenen 5 Tage
 **Kein Fehler**, aber Hinweis: "Der Zeitraum ist kürzer als ein vollständiger Zyklus"
 
 ### Fall 2: Enddatum = Startdatum
+
 **Situation:** Nur ein einzelner Tag
 **Verhalten:** Genau 1 Tag wird generiert
 **Gültig**, kein Fehler
 
 ### Fall 3: 0 freie Tage
+
 **Situation:** Durchgehende Arbeit ohne Pausen
 **Verhalten:** Zyklus besteht nur aus Arbeitstagen
 **Gültig**, aber Warnung anzeigen
 
 ### Fall 4: Sonderregel macht alle Tage frei
+
 **Situation:** Z.B. "Jeder Wochentag frei" würde alle 7 Tage als frei markieren
 **Verhalten:** Algorithmus führt aus, aber zeigt Warnung
 **Hinweis:** "Die Sonderregeln führen dazu, dass alle Tage als frei markiert sind"
 
 ### Fall 5: Startdatum in der Vergangenheit
+
 **Situation:** Benutzer wählt ein Datum in der Vergangenheit
 **Verhalten:** Erlaubt (für Nacherfassung oder Planung ab historischem Datum)
 **Kein Fehler**
@@ -540,23 +595,28 @@ date       | weekdayName | status | shift | cycleNumber
 ## 13. Technische Hinweise für die Implementierung
 
 ### Performance
+
 - Für Zeiträume bis 3 Jahre (~1095 Tage) sollte die Berechnung unter 1 Sekunde dauern
 - Keine Datenbankabfragen während der Schleife
 - Array vorallokieren wenn möglich
 
 ### Datumsberechnung
+
 - Zeitzone beachten (Deutschland: Europe/Berlin)
 - Sommerzeit-Wechsel berücksichtigen
 - Immer mit Datum-Bibliothek arbeiten (z.B. date-fns, dayjs)
 
 ### Testbarkeit
+
 Der Algorithmus sollte als reine Funktion implementiert werden:
+
 - Eingabe: Konfiguration
 - Ausgabe: Generierter Plan
 - Keine Seiteneffekte
 - Leicht zu testen
 
 ### Erweiterbarkeit
+
 - Sonderregel-Typen als Plugin-System
 - Schicht-Typen konfigurierbar (nicht hart-kodiert)
 - Export-Formate erweiterbar (CSV, iCal, etc.)
@@ -661,13 +721,13 @@ HINWEIS: nth_weekday_free ist bereits im MVP enthalten!
 
 ### Entscheidungen (GETROFFEN)
 
-| Frage | Entscheidung |
-|-------|--------------|
-| Wizard oder Modal? | **Modal** (kein Wizard) |
-| Neue Datei rhythm-wizard.ts? | **Nein** (custom-rotation.ts erweitern) |
-| Sonderregeln in MVP? | **Ja** (nth_weekday_free) |
+| Frage                                  | Entscheidung                                         |
+| -------------------------------------- | ---------------------------------------------------- |
+| Wizard oder Modal?                     | **Modal** (kein Wizard)                              |
+| Neue Datei rhythm-wizard.ts?           | **Nein** (custom-rotation.ts erweitern)              |
+| Sonderregeln in MVP?                   | **Ja** (nth_weekday_free)                            |
 | Schichtblock-Modell oder Phasen-Array? | **Schichtblock-Modell** (Phasen-Array nur für 2-2-3) |
-| API neuer Endpoint? | **Nein** (bestehender POST /rotation) |
+| API neuer Endpoint?                    | **Nein** (bestehender POST /rotation)                |
 
 ---
 
@@ -691,31 +751,31 @@ type SpecialRuleType = 'nth_weekday_free';
 interface ShiftPlanConfig {
   startDate: Date;
   endDate: Date;
-  startShift: ShiftType;            // Welche Schicht am ersten Tag?
-  shiftBlockLength: number;         // Wie viele Tage in derselben Schicht?
-  freeDays: number;                 // Freie Tage zwischen Schichtwechseln
-  shiftSequence: ShiftType[];       // Reihenfolge: ['early','late','night']
-  specialRules: SpecialRule[];      // Optional: Sonderregeln
+  startShift: ShiftType; // Welche Schicht am ersten Tag?
+  shiftBlockLength: number; // Wie viele Tage in derselben Schicht?
+  freeDays: number; // Freie Tage zwischen Schichtwechseln
+  shiftSequence: ShiftType[]; // Reihenfolge: ['early','late','night']
+  specialRules: SpecialRule[]; // Optional: Sonderregeln
 }
 
 // Sonderregel-Definitionen (vereinfacht für MVP)
 interface NthWeekdayFreeRule {
   type: 'nth_weekday_free';
   name: string;
-  weekday: number;    // 0-6 (0 = Sonntag)
-  n: number;          // 1-5 (z.B. 4 = "jeder 4.")
+  weekday: number; // 0-6 (0 = Sonntag)
+  n: number; // 1-5 (z.B. 4 = "jeder 4.")
 }
 
 type SpecialRule = NthWeekdayFreeRule;
 
 // Generierter Tag (Ausgabe)
 interface GeneratedDay {
-  date: string;                    // ISO-Format: "2025-01-01"
-  weekday: number;                 // 0-6
-  weekdayName: string;             // Lokalisiert
+  date: string; // ISO-Format: "2025-01-01"
+  weekday: number; // 0-6
+  weekdayName: string; // Lokalisiert
   status: DayStatus;
   shift: ShiftType | null;
-  blockNumber: number;             // Welcher Block? (1, 2, 3, ...)
+  blockNumber: number; // Welcher Block? (1, 2, 3, ...)
   specialRuleApplied: boolean;
   specialRuleName?: string;
 }
@@ -725,7 +785,7 @@ interface AlgorithmState {
   currentDate: Date;
   currentPhase: PhaseType;
   dayInPhase: number;
-  shiftIndex: number;              // 0, 1, 2 → Index in shiftSequence
+  shiftIndex: number; // 0, 1, 2 → Index in shiftSequence
   currentShift: ShiftType;
   blockNumber: number;
 }
@@ -733,9 +793,9 @@ interface AlgorithmState {
 // Zusammenfassung der Generierung
 interface GenerationSummary {
   totalDays: number;
-  shiftDays: number;               // Tage mit Schicht
-  freeDays: number;                // Freie Tage
-  totalBlocks: number;             // Anzahl Schichtblöcke
+  shiftDays: number; // Tage mit Schicht
+  freeDays: number; // Freie Tage
+  totalBlocks: number; // Anzahl Schichtblöcke
   warnings: string[];
 }
 
@@ -763,16 +823,16 @@ export type {
 
 ### ESLint-Regeln die dieser Code einhält:
 
-| Regel | Einhaltung |
-|-------|------------|
-| `@typescript-eslint/naming-convention` | camelCase für Variablen, PascalCase für Types |
-| `@typescript-eslint/explicit-function-return-type` | Alle Funktionen haben Return-Types |
-| `@typescript-eslint/no-explicit-any` | Kein `any` verwendet |
-| `@typescript-eslint/strict-boolean-expressions` | Explizite Vergleiche statt truthy/falsy |
-| `max-lines-per-function: 60` | Funktionen in Hilfsfunktionen aufgeteilt |
-| `max-depth: 4` | Keine tiefen Verschachtelungen |
-| `sonarjs/cognitive-complexity: 10` | Komplexität durch Aufteilung reduziert |
-| `@typescript-eslint/typedef` | Parameter haben explizite Typen |
+| Regel                                              | Einhaltung                                    |
+| -------------------------------------------------- | --------------------------------------------- |
+| `@typescript-eslint/naming-convention`             | camelCase für Variablen, PascalCase für Types |
+| `@typescript-eslint/explicit-function-return-type` | Alle Funktionen haben Return-Types            |
+| `@typescript-eslint/no-explicit-any`               | Kein `any` verwendet                          |
+| `@typescript-eslint/strict-boolean-expressions`    | Explizite Vergleiche statt truthy/falsy       |
+| `max-lines-per-function: 60`                       | Funktionen in Hilfsfunktionen aufgeteilt      |
+| `max-depth: 4`                                     | Keine tiefen Verschachtelungen                |
+| `sonarjs/cognitive-complexity: 10`                 | Komplexität durch Aufteilung reduziert        |
+| `@typescript-eslint/typedef`                       | Parameter haben explizite Typen               |
 
 ---
 
@@ -810,10 +870,10 @@ interface PatternConfig {
   customPattern?: { week1: WeekSchedule; week2: WeekSchedule };
 
   // NEU: Schichtblock-Modus
-  shiftBlockLength?: number;                        // Tage pro Schichtblock (z.B. 10)
-  freeDays?: number;                                // Freie Tage zwischen Wechseln (z.B. 2)
-  startShift?: 'early' | 'late' | 'night';          // Startschicht
-  shiftSequence?: ('early' | 'late' | 'night')[];   // Reihenfolge der Rotation
+  shiftBlockLength?: number; // Tage pro Schichtblock (z.B. 10)
+  freeDays?: number; // Freie Tage zwischen Wechseln (z.B. 2)
+  startShift?: 'early' | 'late' | 'night'; // Startschicht
+  shiftSequence?: ('early' | 'late' | 'night')[]; // Reihenfolge der Rotation
 
   // NEU: Sonderregeln
   specialRules?: NthWeekdayFreeRule[];
@@ -823,8 +883,8 @@ interface PatternConfig {
 interface NthWeekdayFreeRule {
   type: 'nth_weekday_free';
   name: string;
-  weekday: number;    // 0-6
-  n: number;          // 1-5
+  weekday: number; // 0-6
+  n: number; // 1-5
 }
 ```
 
@@ -834,11 +894,13 @@ interface NthWeekdayFreeRule {
 > Das Backend erkennt am Vorhandensein von `shiftBlockLength` dass Schichtblock-Modus gewünscht ist.
 
 **Bestehender Endpoint:**
+
 ```
 POST /api/v2/shifts/rotation
 ```
 
 **Request Body (erweitert um Schichtblock-Felder):**
+
 ```json
 {
   "patternConfig": {
@@ -858,6 +920,7 @@ POST /api/v2/shifts/rotation
 ```
 
 **Backend-Logik:**
+
 ```typescript
 // In rotation.service.ts oder neuer shift-algorithm.service.ts:
 if (patternConfig.shiftBlockLength !== undefined) {
@@ -871,11 +934,11 @@ if (patternConfig.shiftBlockLength !== undefined) {
 
 **Bestehende Endpoints nutzen:**
 
-| Endpoint | Verwendung |
-|----------|------------|
-| `GET /api/v2/shifts/rotation/patterns` | Muster laden |
-| `POST /api/v2/shifts/rotation` | Muster speichern (erweitert!) |
-| `GET /api/v2/users?teamId=X` | Mitarbeiter für Team laden |
+| Endpoint                               | Verwendung                    |
+| -------------------------------------- | ----------------------------- |
+| `GET /api/v2/shifts/rotation/patterns` | Muster laden                  |
+| `POST /api/v2/shifts/rotation`         | Muster speichern (erweitert!) |
+| `GET /api/v2/users?teamId=X`           | Mitarbeiter für Team laden    |
 
 ### Implementierungs-Reihenfolge
 
@@ -915,46 +978,52 @@ frontend/src/scripts/shifts/
 
 ### WAS PASST (wiederverwenden)
 
-| Datei | Funktion | Nutzen |
-|-------|----------|--------|
-| `rotation.service.ts` | `generateRotationShifts()` | Grundstruktur |
-| `rotation.service.ts` | `saveGeneratedShiftInTransaction()` | DB-Speicherung |
-| `rotation.controller.ts` | Endpoint-Struktur | Kopierbar |
-| `shift-plans.service.ts` | `createShiftPlan()` | Shifts speichern |
-| `shifts.validation.zod.ts` | `ShiftTypeSchema` | Types vorhanden |
+| Datei                      | Funktion                            | Nutzen           |
+| -------------------------- | ----------------------------------- | ---------------- |
+| `rotation.service.ts`      | `generateRotationShifts()`          | Grundstruktur    |
+| `rotation.service.ts`      | `saveGeneratedShiftInTransaction()` | DB-Speicherung   |
+| `rotation.controller.ts`   | Endpoint-Struktur                   | Kopierbar        |
+| `shift-plans.service.ts`   | `createShiftPlan()`                 | Shifts speichern |
+| `shifts.validation.zod.ts` | `ShiftTypeSchema`                   | Types vorhanden  |
 
 ### WAS FEHLT (neu erstellen)
 
-| Komponente | Beschreibung |
-|------------|--------------|
-| Schichtblock-Algorithmus | Tagesweise statt wochenweise Rotation |
-| Sonderregeln-System | weekday_free, nth_weekday_free, holidays |
-| Zod-Schema | `GenerateShiftBlockRequestSchema` |
-| Service | `shift-algorithm.service.ts` |
+| Komponente               | Beschreibung                             |
+| ------------------------ | ---------------------------------------- |
+| Schichtblock-Algorithmus | Tagesweise statt wochenweise Rotation    |
+| Sonderregeln-System      | weekday_free, nth_weekday_free, holidays |
+| Zod-Schema               | `GenerateShiftBlockRequestSchema`        |
+| Service                  | `shift-algorithm.service.ts`             |
 
 ### Kern-Unterschied zur bestehenden Logik
 
 **Bestehend (rotation.service.ts:562):**
+
 ```typescript
 // WOCHENWEISE: Eine Schicht pro Woche
 const weeksSinceStart = Math.floor((date - patternStart) / msPerWeek);
-const shiftType = cycleWeek === 0 ? 'F' : cycleWeek === 1 ? 'S' : 'N';
+const shiftType =
+  cycleWeek === 0 ? 'F'
+  : cycleWeek === 1 ? 'S'
+  : 'N';
 ```
 
 **Neu benötigt (Schichtblock-Modus):**
+
 ```typescript
 // TAGESWEISE: shiftBlockLength Schicht, dann freeDays frei
-const blockLength = shiftBlockLength + freeDays;  // z.B. 10+2 = 12
+const blockLength = shiftBlockLength + freeDays; // z.B. 10+2 = 12
 const dayInBlock = daysSinceStart % blockLength;
 const isShiftDay = dayInBlock < shiftBlockLength;
 // Nach jedem Block: Wechsel zur nächsten Schicht in shiftSequence
 const blockNumber = Math.floor(daysSinceStart / blockLength);
-const shiftIndex = blockNumber % shiftSequence.length;  // 0, 1, 2 → early, late, night
+const shiftIndex = blockNumber % shiftSequence.length; // 0, 1, 2 → early, late, night
 ```
 
 ### Anpassungen an bestehenden Dateien
 
 **1. rotation.types.ts:**
+
 ```typescript
 // Zu PatternConfig hinzufügen:
 shiftBlockLength?: number;
@@ -965,6 +1034,7 @@ specialRules?: NthWeekdayFreeRule[];
 ```
 
 **2. shifts.validation.zod.ts:**
+
 ```typescript
 // Neues Schema für Schichtblock-Modus
 export const NthWeekdayFreeRuleSchema = z.object({
@@ -989,6 +1059,7 @@ export const GenerateShiftBlockRequestSchema = z.object({
 ```
 
 **3. rotation.controller.ts:**
+
 ```typescript
 // Bestehender Handler erkennt Modus automatisch:
 // Kein neuer Handler nötig - siehe Section 17 Backend-Logik
@@ -998,17 +1069,25 @@ export const GenerateShiftBlockRequestSchema = z.object({
 
 ```typescript
 // Nutze shift-plans.service.ts:
-await shiftPlansService.createShiftPlan({
-  startDate, endDate,
-  departmentId, teamId,
-  shifts: generatedDays.filter(d => d.status === 'work').map(d => ({
-    userId: d.userId,
-    date: d.date,
-    type: d.shift,      // 'early' | 'late' | 'night'
-    startTime: shiftTimes[d.shift].start,
-    endTime: shiftTimes[d.shift].end,
-  })),
-}, tenantId, userId);
+await shiftPlansService.createShiftPlan(
+  {
+    startDate,
+    endDate,
+    departmentId,
+    teamId,
+    shifts: generatedDays
+      .filter((d) => d.status === 'work')
+      .map((d) => ({
+        userId: d.userId,
+        date: d.date,
+        type: d.shift, // 'early' | 'late' | 'night'
+        startTime: shiftTimes[d.shift].start,
+        endTime: shiftTimes[d.shift].end,
+      })),
+  },
+  tenantId,
+  userId,
+);
 ```
 
 ### Implementierungs-Schritte
@@ -1034,28 +1113,30 @@ await shiftPlansService.createShiftPlan({
 
 ### Bestehende Struktur (wiederverwenden)
 
-| Datei | Was existiert | Nutzen |
-|-------|---------------|--------|
-| `custom-rotation.ts` | `showPatternSelectionModal()` | Modal-Öffnung |
-| `custom-rotation.ts` | `savePattern()` | API-Aufruf anpassen |
-| `custom-rotation-types.ts` | `CustomRotationPattern` | Interface erweitern |
-| `shifts.html` | Modal-Struktur (Zeile 531-581) | Felder hinzufügen |
-| `shifts.html` | Date Range Inputs | Start/End bereits vorhanden |
-| `shifts.html` | 14-Tage Grid | BLEIBT (D&D) |
+| Datei                      | Was existiert                  | Nutzen                      |
+| -------------------------- | ------------------------------ | --------------------------- |
+| `custom-rotation.ts`       | `showPatternSelectionModal()`  | Modal-Öffnung               |
+| `custom-rotation.ts`       | `savePattern()`                | API-Aufruf anpassen         |
+| `custom-rotation-types.ts` | `CustomRotationPattern`        | Interface erweitern         |
+| `shifts.html`              | Modal-Struktur (Zeile 531-581) | Felder hinzufügen           |
+| `shifts.html`              | Date Range Inputs              | Start/End bereits vorhanden |
+| `shifts.html`              | 14-Tage Grid                   | BLEIBT (D&D)                |
 
 ### Was angepasst werden muss
 
 **1. PATTERN_TEMPLATES vereinfachen** (`custom-rotation-types.ts`):
+
 ```typescript
 // "Auto-Erkennung" ENTFERNEN - nicht mehr nötig!
-export const PATTERN_TEMPLATES: PatternTemplate[] = [];  // Leer oder entfernen
+export const PATTERN_TEMPLATES: PatternTemplate[] = []; // Leer oder entfernen
 ```
 
 **2. CustomRotationPattern erweitern** (`custom-rotation-types.ts`):
+
 ```typescript
 export interface CustomRotationPattern {
   name: string;
-  patternType: 'auto-detect';  // BLEIBT (für Kompatibilität)
+  patternType: 'auto-detect'; // BLEIBT (für Kompatibilität)
   cycleLengthWeeks: number;
   employeeCount?: number;
   patternConfig: {
@@ -1065,11 +1146,11 @@ export interface CustomRotationPattern {
     shiftDuration?: number;
 
     // NEU für Schichtblock-Modus:
-    shiftBlockLength?: number;                        // Tage pro Schichtblock
-    freeDays?: number;                                // Freie Tage zwischen Wechseln
-    startShift?: 'early' | 'late' | 'night';          // Startschicht
-    shiftSequence?: ('early' | 'late' | 'night')[];   // Dropdown-Auswahl
-    specialRules?: NthWeekdayFreeRule[];              // Sonderregeln
+    shiftBlockLength?: number; // Tage pro Schichtblock
+    freeDays?: number; // Freie Tage zwischen Wechseln
+    startShift?: 'early' | 'late' | 'night'; // Startschicht
+    shiftSequence?: ('early' | 'late' | 'night')[]; // Dropdown-Auswahl
+    specialRules?: NthWeekdayFreeRule[]; // Sonderregeln
   };
   startsAt: string;
   endsAt?: string;
@@ -1078,20 +1159,21 @@ export interface CustomRotationPattern {
 ```
 
 **3. Modal erweitern** (`shifts.html`):
+
 ```html
 <!-- NEUE Felder im bestehenden Modal hinzufügen: -->
 
 <!-- Schichtblock-Länge -->
 <div class="form-group">
   <label>Schichtblock-Länge</label>
-  <input type="number" id="shift-block-length" min="1" max="30" value="10">
+  <input type="number" id="shift-block-length" min="1" max="30" value="10" />
   <span class="help-text">Tage in derselben Schicht</span>
 </div>
 
 <!-- Freie Tage -->
 <div class="form-group">
   <label>Freie Tage zwischen Schichtwechseln</label>
-  <input type="number" id="free-days" min="0" max="14" value="2">
+  <input type="number" id="free-days" min="0" max="14" value="2" />
 </div>
 
 <!-- Startschicht -->
@@ -1117,7 +1199,7 @@ export interface CustomRotationPattern {
 <div class="form-group">
   <label>Sonderregeln (optional)</label>
   <div class="special-rule-row">
-    <input type="checkbox" id="nth-weekday-free">
+    <input type="checkbox" id="nth-weekday-free" />
     <span>Jeden</span>
     <select id="nth-value">
       <option value="1">1.</option>
@@ -1137,6 +1219,7 @@ export interface CustomRotationPattern {
 ```
 
 **4. custom-rotation.ts anpassen:**
+
 ```typescript
 // Neue Felder beim Speichern auslesen:
 function collectPatternConfig(): CustomRotationPattern['patternConfig'] {
@@ -1152,7 +1235,7 @@ function collectPatternConfig(): CustomRotationPattern['patternConfig'] {
 
 function parseShiftSequence(value: string): ShiftType[] {
   if (value === 'night-late-early') return ['night', 'late', 'early'];
-  return ['early', 'late', 'night'];  // Default
+  return ['early', 'late', 'night']; // Default
 }
 
 function collectSpecialRules(): NthWeekdayFreeRule[] {
@@ -1194,6 +1277,7 @@ frontend/src/scripts/shifts/
 ### Begriff: "Custom Rotation" (NEUER NAME!)
 
 **Custom Rotation** = Benutzerdefiniertes Schichtmuster für flexible Rotationen
+
 - Früh-, Spät- und Nachtschicht
 - Mindestens 3-5 Schichtgruppen rotieren
 - Gesetzliche Ruhezeiten werden eingehalten
@@ -1286,13 +1370,16 @@ Tag 37-46: FRÜH   (Müller, Schmidt, Weber)  ← Zyklus wiederholt
 ### Info-Box Logik
 
 Die Info-Box erscheint wenn:
+
 ```typescript
 // Prüfung: Genug Daten für Pattern?
-const gesamtBlockLänge = shiftBlockLength + freeDays;  // z.B. 10+2 = 12
+const gesamtBlockLänge = shiftBlockLength + freeDays; // z.B. 10+2 = 12
 const schichtTageAusgefüllt = countFilledShiftDays();
 
 if (schichtTageAusgefüllt >= shiftBlockLength) {
-  showInfoBox(`✅ Muster vollständig! ${shiftBlockLength} Schichttage + ${freeDays} Freitag = ${gesamtBlockLänge} Tage Block.`);
+  showInfoBox(
+    `✅ Muster vollständig! ${shiftBlockLength} Schichttage + ${freeDays} Freitag = ${gesamtBlockLänge} Tage Block.`,
+  );
 }
 
 // Was zählt als "ausgefüllt"?
@@ -1300,10 +1387,7 @@ if (schichtTageAusgefüllt >= shiftBlockLength) {
 function countFilledShiftDays(): number {
   let count = 0;
   for (const day of gridDays) {
-    const hasAnyEmployee =
-      day.early.length > 0 ||
-      day.late.length > 0 ||
-      day.night.length > 0;
+    const hasAnyEmployee = day.early.length > 0 || day.late.length > 0 || day.night.length > 0;
     if (hasAnyEmployee) count++;
   }
   return count;
@@ -1313,6 +1397,7 @@ function countFilledShiftDays(): number {
 ### 14-Tage Grid reicht?
 
 **JA!**
+
 - 10 Schichttage + 2 Freitag = 12 Tage → 14 Tage Grid reicht
 - 7 Schichttage + 2 Freitag = 9 Tage → 14 Tage Grid reicht
 - 14 Schichttage + 0 Freitag = 14 Tage → Grid reicht genau (Maximalfall)
@@ -1320,11 +1405,11 @@ function countFilledShiftDays(): number {
 
 ### Kein Wizard, keine Optionen, keine Verwirrung
 
-| Komponente | Bezeichnung |
-|------------|-------------|
-| Toggle | "Benutzerdefiniert" |
-| Modal-Titel | "Custom Rotation Muster erstellen" |
-| Button | "Custom Rotation Muster speichern" |
+| Komponente  | Bezeichnung                                     |
+| ----------- | ----------------------------------------------- |
+| Toggle      | "Benutzerdefiniert"                             |
+| Modal-Titel | "Custom Rotation Muster erstellen"              |
+| Button      | "Custom Rotation Muster speichern"              |
 | Fachbegriff | "Custom Rotation" (Benutzerdefinierte Rotation) |
 
 ### UI-Änderungen nötig
@@ -1395,6 +1480,7 @@ interface DaySchedule {
 ```
 
 **Algorithmus-Verarbeitung:**
+
 1. Lies `customPattern` → Erkenne welche User an welchen Tagen welche Schicht haben
 2. Lies `shiftBlockLength`/`freeDays` → Erkenne Block-Länge (z.B. 10+2=12 Tage)
 3. Für jeden User: Generiere Schichten für gesamten Zeitraum
@@ -1409,13 +1495,16 @@ interface DaySchedule {
 > Siehe Modal in Schritt 3: "☐ Jeden [4.] [Sonntag ▼] im Monat frei"
 
 **MVP Sonderregel:**
+
 - `nth_weekday_free`: Jeder N-te Wochentag im Monat frei (z.B. 4. Sonntag)
 
 **PHASE 2 Features (später):**
+
 - `weekday_always_free`: Bestimmter Wochentag IMMER frei (z.B. jeden Sonntag)
 - `holidays`: Feiertage automatisch frei (Bundesland-abhängig)
 
 **Warum nur nth_weekday_free in MVP?**
+
 - Deckt den häufigsten Anwendungsfall ab (z.B. "jeder 4. Sonntag frei")
 - Keine externe API-Abhängigkeit (im Gegensatz zu Feiertage)
 - Einfach implementierbar
@@ -1466,6 +1555,7 @@ Block 2 (Tag 25-34):
 ### Die Mathematik
 
 Für jeden User:
+
 1. **Startschicht ermitteln:** In welcher Schicht ist er im Grid eingetragen?
 2. **Offset berechnen:** FRÜH=0, SPÄT=1, NACHT=2 (basierend auf shiftSequence)
 3. **Pro Block rotieren:** `shiftIndex = (startOffset + blockNumber) % 3`
@@ -1495,10 +1585,7 @@ Block 2: (2 + 2) % 3 = 1 → SPÄT
  * Ermittelt die Startschicht eines Users aus dem Grid.
  * Regel: "Erster Eintrag gewinnt" - durchsucht alle Tage, nimmt ersten Treffer.
  */
-function findUserStartShift(
-  gridData: GridData,
-  userId: number
-): ShiftType | null {
+function findUserStartShift(gridData: GridData, userId: number): ShiftType | null {
   for (const day of gridData.days) {
     if (day.early.includes(userId)) return 'early';
     if (day.late.includes(userId)) return 'late';
@@ -1512,11 +1599,7 @@ function findUserStartShift(
 ### Algorithmus: Schichten für alle User generieren
 
 ```typescript
-function generateShiftsForAllUsers(
-  config: ShiftPlanConfig,
-  gridData: GridData,
-  userIds: number[]
-): GeneratedShift[] {
+function generateShiftsForAllUsers(config: ShiftPlanConfig, gridData: GridData, userIds: number[]): GeneratedShift[] {
   const result: GeneratedShift[] = [];
   const blockLength = config.shiftBlockLength + config.freeDays;
 
@@ -1642,28 +1725,31 @@ const BATCH_SIZE = 1000;
 const batches = chunkArray(generatedShifts, BATCH_SIZE);
 
 for (const batch of batches) {
-  await pool.query(`
+  await pool.query(
+    `
     INSERT INTO shifts (user_id, date, type, status, tenant_id)
     SELECT * FROM UNNEST($1::int[], $2::date[], $3::shift_type[], $4::shift_status[], $5::int[])
-  `, [
-    batch.map(s => s.userId),
-    batch.map(s => s.date),
-    batch.map(s => s.shiftType),
-    batch.map(s => s.status),
-    batch.map(() => tenantId),
-  ]);
+  `,
+    [
+      batch.map((s) => s.userId),
+      batch.map((s) => s.date),
+      batch.map((s) => s.shiftType),
+      batch.map((s) => s.status),
+      batch.map(() => tenantId),
+    ],
+  );
 }
 ```
 
 ### Zusammenfassung Multi-User Rotation
 
-| Aspekt | Regel |
-|--------|-------|
-| Startschicht | Erster Eintrag im Grid gewinnt |
-| Rotation | `(startIndex + blockNumber) % 3` |
-| User nur in "Frei" | Wird ignoriert |
-| Widersprüchliche Einträge | Erster Tag gewinnt |
-| Performance | Batch-INSERT mit UNNEST |
+| Aspekt                    | Regel                            |
+| ------------------------- | -------------------------------- |
+| Startschicht              | Erster Eintrag im Grid gewinnt   |
+| Rotation                  | `(startIndex + blockNumber) % 3` |
+| User nur in "Frei"        | Wird ignoriert                   |
+| Widersprüchliche Einträge | Erster Tag gewinnt               |
+| Performance               | Batch-INSERT mit UNNEST          |
 
 ---
 
@@ -1683,12 +1769,14 @@ Zeilen: 530-582
 ```
 
 **Was existiert:**
+
 - ✅ Modal-Container mit Design System Klassen
 - ✅ Zeitraum-Picker (Start/End Date Inputs)
 - ✅ Pattern-Cards Container (`#custom-rotation-pattern-list`)
 - ✅ Close-Button mit `data-action="close-custom-rotation-modal"`
 
 **Was hinzugefügt werden muss (nach Zeitraum-Picker, vor Pattern-Cards):**
+
 ```html
 <!-- NEUE FELDER nach Zeile 571: -->
 
@@ -1702,32 +1790,22 @@ Zeilen: 530-582
   <div class="grid grid-cols-2 gap-4 mb-4">
     <!-- Schichtblock-Länge -->
     <div class="form-field">
-      <label class="form-field__label" for="shift-block-length">
-        Schichtblock-Länge (Tage)
-      </label>
-      <input type="number" id="shift-block-length"
-             min="1" max="14" value="10"
-             class="form-field__control" required />
+      <label class="form-field__label" for="shift-block-length"> Schichtblock-Länge (Tage) </label>
+      <input type="number" id="shift-block-length" min="1" max="14" value="10" class="form-field__control" required />
       <span class="form-field__hint">Tage in derselben Schicht</span>
     </div>
 
     <!-- Freie Tage -->
     <div class="form-field">
-      <label class="form-field__label" for="free-days-count">
-        Freie Tage zwischen Wechseln
-      </label>
-      <input type="number" id="free-days-count"
-             min="0" max="14" value="2"
-             class="form-field__control" required />
+      <label class="form-field__label" for="free-days-count"> Freie Tage zwischen Wechseln </label>
+      <input type="number" id="free-days-count" min="0" max="14" value="2" class="form-field__control" required />
     </div>
   </div>
 
   <div class="grid grid-cols-2 gap-4">
     <!-- Startschicht -->
     <div class="form-field">
-      <label class="form-field__label" for="start-shift-select">
-        Startschicht am ersten Tag
-      </label>
+      <label class="form-field__label" for="start-shift-select"> Startschicht am ersten Tag </label>
       <select id="start-shift-select" class="form-field__control">
         <option value="early">Frühschicht</option>
         <option value="late">Spätschicht</option>
@@ -1737,9 +1815,7 @@ Zeilen: 530-582
 
     <!-- Schicht-Reihenfolge -->
     <div class="form-field">
-      <label class="form-field__label" for="shift-sequence-select">
-        Rotations-Reihenfolge
-      </label>
+      <label class="form-field__label" for="shift-sequence-select"> Rotations-Reihenfolge </label>
       <select id="shift-sequence-select" class="form-field__control">
         <option value="early-late-night">Früh → Spät → Nacht</option>
         <option value="night-late-early">Nacht → Spät → Früh (rückwärts)</option>
@@ -1756,8 +1832,7 @@ Zeilen: 530-582
   </h4>
 
   <div class="flex items-center gap-3">
-    <input type="checkbox" id="nth-weekday-free-checkbox"
-           class="toggle-switch__input" />
+    <input type="checkbox" id="nth-weekday-free-checkbox" class="toggle-switch__input" />
     <span>Jeden</span>
     <select id="nth-value-select" class="form-field__control w-16">
       <option value="1">1.</option>
@@ -1788,6 +1863,7 @@ Zeilen: 1336
 ```
 
 **Was existiert:**
+
 - ✅ `showPatternSelectionModal()` - Zeile 129
 - ✅ `selectPattern()` - Zeile 313
 - ✅ `createCustomRotationPattern()` - Zeile 1114
@@ -1882,6 +1958,7 @@ Zeilen: 68
 ```
 
 **Was existiert:**
+
 - ✅ `DaySchedule` Interface
 - ✅ `WeekData` Interface
 - ✅ `CustomRotationPattern` Interface
@@ -1896,8 +1973,8 @@ export type ShiftType = 'early' | 'late' | 'night';
 export interface NthWeekdayFreeRule {
   type: 'nth_weekday_free';
   name: string;
-  weekday: number;  // 0-6 (0 = Sonntag)
-  n: number;        // 1-5
+  weekday: number; // 0-6 (0 = Sonntag)
+  n: number; // 1-5
 }
 
 // CustomRotationPattern.patternConfig erweitern:
@@ -1934,6 +2011,7 @@ Status: STUB - TODO Kommentar bei generateYearPatternFromTwoWeeks()
 ```
 
 **Was existiert:**
+
 - ✅ `isCustomRotationPlan()` - Zeile 22
 - ✅ `calculateEndOfFirstWeekNextYear()` - Zeile 35
 - ✅ `calculateCustomRotationDateRange()` - Zeile 56
@@ -2088,19 +2166,19 @@ export const ShiftBlockConfigSchema = z.object({
 
 ### 22.4 DOM Element IDs (Referenz)
 
-| ID | Typ | Beschreibung |
-|----|-----|--------------|
-| `custom-rotation-modal` | div | Modal Container |
-| `custom-rotation-start-date` | input[date] | Startdatum (EXISTIERT) |
-| `custom-rotation-end-date` | input[date] | Enddatum (EXISTIERT) |
-| `custom-rotation-pattern-list` | div | Pattern Cards Container (EXISTIERT) |
-| `shift-block-length` | input[number] | Schichtblock-Länge (NEU) |
-| `free-days-count` | input[number] | Freie Tage (NEU) |
-| `start-shift-select` | select | Startschicht (NEU) |
-| `shift-sequence-select` | select | Rotations-Reihenfolge (NEU) |
-| `nth-weekday-free-checkbox` | input[checkbox] | Sonderregel aktivieren (NEU) |
-| `nth-value-select` | select | N-ter Wochentag (NEU) |
-| `weekday-value-select` | select | Welcher Wochentag (NEU) |
+| ID                             | Typ             | Beschreibung                        |
+| ------------------------------ | --------------- | ----------------------------------- |
+| `custom-rotation-modal`        | div             | Modal Container                     |
+| `custom-rotation-start-date`   | input[date]     | Startdatum (EXISTIERT)              |
+| `custom-rotation-end-date`     | input[date]     | Enddatum (EXISTIERT)                |
+| `custom-rotation-pattern-list` | div             | Pattern Cards Container (EXISTIERT) |
+| `shift-block-length`           | input[number]   | Schichtblock-Länge (NEU)            |
+| `free-days-count`              | input[number]   | Freie Tage (NEU)                    |
+| `start-shift-select`           | select          | Startschicht (NEU)                  |
+| `shift-sequence-select`        | select          | Rotations-Reihenfolge (NEU)         |
+| `nth-weekday-free-checkbox`    | input[checkbox] | Sonderregel aktivieren (NEU)        |
+| `nth-value-select`             | select          | N-ter Wochentag (NEU)               |
+| `weekday-value-select`         | select          | Welcher Wochentag (NEU)             |
 
 ---
 
@@ -2113,6 +2191,7 @@ Content-Type: application/json
 ```
 
 **Request Body (erweitert):**
+
 ```json
 {
   "name": "Schichtmuster KW 50",
@@ -2143,6 +2222,7 @@ Content-Type: application/json
 ```
 
 **Backend erkennt Modus automatisch:**
+
 ```typescript
 // In rotation.service.ts oder custom-rotation.service.ts:
 if (patternConfig.shiftBlockLength !== undefined) {
@@ -2174,19 +2254,20 @@ private generateYearPatternFromTwoWeeks(
 
 ### 25.3 Input
 
-| Parameter | Typ | Beschreibung |
-|-----------|-----|--------------|
+| Parameter       | Typ            | Beschreibung                             |
+| --------------- | -------------- | ---------------------------------------- |
 | `twoWeekShifts` | `ShiftEntry[]` | Array von Schichten aus dem 14-Tage Grid |
-| `year` | `number` | Zieljahr (z.B. 2025) |
+| `year`          | `number`       | Zieljahr (z.B. 2025)                     |
 
 **ShiftEntry Interface:**
+
 ```typescript
 interface ShiftEntry {
-  userId: number;      // Mitarbeiter-ID
-  date: string;        // ISO-Datum "2025-01-06"
-  startTime: string;   // "06:00"
-  endTime: string;     // "14:00"
-  type: string;        // "early" | "late" | "night"
+  userId: number; // Mitarbeiter-ID
+  date: string; // ISO-Datum "2025-01-06"
+  startTime: string; // "06:00"
+  endTime: string; // "14:00"
+  type: string; // "early" | "late" | "night"
 }
 ```
 
@@ -2246,6 +2327,7 @@ FUNKTION generateYearPatternFromTwoWeeks(twoWeekShifts, year):
 ### 25.6 Beispiel
 
 **Input (2-Wochen Template):**
+
 ```
 Woche 1 (06.01.2025 - 12.01.2025):
   Mo: User 1 Früh, User 2 Spät, User 3 Nacht
@@ -2263,6 +2345,7 @@ Woche 2 (13.01.2025 - 19.01.2025):
 ```
 
 **Output (generiert für 1 Jahr):**
+
 ```
 KW 3 (20.01-26.01): Wiederholt Woche 1 Muster
 KW 4 (27.01-02.02): Wiederholt Woche 2 Muster
@@ -2273,20 +2356,21 @@ KW 52: Wiederholt entsprechendes Muster
 
 ### 25.7 Edge Cases
 
-| Edge Case | Erwartetes Verhalten |
-|-----------|---------------------|
-| Leeres Template | `return []` |
-| Template < 7 Tage | Trotzdem wiederholen (Warnung loggen) |
-| Template = 7 Tage | Normale Wochenwiederholung |
-| Template = 14 Tage | Standard 2-Wochen-Rotation |
-| Template > 14 Tage | 3-4 Wochen Rotation unterstützen |
-| Tage ohne Schichten im Template | Diese Tage bleiben auch im Output leer |
-| userId nicht in Team | Übernehmen (Validierung erfolgt vorher) |
-| Schaltjahr | 366 Tage generieren |
+| Edge Case                       | Erwartetes Verhalten                    |
+| ------------------------------- | --------------------------------------- |
+| Leeres Template                 | `return []`                             |
+| Template < 7 Tage               | Trotzdem wiederholen (Warnung loggen)   |
+| Template = 7 Tage               | Normale Wochenwiederholung              |
+| Template = 14 Tage              | Standard 2-Wochen-Rotation              |
+| Template > 14 Tage              | 3-4 Wochen Rotation unterstützen        |
+| Tage ohne Schichten im Template | Diese Tage bleiben auch im Output leer  |
+| userId nicht in Team            | Übernehmen (Validierung erfolgt vorher) |
+| Schaltjahr                      | 366 Tage generieren                     |
 
 ### 25.8 Abhängigkeiten
 
 Diese Methode wird aufgerufen von:
+
 ```
 prepareShiftsForCreation()
   └── generateCustomRotationPeriod()
@@ -2298,7 +2382,6 @@ prepareShiftsForCreation()
 
 ```typescript
 describe('generateYearPatternFromTwoWeeks', () => {
-
   it('should return empty array for empty input', () => {
     const result = service.generateYearPatternFromTwoWeeks([], 2025);
     expect(result).toEqual([]);
@@ -2312,9 +2395,9 @@ describe('generateYearPatternFromTwoWeeks', () => {
     expect(result.length).toBeGreaterThan(1000);
 
     // Tag 15 sollte wie Tag 1 sein (gleiche User, gleiche Schichten)
-    const day1Shifts = result.filter(s => s.date === '2025-01-06');
-    const day15Shifts = result.filter(s => s.date === '2025-01-20');
-    expect(day15Shifts.map(s => s.userId)).toEqual(day1Shifts.map(s => s.userId));
+    const day1Shifts = result.filter((s) => s.date === '2025-01-06');
+    const day15Shifts = result.filter((s) => s.date === '2025-01-20');
+    expect(day15Shifts.map((s) => s.userId)).toEqual(day1Shifts.map((s) => s.userId));
   });
 
   it('should handle leap year correctly', () => {
@@ -2322,17 +2405,15 @@ describe('generateYearPatternFromTwoWeeks', () => {
     const result = service.generateYearPatternFromTwoWeeks(template, 2024);
 
     // 2024 ist Schaltjahr
-    const feb29Shifts = result.filter(s => s.date === '2024-02-29');
+    const feb29Shifts = result.filter((s) => s.date === '2024-02-29');
     expect(feb29Shifts.length).toBeGreaterThan(0);
   });
 
   it('should preserve shift types and times', () => {
-    const template = [
-      { userId: 1, date: '2025-01-06', type: 'early', startTime: '06:00', endTime: '14:00' }
-    ];
+    const template = [{ userId: 1, date: '2025-01-06', type: 'early', startTime: '06:00', endTime: '14:00' }];
     const result = service.generateYearPatternFromTwoWeeks(template, 2025);
 
-    result.forEach(shift => {
+    result.forEach((shift) => {
       expect(shift.type).toBe('early');
       expect(shift.startTime).toBe('06:00');
       expect(shift.endTime).toBe('14:00');
@@ -2343,11 +2424,11 @@ describe('generateYearPatternFromTwoWeeks', () => {
 
 ### 25.10 Performance-Überlegungen
 
-| Metrik | Erwartung |
-|--------|-----------|
+| Metrik          | Erwartung                                            |
+| --------------- | ---------------------------------------------------- |
 | Zeitkomplexität | O(n × d) wobei n = Template-Schichten, d = Ziel-Tage |
-| Speicher | ~1000-2000 ShiftEntry Objekte pro Jahr |
-| Max. Laufzeit | < 100ms für 1 Jahr |
+| Speicher        | ~1000-2000 ShiftEntry Objekte pro Jahr               |
+| Max. Laufzeit   | < 100ms für 1 Jahr                                   |
 
 ### 25.11 Implementierungs-Checkliste
 

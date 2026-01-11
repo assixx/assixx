@@ -1,0 +1,104 @@
+/**
+ * Root Dashboard - API Functions
+ * @module root-dashboard/_lib/api
+ */
+
+import { getApiClient, ApiError } from '$lib/utils/api-client';
+import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
+import { API_ENDPOINTS, MESSAGES } from './constants';
+import { isTemporaryEmployeeNumber } from './utils';
+
+import type { DashboardData, ActivityLog, UserData, LogsApiResponse } from './types';
+
+const apiClient = getApiClient();
+
+/**
+ * Load dashboard data from API
+ * @returns Dashboard data or error
+ */
+export async function loadDashboardData(): Promise<{
+  data: DashboardData | null;
+  error: string | null;
+  unauthorized: boolean;
+}> {
+  try {
+    const data = await apiClient.get<DashboardData>(API_ENDPOINTS.dashboard);
+    return { data, error: null, unauthorized: false };
+  } catch (err) {
+    console.error('Error loading dashboard:', err);
+
+    // Handle session expired / unauthorized
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      return { data: null, error: null, unauthorized: true };
+    }
+
+    return {
+      data: null,
+      error: err instanceof Error ? err.message : MESSAGES.genericError,
+      unauthorized: false,
+    };
+  }
+}
+
+/**
+ * Load activity logs from API
+ * @returns Array of activity logs
+ */
+export async function loadActivityLogs(): Promise<ActivityLog[]> {
+  try {
+    const result = await apiClient.get<LogsApiResponse>(API_ENDPOINTS.logs);
+    return result.data?.logs ?? result.logs ?? [];
+  } catch (err) {
+    console.error('Error loading logs:', err);
+    return [];
+  }
+}
+
+/**
+ * Check if user has temporary employee number
+ * DELEGATES to shared user service (prevents duplicate /users/me calls)
+ * @returns Object with user data and whether modal should be shown
+ */
+export async function checkEmployeeNumber(): Promise<{
+  userData: UserData | null;
+  showModal: boolean;
+}> {
+  try {
+    const result = await fetchSharedUser();
+    const userData = result.user as UserData | null;
+
+    if (userData === null) {
+      return { userData: null, showModal: false };
+    }
+
+    const employeeNumber = userData.employeeNumber ?? '';
+    const showModal = isTemporaryEmployeeNumber(employeeNumber);
+
+    return { userData, showModal };
+  } catch (err) {
+    console.error('Error checking employee number:', err);
+    return { userData: null, showModal: false };
+  }
+}
+
+/**
+ * Save employee number
+ * @param employeeNumber - New employee number
+ * @returns Success status
+ */
+export async function saveEmployeeNumber(employeeNumber: string): Promise<{
+  success: boolean;
+  error: string | null;
+}> {
+  try {
+    await apiClient.patch(API_ENDPOINTS.userMe, { employeeNumber });
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error saving employee number:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : MESSAGES.employeeNumberSaveError,
+    };
+  }
+}

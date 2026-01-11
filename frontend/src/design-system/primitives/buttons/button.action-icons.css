@@ -14,31 +14,30 @@
 /* ========== BASE ACTION ICON ========== */
 
 .action-icon {
-  cursor: pointer;
+  /* Reset & Base */
+  display: inline-flex;
 
   /* Interaction */
   position: relative;
-
-  /* Reset & Base */
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+
+  /* Effects */
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--glass-card-radius);
+
+  background: transparent;
+  padding: 0;
 
   /* Size */
   width: 2rem;
   height: 2rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--glass-card-radius);
+  color: var(--color-text-secondary);
 
   /* Icon */
   font-size: 0.875rem;
-  color: var(--color-text-secondary);
-
-  background: transparent;
-
-  /* Effects */
-  transition: all 0.2s ease;
 }
 
 .action-icon:hover {
@@ -51,8 +50,8 @@
 }
 
 .action-icon:disabled {
-  cursor: not-allowed;
   opacity: 40%;
+  cursor: not-allowed;
 }
 
 .action-icon:disabled:hover {
@@ -63,8 +62,8 @@
 /* ========== EDIT VARIANT (Yellow) ========== */
 
 .action-icon--edit:hover {
-  color: #fbbf24; /* Tailwind yellow-400 */
   background: rgb(251 191 36 / 10%);
+  color: #fbbf24; /* Tailwind yellow-400 */
 }
 
 .action-icon--edit:active {
@@ -74,8 +73,8 @@
 /* ========== DELETE VARIANT (Red) ========== */
 
 .action-icon--delete:hover {
-  color: #ef4444; /* Tailwind red-500 */
   background: rgb(239 68 68 / 10%);
+  color: #ef4444; /* Tailwind red-500 */
 }
 
 .action-icon--delete:active {
@@ -85,8 +84,8 @@
 /* ========== VIEW VARIANT (Blue) ========== */
 
 .action-icon--view:hover {
-  color: #3b82f6; /* Tailwind blue-500 */
   background: rgb(59 130 246 / 10%);
+  color: #3b82f6; /* Tailwind blue-500 */
 }
 
 .action-icon--view:active {
@@ -96,15 +95,15 @@
 /* ========== MORE VARIANT (Neutral) ========== */
 
 .action-icon--more:hover {
-  color: var(--color-text-primary);
   background: rgb(255 255 255 / 10%);
+  color: var(--color-text-primary);
 }
 
 /* ========== TOGGLE VARIANT (Orange/Green) ========== */
 
 .action-icon--toggle:hover {
-  color: #f97316; /* Tailwind orange-500 */
   background: rgb(249 115 22 / 10%);
+  color: #f97316; /* Tailwind orange-500 */
 }
 
 .action-icon--toggle:active {
@@ -112,12 +111,12 @@
 }
 
 /* Success state for active items */
-.action-icon--toggle[data-status="inactive"]:hover {
-  color: #10b981; /* Tailwind green-500 */
+.action-icon--toggle[data-status='inactive']:hover {
   background: rgb(16 185 129 / 10%);
+  color: #10b981; /* Tailwind green-500 */
 }
 
-.action-icon--toggle[data-status="inactive"]:active {
+.action-icon--toggle[data-status='inactive']:active {
   color: #059669; /* Tailwind green-600 */
 }
 
@@ -145,26 +144,25 @@
  * - Avoid data-tooltip in scroll containers
  */
 .action-icon[data-tooltip]::after {
-  pointer-events: none;
-  content: attr(data-tooltip);
-
   position: absolute;
-  z-index: 9999;
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-4px);
 
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-
-  font-size: 0.75rem;
-  color: var(--color-white);
-  white-space: nowrap;
-
   opacity: 0%;
-  background: rgb(0 0 0 / 90%);
+  z-index: 9999;
 
   transition: opacity 0.2s ease;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 90%);
+
+  padding: 0.25rem 0.5rem;
+  pointer-events: none;
+  content: attr(data-tooltip);
+  color: var(--color-white);
+
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .action-icon[data-tooltip]:hover::after {

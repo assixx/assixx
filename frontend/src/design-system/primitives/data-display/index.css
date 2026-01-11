@@ -10,15 +10,15 @@
  */
 
 /* Tables */
-@import "./table.base.css";
-@import "./table.striped.css";
-@import "./table.hover.css";
-@import "./table.bordered.css";
-@import "./table.borderless.css";
-@import "./table.compact.css";
+@import './table.base.css';
+@import './table.striped.css';
+@import './table.hover.css';
+@import './table.bordered.css';
+@import './table.borderless.css';
+@import './table.compact.css';
 
 /* Empty States */
-@import "./empty-state.css";
+@import './empty-state.css';
 
 /* Data Lists */
-@import "./data-list.css";
+@import './data-list.css';

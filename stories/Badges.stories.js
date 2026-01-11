@@ -10,8 +10,8 @@ export default {
   tags: ['autodocs'],
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
+      value: 'assixx-dark',
+    },
   },
 };
 
@@ -58,7 +58,8 @@ export const StatusBadges = {
     const dotClass = args.dot ? 'badge--dot' : '';
 
     const badge = document.createElement('span');
-    badge.className = `badge badge--${args.variant} ${sizeClass} ${uppercaseClass} ${dotClass}`.trim();
+    badge.className =
+      `badge badge--${args.variant} ${sizeClass} ${uppercaseClass} ${dotClass}`.trim();
     badge.textContent = args.label;
 
     return badge;

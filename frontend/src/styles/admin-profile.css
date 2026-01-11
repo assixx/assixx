@@ -4,25 +4,25 @@
 
 /* ===== CONTAINER WIDTH ===== */
 .profile-card {
-  max-width: 800px;
   margin-right: auto;
   margin-left: auto;
+  max-width: 800px;
 }
 
 /* ===== PROFILE PICTURE LAYOUT ===== */
 .profile-picture-section {
   display: flex;
-  gap: var(--spacing-8);
   align-items: center;
+  gap: var(--spacing-8);
   margin-bottom: var(--spacing-8);
 }
 
 /* Blue border ring around avatar (page-specific decoration) */
 .profile-picture-container {
-  padding: 3px;
   border: 3px solid rgb(0 142 255 / 30%);
   border-radius: 50%;
   background: transparent;
+  padding: 3px;
 }
 
 /* Button stack (vertical layout) */
@@ -43,14 +43,14 @@
 /* ===== INFO BOX (Admin-specific: readonly fields info) ===== */
 .info-box {
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 20%);
   border-radius: var(--radius-xl);
 
-  font-size: 0.875rem;
+  background: rgb(33 150 243 / 5%);
+  padding: var(--spacing-3);
   color: var(--text-secondary);
 
-  background: rgb(33 150 243 / 5%);
+  font-size: 0.875rem;
 }
 
 .info-box i {
@@ -65,8 +65,8 @@
 }
 
 .non-editable:focus {
-  border-color: rgb(255 255 255 / 10%);
   box-shadow: none;
+  border-color: rgb(255 255 255 / 10%);
 }
 
 /* ===== RESPONSIVE ===== */

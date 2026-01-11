@@ -1,61 +1,16 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Assixx Frontend Configuration - Vite with TypeScript",
-
-  // ============================================================
-  // EXTENDS BASE CONFIGURATION
-  // Inherits all strict rules from tsconfig.base.json
-  // ============================================================
-  "extends": "../tsconfig.base.json",
-
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    // ============================================================
-    // BUNDLER MODULE SYSTEM
-    // Best Practice 2025: Use "bundler" for Vite/Rollup/Webpack
-    //
-    // bundler mode:
-    // - NO .js extensions required in imports! (Bundler resolves)
-    // - Understands package.json "exports"
-    // - Optimized for build tools, not Node.js runtime
-    // - Allows importing .ts files directly
-    //
-    // THIS FIXES THE ERROR: "need explicit file extensions"
-    // ============================================================
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-
-    // ============================================================
-    // TARGET LIBRARY
-    // Frontend NEEDS DOM types for browser APIs
-    // ============================================================
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-
-    // ============================================================
-    // BUNDLER FEATURES
-    // ============================================================
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-
-    // ============================================================
-    // PATH MAPPING
-    // Enables cleaner imports: '@scripts/utils' instead of '../../utils'
-    // ============================================================
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@scripts/*": ["scripts/*"],
-      "@styles/*": ["styles/*"],
-      "@components/*": ["components/*"],
-      "@types/*": ["types/*"]
-    }
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "bundler"
   },
-
-  // ============================================================
-  // INCLUDE/EXCLUDE PATTERNS
-  // ============================================================
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "src/**/*.vue"],
-
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "../node_modules", "**/node_modules"]
 }

@@ -58,7 +58,8 @@ Status indicators, labels, and tags for UI feedback and categorization.
 ### With Dot Indicator
 
 ```html
-<span class="badge badge--dot badge--success">Online</span> <span class="badge badge--dot badge--danger">Offline</span>
+<span class="badge badge--dot badge--success">Online</span>
+<span class="badge badge--dot badge--danger">Offline</span>
 ```
 
 ### Uppercase
@@ -222,13 +223,15 @@ http://localhost:6006/?path=/docs/design-system-badges--docs
 **Old (logs.css):**
 
 ```html
-<span class="action-label action-login">Login</span> <span class="role-badge role-admin">Admin</span>
+<span class="action-label action-login">Login</span>
+<span class="role-badge role-admin">Admin</span>
 ```
 
 **New (Design System):**
 
 ```html
-<span class="badge badge--login">Login</span> <span class="badge badge--sm badge--role-admin">Admin</span>
+<span class="badge badge--login">Login</span>
+<span class="badge badge--sm badge--role-admin">Admin</span>
 ```
 
 **Changes:**

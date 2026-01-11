@@ -7,8 +7,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import path from 'path';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Feature from '../routes/v2/features/feature.model.js';
+import featureCheck from './featureCheck.js';
 import { logger } from './logger.js';
 
 // Type definition for attachment (from nodemailer)
@@ -124,16 +123,43 @@ function sanitizeStyles(html: string): string {
 /**
  * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
  * Entfernt gefährliche Tags und Attribute
+ *
+ * SECURITY NOTE: This implementation uses regex-based sanitization which
+ * provides reasonable protection but may be bypassable with clever encoding.
+ * For production environments with high security requirements, consider using
+ * a dedicated library like 'sanitize-html' or 'isomorphic-dompurify'.
+ *
+ * Current protections:
+ * - Removes dangerous tags (script, iframe, object, embed, form, etc.)
+ * - Removes event handlers (onclick, onerror, etc.)
+ * - Sanitizes URLs (blocks javascript:, vbscript:, dangerous data: URIs)
+ * - Sanitizes styles (blocks expression(), behavior:, etc.)
+ *
  * @param html - Der zu bereinigende HTML-Inhalt
  * @returns Bereinigter HTML-Inhalt
  */
 function sanitizeHtml(html: string): string {
+  // SECURITY: Multiple passes to catch nested/encoded attacks
   if (html === '') return '';
   let sanitized = html;
-  sanitized = removeDangerousTags(sanitized);
-  sanitized = removeEventHandlers(sanitized);
-  sanitized = sanitizeUrls(sanitized);
-  sanitized = sanitizeStyles(sanitized);
+
+  // Decode common HTML entities that might hide attacks
+  sanitized = sanitized
+    .replace(/&#x([0-9a-f]+);/gi, (_m: string, hex: string) =>
+      String.fromCharCode(Number.parseInt(hex, 16)),
+    )
+    .replace(/&#(\d+);/g, (_m: string, dec: string) =>
+      String.fromCharCode(Number.parseInt(dec, 10)),
+    );
+
+  // Apply sanitization in multiple passes for nested attacks
+  for (let pass = 0; pass < 2; pass++) {
+    sanitized = removeDangerousTags(sanitized);
+    sanitized = removeEventHandlers(sanitized);
+    sanitized = sanitizeUrls(sanitized);
+    sanitized = sanitizeStyles(sanitized);
+  }
+
   return sanitized.trim();
 }
 
@@ -248,7 +274,7 @@ function escapeHtmlTemplate(str: string): string {
     '"': '&quot;',
     "'": '&#39;',
   };
-  // eslint-disable-next-line security/detect-object-injection -- match is from regex match, always one of the keys
+
   return str.replace(/["&'<>]/g, (match: string) => htmlEscapes[match] ?? match);
 }
 
@@ -272,7 +298,7 @@ async function loadTemplate(
       // eslint-disable-next-line security/detect-non-literal-regexp -- Key is from controlled object keys
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       // Escape replacement values to prevent XSS
-      // eslint-disable-next-line security/detect-object-injection -- Key is from Object.keys iteration
+
       const value = replacements[key];
       if (value === undefined) return;
       const safeValue = escapeHtmlTemplate(value);
@@ -525,7 +551,7 @@ async function checkBulkEmailFeature(
 ): Promise<EmailResult | null> {
   if (options.tenantId == null || options.checkFeature !== true) return null;
 
-  const hasAccess = await Feature.checkTenantAccess(options.tenantId, 'email_notifications');
+  const hasAccess = await featureCheck.checkTenantAccess(options.tenantId, 'email_notifications');
   if (!hasAccess) {
     return {
       success: false,
@@ -533,7 +559,7 @@ async function checkBulkEmailFeature(
     };
   }
 
-  await Feature.logUsage(options.tenantId, 'email_notifications', options.userId, {
+  await featureCheck.logUsage(options.tenantId, 'email_notifications', options.userId, {
     recipients: userCount,
     subject: options.subject,
   });

@@ -10,7 +10,7 @@ Das Role-Switch-Feature wurde mit einem robusten Sicherheitssystem ausgestattet,
 
 Definiert welche Rollen auf welche Seiten zugreifen dürfen:
 
-- **Root-only Seiten**: `/logs`, `/manage-root-users`, `/root-features`, etc.
+- **Root-only Seiten**: `/logs`, `/manage-root-users`, `/features`, etc.
 - **Admin & Root Seiten**: `/manage-admins`, `/departments`, `/blackboard`, etc.
 - **Employee Seiten** (für alle zugänglich): `/kvp`, `/calendar`, `/chat`, etc.
 

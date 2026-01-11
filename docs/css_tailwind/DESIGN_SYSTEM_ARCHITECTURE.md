@@ -3,6 +3,7 @@
 ## 🎯 ULTRA-DURCHDACHTE STRUKTUR
 
 ### Kern-Prinzipien
+
 1. **Semantic Tokens** > Color Values
 2. **Theme-agnostic Core**
 3. **Platform-specific Outputs**
@@ -88,6 +89,7 @@ Platform Output (--color-primary: #42A5F5)
 ## 💡 BEISPIEL TOKEN-STRUKTUR
 
 ### Core Token (colors.json)
+
 ```json
 {
   "color": {
@@ -101,6 +103,7 @@ Platform Output (--color-primary: #42A5F5)
 ```
 
 ### Semantic Token (semantic/colors.json)
+
 ```json
 {
   "color": {
@@ -112,6 +115,7 @@ Platform Output (--color-primary: #42A5F5)
 ```
 
 ### Theme Override (themes/dark/index.json)
+
 ```json
 {
   "color": {
@@ -125,25 +129,27 @@ Platform Output (--color-primary: #42A5F5)
 ## 🚀 THEME SWITCHING
 
 ### CSS (Runtime)
+
 ```css
 /* Automatisch generiert */
-:root { /* Light mode default */
-  --color-background: #FAFAFA;
+:root {
+  --color-background: #fafafa; /* Light mode default */
   --color-text: #212121;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-background: #121212;
-  --color-text: #FAFAFA;
+  --color-text: #fafafa;
 }
 
-[data-theme="contrast"] {
+[data-theme='contrast'] {
   --color-background: #000000;
-  --color-text: #FFFFFF;
+  --color-text: #ffffff;
 }
 ```
 
 ### TypeScript Support
+
 ```typescript
 // Auto-generiert
 export const themes = {
@@ -158,21 +164,25 @@ export type Theme = keyof typeof themes;
 ## ⚡ WARUM DIESE STRUKTUR?
 
 ### ✅ Skalierbar
+
 - Neue Themes = neuer Ordner
 - Neue Platform = neuer Ordner
 - Keine Breaking Changes
 
 ### ✅ Maintainable
+
 - Klare Trennung von Concerns
 - Single Source of Truth
 - Git-friendly JSON
 
 ### ✅ Type-Safe
+
 - TypeScript Generierung
 - Autocomplete in IDE
 - Compile-time Checks
 
 ### ✅ Multi-Brand Ready
+
 - White-Label durch theme/brand/
 - Client-specific Overrides
 - Zentrale Verwaltung
@@ -196,15 +206,25 @@ module.exports = {
     'tokens/semantic/**/*.json',
     'tokens/themes/base.json',
     'tokens/themes/{theme}/**/*.json', // Per theme
-    'tokens/platforms/web/**/*.json'
+    'tokens/platforms/web/**/*.json',
   ],
   platforms: {
-    'web-css': { /* CSS Variables */ },
-    'web-tailwind': { /* Tailwind Config */ },
-    'web-ts': { /* TypeScript */ },
-    'ios': { /* Swift */ },
-    'android': { /* Kotlin/XML */ }
-  }
+    'web-css': {
+      /* CSS Variables */
+    },
+    'web-tailwind': {
+      /* Tailwind Config */
+    },
+    'web-ts': {
+      /* TypeScript */
+    },
+    ios: {
+      /* Swift */
+    },
+    android: {
+      /* Kotlin/XML */
+    },
+  },
 };
 ```
 

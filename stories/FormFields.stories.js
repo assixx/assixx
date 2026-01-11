@@ -8,7 +8,7 @@ export default {
   title: 'Design System/Form Fields',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
@@ -34,19 +34,12 @@ export default {
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
-const createField = ({
-  id,
-  label,
-  required = false,
-  message,
-  control,
-  helperVariant,
-}) => {
+const createField = ({ id, label, required = false, message, control, helperVariant }) => {
   const wrapper = document.createElement('div');
   wrapper.className = 'form-field';
 

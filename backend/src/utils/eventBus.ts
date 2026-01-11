@@ -30,6 +30,17 @@ interface KvpEvent {
   };
 }
 
+interface MessageEvent {
+  tenantId: number;
+  message: {
+    id: number;
+    conversationId: number;
+    senderId: number;
+    recipientIds: number[];
+    preview?: string;
+  };
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -63,6 +74,11 @@ class NotificationEventBus extends EventEmitter {
   emitKvpSubmitted(tenantId: number, kvp: KvpEvent['kvp']): void {
     logger.info(`[EventBus] Emitting kvp.submitted for tenant ${tenantId}`);
     this.emit('kvp.submitted', { tenantId, kvp });
+  }
+
+  emitNewMessage(tenantId: number, message: MessageEvent['message']): void {
+    logger.info(`[EventBus] Emitting message.created for tenant ${tenantId}`);
+    this.emit('message.created', { tenantId, message });
   }
 
   // Get active listener count for monitoring

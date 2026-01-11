@@ -171,7 +171,6 @@ export function sanitizeForLog<T>(obj: T, maxDepth: number = 10): T {
   // Handle objects - build sanitized copy
   const sanitized: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from Object.entries of input obj
     sanitized[key] = sanitizeValue(key, value, maxDepth);
   }
 

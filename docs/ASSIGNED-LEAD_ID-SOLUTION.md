@@ -20,6 +20,7 @@ Tatsächlich: "Aaron Swarz - Admin - [leer]"
 ## Ursache
 
 Die Query berücksichtigte NUR:
+
 - `admin_area_permissions` (explizite Permission)
 - `admin_department_permissions` (explizite Permission)
 - `user_departments` (Employee-Pfad)
@@ -52,6 +53,7 @@ LEFT JOIN areas area_via_dept_lead
 ```
 
 COALESCE-Reihenfolge (Priorität):
+
 ```sql
 -- Department
 COALESCE(adp.department_id, dept_lead.id, ud.department_id)
@@ -64,23 +66,23 @@ COALESCE(aap.area_id, area_lead.id, dep_admin.area_id, dept_lead.area_id, d.area
 
 ## Zuweisungswege (Vollständig)
 
-| Prio | Pfad | Beschreibung |
-|------|------|--------------|
-| 1 | `admin_area_permissions` | Explizite Area-Berechtigung |
-| 2 | `areas.area_lead_id` | User ist Area-Leader |
-| 3 | `admin_department_permissions` | Explizite Dept-Berechtigung |
-| 4 | `departments.department_lead_id` | User ist Dept-Leader |
-| 5 | `user_departments` | Employee-Zugehörigkeit |
+| Prio | Pfad                             | Beschreibung                |
+| ---- | -------------------------------- | --------------------------- |
+| 1    | `admin_area_permissions`         | Explizite Area-Berechtigung |
+| 2    | `areas.area_lead_id`             | User ist Area-Leader        |
+| 3    | `admin_department_permissions`   | Explizite Dept-Berechtigung |
+| 4    | `departments.department_lead_id` | User ist Dept-Leader        |
+| 5    | `user_departments`               | Employee-Zugehörigkeit      |
 
 ---
 
 ## Betroffene Rollen
 
-| Rolle | Kann Leader sein? | Permission-Tabellen |
-|-------|-------------------|---------------------|
-| Root | Ja (area_lead, dept_lead) | Keine nötig (has_full_access) |
-| Admin | Ja (area_lead, dept_lead) | admin_area/department_permissions |
-| Employee | Nein | user_teams, user_departments |
+| Rolle    | Kann Leader sein?         | Permission-Tabellen               |
+| -------- | ------------------------- | --------------------------------- |
+| Root     | Ja (area_lead, dept_lead) | Keine nötig (has_full_access)     |
+| Admin    | Ja (area_lead, dept_lead) | admin_area/department_permissions |
+| Employee | Nein                      | user_teams, user_departments      |
 
 ---
 

@@ -1,9 +1,18 @@
 # =============================================================================
 # Assixx Docker Compose - Development Environment
 # =============================================================================
-# SECURITY NOTE: Default passwords are provided for development convenience.
-# For production, ALWAYS use strong passwords via .env file without defaults!
-# See docker/.env.example for required environment variables.
+#
+# SECURITY NOTES:
+# 1. Default passwords are provided for development convenience only.
+#    For production, ALWAYS use strong passwords via .env file without defaults!
+#
+# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17-alpine).
+#    For production deployments, consider pinning images with SHA256 digests:
+#      image: postgres:17-alpine@sha256:<digest>
+#    Get digests with: docker pull postgres:17-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:17-alpine
+#
+# 3. See docker/.env.example for required environment variables.
+#
 # =============================================================================
 
 services:
@@ -17,18 +26,19 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: "4.0"
           memory: 4G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-assixx_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AssixxP@ss2025!}
-      POSTGRES_DB: ${POSTGRES_DB:-assixx}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       TZ: Europe/Berlin
     ports:
-      - "5432:5432"
+      # SECURITY: Bind to localhost only - not accessible from external networks
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
@@ -49,25 +59,30 @@ services:
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
     # Resource limits prevent runaway processes (generous for dev with TypeScript)
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: "4.0"
           memory: 4G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      # PostgreSQL Connection
+      PORT: 3000
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-app_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
-      DB_NAME: ${POSTGRES_DB:-assixx}
-      JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
-      SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      # SECURITY: Secrets are REQUIRED - no fallback defaults
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
@@ -79,6 +94,10 @@ services:
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
       SCARF_ANALYTICS: false
       DO_NOT_TRACK: 1
+      # Redis Connection (for rate limiting)
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "3000:3000"
     volumes:
@@ -86,26 +105,25 @@ services:
       - ../backend/logs:/app/backend/logs
       - ../exports:/exports
       - ../backups:/backups
-      # Live-Reload Volumes für Entwicklung
+      # Live-Reload Volumes für Entwicklung (source code - need write for hot reload)
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
       - ../scripts:/app/scripts:delegated
       - ../Testing:/app/Testing:delegated
-      - ../package.json:/app/package.json:delegated
-      # pnpm-lock.yaml als read-only mounten (löst EBUSY Problem)
+      # Config files - read-only (edited on host, synced to container)
+      # SECURITY: No write access needed, prevents accidental modification
+      - ../package.json:/app/package.json:ro
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
-      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
-      - ../tsconfig.json:/app/tsconfig.json:delegated
-      - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
-      - ../tsconfig.test.json:/app/tsconfig.test.json:delegated
-      - ../eslint.config.js:/app/eslint.config.js:delegated
-      - ../jest.config.js:/app/jest.config.js:delegated
-      - ../jest.setup.ts:/app/jest.setup.ts:delegated
-      - ../jest.globalSetup.js:/app/jest.globalSetup.js:delegated
-      - ../jest.globalTeardown.js:/app/jest.globalTeardown.js:delegated
-      - ../.prettierignore:/app/.prettierignore:delegated
-      - ../.prettierrc.json:/app/.prettierrc.json:delegated
-      - ../nodemon.json:/app/nodemon.json:delegated
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../tsconfig.base.json:/app/tsconfig.base.json:ro
+      - ../eslint.config.mjs:/app/eslint.config.mjs:ro
+      - ../vitest.config.ts:/app/vitest.config.ts:ro
+      - ../vitest.setup.ts:/app/vitest.setup.ts:ro
+      - ../.prettierignore:/app/.prettierignore:ro
+      - ../.prettierrc.json:/app/.prettierrc.json:ro
+      - ../.npmrc:/app/.npmrc:ro
+      - ../nodemon.json:/app/nodemon.json:ro
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
@@ -126,30 +144,34 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    # Development command mit auto-install - run as root but create files with user permissions
-    command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
+    # Development command - build NestJS and run (tsx doesn't support decorators)
+    # Note: pnpm install is done during docker build, not at runtime
+    command: sh -c "cd backend && pnpm run build && node dist/nest/main.js"
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
     image: redis:7-alpine
     container_name: assixx-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    # SECURITY: Redis with password authentication
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     # Resource limits for cache service (generous for dev)
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
     volumes:
       - redis_data:/data
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -160,28 +182,33 @@ services:
     image: assixx-backend:dev
     container_name: assixx-deletion-worker
     restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
     # Resource limits for worker process (generous for dev)
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      # PostgreSQL Connection
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-app_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-AppUserP@ss2025!}
-      DB_NAME: ${POSTGRES_DB:-assixx}
-      JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
-      SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      # SECURITY: Secrets are REQUIRED - no fallback defaults
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DELETION_WORKER_HEALTH_PORT: 3001
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      DELETION_WORKER_HEALTH_PORT: 3002
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
@@ -192,7 +219,7 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
     ports:
-      - "3001:3001" # Health check port
+      - "3002:3002" # Health check port (changed from 3001 - SvelteKit uses 3001)
     volumes:
       - ../backend:/app/backend:delegated
       - ../scripts:/app/scripts:delegated
@@ -222,7 +249,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+          "require('http').get('http://localhost:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
         ]
       interval: 30s
       timeout: 10s
@@ -230,7 +257,90 @@ services:
     # Worker command - use tsx directly
     command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
-  # Optional: Nginx als Reverse Proxy (für Production)
+  # ===========================================================================
+  # SvelteKit Frontend (Production)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: assixx-frontend:prod
+    container_name: assixx-frontend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ORIGIN: ${ORIGIN:-http://localhost}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+      # API URL for SSR server-side fetches (inside Docker network)
+      API_URL: http://backend:3000/api/v2
+    ports:
+      - "3001:3001" # Direct access for debugging
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+
+  # ===========================================================================
+  # Nginx Reverse Proxy (Production)
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: assixx-nginx
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 64M
+    ports:
+      - "80:80"
+      # - "443:443"  # Uncomment for HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - assixx-network
+    healthcheck:
+      # NOTE: Use curl instead of wget - BusyBox wget resolves localhost to ::1 (IPv6)
+      # but nginx only listens on 0.0.0.0:80 (IPv4), causing "Connection refused"
+      test: ["CMD-SHELL", "curl -sf http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - production
+
+  # Optional: Nginx als Reverse Proxy (für Production) - REPLACED by above
   # nginx:
   #   image: nginx:alpine
   #   container_name: assixx-nginx

@@ -6,37 +6,36 @@
 @layer components {
   /* Glass Card */
   .glass-card {
-    padding: 1.5rem;
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+    padding: 1.5rem;
   }
 
   /* Glass Button */
   .btn-glass {
-    cursor: pointer;
-
     display: inline-block;
-
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--glass-border);
-    border-radius: 0.5rem;
-
-    font-weight: 500;
-
-    background: var(--glass-bg);
     backdrop-filter: blur(10px) saturate(150%);
 
     transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg);
+
+    padding: 0.5rem 1rem;
+
+    font-weight: 500;
   }
 
   .btn-glass:hover {
     transform: translateY(-2px);
-    background: var(--glass-bg-hover);
     box-shadow: 0 12px 40px 0 rgb(0 0 0 / 45%);
+    background: var(--glass-bg-hover);
   }
 
   .btn-glass:active {
@@ -46,23 +45,23 @@
 
   /* Glass Input */
   .input-glass {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--glass-border);
-    border-radius: 0.5rem;
-
-    color: var(--color-text-primary);
-
-    background: var(--glass-bg);
     backdrop-filter: blur(10px) saturate(150%);
 
     transition: all 0.3s ease;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg);
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+
+    color: var(--color-text-primary);
   }
 
   .input-glass:focus {
-    border-color: var(--color-primary);
     outline: none;
     box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+    border-color: var(--color-primary);
   }
 
   .input-glass::placeholder {
@@ -71,55 +70,54 @@
 
   /* Glass Container */
   .container-glass {
-    max-width: 80rem;
     margin-right: auto;
     margin-left: auto;
     padding-right: 1rem;
     padding-left: 1rem;
+    max-width: 80rem;
   }
 
   /* Glass Modal */
   .modal-glass {
+    display: flex;
     position: fixed;
+    justify-content: center;
+    align-items: center;
     z-index: 50;
+    backdrop-filter: blur(5px);
     inset: 0;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgb(0 0 0 / 80%);
 
     padding: 1rem;
-
-    background: rgb(0 0 0 / 80%);
-    backdrop-filter: blur(5px);
   }
 
   .modal-content-glass {
-    overflow: auto;
-
-    width: 100%;
-    max-width: 28rem;
-    max-height: 90vh;
-    padding: 1.5rem;
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+    padding: 1.5rem;
+
+    width: 100%;
+    max-width: 28rem;
+    max-height: 90vh;
+    overflow: auto;
   }
 
   /* Glass Navigation */
   .nav-glass {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-
-    padding: 1rem 1.5rem;
+    align-items: center;
+    backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--glass-border);
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
+
+    padding: 1rem 1.5rem;
   }
 
   /* Glass Table */
@@ -133,10 +131,10 @@
 
   .table-glass th {
     padding: 0.75rem 1rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
 
     font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
     text-align: left;
   }
 
@@ -146,8 +144,8 @@
   }
 
   .table-glass tbody tr {
-    border-bottom: 1px solid var(--glass-border);
     transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--glass-border);
   }
 
   .table-glass tbody tr:hover {
@@ -158,27 +156,27 @@
   .badge-glass {
     display: inline-flex;
     align-items: center;
-
-    padding: 0.125rem 0.625rem;
+    backdrop-filter: blur(10px) saturate(150%);
     border: 1px solid var(--glass-border);
     border-radius: 9999px;
 
-    font-size: 0.75rem;
+    background: var(--glass-bg);
+
+    padding: 0.125rem 0.625rem;
     font-weight: 500;
 
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px) saturate(150%);
+    font-size: 0.75rem;
   }
 
   /* Glass Alert */
   .alert-glass {
+    backdrop-filter: blur(20px) saturate(180%);
     margin-bottom: 1rem;
-    padding: 1rem;
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
+    padding: 1rem;
   }
 
   .alert-glass.alert-success {

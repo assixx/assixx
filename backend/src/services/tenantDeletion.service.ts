@@ -5,10 +5,9 @@
  * No manual maintenance needed - adapts to schema changes automatically!
  */
 import fs from 'fs/promises';
+import { Redis } from 'ioredis';
 import path from 'path';
 
-import { getRedisClient } from '../config/redis.js';
-import { DbUser } from '../routes/v2/users/model/index.js';
 import {
   PoolConnection,
   ResultSetHeader,
@@ -86,10 +85,23 @@ interface LegalHoldRow extends RowDataPacket {
 }
 
 /**
+ * Minimal user interface for email notifications
+ * Only the fields needed for sending deletion warning emails
+ */
+interface DeletionWarningUser extends RowDataPacket {
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+/**
  * Dynamic Tenant Deletion Service
  * Finds and deletes ALL data for a tenant automatically
  */
 export class TenantDeletionService {
+  /** Redis client for cache clearing (lazy-initialized) */
+  private redisClient: Redis | null = null;
+
   private readonly CRITICAL_TABLES = [
     'tenant_deletion_queue', // Needed for the deletion process itself
     'deletion_audit_trail', // Audit must be kept
@@ -380,18 +392,20 @@ export class TenantDeletionService {
    * Send notification emails
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
-    const [admins] = await query<DbUser[]>(
-      "SELECT * FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
+    const [admins] = await query<DeletionWarningUser[]>(
+      "SELECT email, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
     for (const admin of admins) {
+      const nameParts = [admin.first_name, admin.last_name].filter(Boolean).join(' ');
+      const displayName = nameParts !== '' ? nameParts : 'Nutzer';
       await emailService.sendEmail({
         to: admin.email,
         subject: 'Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht',
         html: `
           <h2>Ihr Assixx-Konto wird gelöscht</h2>
-          <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
+          <p>Sehr geehrte/r ${displayName},</p>
           <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE')}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>
@@ -812,10 +826,34 @@ export class TenantDeletionService {
   }
 
   /**
+   * Get or create Redis client (lazy initialization)
+   */
+  private getRedis(): Redis {
+    if (this.redisClient === null) {
+      const redisPassword = process.env['REDIS_PASSWORD'];
+      this.redisClient = new Redis({
+        host: process.env['REDIS_HOST'] ?? 'redis',
+        port: Number.parseInt(process.env['REDIS_PORT'] ?? '6379', 10),
+        // SECURITY: Redis authentication - only include password if configured
+        ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+        keyPrefix: 'tenant-deletion:',
+        lazyConnect: true,
+        maxRetriesPerRequest: 3,
+        connectTimeout: 5000,
+      });
+
+      this.redisClient.on('error', (err: Error) => {
+        logger.error('TenantDeletion Redis Client Error:', err);
+      });
+    }
+    return this.redisClient;
+  }
+
+  /**
    * Clear Redis cache for tenant
    */
   private async clearRedisCache(tenantId: number): Promise<void> {
-    const redis = await getRedisClient();
+    const redis = this.getRedis();
     const pattern = `tenant:${tenantId}:*`;
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {

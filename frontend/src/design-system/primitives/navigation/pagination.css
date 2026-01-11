@@ -18,32 +18,31 @@
 
 .pagination {
   display: flex;
-  gap: var(--spacing-4);
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: var(--spacing-4);
 
   padding: var(--spacing-6) 0;
 }
 
 /* Pagination button (Previous/Next) */
 .pagination__btn {
-  cursor: pointer;
-
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
-  padding: var(--spacing-2) var(--spacing-4);
+  transition: all 0.2s ease;
+  cursor: pointer;
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: var(--radius-xl);
 
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-
   background: rgb(255 255 255 / 5%);
 
-  transition: all 0.2s ease;
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--color-text-primary);
+  font-weight: 500;
+
+  font-size: 14px;
 }
 
 .pagination__btn:hover:not(:disabled) {
@@ -52,62 +51,61 @@
 }
 
 .pagination__btn:disabled {
-  cursor: not-allowed;
   opacity: 40%;
+  cursor: not-allowed;
 }
 
 /* Page numbers container */
 .pagination__pages {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 }
 
 /* Individual page number */
 .pagination__page {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  min-width: 36px;
-  height: 36px;
+  transition: all 0.2s ease;
+  cursor: pointer;
   border: 1px solid transparent;
   border-radius: var(--radius-xl);
 
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-
   background: transparent;
 
-  transition: all 0.2s ease;
+  min-width: 36px;
+  height: 36px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+
+  font-size: 14px;
 }
 
 .pagination__page:hover:not(.pagination__page--active) {
-  color: var(--color-primary);
   background: rgb(255 255 255 / 5%);
+  color: var(--color-primary);
 }
 
 .pagination__page--active {
-  pointer-events: none;
   border-color: var(--color-primary);
-  color: var(--color-primary);
   background: rgb(33 150 243 / 10%);
+  pointer-events: none;
+  color: var(--color-primary);
 }
 
 /* Page info text (e.g., "Page 1 of 10") */
 .pagination__info {
-  font-size: 14px;
   color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 /* Ellipsis for truncated pages */
 .pagination__ellipsis {
-  user-select: none;
   padding: 0 var(--spacing-2);
   color: var(--color-text-secondary);
+  user-select: none;
 }
 
 /* Compact variant (for mobile) */

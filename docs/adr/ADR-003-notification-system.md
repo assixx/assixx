@@ -1,0 +1,286 @@
+# ADR-003: Real-Time Notification System Architecture
+
+**Status:** Accepted
+**Date:** 2026-01-11
+**Deciders:** Development Team
+**Technical Story:** Implement real-time notifications with badge updates in sidebar
+
+## Context and Problem Statement
+
+Users need real-time notifications for various events (new messages, surveys, documents, KVP submissions) without manual page refresh. The system must:
+
+- Update badge counts instantly in the sidebar
+- Support multiple event types
+- Scale to many concurrent users
+- Be easy to extend for new features
+
+## Decision Drivers
+
+- Real-time updates without polling
+- Low latency for notifications
+- Battery efficiency on mobile
+- Simple integration for new features
+- Existing infrastructure (NestJS, SvelteKit)
+
+## Considered Options
+
+1. **Server-Sent Events (SSE)** - Unidirectional server-to-client streaming
+2. **WebSocket** - Bidirectional communication
+3. **Long Polling** - Repeated HTTP requests
+
+## Decision Outcome
+
+**Chosen option: SSE (Server-Sent Events)** for notifications, keeping WebSocket only for Chat.
+
+### Rationale
+
+| Criterion      | SSE                | WebSocket      | Long Polling    |
+| -------------- | ------------------ | -------------- | --------------- |
+| Complexity     | Simple             | Complex        | Medium          |
+| Direction      | Server → Client    | Bidirectional  | Client → Server |
+| Auto-Reconnect | Browser built-in   | Manual         | Manual          |
+| NestJS Support | `@Sse()` decorator | Gateway needed | Manual          |
+| Battery        | Efficient          | Medium         | Poor            |
+
+Notifications are **unidirectional** (server pushes to client), making SSE the ideal choice.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     FRONTEND (SvelteKit 5)                       │
+│                                                                  │
+│  notification-sse.ts ──► notification.store.svelte.ts ──► Badge │
+│       (EventSource)           ($state rune)           (Sidebar)  │
+│              │                                                   │
+│              ▼ GET /api/v2/notifications/stream?token=...        │
+└──────────────────────────────────────────────────────────────────┘
+                              │ SSE
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    BACKEND (NestJS + Fastify)                    │
+│                                                                  │
+│  notifications.controller.ts ◄──── eventBus.ts (Singleton)      │
+│         @Sse('stream')                    │                      │
+│                                           │                      │
+│     ┌─────────────┬─────────────┬─────────┴─────────┐           │
+│     ▼             ▼             ▼                   ▼           │
+│  surveys     documents       kvp              chat              │
+│  .service    .service     .service          .service            │
+│     │             │             │                   │           │
+│     └─────────────┴─────────────┴───────────────────┘           │
+│                    eventBus.emit*()                              │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## How to Add a New Feature to the Notification System
+
+### Step 1: Define Event in EventBus
+
+**File:** `backend/src/utils/eventBus.ts`
+
+```typescript
+// 1. Add interface for your event data
+interface YourFeatureEvent {
+  tenantId: number;
+  yourFeature: {
+    id: number;
+    title: string;
+    // ... other fields
+  };
+}
+
+// 2. Add emit method to NotificationEventBus class
+emitYourFeatureCreated(tenantId: number, data: YourFeatureEvent['yourFeature']): void {
+  logger.info(`[EventBus] Emitting yourfeature.created for tenant ${tenantId}`);
+  this.emit('yourfeature.created', { tenantId, yourFeature: data });
+}
+```
+
+### Step 2: Emit Event in Your Service
+
+**File:** `backend/src/nest/yourfeature/yourfeature.service.ts`
+
+```typescript
+import { eventBus } from '../../utils/eventBus.js';
+
+async createYourFeature(dto: CreateDto): Promise<YourFeature> {
+  const tenantId = this.getTenantId();
+
+  // ... your creation logic ...
+  const result = await this.db.query(...);
+
+  // Emit event AFTER successful creation
+  eventBus.emitYourFeatureCreated(tenantId, {
+    id: result.id,
+    title: dto.title,
+  });
+
+  return result;
+}
+```
+
+### Step 3: Handle Event in Notifications Controller
+
+**File:** `backend/src/nest/notifications/notifications.controller.ts`
+
+```typescript
+// 1. Add to SSE_EVENTS constant
+const SSE_EVENTS = {
+  // ... existing events
+  YOURFEATURE_CREATED: 'yourfeature.created',
+} as const;
+
+// 2. Add to NotificationEventData interface
+interface NotificationEventData {
+  // ... existing fields
+  yourFeature?: {
+    id: number;
+    title: string;
+  };
+}
+
+// 3. Register handler in registerSSEHandlers()
+function registerSSEHandlers(...) {
+  // ... existing handlers
+
+  // Add your handler (decide which roles should receive it)
+  const yourFeatureHandler = createSSEHandler(
+    'NEW_YOURFEATURE',  // Event type sent to frontend
+    'yourFeature',       // Key in eventData
+    tenantId,
+    eventSubject
+  );
+  eventBus.on(SSE_EVENTS.YOURFEATURE_CREATED, yourFeatureHandler);
+  handlers.push({ event: SSE_EVENTS.YOURFEATURE_CREATED, handler: yourFeatureHandler });
+}
+```
+
+### Step 4: Add Event Type in Frontend
+
+**File:** `frontend/src/lib/utils/notification-sse.ts`
+
+```typescript
+export type NotificationEventType =
+  | 'CONNECTED'
+  | 'HEARTBEAT'
+  // ... existing types
+  | 'NEW_YOURFEATURE'; // Add your new type
+```
+
+### Step 5: Handle Event in Notification Store
+
+**File:** `frontend/src/lib/stores/notification.store.svelte.ts`
+
+```typescript
+// 1. Add to NotificationCounts interface
+export interface NotificationCounts {
+  total: number;
+  // ... existing counts
+  yourfeature: number; // Add your count
+}
+
+// 2. Handle in handleSSEEvent()
+function handleSSEEvent(state: NotificationState, event: NotificationEvent): void {
+  switch (event.type) {
+    // ... existing cases
+    case 'NEW_YOURFEATURE':
+      incrementCount(state, 'yourfeature');
+      break;
+  }
+}
+
+// 3. Update createInitialCounts()
+function createInitialCounts(): NotificationCounts {
+  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0, yourfeature: 0 };
+}
+```
+
+### Step 6: Add Badge to Sidebar (Optional)
+
+**File:** `frontend/src/routes/(app)/+layout.svelte`
+
+```typescript
+// Add badgeType to your menu item
+{
+  id: 'yourfeature',
+  icon: ICONS.yourfeature,
+  label: 'Your Feature',
+  url: '/yourfeature',
+  badgeType: 'yourfeature',  // Must match key in NotificationCounts
+}
+```
+
+### Step 7: Reset Count on Page Visit (Optional)
+
+**File:** `frontend/src/routes/(app)/yourfeature/+page.svelte`
+
+```typescript
+import { notificationStore } from '$lib/stores/notification.store.svelte';
+
+onMount(() => {
+  notificationStore.resetCount('yourfeature');
+});
+```
+
+## Event Types Reference
+
+| Event Type     | Trigger           | Recipients         | Badge Location |
+| -------------- | ----------------- | ------------------ | -------------- |
+| `NEW_SURVEY`   | Survey created    | Employees          | Surveys menu   |
+| `NEW_DOCUMENT` | Document uploaded | All users          | Documents menu |
+| `NEW_KVP`      | KVP submitted     | Admins/Root        | KVP menu       |
+| `NEW_MESSAGE`  | Chat message sent | Message recipients | Chat menu      |
+
+## Testing
+
+### Backend: Test SSE Stream
+
+```bash
+curl -N -H "Authorization: Bearer YOUR_TOKEN" \
+  http://localhost:3000/api/v2/notifications/stream
+```
+
+### Backend: Trigger Event
+
+```bash
+# Create a survey to trigger NEW_SURVEY event
+curl -X POST http://localhost:3000/api/v2/surveys \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test"}'
+```
+
+### Frontend: Check DevTools
+
+1. Open DevTools → Network → Filter "EventStream"
+2. Verify SSE connection is active
+3. Trigger event and verify badge updates
+
+## Consequences
+
+### Positive
+
+- Simple, unidirectional architecture
+- Browser handles reconnection automatically
+- Easy to add new event types
+- Low overhead compared to WebSocket
+
+### Negative
+
+- No client-to-server communication (not needed for notifications)
+- Need query param for token (EventSource doesn't support headers)
+
+### Risks
+
+- SSE connections count against browser connection limit (6 per domain in HTTP/1.1)
+- Long-lived connections may be terminated by proxies (mitigated by Nginx config)
+
+## Related Decisions
+
+- ADR-002: Chat uses WebSocket for bidirectional communication (typing indicators)
+
+## Notes
+
+- Nginx must be configured to disable buffering for SSE endpoint
+- Token refresh triggers SSE reconnection with new token

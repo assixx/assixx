@@ -48,6 +48,7 @@ git checkout -b feature/short-description
 ```
 
 **Branch naming:**
+
 - `feature/description` - New functionality
 - `bugfix/issue-123-description` - Bug fixes
 - `hotfix/critical-fix` - Production fixes
@@ -116,11 +117,14 @@ Before submitting:
 **PR Title:** Same format as commits (`feat(scope): description`)
 
 **PR Description:**
+
 ```markdown
 ## Summary
+
 Brief description of changes.
 
 ## Test Plan
+
 - [ ] Tested endpoint X with Bruno
 - [ ] Verified edge case Y
 ```
@@ -209,6 +213,7 @@ Assixx/
 4. Approval + merge with `--no-ff`
 
 **Merge is blocked if:**
+
 - ESLint errors exist
 - TypeScript errors exist
 - Tests fail

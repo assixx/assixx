@@ -41,11 +41,12 @@ import styles from './Button.module.css' // WO ist die Component?
 #### 3. **Euer aktueller Stack**
 
 ```javascript
+// Mit CSS Modules (Alptraum):
+import blackboardStyles from './blackboard.module.css';
+
 // Aktuell (funktioniert):
 document.querySelector('.blackboard-container').classList.add('active');
 
-// Mit CSS Modules (Alptraum):
-import blackboardStyles from './blackboard.module.css';
 document.querySelector(`.${blackboardStyles.blackboardContainer}`).classList.add(blackboardStyles.active);
 // Oh wait - ihr habt gar kein Build-System für JS imports in HTML!
 ```
@@ -61,9 +62,9 @@ document.querySelector(`.${blackboardStyles.blackboardContainer}`).classList.add
     "postcss-preset-env": {
       "stage": 2,
       "features": {
-        "nesting-rules": true,       // CSS Nesting
-        "custom-properties": true,    // CSS Variables
-        "container-queries": true     // @container
+        "nesting-rules": true, // CSS Nesting
+        "custom-properties": true, // CSS Variables
+        "container-queries": true // @container
       }
     },
     "autoprefixer": {}
@@ -89,12 +90,12 @@ $spacing-unit: 8px;
 @import 'variables';
 
 .blackboard {
-  &-container {  // Nesting!
-    padding: $spacing-unit * 2;
+  &-container {
+    padding: $spacing-unit * 2; // Nesting!
   }
 
-  @include responsive(mobile) { // Mixins!
-    width: 100%;
+  @include responsive(mobile) {
+    width: 100%; // Mixins!
   }
 }
 ```
@@ -111,21 +112,24 @@ $spacing-unit: 8px;
 }
 
 /* Lightweight BEM ohne Zwang */
-.blackboard {}
-.blackboard__item {}        /* Wenn es Sinn macht */
-.blackboard--fullscreen {}  /* Wenn es Sinn macht */
+.blackboard {
+}
+.blackboard__item {
+} /* Wenn es Sinn macht */
+.blackboard--fullscreen {
+} /* Wenn es Sinn macht */
 ```
 
 ## 📈 Kosten-Nutzen-Rechnung
 
-| Ansatz | Migrationsaufwand | Nutzen für Assixx | ROI |
-|--------|------------------|-------------------|-----|
-| **CSS Modules** | 6+ Monate | -50% (ihr habt kein React!) | 🔴 Negativ |
-| **CSS-in-JS** | 8+ Monate | -80% (Runtime Overhead ohne Benefit) | 🔴 Katastrophe |
-| **Vanilla Extract** | 9+ Monate | -60% (TypeScript für CSS aber kein TS im Frontend) | 🔴 Absurd |
-| **PostCSS Modern** | 1 Tag | +40% (moderne Features, keine Migration) | 🟢 Excellent |
-| **SCSS Migration** | 2-3 Wochen | +20% (bessere Organisation) | 🟡 Okay |
-| **Status Quo++** | 0 Tage | +10% (incremental improvements) | 🟢 Pragmatisch |
+| Ansatz              | Migrationsaufwand | Nutzen für Assixx                                  | ROI            |
+| ------------------- | ----------------- | -------------------------------------------------- | -------------- |
+| **CSS Modules**     | 6+ Monate         | -50% (ihr habt kein React!)                        | 🔴 Negativ     |
+| **CSS-in-JS**       | 8+ Monate         | -80% (Runtime Overhead ohne Benefit)               | 🔴 Katastrophe |
+| **Vanilla Extract** | 9+ Monate         | -60% (TypeScript für CSS aber kein TS im Frontend) | 🔴 Absurd      |
+| **PostCSS Modern**  | 1 Tag             | +40% (moderne Features, keine Migration)           | 🟢 Excellent   |
+| **SCSS Migration**  | 2-3 Wochen        | +20% (bessere Organisation)                        | 🟡 Okay        |
+| **Status Quo++**    | 0 Tage            | +10% (incremental improvements)                    | 🟢 Pragmatisch |
 
 ## 🎬 Konkrete Empfehlung
 
@@ -139,9 +143,9 @@ npm install -D postcss postcss-preset-env autoprefixer
 // vite.config.js
 export default {
   css: {
-    postcss: './postcss.config.js'
-  }
-}
+    postcss: './postcss.config.js',
+  },
+};
 ```
 
 ### Features die ihr SOFORT nutzen könnt
@@ -152,7 +156,7 @@ export default {
   padding: 1rem;
 
   &:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .card-title {
@@ -166,7 +170,9 @@ export default {
 }
 
 @container (width < 200px) {
-  .nav-text { display: none; }
+  .nav-text {
+    display: none;
+  }
 }
 
 /* :has() Selector mit Fallback */

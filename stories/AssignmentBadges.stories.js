@@ -102,21 +102,30 @@ export const AllBadgeTypes = {
       {
         title: 'Full Access (Vollzugriff)',
         description: 'User has access to ALL items in this category',
-        badge: createAssignmentBadge('full-access', { label: 'Bereiche', tooltip: 'Voller Zugriff auf alle Bereiche' }),
+        badge: createAssignmentBadge('full-access', {
+          label: 'Bereiche',
+          tooltip: 'Voller Zugriff auf alle Bereiche',
+        }),
         usage: 'hasFullAccess === true',
         class: 'badge--primary',
       },
       {
         title: 'Count Badge (Anzahl)',
         description: 'Shows count of assigned items, tooltip lists all names',
-        badge: createAssignmentBadge('count', { count: 3, names: 'Produktion, Lager, Verwaltung', label: 'Bereiche' }),
+        badge: createAssignmentBadge('count', {
+          count: 3,
+          names: 'Produktion, Lager, Verwaltung',
+          label: 'Bereiche',
+        }),
         usage: 'items.length > 0',
         class: 'badge--info',
       },
       {
         title: 'Inherited Badge (Vererbt)',
         description: 'Access inherited from parent (Team → Department → Area)',
-        badge: createAssignmentBadge('inherited', { tooltip: 'Vererbt von: Team Alpha, Team Beta' }),
+        badge: createAssignmentBadge('inherited', {
+          tooltip: 'Vererbt von: Team Alpha, Team Beta',
+        }),
         usage: 'hasTeams && !hasDirectAssignments',
         class: 'badge--info + fa-sitemap',
       },

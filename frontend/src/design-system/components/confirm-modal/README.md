@@ -76,7 +76,9 @@ For destructive actions.
     <i class="fas fa-trash-alt"></i>
   </div>
   <h3 class="confirm-modal__title">Delete Permanently</h3>
-  <p class="confirm-modal__message">This will permanently delete the item. This action cannot be undone.</p>
+  <p class="confirm-modal__message">
+    This will permanently delete the item. This action cannot be undone.
+  </p>
   <div class="confirm-modal__actions">
     <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
     <button class="confirm-modal__btn confirm-modal__btn--confirm">Delete</button>
@@ -156,11 +158,16 @@ Combine with the modal overlay system:
     </div>
     <h3 class="confirm-modal__title">Delete User</h3>
     <p class="confirm-modal__message">
-      This will permanently delete the user "John Doe" and all associated data. This action cannot be undone.
+      This will permanently delete the user "John Doe" and all associated data. This action cannot
+      be undone.
     </p>
     <div class="confirm-modal__actions">
-      <button class="confirm-modal__btn confirm-modal__btn--cancel" onclick="closeModal()">Cancel</button>
-      <button class="confirm-modal__btn confirm-modal__btn--confirm" onclick="deleteUser()">Delete User</button>
+      <button class="confirm-modal__btn confirm-modal__btn--cancel" onclick="closeModal()">
+        Cancel
+      </button>
+      <button class="confirm-modal__btn confirm-modal__btn--confirm" onclick="deleteUser()">
+        Delete User
+      </button>
     </div>
   </div>
 </div>
@@ -192,12 +199,21 @@ Combine with the modal overlay system:
 **Example:**
 
 ```html
-<div class="confirm-modal" role="dialog" aria-labelledby="modal-title" aria-describedby="modal-desc">
+<div
+  class="confirm-modal"
+  role="dialog"
+  aria-labelledby="modal-title"
+  aria-describedby="modal-desc"
+>
   <h3 id="modal-title" class="confirm-modal__title">Delete Item</h3>
   <p id="modal-desc" class="confirm-modal__message">This action is permanent.</p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel" aria-label="Cancel deletion">Cancel</button>
-    <button class="confirm-modal__btn confirm-modal__btn--confirm" aria-label="Confirm deletion">Delete</button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel" aria-label="Cancel deletion">
+      Cancel
+    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--confirm" aria-label="Confirm deletion">
+      Delete
+    </button>
   </div>
 </div>
 ```

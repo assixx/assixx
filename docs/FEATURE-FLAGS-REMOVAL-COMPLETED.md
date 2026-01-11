@@ -7,16 +7,19 @@
 ## 📋 What Was Done
 
 ### 1. HTML Files (38 files) ✅
+
 - Removed `<script src="/feature-flags.js"></script>` from all HTML files
 - Removed `<!-- Feature Flags -->` comments
 - **Result:** No more feature-flags.js references in HTML
 
 ### 2. Feature Flag Files ✅
+
 - Deleted `/frontend/public/feature-flags.js` (185 lines)
 - Deleted `/frontend/src/utils/feature-flags.ts` (279 lines)
 - **Result:** 464 lines of dead code removed
 
 ### 3. API Client Simplification ✅
+
 - Removed `checkFeatureFlag()` method
 - Removed `extractApiName()` method
 - Simplified `determineVersion()` to always return 'v2'
@@ -24,6 +27,7 @@
 - **Result:** API client always uses v2
 
 ### 4. TypeScript/JavaScript Cleanup ✅
+
 - Removed feature flag imports
 - Removed `const useV2` declarations
 - Removed `window.FEATURE_FLAGS` references
@@ -32,12 +36,14 @@
 ## 📊 Impact Summary
 
 ### Before
+
 - **59 files** with feature flag dependencies
 - **205 code patterns** checking flags
 - **8KB** loaded on every page
 - **Conditional complexity** everywhere
 
 ### After
+
 - **0 feature flag references**
 - **Always v2 API** calls
 - **8KB savings** per page load
@@ -46,7 +52,9 @@
 ## ⚠️ Remaining Work
 
 ### Manual Fixes Needed (67 locations)
+
 There are still `if(useV2)` conditionals without the variable declaration:
+
 ```javascript
 // Current (broken):
 if (useV2) {
@@ -62,6 +70,7 @@ if (useV2) {
 These need manual review because the `useV2` variable was removed but the conditionals remain.
 
 ### Files Needing Manual Review
+
 - `/scripts/survey/admin/index.ts`
 - `/scripts/calendar/index.ts`
 - `/scripts/auth/index.ts`
@@ -70,13 +79,17 @@ These need manual review because the `useV2` variable was removed but the condit
 ## 🔧 How to Fix Remaining Issues
 
 ### Option 1: Quick Fix (Temporary)
+
 Add at the top of affected files:
+
 ```javascript
 const useV2 = true; // Temporary until conditionals are removed
 ```
 
 ### Option 2: Proper Fix (Recommended)
+
 Remove the conditionals entirely and keep only v2 code:
+
 ```javascript
 // Before
 if (useV2) {
@@ -95,12 +108,14 @@ return response.data;
 ## ✅ Verification Steps
 
 1. **No feature-flags.js in HTML:**
+
    ```bash
    grep -r "feature-flags.js" frontend/src/pages/*.html
    # Result: No matches
    ```
 
 2. **No feature flag files:**
+
    ```bash
    ls frontend/public/feature-flags.js
    ls frontend/src/utils/feature-flags.ts
@@ -132,6 +147,7 @@ return response.data;
 ## 🔄 Rollback Plan
 
 If issues occur, rollback is available:
+
 ```bash
 # Restore from backup
 cp backups/feature-flags-removal-20250925_221915/feature-flags.js frontend/public/

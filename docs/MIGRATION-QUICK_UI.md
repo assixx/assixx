@@ -104,6 +104,7 @@ git commit -m "Migrate [filename] to Design System + TypeScript"
 Phase 9 executed: Deleted Bootstrap CSS/JS + Compat layer (7 files, ~768 lines)
 
 **Removed:**
+
 - `bootstrap.min.css`
 - `bootstrap.bundle.min.js`
 - `bootstrap-override.css`

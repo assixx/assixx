@@ -1,10 +1,10 @@
 # Multi-stage Dockerfile für Assixx Backend
 # Stage 1: Build TypeScript
-FROM node:24.11.1-alpine AS builder
+FROM node:24.12.0-alpine3.22 AS builder
 
 # pnpm installieren (pinned version matching packageManager field)
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.26.0
+RUN npm install -g npm@latest pnpm@10.28.0
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -13,6 +13,7 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
@@ -30,12 +31,12 @@ COPY backend/ ./backend/
 RUN cd backend && pnpm run build
 
 # Stage 2: Production Runtime
-FROM node:24.11.1-alpine
+FROM node:24.12.0-alpine3.22
 
 # pnpm installieren (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.26.0
+RUN npm install -g npm@latest pnpm@10.28.0
 
 # Install dumb-init for proper signal handling (SIGTERM, SIGINT)
 # This ensures graceful shutdown when Node.js runs as PID 1
@@ -52,6 +53,7 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
@@ -80,4 +82,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Start Command with dumb-init for proper signal handling
 # dumb-init ensures SIGTERM/SIGINT are forwarded to Node.js process
-CMD ["dumb-init", "pnpm", "exec", "tsx", "backend/src/server.ts"]
+# NestJS Entry-Point (migrated from Express)
+CMD ["dumb-init", "pnpm", "exec", "tsx", "backend/src/nest/main.ts"]

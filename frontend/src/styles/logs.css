@@ -40,12 +40,12 @@
    Base .table-responsive from Design System table.base.css
    ============================================ */
 
-/* User info cell layout */
+/* User info cell layout
 .user-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
-}
+} */
 
 .user-name {
   font-weight: 500;

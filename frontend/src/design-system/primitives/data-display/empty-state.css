@@ -18,8 +18,8 @@
 .empty-state {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
   padding: var(--spacing-8) var(--spacing-6);
 
@@ -30,39 +30,39 @@
 
 .empty-state__icon {
   display: flex;
-  align-items: center;
   justify-content: center;
-
-  width: 80px;
-  height: 80px;
+  align-items: center;
   margin-bottom: var(--spacing-4);
   border-radius: 50%;
 
-  font-size: 40px;
-
   background: rgb(255 255 255 / 5%);
+
+  width: 80px;
+  height: 80px;
+
+  font-size: 40px;
 }
 
 /* Icon variants (using FontAwesome classes) */
 .empty-state__icon i {
-  color: var(--color-text-secondary);
   opacity: 70%;
+  color: var(--color-text-secondary);
 }
 
 /* ========== TEXT ========== */
 
 .empty-state__title {
   margin-bottom: var(--spacing-2);
-  font-size: 18px;
-  font-weight: 600;
   color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 18px;
 }
 
 .empty-state__description {
-  margin-bottom: var(--spacing-5);
-  font-size: 14px;
-  color: var(--color-text-secondary);
   opacity: 80%;
+  margin-bottom: var(--spacing-5);
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 /* ========== ACTION BUTTON ========== */
@@ -116,10 +116,10 @@
 
 /* For custom SVG/image illustrations instead of emoji */
 .empty-state__illustration {
+  opacity: 60%;
+  margin-bottom: var(--spacing-4);
   width: 200px;
   height: 200px;
-  margin-bottom: var(--spacing-4);
-  opacity: 60%;
 }
 
 .empty-state--sm .empty-state__illustration {

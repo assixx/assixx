@@ -25,55 +25,53 @@
    ============================================================ */
 
 .date-picker {
-  position: relative;
   display: flex;
+  position: relative;
   width: 100%;
 }
 
 /* Icon (left positioned) */
 .date-picker__icon {
-  pointer-events: none;
-
   position: absolute;
-  z-index: 1;
   top: 50%;
   left: var(--spacing-4);
   transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+  color: var(--color-text-secondary);
 
   font-size: 16px;
-  color: var(--color-text-secondary);
 }
 
 /* Native date input */
 .date-picker__input {
-  width: 100%;
-  padding: var(--spacing-3) var(--spacing-4);
-  padding-left: calc(var(--spacing-4) * 2 + 16px); /* Space for icon */
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  font-family: var(--font-family-sans);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-text-primary);
-
   /* Remove browser default styling */
   appearance: none;
-  background: rgb(255 255 255 / 5%);
   backdrop-filter: blur(10px);
 
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     background var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 5%);
+  padding: var(--spacing-3) var(--spacing-4);
+  padding-left: calc(var(--spacing-4) * 2 + 16px); /* Space for icon */
+  width: 100%;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+
+  font-family: var(--font-family-sans);
 }
 
 /* Calendar icon color on webkit browsers */
 .date-picker__input::-webkit-calendar-picker-indicator {
-  cursor: pointer;
   opacity: 70%;
   filter: invert(80%);
   transition: opacity var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
 }
 
 .date-picker__input::-webkit-calendar-picker-indicator:hover {
@@ -87,10 +85,10 @@
 
 /* Focus state */
 .date-picker__input:focus {
-  border-color: var(--color-primary);
-  background: rgb(255 255 255 / 8%);
   outline: none;
   box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 8%);
 }
 
 .date-picker__input:focus + .date-picker__icon,
@@ -107,8 +105,8 @@
 /* Disabled state */
 .date-picker__input:disabled,
 .date-picker--disabled .date-picker__input {
-  cursor: not-allowed;
   opacity: 50%;
+  cursor: not-allowed;
   background: rgb(255 255 255 / 3%);
 }
 
@@ -155,8 +153,8 @@
 }
 
 .date-picker--error .date-picker__input:focus {
-  border-color: var(--color-danger);
   box-shadow: 0 0 0 3px rgb(244 67 54 / 10%);
+  border-color: var(--color-danger);
 }
 
 .date-picker--error .date-picker__icon {
@@ -170,8 +168,8 @@
 }
 
 .date-picker--success .date-picker__input:focus {
-  border-color: var(--color-success);
   box-shadow: 0 0 0 3px rgb(76 175 80 / 10%);
+  border-color: var(--color-success);
 }
 
 .date-picker--success .date-picker__icon {
@@ -185,8 +183,8 @@
 }
 
 .date-picker--warning .date-picker__input:focus {
-  border-color: var(--color-warning);
   box-shadow: 0 0 0 3px rgb(255 152 0 / 10%);
+  border-color: var(--color-warning);
 }
 
 .date-picker--warning .date-picker__icon {

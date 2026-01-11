@@ -47,7 +47,9 @@ Two date pickers for start/end selection
 
 <!-- With form-field wrapper (recommended) -->
 <div class="form-field">
-  <label class="form-field__label" for="birth-date"> Geburtsdatum <span class="required">*</span> </label>
+  <label class="form-field__label" for="birth-date">
+    Geburtsdatum <span class="required">*</span>
+  </label>
   <div class="date-picker">
     <i class="date-picker__icon fas fa-calendar"></i>
     <input type="date" id="birth-date" name="birth_date" class="date-picker__input" required />
@@ -150,7 +152,9 @@ All pickers support 3 sizes:
   <i class="date-picker__icon fas fa-calendar"></i>
   <input type="date" class="date-picker__input" />
 </div>
-<span class="form-field__message form-field__message--error"> Bitte wählen Sie ein Datum in der Zukunft </span>
+<span class="form-field__message form-field__message--error">
+  Bitte wählen Sie ein Datum in der Zukunft
+</span>
 ```
 
 ### Success State
@@ -170,7 +174,9 @@ All pickers support 3 sizes:
   <i class="date-picker__icon fas fa-calendar"></i>
   <input type="date" class="date-picker__input" />
 </div>
-<span class="form-field__message form-field__message--warning"> Datum liegt weit in der Zukunft </span>
+<span class="form-field__message form-field__message--warning">
+  Datum liegt weit in der Zukunft
+</span>
 ```
 
 ### Disabled State
@@ -227,7 +233,9 @@ All pickers support 3 sizes:
 
 ```html
 <div class="form-field">
-  <label class="form-field__label" for="shift-date"> Schichtdatum <span class="required">*</span> </label>
+  <label class="form-field__label" for="shift-date">
+    Schichtdatum <span class="required">*</span>
+  </label>
   <div class="date-picker">
     <i class="date-picker__icon fas fa-calendar"></i>
     <input type="date" id="shift-date" name="shift_date" class="date-picker__input" required />
@@ -236,10 +244,19 @@ All pickers support 3 sizes:
 </div>
 
 <div class="form-field">
-  <label class="form-field__label" for="shift-time"> Schichtbeginn <span class="required">*</span> </label>
+  <label class="form-field__label" for="shift-time">
+    Schichtbeginn <span class="required">*</span>
+  </label>
   <div class="time-picker time-picker--24h">
     <i class="time-picker__icon fas fa-clock"></i>
-    <input type="time" id="shift-time" name="start_time" class="time-picker__input" value="06:00" required />
+    <input
+      type="time"
+      id="shift-time"
+      name="start_time"
+      class="time-picker__input"
+      value="06:00"
+      required
+    />
   </div>
 </div>
 ```
@@ -276,7 +293,13 @@ All pickers support 3 sizes:
     </div>
     <div class="time-picker" style="flex: 1;">
       <i class="time-picker__icon fas fa-clock"></i>
-      <input type="time" class="time-picker__input" name="event_start_time" value="09:00" required />
+      <input
+        type="time"
+        class="time-picker__input"
+        name="event_start_time"
+        value="09:00"
+        required
+      />
     </div>
   </div>
 </div>
@@ -317,7 +340,9 @@ All pickers support 3 sizes:
 </div>
 
 <!-- ✅ GOOD: Required field indication -->
-<label for="birth-date"> Geburtsdatum <span class="required" aria-label="Pflichtfeld">*</span> </label>
+<label for="birth-date">
+  Geburtsdatum <span class="required" aria-label="Pflichtfeld">*</span>
+</label>
 <div class="date-picker">
   <i class="date-picker__icon fas fa-calendar"></i>
   <input type="date" id="birth-date" class="date-picker__input" required />
@@ -460,7 +485,11 @@ export function DatePicker({
       <input type="date" class="date-picker__input" name="vacation_end" id="vacation-end" />
     </div>
   </div>
-  <span class="form-field__message form-field__message--error" id="range-error" style="display: none;">
+  <span
+    class="form-field__message form-field__message--error"
+    id="range-error"
+    style="display: none;"
+  >
     Enddatum muss nach Startdatum liegen
   </span>
 </div>
@@ -561,7 +590,12 @@ export function DatePicker({
 **Fallback:** Older browsers show text input. Use `pattern` attribute for validation:
 
 ```html
-<input type="date" class="date-picker__input" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" />
+<input
+  type="date"
+  class="date-picker__input"
+  pattern="\d{4}-\d{2}-\d{2}"
+  placeholder="YYYY-MM-DD"
+/>
 ```
 
 ---

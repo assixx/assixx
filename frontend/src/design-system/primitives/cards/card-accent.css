@@ -9,21 +9,20 @@
 
 /* Accent Card (formerly compact-card) */
 .card-accent {
-  cursor: pointer;
-
   position: relative;
+  backdrop-filter: blur(20px) saturate(180%);
 
-  /* overflow: hidden; */
-
-  padding: var(--spacing-4); /* 32px */
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl); /* 12px */
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
 
-  transition: all 0.2s ease;
+  /* overflow: hidden; */
+
+  padding: var(--spacing-4); /* 32px */
 }
 
 /* Top Indicator Bar - REMOVED for cleaner glassmorphism design */
@@ -36,25 +35,25 @@
 
 /* Header */
 .card-accent__header {
-  padding: var(--spacing-4) var(--spacing-6);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid rgb(255 255 255 / 5%);
   border-radius: 10px 10px 0 0;
 
   background: rgb(255 255 255 / 1%);
-  backdrop-filter: blur(10px);
+  padding: var(--spacing-4) var(--spacing-6);
 }
 
 /* Title - Clean without indicators */
 .card-accent__title {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
   margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 600;
 
   font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
 }
 
 /* Side indicator removed for cleaner design */

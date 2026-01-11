@@ -8,21 +8,30 @@
  */
 
 .btn-success {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  box-shadow: var(--shadow-btn-success);
   border: 1px solid rgb(56 142 60); /* Solid green border - avatar style */
 
-  color: var(--color-white);
-
   /* ========== VISUAL ========== */
-  background: linear-gradient(145deg, rgb(139 170 140 / 11%), rgb(29 221 39 / 15%)); /* Subtle green gradient */
-  box-shadow: var(--shadow-btn-success);
+  background: linear-gradient(
+    145deg,
+    rgb(139 170 140 / 11%),
+    rgb(29 221 39 / 15%)
+  ); /* Subtle green gradient */
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-white);
 }
 
 /* Hover state - Brighten the gradient */
 .btn-success:hover:not(:disabled) {
-  background: linear-gradient(145deg, rgb(139 170 140 / 18%), rgb(29 221 39 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-success-hover);
+  background: linear-gradient(
+    145deg,
+    rgb(139 170 140 / 18%),
+    rgb(29 221 39 / 25%)
+  ); /* Intensiver */
 }
 
 /* Focus state */

@@ -9,24 +9,24 @@
  */
 
 .btn-dark {
-  padding: var(--spacing-2) var(--spacing-4);
   border: 1px solid #404040;
-  color: var(--color-white);
   background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--color-white);
 }
 
 /* Hover State - Brighten the gradient */
 .btn-dark:hover:not(:disabled) {
   border: 1px solid #404040;
-  color: var(--color-white);
   background: linear-gradient(145deg, rgb(53 53 53), rgb(0 0 0));
+  color: var(--color-white);
 }
 
 /* Active/Pressed State */
 .btn-dark:active:not(:disabled) {
   transform: translateY(0);
-  background: var(--color-gray-950);
   box-shadow: var(--shadow-btn-dark-active, 0 1px 4px rgb(0 0 0 / 40%));
+  background: var(--color-gray-950);
 }
 
 /* Focus State */
@@ -41,13 +41,12 @@
 /* Disabled State */
 .btn-dark:disabled,
 .btn-dark.disabled {
+  opacity: 60%;
   cursor: not-allowed;
+  box-shadow: none;
+  background: var(--color-gray-600);
 
   color: var(--color-gray-400);
-
-  opacity: 60%;
-  background: var(--color-gray-600);
-  box-shadow: none;
 }
 
 /* Loading State */
@@ -57,21 +56,20 @@
 }
 
 .btn-dark.loading::after {
-  content: "";
-
   position: absolute;
   top: 50%;
   left: 50%;
 
-  width: 16px;
-  height: 16px;
+  animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
   border: 2px solid var(--color-white);
   border-top-color: transparent;
   border-radius: 50%;
 
-  animation: spin 0.6s linear infinite;
+  width: 16px;
+  height: 16px;
+  content: '';
 }
 
 /* Loading spinner animation */

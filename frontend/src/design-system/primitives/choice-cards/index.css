@@ -5,6 +5,6 @@
  * Vertical stacked layout for single/multiple choice.
  */
 
-@import "./choice-card.base.css";
-@import "./choice-card.plan.css";
-@import "./choice-card.feature.css";
+@import './choice-card.base.css';
+@import './choice-card.plan.css';
+@import './choice-card.feature.css';

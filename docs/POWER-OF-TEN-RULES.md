@@ -14,7 +14,7 @@ Die meisten Coding-Guidelines enthalten über 100 Regeln - und werden deshalb ig
 
 Diese Regeln wurden bei NASA/JPL für **mission-critical Software** entwickelt - Code, der Raumschiffe, Flugzeuge und Atomkraftwerke steuert. Ein Bug kann töten.
 
-> *"The rules act like the seat-belt in your car: initially they are perhaps a little uncomfortable, but after a while their use becomes second-nature and not using them becomes unimaginable."*
+> _"The rules act like the seat-belt in your car: initially they are perhaps a little uncomfortable, but after a while their use becomes second-nature and not using them becomes unimaginable."_
 > — Gerard J. Holzmann
 
 ---
@@ -24,6 +24,7 @@ Diese Regeln wurden bei NASA/JPL für **mission-critical Software** entwickelt -
 ### Regel 1: Einfache Kontrollfluss-Strukturen
 
 **Original (C):**
+
 > Restrict all code to very simple control flow constructs – do not use `goto` statements, `setjmp` or `longjmp` constructs, and direct or indirect recursion.
 
 **TypeScript-Adaptation:**
@@ -64,6 +65,7 @@ function processData(data: Data): void {
 ```
 
 **Rationale:**
+
 - Einfacher Kontrollfluss = bessere Verifizierbarkeit
 - Ohne Rekursion: Azyklischer Call-Graph, beweisbar terminierend
 - Statische Analyse kann Stack-Nutzung berechnen
@@ -75,6 +77,7 @@ function processData(data: Data): void {
 ### Regel 2: Alle Loops mit fester Obergrenze
 
 **Original (C):**
+
 > All loops must have a fixed upper-bound. It must be trivially possible for a checking tool to prove statically that a preset upper-bound on the number of iterations of a loop cannot be exceeded.
 
 **TypeScript-Adaptation:**
@@ -104,7 +107,8 @@ if (iterations >= MAX_ITERATIONS) {
 }
 
 // ✅ RICHTIG - for...of mit bekanntem Array
-for (const item of items) { // items.length ist bekannt
+for (const item of items) {
+  // items.length ist bekannt
   process(item);
 }
 
@@ -118,6 +122,7 @@ for (let page = 0; page < MAX_PAGES; page++) {
 ```
 
 **Rationale:**
+
 - Verhindert Runaway-Code und Endlosschleifen
 - Statisch beweisbar, dass Code terminiert
 - Bei Überschreitung: Expliziter Fehler statt stilles Hängen
@@ -127,6 +132,7 @@ for (let page = 0; page < MAX_PAGES; page++) {
 ### Regel 3: Keine dynamische Speicherallokation nach Initialisierung
 
 **Original (C):**
+
 > Do not use dynamic memory allocation after initialization.
 
 **TypeScript-Adaptation:**
@@ -157,8 +163,12 @@ class ResponsePool {
     }
   }
 
-  private createNew(): Response { /* ... */ }
-  private reset(response: Response): void { /* ... */ }
+  private createNew(): Response {
+    /* ... */
+  }
+  private reset(response: Response): void {
+    /* ... */
+  }
 }
 
 // ✅ RICHTIG - Strukturen bei Init erstellen
@@ -172,11 +182,13 @@ const buffer = new Array<number>(BUFFER_SIZE).fill(0);
 ```
 
 **Rationale:**
+
 - Vorhersagbares Speicherverhalten
 - Vermeidung von GC-Pauses in kritischen Pfaden
 - Einfachere Analyse des Speicherverbrauchs
 
 **Pragmatische Anwendung:** In TypeScript ist diese Regel weniger strikt. Fokus auf:
+
 - Keine Speicher-Lecks (Event Listeners entfernen, Subscriptions beenden)
 - Große Datenstrukturen wiederverwenden
 - In Performance-kritischem Code: Object Pools nutzen
@@ -186,6 +198,7 @@ const buffer = new Array<number>(BUFFER_SIZE).fill(0);
 ### Regel 4: Maximale Funktionslänge ~60 Zeilen
 
 **Original (C):**
+
 > No function should be longer than what can be printed on a single sheet of paper in a standard reference format with one line per statement and one line per declaration. Typically, this means no more than about 60 lines of code per function.
 
 **TypeScript-Adaptation:**
@@ -204,10 +217,10 @@ async function handleUserRegistration(data: RegistrationData): Promise<User> {
 
 // ✅ RICHTIG - Aufgeteilt in logische Einheiten
 async function handleUserRegistration(data: RegistrationData): Promise<User> {
-  const validated = validateRegistrationData(data);      // ~15 Zeilen
-  const user = await createUserInDatabase(validated);    // ~20 Zeilen
-  await sendWelcomeEmail(user);                          // ~10 Zeilen
-  logRegistration(user);                                 // ~5 Zeilen
+  const validated = validateRegistrationData(data); // ~15 Zeilen
+  const user = await createUserInDatabase(validated); // ~20 Zeilen
+  await sendWelcomeEmail(user); // ~10 Zeilen
+  logRegistration(user); // ~5 Zeilen
   return user;
 }
 
@@ -221,6 +234,7 @@ async function createUserInDatabase(data: ValidatedData): Promise<User> {
 ```
 
 **Rationale:**
+
 - Jede Funktion = eine verständliche, testbare Einheit
 - Passt auf einen Bildschirm/eine Seite
 - Lange Funktionen = Zeichen schlechter Struktur
@@ -232,11 +246,15 @@ async function createUserInDatabase(data: ValidatedData): Promise<User> {
 ### Regel 5: Mindestens 2 Assertions pro Funktion
 
 **Original (C):**
+
 > The assertion density of the code should average to a minimum of two assertions per function. Assertions are used to check for anomalous conditions that should never happen in real-life executions.
 
 **TypeScript-Adaptation:**
 
 ```typescript
+// ✅ RICHTIG - Mit Zod-Validierung
+import { z } from 'zod';
+
 // ❌ UNZUREICHEND - Keine Validierung
 function divideNumbers(a: number, b: number): number {
   return a / b; // Was wenn b === 0?
@@ -264,9 +282,6 @@ function divideNumbers(a: number, b: number): number {
   return result;
 }
 
-// ✅ RICHTIG - Mit Zod-Validierung
-import { z } from 'zod';
-
 const UserInputSchema = z.object({
   email: z.string().email(),
   age: z.number().int().min(0).max(150),
@@ -286,6 +301,7 @@ function processUser(input: unknown): ProcessedUser {
 ```
 
 **Was zählt als Assertion in TypeScript:**
+
 1. Zod/Joi Schema-Validierung
 2. Type Guards mit throw
 3. Explizite if-checks mit Error
@@ -293,6 +309,7 @@ function processUser(input: unknown): ProcessedUser {
 5. Early Returns nach Validierung
 
 **Rationale:**
+
 - Statistisch: 1 Defekt pro 10-100 Zeilen Code
 - Mehr Assertions = mehr abgefangene Fehler
 - Defensive Programming: Fehler früh erkennen
@@ -302,6 +319,7 @@ function processUser(input: unknown): ProcessedUser {
 ### Regel 6: Kleinster möglicher Scope für Variablen
 
 **Original (C):**
+
 > Data objects must be declared at the smallest possible level of scope.
 
 **TypeScript-Adaptation:**
@@ -352,11 +370,13 @@ function processData(data: Data): Result {
 ```
 
 **Rationale:**
+
 - Data-Hiding: Was nicht sichtbar ist, kann nicht korrumpiert werden
 - Einfacheres Debugging: Weniger Stellen wo Variable geändert werden kann
 - Verhindert Wiederverwendung für inkompatible Zwecke
 
 **TypeScript-Spezifisch:**
+
 - IMMER `const` wenn möglich
 - `let` nur wenn Reassignment nötig
 - NIEMALS `var`
@@ -366,6 +386,7 @@ function processData(data: Data): Result {
 ### Regel 7: Return-Values prüfen, Parameter validieren
 
 **Original (C):**
+
 > The return value of non-void functions must be checked by each calling function, and the validity of parameters must be checked inside each function.
 
 **TypeScript-Adaptation:**
@@ -411,11 +432,13 @@ void analytics.trackEvent('user_action'); // void = bewusst ignoriert
 ```
 
 **TypeScript-Spezifisch:**
+
 - `@typescript-eslint/no-floating-promises` erzwingen
 - Alle `Promise`-Returns awaiten oder mit `void` markieren
 - Zod für Runtime-Validierung an Systemgrenzen
 
 **Rationale:**
+
 - Standard-Libraries wie `strlen(0)` crashen still bei falschen Inputs
 - Fehler müssen die Call-Chain hochpropagiert werden
 - Mechanische Checker können Violations erkennen
@@ -425,6 +448,7 @@ void analytics.trackEvent('user_action'); // void = bewusst ignoriert
 ### Regel 8: Preprocessor-Nutzung einschränken
 
 **Original (C):**
+
 > The use of the preprocessor must be limited to the inclusion of header files and simple macro definitions. Token pasting, variable argument lists (ellipses), and recursive macro calls are not allowed.
 
 **TypeScript-Adaptation:**
@@ -482,6 +506,7 @@ const featureFlags = {
 ```
 
 **Rationale:**
+
 - 10 Conditional-Compilation-Direktiven = 2^10 = 1024 mögliche Code-Versionen
 - Komplexe Type-Level-Programmierung ist schwer zu verstehen und zu debuggen
 - Build-Konfiguration sollte minimal und nachvollziehbar sein
@@ -491,6 +516,7 @@ const featureFlags = {
 ### Regel 9: Referenz-Tiefe einschränken
 
 **Original (C):**
+
 > The use of pointers should be restricted. Specifically, no more than one level of dereferencing is allowed. Pointer dereference operations may not be hidden in macro definitions or inside typedef declarations. Function pointers are not permitted.
 
 **TypeScript-Adaptation:**
@@ -540,6 +566,7 @@ async function processUserData(id: number): Promise<void> {
 **Maximal erlaubte Tiefe:** 2-3 Levels
 
 **Rationale:**
+
 - Tiefe Verschachtelung erschwert statische Analyse
 - Datenfluss wird schwer nachvollziehbar
 - Fehler in tiefen Strukturen sind schwer zu debuggen
@@ -549,6 +576,7 @@ async function processUserData(id: number): Promise<void> {
 ### Regel 10: Zero Warnings - Höchste Compiler-Strenge
 
 **Original (C):**
+
 > All code must be compiled, from the first day of development, with all compiler warnings enabled at the compiler's most pedantic setting. All code must compile with these setting without any warnings. All code must be checked daily with at least one, but preferably more than one, state-of-the-art static source code analyzer and should pass the analyses with zero warnings.
 
 **TypeScript-Adaptation:**
@@ -573,8 +601,8 @@ async function processUserData(id: number): Promise<void> {
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true
-  }
+    "noPropertyAccessFromIndexSignature": true,
+  },
 }
 ```
 
@@ -584,12 +612,11 @@ export default [
   {
     rules: {
       // Alle Rules auf "error", nicht "warn"
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/strict-boolean-expressions': 'error',
       // ... weitere strikte Rules
-    }
-  }
+    },
+  },
 ];
 ```
-
