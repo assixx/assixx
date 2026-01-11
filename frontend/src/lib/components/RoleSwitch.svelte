@@ -2,8 +2,8 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // Toast notifications (1:1 like legacy alerts.ts)
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
 
   // =============================================================================
   // SVELTE 5 RUNES - Role Switch Dropdown
@@ -137,6 +137,10 @@
     }
     if (result.user?.activeRole !== undefined) {
       localStorage.setItem('activeRole', result.user.activeRole);
+
+      // CRITICAL: Broadcast role switch to other tabs
+      // Uses BroadcastChannel + triggers storage event for cross-tab sync
+      broadcastRoleSwitch(result.user.activeRole as 'root' | 'admin' | 'employee', result.token);
     }
     // Clear role switch banner dismissals
     for (const role of ['root', 'admin', 'employee']) {

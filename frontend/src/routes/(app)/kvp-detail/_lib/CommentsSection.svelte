@@ -1,8 +1,16 @@
 <script lang="ts">
   import { getAvatarColorClass, getInitials } from '$lib/utils';
+  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   import { kvpDetailState } from './state.svelte';
   import { canAddComments, formatDate } from './utils';
+
+  /**
+   * Check if a profile picture exists (non-null, non-undefined, non-empty)
+   */
+  function hasProfilePicture(pic: string | null | undefined): boolean {
+    return pic !== null && pic !== undefined && pic !== '';
+  }
 
   interface Props {
     onaddcomment: () => void;
@@ -74,10 +82,22 @@
       <div class="comment-item" class:comment-internal={comment.isInternal}>
         <div class="comment-header">
           <div class="comment-author">
-            <div class="avatar avatar--sm {getAvatarColorClass(comment.createdBy)}">
-              <span class="avatar__initials">
-                {getInitials(comment.createdByName, comment.createdByLastname)}
-              </span>
+            <div
+              class="avatar avatar--sm {hasProfilePicture(comment.profilePicture)
+                ? ''
+                : getAvatarColorClass(comment.createdBy)}"
+            >
+              {#if hasProfilePicture(comment.profilePicture)}
+                <img
+                  src={getProfilePictureUrl(comment.profilePicture)}
+                  alt="{comment.createdByName} {comment.createdByLastname}"
+                  class="avatar__image"
+                />
+              {:else}
+                <span class="avatar__initials">
+                  {getInitials(comment.createdByName, comment.createdByLastname)}
+                </span>
+              {/if}
             </div>
             <span>{comment.createdByName} {comment.createdByLastname}</span>
           </div>

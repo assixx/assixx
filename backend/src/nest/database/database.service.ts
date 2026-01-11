@@ -9,7 +9,8 @@
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
+import { Pool } from 'pg';
 
 import { PG_POOL } from './database.constants.js';
 
@@ -40,12 +41,9 @@ export class DatabaseService {
    * @param params - Query parameters
    * @returns Query result rows
    */
-  async query<T extends QueryResultRow = QueryResultRow>(
-    sql: string,
-    params?: unknown[],
-  ): Promise<T[]> {
-    const result = await this.pool.query<T>(sql, params);
-    return result.rows;
+  async query<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T[]> {
+    const result = await this.pool.query(sql, params);
+    return result.rows as T[];
   }
 
   /**
@@ -55,10 +53,7 @@ export class DatabaseService {
    * @param params - Query parameters
    * @returns First row or null
    */
-  async queryOne<T extends QueryResultRow = QueryResultRow>(
-    sql: string,
-    params?: unknown[],
-  ): Promise<T | null> {
+  async queryOne<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T | null> {
     const rows = await this.query<T>(sql, params);
     return rows[0] ?? null;
   }

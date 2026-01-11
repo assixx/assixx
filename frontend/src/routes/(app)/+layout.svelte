@@ -19,6 +19,8 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
+  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+  import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
   import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
@@ -96,6 +98,9 @@
 
   // Session Manager instance (for cleanup on destroy)
   let sessionManagerInstance = $state<SessionManager | null>(null);
+
+  // Role Sync Manager instance (for cross-tab synchronization)
+  let roleSyncManagerInstance = $state<RoleSyncManager | null>(null);
 
   // Current role for navigation (uses activeRole from role switch)
   // activeRole reflects the current view, which may differ from original userRole
@@ -460,6 +465,23 @@
     // Initialize Session Manager (handles inactivity timeout + warning modal)
     sessionManagerInstance = getSessionManager();
 
+    // Initialize Role Sync Manager (handles cross-tab role synchronization)
+    // When another tab switches role, this callback updates local state
+    roleSyncManagerInstance = getRoleSyncManager();
+    roleSyncManagerInstance.init((newRole: string, token?: string) => {
+      console.warn('[Layout] Role changed in another tab:', newRole);
+
+      // Update local state - the manager handles redirect/reload
+      if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
+        activeRole = newRole;
+      }
+
+      // Update token if provided
+      if (token !== undefined && token !== '') {
+        localStorage.setItem('accessToken', token);
+      }
+    });
+
     // Load initial counts and connect to SSE for real-time notifications
     void notificationStore.loadInitialCounts();
     notificationStore.connect();
@@ -472,6 +494,10 @@
     // Cleanup SessionManager
     if (sessionManagerInstance !== null) {
       sessionManagerInstance.destroy();
+    }
+    // Cleanup RoleSyncManager
+    if (roleSyncManagerInstance !== null) {
+      roleSyncManagerInstance.destroy();
     }
     // Disconnect SSE
     notificationStore.disconnect();
@@ -526,7 +552,11 @@
         <div id="user-info">
           {#if user?.profilePicture}
             <div class="avatar avatar--md">
-              <img src={user.profilePicture} alt={getDisplayName()} class="avatar__image" />
+              <img
+                src={getProfilePictureUrl(user.profilePicture)}
+                alt={getDisplayName()}
+                class="avatar__image"
+              />
             </div>
           {:else}
             <div class="avatar avatar--md avatar--color-5">
@@ -633,7 +663,11 @@
       <div class="user-info-card">
         {#if user?.profilePicture}
           <div class="avatar avatar--md">
-            <img src={user.profilePicture} alt={getDisplayName()} class="avatar__image" />
+            <img
+              src={getProfilePictureUrl(user.profilePicture)}
+              alt={getDisplayName()}
+              class="avatar__image"
+            />
           </div>
         {:else}
           <div class="avatar avatar--md avatar--color-0">

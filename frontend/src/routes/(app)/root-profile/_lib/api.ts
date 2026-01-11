@@ -4,6 +4,7 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
@@ -78,18 +79,19 @@ export async function loadProfile(): Promise<{
 /**
  * Load profile picture from cache or user data
  * @param userPicture - Profile picture URL from user data
+ * @returns Absolute URL path or null
  */
 export function loadProfilePicture(userPicture?: string): string | null {
   // Check localStorage cache first
   const cached = localStorage.getItem(STORAGE_KEYS.profilePictureCache);
   if (cached !== null && cached !== 'null' && cached !== '') {
-    return cached;
+    return getProfilePictureUrl(cached);
   }
 
   // Use user's profile picture if available
   if (userPicture !== undefined && userPicture !== '') {
     localStorage.setItem(STORAGE_KEYS.profilePictureCache, userPicture);
-    return userPicture;
+    return getProfilePictureUrl(userPicture);
   }
 
   return null;
