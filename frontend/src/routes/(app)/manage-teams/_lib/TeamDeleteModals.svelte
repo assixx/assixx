@@ -49,13 +49,19 @@
     aria-labelledby="delete-modal-title"
     tabindex="-1"
     onclick={handleDeleteOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && oncloseDelete()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') oncloseDelete();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ds-modal ds-modal--sm"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <div class="ds-modal__header">
@@ -92,13 +98,19 @@
     aria-labelledby="delete-confirm-title"
     tabindex="-1"
     onclick={handleDeleteConfirmOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && oncloseDeleteConfirm()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') oncloseDeleteConfirm();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="confirm-modal confirm-modal--danger"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <div class="confirm-modal__icon">
@@ -140,13 +152,19 @@
     aria-labelledby="force-delete-title"
     tabindex="-1"
     onclick={handleForceDeleteOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && oncloseForceDelete()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') oncloseForceDelete();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="confirm-modal confirm-modal--warning"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <div class="confirm-modal__icon">
@@ -154,7 +172,7 @@
       </div>
       <h3 class="confirm-modal__title" id="force-delete-title">{MESSAGES.FORCE_DELETE_TITLE}</h3>
       <p class="confirm-modal__message">
-        {MESSAGES.FORCE_DELETE_MESSAGE(forceDeleteMemberCount)}
+        {MESSAGES.forceDeleteMessage(forceDeleteMemberCount)}
       </p>
       <div class="confirm-modal__actions">
         <button

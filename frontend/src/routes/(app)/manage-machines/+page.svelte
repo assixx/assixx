@@ -7,27 +7,26 @@
    * Note: Uses external state store for UI state (forms, modals, dropdowns).
    */
   import { invalidateAll } from '$app/navigation';
-  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/manage-machines.css';
 
   // Import state and components
-  import { machineState } from './_lib/state.svelte';
-  import MachineFormModal from './_lib/MachineFormModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
 
   // Import from _lib/ modules
-  import type { Machine, MachineStatusFilter } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
   import {
     getMachineTeams as apiGetMachineTeams,
     setMachineTeams as apiSetMachineTeams,
     saveMachine as apiSaveMachine,
     deleteMachine as apiDeleteMachine,
   } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import MachineFormModal from './_lib/MachineFormModal.svelte';
+  import { machineState } from './_lib/state.svelte';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -44,6 +43,9 @@
     getDepartmentBadgeData,
   } from './_lib/utils';
 
+  import type { PageData } from './$types';
+  import type { Machine, MachineStatusFilter } from './_lib/types';
+
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
@@ -51,13 +53,13 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allMachines = $derived<Machine[]>(data?.machines ?? []);
+  const allMachines = $derived<Machine[]>(data.machines);
 
   // Sync SSR data to state store for child components (departments, areas, teams)
   $effect(() => {
-    if (data?.departments) machineState.setDepartments(data.departments);
-    if (data?.areas) machineState.setAreas(data.areas);
-    if (data?.teams) machineState.setTeams(data.teams);
+    machineState.setDepartments(data.departments);
+    machineState.setAreas(data.areas);
+    machineState.setTeams(data.teams);
   });
 
   // Sync machines to state store for openEditModal
@@ -213,7 +215,7 @@
   }
 
   function handleSearchResultClick(machineId: number) {
-    openEditModal(machineId);
+    void openEditModal(machineId);
     machineState.setSearchOpen(false);
     machineState.setCurrentSearchQuery('');
   }
@@ -224,53 +226,78 @@
 
   function handleFormSubmit(e: Event) {
     e.preventDefault();
-    saveMachine();
+    void saveMachine();
   }
 
   // =============================================================================
   // OUTSIDE CLICK HANDLERS
   // =============================================================================
 
+  // Dropdown configuration for outside click handling
+  const dropdownConfigs = [
+    {
+      isOpen: () => machineState.departmentDropdownOpen,
+      selector: '#department-dropdown',
+      close: () => {
+        machineState.setDepartmentDropdownOpen(false);
+      },
+    },
+    {
+      isOpen: () => machineState.areaDropdownOpen,
+      selector: '#area-dropdown',
+      close: () => {
+        machineState.setAreaDropdownOpen(false);
+      },
+    },
+    {
+      isOpen: () => machineState.typeDropdownOpen,
+      selector: '#type-dropdown',
+      close: () => {
+        machineState.setTypeDropdownOpen(false);
+      },
+    },
+    {
+      isOpen: () => machineState.statusDropdownOpen,
+      selector: '#status-dropdown',
+      close: () => {
+        machineState.setStatusDropdownOpen(false);
+      },
+    },
+    {
+      isOpen: () => machineState.teamsDropdownOpen,
+      selector: '#teams-dropdown',
+      close: () => {
+        machineState.setTeamsDropdownOpen(false);
+      },
+    },
+    {
+      isOpen: () => machineState.searchOpen,
+      selector: '.search-input-wrapper',
+      close: () => {
+        machineState.setSearchOpen(false);
+      },
+    },
+  ];
+
+  function isAnyDropdownOpen(): boolean {
+    return dropdownConfigs.some((config) => config.isOpen());
+  }
+
+  function handleOutsideClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    for (const config of dropdownConfigs) {
+      if (!config.isOpen()) continue;
+      const el = document.querySelector(config.selector);
+      if (el !== null && !el.contains(target)) config.close();
+    }
+  }
+
   $effect(() => {
-    if (
-      machineState.departmentDropdownOpen ||
-      machineState.areaDropdownOpen ||
-      machineState.typeDropdownOpen ||
-      machineState.statusDropdownOpen ||
-      machineState.teamsDropdownOpen ||
-      machineState.searchOpen
-    ) {
-      const handleOutsideClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-
-        if (machineState.departmentDropdownOpen) {
-          const el = document.getElementById('department-dropdown');
-          if (el && !el.contains(target)) machineState.setDepartmentDropdownOpen(false);
-        }
-        if (machineState.areaDropdownOpen) {
-          const el = document.getElementById('area-dropdown');
-          if (el && !el.contains(target)) machineState.setAreaDropdownOpen(false);
-        }
-        if (machineState.typeDropdownOpen) {
-          const el = document.getElementById('type-dropdown');
-          if (el && !el.contains(target)) machineState.setTypeDropdownOpen(false);
-        }
-        if (machineState.statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) machineState.setStatusDropdownOpen(false);
-        }
-        if (machineState.teamsDropdownOpen) {
-          const el = document.getElementById('teams-dropdown');
-          if (el && !el.contains(target)) machineState.setTeamsDropdownOpen(false);
-        }
-        if (machineState.searchOpen) {
-          const el = document.querySelector('.search-input-wrapper');
-          if (el && !el.contains(target)) machineState.setSearchOpen(false);
-        }
-      };
-
+    if (isAnyDropdownOpen()) {
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 
@@ -308,33 +335,45 @@
         <!-- Status Toggle Group -->
         <div class="toggle-group" id="machine-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={machineState.currentStatusFilter === 'all'}
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-list"></i>
             {MESSAGES.FILTER_ALL}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={machineState.currentStatusFilter === 'operational'}
-            onclick={() => handleStatusToggle('operational')}
+            onclick={() => {
+              handleStatusToggle('operational');
+            }}
           >
             <i class="fas fa-check-circle"></i>
             {MESSAGES.FILTER_OPERATIONAL}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={machineState.currentStatusFilter === 'maintenance'}
-            onclick={() => handleStatusToggle('maintenance')}
+            onclick={() => {
+              handleStatusToggle('maintenance');
+            }}
           >
             <i class="fas fa-wrench"></i>
             {MESSAGES.FILTER_MAINTENANCE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={machineState.currentStatusFilter === 'repair'}
-            onclick={() => handleStatusToggle('repair')}
+            onclick={() => {
+              handleStatusToggle('repair');
+            }}
           >
             <i class="fas fa-tools"></i>
             {MESSAGES.FILTER_REPAIR}
@@ -376,7 +415,9 @@
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="search-input__result-item"
-                  onclick={() => handleSearchResultClick(machine.id)}
+                  onclick={() => {
+                    handleSearchResultClick(machine.id);
+                  }}
                 >
                   <div class="search-result__content">
                     <div class="search-result__name">
@@ -413,7 +454,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{machineState.error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
+          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
             {MESSAGES.BTN_RETRY}
           </button>
         </div>
@@ -423,7 +464,7 @@
           <h3 class="empty-state__title">{emptyStateTitle}</h3>
           <p class="empty-state__description">{emptyStateDescription}</p>
           {#if machineState.currentStatusFilter === 'all'}
-            <button class="btn btn-primary" onclick={openAddModal}>
+            <button type="button" class="btn btn-primary" onclick={openAddModal}>
               <i class="fas fa-plus"></i>
               {MESSAGES.BTN_ADD_MACHINE}
             </button>
@@ -497,6 +538,7 @@
                     <td>
                       <div class="flex gap-2">
                         <button
+                          type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
                           aria-label="Maschine bearbeiten"
@@ -505,10 +547,13 @@
                           <i class="fas fa-edit"></i>
                         </button>
                         <button
+                          type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
                           aria-label="Maschine löschen"
-                          onclick={() => machineState.openDeleteModal(machine.id)}
+                          onclick={() => {
+                            machineState.openDeleteModal(machine.id);
+                          }}
                         >
                           <i class="fas fa-trash"></i>
                         </button>
@@ -526,10 +571,20 @@
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn-float add-machine-btn" onclick={openAddModal} aria-label="Maschine hinzufügen">
+<button
+  type="button"
+  class="btn-float add-machine-btn"
+  onclick={openAddModal}
+  aria-label="Maschine hinzufügen"
+>
   <i class="fas fa-plus"></i>
 </button>
 
 <!-- Modal Components -->
-<MachineFormModal onsubmit={handleFormSubmit} onclose={() => machineState.closeMachineModal()} />
+<MachineFormModal
+  onsubmit={handleFormSubmit}
+  onclose={() => {
+    machineState.closeMachineModal();
+  }}
+/>
 <DeleteModals ondelete={deleteMachine} />

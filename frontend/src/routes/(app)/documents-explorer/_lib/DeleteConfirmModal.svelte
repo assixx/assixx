@@ -20,7 +20,12 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
-    <div class="confirm-modal confirm-modal--danger" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="confirm-modal confirm-modal--danger"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>

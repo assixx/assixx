@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { EventFormData, CalendarEvent, Department, Team, Area } from './types';
   import {
     RECURRENCE_OPTIONS,
     RECURRENCE_END_OPTIONS,
     REMINDER_DROPDOWN_OPTIONS,
   } from './constants';
+
+  import type { EventFormData, CalendarEvent, Department, Team, Area } from './types';
 
   interface Props {
     formData: EventFormData;
@@ -17,18 +18,10 @@
     onsave: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
-    formData = $bindable(),
-    editingEvent,
-    isAdmin,
-    departments,
-    teams,
-    areas,
-    onclose,
-    onsave,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { formData = $bindable(), editingEvent, isAdmin, departments, teams, areas, onclose, onsave }: Props = $props();
+  /* eslint-enable */
 
   // Dropdown states
   let recurrenceDropdownOpen = $state(false);
@@ -68,7 +61,9 @@
     }
 
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   });
 </script>
 
@@ -76,7 +71,9 @@
   <form
     class="ds-modal ds-modal--lg"
     role="presentation"
-    onclick={(e) => e.stopPropagation()}
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
     onsubmit={(e) => {
       e.preventDefault();
       onsave();

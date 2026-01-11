@@ -1,10 +1,10 @@
 # ADR-001: Rate Limiting Implementation
 
-| Metadata | Value |
-|----------|-------|
-| **Status** | Accepted |
-| **Date** | 2026-01-06 |
-| **Decision Makers** | SCS Technik |
+| Metadata                | Value                              |
+| ----------------------- | ---------------------------------- |
+| **Status**              | Accepted                           |
+| **Date**                | 2026-01-06                         |
+| **Decision Makers**     | SCS Technik                        |
 | **Affected Components** | Backend API, Redis, Authentication |
 
 ---
@@ -40,21 +40,21 @@ Wir implementieren Rate Limiting mit:
 
 ### Technologie-Stack
 
-| Component | Choice | Version |
-|-----------|--------|---------|
-| Rate Limiter | `@nestjs/throttler` | 6.5.0 |
-| Redis Storage | `@nest-lab/throttler-storage-redis` | 1.1.0 |
-| Redis Client | `ioredis` | 5.x |
+| Component     | Choice                              | Version |
+| ------------- | ----------------------------------- | ------- |
+| Rate Limiter  | `@nestjs/throttler`                 | 6.5.0   |
+| Redis Storage | `@nest-lab/throttler-storage-redis` | 1.1.0   |
+| Redis Client  | `ioredis`                           | 5.x     |
 
 ### Rate Limit Tiers
 
-| Tier | Limit | Window | Use Case |
-|------|-------|--------|----------|
-| `auth` | 5 | 15 min | Brute-Force-Schutz |
-| `public` | 100 | 15 min | Public Endpoints |
-| `user` | 1000 | 15 min | Authenticated Users |
-| `admin` | 2000 | 15 min | Admin Endpoints |
-| `upload` | 20 | 1 hour | File Uploads |
+| Tier     | Limit | Window | Use Case            |
+| -------- | ----- | ------ | ------------------- |
+| `auth`   | 5     | 15 min | Brute-Force-Schutz  |
+| `public` | 100   | 15 min | Public Endpoints    |
+| `user`   | 1000  | 15 min | Authenticated Users |
+| `admin`  | 2000  | 15 min | Admin Endpoints     |
+| `upload` | 20    | 1 hour | File Uploads        |
 
 ### Tracking-Strategie
 
@@ -75,40 +75,40 @@ Wir implementieren Rate Limiting mit:
 
 ### 1. @fastify/rate-limit
 
-| Pro | Contra |
-|-----|--------|
-| Native Fastify Integration | Keine NestJS Decorators |
-| Hook-basiert | Manuelles Guard-Setup |
+| Pro                         | Contra                     |
+| --------------------------- | -------------------------- |
+| Native Fastify Integration  | Keine NestJS Decorators    |
+| Hook-basiert                | Manuelles Guard-Setup      |
 | Direkte Redis-Unterstützung | Weniger NestJS-idiomatisch |
 
 **Entscheidung**: Abgelehnt - `@nestjs/throttler` bietet bessere DX mit Decorators.
 
 ### 2. Custom Implementation
 
-| Pro | Contra |
-|-----|--------|
-| Volle Kontrolle | Erhöhter Wartungsaufwand |
-| Keine Dependencies | Fehleranfällig |
-| Exakt passend | Zeitaufwändig |
+| Pro                | Contra                   |
+| ------------------ | ------------------------ |
+| Volle Kontrolle    | Erhöhter Wartungsaufwand |
+| Keine Dependencies | Fehleranfällig           |
+| Exakt passend      | Zeitaufwändig            |
 
 **Entscheidung**: Abgelehnt - Official NestJS Package ist battle-tested.
 
 ### 3. In-Memory Storage (kein Redis)
 
-| Pro | Contra |
-|-----|--------|
-| Einfacher | Nicht distributed |
-| Keine Redis-Abhängigkeit | Verloren bei Restart |
-| | Multi-Instance nicht möglich |
+| Pro                      | Contra                       |
+| ------------------------ | ---------------------------- |
+| Einfacher                | Nicht distributed            |
+| Keine Redis-Abhängigkeit | Verloren bei Restart         |
+|                          | Multi-Instance nicht möglich |
 
 **Entscheidung**: Abgelehnt - Redis bereits vorhanden, distributed Rate Limiting erforderlich.
 
 ### 4. nestjs-throttler-storage-redis (kkoomen)
 
-| Pro | Contra |
-|-----|--------|
-| Bekannt | **ARCHIVED** (Sept 2024) |
-| Viele Tutorials | Keine Maintenance |
+| Pro             | Contra                   |
+| --------------- | ------------------------ |
+| Bekannt         | **ARCHIVED** (Sept 2024) |
+| Viele Tutorials | Keine Maintenance        |
 
 **Entscheidung**: Abgelehnt - Paket ist deprecated. Stattdessen `@nest-lab/throttler-storage-redis` (aktiver Fork).
 
@@ -173,12 +173,12 @@ REDIS_PORT: 6379
 
 ### Tested Scenarios
 
-| Scenario | Expected | Actual | Status |
-|----------|----------|--------|--------|
-| 5 Login Attempts | 429 on 6th | 429 on 6th | ✅ |
-| Redis Keys Created | throttle:* | throttle:* | ✅ |
-| Error Message | Custom text | Custom text | ✅ |
-| Manual Reset | Keys deleted | Keys deleted | ✅ |
+| Scenario           | Expected     | Actual       | Status |
+| ------------------ | ------------ | ------------ | ------ |
+| 5 Login Attempts   | 429 on 6th   | 429 on 6th   | ✅     |
+| Redis Keys Created | throttle:\*  | throttle:\*  | ✅     |
+| Error Message      | Custom text  | Custom text  | ✅     |
+| Manual Reset       | Keys deleted | Keys deleted | ✅     |
 
 ### Documentation
 

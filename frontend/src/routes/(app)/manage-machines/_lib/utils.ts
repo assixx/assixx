@@ -2,6 +2,10 @@
 // MANAGE MACHINES - UTILITY FUNCTIONS
 // =============================================================================
 
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, MACHINE_TYPE_LABELS, MESSAGES } from './constants';
+
 import type {
   Machine,
   MachineFormData,
@@ -9,7 +13,6 @@ import type {
   MachineStatusFilter,
   MachineTeamInfo,
 } from './types';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, MACHINE_TYPE_LABELS, MESSAGES } from './constants';
 
 // =============================================================================
 // BADGE DATA TYPES
@@ -32,14 +35,14 @@ export interface BadgeData {
  * Get CSS class for status badge
  */
 export function getStatusBadgeClass(status: MachineStatus): string {
-  return STATUS_BADGE_CLASSES[status] ?? 'badge--error';
+  return STATUS_BADGE_CLASSES[status];
 }
 
 /**
  * Get localized status label
  */
 export function getStatusLabel(status: MachineStatus): string {
-  return STATUS_LABELS[status] ?? status;
+  return STATUS_LABELS[status];
 }
 
 // =============================================================================
@@ -155,6 +158,14 @@ export function formatDateDE(dateString?: string): string {
 }
 
 /**
+ * Format date string to YYYY-MM-DD for HTML date input
+ */
+export function formatDateForInput(dateString?: string): string {
+  if (dateString === undefined || dateString === '') return '';
+  return new Date(dateString).toISOString().split('T')[0] ?? '';
+}
+
+/**
  * Format operating hours for display
  */
 export function formatOperatingHours(hours?: number): string {
@@ -198,15 +209,22 @@ export function getEmptyStateDescription(statusFilter: MachineStatusFilter): str
 
 /**
  * Highlight search term in text with <strong> tags
- * @param text - Text to highlight in
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to highlight in (potentially untrusted)
  * @param query - Search query to highlight
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
@@ -266,8 +284,6 @@ export function populateFormFromMachine(machine: Machine): FormState {
     machineType: machine.machineType ?? '',
     status: machine.status,
     operatingHours: machine.operatingHours ?? null,
-    nextMaintenance: machine.nextMaintenance
-      ? (new Date(machine.nextMaintenance).toISOString().split('T')[0] ?? '')
-      : '',
+    nextMaintenance: formatDateForInput(machine.nextMaintenance),
   };
 }

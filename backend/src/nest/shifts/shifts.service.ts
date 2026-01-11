@@ -381,14 +381,13 @@ export class ShiftsService {
     ];
 
     for (const { key, column, isDate } of filterMap) {
-      // eslint-disable-next-line security/detect-object-injection -- key is from hardcoded filterMap, not user input
       if (filters[key] === undefined) continue;
       const op =
         key === 'startDate' ? '>='
         : key === 'endDate' ? '<='
         : '=';
       conditions.push(isDate === true ? `${column} = $${idx}` : `${column} ${op} $${idx}`);
-      // eslint-disable-next-line security/detect-object-injection -- key is from hardcoded filterMap, not user input
+
       params.push(filters[key]);
       idx++;
     }
@@ -416,8 +415,20 @@ export class ShiftsService {
     const params: unknown[] = [tenantId, ...filterParams];
 
     const filterClause = conditions.length > 0 ? ` AND ${conditions}` : '';
-    const sortColumn = filters.sortBy === 'date' ? 's.date' : `s.${filters.sortBy}`;
-    const orderClause = ` ORDER BY ${sortColumn} ${filters.sortOrder.toUpperCase()}`;
+
+    // SECURITY FIX: Whitelist map for ORDER BY to prevent SQL injection
+    // Defense-in-depth: Even though Zod validates, we use explicit mapping
+    const SORT_COLUMN_MAP: Record<string, string> = {
+      date: 's.date',
+      startTime: 's.start_time',
+      endTime: 's.end_time',
+      userId: 's.user_id',
+      status: 's.status',
+      type: 's.type',
+    };
+    const sortColumn = SORT_COLUMN_MAP[filters.sortBy] ?? 's.date';
+    const sortDirection = filters.sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    const orderClause = ` ORDER BY ${sortColumn} ${sortDirection}`;
     const limitClause = ` LIMIT $${nextIndex} OFFSET $${nextIndex + 1}`;
     params.push(filters.limit, (filters.page - 1) * filters.limit);
 

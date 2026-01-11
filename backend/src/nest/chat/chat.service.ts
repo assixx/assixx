@@ -925,8 +925,17 @@ export class ChatService {
         m.created_at,
         u.username as sender_username, u.first_name as sender_first_name,
         u.last_name as sender_last_name, u.profile_picture as sender_profile_picture,
-        CASE WHEN m.sender_id = ${userId} THEN 1
-             WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1 ELSE 0 END as is_read,
+        CASE
+          WHEN m.sender_id = ${userId} THEN
+            CASE WHEN EXISTS (
+              SELECT 1 FROM conversation_participants other_cp
+              WHERE other_cp.conversation_id = m.conversation_id
+              AND other_cp.user_id != ${userId}
+              AND other_cp.last_read_message_id >= m.id
+            ) THEN 1 ELSE 0 END
+          WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1
+          ELSE 0
+        END as is_read,
         CASE WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN cp.last_read_at ELSE NULL END as read_at
        FROM messages m
        INNER JOIN users u ON m.sender_id = u.id

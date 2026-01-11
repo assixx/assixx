@@ -7,34 +7,38 @@
    * User data comes from parent layout (single /users/me call).
    */
   import { onMount } from 'svelte';
-  import type { PageData } from './$types';
+
+  import { page } from '$app/stores';
 
   // Page-specific CSS
   import '../../../styles/employee-dashboard.css';
 
   // Local modules
   import {
+    FLOATING_DOTS_COUNT,
     MESSAGES,
     PLACEHOLDER_TEXT,
-    FLOATING_DOTS_COUNT,
     QUICK_ACCESS_ROUTES,
   } from './_lib/constants';
   import {
+    formatBlackboardDate,
+    formatEventDate,
+    getBlackboardOrgLabel,
     getDisplayName,
     getDisplayValue,
-    formatEventDate,
-    getOrgLevelText,
     getOrgLevelClass,
-    navigateTo,
-    goToCalendar,
-    openBlackboardEntry,
+    getOrgLevelText,
     getPriorityLabel,
-    getBlackboardOrgLabel,
+    goToCalendar,
+    isAllDay,
+    navigateTo,
+    openBlackboardEntry,
     parseContent,
     truncateContent,
-    formatBlackboardDate,
-    isAllDay,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
+  import type { LayoutUser } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Loaded server-side in +page.server.ts
@@ -43,16 +47,14 @@
   /** Props from server load function */
   const { data }: { data: PageData } = $props();
 
-  // Destructure with safe fallbacks
-  const recentDocuments = $derived(data?.recentDocuments ?? []);
-  const upcomingEvents = $derived(data?.upcomingEvents ?? []);
-  const blackboardEntries = $derived(data?.blackboardEntries ?? []);
+  // Destructure SSR data (guaranteed by +page.server.ts)
+  const recentDocuments = $derived(data.recentDocuments);
+  const upcomingEvents = $derived(data.upcomingEvents);
+  const blackboardEntries = $derived(data.blackboardEntries);
 
   // User data from parent layout (via $page.data)
   // The (app) layout provides user data to all child pages
-  import { page } from '$app/stores';
-
-  const user = $derived($page.data.user);
+  const user = $derived($page.data.user as LayoutUser | null);
   const employeeName = $derived(getDisplayName(user?.firstName, user?.lastName));
   const employeeArea = $derived(getDisplayValue(user?.teamAreaName));
   const employeeDepartment = $derived(getDisplayValue(user?.teamDepartmentName));
@@ -61,7 +63,7 @@
   const employeePosition = $derived(getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee));
 
   // Notification count (placeholder for now)
-  const alertCount = $derived(blackboardEntries.filter((e) => !e.isConfirmed).length);
+  const alertCount = $derived(blackboardEntries.filter((e) => e.isConfirmed !== true).length);
 
   // =============================================================================
   // FLOATING DOTS - Generated client-side for animation
@@ -88,7 +90,9 @@
 <div class="container">
   <!-- Welcome Hero Section -->
   <div
-    class="welcome-hero-custom relative flex items-center justify-between min-h-[120px] overflow-hidden rounded-xl px-8 py-6 mb-8 border border-white/10 backdrop-blur-[20px] backdrop-saturate-[180%] shadow-sm text-white"
+    class="welcome-hero-custom relative flex items-center justify-between min-h-[120px]
+      overflow-hidden rounded-xl px-8 py-6 mb-8 border border-white/10
+      backdrop-blur-[20px] backdrop-saturate-[180%] shadow-sm text-white"
   >
     <!-- Floating sakura petals (generated via floatingDotsCount) -->
     <div class="floating-elements">
@@ -171,11 +175,16 @@
           <div class="sticky-notes-container">
             {#each blackboardEntries as entry (entry.id)}
               {@const contentText = parseContent(entry.content)}
+              {@const isRead = entry.isConfirmed === true}
               <div
-                class="sticky-note sticky-note--{entry.color ?? 'yellow'} sticky-note--large"
+                class="sticky-note sticky-note--{entry.color} sticky-note--large"
                 id="sticky-note-{entry.id}"
-                onclick={() => openBlackboardEntry(entry.uuid)}
-                onkeydown={(e) => e.key === 'Enter' && openBlackboardEntry(entry.uuid)}
+                onclick={() => {
+                  openBlackboardEntry(entry.uuid);
+                }}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') openBlackboardEntry(entry.uuid);
+                }}
                 role="button"
                 tabindex="0"
               >
@@ -183,6 +192,12 @@
                 <div class="sticky-note__title">{entry.title}</div>
                 <div class="sticky-note__content">{truncateContent(contentText)}</div>
                 <div class="sticky-note__indicators">
+                  {#if (entry.attachmentCount ?? 0) > 0}
+                    <span class="sticky-note__attachments" title="Anhänge">
+                      <i class="fas fa-paperclip"></i>
+                      <span>{entry.attachmentCount}</span>
+                    </span>
+                  {/if}
                   {#if (entry.commentCount ?? 0) > 0}
                     <div class="sticky-note__comments">
                       <i class="fas fa-comments"></i>
@@ -191,26 +206,20 @@
                   {/if}
                   <span
                     class="sticky-note__read-status"
-                    class:sticky-note__read-status--read={entry.isConfirmed}
-                    class:sticky-note__read-status--unread={!entry.isConfirmed}
-                    title={entry.isConfirmed ? 'Gelesen' : 'Ungelesen'}
+                    class:sticky-note__read-status--read={isRead}
+                    class:sticky-note__read-status--unread={!isRead}
+                    title={isRead ? 'Gelesen' : 'Ungelesen'}
                   >
-                    <i class="fas {entry.isConfirmed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                    <i class="fas {isRead ? 'fa-eye' : 'fa-eye-slash'}"></i>
                   </span>
                 </div>
                 <div class="sticky-note__footer">
                   <div class="sticky-note__badges">
-                    <span
-                      class="sticky-note__badge sticky-note__badge--priority-{entry.priority ??
-                        'medium'}"
-                    >
-                      {getPriorityLabel(entry.priority ?? 'medium')}
+                    <span class="sticky-note__badge sticky-note__badge--priority-{entry.priority}">
+                      {getPriorityLabel(entry.priority)}
                     </span>
-                    <span
-                      class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel ??
-                        'company'}"
-                    >
-                      {getBlackboardOrgLabel(entry.orgLevel ?? 'company')}
+                    <span class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}">
+                      {getBlackboardOrgLabel(entry.orgLevel)}
                     </span>
                   </div>
                   <div class="sticky-note__footer-row">
@@ -244,8 +253,11 @@
         </div>
         <div class="card-accent__content">
           <button
+            type="button"
             class="btn btn-manage w-4/5 mb-4"
-            onclick={() => navigateTo(QUICK_ACCESS_ROUTES.documents)}
+            onclick={() => {
+              navigateTo(QUICK_ACCESS_ROUTES.documents);
+            }}
           >
             {MESSAGES.documentsButton}
           </button>
@@ -275,8 +287,11 @@
         </div>
         <div class="card-accent__content">
           <button
+            type="button"
             class="btn btn-manage w-4/5 mb-4"
-            onclick={() => navigateTo(QUICK_ACCESS_ROUTES.calendar)}
+            onclick={() => {
+              navigateTo(QUICK_ACCESS_ROUTES.calendar);
+            }}
           >
             {MESSAGES.calendarButton}
           </button>
@@ -294,7 +309,9 @@
                   onclick={goToCalendar}
                   role="button"
                   tabindex="0"
-                  onkeydown={(e) => e.key === 'Enter' && goToCalendar()}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') goToCalendar();
+                  }}
                 >
                   <div class="event-date">
                     <span class="event-day">{dateInfo.day}</span>
@@ -336,8 +353,11 @@
         </div>
         <div class="card-accent__content">
           <button
+            type="button"
             class="btn btn-manage w-4/5 mb-4"
-            onclick={() => navigateTo(QUICK_ACCESS_ROUTES.kvp)}
+            onclick={() => {
+              navigateTo(QUICK_ACCESS_ROUTES.kvp);
+            }}
           >
             {MESSAGES.kvpButton}
           </button>
@@ -357,8 +377,11 @@
         </div>
         <div class="card-accent__content">
           <button
+            type="button"
             class="btn btn-manage w-4/5 mb-4"
-            onclick={() => navigateTo(QUICK_ACCESS_ROUTES.profile)}
+            onclick={() => {
+              navigateTo(QUICK_ACCESS_ROUTES.profile);
+            }}
           >
             {MESSAGES.profileButton}
           </button>

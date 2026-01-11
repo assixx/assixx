@@ -2,8 +2,13 @@
 // SIGNUP PAGE - API FUNCTIONS
 // =============================================================================
 
-import type { RegisterPayload, RegisterResponse } from './types';
+import { getApiClient } from '$lib/utils/api-client';
+
 import { ERROR_MESSAGES } from './constants';
+
+import type { RegisterPayload, RegisterResponse } from './types';
+
+const apiClient = getApiClient();
 
 /**
  * Registers a new user/tenant
@@ -13,21 +18,17 @@ import { ERROR_MESSAGES } from './constants';
  * @throws Error if registration fails
  */
 export async function registerUser(payload: RegisterPayload): Promise<RegisterResponse> {
-  const response = await fetch('/api/v2/auth/register', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const result: RegisterResponse = await response.json();
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.error?.message ?? ERROR_MESSAGES.registrationFailed);
+  try {
+    // Registration endpoint is unauthenticated
+    return await apiClient.post<RegisterResponse>('/auth/register', payload, {
+      useAuth: false,
+    });
+  } catch (err) {
+    // Re-throw with user-friendly message
+    const message =
+      err instanceof Error && err.message !== '' ? err.message : ERROR_MESSAGES.registrationFailed;
+    throw new Error(message);
   }
-
-  return result;
 }
 
 /**

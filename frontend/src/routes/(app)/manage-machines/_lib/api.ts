@@ -3,17 +3,33 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
-import type {
-  Machine,
-  Department,
-  Area,
-  Team,
-  MachineTeam,
-  MachineFormData,
-  ApiResponse,
-} from './types';
+
+import type { Machine, Department, Area, Team, MachineTeam, MachineFormData } from './types';
 
 const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Type-safe extraction of array data from various API response formats
+ * Handles: T[], { data: T[] }
+ */
+function extractArrayFromResponse<T>(result: unknown): T[] {
+  if (Array.isArray(result)) {
+    return result as T[];
+  }
+
+  if (result !== null && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    if (Array.isArray(obj.data)) {
+      return obj.data as T[];
+    }
+  }
+
+  return [];
+}
 
 // =============================================================================
 // LOAD FUNCTIONS
@@ -37,13 +53,8 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
   const queryString = params.toString();
   const endpoint = queryString.length > 0 ? `/machines?${queryString}` : '/machines';
 
-  const result = await apiClient.get(endpoint);
-
-  if (Array.isArray(result)) {
-    return result;
-  }
-
-  return result.data ?? [];
+  const result: unknown = await apiClient.get(endpoint);
+  return extractArrayFromResponse<Machine>(result);
 }
 
 /**
@@ -62,24 +73,24 @@ export async function getMachineById(machineId: number): Promise<Machine | null>
  * Load all departments from API
  */
 export async function loadDepartments(): Promise<Department[]> {
-  const result = await apiClient.get('/departments');
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get('/departments');
+  return extractArrayFromResponse<Department>(result);
 }
 
 /**
  * Load all areas from API
  */
 export async function loadAreas(): Promise<Area[]> {
-  const result = await apiClient.get('/areas');
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get('/areas');
+  return extractArrayFromResponse<Area>(result);
 }
 
 /**
  * Load all teams from API
  */
 export async function loadTeams(): Promise<Team[]> {
-  const result = await apiClient.get('/teams');
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get('/teams');
+  return extractArrayFromResponse<Team>(result);
 }
 
 /**
@@ -87,8 +98,8 @@ export async function loadTeams(): Promise<Team[]> {
  */
 export async function getMachineTeams(machineId: number): Promise<MachineTeam[]> {
   try {
-    const result = await apiClient.get(`/machines/${machineId}/teams`);
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(`/machines/${machineId}/teams`);
+    return extractArrayFromResponse<MachineTeam>(result);
   } catch (error) {
     console.error(`Error loading teams for machine ${machineId}:`, error);
     return [];
@@ -102,8 +113,8 @@ export async function setMachineTeams(
   machineId: number,
   teamIds: number[],
 ): Promise<MachineTeam[]> {
-  const result = await apiClient.put(`/machines/${machineId}/teams`, { teamIds });
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.put(`/machines/${machineId}/teams`, { teamIds });
+  return extractArrayFromResponse<MachineTeam>(result);
 }
 
 // =============================================================================

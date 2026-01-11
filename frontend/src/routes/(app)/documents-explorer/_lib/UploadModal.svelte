@@ -1,26 +1,16 @@
 <script lang="ts">
-  import type { CurrentUser } from './types';
   import { UPLOAD_CATEGORY_OPTIONS, CATEGORY_MAPPINGS, MESSAGES } from './constants';
   import { formatFileSize, validateFile, getFileTypeDisplayInfo } from './utils';
 
+  import type { UploadData } from './types';
+
   interface Props {
     show: boolean;
-    currentUser: CurrentUser | null;
     onclose: () => void;
     onsubmit: (data: UploadData) => void;
   }
 
-  export interface UploadData {
-    file: File;
-    category: string;
-    docName: string;
-    description: string;
-    tags: string;
-    salaryYear: number;
-    salaryMonth: number;
-  }
-
-  const { show, currentUser: _currentUser, onclose, onsubmit }: Props = $props();
+  const { show, onclose, onsubmit }: Props = $props();
 
   // Form State
   let uploadFile = $state<File | null>(null);
@@ -35,7 +25,8 @@
   let categoryDropdownOpen = $state(false);
 
   const requiresPayrollPeriod = $derived(
-    CATEGORY_MAPPINGS[uploadCategory]?.requiresPayrollPeriod === true,
+    uploadCategory in CATEGORY_MAPPINGS &&
+      CATEGORY_MAPPINGS[uploadCategory].requiresPayrollPeriod === true,
   );
 
   function handleOverlayClick(e: MouseEvent) {
@@ -61,7 +52,7 @@
 
   function handleFileDrop(e: DragEvent) {
     e.preventDefault();
-    const file = e.dataTransfer?.files?.[0];
+    const file = e.dataTransfer?.files[0];
     if (file) handleFileSelected(file);
   }
 
@@ -115,7 +106,9 @@
         if (el && !el.contains(target)) categoryDropdownOpen = false;
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -128,7 +121,9 @@
     <form
       id="upload-form"
       class="ds-modal ds-modal--lg"
-      onclick={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
       onsubmit={(e) => {
         e.preventDefault();
         handleSubmit();
@@ -148,7 +143,9 @@
             class="file-upload-zone"
             role="button"
             tabindex="0"
-            ondragover={(e) => e.preventDefault()}
+            ondragover={(e) => {
+              e.preventDefault();
+            }}
             ondrop={handleFileDrop}
             onclick={() => document.getElementById('file-input')?.click()}
             onkeydown={(e) => e.key === 'Enter' && document.getElementById('file-input')?.click()}
@@ -250,7 +247,12 @@
                 {#each UPLOAD_CATEGORY_OPTIONS as opt (opt.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="dropdown__option" onclick={() => selectCategory(opt.value)}>
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectCategory(opt.value);
+                    }}
+                  >
                     <i class={opt.icon}></i>
                     {opt.label}
                   </div>

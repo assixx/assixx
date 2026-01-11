@@ -76,8 +76,9 @@ export interface Answer {
 
 /**
  * Answer map (questionId -> Answer)
+ * Uses Partial to indicate that a key might not exist (user hasn't answered yet)
  */
-export type AnswerMap = Record<number, Answer>;
+export type AnswerMap = Partial<Record<number, Answer>>;
 
 /**
  * Response answer (from API)

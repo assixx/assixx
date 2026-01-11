@@ -1,298 +1,140 @@
 // =============================================================================
 // CALENDAR - REACTIVE STATE (Svelte 5 Runes)
+// Main entry point - composes all state modules
 // =============================================================================
 
+import { dataState } from './state-data.svelte';
+import { uiState } from './state-ui.svelte';
+import { userState } from './state-user.svelte';
+
 import type { CalendarInstance } from '@event-calendar/core';
-import type { CalendarEvent, Department, Team, Area, User, FilterLevel, ViewMode } from './types';
+
+// Calendar instance (only reference that lives here)
+let calendar = $state<CalendarInstance | null>(null);
 
 /**
- * Calendar State using Svelte 5 Runes
+ * Set calendar instance
  */
-function createCalendarState() {
-  // Calendar instance
-  let calendar = $state<CalendarInstance | null>(null);
-
-  // Current user
-  let currentUserId = $state<number | null>(null);
-  let isAdmin = $state(false);
-  let userRole = $state<string | null>(null);
-
-  // Organization data
-  let departments = $state<Department[]>([]);
-  let teams = $state<Team[]>([]);
-  let areas = $state<Area[]>([]);
-  let employees = $state<User[]>([]);
-
-  // Filter state
-  let currentFilter = $state<FilterLevel>('all');
-  let currentSearch = $state('');
-  let calendarView = $state<ViewMode>('dayGridMonth');
-
-  // Selection state
-  let selectedAttendees = $state<number[]>([]);
-  let eventToDelete = $state<number | null>(null);
-
-  // Modal state
-  let showEventModal = $state(false);
-  let showDetailModal = $state(false);
-  let showDeleteModal = $state(false);
-  let editingEvent = $state<CalendarEvent | null>(null);
-  let viewingEvent = $state<CalendarEvent | null>(null);
-  let selectedDate = $state<Date | null>(null);
-
-  // Loading state - PERFORMANCE: Start true to prevent FOUC (triple-render)
-  let isLoading = $state(true);
-
-  // Derived: can create events (all users can create personal events)
-  const canCreateEvents = $derived(true);
-
-  // Permission check functions (read reactive state when called)
-  function canEditEvent(event: CalendarEvent): boolean {
-    if (isAdmin) return true;
-    return event.createdBy === currentUserId;
-  }
-
-  function canDeleteEvent(_event: CalendarEvent): boolean {
-    return isAdmin;
-  }
-
-  // Methods
-  function setUser(user: { id: number; role?: string }) {
-    currentUserId = user.id;
-    userRole = user.role ?? null;
-    isAdmin = user.role === 'admin' || user.role === 'root';
-  }
-
-  function setCalendar(instance: CalendarInstance | null) {
-    calendar = instance;
-  }
-
-  function setOrganizationData(data: {
-    departments: Department[];
-    teams: Team[];
-    areas: Area[];
-    users: User[];
-  }) {
-    departments = data.departments;
-    teams = data.teams;
-    areas = data.areas;
-    // Exclude current user from employees
-    employees = data.users.filter((u) => u.id !== currentUserId);
-  }
-
-  function setFilter(filter: FilterLevel) {
-    currentFilter = filter;
-    // Persist to localStorage
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('calendarFilter', filter);
-    }
-  }
-
-  function setSearch(query: string) {
-    currentSearch = query;
-  }
-
-  function setView(view: ViewMode) {
-    calendarView = view;
-  }
-
-  function addAttendee(userId: number) {
-    if (!selectedAttendees.includes(userId)) {
-      selectedAttendees = [...selectedAttendees, userId];
-    }
-  }
-
-  function removeAttendee(userId: number) {
-    selectedAttendees = selectedAttendees.filter((id) => id !== userId);
-  }
-
-  function clearAttendees() {
-    selectedAttendees = [];
-  }
-
-  function openEventModal(date?: Date, event?: CalendarEvent) {
-    selectedDate = date ?? null;
-    editingEvent = event ?? null;
-    selectedAttendees = event?.attendees?.map((a) => a.userId) ?? [];
-    showEventModal = true;
-  }
-
-  function closeEventModal() {
-    showEventModal = false;
-    editingEvent = null;
-    selectedDate = null;
-    clearAttendees();
-  }
-
-  function openDetailModal(event: CalendarEvent) {
-    viewingEvent = event;
-    showDetailModal = true;
-  }
-
-  function closeDetailModal() {
-    showDetailModal = false;
-    viewingEvent = null;
-  }
-
-  function openDeleteModal(eventId: number) {
-    eventToDelete = eventId;
-    showDeleteModal = true;
-  }
-
-  function closeDeleteModal() {
-    showDeleteModal = false;
-    eventToDelete = null;
-  }
-
-  function refetchEvents() {
-    calendar?.refetchEvents();
-  }
-
-  function getDepartmentById(id: number): Department | undefined {
-    return departments.find((d) => d.id === id);
-  }
-
-  function getTeamById(id: number): Team | undefined {
-    return teams.find((t) => t.id === id);
-  }
-
-  function getTeamsByDepartment(departmentId: number): Team[] {
-    return teams.filter((t) => t.departmentId === departmentId);
-  }
-
-  function getEmployeeById(id: number): User | undefined {
-    return employees.find((e) => e.id === id);
-  }
-
-  // Load saved filter from localStorage
-  function loadSavedFilter() {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('calendarFilter') as FilterLevel | null;
-      if (saved !== null) {
-        currentFilter = saved;
-      }
-    }
-  }
-
-  function reset() {
-    calendar = null;
-    currentUserId = null;
-    isAdmin = false;
-    userRole = null;
-    departments = [];
-    teams = [];
-    areas = [];
-    employees = [];
-    currentFilter = 'all';
-    currentSearch = '';
-    selectedAttendees = [];
-    eventToDelete = null;
-    showEventModal = false;
-    showDetailModal = false;
-    showDeleteModal = false;
-    editingEvent = null;
-    viewingEvent = null;
-    selectedDate = null;
-  }
-
-  return {
-    // Getters (reactive)
-    get calendar() {
-      return calendar;
-    },
-    get currentUserId() {
-      return currentUserId;
-    },
-    get isAdmin() {
-      return isAdmin;
-    },
-    get userRole() {
-      return userRole;
-    },
-    get departments() {
-      return departments;
-    },
-    get teams() {
-      return teams;
-    },
-    get areas() {
-      return areas;
-    },
-    get employees() {
-      return employees;
-    },
-    get currentFilter() {
-      return currentFilter;
-    },
-    get currentSearch() {
-      return currentSearch;
-    },
-    get calendarView() {
-      return calendarView;
-    },
-    get selectedAttendees() {
-      return selectedAttendees;
-    },
-    get eventToDelete() {
-      return eventToDelete;
-    },
-    get showEventModal() {
-      return showEventModal;
-    },
-    get showDetailModal() {
-      return showDetailModal;
-    },
-    get showDeleteModal() {
-      return showDeleteModal;
-    },
-    get editingEvent() {
-      return editingEvent;
-    },
-    get viewingEvent() {
-      return viewingEvent;
-    },
-    get selectedDate() {
-      return selectedDate;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get canCreateEvents() {
-      return canCreateEvents;
-    },
-
-    // Permission check functions
-    canEditEvent,
-    canDeleteEvent,
-
-    // Methods
-    setUser,
-    setCalendar,
-    setOrganizationData,
-    setFilter,
-    setSearch,
-    setView,
-    addAttendee,
-    removeAttendee,
-    clearAttendees,
-    openEventModal,
-    closeEventModal,
-    openDetailModal,
-    closeDetailModal,
-    openDeleteModal,
-    closeDeleteModal,
-    refetchEvents,
-    getDepartmentById,
-    getTeamById,
-    getTeamsByDepartment,
-    getEmployeeById,
-    loadSavedFilter,
-    reset,
-    setLoading: (val: boolean) => {
-      isLoading = val;
-    },
-  };
+function setCalendar(instance: CalendarInstance | null) {
+  calendar = instance;
 }
 
-// Singleton export
-export const calendarState = createCalendarState();
+/**
+ * Refetch calendar events
+ */
+function refetchEvents() {
+  calendar?.refetchEvents();
+}
+
+/**
+ * Reset all state to initial values
+ */
+function reset() {
+  calendar = null;
+  userState.reset();
+  dataState.reset();
+  uiState.reset();
+}
+
+/**
+ * Unified calendar state - re-exports all modules
+ */
+export const calendarState = {
+  // Calendar instance
+  get calendar() {
+    return calendar;
+  },
+  setCalendar,
+  refetchEvents,
+
+  // User state
+  get currentUserId() {
+    return userState.currentUserId;
+  },
+  get isAdmin() {
+    return userState.isAdmin;
+  },
+  get userRole() {
+    return userState.userRole;
+  },
+  get canCreateEvents() {
+    return userState.canCreateEvents;
+  },
+  setUser: userState.setUser,
+  canEditEvent: userState.canEditEvent,
+  canDeleteEvent: userState.canDeleteEvent,
+
+  // Data state
+  get departments() {
+    return dataState.departments;
+  },
+  get teams() {
+    return dataState.teams;
+  },
+  get areas() {
+    return dataState.areas;
+  },
+  get employees() {
+    return dataState.employees;
+  },
+  setOrganizationData: dataState.setOrganizationData,
+  getDepartmentById: dataState.getDepartmentById,
+  getTeamById: dataState.getTeamById,
+  getTeamsByDepartment: dataState.getTeamsByDepartment,
+  getEmployeeById: dataState.getEmployeeById,
+
+  // UI state
+  get isLoading() {
+    return uiState.isLoading;
+  },
+  get currentFilter() {
+    return uiState.currentFilter;
+  },
+  get currentSearch() {
+    return uiState.currentSearch;
+  },
+  get calendarView() {
+    return uiState.calendarView;
+  },
+  get selectedAttendees() {
+    return uiState.selectedAttendees;
+  },
+  get eventToDelete() {
+    return uiState.eventToDelete;
+  },
+  get showEventModal() {
+    return uiState.showEventModal;
+  },
+  get showDetailModal() {
+    return uiState.showDetailModal;
+  },
+  get showDeleteModal() {
+    return uiState.showDeleteModal;
+  },
+  get editingEvent() {
+    return uiState.editingEvent;
+  },
+  get viewingEvent() {
+    return uiState.viewingEvent;
+  },
+  get selectedDate() {
+    return uiState.selectedDate;
+  },
+  setLoading: uiState.setLoading,
+  setFilter: uiState.setFilter,
+  loadSavedFilter: uiState.loadSavedFilter,
+  setSearch: uiState.setSearch,
+  setView: uiState.setView,
+  addAttendee: uiState.addAttendee,
+  removeAttendee: uiState.removeAttendee,
+  clearAttendees: uiState.clearAttendees,
+  openEventModal: uiState.openEventModal,
+  closeEventModal: uiState.closeEventModal,
+  openDetailModal: uiState.openDetailModal,
+  closeDetailModal: uiState.closeDetailModal,
+  openDeleteModal: uiState.openDeleteModal,
+  closeDeleteModal: uiState.closeDeleteModal,
+
+  // Global reset
+  reset,
+};

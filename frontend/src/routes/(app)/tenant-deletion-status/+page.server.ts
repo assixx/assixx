@@ -5,6 +5,7 @@
  * SSR: Loads deletion status. Only root users can access.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { DeletionStatusItem } from './_lib/types';
 
@@ -15,11 +16,30 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
+/**
+ * Parse API response into an array of deletion status items.
+ * Handles both single object and array responses.
+ */
+function parseStatusResponse(
+  json: ApiResponse<DeletionStatusItem | DeletionStatusItem[]>,
+): DeletionStatusItem[] {
+  const data = json.data ?? json;
 
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  // Single object response with queueId property
+  if (typeof data === 'object' && 'queueId' in data) {
+    return [data];
+  }
+
+  return [];
+}
+
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -28,6 +48,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   if (parentData.user?.role !== 'root') {
     redirect(302, '/login');
   }
+
+  const userId = parentData.user.id;
 
   try {
     const response = await fetch(`${API_BASE}/root/tenant/deletion-status`, {
@@ -38,45 +60,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     });
 
     // 404 means no deletion found - not an error
-    if (response.status === 404) {
-      return {
-        statusData: [],
-        currentUserId: parentData.user.id,
-      };
-    }
-
     if (!response.ok) {
-      console.error(`[SSR] API error ${response.status} for /root/tenant/deletion-status`);
-      return {
-        statusData: [],
-        currentUserId: parentData.user.id,
-      };
+      if (response.status !== 404) {
+        console.error(`[SSR] API error ${response.status} for /root/tenant/deletion-status`);
+      }
+      return { statusData: [], currentUserId: userId };
     }
 
     const json = (await response.json()) as ApiResponse<DeletionStatusItem | DeletionStatusItem[]>;
 
-    // Handle different response formats
-    let statusData: DeletionStatusItem[] = [];
-    const data = json.data ?? json;
-
-    if (Array.isArray(data)) {
-      statusData = data;
-    } else if (typeof data === 'object' && data !== null && 'queueId' in data) {
-      statusData = [data];
-    }
-
-    const duration = (performance.now() - startTime).toFixed(1);
-    console.info(`[SSR] tenant-deletion-status loaded in ${duration}ms`);
-
     return {
-      statusData,
-      currentUserId: parentData.user.id,
+      statusData: parseStatusResponse(json),
+      currentUserId: userId,
     };
   } catch (error) {
     console.error(`[SSR] Fetch error for /root/tenant/deletion-status:`, error);
-    return {
-      statusData: [],
-      currentUserId: parentData.user?.id ?? null,
-    };
+    return { statusData: [], currentUserId: userId };
   }
 };

@@ -25,7 +25,6 @@ export function createTenantConnection(_tenantId: string): Pool {
  */
 export function initializeTenantDatabase(_tenantId: string): void {
   // No-op: PostgreSQL + RLS doesn't need per-tenant databases
-  console.info(`[tenantDb] Using PostgreSQL with RLS - no per-tenant DB needed`);
 }
 
 /**
@@ -33,5 +32,4 @@ export function initializeTenantDatabase(_tenantId: string): void {
  */
 export function closeAllConnections(): void {
   // Main pool closure is handled by database.ts
-  console.info('[tenantDb] Connection management delegated to main pool');
 }

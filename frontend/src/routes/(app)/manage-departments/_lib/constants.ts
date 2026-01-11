@@ -70,7 +70,7 @@ export const MESSAGES = {
 
   // Force delete
   FORCE_DELETE_TITLE: 'Abteilung hat Abhängigkeiten',
-  FORCE_DELETE_MESSAGE: (totalDeps: number, depList: string) => {
+  forceDeleteMessage(totalDeps: number, depList: string): string {
     const element = totalDeps === 1 ? 'Element' : 'Elementen';
     return `Diese Abteilung wird von ${totalDeps} ${element} verwendet (${depList}). Möchten Sie die Abteilung trotzdem löschen? Alle Zuordnungen werden automatisch entfernt.`;
   },
@@ -78,7 +78,9 @@ export const MESSAGES = {
   // Search
   SEARCH_PLACEHOLDER: 'Abteilungen suchen...',
   SEARCH_NO_RESULTS: 'Keine Abteilungen gefunden für',
-  MORE_RESULTS: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
+  moreResults(count: number): string {
+    return `${count} weitere Ergebnisse in Tabelle`;
+  },
 
   // Form labels
   LABEL_NAME: 'Name',
@@ -132,8 +134,12 @@ export const MESSAGES = {
  */
 export const API_ENDPOINTS = {
   DEPARTMENTS: '/departments',
-  DEPARTMENT: (id: number) => `/departments/${id}`,
-  DEPARTMENT_FORCE_DELETE: (id: number) => `/departments/${id}?force=true`,
+  department(id: number): string {
+    return `/departments/${id}`;
+  },
+  departmentForceDelete(id: number): string {
+    return `/departments/${id}?force=true`;
+  },
   AREAS: '/areas',
   USERS_ADMIN: '/users?role=admin',
   USERS_ROOT: '/users?role=root',

@@ -6,25 +6,23 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
 
-  // Page-specific CSS
-  import '../../../styles/manage-admins.css';
-  import '../../../styles/password-strength.css';
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
 
-  // Import from _lib/ modules
-  import type { Admin, Area, Department, StatusFilter, FormIsActiveStatus } from './_lib/types';
-  import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
+  import AdminFormModal from './_lib/AdminFormModal.svelte';
+  import AdminTableRow from './_lib/AdminTableRow.svelte';
   import { saveAdminWithPermissions, deleteAdmin as apiDeleteAdmin } from './_lib/api';
+  import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import SearchResults from './_lib/SearchResults.svelte';
   import { buildAdminFormData, populateFormFromAdmin } from './_lib/utils';
 
-  // Import Components
-  import AdminFormModal from './_lib/AdminFormModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
-  import SearchResults from './_lib/SearchResults.svelte';
-  import AdminTableRow from './_lib/AdminTableRow.svelte';
+  import type { PageData } from './$types';
+  import type { Admin, Area, Department, StatusFilter, FormIsActiveStatus } from './_lib/types';
+
+  import '../../../styles/manage-admins.css';
+  import '../../../styles/password-strength.css';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -33,9 +31,9 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allAdmins = $derived<Admin[]>(data?.admins ?? []);
-  const allAreas = $derived<Area[]>(data?.areas ?? []);
-  const allDepartments = $derived<Department[]>(data?.departments ?? []);
+  const allAdmins = $derived<Admin[]>(data.admins);
+  const allAreas = $derived<Area[]>(data.areas);
+  const allDepartments = $derived<Department[]>(data.departments);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -93,6 +91,39 @@
   );
 
   // =============================================================================
+  // VALIDATION HELPERS
+  // =============================================================================
+
+  /**
+   * Validates admin form fields
+   * @returns Error message if invalid, null if valid
+   */
+  function validateAdminForm(): string | null {
+    if (formEmail !== formEmailConfirm) {
+      return MESSAGES.ERROR_EMAIL_MISMATCH;
+    }
+
+    const passwordMismatch = formPassword !== formPasswordConfirm;
+    if (!isEditMode && passwordMismatch) {
+      return MESSAGES.ERROR_PASSWORD_MISMATCH;
+    }
+
+    if (isEditMode && formPassword && passwordMismatch) {
+      return MESSAGES.ERROR_PASSWORD_MISMATCH;
+    }
+
+    if (!formPosition) {
+      return MESSAGES.ERROR_POSITION_REQUIRED;
+    }
+
+    if (!formEmployeeNumber) {
+      return MESSAGES.ERROR_EMPLOYEE_NUMBER_REQUIRED;
+    }
+
+    return null;
+  }
+
+  // =============================================================================
   // API FUNCTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
@@ -100,33 +131,9 @@
     submitting = true;
 
     try {
-      // Validate
-      if (formEmail !== formEmailConfirm) {
-        showWarningAlert(MESSAGES.ERROR_EMAIL_MISMATCH);
-        submitting = false;
-        return;
-      }
-
-      if (!isEditMode && formPassword !== formPasswordConfirm) {
-        showWarningAlert(MESSAGES.ERROR_PASSWORD_MISMATCH);
-        submitting = false;
-        return;
-      }
-
-      if (isEditMode && formPassword && formPassword !== formPasswordConfirm) {
-        showWarningAlert(MESSAGES.ERROR_PASSWORD_MISMATCH);
-        submitting = false;
-        return;
-      }
-
-      if (!formPosition) {
-        showWarningAlert(MESSAGES.ERROR_POSITION_REQUIRED);
-        submitting = false;
-        return;
-      }
-
-      if (!formEmployeeNumber) {
-        showWarningAlert(MESSAGES.ERROR_EMPLOYEE_NUMBER_REQUIRED);
+      const validationError = validateAdminForm();
+      if (validationError !== null) {
+        showWarningAlert(validationError);
         submitting = false;
         return;
       }
@@ -163,13 +170,15 @@
   }
 
   async function deleteAdmin() {
-    if (deleteAdminId === null) return;
+    const adminId = deleteAdminId;
+    if (adminId === null) return;
+
+    // Reset state before async operations to avoid race conditions
+    showDeleteConfirmModal = false;
+    deleteAdminId = null;
 
     try {
-      await apiDeleteAdmin(deleteAdminId);
-
-      showDeleteConfirmModal = false;
-      deleteAdminId = null;
+      await apiDeleteAdmin(adminId);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
@@ -290,7 +299,7 @@
 
   function handleFormSubmit(e: Event) {
     e.preventDefault();
-    saveAdmin();
+    void saveAdmin();
   }
 
   // =============================================================================
@@ -305,7 +314,9 @@
         if (el && !el.contains(target)) searchOpen = false;
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 
@@ -343,37 +354,49 @@
         <!-- Status Toggle Group -->
         <div class="toggle-group" id="admin-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
             title="Aktive Administratoren"
-            onclick={() => handleStatusToggle('active')}
+            onclick={() => {
+              handleStatusToggle('active');
+            }}
           >
             <i class="fas fa-user-check"></i>
             {MESSAGES.FILTER_ACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
             title="Inaktive Administratoren"
-            onclick={() => handleStatusToggle('inactive')}
+            onclick={() => {
+              handleStatusToggle('inactive');
+            }}
           >
             <i class="fas fa-user-times"></i>
             {MESSAGES.FILTER_INACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
             title="Archivierte Administratoren"
-            onclick={() => handleStatusToggle('archived')}
+            onclick={() => {
+              handleStatusToggle('archived');
+            }}
           >
             <i class="fas fa-archive"></i>
             {MESSAGES.FILTER_ARCHIVED}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
             title="Alle Administratoren"
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-users"></i>
             {MESSAGES.FILTER_ALL}
@@ -419,7 +442,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
             >{MESSAGES.BTN_RETRY}</button
           >
         </div>
@@ -430,7 +453,7 @@
           </div>
           <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
           <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
-          <button class="btn btn-primary" onclick={openAddModal}>
+          <button type="button" class="btn btn-primary" onclick={openAddModal}>
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_ADMIN}
           </button>
@@ -467,7 +490,12 @@
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn-float" onclick={openAddModal} aria-label="Administrator hinzufügen">
+<button
+  type="button"
+  class="btn-float"
+  onclick={openAddModal}
+  aria-label="Administrator hinzufügen"
+>
   <i class="fas fa-user-plus"></i>
 </button>
 

@@ -6,6 +6,7 @@
  * Note: The calendar events themselves are fetched dynamically by the Calendar component.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { CalendarEvent, Department, Team, Area, User } from './_lib/types';
 
@@ -15,6 +16,32 @@ interface ApiResponse<T> {
   success?: boolean;
   data?: T;
   events?: T;
+}
+
+/**
+ * Extract data from various API response formats.
+ * Handles: { success: true, data: { events: [...] } } | { success: true, data: T } | { data: T } | T
+ */
+function extractResponseData<T>(json: ApiResponse<T>): T | null {
+  // Format: { success: true, data: { events: [...] } }
+  if ('success' in json && json.success === true) {
+    if (json.data === undefined || json.data === null) {
+      return null;
+    }
+    const innerData = json.data as unknown as { events?: T };
+    if ('events' in innerData) {
+      return innerData.events ?? null;
+    }
+    return json.data;
+  }
+
+  // Format: { data: T }
+  if ('data' in json && json.data !== undefined) {
+    return json.data;
+  }
+
+  // Format: T (raw response)
+  return json as unknown as T;
 }
 
 async function apiFetch<T>(
@@ -36,18 +63,7 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      // Handle calendar events response: { success: true, data: { events: [...] } }
-      const innerData = json.data as unknown as { events?: T };
-      if (innerData && 'events' in innerData) {
-        return innerData.events ?? null;
-      }
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
+    return extractResponseData(json);
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;
@@ -55,16 +71,14 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
   // Parallel fetch: upcoming events + organization data for dropdowns
   const [upcomingEventsData, departmentsData, teamsData, areasData, usersData] = await Promise.all([
-    apiFetch<CalendarEvent[]>('/calendar/events/dashboard', token, fetch),
+    apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),
     apiFetch<Area[]>('/areas', token, fetch),
@@ -80,9 +94,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const teams = Array.isArray(teamsData) ? teamsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
   const users = Array.isArray(usersData) ? usersData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] calendar loaded in ${duration}ms (5 parallel API calls)`);
 
   return {
     upcomingEvents,

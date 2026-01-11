@@ -722,7 +722,6 @@ export class MachinesService {
     let paramIndex = 1;
 
     for (const [apiField, dbField] of this.machineFieldMappings) {
-      // eslint-disable-next-line security/detect-object-injection -- apiField is from static readonly array, not user input
       const fieldValue = data[apiField];
       if (fieldValue !== undefined) {
         fields.push(`${dbField} = $${paramIndex++}`);
@@ -731,7 +730,6 @@ export class MachinesService {
     }
 
     for (const [apiField, dbField] of this.machineDateFieldMappings) {
-      // eslint-disable-next-line security/detect-object-injection -- apiField is from static readonly array, not user input
       const value = data[apiField] as string | undefined;
       if (this.hasContent(value)) {
         fields.push(`${dbField} = $${paramIndex++}`);

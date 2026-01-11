@@ -3,17 +3,18 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
 import type {
   Conversation,
   Message,
   ScheduledMessage,
   ChatUser,
-  UsersResponse,
   CreateConversationResponse,
   UploadResponse,
   ConversationParticipant,
 } from './types';
-import { API_ENDPOINTS } from './constants';
 
 const apiClient = getApiClient();
 
@@ -66,7 +67,15 @@ export async function createConversation(
     isGroup,
   });
 
-  return response.conversation;
+  // Handle API response format
+  if (response !== null && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    if (obj.conversation !== null && typeof obj.conversation === 'object') {
+      return obj.conversation as CreateConversationResponse['conversation'];
+    }
+  }
+
+  throw new Error('Invalid response format from create conversation API');
 }
 
 /**
@@ -178,13 +187,26 @@ export async function cancelScheduledMessage(scheduledId: string): Promise<void>
 export async function searchUsers(query: string): Promise<ChatUser[]> {
   const response = await apiClient.get(API_ENDPOINTS.users);
 
-  if (!query.trim()) {
-    return response.users;
+  // Handle API response format
+  let users: ChatUser[] = [];
+  if (Array.isArray(response)) {
+    users = response as ChatUser[];
+  } else if (response !== null && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    if (Array.isArray(obj.users)) {
+      users = obj.users as ChatUser[];
+    } else if (Array.isArray(obj.data)) {
+      users = obj.data as ChatUser[];
+    }
+  }
+
+  if (query.trim() === '') {
+    return users;
   }
 
   const searchLower = query.toLowerCase();
 
-  return response.users.filter((user) => {
+  return users.filter((user: ChatUser) => {
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase();
     return (
       user.username.toLowerCase().includes(searchLower) ||

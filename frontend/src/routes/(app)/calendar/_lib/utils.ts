@@ -2,8 +2,9 @@
 // CALENDAR - UTILITY FUNCTIONS
 // =============================================================================
 
-import type { CalendarEvent, OrgLevel, User, EventLevelInfo } from './types';
 import { EVENT_LEVEL_INFO, REMINDER_OPTIONS } from './constants';
+
+import type { CalendarEvent, OrgLevel, User, EventLevelInfo } from './types';
 
 /**
  * Escape HTML to prevent XSS
@@ -35,7 +36,7 @@ export function getEventLevelInfo(orgLevel: OrgLevel | undefined): EventLevelInf
   if (orgLevel === undefined) {
     return EVENT_LEVEL_INFO.personal;
   }
-  return EVENT_LEVEL_INFO[orgLevel] ?? EVENT_LEVEL_INFO.personal;
+  return EVENT_LEVEL_INFO[orgLevel];
 }
 
 /**

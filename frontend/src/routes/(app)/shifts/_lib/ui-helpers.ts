@@ -4,7 +4,6 @@
 // Adapted for Svelte 5 (pure functions, no DOM manipulation)
 // =============================================================================
 
-import type { Employee, AvailabilityStatus, ShiftType } from './types';
 import {
   AVAILABILITY_LABELS,
   AVAILABILITY_ICONS,
@@ -12,6 +11,8 @@ import {
   SHIFT_TIMES,
 } from './constants';
 import { getEffectiveAvailability } from './utils';
+
+import type { Employee, AvailabilityStatus, ShiftType } from './types';
 
 // =============================================================================
 // EMPLOYEE DISPLAY
@@ -62,9 +63,9 @@ export function getAvailabilityBadgeInfo(status: AvailabilityStatus): {
   colorClass: string;
 } {
   return {
-    label: AVAILABILITY_LABELS[status] ?? status,
-    icon: AVAILABILITY_ICONS[status] ?? 'fa-question-circle',
-    colorClass: AVAILABILITY_COLORS[status] ?? 'badge--dark',
+    label: AVAILABILITY_LABELS[status],
+    icon: AVAILABILITY_ICONS[status],
+    colorClass: AVAILABILITY_COLORS[status],
   };
 }
 
@@ -105,7 +106,7 @@ export function getShiftDisplayInfo(shiftType: ShiftType): {
   timeRange: string;
   colorClass: string;
 } {
-  const shiftInfo = SHIFT_TIMES[shiftType] ?? { start: '08:00', end: '17:00', label: shiftType };
+  const shiftInfo = SHIFT_TIMES[shiftType];
 
   return {
     label: shiftInfo.label,

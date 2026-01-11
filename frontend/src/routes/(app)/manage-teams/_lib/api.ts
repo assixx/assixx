@@ -2,7 +2,12 @@
 // MANAGE TEAMS - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+
 import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
 import type {
   Team,
   Department,
@@ -12,11 +17,58 @@ import type {
   TeamPayload,
   ApiErrorWithDetails,
 } from './types';
-import { API_ENDPOINTS } from './constants';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Type-safe extraction of array data from various API response formats
+ * Handles: T[], { data: T[] }
+ */
+function extractArrayFromResponse<T>(result: unknown): T[] {
+  if (Array.isArray(result)) {
+    return result as T[];
+  }
+
+  if (result !== null && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    if (Array.isArray(obj.data)) {
+      return obj.data as T[];
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Type-safe extraction of ID from API response
+ * Handles: { id: number }, { data: { id: number } }
+ */
+function extractIdFromResponse(result: unknown): number | null {
+  if (result === null || typeof result !== 'object') {
+    return null;
+  }
+
+  const obj = result as Record<string, unknown>;
+
+  // Direct { id: number }
+  if (typeof obj.id === 'number') {
+    return obj.id;
+  }
+
+  // { data: { id: number } }
+  if (obj.data !== null && typeof obj.data === 'object') {
+    const dataObj = obj.data as Record<string, unknown>;
+    if (typeof dataObj.id === 'number') {
+      return dataObj.id;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Check if error is a session expired error
@@ -31,18 +83,22 @@ function isSessionExpiredError(err: unknown): boolean {
 }
 
 /**
- * Handle session expired error
+ * Handle session expired error - navigates to login page
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto('/login?session=expired');
 }
+
+// =============================================================================
+// LOAD FUNCTIONS
+// =============================================================================
 
 /**
  * Load teams from API
  */
 export async function loadTeams(): Promise<Team[]> {
-  const result = await apiClient.get(API_ENDPOINTS.TEAMS);
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get(API_ENDPOINTS.TEAMS);
+  return extractArrayFromResponse<Team>(result);
 }
 
 /**
@@ -50,8 +106,8 @@ export async function loadTeams(): Promise<Team[]> {
  */
 export async function loadDepartments(): Promise<Department[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
+    return extractArrayFromResponse<Department>(result);
   } catch (err) {
     console.error('[ManageTeams] Error loading departments:', err);
     return [];
@@ -63,8 +119,8 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadAdmins(): Promise<Admin[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.ADMINS);
-    const data = Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.ADMINS);
+    const data = extractArrayFromResponse<Admin>(result);
     return data.filter((u) => u.role === 'admin');
   } catch (err) {
     console.error('[ManageTeams] Error loading admins:', err);
@@ -77,8 +133,8 @@ export async function loadAdmins(): Promise<Admin[]> {
  */
 export async function loadEmployees(): Promise<TeamMember[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.EMPLOYEES);
-    const data = Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.EMPLOYEES);
+    const data = extractArrayFromResponse<TeamMember>(result);
     return data.filter((u) => u.role === 'employee');
   } catch (err) {
     console.error('[ManageTeams] Error loading employees:', err);
@@ -91,8 +147,8 @@ export async function loadEmployees(): Promise<TeamMember[]> {
  */
 export async function loadMachines(): Promise<Machine[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.MACHINES);
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.MACHINES);
+    return extractArrayFromResponse<Machine>(result);
   } catch (err) {
     console.error('[ManageTeams] Error loading machines:', err);
     return [];
@@ -105,8 +161,8 @@ export async function loadMachines(): Promise<Machine[]> {
  */
 export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.TEAM_MEMBERS(teamId));
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.teamMembers(teamId));
+    return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
     console.error('[ManageTeams] Error fetching team members:', err);
     return [];
@@ -119,8 +175,8 @@ export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]
  */
 export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[]> {
   try {
-    const result = await apiClient.get(API_ENDPOINTS.TEAM_MACHINES(teamId));
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.teamMachines(teamId));
+    return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
     console.error('[ManageTeams] Error fetching team machines:', err);
     return [];
@@ -133,11 +189,11 @@ export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[
  */
 export async function saveTeam(payload: TeamPayload, editId: number | null): Promise<number> {
   const isEdit = editId !== null;
-  const result = isEdit
-    ? await apiClient.put(API_ENDPOINTS.TEAM(editId), payload)
+  const result: unknown = isEdit
+    ? await apiClient.put(API_ENDPOINTS.team(editId), payload)
     : await apiClient.post(API_ENDPOINTS.TEAMS, payload);
 
-  return editId ?? result.id ?? result.data?.id ?? 0;
+  return editId ?? extractIdFromResponse(result) ?? 0;
 }
 
 /**
@@ -145,7 +201,7 @@ export async function saveTeam(payload: TeamPayload, editId: number | null): Pro
  */
 export async function addTeamMember(teamId: number, userId: number): Promise<void> {
   try {
-    await apiClient.post(API_ENDPOINTS.TEAM_MEMBERS(teamId), { userId });
+    await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err) {
     console.error(`[ManageTeams] Error adding member ${userId}:`, err);
   }
@@ -156,7 +212,7 @@ export async function addTeamMember(teamId: number, userId: number): Promise<voi
  */
 export async function removeTeamMember(teamId: number, userId: number): Promise<void> {
   try {
-    await apiClient.delete(API_ENDPOINTS.TEAM_MEMBER(teamId, userId));
+    await apiClient.delete(API_ENDPOINTS.teamMember(teamId, userId));
   } catch (err) {
     console.error(`[ManageTeams] Error removing member ${userId}:`, err);
   }
@@ -167,7 +223,7 @@ export async function removeTeamMember(teamId: number, userId: number): Promise<
  */
 export async function addTeamMachine(teamId: number, machineId: number): Promise<void> {
   try {
-    await apiClient.post(API_ENDPOINTS.TEAM_MACHINES(teamId), { machineId });
+    await apiClient.post(API_ENDPOINTS.teamMachines(teamId), { machineId });
   } catch (err) {
     console.error(`[ManageTeams] Error adding machine ${machineId}:`, err);
   }
@@ -178,7 +234,7 @@ export async function addTeamMachine(teamId: number, machineId: number): Promise
  */
 export async function removeTeamMachine(teamId: number, machineId: number): Promise<void> {
   try {
-    await apiClient.delete(API_ENDPOINTS.TEAM_MACHINE(teamId, machineId));
+    await apiClient.delete(API_ENDPOINTS.teamMachine(teamId, machineId));
   } catch (err) {
     console.error(`[ManageTeams] Error removing machine ${machineId}:`, err);
   }
@@ -243,14 +299,14 @@ export interface DeleteTeamResult {
  */
 export async function deleteTeam(teamId: number): Promise<DeleteTeamResult> {
   try {
-    await apiClient.delete(API_ENDPOINTS.TEAM(teamId));
+    await apiClient.delete(API_ENDPOINTS.team(teamId));
     return { success: true, hasMembers: false, memberCount: 0 };
   } catch (err) {
     console.error('[ManageTeams] Error deleting team:', err);
 
     // Check if team has members
     const errObj = err as ApiErrorWithDetails | null;
-    if (errObj?.message?.includes('members')) {
+    if (errObj?.message?.includes('members') === true) {
       return {
         success: false,
         hasMembers: true,
@@ -266,7 +322,7 @@ export async function deleteTeam(teamId: number): Promise<DeleteTeamResult> {
  * Force delete team with members
  */
 export async function forceDeleteTeam(teamId: number): Promise<void> {
-  await apiClient.delete(`${API_ENDPOINTS.TEAM(teamId)}?force=true`);
+  await apiClient.delete(`${API_ENDPOINTS.team(teamId)}?force=true`);
 }
 
 /**
@@ -292,7 +348,7 @@ export function buildTeamPayload(formData: {
 }): TeamPayload {
   return {
     name: formData.name,
-    description: formData.description || undefined,
+    description: formData.description.length > 0 ? formData.description : undefined,
     departmentId: formData.departmentId ?? undefined,
     leaderId: formData.leaderId ?? undefined,
     isActive: formData.isActive,

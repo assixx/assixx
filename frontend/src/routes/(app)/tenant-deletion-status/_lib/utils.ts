@@ -3,15 +3,16 @@
  * @module tenant-deletion-status/_lib/utils
  */
 
-import type { DeletionStatus, DeletionStatusItem, TimelineItem, ToastType } from './types';
 import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS, TIMELINE_ICONS, MESSAGES } from './constants';
+
+import type { DeletionStatus, DeletionStatusItem, TimelineItem, ToastType } from './types';
 
 /**
  * Get status text in German
  * @param status - Deletion status
  */
 export function getStatusText(status: DeletionStatus): string {
-  return STATUS_TEXT_MAP[status] ?? status;
+  return STATUS_TEXT_MAP[status];
 }
 
 /**
@@ -19,7 +20,7 @@ export function getStatusText(status: DeletionStatus): string {
  * @param status - Deletion status
  */
 export function getBadgeClass(status: DeletionStatus): string {
-  return STATUS_BADGE_CLASS[status] ?? 'badge--info';
+  return STATUS_BADGE_CLASS[status];
 }
 
 /**
@@ -68,7 +69,7 @@ export function formatDate(date: Date | null): string {
  * @param dateString - ISO date string or undefined
  */
 export function formatDateOnly(dateString: string | undefined): string {
-  if (!dateString) {
+  if (dateString === undefined || dateString === '') {
     return MESSAGES.gracePeriodDefault;
   }
   return new Date(dateString).toLocaleDateString('de-DE', {
@@ -94,7 +95,7 @@ export function buildTimeline(item: DeletionStatusItem): TimelineItem[] {
   });
 
   // Approval
-  if (item.approvedAt) {
+  if (item.approvedAt !== undefined) {
     timeline.push({
       icon: TIMELINE_ICONS.approved,
       title: 'Genehmigt',
@@ -104,7 +105,7 @@ export function buildTimeline(item: DeletionStatusItem): TimelineItem[] {
   }
 
   // Scheduled deletion
-  if (item.scheduledFor && item.status !== 'completed') {
+  if (item.scheduledFor !== undefined && item.status !== 'completed') {
     timeline.push({
       icon: TIMELINE_ICONS.scheduled,
       title: 'Geplante Löschung',
@@ -163,5 +164,4 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.log(`[Toast:${type}] ${message}`);
 }

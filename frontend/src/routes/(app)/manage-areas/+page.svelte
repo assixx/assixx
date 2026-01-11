@@ -6,28 +6,22 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // =============================================================================
   // IMPORTS FROM _LIB
   // =============================================================================
 
-  import type {
-    Area,
-    AdminUser,
-    Department,
-    StatusFilter,
-    AreaType,
-    FormIsActiveStatus,
-  } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
   import {
     buildAreaPayload,
     saveArea,
     deleteArea as apiDeleteArea,
     forceDeleteArea as apiForceDeleteArea,
   } from './_lib/api';
+  import AreaModal from './_lib/AreaModal.svelte';
+  import { MESSAGES } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
   import { filterByStatus, filterBySearch } from './_lib/filters';
   import {
     getStatusBadgeClass,
@@ -37,8 +31,16 @@
     populateFormFromArea,
     getDefaultFormValues,
   } from './_lib/utils';
-  import AreaModal from './_lib/AreaModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
+
+  import type { PageData } from './$types';
+  import type {
+    Area,
+    AdminUser,
+    Department,
+    StatusFilter,
+    AreaType,
+    FormIsActiveStatus,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -47,9 +49,9 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const areas = $derived<Area[]>(data?.areas ?? []);
-  const areaLeads = $derived<AdminUser[]>(data?.areaLeads ?? []);
-  const allDepartments = $derived<Department[]>(data?.departments ?? []);
+  const areas = $derived<Area[]>(data.areas);
+  const areaLeads = $derived<AdminUser[]>(data.areaLeads);
+  const allDepartments = $derived<Department[]>(data.departments);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -111,7 +113,7 @@
     showAreaModal = true;
   }
 
-  async function openEditModal(id: number) {
+  function openEditModal(id: number): void {
     const area = areas.find((a) => a.id === id);
     if (!area) return;
 
@@ -201,16 +203,17 @@
         closeAreaModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
-      } else if (result.error) {
+      } else if (result.error !== null) {
         showErrorAlert(result.error);
       }
     } finally {
+      // eslint-disable-next-line require-atomic-updates -- Guard clause at function start prevents concurrent execution
       submitting = false;
     }
   }
 
   async function deleteArea() {
-    if (!deletingAreaId) return;
+    if (deletingAreaId === null) return;
 
     const result = await apiDeleteArea(deletingAreaId);
 
@@ -219,18 +222,18 @@
       closeDeleteConfirmModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } else if (result.hasDependencies) {
+    } else if (result.hasDependencies === true) {
       forceDeleteMessage = result.dependencyMessage ?? MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE;
       showDeleteConfirmModal = false;
       showForceDeleteModal = true;
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
       closeDeleteConfirmModal();
     }
   }
 
   async function forceDeleteArea() {
-    if (!deletingAreaId) return;
+    if (deletingAreaId === null) return;
 
     const result = await apiForceDeleteArea(deletingAreaId);
 
@@ -239,7 +242,7 @@
       closeForceDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
       closeForceDeleteModal();
     }
@@ -289,7 +292,9 @@
         }
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -309,36 +314,48 @@
         <!-- Status Filter Toggle -->
         <div class="toggle-group">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={statusFilter === 'active'}
-            onclick={() => setStatusFilter('active')}
+            onclick={() => {
+              setStatusFilter('active');
+            }}
             title="Aktive Bereiche"
           >
             <i class="fas fa-check"></i>
             {MESSAGES.FILTER_ACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={statusFilter === 'inactive'}
-            onclick={() => setStatusFilter('inactive')}
+            onclick={() => {
+              setStatusFilter('inactive');
+            }}
             title="Inaktive Bereiche"
           >
             <i class="fas fa-times"></i>
             {MESSAGES.FILTER_INACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={statusFilter === 'archived'}
-            onclick={() => setStatusFilter('archived')}
+            onclick={() => {
+              setStatusFilter('archived');
+            }}
             title="Archivierte Bereiche"
           >
             <i class="fas fa-archive"></i>
             {MESSAGES.FILTER_ARCHIVED}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={statusFilter === 'all'}
-            onclick={() => setStatusFilter('all')}
+            onclick={() => {
+              setStatusFilter('all');
+            }}
             title="Alle Bereiche"
           >
             <i class="fas fa-map-marked-alt"></i>
@@ -386,11 +403,13 @@
                   <button
                     type="button"
                     class="search-input__result-item"
-                    onclick={() => handleSearchResultClick(area.id)}
+                    onclick={() => {
+                      handleSearchResultClick(area.id);
+                    }}
                   >
                     <div class="search-result-item">
                       <div class="search-result-item__name">
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch uses escapeHtml internally -->
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- highlightMatch escapes HTML -->
                         {@html highlightMatch(area.name, searchQuery)}
                       </div>
                       <div class="search-result-item__email">
@@ -407,7 +426,7 @@
                 {/each}
                 {#if hasMoreResults}
                   <div class="search-result-item__more py-2">
-                    {MESSAGES.MORE_RESULTS(filteredAreas.length - 5)}
+                    {MESSAGES.moreResults(filteredAreas.length - 5)}
                   </div>
                 {/if}
               {/if}
@@ -424,7 +443,7 @@
           <div class="empty-state__icon"><i class="fas fa-map-marked-alt"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_AREAS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_AREA}</p>
-          <button class="btn btn-primary" onclick={openAddModal}>
+          <button type="button" class="btn btn-primary" onclick={openAddModal}>
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_AREA}
           </button>
@@ -476,7 +495,7 @@
                       <span class="badge badge--info" title={area.departmentNames ?? ''}>
                         {Number(area.departmentCount) === 1
                           ? MESSAGES.ONE_DEPARTMENT
-                          : MESSAGES.MULTIPLE_DEPARTMENTS(Number(area.departmentCount ?? 0))}
+                          : MESSAGES.multipleDepartments(Number(area.departmentCount ?? 0))}
                       </span>
                     {/if}
                   </td>
@@ -488,18 +507,24 @@
                   <td>
                     <div class="flex gap-2">
                       <button
+                        type="button"
                         class="action-icon action-icon--edit"
                         title="Bearbeiten"
                         aria-label="Bereich bearbeiten"
-                        onclick={() => openEditModal(area.id)}
+                        onclick={() => {
+                          openEditModal(area.id);
+                        }}
                       >
                         <i class="fas fa-edit"></i>
                       </button>
                       <button
+                        type="button"
                         class="action-icon action-icon--delete"
                         title="Löschen"
                         aria-label="Bereich löschen"
-                        onclick={() => openDeleteModal(area.id)}
+                        onclick={() => {
+                          openDeleteModal(area.id);
+                        }}
                       >
                         <i class="fas fa-trash"></i>
                       </button>
@@ -516,7 +541,7 @@
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn-float" onclick={openAddModal} aria-label="Bereich hinzufügen">
+<button type="button" class="btn-float" onclick={openAddModal} aria-label="Bereich hinzufügen">
   <i class="fas fa-plus"></i>
 </button>
 

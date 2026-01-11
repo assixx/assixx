@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { FilePreviewItem } from './types';
   import { MESSAGES } from './constants';
   import { formatFileSize, getFileIcon, formatScheduleTime } from './utils';
 
+  import type { FilePreviewItem } from './types';
+
   interface Props {
-    messageInput: string;
+    messageInput?: string; // Optional for $bindable() - parent uses bind:messageInput
     selectedFiles: FilePreviewItem[];
     scheduledFor: Date | null;
     onsend: () => void;
@@ -17,8 +18,9 @@
   }
 
   /* eslint-disable prefer-const */
+  // $bindable() required for two-way binding in Svelte 5
   let {
-    messageInput = $bindable(),
+    messageInput = $bindable(''),
     selectedFiles,
     scheduledFor,
     onsend,
@@ -53,9 +55,12 @@
             <span class="file-size">{formatFileSize(item.file.size)}</span>
           </div>
           <button
+            type="button"
             class="remove-file"
             aria-label={MESSAGES.labelRemoveFile}
-            onclick={() => onremovefile(i)}
+            onclick={() => {
+              onremovefile(i);
+            }}
             disabled={item.status === 'uploading'}
           >
             <i class="fas fa-times"></i>
@@ -97,6 +102,7 @@
         </div>
       {:else}
         <button
+          type="button"
           class="btn btn-icon btn-secondary"
           title={MESSAGES.labelScheduleMessage}
           aria-label={MESSAGES.labelScheduleMessage}
@@ -107,6 +113,7 @@
       {/if}
 
       <button
+        type="button"
         class="btn btn-icon btn-secondary"
         title={MESSAGES.labelAttachFile}
         aria-label={MESSAGES.labelAttachFile}
@@ -115,6 +122,7 @@
         <i class="fas fa-paperclip"></i>
       </button>
       <button
+        type="button"
         class="btn btn-icon btn-upload"
         aria-label={MESSAGES.labelSendMessage}
         onclick={onsend}

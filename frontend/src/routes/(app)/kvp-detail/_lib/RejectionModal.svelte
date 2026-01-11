@@ -7,9 +7,10 @@
     oncancel: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  let { rejectionReason = $bindable(''), onconfirm, oncancel }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { rejectionReason = $bindable(), onconfirm, oncancel }: Props = $props();
+  /* eslint-enable */
 </script>
 
 {#if kvpDetailState.showRejectionModal}

@@ -18,6 +18,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { hierarchyPermissionService } from '../../services/hierarchyPermission.service.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
+import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { DatabaseService } from '../database/database.service.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import type { CreateEntryDto } from './dto/create-entry.dto.js';
@@ -925,7 +926,7 @@ export class BlackboardService {
 
     for (const { key, column, transform } of fields) {
       // Safe: key is from hardcoded array with keyof UpdateEntryDto, not user input
-      // eslint-disable-next-line security/detect-object-injection
+
       const fieldValue = (dto as Record<string, unknown>)[key];
       if (fieldValue !== undefined) {
         const value = transform !== undefined ? transform(fieldValue) : fieldValue;
@@ -1329,7 +1330,7 @@ export class BlackboardService {
    */
   async uploadAttachment(
     entryId: number | string,
-    file: Express.Multer.File,
+    file: MulterFile,
     tenantId: number,
     userId: number,
   ): Promise<Record<string, unknown>> {
@@ -1357,7 +1358,7 @@ export class BlackboardService {
 
     return await this.documentsService.createDocument(
       {
-        filename: `${fileUuid}${extension}`,
+        filename: file.originalname, // Display name = original filename
         originalName: file.originalname,
         fileSize: file.size,
         fileContent: file.buffer,

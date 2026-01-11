@@ -1,31 +1,20 @@
-<script>
+<script lang="ts">
   import { resolve } from '$app/paths';
 
-  // Page-specific CSS
   import '../styles/index.css';
 
-  // =============================================================================
-  // SVELTE 5 RUNES - Landing Page (Index)
-  // 1:1 Copy from frontend/src/pages/index.html
-  // =============================================================================
-
   // Modal state
-  let showSignupModal = $state(false);
+  let showSignupModal: boolean = $state(false);
 
-  // =============================================================================
-  // Event Handlers
-  // =============================================================================
-
-  function handleReloadPage() {
+  function handleReloadPage(): void {
     window.location.reload();
   }
 
-  function closeSignupModal() {
+  function closeSignupModal(): void {
     showSignupModal = false;
   }
 
-  /** @param {Event} e */
-  function handleModalBackdropClick(e) {
+  function handleModalBackdropClick(e: MouseEvent): void {
     if (e.target === e.currentTarget) {
       closeSignupModal();
     }
@@ -50,8 +39,8 @@
         <a href="#features">Features</a>
         <a href="#security">Sicherheit</a>
         <a href="#pricing">Preise</a>
-        <a href={resolve('/login')}>Anmelden</a>
-        <a href={resolve('/signup')} class="btn btn-primary btn-primary--transparent"
+        <a href={resolve('/login', {})}>Anmelden</a>
+        <a href={resolve('/signup', {})} class="btn btn-primary btn-primary--transparent"
           >Registrieren</a
         >
       </div>
@@ -65,7 +54,7 @@
       Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung. Dokumentenverwaltung, Kommunikation
       und mehr - alles in einer Plattform.
     </p>
-    <a href={resolve('/signup')} class="btn btn-primary btn-primary--transparent"
+    <a href={resolve('/signup', {})} class="btn btn-primary btn-primary--transparent"
       >Jetzt registrieren</a
     >
   </section>
@@ -99,7 +88,10 @@
         <h3>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path
-              d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"
+              d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1
+                10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19
+                14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1
+                12,23A2,2 0 0,1 10,21"
             />
           </svg>
           Benachrichtigungen
@@ -110,7 +102,10 @@
         <h3>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path
-              d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"
+              d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2
+                0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1
+                4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1
+                17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"
             />
           </svg>
           Sicher & DSGVO-konform
@@ -215,9 +210,9 @@
             <p class="u-fs-09rem u-opacity-80">Dediziertes Enterprise-Team</p>
           </div>
         </div>
-        <!-- eslint-disable svelte/no-navigation-without-resolve -- Query string with resolve() not statically analyzable -->
+        <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
-          href={`${resolve('/signup')}?plan=enterprise`}
+          href={`${resolve('/signup', {})}?plan=enterprise`}
           class="btn btn-primary enterprise-box__button">Enterprise-Beratung anfragen</a
         >
         <!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -257,9 +252,9 @@
           <li>✅ Basis-Support</li>
         </ul>
         <div class="pricing-card__footer">
-          <!-- eslint-disable svelte/no-navigation-without-resolve -- Query string with resolve() not statically analyzable -->
+          <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
           <a
-            href={`${resolve('/signup')}?plan=basic`}
+            href={`${resolve('/signup', {})}?plan=basic`}
             class="btn btn-secondary pricing-card__button">Jetzt starten</a
           >
           <!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -286,9 +281,9 @@
           <li>✅ Priority Support</li>
         </ul>
         <div class="pricing-card__footer">
-          <!-- eslint-disable svelte/no-navigation-without-resolve -- Query string with resolve() not statically analyzable -->
+          <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
           <a
-            href={`${resolve('/signup')}?plan=professional`}
+            href={`${resolve('/signup', {})}?plan=professional`}
             class="btn btn-primary pricing-card__button pricing-card__button--transparent"
           >
             Kostenlos testen
@@ -315,9 +310,9 @@
           <li>✅ SLA-Garantie</li>
         </ul>
         <div class="pricing-card__footer">
-          <!-- eslint-disable svelte/no-navigation-without-resolve -- Query string with resolve() not statically analyzable -->
+          <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
           <a
-            href={`${resolve('/signup')}?plan=enterprise`}
+            href={`${resolve('/signup', {})}?plan=enterprise`}
             class="btn btn-secondary pricing-card__button">Kontakt aufnehmen</a
           >
           <!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -510,7 +505,7 @@
       <h2>Jetzt kostenlos testen</h2>
       <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
       <p class="u-mb-md">Bitte nutzen Sie unser vollständiges Registrierungsformular:</p>
-      <a href={resolve('/signup')} class="btn btn-primary u-w-full">Zur Registrierung</a>
+      <a href={resolve('/signup', {})} class="btn btn-primary u-w-full">Zur Registrierung</a>
       <button type="button" class="btn btn-secondary btn-cancel--full" onclick={closeSignupModal}
         >Abbrechen</button
       >

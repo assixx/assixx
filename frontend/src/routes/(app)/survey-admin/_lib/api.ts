@@ -3,8 +3,13 @@
 // Based on: frontend/src/scripts/survey/admin/data.ts
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
+
 import { API_ENDPOINTS } from './constants';
+
 import type {
   Survey,
   SurveyTemplate,
@@ -15,8 +20,6 @@ import type {
   SurveyApiResponse,
   PaginatedResponse,
 } from './types';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -40,7 +43,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(`${resolve('/login', {})}?session=expired`);
 }
 
 /**
@@ -63,9 +66,7 @@ export function checkSessionExpired(err: unknown): boolean {
  */
 export async function loadSurveys(): Promise<Survey[]> {
   try {
-    const surveysData = await apiClient.get<Survey[]>(API_ENDPOINTS.SURVEYS);
-    console.info('[Survey API] Surveys loaded:', surveysData.length);
-    return surveysData;
+    return await apiClient.get<Survey[]>(API_ENDPOINTS.SURVEYS);
   } catch (err) {
     console.error('[Survey API] Error loading surveys:', err);
     checkSessionExpired(err);
@@ -78,9 +79,7 @@ export async function loadSurveys(): Promise<Survey[]> {
  */
 export async function loadSurveyById(surveyId: number | string): Promise<Survey | null> {
   try {
-    const survey = await apiClient.get<Survey>(API_ENDPOINTS.SURVEY_BY_ID(surveyId));
-    console.info('[Survey API] Survey loaded:', surveyId);
-    return survey;
+    return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
   } catch (err) {
     console.error('[Survey API] Error loading survey:', err);
     checkSessionExpired(err);
@@ -97,7 +96,6 @@ export async function createSurvey(
   try {
     const response = await apiClient.post<SurveyApiResponse>(API_ENDPOINTS.SURVEYS, data);
     const surveyId = response.surveyId ?? response.id;
-    console.info('[Survey API] Survey created:', surveyId);
     return { success: true, id: surveyId };
   } catch (err) {
     console.error('[Survey API] Error creating survey:', err);
@@ -115,8 +113,7 @@ export async function updateSurvey(
   data: SurveyFormData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.put(API_ENDPOINTS.SURVEY_BY_ID(surveyId), data);
-    console.info('[Survey API] Survey updated:', surveyId);
+    await apiClient.put(API_ENDPOINTS.surveyById(surveyId), data);
     return { success: true };
   } catch (err) {
     console.error('[Survey API] Error updating survey:', err);
@@ -133,8 +130,7 @@ export async function deleteSurvey(
   surveyId: number | string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.SURVEY_BY_ID(surveyId));
-    console.info('[Survey API] Survey deleted:', surveyId);
+    await apiClient.delete(API_ENDPOINTS.surveyById(surveyId));
     return { success: true };
   } catch (err) {
     console.error('[Survey API] Error deleting survey:', err);
@@ -153,9 +149,7 @@ export async function deleteSurvey(
  */
 export async function loadTemplates(): Promise<SurveyTemplate[]> {
   try {
-    const templatesData = await apiClient.get<SurveyTemplate[]>(API_ENDPOINTS.TEMPLATES);
-    console.info('[Survey API] Templates loaded:', templatesData.length);
-    return templatesData;
+    return await apiClient.get<SurveyTemplate[]>(API_ENDPOINTS.TEMPLATES);
   } catch (err) {
     console.error('[Survey API] Error loading templates:', err);
     return [];
@@ -169,8 +163,7 @@ export async function createFromTemplate(
   templateId: number,
 ): Promise<{ success: boolean; survey?: Survey; error?: string }> {
   try {
-    const survey = await apiClient.post<Survey>(API_ENDPOINTS.TEMPLATE_CREATE(templateId), {});
-    console.info('[Survey API] Survey created from template:', templateId);
+    const survey = await apiClient.post<Survey>(API_ENDPOINTS.templateCreate(templateId), {});
     return { success: true, survey };
   } catch (err) {
     console.error('[Survey API] Error creating from template:', err);
@@ -192,9 +185,7 @@ export async function loadDepartments(): Promise<Department[]> {
     const response = await apiClient.get<PaginatedResponse<Department> | Department[]>(
       API_ENDPOINTS.DEPARTMENTS,
     );
-    const departments = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[Survey API] Departments loaded:', departments.length);
-    return departments;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[Survey API] Error loading departments:', err);
     return [];
@@ -207,9 +198,7 @@ export async function loadDepartments(): Promise<Department[]> {
 export async function loadTeams(): Promise<Team[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
-    const teams = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[Survey API] Teams loaded:', teams.length);
-    return teams;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[Survey API] Error loading teams:', err);
     return [];
@@ -222,9 +211,7 @@ export async function loadTeams(): Promise<Team[]> {
 export async function loadAreas(): Promise<Area[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<Area> | Area[]>(API_ENDPOINTS.AREAS);
-    const areas = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[Survey API] Areas loaded:', areas.length);
-    return areas;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[Survey API] Error loading areas:', err);
     return [];

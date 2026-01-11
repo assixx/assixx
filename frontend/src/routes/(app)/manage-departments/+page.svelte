@@ -6,22 +6,9 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
 
-  // =============================================================================
-  // IMPORTS FROM _LIB
-  // =============================================================================
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
-  import type {
-    Department,
-    Area,
-    AdminUser,
-    StatusFilter,
-    FormIsActiveStatus,
-    DependencyDetails,
-  } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
   import {
     buildDepartmentPayload,
     saveDepartment as apiSaveDepartment,
@@ -29,6 +16,9 @@
     forceDeleteDepartment as apiForceDeleteDepartment,
     buildDependencyMessage,
   } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
+  import DepartmentModal from './_lib/DepartmentModal.svelte';
   import { applyAllFilters } from './_lib/filters';
   import {
     getStatusBadgeClass,
@@ -40,8 +30,16 @@
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
-  import DepartmentModal from './_lib/DepartmentModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
+
+  import type { PageData } from './$types';
+  import type {
+    Department,
+    Area,
+    AdminUser,
+    StatusFilter,
+    FormIsActiveStatus,
+    DependencyDetails,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -50,9 +48,9 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allDepartments = $derived<Department[]>(data?.departments ?? []);
-  const allAreas = $derived<Area[]>(data?.areas ?? []);
-  const allDepartmentLeads = $derived<AdminUser[]>(data?.departmentLeads ?? []);
+  const allDepartments = $derived<Department[]>(data.departments);
+  const allAreas = $derived<Area[]>(data.areas);
+  const allDepartmentLeads = $derived<AdminUser[]>(data.departmentLeads);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -127,38 +125,44 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert(isEditMode ? 'Abteilung aktualisiert' : 'Abteilung erstellt');
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
     submitting = false;
   }
 
   async function deleteDepartment(): Promise<void> {
-    if (deleteDepartmentId === null) return;
-    const result = await apiDeleteDepartment(deleteDepartmentId);
+    const idToDelete = deleteDepartmentId;
+    if (idToDelete === null) return;
+    // Clear immediately after capture to prevent race conditions
+    deleteDepartmentId = null;
+    showDeleteConfirmModal = false;
+
+    const result = await apiDeleteDepartment(idToDelete);
     if (result.success) {
-      showDeleteConfirmModal = false;
-      deleteDepartmentId = null;
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Abteilung wurde gelöscht');
-    } else if (result.hasDependencies && result.dependencyDetails) {
+    } else if (result.hasDependencies === true && result.dependencyDetails !== undefined) {
       showForceDeleteWarning(result.dependencyDetails);
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
   }
 
   async function forceDeleteDepartment(): Promise<void> {
-    if (deleteDepartmentId === null) return;
-    const result = await apiForceDeleteDepartment(deleteDepartmentId);
+    const idToDelete = deleteDepartmentId;
+    if (idToDelete === null) return;
+    // Clear immediately after capture to prevent race conditions
+    deleteDepartmentId = null;
+    showForceDeleteModal = false;
+
+    const result = await apiForceDeleteDepartment(idToDelete);
     if (result.success) {
-      showForceDeleteModal = false;
-      deleteDepartmentId = null;
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Abteilung wurde endgültig gelöscht');
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
   }
@@ -167,7 +171,7 @@
     showDeleteConfirmModal = false;
     const totalDeps = details.totalDependencies ?? 0;
     const depList = buildDependencyMessage(details);
-    forceDeleteMessage = MESSAGES.FORCE_DELETE_MESSAGE(totalDeps, depList);
+    forceDeleteMessage = MESSAGES.forceDeleteMessage(totalDeps, depList);
     showForceDeleteModal = true;
   }
 
@@ -269,9 +273,9 @@
   // FORM SUBMIT HANDLER
   // =============================================================================
 
-  function handleFormSubmit(e: Event) {
+  async function handleFormSubmit(e: Event): Promise<void> {
     e.preventDefault();
-    saveDepartment();
+    await saveDepartment();
   }
 
   // =============================================================================
@@ -286,7 +290,9 @@
         if (el && !el.contains(target)) searchOpen = false;
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 
@@ -323,37 +329,49 @@
         <!-- Status Toggle Group -->
         <div class="toggle-group" id="department-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
             title="Aktive Abteilungen"
-            onclick={() => handleStatusToggle('active')}
+            onclick={() => {
+              handleStatusToggle('active');
+            }}
           >
             <i class="fas fa-check"></i>
             {MESSAGES.FILTER_ACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
             title="Inaktive Abteilungen"
-            onclick={() => handleStatusToggle('inactive')}
+            onclick={() => {
+              handleStatusToggle('inactive');
+            }}
           >
             <i class="fas fa-times"></i>
             {MESSAGES.FILTER_INACTIVE}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
             title="Archivierte Abteilungen"
-            onclick={() => handleStatusToggle('archived')}
+            onclick={() => {
+              handleStatusToggle('archived');
+            }}
           >
             <i class="fas fa-archive"></i>
             {MESSAGES.FILTER_ARCHIVED}
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
             title="Alle Abteilungen"
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-building"></i>
             {MESSAGES.FILTER_ALL}
@@ -393,7 +411,9 @@
                 <button
                   type="button"
                   class="search-input__result-item"
-                  onclick={() => handleSearchResultClick(dept.id)}
+                  onclick={() => {
+                    handleSearchResultClick(dept.id);
+                  }}
                 >
                   <div class="search-result-item">
                     <div class="search-result-item__name">
@@ -409,7 +429,7 @@
               {/each}
               {#if filteredDepartments.length > 5}
                 <div class="search-result-item__more py-2">
-                  {MESSAGES.MORE_RESULTS(filteredDepartments.length - 5)}
+                  {MESSAGES.moreResults(filteredDepartments.length - 5)}
                 </div>
               {/if}
             {/if}
@@ -423,7 +443,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
             >{MESSAGES.BTN_RETRY}</button
           >
         </div>
@@ -432,7 +452,7 @@
           <div class="empty-state__icon"><i class="fas fa-building"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_DEPARTMENTS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_DEPARTMENT}</p>
-          <button class="btn btn-primary" onclick={openAddModal}>
+          <button type="button" class="btn btn-primary" onclick={openAddModal}>
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_DEPARTMENT}
           </button>
@@ -470,7 +490,11 @@
                     </td>
                     <td>
                       <span
-                        class="badge {dept.areaName ? 'badge--info' : 'badge--secondary'}"
+                        class="badge {dept.areaName !== null &&
+                        dept.areaName !== undefined &&
+                        dept.areaName !== ''
+                          ? 'badge--info'
+                          : 'badge--secondary'}"
                         title={dept.areaName ?? 'Kein Bereich zugewiesen'}
                       >
                         {getAreaDisplay(dept.areaName)}
@@ -496,18 +520,24 @@
                     <td>
                       <div class="flex gap-2">
                         <button
+                          type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
                           aria-label="Abteilung bearbeiten"
-                          onclick={() => openEditModal(dept.id)}
+                          onclick={() => {
+                            openEditModal(dept.id);
+                          }}
                         >
                           <i class="fas fa-edit"></i>
                         </button>
                         <button
+                          type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
                           aria-label="Abteilung löschen"
-                          onclick={() => openDeleteModal(dept.id)}
+                          onclick={() => {
+                            openDeleteModal(dept.id);
+                          }}
                         >
                           <i class="fas fa-trash"></i>
                         </button>
@@ -525,7 +555,7 @@
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn-float" onclick={openAddModal} aria-label="Abteilung hinzufügen">
+<button type="button" class="btn-float" onclick={openAddModal} aria-label="Abteilung hinzufügen">
   <i class="fas fa-plus"></i>
 </button>
 

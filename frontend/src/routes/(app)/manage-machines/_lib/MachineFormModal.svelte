@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { machineState } from './state.svelte';
   import { MESSAGES, MACHINE_TYPE_OPTIONS, STATUS_OPTIONS } from './constants';
+  import { machineState } from './state.svelte';
   import { getStatusBadgeClass, getStatusLabel } from './utils';
+
   import type { MachineStatus } from './types';
 
   interface Props {
@@ -97,14 +98,20 @@
     aria-labelledby="machine-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="machine-form"
       class="ds-modal"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -125,7 +132,9 @@
             class="form-field__control"
             required
             value={machineState.formName}
-            oninput={(e) => machineState.setFormName((e.target as HTMLInputElement).value)}
+            oninput={(e) => {
+              machineState.setFormName((e.target as HTMLInputElement).value);
+            }}
           />
         </div>
 
@@ -137,7 +146,9 @@
             name="model"
             class="form-field__control"
             value={machineState.formModel}
-            oninput={(e) => machineState.setFormModel((e.target as HTMLInputElement).value)}
+            oninput={(e) => {
+              machineState.setFormModel((e.target as HTMLInputElement).value);
+            }}
           />
         </div>
 
@@ -151,7 +162,9 @@
             name="manufacturer"
             class="form-field__control"
             value={machineState.formManufacturer}
-            oninput={(e) => machineState.setFormManufacturer((e.target as HTMLInputElement).value)}
+            oninput={(e) => {
+              machineState.setFormManufacturer((e.target as HTMLInputElement).value);
+            }}
           />
         </div>
 
@@ -163,7 +176,9 @@
             name="serialNumber"
             class="form-field__control"
             value={machineState.formSerialNumber}
-            oninput={(e) => machineState.setFormSerialNumber((e.target as HTMLInputElement).value)}
+            oninput={(e) => {
+              machineState.setFormSerialNumber((e.target as HTMLInputElement).value);
+            }}
           />
         </div>
 
@@ -190,13 +205,23 @@
             <div class="dropdown__menu" class:active={machineState.areaDropdownOpen}>
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectArea(null)}>
+              <div
+                class="dropdown__option"
+                onclick={() => {
+                  selectArea(null);
+                }}
+              >
                 {MESSAGES.PLACEHOLDER_AREA}
               </div>
               {#each machineState.allAreas as area (area.id)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectArea(area.id)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectArea(area.id);
+                  }}
+                >
                   {area.name}
                 </div>
               {/each}
@@ -226,7 +251,11 @@
               class="dropdown__trigger"
               class:active={machineState.departmentDropdownOpen}
               class:disabled={machineState.isDepartmentDisabled}
-              onclick={(e) => !machineState.isDepartmentDisabled && toggleDepartmentDropdown(e)}
+              onclick={(e) => {
+                if (!machineState.isDepartmentDisabled) {
+                  toggleDepartmentDropdown(e);
+                }
+              }}
             >
               <span>
                 {#if machineState.isDepartmentDisabled}
@@ -241,13 +270,23 @@
               <div class="dropdown__menu" class:active={machineState.departmentDropdownOpen}>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectDepartment(null)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectDepartment(null);
+                  }}
+                >
                   {MESSAGES.PLACEHOLDER_DEPARTMENT}
                 </div>
                 {#each machineState.filteredDepartments as dept (dept.id)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="dropdown__option" onclick={() => selectDepartment(dept.id)}>
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectDepartment(dept.id);
+                    }}
+                  >
                     {dept.name}
                   </div>
                 {/each}
@@ -286,14 +325,20 @@
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
                     <div
                       class="dropdown__option dropdown__option--checkbox"
-                      onclick={() => toggleTeamSelection(team.id)}
+                      onclick={() => {
+                        toggleTeamSelection(team.id);
+                      }}
                     >
                       <input
                         type="checkbox"
                         checked={machineState.formTeamIds.includes(team.id)}
                         class="dropdown__checkbox"
-                        onclick={(e) => e.stopPropagation()}
-                        onchange={() => toggleTeamSelection(team.id)}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onchange={() => {
+                          toggleTeamSelection(team.id);
+                        }}
                       />
                       <span>{team.name}</span>
                     </div>
@@ -327,7 +372,12 @@
               {#each MACHINE_TYPE_OPTIONS as option (option.value)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectType(option.value)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectType(option.value);
+                  }}
+                >
                   {option.label}
                 </div>
               {/each}
@@ -355,7 +405,12 @@
               {#each STATUS_OPTIONS as option (option.value)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(option.value)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(option.value);
+                  }}
+                >
                   <span class="badge {option.class}">{option.label}</span>
                 </div>
               {/each}
@@ -375,7 +430,7 @@
             value={machineState.formOperatingHours ?? ''}
             oninput={(e) => {
               const val = (e.target as HTMLInputElement).value;
-              machineState.setFormOperatingHours(val ? parseFloat(val) : null);
+              machineState.setFormOperatingHours(val !== '' ? parseFloat(val) : null);
             }}
           />
         </div>
@@ -392,8 +447,9 @@
               name="nextMaintenance"
               class="date-picker__input"
               value={machineState.formNextMaintenance}
-              oninput={(e) =>
-                machineState.setFormNextMaintenance((e.target as HTMLInputElement).value)}
+              oninput={(e) => {
+                machineState.setFormNextMaintenance((e.target as HTMLInputElement).value);
+              }}
             />
           </div>
         </div>

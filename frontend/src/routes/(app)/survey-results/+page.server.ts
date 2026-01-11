@@ -5,6 +5,7 @@
  * SSR: Loads survey details, questions, statistics, and responses in parallel.
  */
 import { redirect, error } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type {
   Survey,
@@ -54,16 +55,14 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
   // Get surveyId from URL search params
   const surveyId = url.searchParams.get('surveyId');
-  if (!surveyId) {
+  if (surveyId === null || surveyId === '') {
     error(400, 'Keine Umfrage-ID angegeben');
   }
 
@@ -82,9 +81,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   // Safe fallbacks
   const questions = Array.isArray(questionsData) ? questionsData : [];
   const responses = Array.isArray(responsesData) ? responsesData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] survey-results/${surveyId} loaded in ${duration}ms (4 parallel API calls)`);
 
   return {
     surveyId,

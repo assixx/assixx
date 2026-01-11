@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { kvpState } from './state.svelte';
-  import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
-  import { validatePhotoFile, readFileAsDataUrl } from './utils';
   import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
+
   import { createSuggestion, uploadPhotos } from './api';
+  import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
+  import { kvpState } from './state.svelte';
+  import { validatePhotoFile, readFileAsDataUrl } from './utils';
+
   import type { KvpFormData, KvpPriority } from './types';
 
   interface Props {
@@ -105,6 +107,54 @@
     onclose();
   }
 
+  interface OrgInfo {
+    orgLevel: 'team' | 'company';
+    orgId: number;
+  }
+
+  function determineOrgInfo(): OrgInfo {
+    const isEmployee = kvpState.effectiveRole === 'employee';
+    const isAdminOrRoot = kvpState.effectiveRole === 'admin' || kvpState.effectiveRole === 'root';
+
+    if (isEmployee && currentTeamId !== null) {
+      return { orgLevel: 'team', orgId: currentTeamId };
+    }
+    if (isAdminOrRoot) {
+      return { orgLevel: 'company', orgId: kvpState.currentUser?.tenantId ?? 0 };
+    }
+    return { orgLevel: 'team', orgId: 0 };
+  }
+
+  function buildFormPayload(
+    title: string,
+    description: string,
+    expectedBenefit: string,
+  ): KvpFormData {
+    const { orgLevel, orgId } = determineOrgInfo();
+    const categoryId = formCategoryValue !== '' ? parseInt(formCategoryValue, 10) : null;
+
+    return {
+      title: title.trim(),
+      description: description.trim(),
+      categoryId,
+      priority: formPriorityValue,
+      expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
+      orgLevel,
+      orgId,
+      departmentId: kvpState.currentUser?.departmentId ?? null,
+    };
+  }
+
+  async function handlePhotoUpload(suggestionId: number): Promise<void> {
+    if (selectedPhotos.length === 0) return;
+
+    const uploadResult = await uploadPhotos(suggestionId, selectedPhotos);
+    if (!uploadResult.success) {
+      const errorMsg = uploadResult.error ?? 'Unbekannter Fehler';
+      showWarningAlert(`Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`);
+    }
+  }
+
   async function handleSubmit(event: Event) {
     event.preventDefault();
 
@@ -120,28 +170,7 @@
       return;
     }
 
-    let orgLevel: 'team' | 'company' = 'team';
-    let orgId = 0;
-
-    if (kvpState.effectiveRole === 'employee' && currentTeamId !== null) {
-      orgLevel = 'team';
-      orgId = currentTeamId;
-    } else if (kvpState.effectiveRole === 'admin' || kvpState.effectiveRole === 'root') {
-      orgLevel = 'company';
-      orgId = kvpState.currentUser?.tenantId ?? 0;
-    }
-
-    const data: KvpFormData = {
-      title: title.trim(),
-      description: description.trim(),
-      categoryId: formCategoryValue !== '' ? parseInt(formCategoryValue, 10) : null,
-      priority: formPriorityValue,
-      expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
-      orgLevel,
-      orgId,
-      departmentId: kvpState.currentUser?.departmentId ?? null,
-    };
-
+    const data = buildFormPayload(title, description, expectedBenefit);
     kvpState.setSubmitting(true);
 
     try {
@@ -152,14 +181,8 @@
         return;
       }
 
-      if (selectedPhotos.length > 0 && result.id !== undefined) {
-        const uploadResult = await uploadPhotos(result.id, selectedPhotos);
-        if (!uploadResult.success) {
-          showWarningAlert(
-            'Vorschlag wurde erstellt, aber Fotos konnten nicht hochgeladen werden: ' +
-              (uploadResult.error ?? 'Unbekannter Fehler'),
-          );
-        }
+      if (result.id !== undefined) {
+        await handlePhotoUpload(result.id);
       }
 
       showSuccessAlert('Vorschlag wurde erfolgreich eingereicht');
@@ -247,8 +270,12 @@
               class:active={activeDropdown === 'kvpCategory'}
               role="button"
               tabindex="0"
-              onclick={() => toggleDropdown('kvpCategory')}
-              onkeydown={(e) => e.key === 'Enter' && toggleDropdown('kvpCategory')}
+              onclick={() => {
+                toggleDropdown('kvpCategory');
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') toggleDropdown('kvpCategory');
+              }}
             >
               <span>{formCategoryDisplay}</span>
               <i class="fas fa-chevron-down"></i>
@@ -259,11 +286,18 @@
                   class="dropdown__option"
                   role="button"
                   tabindex="0"
-                  onclick={() =>
-                    handleFormCategorySelect(category.id.toString(), category.name, category.icon)}
-                  onkeydown={(e) =>
-                    e.key === 'Enter' &&
-                    handleFormCategorySelect(category.id.toString(), category.name, category.icon)}
+                  onclick={() => {
+                    handleFormCategorySelect(category.id.toString(), category.name, category.icon);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleFormCategorySelect(
+                        category.id.toString(),
+                        category.name,
+                        category.icon,
+                      );
+                    }
+                  }}
                 >
                   {category.icon ?? '💡'}
                   {category.name}
@@ -287,8 +321,12 @@
               class:active={activeDropdown === 'kvpPriority'}
               role="button"
               tabindex="0"
-              onclick={() => toggleDropdown('kvpPriority')}
-              onkeydown={(e) => e.key === 'Enter' && toggleDropdown('kvpPriority')}
+              onclick={() => {
+                toggleDropdown('kvpPriority');
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') toggleDropdown('kvpPriority');
+              }}
             >
               <span>{formPriorityDisplay}</span>
               <i class="fas fa-chevron-down"></i>
@@ -299,9 +337,12 @@
                   class="dropdown__option"
                   role="button"
                   tabindex="0"
-                  onclick={() => handleFormPrioritySelect(option.value, option.label)}
-                  onkeydown={(e) =>
-                    e.key === 'Enter' && handleFormPrioritySelect(option.value, option.label)}
+                  onclick={() => {
+                    handleFormPrioritySelect(option.value, option.label);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') handleFormPrioritySelect(option.value, option.label);
+                  }}
                 >
                   {option.label}
                 </div>
@@ -343,7 +384,9 @@
               role="button"
               tabindex="0"
               onclick={handlePhotoClick}
-              onkeydown={(e) => e.key === 'Enter' && handlePhotoClick()}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') handlePhotoClick();
+              }}
             >
               <i class="fas fa-camera"></i>
               <p>Klicken Sie hier, um Fotos auszuwaehlen</p>
@@ -356,7 +399,9 @@
                   <button
                     type="button"
                     class="remove-photo"
-                    onclick={() => handleRemovePhoto(index)}
+                    onclick={() => {
+                      handleRemovePhoto(index);
+                    }}
                   >
                     ×
                   </button>

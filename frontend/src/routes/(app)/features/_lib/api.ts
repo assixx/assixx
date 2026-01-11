@@ -3,23 +3,91 @@
  * @module features/_lib/api
  */
 
+import { getApiClient } from '$lib/utils/api-client';
+
 import type { Plan, TenantAddons, FeatureCategory, AddonInfo, TenantFeature } from './types';
 
-/** Get auth token from localStorage */
-function getAuthToken(): string | null {
-  return localStorage.getItem('accessToken');
+const apiClient = getApiClient();
+
+/** API response wrapper for plans endpoint */
+interface PlansApiResponse {
+  data?: Plan[];
 }
 
-/** Create auth headers */
-function createHeaders(includeContentType = false): HeadersInit {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${token}`,
+/** Plan info from current plan endpoint */
+interface CurrentPlanInfo {
+  planCode?: string;
+  planId?: number;
+  status?: string;
+}
+
+/** API response wrapper for current plan endpoint */
+interface CurrentPlanApiResponse {
+  data?: {
+    plan?: CurrentPlanInfo;
+    addons?: AddonInfo[];
   };
-  if (includeContentType) {
-    headers['Content-Type'] = 'application/json';
+  plan?: CurrentPlanInfo;
+  addons?: AddonInfo[];
+}
+
+/** API response wrapper for tenant features endpoint */
+interface TenantFeaturesApiResponse {
+  data?: TenantFeature[];
+}
+
+/** Map of plan IDs to plan codes for trial resolution */
+const PLAN_ID_TO_CODE: Record<number, string> = {
+  1: 'basic',
+  2: 'professional',
+  3: 'enterprise',
+};
+
+/**
+ * Resolve plan code from plan info, handling trial status
+ */
+function resolvePlanCode(planInfo: CurrentPlanInfo | undefined): string {
+  if (planInfo?.planCode === undefined || planInfo.planCode === '') {
+    return 'basic';
   }
-  return headers;
+
+  const planCode = planInfo.planCode;
+
+  // Trial plans need to be mapped to actual plan
+  const isTrial = planCode === 'trial' || planInfo.status === 'trial';
+  if (!isTrial) {
+    return planCode;
+  }
+
+  if (planInfo.planId === undefined) {
+    return 'basic';
+  }
+
+  return PLAN_ID_TO_CODE[planInfo.planId] ?? 'basic';
+}
+
+/**
+ * Parse addon info array into TenantAddons object
+ */
+function parseAddons(addonsInfo: AddonInfo[]): TenantAddons {
+  const addons: TenantAddons = {};
+
+  for (const addon of addonsInfo) {
+    const addonType = addon.addonType ?? '';
+    switch (addonType) {
+      case 'employees':
+        addons.employees = addon.quantity;
+        break;
+      case 'admins':
+        addons.admins = addon.quantity;
+        break;
+      case 'storage_gb':
+        addons.storage_gb = addon.quantity;
+        break;
+    }
+  }
+
+  return addons;
 }
 
 /**
@@ -27,17 +95,12 @@ function createHeaders(includeContentType = false): HeadersInit {
  * @returns Dictionary of plans by code
  */
 export async function loadPlans(): Promise<Record<string, Plan>> {
-  const response = await fetch('/api/v2/plans', {
-    headers: createHeaders(),
-  });
+  const result = await apiClient.get<PlansApiResponse | Plan[]>('/plans');
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  const result = await response.json();
-  const plansArray: Plan[] = Array.isArray(result.data)
-    ? result.data
-    : Array.isArray(result)
-      ? result
+  const plansArray: Plan[] = Array.isArray(result)
+    ? result
+    : Array.isArray(result.data)
+      ? result.data
       : [];
 
   const loadedPlans: Record<string, Plan> = {};
@@ -56,42 +119,15 @@ export async function loadCurrentPlan(): Promise<{
   planCode: string;
   addons: TenantAddons;
 }> {
-  const response = await fetch('/api/v2/plans/current', {
-    headers: createHeaders(),
-  });
+  const result = await apiClient.get<CurrentPlanApiResponse>('/plans/current');
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  const result = await response.json();
-  const planInfo = result.data?.plan ?? result.plan;
+  const planInfo: CurrentPlanInfo | undefined = result.data?.plan ?? result.plan;
   const addonsInfo: AddonInfo[] = result.data?.addons ?? result.addons ?? [];
 
-  let planCode = 'basic';
-
-  if (planInfo?.planCode) {
-    planCode = planInfo.planCode;
-
-    // Handle trial status
-    if (planCode === 'trial' || planInfo.status === 'trial') {
-      const planMap: Record<number, string> = {
-        1: 'basic',
-        2: 'professional',
-        3: 'enterprise',
-      };
-      planCode = planMap[planInfo.planId] ?? 'basic';
-    }
-  }
-
-  // Parse addons
-  const addons: TenantAddons = {};
-  addonsInfo.forEach((addon) => {
-    const addonType = addon.addonType ?? '';
-    if (addonType === 'employees') addons.employees = addon.quantity;
-    else if (addonType === 'admins') addons.admins = addon.quantity;
-    else if (addonType === 'storage_gb') addons.storage_gb = addon.quantity;
-  });
-
-  return { planCode, addons };
+  return {
+    planCode: resolvePlanCode(planInfo),
+    addons: parseAddons(addonsInfo),
+  };
 }
 
 /**
@@ -99,14 +135,10 @@ export async function loadCurrentPlan(): Promise<{
  * @returns Array of feature codes with their availability
  */
 export async function loadTenantFeatures(): Promise<TenantFeature[]> {
-  const response = await fetch('/api/v2/features/my-features', {
-    headers: createHeaders(),
-  });
-
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  const result = await response.json();
-  return Array.isArray(result.data) ? result.data : Array.isArray(result) ? result : [];
+  const result = await apiClient.get<TenantFeaturesApiResponse | TenantFeature[]>(
+    '/features/my-features',
+  );
+  return Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : [];
 }
 
 /**
@@ -139,14 +171,7 @@ export function applyTenantFeaturesToCategories(
  * @param newPlanCode - New plan code to switch to
  */
 export async function changePlan(tenantId: number | null, newPlanCode: string): Promise<void> {
-  await fetch('/api/v2/plans/change', {
-    method: 'POST',
-    headers: createHeaders(true),
-    body: JSON.stringify({
-      tenantId,
-      newPlanCode,
-    }),
-  });
+  await apiClient.post('/plans/change', { tenantId, newPlanCode });
 }
 
 /**
@@ -160,16 +185,8 @@ export async function toggleFeature(
   featureCode: string,
   activate: boolean,
 ): Promise<void> {
-  const endpoint = activate ? '/api/v2/features/activate' : '/api/v2/features/deactivate';
-
-  await fetch(endpoint, {
-    method: 'POST',
-    headers: createHeaders(true),
-    body: JSON.stringify({
-      tenantId,
-      featureCode,
-    }),
-  });
+  const endpoint = activate ? '/features/activate' : '/features/deactivate';
+  await apiClient.post(endpoint, { tenantId, featureCode });
 }
 
 /**
@@ -177,15 +194,9 @@ export async function toggleFeature(
  * @param addons - Addons to save
  */
 export async function saveAddons(addons: TenantAddons): Promise<void> {
-  const response = await fetch('/api/v2/plans/addons', {
-    method: 'PUT',
-    headers: createHeaders(true),
-    body: JSON.stringify({
-      employees: addons.employees,
-      admins: addons.admins,
-      storageGb: addons.storage_gb,
-    }),
+  await apiClient.put('/plans/addons', {
+    employees: addons.employees,
+    admins: addons.admins,
+    storageGb: addons.storage_gb,
   });
-
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }

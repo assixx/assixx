@@ -7,9 +7,9 @@
  */
 export const API_ENDPOINTS = {
   SURVEYS: '/surveys',
-  SURVEY_BY_ID: (id: number) => `/surveys/${id}`,
-  MY_RESPONSE: (id: number) => `/surveys/${id}/my-response`,
-  SUBMIT_RESPONSE: (id: number) => `/surveys/${id}/responses`,
+  surveyById: (id: number) => `/surveys/${id}`,
+  myResponse: (id: number) => `/surveys/${id}/my-response`,
+  submitResponse: (id: number) => `/surveys/${id}/responses`,
 } as const;
 
 /**

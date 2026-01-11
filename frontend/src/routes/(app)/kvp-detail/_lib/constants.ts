@@ -8,16 +8,16 @@ import type { KvpStatus, KvpPriority, OrgLevel } from './types';
  * API endpoints
  */
 export const API_ENDPOINTS = {
-  KVP_BY_ID: (id: string) => `/kvp/${id}`,
-  KVP_COMMENTS: (id: string) => `/kvp/${id}/comments`,
-  KVP_ATTACHMENTS: (id: string) => `/kvp/${id}/attachments`,
-  KVP_SHARE: (id: string) => `/kvp/${id}/share`,
-  KVP_UNSHARE: (id: string) => `/kvp/${id}/unshare`,
-  ATTACHMENT_DOWNLOAD: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
-  DEPARTMENTS: '/departments',
-  TEAMS: '/teams',
-  AREAS: '/areas',
-  USER_ME: '/users/me',
+  kvpById: (id: string) => `/kvp/${id}`,
+  kvpComments: (id: string) => `/kvp/${id}/comments`,
+  kvpAttachments: (id: string) => `/kvp/${id}/attachments`,
+  kvpShare: (id: string) => `/kvp/${id}/share`,
+  kvpUnshare: (id: string) => `/kvp/${id}/unshare`,
+  attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
+  departments: '/departments',
+  teams: '/teams',
+  areas: '/areas',
+  userMe: '/users/me',
 } as const;
 
 /**

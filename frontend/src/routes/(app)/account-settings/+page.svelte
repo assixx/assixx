@@ -6,21 +6,22 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { base } from '$app/paths';
-  import type { PageData } from './$types';
+  import { resolve } from '$app/paths';
 
   // Page-specific CSS
   import '../../../styles/account-settings.css';
 
   // Module imports
   import { getRootUserCount, deleteTenant } from './_lib/api';
-  import { formatDate, getStatusLabel, showToast } from './_lib/utils';
   import {
     DELETE_CONFIRMATION_TEXT,
     MIN_REASON_LENGTH,
     MIN_ROOT_USERS,
     MESSAGES,
   } from './_lib/constants';
+  import { formatDate, getStatusLabel, showToast } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type { DeletionStatusData } from './_lib/types';
 
   // =============================================================================
@@ -30,7 +31,7 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const pendingDeletion = $derived<DeletionStatusData | null>(data?.pendingDeletion ?? null);
+  const pendingDeletion = $derived<DeletionStatusData | null>(data.pendingDeletion ?? null);
   const hasPendingDeletion = $derived(pendingDeletion !== null);
 
   // =============================================================================
@@ -62,7 +63,7 @@
   async function handleShowDeleteModal() {
     try {
       const rootUserCount = await getRootUserCount();
-      console.info(`[AccountSettings] Found ${rootUserCount} root users in tenant`);
+      console.warn(`[AccountSettings] Found ${rootUserCount} root users in tenant`);
 
       if (rootUserCount < MIN_ROOT_USERS) {
         showToast(MESSAGES.notEnoughRootUsers(rootUserCount), 'error');
@@ -101,9 +102,10 @@
       console.error('[AccountSettings] Error deleting tenant:', err);
       const message = err instanceof Error ? err.message : MESSAGES.deletionError;
       showToast(message, 'error');
-    } finally {
-      deleteLoading = false;
     }
+
+    // eslint-disable-next-line require-atomic-updates -- Unconditional reset after sync guard; no value dependency
+    deleteLoading = false;
   }
 
   /**
@@ -163,7 +165,7 @@
               · Tenant #{pendingDeletion.tenantId} · Angefordert von {pendingDeletion.requestedByName ??
                 'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
             </p>
-            <a href="{base}/tenant-deletion-status" class="btn btn-warning mt-4">
+            <a href={resolve('/tenant-deletion-status', {})} class="btn btn-warning mt-4">
               <i class="fas fa-external-link-alt mr-2"></i>
               Details anzeigen
             </a>
@@ -194,7 +196,7 @@
       <!-- Action Button -->
       {#if !hasPendingDeletion}
         <div class="flex gap-3">
-          <button class="btn btn-danger" onclick={handleShowDeleteModal}>
+          <button type="button" class="btn btn-danger" onclick={handleShowDeleteModal}>
             <i class="fas fa-trash-alt"></i>
             Tenant komplett löschen
           </button>
@@ -218,7 +220,12 @@
           <i class="fas fa-exclamation-triangle mr-3"></i>
           Tenant unwiderruflich löschen
         </h2>
-        <button class="ds-modal__close" onclick={closeDeleteModal} aria-label="Schließen">
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closeDeleteModal}
+          aria-label="Schließen"
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -307,11 +314,12 @@
       </div>
 
       <div class="ds-modal__footer ds-modal__footer--end">
-        <button class="btn btn-cancel" onclick={closeDeleteModal}>
+        <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>
           <i class="fas fa-times"></i>
           Abbrechen
         </button>
         <button
+          type="button"
           class="btn btn-danger"
           onclick={handleDeleteTenant}
           disabled={!canDelete || deleteLoading}

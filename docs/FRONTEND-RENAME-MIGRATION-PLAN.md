@@ -11,6 +11,7 @@
 ## Executive Summary
 
 This document provides a **zero-error migration plan** to:
+
 1. Archive the legacy `frontend/` directory to `frontend-legacy/`
 2. Create a ZIP backup of the archived folder
 3. Rename `frontend-svelte/` to `frontend/`
@@ -48,13 +49,13 @@ This document provides a **zero-error migration plan** to:
 
 ### Routing (via Nginx)
 
-| Path | Destination | Description |
-|------|-------------|-------------|
-| `/api/*` | backend:3000 | All API calls |
-| `/uploads/*` | backend:3000 | Uploaded files |
-| `/health` | backend:3000 | Backend health check |
-| `/chat-ws` | backend:3000 | WebSocket for chat |
-| `/*` | frontend:3001 | All other requests (SvelteKit SSR) |
+| Path         | Destination   | Description                        |
+| ------------ | ------------- | ---------------------------------- |
+| `/api/*`     | backend:3000  | All API calls                      |
+| `/uploads/*` | backend:3000  | Uploaded files                     |
+| `/health`    | backend:3000  | Backend health check               |
+| `/chat-ws`   | backend:3000  | WebSocket for chat                 |
+| `/*`         | frontend:3001 | All other requests (SvelteKit SSR) |
 
 ---
 
@@ -141,13 +142,13 @@ ls -la frontend/
 ```yaml
 # REMOVE the "frontend-svelte" line
 packages:
-  - "frontend"
-  - "backend"
+  - 'frontend'
+  - 'backend'
 ignoredBuiltDependencies:
   - unrs-resolver
 onlyBuiltDependencies:
-  - "@swc/core"
-  - "esbuild"
+  - '@swc/core'
+  - 'esbuild'
 ```
 
 #### 4.2 package.json (root) - Lines 41-42
@@ -453,75 +454,81 @@ server {
 **ADD these services** (after existing services):
 
 ```yaml
-  # ===========================================================================
-  # SvelteKit Frontend (Production)
-  # ===========================================================================
-  frontend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.frontend
-    image: assixx-frontend:prod
-    container_name: assixx-frontend
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 1G
-        reservations:
-          cpus: "0.5"
-          memory: 256M
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      ORIGIN: ${ORIGIN:-http://localhost}
-      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
-      # API URL for server-side fetches
-      PUBLIC_API_URL: http://backend:3000
-    ports:
-      - "3001:3001"  # Direct access for debugging
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - assixx-network
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+# ===========================================================================
+# SvelteKit Frontend (Production)
+# ===========================================================================
+frontend:
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.frontend
+  image: assixx-frontend:prod
+  container_name: assixx-frontend
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 1G
+      reservations:
+        cpus: '0.5'
+        memory: 256M
+  environment:
+    NODE_ENV: production
+    PORT: 3001
+    ORIGIN: ${ORIGIN:-http://localhost}
+    BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+    # API URL for server-side fetches
+    PUBLIC_API_URL: http://backend:3000
+  ports:
+    - '3001:3001' # Direct access for debugging
+  depends_on:
+    backend:
+      condition: service_healthy
+  networks:
+    - assixx-network
+  healthcheck:
+    test:
+      [
+        'CMD',
+        'node',
+        '-e',
+        "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1))",
+      ]
+    interval: 30s
+    timeout: 10s
+    retries: 3
 
-  # ===========================================================================
-  # Nginx Reverse Proxy
-  # ===========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: assixx-nginx
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 256M
-        reservations:
-          cpus: "0.25"
-          memory: 64M
-    ports:
-      - "80:80"
-      # - "443:443"  # Uncomment for HTTPS
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - assixx-network
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+# ===========================================================================
+# Nginx Reverse Proxy
+# ===========================================================================
+nginx:
+  image: nginx:alpine
+  container_name: assixx-nginx
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: '1.0'
+        memory: 256M
+      reservations:
+        cpus: '0.25'
+        memory: 64M
+  ports:
+    - '80:80'
+    # - "443:443"  # Uncomment for HTTPS
+  volumes:
+    - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
+  depends_on:
+    - frontend
+    - backend
+  networks:
+    - assixx-network
+  healthcheck:
+    test: ['CMD', 'nginx', '-t']
+    interval: 30s
+    timeout: 10s
+    retries: 3
 ```
 
 ### Phase 10: Update Backend to Remove Static File Serving
@@ -567,6 +574,7 @@ async function setupStaticAssets(app: NestFastifyApplication, paths: ProjectPath
 
 ```typescript
 import { json } from '@sveltejs/kit';
+
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async () => {
@@ -615,13 +623,13 @@ curl -s http://localhost:3000/health | jq '.'       # Backend (direct)
 
 ### Expected Results
 
-| URL | Response |
-|-----|----------|
-| `http://localhost/` | SvelteKit Login Page |
-| `http://localhost/health` | `{"status":"ok","framework":"NestJS+Fastify"}` |
-| `http://localhost/api/v2/auth/check` | Auth response |
-| `http://localhost:3001/` | SvelteKit (direct) |
-| `http://localhost:3000/health` | Backend health (direct) |
+| URL                                  | Response                                       |
+| ------------------------------------ | ---------------------------------------------- |
+| `http://localhost/`                  | SvelteKit Login Page                           |
+| `http://localhost/health`            | `{"status":"ok","framework":"NestJS+Fastify"}` |
+| `http://localhost/api/v2/auth/check` | Auth response                                  |
+| `http://localhost:3001/`             | SvelteKit (direct)                             |
+| `http://localhost:3000/health`       | Backend health (direct)                        |
 
 ---
 
@@ -667,25 +675,25 @@ docker-compose build --no-cache
 
 ### NEW Files to Create
 
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `docker/Dockerfile.frontend` | SvelteKit production build |
-| 2 | `docker/nginx/nginx.conf` | Reverse proxy config |
-| 3 | `frontend/src/routes/health/+server.ts` | Health endpoint |
+| #   | File                                    | Purpose                    |
+| --- | --------------------------------------- | -------------------------- |
+| 1   | `docker/Dockerfile.frontend`            | SvelteKit production build |
+| 2   | `docker/nginx/nginx.conf`               | Reverse proxy config       |
+| 3   | `frontend/src/routes/health/+server.ts` | Health endpoint            |
 
 ### Files to Modify
 
-| # | File | Changes |
-|---|------|---------|
-| 1 | `pnpm-workspace.yaml` | Remove `frontend-svelte` |
-| 2 | `package.json` (root) | Update scripts |
-| 3 | `eslint.config.js` | Update ignores |
-| 4 | `.gitignore` | Update paths |
-| 5 | `frontend/package.json` | Rename package |
-| 6 | `frontend/vite.config.ts` | Change ports |
-| 7 | `vitest.config.ts` | Change port |
-| 8 | `docker/docker-compose.yml` | Add frontend + nginx services |
-| 9 | `backend/src/nest/main.ts` | Remove static file serving (optional) |
+| #   | File                        | Changes                               |
+| --- | --------------------------- | ------------------------------------- |
+| 1   | `pnpm-workspace.yaml`       | Remove `frontend-svelte`              |
+| 2   | `package.json` (root)       | Update scripts                        |
+| 3   | `eslint.config.js`          | Update ignores                        |
+| 4   | `.gitignore`                | Update paths                          |
+| 5   | `frontend/package.json`     | Rename package                        |
+| 6   | `frontend/vite.config.ts`   | Change ports                          |
+| 7   | `vitest.config.ts`          | Change port                           |
+| 8   | `docker/docker-compose.yml` | Add frontend + nginx services         |
+| 9   | `backend/src/nest/main.ts`  | Remove static file serving (optional) |
 
 ### Directories to Create
 
@@ -738,23 +746,23 @@ cd frontend && pnpm run build
 
 ### Development
 
-| Service | Port | URL |
-|---------|------|-----|
-| SvelteKit (dev) | 5173 | `http://localhost:5173` |
+| Service          | Port | URL                     |
+| ---------------- | ---- | ----------------------- |
+| SvelteKit (dev)  | 5173 | `http://localhost:5173` |
 | Backend (Docker) | 3000 | `http://localhost:3000` |
-| PostgreSQL | 5432 | - |
-| Redis | 6379 | - |
-| Vitest UI | 5175 | `http://localhost:5175` |
+| PostgreSQL       | 5432 | -                       |
+| Redis            | 6379 | -                       |
+| Vitest UI        | 5175 | `http://localhost:5175` |
 
 ### Production
 
-| Service | Port | URL |
-|---------|------|-----|
-| Nginx | 80 | `http://localhost` |
-| SvelteKit | 3001 | `http://localhost:3001` (internal) |
-| Backend | 3000 | `http://localhost:3000` (internal) |
-| PostgreSQL | 5432 | - |
-| Redis | 6379 | - |
+| Service    | Port | URL                                |
+| ---------- | ---- | ---------------------------------- |
+| Nginx      | 80   | `http://localhost`                 |
+| SvelteKit  | 3001 | `http://localhost:3001` (internal) |
+| Backend    | 3000 | `http://localhost:3000` (internal) |
+| PostgreSQL | 5432 | -                                  |
+| Redis      | 6379 | -                                  |
 
 ---
 

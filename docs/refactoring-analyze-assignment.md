@@ -56,7 +56,7 @@ EMPLOYEE    → Admin vergibt Zugriff
 ```typescript
 // Root and employees bypass department checks
 if (user.role === 'root' || user.role === 'employee') {
-  next();  // KEIN CHECK!
+  next(); // KEIN CHECK!
   return;
 }
 ```

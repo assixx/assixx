@@ -7,22 +7,28 @@
    * Note: Personal info is readonly for employees (only password can be changed).
    */
   import { goto, invalidateAll } from '$app/navigation';
-  import { analyzePassword } from '$lib/utils/password-strength';
+
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
-  import type { PageData } from './$types';
+  import { analyzePassword } from '$lib/utils/password-strength';
 
   // Page-specific CSS
   import '../../../styles/employee-profile.css';
   import '../../../styles/password-strength.css';
 
   // Local modules
-  import { MESSAGES, PASSWORD_TOOLTIP, PASSWORD_RULES, READONLY_INFO_TEXT } from './_lib/constants';
   import {
     loadProfilePicture as apiLoadProfilePicture,
     uploadProfilePicture,
     removeProfilePicture,
     changePassword as apiChangePassword,
   } from './_lib/api';
+  import {
+    MESSAGES,
+    PASSWORD_TOOLTIP,
+    PASSWORD_RULES,
+    READONLY_INFO_TEXT,
+    PICTURE_UPLOAD_ERROR_MAP,
+  } from './_lib/constants';
   import {
     showToast,
     triggerFileInput,
@@ -31,6 +37,8 @@
     doPasswordsMatch,
     getDisplayPosition,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type { EmployeeProfile, PasswordStrengthResult } from './_lib/types';
 
   // =============================================================================
@@ -40,12 +48,12 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const user = $derived<EmployeeProfile | null>(data?.profile ?? null);
+  const user = $derived<EmployeeProfile | null>(data.profile ?? null);
 
   // Initialize form values from SSR data
   $effect(() => {
-    if (user) {
-      formEmail = user.email ?? '';
+    if (user !== null) {
+      formEmail = user.email;
       formFirstName = user.firstName ?? '';
       formLastName = user.lastName ?? '';
       formPosition = getDisplayPosition(user.position);
@@ -95,31 +103,43 @@
   const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
 
+  // Password feedback visibility helpers
+  const hasWarning = $derived(
+    passwordStrength?.feedback.warning !== undefined && passwordStrength.feedback.warning !== '',
+  );
+  const hasSuggestions = $derived(
+    passwordStrength?.feedback.suggestions !== undefined &&
+      passwordStrength.feedback.suggestions.length > 0,
+  );
+  const hasPasswordFeedback = $derived(hasWarning || hasSuggestions);
+
   // =============================================================================
   // PROFILE PICTURE ACTIONS
   // =============================================================================
+
+  function getUploadErrorMessage(err: unknown): string {
+    const code = err instanceof Error ? err.message : '';
+    return PICTURE_UPLOAD_ERROR_MAP[code] ?? MESSAGES.pictureUploadError;
+  }
 
   async function handlePictureUpload(event: Event): Promise<void> {
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) return;
 
     const file = target.files?.[0];
-    if (!file) return;
+    if (file === undefined) return;
 
     pictureUploading = true;
 
     try {
       const newUrl = await uploadProfilePicture(file);
-      if (newUrl) {
+      if (newUrl !== null && newUrl !== '') {
         profilePicture = newUrl;
         showToast(MESSAGES.pictureUpdated, 'success');
         await invalidateAll();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'INVALID_TYPE') showToast(MESSAGES.invalidImageType, 'error');
-      else if (msg === 'FILE_TOO_LARGE') showToast(MESSAGES.fileTooLarge, 'error');
-      else showToast(MESSAGES.pictureUploadError, 'error');
+      showToast(getUploadErrorMessage(err), 'error');
     } finally {
       pictureUploading = false;
       target.value = '';
@@ -147,45 +167,65 @@
   // PASSWORD ACTIONS
   // =============================================================================
 
-  async function handleChangePassword(event: Event): Promise<void> {
-    event.preventDefault();
+  /** Validate password form, returns true if valid */
+  function validatePasswordForm(): boolean {
     currentPasswordError = false;
     newPasswordError = false;
     passwordMismatchError = false;
 
     if (!isPasswordValid) {
       newPasswordError = true;
-      return;
+      return false;
     }
     if (!passwordsMatch) {
       passwordMismatchError = true;
-      return;
+      return false;
     }
+    return true;
+  }
+
+  /** Handle password change error */
+  function handlePasswordChangeError(err: unknown): void {
+    const msg = err instanceof Error ? err.message : '';
+    if (isCurrentPasswordError(msg)) {
+      currentPasswordError = true;
+    } else {
+      showToast(msg !== '' ? msg : MESSAGES.passwordChangeError, 'error');
+    }
+  }
+
+  /** Reset form and schedule logout after password change */
+  function onPasswordChangeSuccess(): void {
+    showToast(MESSAGES.passwordChanged, 'success');
+
+    currentPassword = '';
+    newPassword = '';
+    confirmPassword = '';
+    passwordStrength = null;
+
+    // Logout after 2 seconds (password changed = security logout)
+    setTimeout(() => {
+      localStorage.removeItem('accessToken');
+      void goto('/login', { replaceState: true });
+    }, 2000);
+  }
+
+  async function handleChangePassword(event: Event): Promise<void> {
+    event.preventDefault();
+
+    if (!validatePasswordForm()) return;
+
+    // Capture values before async operations to avoid race conditions
+    const currentPwd = currentPassword;
+    const newPwd = newPassword;
 
     passwordSaving = true;
 
     try {
-      await apiChangePassword({ currentPassword, newPassword });
-      showToast(MESSAGES.passwordChanged, 'success');
-
-      // Reset form
-      currentPassword = '';
-      newPassword = '';
-      confirmPassword = '';
-      passwordStrength = null;
-
-      // Logout after 2 seconds (password changed = security logout)
-      setTimeout(() => {
-        localStorage.removeItem('accessToken');
-        goto('/login', { replaceState: true });
-      }, 2000);
+      await apiChangePassword({ currentPassword: currentPwd, newPassword: newPwd });
+      onPasswordChangeSuccess();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (isCurrentPasswordError(msg)) {
-        currentPasswordError = true;
-      } else {
-        showToast(msg || MESSAGES.passwordChangeError, 'error');
-      }
+      handlePasswordChangeError(err);
     } finally {
       passwordSaving = false;
     }
@@ -206,6 +246,19 @@
     } finally {
       strengthLoading = false;
     }
+  }
+
+  function validateConfirmPassword(): void {
+    if (confirmPassword === '') {
+      passwordMismatchError = false;
+      return;
+    }
+    passwordMismatchError = !passwordsMatch;
+  }
+
+  async function handleNewPasswordInput(): Promise<void> {
+    await checkPassword();
+    validateConfirmPassword();
   }
 
   // =============================================================================
@@ -250,7 +303,9 @@
           <button
             type="button"
             class="btn btn-modal"
-            onclick={() => triggerFileInput('profile-picture-input')}
+            onclick={() => {
+              triggerFileInput('profile-picture-input');
+            }}
             disabled={pictureUploading}
           >
             {#if pictureUploading}<i class="fas fa-spinner fa-spin"></i>{:else}<i
@@ -344,7 +399,7 @@
               id="current_password"
               name="current_password"
               class="form-field__control"
-              class:form-field__control--error={currentPasswordError}
+              class:is-error={currentPasswordError}
               autocomplete="current-password"
               bind:value={currentPassword}
               required
@@ -353,7 +408,9 @@
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('current')}
+              onclick={() => {
+                togglePasswordVisibility('current');
+              }}
             >
               <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
@@ -383,30 +440,32 @@
               id="new_password"
               name="new_password"
               class="form-field__control"
-              class:form-field__control--error={newPasswordError}
+              class:is-error={newPasswordError}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
               bind:value={newPassword}
-              oninput={checkPassword}
+              oninput={handleNewPasswordInput}
               required
             />
             <button
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('new')}
+              onclick={() => {
+                togglePasswordVisibility('new');
+              }}
             >
               <i class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
           </div>
 
-          {#if passwordStrength || strengthLoading}
+          {#if passwordStrength !== null || strengthLoading}
             <div class="password-strength-container" class:is-loading={strengthLoading}>
               <div class="password-strength-meter">
                 <div class="password-strength-bar" data-score={passwordStrength?.score ?? -1}></div>
               </div>
-              {#if passwordStrength}
+              {#if passwordStrength !== null}
                 <div class="password-strength-info">
                   <span class="password-strength-label">{passwordStrength.label}</span>
                   <span class="password-strength-time">{passwordStrength.crackTime}</span>
@@ -421,12 +480,12 @@
             </span>
           {/if}
 
-          {#if passwordStrength?.feedback.warning || (passwordStrength?.feedback.suggestions && passwordStrength.feedback.suggestions.length > 0)}
+          {#if hasPasswordFeedback && passwordStrength !== null}
             <div class="password-feedback">
-              {#if passwordStrength.feedback.warning}
+              {#if hasWarning}
                 <span class="password-feedback-warning">{passwordStrength.feedback.warning}</span>
               {/if}
-              {#if passwordStrength.feedback.suggestions && passwordStrength.feedback.suggestions.length > 0}
+              {#if hasSuggestions}
                 <ul class="password-feedback-suggestions">
                   {#each passwordStrength.feedback.suggestions as suggestion, i (i)}
                     <li>{suggestion}</li>
@@ -446,18 +505,21 @@
               id="confirm_password"
               name="confirm_password"
               class="form-field__control"
-              class:form-field__control--error={passwordMismatchError}
+              class:is-error={passwordMismatchError}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
               bind:value={confirmPassword}
+              oninput={validateConfirmPassword}
               required
             />
             <button
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('confirm')}
+              onclick={() => {
+                togglePasswordVisibility('confirm');
+              }}
             >
               <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>

@@ -5,6 +5,7 @@
  * SSR: Loads user profile and pending approvals.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { UserProfile, ApprovalItem } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -66,9 +65,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     apiFetch<UserProfile>('/users/me', token, fetch),
     apiFetch<ApprovalItem[]>('/tenant-deletion/pending-approvals', token, fetch),
   ]);
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] root-profile loaded in ${duration}ms (2 parallel API calls)`);
 
   return {
     profile: profileData,

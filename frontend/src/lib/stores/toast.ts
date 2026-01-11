@@ -1,38 +1,33 @@
 /**
  * Toast/Notification Store for SvelteKit
- * 1:1 Copy from frontend/src/scripts/services/notification.service.ts
  * Using Svelte writable store for global state
  */
 
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 
 // =============================================================================
-// TYPES (JSDoc)
+// TYPES
 // =============================================================================
 
-/**
- * @typedef {'success' | 'error' | 'warning' | 'info'} ToastType
- */
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-/**
- * @typedef {Object} Toast
- * @property {string} id
- * @property {ToastType} type
- * @property {string} title
- * @property {string} [message]
- * @property {number} [duration]
- * @property {boolean} [dismissing] - Animation state
- */
+export interface Toast {
+  id: string;
+  type: ToastType;
+  title: string;
+  message?: string;
+  duration?: number;
+  dismissing?: boolean;
+}
 
 // =============================================================================
 // STORE
 // =============================================================================
 
-const MAX_TOASTS = 3;
-const DEFAULT_DURATION = 4000; // 4 seconds
+const MAX_TOASTS: number = 3;
+const DEFAULT_DURATION: number = 4000; // 4 seconds
 
-/** @type {import('svelte/store').Writable<Toast[]>} */
-export const toasts = writable([]);
+export const toasts: Writable<Toast[]> = writable([]);
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -40,9 +35,8 @@ export const toasts = writable([]);
 
 /**
  * Generate unique ID
- * @returns {string}
  */
-function generateId() {
+function generateId(): string {
   return `toast-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
@@ -52,23 +46,20 @@ function generateId() {
 
 /**
  * Show a toast notification
- * @param {Omit<Toast, 'id'>} toast
- * @returns {string} Toast ID
  */
-export function showToast(toast) {
-  let currentToasts = [];
-  toasts.subscribe((t) => (currentToasts = t))();
+export function showToast(toast: Omit<Toast, 'id'>): string {
+  let currentToasts: Toast[] = [];
+  toasts.subscribe((t: Toast[]) => (currentToasts = t))();
 
   if (currentToasts.length >= MAX_TOASTS) {
-    console.info(`[TOAST] Max ${MAX_TOASTS} toasts active, ignoring new one`);
+    console.warn(`[TOAST] Max ${MAX_TOASTS} toasts active, ignoring new one`);
     return '';
   }
 
-  const id = generateId();
-  const duration = toast.duration ?? DEFAULT_DURATION;
+  const id: string = generateId();
+  const duration: number = toast.duration ?? DEFAULT_DURATION;
 
-  /** @type {Toast} */
-  const fullToast = {
+  const fullToast: Toast = {
     id,
     type: toast.type,
     title: toast.title,
@@ -77,7 +68,7 @@ export function showToast(toast) {
     dismissing: false,
   };
 
-  toasts.update((t) => [...t, fullToast]);
+  toasts.update((t: Toast[]) => [...t, fullToast]);
 
   // Auto-dismiss after duration
   if (duration > 0) {
@@ -91,24 +82,23 @@ export function showToast(toast) {
 
 /**
  * Dismiss a toast by ID (with animation)
- * @param {string} id
  */
-export function dismissToast(id) {
+export function dismissToast(id: string): void {
   // First mark as dismissing for animation
-  toasts.update((t) =>
-    t.map((toast) => (toast.id === id ? { ...toast, dismissing: true } : toast)),
+  toasts.update((t: Toast[]) =>
+    t.map((toast: Toast) => (toast.id === id ? { ...toast, dismissing: true } : toast)),
   );
 
   // Then remove after animation
   setTimeout(() => {
-    toasts.update((t) => t.filter((toast) => toast.id !== id));
+    toasts.update((t: Toast[]) => t.filter((toast: Toast) => toast.id !== id));
   }, 300);
 }
 
 /**
  * Dismiss all toasts
  */
-export function dismissAllToasts() {
+export function dismissAllToasts(): void {
   toasts.set([]);
 }
 
@@ -118,11 +108,8 @@ export function dismissAllToasts() {
 
 /**
  * Show success toast
- * @param {string} message
- * @param {number} [duration]
- * @returns {string}
  */
-export function showSuccessAlert(message, duration) {
+export function showSuccessAlert(message: string, duration?: number): string {
   return showToast({
     type: 'success',
     title: 'Erfolg',
@@ -133,11 +120,8 @@ export function showSuccessAlert(message, duration) {
 
 /**
  * Show error toast
- * @param {string} message
- * @param {number} [duration]
- * @returns {string}
  */
-export function showErrorAlert(message, duration) {
+export function showErrorAlert(message: string, duration?: number): string {
   return showToast({
     type: 'error',
     title: 'Fehler',
@@ -148,11 +132,8 @@ export function showErrorAlert(message, duration) {
 
 /**
  * Show warning toast
- * @param {string} message
- * @param {number} [duration]
- * @returns {string}
  */
-export function showWarningAlert(message, duration) {
+export function showWarningAlert(message: string, duration?: number): string {
   return showToast({
     type: 'warning',
     title: 'Warnung',
@@ -163,11 +144,8 @@ export function showWarningAlert(message, duration) {
 
 /**
  * Show info toast
- * @param {string} message
- * @param {number} [duration]
- * @returns {string}
  */
-export function showInfoAlert(message, duration) {
+export function showInfoAlert(message: string, duration?: number): string {
   return showToast({
     type: 'info',
     title: 'Information',

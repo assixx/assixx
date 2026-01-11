@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { kvpDetailState } from './state.svelte';
-  import { canAddComments } from './utils';
-  import { formatDate } from './utils';
   import { getAvatarColorClass, getInitials } from '$lib/utils';
+
+  import { kvpDetailState } from './state.svelte';
+  import { canAddComments, formatDate } from './utils';
 
   interface Props {
     onaddcomment: () => void;

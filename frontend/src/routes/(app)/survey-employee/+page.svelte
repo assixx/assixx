@@ -6,13 +6,15 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import type { PageData } from './$types';
+
+  import { showErrorAlert, showSuccessAlert } from '$lib/utils';
+
   // Survey-specific styles (migrated from legacy)
   import '../../../styles/survey-employee.css';
-  import { surveyEmployeeState } from './_lib/state.svelte';
-  import { showErrorAlert, showSuccessAlert } from '$lib/utils';
-  import { loadSurveyById, fetchUserResponse, submitResponse } from './_lib/api';
 
+  import { loadSurveyById, fetchUserResponse, submitResponse } from './_lib/api';
+  import { surveyEmployeeState } from './_lib/state.svelte';
+  import SurveyCard from './_lib/SurveyCard.svelte';
   import {
     getTextFromBuffer,
     isQuestionRequired,
@@ -22,8 +24,9 @@
     convertAnswersToArray,
     validateRequiredQuestions,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type { QuestionOption, SurveyWithStatus } from './_lib/types';
-  import SurveyCard from './_lib/SurveyCard.svelte';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -32,7 +35,7 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allSurveys = $derived<SurveyWithStatus[]>(data?.surveys ?? []);
+  const allSurveys = $derived<SurveyWithStatus[]>(data.surveys);
 
   // One-time initialization flag (prevents re-running on every SSR change)
   let initialized = $state(false);
@@ -51,6 +54,21 @@
   // Derived: Filter surveys by response status
   const pendingSurveys = $derived(allSurveys.filter((s) => !s.hasResponded));
   const completedSurveys = $derived(allSurveys.filter((s) => s.hasResponded));
+
+  // Derived: Response modal data (typed object when guard passes, null otherwise)
+  const responseModalData = $derived.by(() => {
+    if (
+      !surveyEmployeeState.showResponseModal ||
+      surveyEmployeeState.viewingSurvey === null ||
+      surveyEmployeeState.viewingResponse === null
+    ) {
+      return null;
+    }
+    return {
+      survey: surveyEmployeeState.viewingSurvey,
+      response: surveyEmployeeState.viewingResponse,
+    };
+  });
 
   // ==========================================================================
   // SURVEY ACTIONS
@@ -307,7 +325,9 @@
             type="button"
             class="ds-modal__close"
             aria-label="Schließen"
-            onclick={() => surveyEmployeeState.closeSurveyModal()}
+            onclick={() => {
+              surveyEmployeeState.closeSurveyModal();
+            }}
           >
             <i class="fas fa-times"></i>
           </button>
@@ -355,8 +375,9 @@
                       placeholder="Ihre Antwort..."
                       rows="4"
                       {required}
-                      oninput={(e) =>
-                        handleTextChange(question.id, (e.target as HTMLTextAreaElement).value)}
+                      oninput={(e) => {
+                        handleTextChange(question.id, (e.target as HTMLTextAreaElement).value);
+                      }}
                     ></textarea>
                   </div>
 
@@ -373,7 +394,9 @@
                           name="question_{question.id}"
                           value={optionId}
                           {required}
-                          onchange={() => handleSingleChoiceChange(question.id, optionId)}
+                          onchange={() => {
+                            handleSingleChoiceChange(question.id, optionId);
+                          }}
                         />
                         <span class="choice-card__text">{optionText}</span>
                       </label>
@@ -392,12 +415,13 @@
                           class="choice-card__input"
                           value={optionId}
                           checked={isMultipleOptionSelected(question.id, optionId)}
-                          onchange={(e) =>
+                          onchange={(e) => {
                             handleMultipleChoiceChange(
                               question.id,
                               optionId,
                               (e.target as HTMLInputElement).checked,
-                            )}
+                            );
+                          }}
                         />
                         <span class="choice-card__text">{optionText}</span>
                       </label>
@@ -413,7 +437,9 @@
                         class="rating-button"
                         class:rating-button--selected={isRatingSelected(question.id, value)}
                         aria-label="Bewertung {value} von 5"
-                        onclick={() => handleRatingClick(question.id, value)}
+                        onclick={() => {
+                          handleRatingClick(question.id, value);
+                        }}
                       >
                         {value}
                       </button>
@@ -430,7 +456,9 @@
                         name="question_{question.id}"
                         value="1"
                         {required}
-                        onchange={() => handleSingleChoiceChange(question.id, 1)}
+                        onchange={() => {
+                          handleSingleChoiceChange(question.id, 1);
+                        }}
                       />
                       <span class="choice-card__text">Ja</span>
                     </label>
@@ -441,7 +469,9 @@
                         name="question_{question.id}"
                         value="2"
                         {required}
-                        onchange={() => handleSingleChoiceChange(question.id, 2)}
+                        onchange={() => {
+                          handleSingleChoiceChange(question.id, 2);
+                        }}
                       />
                       <span class="choice-card__text">Nein</span>
                     </label>
@@ -455,8 +485,9 @@
                       class="form-field__control"
                       placeholder="Zahl eingeben..."
                       {required}
-                      oninput={(e) =>
-                        handleNumberChange(question.id, (e.target as HTMLInputElement).value)}
+                      oninput={(e) => {
+                        handleNumberChange(question.id, (e.target as HTMLInputElement).value);
+                      }}
                     />
                   </div>
 
@@ -468,8 +499,9 @@
                       class="form-field__control"
                       placeholder="Datum wählen..."
                       {required}
-                      oninput={(e) =>
-                        handleDateChange(question.id, (e.target as HTMLInputElement).value)}
+                      oninput={(e) => {
+                        handleDateChange(question.id, (e.target as HTMLInputElement).value);
+                      }}
                     />
                   </div>
                 {/if}
@@ -483,7 +515,9 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={() => surveyEmployeeState.closeSurveyModal()}
+          onclick={() => {
+            surveyEmployeeState.closeSurveyModal();
+          }}
         >
           Abbrechen
         </button>
@@ -501,18 +535,20 @@
 {/if}
 
 <!-- Response Viewing Modal -->
-{#if surveyEmployeeState.showResponseModal && surveyEmployeeState.viewingSurvey !== null && surveyEmployeeState.viewingResponse !== null}
-  {@const survey = surveyEmployeeState.viewingSurvey}
-  {@const response = surveyEmployeeState.viewingResponse}
+{#if responseModalData}
   <div class="modal-overlay modal-overlay--active">
     <div class="ds-modal ds-modal--lg">
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title">Ihre Antworten - {getTextFromBuffer(survey.title)}</h3>
+        <h3 class="ds-modal__title">
+          Ihre Antworten - {getTextFromBuffer(responseModalData.survey.title)}
+        </h3>
         <button
           type="button"
           class="ds-modal__close"
           aria-label="Schließen"
-          onclick={() => surveyEmployeeState.closeResponseModal()}
+          onclick={() => {
+            surveyEmployeeState.closeResponseModal();
+          }}
         >
           <i class="fas fa-times"></i>
         </button>
@@ -521,28 +557,28 @@
         <div class="response-info">
           <p>
             <i class="fas fa-clock"></i>
-            Abgeschlossen am: {formatDateTimeGerman(response.completedAt)}
+            Abgeschlossen am: {formatDateTimeGerman(responseModalData.response.completedAt)}
           </p>
         </div>
         <div class="response-answers">
-          {#each response.answers as answer (answer.questionId)}
+          {#each responseModalData.response.answers as answer (answer.questionId)}
             <div class="response-question">
               <h4>{answer.questionText}</h4>
               <div class="response-answer">
-                {#if answer.answerText !== undefined && answer.answerText !== null}
+                {#if answer.answerText !== undefined}
                   <p>{answer.answerText}</p>
-                {:else if answer.answerNumber !== undefined && answer.answerNumber !== null}
+                {:else if answer.answerNumber !== undefined}
                   {#if answer.questionType === 'rating'}
                     <p>Bewertung: {answer.answerNumber}</p>
                   {:else}
                     <p>{answer.answerNumber}</p>
                   {/if}
-                {:else if answer.answerDate !== undefined && answer.answerDate !== null}
+                {:else if answer.answerDate !== undefined}
                   <p>
                     <i class="fas fa-calendar"></i>
                     {formatSurveyDate(answer.answerDate)}
                   </p>
-                {:else if answer.answerOptions !== undefined && answer.answerOptions !== null}
+                {:else if answer.answerOptions !== undefined}
                   {#each answer.answerOptions as optionText, idx (idx)}
                     <p><i class="fas fa-check-square"></i> {optionText}</p>
                   {/each}
@@ -558,7 +594,9 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={() => surveyEmployeeState.closeResponseModal()}
+          onclick={() => {
+            surveyEmployeeState.closeResponseModal();
+          }}
         >
           Schließen
         </button>

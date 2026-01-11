@@ -3,7 +3,6 @@
  * Helper functions for formatting, parsing, and display
  */
 
-import type { Priority, OrgLevel, EntryColor } from './types';
 import {
   PRIORITY_LABELS,
   PRIORITY_BADGE_CLASSES,
@@ -11,6 +10,8 @@ import {
   ORG_LEVEL_BADGE_CLASSES,
   SORT_OPTIONS,
 } from './constants';
+
+import type { Priority, OrgLevel, EntryColor } from './types';
 
 // ============================================================================
 // Date Formatting

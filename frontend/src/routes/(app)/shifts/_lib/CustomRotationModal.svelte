@@ -4,8 +4,9 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import type { Employee } from './types';
   import { getEmployeeDisplayName } from './utils';
+
+  import type { Employee, CustomRotationConfig } from './types';
 
   /**
    * Props interface for CustomRotationModal
@@ -16,22 +17,6 @@
     initialEndDate?: string;
     onclose: () => void;
     ongenerate: (config: CustomRotationConfig) => void;
-  }
-
-  /**
-   * Custom rotation configuration output
-   */
-  export interface CustomRotationConfig {
-    startDate: string;
-    endDate: string;
-    shiftBlockLength: number;
-    freeDays: number;
-    startShift: 'early' | 'late' | 'night';
-    shiftSequence: 'early-late-night' | 'night-late-early';
-    nthWeekdayFree: boolean;
-    nthValue: number;
-    weekdayValue: number;
-    employeeAssignments: Map<string, number[]>; // shift -> employeeIds
   }
 
   const {
@@ -122,7 +107,7 @@
       assignedEarly = [...assignedEarly, draggedEmployeeId];
     } else if (shift === 'S') {
       assignedLate = [...assignedLate, draggedEmployeeId];
-    } else if (shift === 'N') {
+    } else {
       assignedNight = [...assignedNight, draggedEmployeeId];
     }
 
@@ -134,7 +119,7 @@
       assignedEarly = assignedEarly.filter((id) => id !== employeeId);
     } else if (shift === 'S') {
       assignedLate = assignedLate.filter((id) => id !== employeeId);
-    } else if (shift === 'N') {
+    } else {
       assignedNight = assignedNight.filter((id) => id !== employeeId);
     }
   }
@@ -175,7 +160,12 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="modal-overlay modal-overlay--active" onclick={closeAllDropdowns}>
-  <div class="ds-modal ds-modal--lg" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="ds-modal ds-modal--lg"
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
+  >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">Schichtmuster konfigurieren</h3>
       <button type="button" class="ds-modal__close" onclick={onclose} aria-label="Schließen">
@@ -494,7 +484,9 @@
                 <div
                   class="employee-item"
                   draggable="true"
-                  ondragstart={() => handleDragStart(employee.id)}
+                  ondragstart={() => {
+                    handleDragStart(employee.id);
+                  }}
                   role="listitem"
                 >
                   <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
@@ -514,7 +506,9 @@
               <div
                 class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                 ondragover={handleDragOver}
-                ondrop={() => handleDrop('F')}
+                ondrop={() => {
+                  handleDrop('F');
+                }}
                 role="listbox"
                 tabindex="0"
               >
@@ -526,7 +520,9 @@
                       <button
                         type="button"
                         class="btn-remove-rotation"
-                        onclick={() => removeFromShift(empId, 'F')}
+                        onclick={() => {
+                          removeFromShift(empId, 'F');
+                        }}
                         aria-label="Entfernen"
                       >
                         <i class="fas fa-times"></i>
@@ -543,7 +539,9 @@
               <div
                 class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                 ondragover={handleDragOver}
-                ondrop={() => handleDrop('S')}
+                ondrop={() => {
+                  handleDrop('S');
+                }}
                 role="listbox"
                 tabindex="0"
               >
@@ -555,7 +553,9 @@
                       <button
                         type="button"
                         class="btn-remove-rotation"
-                        onclick={() => removeFromShift(empId, 'S')}
+                        onclick={() => {
+                          removeFromShift(empId, 'S');
+                        }}
                         aria-label="Entfernen"
                       >
                         <i class="fas fa-times"></i>
@@ -574,7 +574,9 @@
               <div
                 class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                 ondragover={handleDragOver}
-                ondrop={() => handleDrop('N')}
+                ondrop={() => {
+                  handleDrop('N');
+                }}
                 role="listbox"
                 tabindex="0"
               >
@@ -586,7 +588,9 @@
                       <button
                         type="button"
                         class="btn-remove-rotation"
-                        onclick={() => removeFromShift(empId, 'N')}
+                        onclick={() => {
+                          removeFromShift(empId, 'N');
+                        }}
                         aria-label="Entfernen"
                       >
                         <i class="fas fa-times"></i>

@@ -274,7 +274,7 @@ export class UsersService {
     const employeeNumber = dto.employeeNumber ?? `EMP${String(Date.now())}`;
 
     // Hash password
-    const hashedPassword = await bcryptjs.hash(dto.password, 10);
+    const hashedPassword = await bcryptjs.hash(dto.password, 12);
 
     // Extract department/team arrays
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
@@ -382,7 +382,7 @@ export class UsersService {
 
     let currentIndex = paramIndex;
     if (password !== undefined && password !== '') {
-      const hashedPassword = await bcryptjs.hash(password, 10);
+      const hashedPassword = await bcryptjs.hash(password, 12);
       updates.push(`password = $${currentIndex}`);
       params.push(hashedPassword);
       currentIndex++;
@@ -421,7 +421,7 @@ export class UsersService {
 
     for (const [dtoField, dbColumn] of Object.entries(fieldMap)) {
       // Safe: dtoField comes from hardcoded fieldMap keys, not user input
-      // eslint-disable-next-line security/detect-object-injection -- keys from trusted fieldMap constant
+
       const value = data[dtoField];
       if (value !== undefined) {
         updates.push(`${dbColumn} = $${paramIndex}`);
@@ -567,7 +567,7 @@ export class UsersService {
     }
 
     // Hash and update new password
-    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+    const hashedPassword = await bcryptjs.hash(newPassword, 12);
     await this.databaseService.query(
       `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
       [hashedPassword, userId, tenantId],

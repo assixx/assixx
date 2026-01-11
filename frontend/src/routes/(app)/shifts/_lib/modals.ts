@@ -275,7 +275,9 @@ export function addEscapeListener(handler: (e: KeyboardEvent) => void): () => vo
       document.removeEventListener('keydown', handler);
     };
   }
-  return () => {};
+  return () => {
+    /* no-op cleanup for SSR */
+  };
 }
 
 // =============================================================================
@@ -309,8 +311,6 @@ export function trapFocus(container: HTMLElement, e: KeyboardEvent): void {
 
   const firstElement = focusableElements[0];
   const lastElement = focusableElements[focusableElements.length - 1];
-
-  if (firstElement === undefined || lastElement === undefined) return;
 
   if (e.shiftKey) {
     // Shift + Tab

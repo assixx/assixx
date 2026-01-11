@@ -4,9 +4,10 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import type { Employee, ShiftDetailData } from './types';
   import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
   import { formatDate, getEmployeeDisplayName } from './utils';
+
+  import type { Employee, ShiftDetailData } from './types';
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -106,7 +107,9 @@
           {ondragover}
           {ondragenter}
           {ondragleave}
-          ondrop={(e) => ondrop(e, dateKey, shiftType)}
+          ondrop={(e) => {
+            ondrop(e, dateKey, shiftType);
+          }}
           role="gridcell"
           tabindex="0"
         >
@@ -181,7 +184,9 @@ Beispiele:
 • Team-Meeting Freitag 14:00 Uhr
 • Überstunden-Genehmigung für Donnerstag"
         value={weeklyNotes}
-        oninput={(e) => onnotesChange((e.target as HTMLTextAreaElement).value)}
+        oninput={(e) => {
+          onnotesChange((e.target as HTMLTextAreaElement).value);
+        }}
         disabled={!canEditShifts || (currentPlanId !== null && !isEditMode)}
       ></textarea>
     </div>

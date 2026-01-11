@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { kvpDetailState } from './state.svelte';
   import { getAttachmentPreviewUrl, downloadAttachment } from './api';
+  import { kvpDetailState } from './state.svelte';
   import { getFileIconClass, formatFileSize } from './utils';
 
   function handleDownload(fileUuid: string) {
@@ -21,7 +21,9 @@
           type="button"
           class="ds-modal__close"
           aria-label="Schliessen"
-          onclick={() => kvpDetailState.closePreviewModal()}
+          onclick={() => {
+            kvpDetailState.closePreviewModal();
+          }}
         >
           <i class="fas fa-times"></i>
         </button>
@@ -69,7 +71,9 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={() => kvpDetailState.closePreviewModal()}
+          onclick={() => {
+            kvpDetailState.closePreviewModal();
+          }}
         >
           <i class="fas fa-times mr-2"></i>
           Schliessen
@@ -77,7 +81,9 @@
         <button
           type="button"
           class="btn btn-modal"
-          onclick={() => handleDownload(attachment.fileUuid)}
+          onclick={() => {
+            handleDownload(attachment.fileUuid);
+          }}
         >
           <i class="fas fa-download mr-2"></i>
           Herunterladen

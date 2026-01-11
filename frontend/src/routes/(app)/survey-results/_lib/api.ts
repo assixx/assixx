@@ -3,12 +3,15 @@
 // Based on: frontend/src/scripts/survey/results/data.ts
 // =============================================================================
 
-import { getApiClient } from '$lib/utils/api-client';
-import { API_ENDPOINTS } from './constants';
-import type { Survey, SurveyQuestion, SurveyStatistics, ResponsesData } from './types';
-import { goto } from '$app/navigation';
-import { base } from '$app/paths';
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
+import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
+import type { Survey, SurveyQuestion, SurveyStatistics, ResponsesData } from './types';
 
 const apiClient = getApiClient();
 
@@ -32,7 +35,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 /**
@@ -55,9 +58,7 @@ export function checkSessionExpired(err: unknown): boolean {
  */
 export async function loadSurveyDetails(surveyId: string): Promise<Survey | null> {
   try {
-    const survey = await apiClient.get<Survey>(API_ENDPOINTS.SURVEY_BY_ID(surveyId));
-    console.info('[Survey Results] Survey loaded:', surveyId);
-    return survey;
+    return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
   } catch (err) {
     console.error('[Survey Results] Error loading survey:', err);
     checkSessionExpired(err);
@@ -70,11 +71,7 @@ export async function loadSurveyDetails(surveyId: string): Promise<Survey | null
  */
 export async function loadSurveyQuestions(surveyId: string): Promise<SurveyQuestion[]> {
   try {
-    const questions = await apiClient.get<SurveyQuestion[]>(
-      API_ENDPOINTS.SURVEY_QUESTIONS(surveyId),
-    );
-    console.info('[Survey Results] Questions loaded:', questions.length);
-    return questions;
+    return await apiClient.get<SurveyQuestion[]>(API_ENDPOINTS.surveyQuestions(surveyId));
   } catch (err) {
     console.error('[Survey Results] Error loading questions:', err);
     checkSessionExpired(err);
@@ -87,9 +84,7 @@ export async function loadSurveyQuestions(surveyId: string): Promise<SurveyQuest
  */
 export async function loadSurveyStatistics(surveyId: string): Promise<SurveyStatistics | null> {
   try {
-    const stats = await apiClient.get<SurveyStatistics>(API_ENDPOINTS.SURVEY_STATISTICS(surveyId));
-    console.info('[Survey Results] Statistics loaded');
-    return stats;
+    return await apiClient.get<SurveyStatistics>(API_ENDPOINTS.surveyStatistics(surveyId));
   } catch (err) {
     console.error('[Survey Results] Error loading statistics:', err);
     checkSessionExpired(err);
@@ -102,9 +97,7 @@ export async function loadSurveyStatistics(surveyId: string): Promise<SurveyStat
  */
 export async function loadSurveyResponses(surveyId: string): Promise<ResponsesData | null> {
   try {
-    const responses = await apiClient.get<ResponsesData>(API_ENDPOINTS.SURVEY_RESPONSES(surveyId));
-    console.info('[Survey Results] Responses loaded:', responses.responses?.length ?? 0);
-    return responses;
+    return await apiClient.get<ResponsesData>(API_ENDPOINTS.surveyResponses(surveyId));
   } catch (err) {
     console.warn(
       '[Survey Results] Could not load individual responses (might not have permission):',
@@ -116,13 +109,16 @@ export async function loadSurveyResponses(surveyId: string): Promise<ResponsesDa
 
 /**
  * Export survey results to Excel (triggers download)
+ * NOTE: Uses raw fetch because we need blob response for file download.
+ * getApiClient() returns JSON, not blobs.
  */
 export async function exportToExcel(surveyId: string): Promise<boolean> {
   if (!browser) return false;
 
   try {
-    const endpoint = API_ENDPOINTS.SURVEY_EXPORT(surveyId, 'excel');
-    const token = localStorage.getItem('token') ?? '';
+    const endpoint = API_ENDPOINTS.surveyExport(surveyId, 'excel');
+    // Use accessToken (not 'token') for consistency with rest of app
+    const token = localStorage.getItem('accessToken') ?? '';
 
     const response = await fetch(`/api/v2${endpoint}`, {
       headers: {

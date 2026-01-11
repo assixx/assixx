@@ -3,6 +3,26 @@
  * @module employee-dashboard/_lib/types
  */
 
+/** User data from parent layout (matches +layout.server.ts return type) */
+export interface LayoutUser {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'root' | 'admin' | 'employee';
+  employeeNumber?: string;
+  profilePicture?: string;
+  position?: string;
+  tenantId: number;
+  hasFullAccess: boolean;
+  teamIds?: number[];
+  teamNames?: string[];
+  teamDepartmentId?: number;
+  teamDepartmentName?: string;
+  teamAreaId?: number;
+  teamAreaName?: string;
+}
+
 /** Employee info from user data */
 export interface EmployeeInfo {
   id: number;

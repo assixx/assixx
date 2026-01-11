@@ -751,31 +751,31 @@ type SpecialRuleType = 'nth_weekday_free';
 interface ShiftPlanConfig {
   startDate: Date;
   endDate: Date;
-  startShift: ShiftType;            // Welche Schicht am ersten Tag?
-  shiftBlockLength: number;         // Wie viele Tage in derselben Schicht?
-  freeDays: number;                 // Freie Tage zwischen Schichtwechseln
-  shiftSequence: ShiftType[];       // Reihenfolge: ['early','late','night']
-  specialRules: SpecialRule[];      // Optional: Sonderregeln
+  startShift: ShiftType; // Welche Schicht am ersten Tag?
+  shiftBlockLength: number; // Wie viele Tage in derselben Schicht?
+  freeDays: number; // Freie Tage zwischen Schichtwechseln
+  shiftSequence: ShiftType[]; // Reihenfolge: ['early','late','night']
+  specialRules: SpecialRule[]; // Optional: Sonderregeln
 }
 
 // Sonderregel-Definitionen (vereinfacht für MVP)
 interface NthWeekdayFreeRule {
   type: 'nth_weekday_free';
   name: string;
-  weekday: number;    // 0-6 (0 = Sonntag)
-  n: number;          // 1-5 (z.B. 4 = "jeder 4.")
+  weekday: number; // 0-6 (0 = Sonntag)
+  n: number; // 1-5 (z.B. 4 = "jeder 4.")
 }
 
 type SpecialRule = NthWeekdayFreeRule;
 
 // Generierter Tag (Ausgabe)
 interface GeneratedDay {
-  date: string;                    // ISO-Format: "2025-01-01"
-  weekday: number;                 // 0-6
-  weekdayName: string;             // Lokalisiert
+  date: string; // ISO-Format: "2025-01-01"
+  weekday: number; // 0-6
+  weekdayName: string; // Lokalisiert
   status: DayStatus;
   shift: ShiftType | null;
-  blockNumber: number;             // Welcher Block? (1, 2, 3, ...)
+  blockNumber: number; // Welcher Block? (1, 2, 3, ...)
   specialRuleApplied: boolean;
   specialRuleName?: string;
 }
@@ -785,7 +785,7 @@ interface AlgorithmState {
   currentDate: Date;
   currentPhase: PhaseType;
   dayInPhase: number;
-  shiftIndex: number;              // 0, 1, 2 → Index in shiftSequence
+  shiftIndex: number; // 0, 1, 2 → Index in shiftSequence
   currentShift: ShiftType;
   blockNumber: number;
 }
@@ -793,9 +793,9 @@ interface AlgorithmState {
 // Zusammenfassung der Generierung
 interface GenerationSummary {
   totalDays: number;
-  shiftDays: number;               // Tage mit Schicht
-  freeDays: number;                // Freie Tage
-  totalBlocks: number;             // Anzahl Schichtblöcke
+  shiftDays: number; // Tage mit Schicht
+  freeDays: number; // Freie Tage
+  totalBlocks: number; // Anzahl Schichtblöcke
   warnings: string[];
 }
 

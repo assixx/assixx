@@ -3,8 +3,25 @@
  * @module admin-profile/_lib/utils
  */
 
+import { MESSAGES, POSITION_MAP } from './constants';
+
 import type { ToastType } from './types';
-import { POSITION_MAP } from './constants';
+
+/** Error code to message mapping for picture upload */
+const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
+  INVALID_TYPE: MESSAGES.invalidImageType,
+  FILE_TOO_LARGE: MESSAGES.fileTooLarge,
+};
+
+/**
+ * Get error message for picture upload errors
+ * @param error - Caught error
+ * @returns Appropriate error message
+ */
+export function getPictureUploadErrorMessage(error: unknown): string {
+  const code = error instanceof Error ? error.message : '';
+  return PICTURE_UPLOAD_ERROR_MAP[code] ?? MESSAGES.pictureUploadError;
+}
 
 /**
  * Show toast notification via custom event
@@ -18,7 +35,7 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.log(`[Toast:${type}] ${message}`);
+  console.warn(`[Toast:${type}] ${message}`);
 }
 
 /**
@@ -64,7 +81,7 @@ export function doPasswordsMatch(password: string, confirmPassword: string): boo
  * @returns German display name or original value
  */
 export function getDisplayPosition(position?: string): string {
-  if (!position || position === '') {
+  if (position === undefined || position === '') {
     return '-';
   }
   return POSITION_MAP[position.toLowerCase()] ?? position;
@@ -76,5 +93,5 @@ export function getDisplayPosition(position?: string): string {
  * @returns Company name or placeholder
  */
 export function getDisplayCompany(companyName?: string): string {
-  return companyName && companyName !== '' ? companyName : '-';
+  return companyName !== undefined && companyName !== '' ? companyName : '-';
 }

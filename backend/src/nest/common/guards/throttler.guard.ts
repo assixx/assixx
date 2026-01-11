@@ -6,8 +6,21 @@
  * - Falls back to IP address for unauthenticated requests
  * - Handles proxy headers (X-Forwarded-For, X-Real-IP)
  *
- * Note: This guard extracts userId from JWT without full verification.
- * Full auth verification is done by JwtAuthGuard which runs after this guard.
+ * SECURITY ARCHITECTURE NOTE:
+ * This guard extracts userId from JWT WITHOUT cryptographic verification.
+ * This is intentional for performance - full signature verification happens
+ * in JwtAuthGuard which MUST run after this guard in the guard chain.
+ *
+ * Why this is safe:
+ * 1. Rate limiting key extraction doesn't grant access - it only groups requests
+ * 2. A forged/invalid JWT will fail at JwtAuthGuard before reaching any handler
+ * 3. Worst case: attacker wastes another user's rate limit quota (minor DoS)
+ *
+ * Guard ordering is enforced by NestJS decorators:
+ * \@UseGuards(CustomThrottlerGuard, JwtAuthGuard) - Throttler runs first
+ *
+ * If guard ordering changes, this could become a security issue.
+ * See: docs/SECURITY-AUDIT-2026-01-08.md - MEDIUM-008
  */
 import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerLimitDetail } from '@nestjs/throttler';
@@ -42,8 +55,12 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Extract user ID from JWT token without full verification
-   * This is safe because JwtAuthGuard will do full verification later
+   * Extract user ID from JWT token WITHOUT signature verification
+   *
+   * SECURITY: This decodes the JWT payload (base64) without verifying the signature.
+   * Safe because: (1) This is only for rate limit grouping, not authorization
+   *               (2) JwtAuthGuard verifies signature before any protected handler runs
+   *               (3) Invalid/forged tokens fall back to IP-based rate limiting
    */
   private extractUserIdFromToken(req: FastifyRequest): number | null {
     const token = this.extractToken(req);

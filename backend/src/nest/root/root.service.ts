@@ -397,7 +397,7 @@ export class RootService {
     await this.checkDuplicateEmail(normalizedEmail, tenantId);
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
       const rows = await this.db.query<DbIdRow>(
@@ -445,7 +445,7 @@ export class RootService {
 
     // Hash password if provided
     if (data.password !== undefined && data.password !== '') {
-      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const hashedPassword = await bcrypt.hash(data.password, 12);
       fields.push(`password = $${nextIndex}`);
       values.push(hashedPassword);
     }
@@ -619,7 +619,7 @@ export class RootService {
     const subdomain = await this.getTenantSubdomain(tenantId);
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await bcrypt.hash(data.password, 12);
 
     const rows = await this.db.query<DbIdRow>(
       `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id)
@@ -668,7 +668,7 @@ export class RootService {
 
     // Hash password if provided
     if (data.password !== undefined && data.password !== '') {
-      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const hashedPassword = await bcrypt.hash(data.password, 12);
       fields.push(`password = $${paramIndex++}`);
       values.push(hashedPassword);
     }
@@ -799,7 +799,7 @@ export class RootService {
 
     const totalStorage =
       Object.hasOwn(STORAGE_LIMITS, planKey) ?
-        (STORAGE_LIMITS[planKey] ?? defaultStorage) // eslint-disable-line security/detect-object-injection -- planKey validated via Object.hasOwn
+        (STORAGE_LIMITS[planKey] ?? defaultStorage)
       : defaultStorage;
 
     // Get storage breakdown in parallel

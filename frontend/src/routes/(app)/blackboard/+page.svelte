@@ -9,29 +9,25 @@
    * - No client-side data fetching
    */
   import { goto, invalidateAll } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { page } from '$app/stores';
-  import { base } from '$app/paths';
-  import type { PageData } from './$types';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // API Client (for mutations only)
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
-  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast.js';
 
   // Page-specific CSS
   import '../../../styles/blackboard.css';
 
   // _lib/ imports
-  import type {
-    BlackboardEntry,
-    Department,
-    Team,
-    Area,
-    Priority,
-    EntryColor,
-    FormMode,
-  } from './_lib/types';
-  import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
+  import { fetchEntryByUuid, uploadAttachment } from './_lib/api';
   import BlackboardEntryModal from './_lib/BlackboardEntryModal.svelte';
+  import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
   import {
     formatDateShort,
     truncateText,
@@ -42,6 +38,9 @@
     getSortLabel,
   } from './_lib/utils';
 
+  import type { PageData } from './$types';
+  import type { BlackboardEntry, Priority, EntryColor, FormMode } from './_lib/types';
+
   // =============================================================================
   // SSR DATA - All via $derived (Level 3: Single Source of Truth)
   // =============================================================================
@@ -49,11 +48,11 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data as derived - updates automatically when data changes
-  const entries = $derived<BlackboardEntry[]>(data?.entries ?? []);
-  const totalPages = $derived(data?.totalPages ?? 1);
-  const departments = $derived<Department[]>(data?.departments ?? []);
-  const teams = $derived<Team[]>(data?.teams ?? []);
-  const areas = $derived<Area[]>(data?.areas ?? []);
+  const entries = $derived(data.entries);
+  const totalPages = $derived(data.totalPages);
+  const departments = $derived(data.departments);
+  const teams = $derived(data.teams);
+  const areas = $derived(data.areas);
 
   // API Client for mutations
   const apiClient = getApiClient();
@@ -65,14 +64,17 @@
   // Read current filter state from URL
   const currentPage = $derived(Number($page.url.searchParams.get('page') ?? '1'));
   const sortBy = $derived($page.url.searchParams.get('sortBy') ?? 'created_at');
-  const sortDir = $derived<'ASC' | 'DESC'>(
-    ($page.url.searchParams.get('sortDir') as 'ASC' | 'DESC') ?? 'DESC',
-  );
-  const levelFilter = $derived<'all' | 'company' | 'department' | 'team' | 'area'>(
-    ($page.url.searchParams.get('filter') as 'all' | 'company' | 'department' | 'team' | 'area') ??
-      'all',
+  const sortDir = $derived(($page.url.searchParams.get('sortDir') ?? 'DESC') as 'ASC' | 'DESC');
+  const levelFilter = $derived(
+    ($page.url.searchParams.get('filter') ?? 'all') as
+      | 'all'
+      | 'company'
+      | 'department'
+      | 'team'
+      | 'area',
   );
   const searchQuery = $derived($page.url.searchParams.get('search') ?? '');
+  const editUuid = $derived($page.url.searchParams.get('edit') ?? '');
 
   // Derived UI state
   const sortLabel = $derived(getSortLabel(`${sortBy}|${sortDir}`));
@@ -82,7 +84,7 @@
   // =============================================================================
 
   // Zoom State
-  let zoomLevel = $state(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
   let filterExpanded = $state(false);
 
   // Loading state for mutations
@@ -107,7 +109,7 @@
   let formDepartmentIds = $state<number[]>([]);
   let formTeamIds = $state<number[]>([]);
   let formAreaIds = $state<number[]>([]);
-  let attachmentFiles = $state<FileList | null>(null);
+  let attachmentFiles = $state<File[] | null>(null);
 
   // User State (client-side only - from localStorage)
   let userRole = $state<string | null>(null);
@@ -176,30 +178,62 @@
   // MUTATIONS (Level 3: invalidateAll() after success)
   // =============================================================================
 
+  function buildEntryPayload(): Record<string, unknown> {
+    const orgIds = formCompanyWide
+      ? { departmentIds: [], teamIds: [], areaIds: [] }
+      : { departmentIds: formDepartmentIds, teamIds: formTeamIds, areaIds: formAreaIds };
+
+    return {
+      title: formTitle,
+      content: formContent,
+      priority: formPriority,
+      color: formColor,
+      expiresAt: formExpiresAt || null,
+      ...orgIds,
+    };
+  }
+
+  async function uploadAttachments(entryId: number): Promise<void> {
+    if (attachmentFiles === null || attachmentFiles.length === 0) return;
+
+    for (const file of attachmentFiles) {
+      try {
+        await uploadAttachment(entryId, file);
+      } catch (uploadErr) {
+        console.error(`[Blackboard] Failed to upload ${file.name}:`, uploadErr);
+        showErrorAlert(`Fehler beim Hochladen von ${file.name}`);
+      }
+    }
+  }
+
   async function saveEntry(): Promise<void> {
     loading = true;
     try {
-      const payload = {
-        title: formTitle,
-        content: formContent,
-        priority: formPriority,
-        color: formColor,
-        expiresAt: formExpiresAt || null,
-        departmentIds: formCompanyWide ? [] : formDepartmentIds,
-        teamIds: formCompanyWide ? [] : formTeamIds,
-        areaIds: formCompanyWide ? [] : formAreaIds,
-      };
+      const payload = buildEntryPayload();
+      let entryId: number | null = null;
 
       if (entryModalMode === 'edit') {
+        if (editingEntryId === null) {
+          throw new Error('Entry ID required for edit mode');
+        }
         await apiClient.put(`/blackboard/entries/${editingEntryId}`, payload);
+        entryId = editingEntryId;
         showSuccessAlert('Eintrag aktualisiert');
       } else {
-        await apiClient.post('/blackboard/entries', payload);
+        const response = await apiClient.post<{ data?: { id: number }; id?: number }>(
+          '/blackboard/entries',
+          payload,
+        );
+        entryId = response.data?.id ?? response.id ?? null;
         showSuccessAlert('Eintrag erstellt');
       }
 
+      if (entryId !== null) {
+        await uploadAttachments(entryId);
+      }
+
       closeEntryModal();
-      await invalidateAll(); // Level 3: Server refetches data
+      await invalidateAll();
     } catch (err) {
       console.error('[Blackboard] Error saving entry:', err);
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.SAVE_ERROR);
@@ -209,14 +243,17 @@
   }
 
   async function deleteEntry(): Promise<void> {
-    if (!deletingEntryId) return;
+    const entryIdToDelete = deletingEntryId;
+    if (entryIdToDelete === null) return;
 
+    // Clear state immediately to prevent double-submission
+    deletingEntryId = null;
+    showDeleteConfirmModal = false;
+    showDeleteModal = false;
     loading = true;
+
     try {
-      await apiClient.delete(`/blackboard/entries/${deletingEntryId}`);
-      showDeleteConfirmModal = false;
-      showDeleteModal = false;
-      deletingEntryId = null;
+      await apiClient.delete(`/blackboard/entries/${entryIdToDelete}`);
       showSuccessAlert('Eintrag gelöscht');
       await invalidateAll(); // Level 3: Server refetches data
     } catch (err) {
@@ -275,6 +312,31 @@
   function closeEntryModal(): void {
     showEntryModal = false;
     editingEntryId = null;
+    // Clear edit parameter from URL when closing
+    if (editUuid !== '') {
+      const url = new URL($page.url);
+      url.searchParams.delete('edit');
+      void goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+    }
+  }
+
+  /**
+   * Open edit modal for an existing entry
+   */
+  function openEditModal(entry: BlackboardEntry): void {
+    entryModalMode = 'edit';
+    editingEntryId = entry.id;
+    formTitle = entry.title;
+    formContent = entry.content;
+    formPriority = entry.priority;
+    formColor = entry.color;
+    formExpiresAt = entry.expiresAt ?? '';
+    formCompanyWide = entry.orgLevel === 'company';
+    formDepartmentIds = entry.departmentIds ?? [];
+    formTeamIds = entry.teamIds ?? [];
+    formAreaIds = entry.areaIds ?? [];
+    attachmentFiles = null;
+    showEntryModal = true;
   }
 
   function proceedDelete(): void {
@@ -284,11 +346,11 @@
 
   function handleEntrySubmit(e: Event): void {
     e.preventDefault();
-    saveEntry();
+    void saveEntry();
   }
 
   function goToDetail(uuid: string): void {
-    goto(`${base}/blackboard/${uuid}`);
+    void goto(resolvePath(`/blackboard/${uuid}`));
   }
 
   // =============================================================================
@@ -301,6 +363,33 @@
     if (!mounted) {
       mounted = true;
       userRole = localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
+    }
+  });
+
+  // Handle edit URL parameter - load entry and open edit modal
+  let lastEditUuid = '';
+  $effect(() => {
+    if (editUuid !== '' && editUuid !== lastEditUuid) {
+      lastEditUuid = editUuid;
+      // Load entry by UUID and open edit modal
+      fetchEntryByUuid(editUuid)
+        .then((entry) => {
+          if (entry !== null) {
+            openEditModal(entry);
+          } else {
+            showErrorAlert('Eintrag nicht gefunden');
+            // Clear edit parameter
+            const url = new URL($page.url);
+            url.searchParams.delete('edit');
+            void goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+          }
+        })
+        .catch((err: unknown) => {
+          console.error('[Blackboard] Error loading entry for edit:', err);
+          showErrorAlert('Fehler beim Laden des Eintrags');
+        });
+    } else if (editUuid === '' && lastEditUuid !== '') {
+      lastEditUuid = '';
     }
   });
 
@@ -334,7 +423,9 @@
       onclick={toggleFilter}
       role="button"
       tabindex="0"
-      onkeydown={(e) => e.key === 'Enter' && toggleFilter()}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') toggleFilter();
+      }}
     >
       <div class="flex items-center justify-between">
         <h3 class="card__title m-0"><i class="fas fa-filter mr-2"></i>Filter & Suche</h3>
@@ -369,6 +460,7 @@
             <div class="toggle-group mt-2" role="group" aria-labelledby="levelFilterLabel">
               {#each [{ value: 'all', label: 'Alle', icon: 'fa-globe' }, { value: 'company', label: 'Firma', icon: 'fa-building' }, { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' }, { value: 'team', label: 'Team', icon: 'fa-users' }, { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' }] as opt (opt.value)}
                 <button
+                  type="button"
                   class="toggle-group__btn"
                   class:active={levelFilter === opt.value}
                   onclick={() => setLevelFilter(opt.value as typeof levelFilter)}
@@ -389,7 +481,9 @@
                 onclick={() => (sortDropdownOpen = !sortDropdownOpen)}
                 role="button"
                 tabindex="0"
-                onkeydown={(e) => e.key === 'Enter' && (sortDropdownOpen = !sortDropdownOpen)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') sortDropdownOpen = !sortDropdownOpen;
+                }}
               >
                 <span>{sortLabel}</span>
                 <i class="fas fa-chevron-down"></i>
@@ -399,8 +493,10 @@
                   {#each SORT_OPTIONS as opt (opt.value)}
                     <div
                       class="dropdown__option"
-                      onclick={() => setSort(opt.value)}
-                      onkeydown={(e) => e.key === 'Enter' && setSort(opt.value)}
+                      onclick={() => void setSort(opt.value)}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter') void setSort(opt.value);
+                      }}
                       role="option"
                       tabindex="0"
                       aria-selected={`${sortBy}|${sortDir}` === opt.value}
@@ -421,19 +517,25 @@
   <div class="flex justify-between mb-6">
     <div class="controls-flex">
       <div class="zoom-controls zoom-controls-inline">
-        <button class="btn btn-icon btn-secondary" title="Vergrößern" onclick={zoomIn}
+        <button type="button" class="btn btn-icon btn-secondary" title="Vergrößern" onclick={zoomIn}
           ><i class="fas fa-plus"></i></button
         >
         <span class="zoom-level">{zoomLevel}%</span>
-        <button class="btn btn-icon btn-secondary" title="Verkleinern" onclick={zoomOut}
-          ><i class="fas fa-minus"></i></button
+        <button
+          type="button"
+          class="btn btn-icon btn-secondary"
+          title="Verkleinern"
+          onclick={zoomOut}><i class="fas fa-minus"></i></button
         >
-        <button class="btn btn-icon btn-secondary ml-2" title="Vollbild" onclick={toggleFullscreen}
-          ><i class="fas fa-expand"></i></button
+        <button
+          type="button"
+          class="btn btn-icon btn-secondary ml-2"
+          title="Vollbild"
+          onclick={toggleFullscreen}><i class="fas fa-expand"></i></button
         >
       </div>
       {#if isAdmin}
-        <button class="btn btn-primary" onclick={openCreateModal} disabled={loading}
+        <button type="button" class="btn btn-primary" onclick={openCreateModal} disabled={loading}
           ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
         >
       {/if}
@@ -451,7 +553,7 @@
       <div class="text-center p-5">
         <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
         <p class="text-[var(--color-text-secondary)]">{error}</p>
-        <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+        <button type="button" class="btn btn-primary mt-4" onclick={() => void invalidateAll()}
           >{MESSAGES.RETRY}</button
         >
       </div>
@@ -461,7 +563,7 @@
         ></i>
         <p class="text-[var(--color-text-secondary)]">{MESSAGES.NO_ENTRIES}</p>
         {#if isAdmin}
-          <button class="btn btn-primary mt-4" onclick={openCreateModal}
+          <button type="button" class="btn btn-primary mt-4" onclick={openCreateModal}
             ><i class="fas fa-plus mr-2"></i>{MESSAGES.CREATE_FIRST}</button
           >
         {/if}
@@ -471,34 +573,38 @@
         {#each entries as entry (entry.id)}
           <div
             class="pinboard-item"
-            onclick={() => goToDetail(entry.uuid)}
+            onclick={() => {
+              goToDetail(entry.uuid);
+            }}
             style="transform: scale(var(--zoom-level, 1));"
             role="button"
             tabindex="0"
-            onkeydown={(e) => e.key === 'Enter' && goToDetail(entry.uuid)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') goToDetail(entry.uuid);
+            }}
           >
             <div class="sticky-note sticky-note--{entry.color} sticky-note--large">
               <div class="sticky-note__pin"></div>
               <div class="sticky-note__title">{entry.title}</div>
               <div class="sticky-note__content">{truncateText(entry.content)}</div>
               <div class="sticky-note__indicators">
-                {#if entry.commentCount && entry.commentCount > 0}
+                {#if (entry.commentCount ?? 0) > 0}
                   <span class="sticky-note__comments" title="Kommentare"
                     ><i class="fas fa-comments"></i> {entry.commentCount}</span
                   >
                 {/if}
-                {#if entry.attachmentCount && entry.attachmentCount > 0}
+                {#if (entry.attachmentCount ?? 0) > 0}
                   <span class="sticky-note__attachments" title="Anhänge"
                     ><i class="fas fa-paperclip"></i> {entry.attachmentCount}</span
                   >
                 {/if}
                 <span
                   class="sticky-note__read-status"
-                  class:sticky-note__read-status--read={entry.isConfirmed}
-                  class:sticky-note__read-status--unread={!entry.isConfirmed}
-                  title={entry.isConfirmed ? 'Gelesen' : 'Ungelesen'}
+                  class:sticky-note__read-status--read={entry.isConfirmed === true}
+                  class:sticky-note__read-status--unread={entry.isConfirmed !== true}
+                  title={entry.isConfirmed === true ? 'Gelesen' : 'Ungelesen'}
                 >
-                  <i class="fas {entry.isConfirmed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                  <i class="fas {entry.isConfirmed === true ? 'fa-eye' : 'fa-eye-slash'}"></i>
                 </span>
               </div>
               <div class="sticky-note__footer">
@@ -531,6 +637,7 @@
     <div class="flex items-center justify-center mt-6 gap-2">
       <div class="pagination">
         <button
+          type="button"
           class="pagination__btn"
           disabled={currentPage === 1}
           onclick={() => goToPage(currentPage - 1)}
@@ -538,12 +645,14 @@
         >
         {#each Array(totalPages) as _, i (i)}
           <button
+            type="button"
             class="pagination__btn"
             class:active={currentPage === i + 1}
             onclick={() => goToPage(i + 1)}>{i + 1}</button
           >
         {/each}
         <button
+          type="button"
           class="pagination__btn"
           disabled={currentPage === totalPages}
           onclick={() => goToPage(currentPage + 1)}
@@ -573,16 +682,16 @@
     {areas}
     onclose={closeEntryModal}
     onsubmit={handleEntrySubmit}
-    ontitlechange={(v) => (formTitle = v)}
-    oncontentchange={(v) => (formContent = v)}
-    onprioritychange={(v) => (formPriority = v)}
-    oncolorchange={(v) => (formColor = v)}
-    onexpireschange={(v) => (formExpiresAt = v)}
-    oncompanywidechange={(v) => (formCompanyWide = v)}
-    ondepartmentschange={(v) => (formDepartmentIds = v)}
-    onteamschange={(v) => (formTeamIds = v)}
-    onareaschange={(v) => (formAreaIds = v)}
-    onfileschange={(v) => (attachmentFiles = v)}
+    ontitlechange={(v: string) => (formTitle = v)}
+    oncontentchange={(v: string) => (formContent = v)}
+    onprioritychange={(v: Priority) => (formPriority = v)}
+    oncolorchange={(v: EntryColor) => (formColor = v)}
+    onexpireschange={(v: string) => (formExpiresAt = v)}
+    oncompanywidechange={(v: boolean) => (formCompanyWide = v)}
+    ondepartmentschange={(v: number[]) => (formDepartmentIds = v)}
+    onteamschange={(v: number[]) => (formTeamIds = v)}
+    onareaschange={(v: number[]) => (formAreaIds = v)}
+    onfileschange={(v: File[] | null) => (attachmentFiles = v)}
   />
 {/if}
 
@@ -591,7 +700,9 @@
   <div
     class="modal-overlay modal-overlay--active"
     onclick={() => (showDeleteModal = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') showDeleteModal = false;
+    }}
     role="dialog"
     aria-modal="true"
     tabindex="-1"
@@ -599,8 +710,12 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ds-modal ds-modal--sm"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <div class="ds-modal__header">
@@ -634,7 +749,9 @@
   <div
     class="modal-overlay modal-overlay--active"
     onclick={() => (showDeleteConfirmModal = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showDeleteConfirmModal = false)}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') showDeleteConfirmModal = false;
+    }}
     role="dialog"
     aria-modal="true"
     tabindex="-1"
@@ -642,8 +759,12 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="confirm-modal confirm-modal--danger"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <div class="confirm-modal__icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -661,7 +782,7 @@
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={deleteEntry}
+          onclick={() => void deleteEntry()}
           disabled={loading}>Endgültig löschen</button
         >
       </div>

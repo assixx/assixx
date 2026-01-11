@@ -3,8 +3,11 @@
 // Performance optimized with caching and memoization
 // =============================================================================
 
-import type { Conversation, Message, ConversationParticipant, UserStatus } from './types';
+import { escapeHtml, sanitizeHtml } from '$lib/utils/sanitize-html';
+
 import { FILE_SIZE_UNITS, MIME_TYPE_ICONS, MESSAGES } from './constants';
+
+import type { Conversation, Message, ConversationParticipant, UserStatus } from './types';
 
 // =============================================================================
 // PERFORMANCE: CACHED REGEX & MEMOIZATION
@@ -24,7 +27,7 @@ class SimpleCache<T> {
   private cache = new Map<string, T>();
   private readonly maxSize: number;
 
-  constructor(maxSize = 500) {
+  constructor(maxSize: number = 500) {
     this.maxSize = maxSize;
   }
 
@@ -76,22 +79,31 @@ export function formatFileSize(bytes: number): string {
   return `${size} ${FILE_SIZE_UNITS[i]}`;
 }
 
+/** MIME type pattern matchers - data-driven lookup for icon resolution */
+const MIME_TYPE_MATCHERS: readonly {
+  test: (mimeType: string) => boolean;
+  icon: string;
+}[] = [
+  { test: (m) => m.startsWith('image/'), icon: MIME_TYPE_ICONS.image },
+  { test: (m) => m.startsWith('video/'), icon: MIME_TYPE_ICONS.video },
+  { test: (m) => m.startsWith('audio/'), icon: MIME_TYPE_ICONS.audio },
+  { test: (m) => m.includes('pdf'), icon: MIME_TYPE_ICONS.pdf },
+  { test: (m) => m.includes('word') || m.includes('document'), icon: MIME_TYPE_ICONS.word },
+  { test: (m) => m.includes('excel') || m.includes('spreadsheet'), icon: MIME_TYPE_ICONS.excel },
+  {
+    test: (m) => m.includes('zip') || m.includes('rar') || m.includes('archive'),
+    icon: MIME_TYPE_ICONS.archive,
+  },
+];
+
 /**
  * Get Font Awesome icon class for a MIME type
  * @param mimeType - File MIME type
  * @returns Font Awesome icon class
  */
 export function getFileIcon(mimeType: string): string {
-  if (mimeType.startsWith('image/')) return MIME_TYPE_ICONS.image;
-  if (mimeType.startsWith('video/')) return MIME_TYPE_ICONS.video;
-  if (mimeType.startsWith('audio/')) return MIME_TYPE_ICONS.audio;
-  if (mimeType.includes('pdf')) return MIME_TYPE_ICONS.pdf;
-  if (mimeType.includes('word') || mimeType.includes('document')) return MIME_TYPE_ICONS.word;
-  if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return MIME_TYPE_ICONS.excel;
-  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('archive')) {
-    return MIME_TYPE_ICONS.archive;
-  }
-  return MIME_TYPE_ICONS.default;
+  const match = MIME_TYPE_MATCHERS.find((matcher) => matcher.test(mimeType));
+  return match?.icon ?? MIME_TYPE_ICONS.default;
 }
 
 /**
@@ -109,21 +121,35 @@ export function isImageFile(file: File): boolean {
 
 /**
  * Convert URLs in text to clickable links (CACHED)
- * @param text - Text containing URLs
- * @returns HTML string with anchor tags
+ * SECURITY: Escapes HTML BEFORE processing to prevent XSS attacks
+ *
+ * @param text - Text containing URLs (potentially untrusted)
+ * @returns Sanitized HTML string with anchor tags
  */
 export function linkify(text: string): string {
   // Check cache first
   const cached = linkifyCache.get(text);
   if (cached !== undefined) return cached;
 
+  // SECURITY FIX: Escape HTML entities FIRST to prevent XSS
+  // This converts <script> to &lt;script&gt; before URL processing
+  const escaped = escapeHtml(text);
+
   // Reset lastIndex for global regex reuse
   URL_REGEX.lastIndex = 0;
 
-  const result = text.replace(
-    URL_REGEX,
-    (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
-  );
+  // Now safely replace URLs with anchor tags
+  // The escaped text cannot contain malicious HTML
+  const linked = escaped.replace(URL_REGEX, (url: string): string => {
+    // Additional URL validation: block javascript: protocol
+    if (/^javascript:/i.test(url)) {
+      return url; // Return as plain text, not a link
+    }
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+  });
+
+  // Defense-in-depth: Final sanitization pass
+  const result = sanitizeHtml(linked);
 
   linkifyCache.set(text, result);
   return result;
@@ -144,6 +170,7 @@ function getSearchRegex(searchTerm: string): RegExp {
 
   SEARCH_ESCAPE_REGEX.lastIndex = 0;
   const escaped = searchTerm.replace(SEARCH_ESCAPE_REGEX, '\\$&');
+
   const regex = new RegExp(`(${escaped})`, 'gi');
   searchRegexCache.set(searchTerm, regex);
   return regex;
@@ -151,26 +178,42 @@ function getSearchRegex(searchTerm: string): RegExp {
 
 /**
  * Highlight search term in text (OPTIMIZED)
- * @param text - Text to search in
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param searchTerm - Term to highlight
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightSearchTerm(text: string, searchTerm: string): string {
-  if (!searchTerm.trim()) return text;
-  const regex = getSearchRegex(searchTerm);
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first
+  const escaped = escapeHtml(text);
+  if (searchTerm.trim() === '') return escaped;
+
+  // Escape the search term too (for display consistency)
+  const escapedSearchTerm = escapeHtml(searchTerm);
+  const regex = getSearchRegex(escapedSearchTerm);
+
+  return escaped.replace(regex, '<strong>$1</strong>');
 }
 
 /**
  * Highlight search term with mark tag (for message search) (OPTIMIZED)
- * @param text - Text to search in
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param searchTerm - Term to highlight
- * @returns HTML string with <mark> tags
+ * @returns Sanitized HTML string with <mark> tags
  */
 export function highlightSearchInMessage(text: string, searchTerm: string): string {
-  if (!searchTerm.trim()) return text;
-  const regex = getSearchRegex(searchTerm);
-  return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+  // SECURITY FIX: Escape HTML first
+  const escaped = escapeHtml(text);
+  if (searchTerm.trim() === '') return escaped;
+
+  // Escape the search term too (for display consistency)
+  const escapedSearchTerm = escapeHtml(searchTerm);
+  const regex = getSearchRegex(escapedSearchTerm);
+
+  return escaped.replace(regex, '<mark class="search-highlight">$1</mark>');
 }
 
 // =============================================================================
@@ -243,7 +286,7 @@ export function formatMessageTime(dateStr: string): string {
  * @returns Formatted date/time string
  */
 export function formatConversationTime(dateStr: string): string {
-  if (!dateStr) return '';
+  if (dateStr === '') return '';
 
   const cached = conversationTimeCache.get(dateStr);
   if (cached !== undefined) return cached;
@@ -334,14 +377,14 @@ export function shouldShowDateSeparator(prev: Message | undefined, current: Mess
  * @returns Display name string
  */
 export function getConversationDisplayName(conv: Conversation, currentUserId: number): string {
-  if (conv.name) return conv.name;
+  if (conv.name !== undefined && conv.name !== '') return conv.name;
   if (conv.isGroup) return MESSAGES.labelGroupConversation;
 
   const partner = conv.participants.find((p) => p.id !== currentUserId);
   if (!partner) return MESSAGES.labelConversation;
 
-  const fullName = `${partner.firstName ?? ''} ${partner.lastName ?? ''}`.trim();
-  return fullName || partner.username;
+  const fullName = `${partner.firstName} ${partner.lastName}`.trim();
+  return fullName !== '' ? fullName : partner.username;
 }
 
 /**
@@ -383,8 +426,8 @@ export function getChatPartnerName(
 ): string {
   if (!partner) return conversationName ?? MESSAGES.labelConversation;
 
-  const fullName = `${partner.firstName ?? ''} ${partner.lastName ?? ''}`.trim();
-  return fullName || partner.username;
+  const fullName = `${partner.firstName} ${partner.lastName}`.trim();
+  return fullName !== '' ? fullName : partner.username;
 }
 
 /**
@@ -446,7 +489,7 @@ export function getRoleBadgeClass(role: string): string {
  * @returns Filtered messages
  */
 export function filterMessagesByQuery(messages: Message[], query: string): Message[] {
-  if (!query.trim()) return messages;
+  if (query.trim() === '') return messages;
 
   const queryLower = query.toLowerCase();
   return messages.filter((m) => m.content.toLowerCase().includes(queryLower));
@@ -459,7 +502,7 @@ export function filterMessagesByQuery(messages: Message[], query: string): Messa
  * @returns true if matches
  */
 export function messageMatchesQuery(content: string, query: string): boolean {
-  if (!query.trim()) return false;
+  if (query.trim() === '') return false;
   return content.toLowerCase().includes(query.toLowerCase());
 }
 

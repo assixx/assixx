@@ -5,14 +5,15 @@
 // Adapted for Svelte 5 (pure functions for use in components)
 // =============================================================================
 
-import type { Employee, ShiftType, SelectedContext } from './types';
+import { performAutofill, type AutofillConfig, type AutofillResult } from './autofill';
+import { getDropTargetData, getEmployeeIdFromDrag } from './drag-drop';
 import {
   validateEmployeeAvailability,
   checkDuplicateShiftAssignment,
   checkAlreadyAssigned,
 } from './validation';
-import { performAutofill, type AutofillConfig, type AutofillResult } from './autofill';
-import { getDropTargetData, getEmployeeIdFromDrag } from './drag-drop';
+
+import type { Employee, ShiftType, SelectedContext } from './types';
 
 // =============================================================================
 // SHIFT ASSIGNMENT HANDLERS

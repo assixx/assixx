@@ -160,7 +160,7 @@ export const MESSAGES = {
   TH_ACTIONS: 'Aktionen',
 
   // Teams display
-  TEAMS_SELECTED: (count: number) => (count <= 2 ? '' : `${count} Teams ausgewählt`),
+  teamsSelected: (count: number) => (count <= 2 ? '' : `${count} Teams ausgewählt`),
 } as const;
 
 /**

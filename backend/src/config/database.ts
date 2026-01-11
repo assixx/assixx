@@ -34,11 +34,11 @@ if (USE_MOCK_DB) {
 } else {
   // Real PostgreSQL connection
   const config = {
-    host: process.env['DB_HOST'] ?? 'assixx-postgres',
+    host: process.env['DB_HOST'] ?? 'postgres',
     port: Number.parseInt(process.env['DB_PORT'] ?? '5432', 10),
     database: process.env['DB_NAME'] ?? 'assixx',
     user: process.env['DB_USER'] ?? 'app_user',
-    password: process.env['DB_PASSWORD'] ?? 'AppUserP@ss2025!',
+    password: process.env['DB_PASSWORD'] ?? 'DevOnlyAppPass2026NotForProd',
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,

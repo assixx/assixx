@@ -5,6 +5,7 @@
  * SSR: Loads suggestion, comments, attachments, and org data in parallel.
  */
 import { redirect, error } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { KvpSuggestion, Comment, Attachment, Department, Team, Area } from './_lib/types';
 
@@ -13,6 +14,13 @@ const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 interface ApiResponse<T> {
   success?: boolean;
   data?: T;
+}
+
+/**
+ * Safely convert API response to array with empty fallback
+ */
+function ensureArray<T>(data: T[] | null): T[] {
+  return Array.isArray(data) ? data : [];
 }
 
 async function apiFetch<T>(
@@ -49,10 +57,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -61,7 +67,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const legacyId = url.searchParams.get('id');
   const idOrUuid = uuid ?? legacyId;
 
-  if (!idOrUuid) {
+  if (idOrUuid === null || idOrUuid === '') {
     error(400, 'Ungueltige Vorschlags-ID');
   }
 
@@ -84,15 +90,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     apiFetch<Area[]>('/areas', token, fetch),
   ]);
 
-  // Safe fallbacks
-  const comments = Array.isArray(commentsData) ? commentsData : [];
-  const attachments = Array.isArray(attachmentsData) ? attachmentsData : [];
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
-  const teams = Array.isArray(teamsData) ? teamsData : [];
-  const areas = Array.isArray(areasData) ? areasData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] kvp-detail/${idOrUuid} loaded in ${duration}ms (6 API calls)`);
+  // Safe fallbacks for array responses
+  const comments = ensureArray(commentsData);
+  const attachments = ensureArray(attachmentsData);
+  const departments = ensureArray(departmentsData);
+  const teams = ensureArray(teamsData);
+  const areas = ensureArray(areasData);
 
   return {
     suggestion,

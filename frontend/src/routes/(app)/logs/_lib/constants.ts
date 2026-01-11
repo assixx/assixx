@@ -115,7 +115,7 @@ export const ROLE_BADGE_CLASSES: Record<string, string> = {
 // Timerange to Days Mapping (for delete API)
 // ============================================================================
 
-export const TIMERANGE_DAYS_MAP: Record<string, number> = {
+export const TIMERANGE_DAYS_MAP: Partial<Record<string, number>> = {
   today: 0,
   week: 7,
   month: 30,

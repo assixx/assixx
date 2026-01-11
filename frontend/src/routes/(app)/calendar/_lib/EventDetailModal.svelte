@@ -1,11 +1,12 @@
 <script lang="ts">
-  import type { CalendarEvent } from './types';
   import {
     getEventLevelText,
     formatDateTime,
     getResponseText,
     getResponseIconClass,
   } from './utils';
+
+  import type { CalendarEvent } from './types';
 
   interface Props {
     event: CalendarEvent;
@@ -24,7 +25,13 @@
 </script>
 
 <div class="modal-overlay modal-overlay--active" role="presentation" onclick={onclose}>
-  <div class="ds-modal" role="presentation" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="ds-modal"
+    role="presentation"
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
+  >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">
         <i class="fas fa-calendar-alt"></i>
@@ -74,10 +81,8 @@
           <h4>Teilnehmer ({event.attendees.length})</h4>
           <div class="attendee-list">
             {#each event.attendees as attendee (attendee.userId)}
-              {@const name =
-                `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim() ||
-                attendee.username ||
-                'Unbekannt'}
+              {@const fullName = `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+              {@const name = fullName !== '' ? fullName : (attendee.username ?? 'Unbekannt')}
               <div class="attendee-item">
                 <span>{name}</span>
                 <span class="attendee-status" title={getResponseText(attendee.responseStatus)}>
@@ -90,12 +95,24 @@
 
         <div class="modal-actions">
           {#if canEdit}
-            <button type="button" class="btn btn-edit" onclick={() => onedit(event)}>
+            <button
+              type="button"
+              class="btn btn-edit"
+              onclick={() => {
+                onedit(event);
+              }}
+            >
               <i class="fas fa-edit"></i> Bearbeiten
             </button>
           {/if}
           {#if canDelete}
-            <button type="button" class="btn btn-danger" onclick={() => ondelete(event.id)}>
+            <button
+              type="button"
+              class="btn btn-danger"
+              onclick={() => {
+                ondelete(event.id);
+              }}
+            >
               <i class="fas fa-trash"></i> Löschen
             </button>
           {/if}

@@ -10,6 +10,7 @@
  * - `await parent()` in +page.server.ts
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { LayoutServerLoad } from './$types';
 
 /** API base URL for server-side fetching */
@@ -27,6 +28,7 @@ interface UserData {
   position?: string;
   tenantId: number;
   tenant?: TenantData;
+  hasFullAccess?: boolean;
   // Team assignment fields (inherited from primary team)
   teamIds?: number[];
   teamNames?: string[];
@@ -49,6 +51,44 @@ interface ApiResponse<T> {
   error?: { message: string };
 }
 
+/** Public paths that don't require authentication */
+const PUBLIC_PATHS = ['/login', '/signup', '/tenant-deletion-approve'];
+
+/** Check if path is public (no auth required) */
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+}
+
+/** Map API response to layout user data */
+function mapUserData(userData: UserData) {
+  return {
+    id: userData.id,
+    email: userData.email,
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    role: userData.role,
+    employeeNumber: userData.employeeNumber,
+    profilePicture: userData.profilePicture,
+    position: userData.position,
+    tenantId: userData.tenantId,
+    hasFullAccess: userData.hasFullAccess ?? false,
+    teamIds: userData.teamIds,
+    teamNames: userData.teamNames,
+    teamDepartmentId: userData.teamDepartmentId,
+    teamDepartmentName: userData.teamDepartmentName,
+    teamAreaId: userData.teamAreaId,
+    teamAreaName: userData.teamAreaName,
+  };
+}
+
+/** Extract user data from API response (handles wrapped and unwrapped formats) */
+function extractUserData(json: ApiResponse<UserData>): UserData | undefined {
+  if ('success' in json && json.success) {
+    return json.data;
+  }
+  return json as unknown as UserData;
+}
+
 /**
  * Layout server load function
  *
@@ -56,31 +96,19 @@ interface ApiResponse<T> {
  * Child pages can access via `data.user` or `await parent()` in their load functions.
  */
 export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
-  const startTime = performance.now();
-
-  // 1. Get auth token from httpOnly cookie
   const token = cookies.get('accessToken');
+  const hasToken = token !== undefined && token !== '';
 
-  // 2. Skip auth for public routes (login, signup, etc.)
-  const publicPaths = ['/login', '/signup', '/tenant-deletion-approve'];
-  const isPublicPath = publicPaths.some((path) => url.pathname.startsWith(path));
-
-  if (!token && !isPublicPath) {
-    // No token and not a public page - redirect to login
-    console.info('[SSR Layout] No accessToken cookie, redirecting to login');
+  // Handle unauthenticated requests
+  if (!hasToken && !isPublicPath(url.pathname)) {
     redirect(302, '/login');
   }
 
-  // 3. If no token (public page), return minimal data
-  if (!token) {
-    return {
-      user: null,
-      tenant: null,
-      isAuthenticated: false,
-    };
+  if (!hasToken) {
+    return { user: null, tenant: null, isAuthenticated: false };
   }
 
-  // 4. Fetch user data from API
+  // Fetch user data from API
   try {
     const response = await fetch(`${API_BASE}/users/me`, {
       headers: {
@@ -90,56 +118,27 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
     });
 
     if (!response.ok) {
-      // Token invalid or expired - redirect to login
       console.warn('[SSR Layout] /users/me failed with status', response.status);
-
-      // Clear invalid cookie
       cookies.delete('accessToken', { path: '/' });
       cookies.delete('refreshToken', { path: '/' });
-
       redirect(302, '/login');
     }
 
-    const json = (await response.json()) as ApiResponse<UserData & { tenant?: TenantData }>;
+    const json = (await response.json()) as ApiResponse<UserData>;
+    const userData = extractUserData(json);
 
-    // Handle wrapped response
-    const userData = 'success' in json && json.success ? json.data : (json as unknown as UserData);
-
-    if (!userData) {
+    if (userData === undefined) {
       console.error('[SSR Layout] No user data in response');
       redirect(302, '/login');
     }
 
-    const duration = (performance.now() - startTime).toFixed(1);
-    console.info(`[SSR Layout] User loaded in ${duration}ms: ${userData.email}`);
-
-    // 5. Return user and tenant data for all child pages
     return {
-      user: {
-        id: userData.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        role: userData.role,
-        employeeNumber: userData.employeeNumber,
-        profilePicture: userData.profilePicture,
-        position: userData.position,
-        tenantId: userData.tenantId,
-        // Team assignment fields (inherited from primary team)
-        teamIds: userData.teamIds,
-        teamNames: userData.teamNames,
-        teamDepartmentId: userData.teamDepartmentId,
-        teamDepartmentName: userData.teamDepartmentName,
-        teamAreaId: userData.teamAreaId,
-        teamAreaName: userData.teamAreaName,
-      },
+      user: mapUserData(userData),
       tenant: userData.tenant ?? null,
       isAuthenticated: true,
     };
   } catch (error) {
     console.error('[SSR Layout] Error loading user:', error);
-
-    // On error, redirect to login
     redirect(302, '/login');
   }
 };

@@ -6,6 +6,7 @@
  * Note: Admin profile is readonly except for password.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { AdminProfile } from './_lib/types';
 
@@ -49,10 +50,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -64,9 +63,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Fetch admin profile data
   const profileData = await apiFetch<AdminProfile>('/users/me', token, fetch);
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] admin-profile loaded in ${duration}ms`);
 
   return {
     profile: profileData,

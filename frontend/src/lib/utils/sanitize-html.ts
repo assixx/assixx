@@ -19,7 +19,32 @@
  * ```
  */
 
-import DOMPurify, { type Config } from 'dompurify';
+import { browser } from '$app/environment';
+
+import type { Config, DOMPurify as DOMPurifyType } from 'dompurify';
+
+// DOMPurify is browser-only, dynamically import when in browser
+let purifier: DOMPurifyType | null = null;
+
+// Initialize DOMPurify in browser environment
+if (browser) {
+  void import('dompurify').then((module) => {
+    purifier = module.default;
+  });
+}
+
+/**
+ * Simple HTML escape for SSR fallback
+ * Only escapes dangerous characters, preserves newlines
+ */
+function escapeHtmlBasic(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 /**
  * DOMPurify configuration for safe HTML sanitization
@@ -158,6 +183,8 @@ const DOMPURIFY_CONFIG = {
  * Sanitize HTML content to prevent XSS attacks
  * Use this for any user-generated content rendered via {@html}
  *
+ * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser
+ *
  * @param html - Untrusted HTML content
  * @returns Sanitized HTML safe for rendering
  *
@@ -170,12 +197,19 @@ export function sanitizeHtml(html: string | null | undefined): string {
     return '';
   }
 
-  return DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+  // SSR fallback: basic HTML escaping (DOMPurify is browser-only)
+  if (!browser || purifier === null) {
+    return escapeHtmlBasic(html);
+  }
+
+  return purifier.sanitize(html, DOMPURIFY_CONFIG);
 }
 
 /**
  * Sanitize HTML with newline-to-br conversion
  * Useful for plain text content that should preserve line breaks
+ *
+ * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser
  *
  * @param text - Text content (may contain newlines)
  * @returns Sanitized HTML with <br> tags
@@ -188,9 +222,13 @@ export function sanitizeWithLineBreaks(text: string | null | undefined): string 
     return '';
   }
 
-  // First sanitize the content, then replace newlines with <br>
-  // Order matters: sanitize first to prevent XSS, then add safe <br> tags
-  const sanitized = DOMPurify.sanitize(text, DOMPURIFY_CONFIG);
+  // SSR fallback: basic HTML escaping (DOMPurify is browser-only)
+  if (!browser || purifier === null) {
+    return escapeHtmlBasic(text).replace(/\n/g, '<br>');
+  }
+
+  // Browser: full DOMPurify sanitization
+  const sanitized = purifier.sanitize(text, DOMPURIFY_CONFIG);
   return sanitized.replace(/\n/g, '<br>');
 }
 
@@ -222,6 +260,8 @@ export function escapeHtml(text: string | null | undefined): string {
  * Check if content contains potentially dangerous HTML
  * Useful for showing warnings to users
  *
+ * SSR-SAFE: Returns false on server (can't detect without DOMPurify)
+ *
  * @param html - HTML content to check
  * @returns true if content was modified by sanitization
  */
@@ -230,6 +270,11 @@ export function containsDangerousHtml(html: string | null | undefined): boolean 
     return false;
   }
 
-  const sanitized = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+  // SSR fallback: can't detect dangerous HTML without DOMPurify
+  if (!browser || purifier === null) {
+    return false;
+  }
+
+  const sanitized = purifier.sanitize(html, DOMPURIFY_CONFIG);
   return sanitized !== html;
 }

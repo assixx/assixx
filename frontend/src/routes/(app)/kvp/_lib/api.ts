@@ -2,9 +2,14 @@
 // KVP - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
 import { API_ENDPOINTS } from './constants';
+
 import type {
   User,
   KvpSuggestion,
@@ -17,8 +22,6 @@ import type {
   PaginatedResponse,
   KvpFilter,
 } from './types';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -42,7 +45,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 /**
@@ -67,7 +70,6 @@ export function checkSessionExpired(err: unknown): boolean {
 export async function fetchUserData(): Promise<User | null> {
   try {
     const result = await fetchSharedUser();
-    console.info('[KVP API] User data loaded:', result.user);
     return result.user as User | null;
   } catch (err) {
     console.error('[KVP API] Error fetching user:', err);
@@ -85,9 +87,7 @@ export async function fetchUserData(): Promise<User | null> {
  */
 export async function loadCategories(): Promise<KvpCategory[]> {
   try {
-    const categories = await apiClient.get<KvpCategory[]>(API_ENDPOINTS.KVP_CATEGORIES);
-    console.info('[KVP API] Categories loaded:', categories.length);
-    return categories;
+    return await apiClient.get<KvpCategory[]>(API_ENDPOINTS.KVP_CATEGORIES);
   } catch (err) {
     console.error('[KVP API] Error loading categories:', err);
     return [];
@@ -106,9 +106,7 @@ export async function loadDepartments(): Promise<Department[]> {
     const response = await apiClient.get<PaginatedResponse<Department> | Department[]>(
       API_ENDPOINTS.DEPARTMENTS,
     );
-    const departments = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[KVP API] Departments loaded:', departments.length);
-    return departments;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[KVP API] Error loading departments:', err);
     return [];
@@ -121,9 +119,7 @@ export async function loadDepartments(): Promise<Department[]> {
 export async function loadTeams(): Promise<Team[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
-    const teams = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[KVP API] Teams loaded:', teams.length);
-    return teams;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[KVP API] Error loading teams:', err);
     return [];
@@ -176,8 +172,7 @@ export async function fetchSuggestions(
 
     const response = await apiClient.get<SuggestionsResponse>(`${API_ENDPOINTS.KVP}?${params}`);
 
-    console.info('[KVP API] Suggestions loaded:', response.suggestions?.length ?? 0);
-    return response.suggestions ?? [];
+    return response.suggestions;
   } catch (err) {
     console.error('[KVP API] Error fetching suggestions:', err);
     checkSessionExpired(err);
@@ -193,7 +188,6 @@ export async function createSuggestion(
 ): Promise<{ success: boolean; id?: number; error?: string }> {
   try {
     const response = await apiClient.post<{ id: number }>(API_ENDPOINTS.KVP, data);
-    console.info('[KVP API] Suggestion created:', response.id);
     return { success: true, id: response.id };
   } catch (err) {
     console.error('[KVP API] Error creating suggestion:', err);
@@ -217,8 +211,7 @@ export async function uploadPhotos(
       formData.append('files', photo);
     });
 
-    console.info('[KVP API] Uploading photos:', photos.length, 'for suggestion', suggestionId);
-    await apiClient.upload(API_ENDPOINTS.KVP_ATTACHMENTS(suggestionId), formData);
+    await apiClient.upload(API_ENDPOINTS.kvpAttachments(suggestionId), formData);
 
     return { success: true };
   } catch (err) {
@@ -233,8 +226,7 @@ export async function uploadPhotos(
  */
 export async function shareSuggestion(id: number): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.post(API_ENDPOINTS.KVP_SHARE(id), {});
-    console.info('[KVP API] Suggestion shared:', id);
+    await apiClient.post(API_ENDPOINTS.kvpShare(id), {});
     return { success: true };
   } catch (err) {
     console.error('[KVP API] Error sharing suggestion:', err);
@@ -250,8 +242,7 @@ export async function shareSuggestion(id: number): Promise<{ success: boolean; e
  */
 export async function unshareSuggestion(id: number): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.post(API_ENDPOINTS.KVP_UNSHARE(id), {});
-    console.info('[KVP API] Suggestion unshared:', id);
+    await apiClient.post(API_ENDPOINTS.kvpUnshare(id), {});
     return { success: true };
   } catch (err) {
     console.error('[KVP API] Error unsharing suggestion:', err);
@@ -284,7 +275,6 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
           },
         };
 
-    console.info('[KVP API] Statistics loaded');
     return stats;
   } catch (err) {
     console.error('[KVP API] Error fetching statistics:', err);

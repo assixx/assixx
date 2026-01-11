@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { QUESTION_TYPE_LABELS, STATUS_TEXT_MAP } from './constants';
+
 import type { Survey, SurveyQuestion, SurveyResponse, ResponseAnswer } from './types';
 
 /**
@@ -128,34 +129,37 @@ export function getOptionTexts(question: SurveyQuestion, optionIds: number[]): s
 }
 
 /**
+ * Checks if a value is defined (not null and not undefined)
+ */
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
+/**
  * Get answer display text
  */
 export function getAnswerDisplayText(
   question: SurveyQuestion,
   answer: ResponseAnswer | undefined,
 ): string {
-  if (answer === undefined) {
+  if (!isDefined(answer)) {
     return 'Keine Antwort';
   }
 
   // Check answerOptions BEFORE answerDate to prevent option IDs being formatted as dates
-  if (answer.answerText !== undefined && answer.answerText !== null) {
+  if (isDefined(answer.answerText)) {
     return answer.answerText;
   }
 
-  if (answer.answerNumber !== undefined && answer.answerNumber !== null) {
+  if (isDefined(answer.answerNumber)) {
     return String(answer.answerNumber);
   }
 
-  if (
-    answer.answerOptions !== undefined &&
-    answer.answerOptions !== null &&
-    answer.answerOptions.length > 0
-  ) {
+  if (isDefined(answer.answerOptions) && answer.answerOptions.length > 0) {
     return getOptionTexts(question, answer.answerOptions);
   }
 
-  if (answer.answerDate !== undefined && answer.answerDate !== null) {
+  if (isDefined(answer.answerDate)) {
     return formatGermanDate(answer.answerDate);
   }
 

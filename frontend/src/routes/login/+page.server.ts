@@ -5,7 +5,8 @@
  * Handles login form submission server-side to set httpOnly cookies.
  * This enables SSR pages to access the auth token via cookies.
  */
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, type Cookies } from '@sveltejs/kit';
+
 import type { Actions } from './$types';
 
 /** API base URL for server-side fetching */
@@ -25,120 +26,116 @@ const ACCESS_TOKEN_MAX_AGE = 30 * 60;
 /** Refresh token expiry: 7 days */
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
 
+type UserRole = 'root' | 'admin' | 'employee';
+
+interface LoginResponseData {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    tenantId: number;
+  };
+}
+
 interface LoginResponse {
   success: boolean;
-  data?: {
-    accessToken: string;
-    refreshToken: string;
-    user: {
-      id: number;
-      email: string;
-      firstName: string;
-      lastName: string;
-      role: 'root' | 'admin' | 'employee';
-      tenantId: number;
-    };
-  };
+  data?: LoginResponseData;
   error?: {
     message: string;
     code?: string;
   };
 }
 
+/** Set authentication cookies after successful login */
+function setAuthCookies(cookies: Cookies, data: LoginResponseData): void {
+  cookies.set('accessToken', data.accessToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+
+  cookies.set('refreshToken', data.refreshToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: REFRESH_TOKEN_MAX_AGE,
+  });
+
+  cookies.set('userRole', data.user.role, {
+    ...COOKIE_OPTIONS,
+    httpOnly: false,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+}
+
+/** Get redirect path based on user role */
+function getRedirectPath(role: UserRole): string {
+  const paths: Record<UserRole, string> = {
+    root: '/root-dashboard',
+    admin: '/admin-dashboard',
+    employee: '/employee-dashboard',
+  };
+  return paths[role];
+}
+
+/** Validate that a form field is a non-empty string */
+function isValidStringField(value: FormDataEntryValue | null): value is string {
+  return typeof value === 'string' && value !== '';
+}
+
+/** Check if login response indicates success with valid data */
+function isSuccessfulLogin(
+  response: Response,
+  result: LoginResponse,
+): result is LoginResponse & { data: LoginResponseData } {
+  return response.ok && result.success && result.data !== undefined;
+}
+
+/** Get error response for failed login based on status */
+function getLoginErrorResponse(response: Response, result: LoginResponse, email: string) {
+  if (response.status === 429) {
+    return fail(429, { error: 'Zu viele Anmeldeversuche. Bitte warten Sie.', email });
+  }
+  return fail(401, { error: result.error?.message ?? 'Login fehlgeschlagen', email });
+}
+
 export const actions: Actions = {
-  /**
-   * Default action: Handle login form submission
-   */
   default: async ({ request, cookies, fetch }) => {
     const formData = await request.formData();
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = formData.get('email');
+    const password = formData.get('password');
 
-    // Validation
-    if (!email || !password) {
-      return fail(400, {
-        error: 'E-Mail und Passwort sind erforderlich',
-        email,
-      });
+    if (!isValidStringField(email) || !isValidStringField(password)) {
+      const emailValue = typeof email === 'string' ? email : '';
+      return fail(400, { error: 'E-Mail und Passwort sind erforderlich', email: emailValue });
     }
 
     try {
-      // Call backend login API
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const result = (await response.json()) as LoginResponse;
 
-      if (!response.ok || !result.success) {
-        const errorMessage = result.error?.message ?? 'Login fehlgeschlagen';
-
-        // Handle rate limiting
-        if (response.status === 429) {
-          return fail(429, {
-            error: 'Zu viele Anmeldeversuche. Bitte warten Sie.',
-            email,
-          });
-        }
-
-        return fail(401, {
-          error: errorMessage,
-          email,
-        });
+      if (!isSuccessfulLogin(response, result)) {
+        return getLoginErrorResponse(response, result, email);
       }
 
-      // Set httpOnly cookies for SSR auth
-      if (result.data?.accessToken) {
-        cookies.set('accessToken', result.data.accessToken, {
-          ...COOKIE_OPTIONS,
-          maxAge: ACCESS_TOKEN_MAX_AGE,
-        });
-      }
+      setAuthCookies(cookies, result.data);
 
-      if (result.data?.refreshToken) {
-        cookies.set('refreshToken', result.data.refreshToken, {
-          ...COOKIE_OPTIONS,
-          maxAge: REFRESH_TOKEN_MAX_AGE,
-        });
-      }
-
-      // Store user role in non-httpOnly cookie (for client-side routing)
-      if (result.data?.user?.role) {
-        cookies.set('userRole', result.data.user.role, {
-          ...COOKIE_OPTIONS,
-          httpOnly: false, // Accessible by client JS
-          maxAge: ACCESS_TOKEN_MAX_AGE,
-        });
-      }
-
-      // Determine redirect path based on role
-      const role = result.data?.user?.role ?? 'employee';
-      const redirectTo =
-        role === 'root'
-          ? '/root-dashboard'
-          : role === 'admin'
-            ? '/admin-dashboard'
-            : '/employee-dashboard';
-
-      // Return success with tokens for client-side storage
-      // Client will store in localStorage and redirect
       return {
         success: true,
-        accessToken: result.data?.accessToken,
-        refreshToken: result.data?.refreshToken,
-        user: result.data?.user,
-        redirectTo,
+        accessToken: result.data.accessToken,
+        refreshToken: result.data.refreshToken,
+        user: result.data.user,
+        redirectTo: getRedirectPath(result.data.user.role),
       };
     } catch (error) {
       console.error('[Login] Server error:', error);
-      return fail(500, {
-        error: 'Ein Serverfehler ist aufgetreten',
-        email,
-      });
+      return fail(500, { error: 'Ein Serverfehler ist aufgetreten', email });
     }
   },
 };

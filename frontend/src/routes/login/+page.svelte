@@ -1,13 +1,37 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
-  import { goto, replaceState } from '$app/navigation';
-  import { base, resolve } from '$app/paths';
-  import { showInfoAlert } from '$lib/stores/toast.js';
-  import { getTokenManager } from '$lib/utils/token-manager';
-  import { enhance } from '$app/forms';
 
-  /** @type {{ form: import('./$types').ActionData }} */
-  const { form } = $props();
+  import { enhance } from '$app/forms';
+  import { goto, replaceState } from '$app/navigation';
+  import { resolve } from '$app/paths';
+
+  import { showInfoAlert } from '$lib/stores/toast';
+  import { getTokenManager } from '$lib/utils/token-manager';
+
+  import type { ActionData } from './$types';
+
+  // API Response types for login endpoint
+  interface LoginUser {
+    id: number;
+    role: 'root' | 'admin' | 'employee';
+    email: string;
+    tenantId?: number;
+  }
+
+  interface LoginApiResponse {
+    success: boolean;
+    data?: {
+      accessToken: string;
+      refreshToken: string;
+      user: LoginUser;
+    };
+    error?: {
+      message: string;
+      code?: string;
+    };
+  }
+
+  const { form }: { form: ActionData } = $props();
 
   // Page-specific CSS
   import '../../styles/login.css';
@@ -20,18 +44,14 @@
   let email = $state('');
   let password = $state('');
   let loading = $state(false);
-  /** @type {string | null} */
-  let error = $state(null);
-  /** @type {boolean} */
+  let error: string | null = $state(null);
   let showToast = $state(false);
-  /** @type {boolean} */
   let isTimeout = $state(false);
 
   // Toast auto-dismiss configuration (1:1 like legacy)
   const TOAST_DURATION_SECONDS = 3;
 
-  /** @type {ReturnType<typeof setTimeout> | null} */
-  let toastTimeoutId = null;
+  let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // =============================================================================
   // URL Parameter Check (1:1 like legacy checkForMessages)
@@ -88,9 +108,8 @@
 
   /**
    * Show error toast with auto-dismiss
-   * @param {string} message - Error message to display
    */
-  function showError(message) {
+  function showError(message: string): void {
     // Clear existing timeout if any
     if (toastTimeoutId !== null) {
       clearTimeout(toastTimeoutId);
@@ -120,11 +139,11 @@
   }
 
   // =============================================================================
-  // Event Handlers (JSDoc types - esrap compatible)
+  // Event Handlers
   // =============================================================================
 
-  /** @param {Event} e */
-  async function handleSubmit(e) {
+  // Note: _handleSubmit is kept for potential future use (currently form uses enhance)
+  async function _handleSubmit(e: Event): Promise<void> {
     e.preventDefault();
     dismissToast(); // Clear any existing toast
     loading = true;
@@ -138,43 +157,36 @@
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await response.json();
+      const result: LoginApiResponse = (await response.json()) as LoginApiResponse;
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error?.message || 'Login fehlgeschlagen');
+        throw new Error(result.error?.message ?? 'Login fehlgeschlagen');
       }
 
       // Token speichern - CRITICAL: Use TokenManager to update BOTH memory AND localStorage!
       // Direct localStorage writes don't update the TokenManager singleton's in-memory state
-      if (result.data?.accessToken && result.data?.refreshToken) {
+      if (result.data !== undefined) {
         // Use TokenManager to properly set tokens (updates singleton memory + localStorage)
         getTokenManager().setTokens(result.data.accessToken, result.data.refreshToken);
         // Legacy: token (backward compatibility for old code)
         localStorage.setItem('token', result.data.accessToken);
-      } else if (result.data?.accessToken) {
-        // Fallback if no refresh token (shouldn't happen in v2 API)
-        localStorage.setItem('accessToken', result.data.accessToken);
-        localStorage.setItem('token', result.data.accessToken);
-        console.warn('[Login] No refresh token received - using direct localStorage');
-      }
 
-      // Store user role - Required for permission checks across pages
-      const role = result.data?.user?.role || 'employee';
-      localStorage.setItem('userRole', role);
-      localStorage.setItem('activeRole', role); // Legacy compatibility
+        // Store user role - Required for permission checks across pages
+        const role = result.data.user.role;
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('activeRole', role); // Legacy compatibility
 
-      // Store user object - Full user data for pages that need more than just role
-      if (result.data?.user) {
+        // Store user object - Full user data for pages that need more than just role
         localStorage.setItem('user', JSON.stringify(result.data.user));
-      }
 
-      // Redirect zum Dashboard basierend auf Rolle
-      if (role === 'root') {
-        goto(`${base}/root-dashboard`);
-      } else if (role === 'admin') {
-        goto(`${base}/admin-dashboard`);
-      } else {
-        goto(`${base}/employee-dashboard`);
+        // Redirect zum Dashboard basierend auf Rolle
+        if (role === 'root') {
+          await goto(resolve('/root-dashboard', {}));
+        } else if (role === 'admin') {
+          await goto(resolve('/admin-dashboard', {}));
+        } else {
+          await goto(resolve('/employee-dashboard', {}));
+        }
       }
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
@@ -183,18 +195,53 @@
     }
   }
 
-  /** @param {Event} e */
-  function handlePasswordReset(e) {
+  function handlePasswordReset(e: Event): void {
     e.preventDefault();
-    // TODO: Implement password reset modal
     showInfoAlert('Passwort zurücksetzen - Coming soon');
   }
 
-  /** @param {Event} e */
-  function handleRequestAccess(e) {
+  function handleRequestAccess(e: Event): void {
     e.preventDefault();
-    // TODO: Implement access request
     showInfoAlert('Zugang beantragen - Coming soon');
+  }
+
+  // =============================================================================
+  // Type Guards for Form Enhancement
+  // =============================================================================
+
+  interface SuccessResultData {
+    success: true;
+    accessToken: string;
+    refreshToken: string;
+    user: { role: string };
+    redirectTo?: string;
+  }
+
+  /** Check if value is a non-null object */
+  function isObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  /** Check if object has a string property */
+  function hasStringProp(obj: Record<string, unknown>, key: string): boolean {
+    return key in obj && typeof obj[key] === 'string';
+  }
+
+  /** Check if object has valid user with role */
+  function hasValidUser(obj: Record<string, unknown>): boolean {
+    if (!isObject(obj.user)) return false;
+    return hasStringProp(obj.user, 'role');
+  }
+
+  /**
+   * Type guard to validate successful login result data
+   */
+  function isSuccessResultData(data: unknown): data is SuccessResultData {
+    if (!isObject(data)) return false;
+    if (data.success !== true) return false;
+    if (!hasStringProp(data, 'accessToken')) return false;
+    if (!hasStringProp(data, 'refreshToken')) return false;
+    return hasValidUser(data);
   }
 </script>
 
@@ -203,7 +250,7 @@
 </svelte:head>
 
 <!-- Back to Homepage Button -->
-<a href={resolve('/')} class="back-button">
+<a href={resolve('/', {})} class="back-button">
   <span class="icon">←</span>
   <span>Zurück zur Hauptseite</span>
 </a>
@@ -216,7 +263,13 @@
   <div class="login-card">
     <!-- Logo inside card -->
     <div class="login-card-logo">
-      <button type="button" class="logo-button" onclick={() => window.location.reload()}>
+      <button
+        type="button"
+        class="logo-button"
+        onclick={() => {
+          window.location.reload();
+        }}
+      >
         <img src="/images/logo.png" alt="Assixx Logo" class="login-logo" />
       </button>
     </div>
@@ -263,23 +316,20 @@
         return async ({ result, update }) => {
           loading = false;
 
-          if (result.type === 'success' && result.data?.success) {
-            // Store tokens in localStorage for client-side API calls
+          if (result.type === 'success' && isSuccessResultData(result.data)) {
             const { accessToken, refreshToken, user, redirectTo } = result.data;
 
-            if (accessToken && refreshToken) {
-              getTokenManager().setTokens(accessToken, refreshToken);
-              localStorage.setItem('token', accessToken); // Legacy compatibility
-            }
+            // Store tokens for client-side API calls
+            getTokenManager().setTokens(accessToken, refreshToken);
+            localStorage.setItem('token', accessToken); // Legacy compatibility
 
-            if (user) {
-              localStorage.setItem('user', JSON.stringify(user));
-              localStorage.setItem('userRole', user.role);
-              localStorage.setItem('activeRole', user.role);
-            }
+            // Store user data
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('activeRole', user.role);
 
             // Redirect to dashboard
-            goto(redirectTo || '/admin-dashboard');
+            await goto(redirectTo ?? '/admin-dashboard');
             return;
           }
 

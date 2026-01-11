@@ -3,17 +3,75 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+
 import type {
   Admin,
   Area,
   Department,
   AdminPermissions,
   AdminApiResponse,
-  ApiResponse,
   AdminFormData,
 } from './types';
 
 const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Type guard: checks if value is a non-null object
+ */
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Attempts to extract array from object by key, or from 'data' property
+ */
+function extractArrayFromObject(obj: Record<string, unknown>, key?: string): unknown[] | null {
+  // { [key]: T[] } - e.g. { admins: Admin[] }
+  if (key !== undefined) {
+    const keyValue = obj[key];
+    if (Array.isArray(keyValue)) {
+      return keyValue as unknown[];
+    }
+  }
+
+  // { data: T[] }
+  const dataValue = obj.data;
+  if (Array.isArray(dataValue)) {
+    return dataValue as unknown[];
+  }
+
+  // { data: { [key]: T[] } }
+  if (key !== undefined && isNonNullObject(dataValue)) {
+    const nestedValue = dataValue[key];
+    if (Array.isArray(nestedValue)) {
+      return nestedValue as unknown[];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Type-safe extraction of array data from various API response formats
+ * Handles: T[], { data: T[] }, { [key]: T[] }, { data: { [key]: T[] } }
+ */
+function extractArrayFromResponse<T>(result: unknown, key?: string): T[] {
+  // Direct array response
+  if (Array.isArray(result)) {
+    return result as T[];
+  }
+
+  // Object response - delegate to helper
+  if (isNonNullObject(result)) {
+    return (extractArrayFromObject(result, key) ?? []) as T[];
+  }
+
+  return [];
+}
 
 // =============================================================================
 // LOAD FUNCTIONS
@@ -25,31 +83,7 @@ const apiClient = getApiClient();
  */
 export async function loadAdmins(): Promise<Admin[]> {
   const result: unknown = await apiClient.get('/root/admins');
-
-  // Type-safe extraction of admin data from various API response formats
-  let loadedAdmins: Admin[] = [];
-
-  if (Array.isArray(result)) {
-    // Direct array response
-    loadedAdmins = result;
-  } else if (result !== null && typeof result === 'object') {
-    const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.admins)) {
-      // { admins: Admin[] }
-      loadedAdmins = obj.admins;
-    } else if (obj.data !== undefined) {
-      if (Array.isArray(obj.data)) {
-        // { data: Admin[] }
-        loadedAdmins = obj.data;
-      } else if (obj.data !== null && typeof obj.data === 'object') {
-        const dataObj = obj.data as Record<string, unknown>;
-        if (Array.isArray(dataObj.admins)) {
-          // { data: { admins: Admin[] } }
-          loadedAdmins = dataObj.admins;
-        }
-      }
-    }
-  }
+  const loadedAdmins = extractArrayFromResponse<Admin>(result, 'admins');
 
   // Load permissions for each admin
   for (const admin of loadedAdmins) {
@@ -72,16 +106,16 @@ export async function loadAdmins(): Promise<Admin[]> {
  * Load all areas for multi-select dropdown
  */
 export async function loadAreas(): Promise<Area[]> {
-  const result = await apiClient.get('/areas');
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get('/areas');
+  return extractArrayFromResponse<Area>(result);
 }
 
 /**
  * Load all departments for multi-select dropdown
  */
 export async function loadDepartments(): Promise<Department[]> {
-  const result = await apiClient.get('/departments');
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const result: unknown = await apiClient.get('/departments');
+  return extractArrayFromResponse<Department>(result);
 }
 
 // =============================================================================

@@ -260,7 +260,7 @@ export class SignupService {
     tenantId: number,
     dto: SignupDto,
   ): Promise<number> {
-    const hashedPassword = await bcrypt.hash(dto.adminPassword, 10);
+    const hashedPassword = await bcrypt.hash(dto.adminPassword, 12);
     const employeeNumber = this.generateTemporaryEmployeeNumber();
 
     const userRows = await client.query<DbUserResult>(

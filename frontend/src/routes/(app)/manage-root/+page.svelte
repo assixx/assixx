@@ -6,18 +6,24 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { base } from '$app/paths';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+  import { resolve } from '$app/paths';
 
-  import type { RootUser, StatusFilter, FormIsActiveStatus } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
+
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+
   import {
     saveRootUser as apiSaveRootUser,
     deleteRootUser as apiDeleteRootUser,
     buildRootUserPayload,
   } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import RootUserModal from './_lib/RootUserModal.svelte';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -30,8 +36,8 @@
     validatePasswordMatch,
   } from './_lib/utils';
 
-  import RootUserModal from './_lib/RootUserModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
+  import type { PageData } from './$types';
+  import type { RootUser, StatusFilter, FormIsActiveStatus } from './_lib/types';
 
   import '../../../styles/manage-root.css';
   import '../../../styles/password-strength.css';
@@ -43,7 +49,7 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allRootUsers = $derived<RootUser[]>(data?.rootUsers ?? []);
+  const allRootUsers = $derived<RootUser[]>(data.rootUsers);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -120,27 +126,32 @@
   // API FUNCTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
+  /**
+   * Validate form before save
+   * @returns true if valid, false if validation failed (and state was updated)
+   */
+  function validateSaveForm(): boolean {
+    if (!validateEmailMatch(formEmail, formEmailConfirm)) {
+      emailError = true;
+      return false;
+    }
+    const needsPasswordValidation = !isEditMode || formPassword !== '';
+    if (needsPasswordValidation && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
+      passwordError = true;
+      return false;
+    }
+    if (formPosition === '') {
+      showWarningAlert(MESSAGES.SELECT_POSITION_ERROR);
+      return false;
+    }
+    return true;
+  }
+
   async function saveUser(): Promise<void> {
     submitting = true;
 
     try {
-      if (!validateEmailMatch(formEmail, formEmailConfirm)) {
-        emailError = true;
-        submitting = false;
-        return;
-      }
-      if (!isEditMode && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
-        passwordError = true;
-        submitting = false;
-        return;
-      }
-      if (isEditMode && formPassword && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
-        passwordError = true;
-        submitting = false;
-        return;
-      }
-      if (!formPosition) {
-        showWarningAlert(MESSAGES.SELECT_POSITION_ERROR);
+      if (!validateSaveForm()) {
         submitting = false;
         return;
       }
@@ -176,13 +187,14 @@
   }
 
   async function deleteUser(): Promise<void> {
-    if (deleteUserId === null) return;
+    // Capture ID at start to avoid race condition (require-atomic-updates)
+    const userIdToDelete = deleteUserId;
+    if (userIdToDelete === null) return;
 
     try {
-      const result = await apiDeleteRootUser(deleteUserId);
+      const result = await apiDeleteRootUser(userIdToDelete);
       if (result.success) {
-        showDeleteConfirmModal = false;
-        deleteUserId = null;
+        closeDeleteConfirmModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
@@ -279,7 +291,7 @@
 
   function handleFormSubmit(e: Event): void {
     e.preventDefault();
-    saveUser();
+    void saveUser();
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -306,7 +318,9 @@
         if (el && !el.contains(e.target as HTMLElement)) searchOpen = false;
       };
       document.addEventListener('click', handler);
-      return () => document.removeEventListener('click', handler);
+      return () => {
+        document.removeEventListener('click', handler);
+      };
     }
   });
 </script>
@@ -326,30 +340,42 @@
       <div class="flex items-center justify-between gap-4 mt-6">
         <div class="toggle-group" id="root-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
-            onclick={() => handleStatusToggle('active')}
+            onclick={() => {
+              handleStatusToggle('active');
+            }}
           >
             <i class="fas fa-user-check"></i> Aktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
-            onclick={() => handleStatusToggle('inactive')}
+            onclick={() => {
+              handleStatusToggle('inactive');
+            }}
           >
             <i class="fas fa-user-times"></i> Inaktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
-            onclick={() => handleStatusToggle('archived')}
+            onclick={() => {
+              handleStatusToggle('archived');
+            }}
           >
             <i class="fas fa-archive"></i> Archiviert
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-users"></i> Alle
           </button>
@@ -384,7 +410,9 @@
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
                   class="search-input__result-item"
-                  onclick={() => handleSearchResultClick(user.id)}
+                  onclick={() => {
+                    handleSearchResultClick(user.id);
+                  }}
                 >
                   <div class="search-result-item">
                     <div class="search-result-item__name">
@@ -418,7 +446,7 @@
               {/each}
               {#if filteredUsers.length > 5}
                 <div class="search-input__result-item search-result-item__more">
-                  {MESSAGES.MORE_RESULTS(filteredUsers.length - 5)}
+                  {MESSAGES.moreResults(filteredUsers.length - 5)}
                 </div>
               {/if}
             {/if}
@@ -440,7 +468,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
             >Erneut versuchen</button
           >
         </div>
@@ -449,7 +477,7 @@
           <div class="empty-state__icon"><i class="fas fa-shield-alt"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_USERS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_USER}</p>
-          <button class="btn btn-primary" onclick={openAddModal}
+          <button type="button" class="btn btn-primary" onclick={openAddModal}
             ><i class="fas fa-plus"></i> Root-Benutzer hinzufügen</button
           >
         </div>
@@ -487,15 +515,20 @@
                   <td>
                     <div class="flex gap-2">
                       <button
+                        type="button"
                         class="action-icon action-icon--edit"
                         title="Bearbeiten"
-                        onclick={() => openEditModal(user.id)}><i class="fas fa-edit"></i></button
+                        onclick={() => {
+                          openEditModal(user.id);
+                        }}><i class="fas fa-edit"></i></button
                       >
                       <button
+                        type="button"
                         class="action-icon action-icon--delete"
                         title="Löschen"
-                        onclick={() => openDeleteModal(user.id)}
-                        ><i class="fas fa-trash"></i></button
+                        onclick={() => {
+                          openDeleteModal(user.id);
+                        }}><i class="fas fa-trash"></i></button
                       >
                     </div>
                   </td>
@@ -509,7 +542,7 @@
           <div class="alert__content">
             <div class="alert__message">
               {MESSAGES.PROFILE_INFO}
-              <a href="{base}/root-profile" class="text-blue-500 hover:underline"
+              <a href={resolvePath('/root-profile')} class="text-blue-500 hover:underline"
                 >{MESSAGES.PROFILE_LINK_TEXT}</a
               >.
             </div>
@@ -520,7 +553,7 @@
   </div>
 </div>
 
-<button class="btn-float" onclick={openAddModal} aria-label="Root-Benutzer hinzufügen"
+<button type="button" class="btn-float" onclick={openAddModal} aria-label="Root-Benutzer hinzufügen"
   ><i class="fas fa-user-shield"></i></button
 >
 

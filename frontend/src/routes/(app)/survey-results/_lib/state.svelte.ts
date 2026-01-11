@@ -1,164 +1,70 @@
 // =============================================================================
 // SURVEY-RESULTS - REACTIVE STATE (Svelte 5 Runes)
-// Based on: frontend/src/scripts/survey/results/index.ts
+// Composed from modular state files
 // =============================================================================
 
-import { SvelteSet } from 'svelte/reactivity';
-import type { Survey, SurveyStatistics, ResponsesData } from './types';
+import { dataState } from './state-data.svelte';
+import { uiState } from './state-ui.svelte';
 
 /**
- * Survey Results State using Svelte 5 Runes
+ * Survey Results State - Facade combining data and UI state
  */
-function createSurveyResultsState() {
-  // Survey data
-  let survey = $state<Survey | null>(null);
-  let statistics = $state<SurveyStatistics | null>(null);
-  let responsesData = $state<ResponsesData | null>(null);
+export const surveyResultsState = {
+  // Data state
+  get survey() {
+    return dataState.survey;
+  },
+  get statistics() {
+    return dataState.statistics;
+  },
+  get responsesData() {
+    return dataState.responsesData;
+  },
+  get surveyId() {
+    return dataState.surveyId;
+  },
+  get hasData() {
+    return dataState.hasData;
+  },
+  get isAnonymous() {
+    return dataState.isAnonymous;
+  },
+  get totalResponses() {
+    return dataState.totalResponses;
+  },
+  get completedResponses() {
+    return dataState.completedResponses;
+  },
+  get completionRate() {
+    return dataState.completionRate;
+  },
+  get hasResponses() {
+    return dataState.hasResponses;
+  },
+  setSurveyId: dataState.setSurveyId,
+  setSurvey: dataState.setSurvey,
+  setStatistics: dataState.setStatistics,
+  setResponsesData: dataState.setResponsesData,
 
-  // Current survey ID (from URL)
-  let surveyId = $state<string | null>(null);
+  // UI state
+  get isLoading() {
+    return uiState.isLoading;
+  },
+  get isExporting() {
+    return uiState.isExporting;
+  },
+  get errorMessage() {
+    return uiState.errorMessage;
+  },
+  setLoading: uiState.setLoading,
+  setExporting: uiState.setExporting,
+  setError: uiState.setError,
+  toggleResponseExpanded: uiState.toggleResponseExpanded,
+  isResponseExpanded: uiState.isResponseExpanded,
 
-  // Loading states - PERFORMANCE: Start true to prevent FOUC (triple-render)
-  let isLoading = $state(true);
-  let isExporting = $state(false);
-
-  // Error state
-  let errorMessage = $state<string | null>(null);
-
-  // Accordion state for individual responses
-  const expandedResponses = new SvelteSet<number>();
-
-  // Derived: Has data
-  const hasData = $derived(survey !== null && statistics !== null);
-
-  // Derived: Is anonymous survey (using $derived.by for multi-line logic)
-  const isAnonymous = $derived.by(() => {
-    if (survey === null) return false;
-    const isAnon = survey.isAnonymous;
-    return isAnon === '1' || isAnon === 1 || isAnon === true;
-  });
-
-  // Derived: Total responses
-  const totalResponses = $derived(statistics?.totalResponses ?? 0);
-
-  // Derived: Completed responses
-  const completedResponses = $derived(statistics?.completedResponses ?? 0);
-
-  // Derived: Completion rate
-  const completionRate = $derived(statistics?.completionRate ?? 0);
-
-  // Derived: Has individual responses
-  const hasResponses = $derived(
-    responsesData?.responses !== undefined && responsesData.responses.length > 0,
-  );
-
-  // Methods
-  function setSurveyId(id: string | null) {
-    surveyId = id;
-  }
-
-  function setSurvey(data: Survey | null) {
-    survey = data;
-  }
-
-  function setStatistics(data: SurveyStatistics | null) {
-    statistics = data;
-  }
-
-  function setResponsesData(data: ResponsesData | null) {
-    responsesData = data;
-  }
-
-  function setLoading(val: boolean) {
-    isLoading = val;
-  }
-
-  function setExporting(val: boolean) {
-    isExporting = val;
-  }
-
-  function setError(message: string | null) {
-    errorMessage = message;
-  }
-
-  function toggleResponseExpanded(index: number) {
-    if (expandedResponses.has(index)) {
-      expandedResponses.delete(index);
-    } else {
-      expandedResponses.add(index);
-    }
-  }
-
-  function isResponseExpanded(index: number): boolean {
-    return expandedResponses.has(index);
-  }
-
-  function reset() {
-    survey = null;
-    statistics = null;
-    responsesData = null;
-    surveyId = null;
-    isLoading = false;
-    isExporting = false;
-    errorMessage = null;
-    expandedResponses.clear();
-  }
-
-  return {
-    // Getters (reactive)
-    get survey() {
-      return survey;
-    },
-    get statistics() {
-      return statistics;
-    },
-    get responsesData() {
-      return responsesData;
-    },
-    get surveyId() {
-      return surveyId;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get isExporting() {
-      return isExporting;
-    },
-    get errorMessage() {
-      return errorMessage;
-    },
-    get hasData() {
-      return hasData;
-    },
-    get isAnonymous() {
-      return isAnonymous;
-    },
-    get totalResponses() {
-      return totalResponses;
-    },
-    get completedResponses() {
-      return completedResponses;
-    },
-    get completionRate() {
-      return completionRate;
-    },
-    get hasResponses() {
-      return hasResponses;
-    },
-
-    // Methods
-    setSurveyId,
-    setSurvey,
-    setStatistics,
-    setResponsesData,
-    setLoading,
-    setExporting,
-    setError,
-    toggleResponseExpanded,
-    isResponseExpanded,
-    reset,
-  };
-}
-
-// Singleton export
-export const surveyResultsState = createSurveyResultsState();
+  // Combined reset
+  reset: () => {
+    dataState.reset();
+    uiState.reset();
+  },
+};

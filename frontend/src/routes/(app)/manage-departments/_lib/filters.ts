@@ -34,7 +34,7 @@ export function filterByStatus(departments: Department[], status: StatusFilter):
  */
 export function filterBySearch(departments: Department[], query: string): Department[] {
   const term = query.toLowerCase().trim();
-  if (!term) return departments;
+  if (term === '') return departments;
 
   return departments.filter((d) => {
     const name = d.name.toLowerCase();

@@ -334,16 +334,34 @@ export function validateShiftAssignment(
  */
 function parseDateOnly(dateStr: string): Date {
   // Extract just the date part (YYYY-MM-DD) in case of ISO string with time
+  // String.split() always returns at least one element (original string if separator not found)
   const datePart = dateStr.split('T')[0];
-  if (datePart === undefined) {
-    return new Date(dateStr);
-  }
   const parts = datePart.split('-');
   const year = Number.parseInt(parts[0] ?? '0', 10);
   const month = Number.parseInt(parts[1] ?? '1', 10) - 1; // JS months are 0-indexed
   const day = Number.parseInt(parts[2] ?? '1', 10);
   // Create date in LOCAL timezone at midnight
   return new Date(year, month, day, 0, 0, 0, 0);
+}
+
+/**
+ * Parse an optional date string, returning null if empty or undefined
+ */
+function parseOptionalDate(dateStr: string | undefined): Date | null {
+  if (dateStr === undefined || dateStr === '') {
+    return null;
+  }
+  return parseDateOnly(dateStr);
+}
+
+/**
+ * Check if a date falls within a date range [start, end] inclusive
+ * Null boundaries are treated as unbounded (infinity)
+ */
+function isDateInRange(checkDate: Date, start: Date | null, end: Date | null): boolean {
+  const afterStart = start === null || checkDate >= start;
+  const beforeEnd = end === null || checkDate <= end;
+  return afterStart && beforeEnd;
 }
 
 /**
@@ -360,41 +378,20 @@ export function isEmployeeAvailableOnDate(employee: Employee, dateString: string
     return true;
   }
 
-  // If no dates set, use status directly
-  const startDateStr = employee.availabilityStart;
-  const endDateStr = employee.availabilityEnd;
+  // Parse availability period boundaries
+  const start = parseOptionalDate(employee.availabilityStart);
+  const end = parseOptionalDate(employee.availabilityEnd);
 
-  if (startDateStr === undefined && endDateStr === undefined) {
-    // No dates = status applies indefinitely
+  // No dates = status applies indefinitely (employee is unavailable)
+  if (start === null && end === null) {
     return false;
   }
 
-  // Parse all dates as date-only (ignoring time component)
+  // Check if the date falls within the unavailability period
   const checkDate = parseDateOnly(dateString);
+  const isUnavailable = isDateInRange(checkDate, start, end);
 
-  // Parse start date
-  let start: Date | null = null;
-  if (startDateStr !== undefined && startDateStr !== '') {
-    start = parseDateOnly(startDateStr);
-  }
-
-  // Parse end date
-  let end: Date | null = null;
-  if (endDateStr !== undefined && endDateStr !== '') {
-    end = parseDateOnly(endDateStr);
-  }
-
-  // Check if date falls within unavailability period [start, end] inclusive
-  const afterStart = start === null || checkDate >= start;
-  const beforeEnd = end === null || checkDate <= end;
-  const isUnavailable = afterStart && beforeEnd;
-
-  // If within unavailability period, employee is NOT available
-  if (isUnavailable) {
-    return false;
-  }
-
-  return true;
+  return !isUnavailable;
 }
 
 /**
@@ -428,6 +425,46 @@ export function validateEmployeeAvailability(employee: Employee, date: string): 
 // =============================================================================
 
 /**
+ * Parse a date string for period comparison, normalizing to start of day
+ */
+function parseDateForPeriodStart(dateStr: string | undefined): Date | null {
+  if (dateStr === undefined || dateStr === '') {
+    return null;
+  }
+  const date = new Date(dateStr);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/**
+ * Parse a date string for period comparison, normalizing to end of day
+ */
+function parseDateForPeriodEnd(dateStr: string | undefined): Date | null {
+  if (dateStr === undefined || dateStr === '') {
+    return null;
+  }
+  const date = new Date(dateStr);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+/**
+ * Check if two date periods overlap
+ * Null boundaries are treated as unbounded (infinity)
+ * Periods overlap if: periodA.start <= periodB.end AND periodA.end >= periodB.start
+ */
+function doPeriodsOverlap(
+  periodAStart: Date | null,
+  periodAEnd: Date | null,
+  periodBStart: Date,
+  periodBEnd: Date,
+): boolean {
+  const aStartsBeforeBEnds = periodAStart === null || periodAStart <= periodBEnd;
+  const aEndsAfterBStarts = periodAEnd === null || periodAEnd >= periodBStart;
+  return aStartsBeforeBEnds && aEndsAfterBStarts;
+}
+
+/**
  * Check if employee's unavailability period overlaps with the given week
  * If the unavailability period does NOT overlap with the week, the employee is effectively "available"
  *
@@ -446,56 +483,26 @@ export function getEffectiveAvailabilityForWeekValidation(
     return 'available';
   }
 
-  // If no dates set, status applies indefinitely
-  const startDate = employee.availabilityStart;
-  const endDate = employee.availabilityEnd;
+  // Parse unavailability period boundaries
+  const unavailStart = parseDateForPeriodStart(employee.availabilityStart);
+  const unavailEnd = parseDateForPeriodEnd(employee.availabilityEnd);
 
-  if (startDate === undefined && endDate === undefined) {
+  // No dates = status applies indefinitely
+  if (unavailStart === null && unavailEnd === null) {
     return rawStatus;
   }
 
-  // Get week boundaries
-  const weekStart = weekDates[0];
-  const weekEnd = weekDates[6];
-
-  if (weekStart === undefined || weekEnd === undefined) {
-    return rawStatus;
-  }
-
-  // Parse unavailability dates
-  let unavailStart: Date | null = null;
-  if (startDate !== undefined && startDate !== '') {
-    unavailStart = new Date(startDate);
-    unavailStart.setHours(0, 0, 0, 0);
-  }
-
-  let unavailEnd: Date | null = null;
-  if (endDate !== undefined && endDate !== '') {
-    unavailEnd = new Date(endDate);
-    unavailEnd.setHours(23, 59, 59, 999);
-  }
-
-  // Normalize week dates
-  const weekStartNorm = new Date(weekStart);
+  // Normalize week boundaries (weekDates guaranteed to have 7 elements per contract)
+  const weekStartNorm = new Date(weekDates[0]);
   weekStartNorm.setHours(0, 0, 0, 0);
 
-  const weekEndNorm = new Date(weekEnd);
+  const weekEndNorm = new Date(weekDates[6]);
   weekEndNorm.setHours(23, 59, 59, 999);
 
-  // Check for overlap:
-  // Periods overlap if: unavailStart <= weekEnd AND unavailEnd >= weekStart
-  // (Handling nulls as "infinity" in that direction)
+  // Check if unavailability period overlaps with the week
+  const hasOverlap = doPeriodsOverlap(unavailStart, unavailEnd, weekStartNorm, weekEndNorm);
 
-  const unavailStartsBeforeWeekEnds = unavailStart === null || unavailStart <= weekEndNorm;
-  const unavailEndsAfterWeekStarts = unavailEnd === null || unavailEnd >= weekStartNorm;
-
-  // If both conditions are true, there IS an overlap → employee is unavailable
-  if (unavailStartsBeforeWeekEnds && unavailEndsAfterWeekStarts) {
-    return rawStatus;
-  }
-
-  // No overlap → employee is effectively available for this week
-  return 'available';
+  return hasOverlap ? rawStatus : 'available';
 }
 
 /**

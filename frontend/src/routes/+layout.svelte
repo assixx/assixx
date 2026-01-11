@@ -1,12 +1,14 @@
-<script>
+<script lang="ts">
   import '../app.css';
-
-  // Global Toast Notifications
   import ToastContainer from '$lib/components/ToastContainer.svelte';
 
-  // Svelte 5 Runes: $props() for children snippet
-  /** @type {{ children: import('svelte').Snippet }} */
-  const { children } = $props();
+  import type { Snippet } from 'svelte';
+
+  interface Props {
+    children: Snippet;
+  }
+
+  const { children }: Props = $props();
 </script>
 
 <svelte:head>

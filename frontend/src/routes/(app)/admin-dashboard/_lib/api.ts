@@ -6,8 +6,10 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { User, Document, Department, Team, CalendarEvent, BlackboardEntry } from './types';
+
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './constants';
+
+import type { User, Document, Department, Team, CalendarEvent, BlackboardEntry } from './types';
 
 /** Get auth token from localStorage */
 export function getAuthToken(): string | null {

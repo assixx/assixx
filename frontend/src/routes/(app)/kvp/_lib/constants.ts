@@ -9,10 +9,10 @@ import type { KvpStatus, KvpPriority, OrgLevel, KvpFilter } from './types';
  */
 export const API_ENDPOINTS = {
   KVP: '/kvp',
-  KVP_BY_ID: (id: number) => `/kvp/${id}`,
-  KVP_SHARE: (id: number) => `/kvp/${id}/share`,
-  KVP_UNSHARE: (id: number) => `/kvp/${id}/unshare`,
-  KVP_ATTACHMENTS: (id: number) => `/kvp/${id}/attachments`,
+  kvpById: (id: number) => `/kvp/${id}`,
+  kvpShare: (id: number) => `/kvp/${id}/share`,
+  kvpUnshare: (id: number) => `/kvp/${id}/unshare`,
+  kvpAttachments: (id: number) => `/kvp/${id}/attachments`,
   KVP_CATEGORIES: '/kvp/categories',
   KVP_STATS: '/kvp/dashboard/stats',
   DEPARTMENTS: '/departments',

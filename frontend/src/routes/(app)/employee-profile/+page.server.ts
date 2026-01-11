@@ -7,6 +7,7 @@
  * Access: employee role (or admin/root viewing as employee)
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { EmployeeProfile } from './_lib/types';
 
@@ -50,10 +51,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -67,9 +66,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Fetch employee profile data
   const profileData = await apiFetch<EmployeeProfile>('/users/me', token, fetch);
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] employee-profile loaded in ${duration}ms`);
 
   return {
     profile: profileData,

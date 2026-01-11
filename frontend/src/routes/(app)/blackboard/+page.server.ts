@@ -5,6 +5,7 @@
  * SSR: Loads initial entries + organization data (for dropdowns) in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { BlackboardEntry, Department, Team, Area, PaginationMeta } from './_lib/types';
 
@@ -56,31 +57,61 @@ interface EntriesResponse {
   meta?: { pagination?: PaginationMeta };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
-  const startTime = performance.now();
+interface ProcessedEntries {
+  entries: BlackboardEntry[];
+  totalPages: number;
+}
 
-  const token = cookies.get('accessToken');
-  if (!token) {
-    redirect(302, '/login');
+/** Process entries response (handles both array and object formats) */
+function processEntriesResponse(
+  result: EntriesResponse | BlackboardEntry[] | null,
+): ProcessedEntries {
+  if (result === null) {
+    return { entries: [], totalPages: 1 };
   }
+  if (Array.isArray(result)) {
+    return { entries: result, totalPages: 1 };
+  }
+  return {
+    entries: result.entries ?? result.data ?? [],
+    totalPages: result.meta?.pagination?.totalPages ?? 1,
+  };
+}
 
-  // Read filter/sort/page from URL search params (Level 3: URL is source of truth)
+/** Safely extract array from API response */
+function safeArray<T>(data: T[] | null): T[] {
+  return Array.isArray(data) ? data : [];
+}
+
+/** Build API query params from URL search params */
+function buildApiParams(url: URL): URLSearchParams {
   const page = url.searchParams.get('page') ?? '1';
   const sortBy = url.searchParams.get('sortBy') ?? 'created_at';
   const sortDir = url.searchParams.get('sortDir') ?? 'DESC';
   const filter = url.searchParams.get('filter') ?? '';
   const search = url.searchParams.get('search') ?? '';
 
-  // Build API query string
-  const apiParams = new URLSearchParams({
+  const params = new URLSearchParams({
     status: 'active',
     page,
     limit: ENTRIES_PER_PAGE.toString(),
     sortBy,
     sortDir,
   });
-  if (filter && filter !== 'all') apiParams.append('filter', filter);
-  if (search.trim()) apiParams.append('search', search.trim());
+
+  if (filter !== '' && filter !== 'all') params.append('filter', filter);
+  if (search.trim() !== '') params.append('search', search.trim());
+
+  return params;
+}
+
+export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
+  const token = cookies.get('accessToken');
+  if (token === undefined || token === '') {
+    redirect(302, '/login');
+  }
+
+  const apiParams = buildApiParams(url);
 
   // Parallel fetch: entries with filters + organization data for dropdowns
   const [entriesResult, departmentsData, teamsData, areasData] = await Promise.all([
@@ -94,32 +125,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
     apiFetch<Area[]>('/areas', token, fetch),
   ]);
 
-  // Process entries response (handles both array and object formats)
-  let entries: BlackboardEntry[] = [];
-  let totalPages = 1;
-
-  if (Array.isArray(entriesResult)) {
-    entries = entriesResult;
-  } else if (entriesResult) {
-    entries = entriesResult.entries ?? entriesResult.data ?? [];
-    if (entriesResult.meta?.pagination) {
-      totalPages = entriesResult.meta.pagination.totalPages;
-    }
-  }
-
-  // Safe fallbacks for organization data
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
-  const teams = Array.isArray(teamsData) ? teamsData : [];
-  const areas = Array.isArray(areasData) ? areasData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] blackboard loaded in ${duration}ms (4 parallel API calls)`);
+  const { entries, totalPages } = processEntriesResponse(entriesResult);
 
   return {
     entries,
     totalPages,
-    departments,
-    teams,
-    areas,
+    departments: safeArray(departmentsData),
+    teams: safeArray(teamsData),
+    areas: safeArray(areasData),
   };
 };

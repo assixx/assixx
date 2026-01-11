@@ -35,13 +35,25 @@ export const POSITION_DISPLAY_MAP: Record<string, string> = {
 };
 
 /**
+ * Badge CSS classes
+ */
+export const BADGE_CLASS = {
+  INFO: 'badge--info',
+  PRIMARY: 'badge--primary',
+  SECONDARY: 'badge--secondary',
+  SUCCESS: 'badge--success',
+  WARNING: 'badge--warning',
+  ERROR: 'badge--error',
+} as const;
+
+/**
  * Status badge CSS class mapping
  */
 export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
-  1: 'badge--success',
-  0: 'badge--warning',
-  3: 'badge--secondary',
-  4: 'badge--error',
+  1: BADGE_CLASS.SUCCESS,
+  0: BADGE_CLASS.WARNING,
+  3: BADGE_CLASS.SECONDARY,
+  4: BADGE_CLASS.ERROR,
 };
 
 /**

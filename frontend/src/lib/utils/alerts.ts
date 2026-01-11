@@ -6,26 +6,17 @@
  * Based on: frontend/src/scripts/utils/alerts.ts
  */
 
+import { browser } from '$app/environment';
+
 import {
   showInfoAlert as toastInfo,
   showErrorAlert as toastError,
   showSuccessAlert as toastSuccess,
   showWarningAlert as toastWarning,
-} from '$lib/stores/toast.js';
-import { browser } from '$app/environment';
+} from '$lib/stores/toast';
 
 /** CSS class for custom confirm dialog container */
 const CONFIRM_DIALOG_CLASS = 'custom-confirm-dialog';
-
-/**
- * Escape HTML for safe rendering
- */
-function escapeHtml(text: string): string {
-  if (!browser) return text;
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 /**
  * Show an alert message (info notification)
@@ -56,27 +47,98 @@ export function showWarningAlert(message: string): void {
 }
 
 /**
+ * Create a DOM element with optional class and text content
+ */
+function createElement<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  textContent?: string,
+): HTMLElementTagNameMap[K] {
+  const el = document.createElement(tag);
+  if (className !== undefined && className !== '') {
+    el.className = className;
+  }
+  if (textContent !== undefined && textContent !== '') {
+    el.textContent = textContent;
+  }
+  return el;
+}
+
+/**
+ * Create icon element
+ */
+function createIcon(iconClass: string): HTMLElement {
+  return createElement('i', `fas ${iconClass}`);
+}
+
+/**
+ * Build confirm modal structure using DOM methods (XSS-safe)
+ */
+function buildConfirmModal(config: {
+  message: string;
+  title: string;
+  iconClass: string;
+  modifier?: string;
+  confirmText: string;
+  cancelText: string;
+  confirmBtnClass: string;
+}): HTMLDivElement {
+  const container = createElement('div', CONFIRM_DIALOG_CLASS);
+  const overlay = createElement('div', 'confirm-overlay');
+  const modal = createElement(
+    'div',
+    config.modifier !== undefined && config.modifier !== ''
+      ? `confirm-modal confirm-modal--${config.modifier}`
+      : 'confirm-modal',
+  );
+
+  // Icon
+  const iconDiv = createElement('div', 'confirm-modal__icon');
+  iconDiv.appendChild(createIcon(config.iconClass));
+  modal.appendChild(iconDiv);
+
+  // Title
+  const titleEl = createElement('h3', 'confirm-modal__title', config.title);
+  modal.appendChild(titleEl);
+
+  // Message
+  const messageEl = createElement('p', 'confirm-modal__message', config.message);
+  modal.appendChild(messageEl);
+
+  // Actions
+  const actionsDiv = createElement('div', 'confirm-modal__actions');
+  const cancelBtn = createElement(
+    'button',
+    'confirm-modal__btn confirm-modal__btn--cancel',
+    config.cancelText,
+  );
+  const confirmBtn = createElement(
+    'button',
+    `confirm-modal__btn ${config.confirmBtnClass}`,
+    config.confirmText,
+  );
+  actionsDiv.appendChild(cancelBtn);
+  actionsDiv.appendChild(confirmBtn);
+  modal.appendChild(actionsDiv);
+
+  overlay.appendChild(modal);
+  container.appendChild(overlay);
+
+  return container;
+}
+
+/**
  * Create a confirmation dialog using Design System confirm-modal
  */
 function createConfirmDialog(message: string): HTMLDivElement {
-  const confirmDiv = document.createElement('div');
-  confirmDiv.className = CONFIRM_DIALOG_CLASS;
-  confirmDiv.innerHTML = `
-    <div class="confirm-overlay">
-      <div class="confirm-modal">
-        <div class="confirm-modal__icon">
-          <i class="fas fa-question-circle"></i>
-        </div>
-        <h3 class="confirm-modal__title">Bestätigung</h3>
-        <p class="confirm-modal__message">${escapeHtml(message)}</p>
-        <div class="confirm-modal__actions">
-          <button class="confirm-modal__btn confirm-modal__btn--cancel">Nein</button>
-          <button class="confirm-modal__btn confirm-modal__btn--confirm">Ja</button>
-        </div>
-      </div>
-    </div>
-  `;
-  return confirmDiv;
+  return buildConfirmModal({
+    message,
+    title: 'Bestätigung',
+    iconClass: 'fa-question-circle',
+    confirmText: 'Ja',
+    cancelText: 'Nein',
+    confirmBtnClass: 'confirm-modal__btn--confirm',
+  });
 }
 
 /**
@@ -119,23 +181,15 @@ export async function showConfirmDanger(
   if (!browser) return false;
 
   return await new Promise((resolve) => {
-    const modalDiv = document.createElement('div');
-    modalDiv.className = CONFIRM_DIALOG_CLASS;
-    modalDiv.innerHTML = `
-      <div class="confirm-overlay">
-        <div class="confirm-modal confirm-modal--danger">
-          <div class="confirm-modal__icon">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <h3 class="confirm-modal__title">${escapeHtml(title)}</h3>
-          <p class="confirm-modal__message">${escapeHtml(message)}</p>
-          <div class="confirm-modal__actions">
-            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
-            <button class="confirm-modal__btn confirm-modal__btn--danger">Bestätigen</button>
-          </div>
-        </div>
-      </div>
-    `;
+    const modalDiv = buildConfirmModal({
+      message,
+      title,
+      iconClass: 'fa-exclamation-triangle',
+      modifier: 'danger',
+      confirmText: 'Bestätigen',
+      cancelText: 'Abbrechen',
+      confirmBtnClass: 'confirm-modal__btn--danger',
+    });
     document.body.append(modalDiv);
 
     const dangerBtn = modalDiv.querySelector('.confirm-modal__btn--danger');
@@ -167,23 +221,15 @@ export async function showConfirmWarning(
   if (!browser) return false;
 
   return await new Promise((resolve) => {
-    const modalDiv = document.createElement('div');
-    modalDiv.className = CONFIRM_DIALOG_CLASS;
-    modalDiv.innerHTML = `
-      <div class="confirm-overlay">
-        <div class="confirm-modal confirm-modal--warning">
-          <div class="confirm-modal__icon">
-            <i class="fas fa-exclamation-circle"></i>
-          </div>
-          <h3 class="confirm-modal__title">${escapeHtml(title)}</h3>
-          <p class="confirm-modal__message">${escapeHtml(message)}</p>
-          <div class="confirm-modal__actions">
-            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
-            <button class="confirm-modal__btn confirm-modal__btn--confirm">Ja, fortfahren</button>
-          </div>
-        </div>
-      </div>
-    `;
+    const modalDiv = buildConfirmModal({
+      message,
+      title,
+      iconClass: 'fa-exclamation-circle',
+      modifier: 'warning',
+      confirmText: 'Ja, fortfahren',
+      cancelText: 'Abbrechen',
+      confirmBtnClass: 'confirm-modal__btn--confirm',
+    });
     document.body.append(modalDiv);
 
     const confirmBtn = modalDiv.querySelector('.confirm-modal__btn--confirm');
@@ -206,28 +252,46 @@ export async function showConfirmWarning(
 }
 
 /**
+ * Build info modal structure using DOM methods (single button variant)
+ */
+function buildInfoModal(config: { message: string; title: string }): HTMLDivElement {
+  const container = createElement('div', CONFIRM_DIALOG_CLASS);
+  const overlay = createElement('div', 'confirm-overlay');
+  const modal = createElement('div', 'confirm-modal confirm-modal--info');
+
+  // Icon
+  const iconDiv = createElement('div', 'confirm-modal__icon');
+  iconDiv.appendChild(createIcon('fa-info-circle'));
+  modal.appendChild(iconDiv);
+
+  // Title
+  const titleEl = createElement('h3', 'confirm-modal__title', config.title);
+  modal.appendChild(titleEl);
+
+  // Message
+  const messageEl = createElement('p', 'confirm-modal__message', config.message);
+  modal.appendChild(messageEl);
+
+  // Actions (single button)
+  const actionsDiv = createElement('div', 'confirm-modal__actions');
+  const okBtn = createElement('button', 'confirm-modal__btn confirm-modal__btn--confirm', 'OK');
+  actionsDiv.appendChild(okBtn);
+  modal.appendChild(actionsDiv);
+
+  overlay.appendChild(modal);
+  container.appendChild(overlay);
+
+  return container;
+}
+
+/**
  * Show an informational modal dialog
  */
 export async function showInfoModal(message: string, title: string = 'Hinweis'): Promise<void> {
   if (!browser) return;
 
   await new Promise<void>((resolve) => {
-    const modalDiv = document.createElement('div');
-    modalDiv.className = CONFIRM_DIALOG_CLASS;
-    modalDiv.innerHTML = `
-      <div class="confirm-overlay">
-        <div class="confirm-modal confirm-modal--info">
-          <div class="confirm-modal__icon">
-            <i class="fas fa-info-circle"></i>
-          </div>
-          <h3 class="confirm-modal__title">${escapeHtml(title)}</h3>
-          <p class="confirm-modal__message">${escapeHtml(message)}</p>
-          <div class="confirm-modal__actions">
-            <button class="confirm-modal__btn confirm-modal__btn--confirm">OK</button>
-          </div>
-        </div>
-      </div>
-    `;
+    const modalDiv = buildInfoModal({ message, title });
     document.body.append(modalDiv);
 
     const okBtn = modalDiv.querySelector('.confirm-modal__btn--confirm');

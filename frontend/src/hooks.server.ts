@@ -7,8 +7,10 @@
  * @see https://kit.svelte.dev/docs/hooks#server-hooks
  */
 import { minify } from 'html-minifier-terser';
-import type { Handle } from '@sveltejs/kit';
+
 import { dev } from '$app/environment';
+
+import type { Handle } from '@sveltejs/kit';
 
 /**
  * HTML Minification Options

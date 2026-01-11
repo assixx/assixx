@@ -229,11 +229,7 @@ function processData(data: any): void {
 
 // ✅ CORRECT - unknown with Type Guards
 function processData(data: unknown): void {
-  if (
-    typeof data === 'object' &&
-    data !== null &&
-    'value' in data
-  ) {
+  if (typeof data === 'object' && data !== null && 'value' in data) {
     console.log((data as { value: unknown }).value);
   }
 }
@@ -302,15 +298,18 @@ const userId = req.user.id;  // Now type-safe
 
 ```typescript
 // ❌ WRONG - ESLint Error: @typescript-eslint/strict-boolean-expressions
-if (user.name) {  // String in condition
+if (user.name) {
+  // String in condition
   console.log(user.name);
 }
 
-if (!token) {  // Truthy check not allowed
+if (!token) {
+  // Truthy check not allowed
   return;
 }
 
-if (items.length) {  // Number in condition
+if (items.length) {
+  // Number in condition
   processItems(items);
 }
 
@@ -449,10 +448,10 @@ array.map((item) => {
 
 ```typescript
 // ❌ WRONG - ESLint Error: @typescript-eslint/no-floating-promises
-fetchUser(123);  // Promise is ignored!
+fetchUser(123); // Promise is ignored!
 
 async function process(): void {
-  doAsyncWork();  // Not awaited!
+  doAsyncWork(); // Not awaited!
 }
 
 // ✅ CORRECT - Await or handle
@@ -463,15 +462,16 @@ async function process(): Promise<void> {
 }
 
 // ✅ CORRECT - Explicit void for Fire-and-Forget
-void fetchAnalytics();  // Explicitly ignored
+void fetchAnalytics(); // Explicitly ignored
 ```
 
 ### 4.2 Async Functions return Promise
 
 ```typescript
 // ❌ WRONG - ESLint Error: @typescript-eslint/promise-function-async
-function fetchData(): Promise<Data> {  // Not marked async
-  return fetch('/api/data').then(r => r.json());
+function fetchData(): Promise<Data> {
+  // Not marked async
+  return fetch('/api/data').then((r) => r.json());
 }
 
 // ✅ CORRECT - Async/Await
@@ -657,14 +657,17 @@ console.debug('Debug mode:', config); // Backend only
 
 ```typescript
 // ❌ WRONG - ESLint Error: prefer-promise-reject-errors
-return Promise.reject('Error occurred');  // String rejection
+return Promise.reject('Error occurred'); // String rejection
 
 // ✅ CORRECT - Error Objects
 return Promise.reject(new Error('Error occurred'));
 
 // ✅ CORRECT - Custom Error Classes
 class ValidationError extends Error {
-  constructor(public field: string, message: string) {
+  constructor(
+    public field: string,
+    message: string,
+  ) {
     super(message);
     this.name = 'ValidationError';
   }

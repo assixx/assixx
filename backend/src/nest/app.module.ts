@@ -62,15 +62,24 @@ import { UsersModule } from './users/users.module.js';
     AppConfigModule,
 
     // JWT Module
+    // SECURITY: JWT_SECRET must be set in environment (no fallback allowed)
     JwtModule.registerAsync({
       global: true,
-      useFactory: (): JwtModuleOptions =>
-        ({
-          secret: process.env['JWT_SECRET'] ?? 'your-secret-key-change-in-production',
+      useFactory: (): JwtModuleOptions => {
+        const secret = process.env['JWT_SECRET'];
+        if (secret === undefined || secret === '' || secret.length < 32) {
+          throw new Error(
+            'SECURITY ERROR: JWT_SECRET must be set and at least 32 characters. ' +
+              "Generate one with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
+          );
+        }
+        return {
+          secret,
           signOptions: {
             expiresIn: process.env['JWT_ACCESS_EXPIRY'] ?? '30m',
           },
-        }) as JwtModuleOptions,
+        } as JwtModuleOptions;
+      },
     }),
 
     // CLS Module for request-scoped context (tenant isolation)

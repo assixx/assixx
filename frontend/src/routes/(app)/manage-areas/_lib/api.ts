@@ -2,7 +2,13 @@
 // MANAGE AREAS - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
 import type {
   Area,
   AdminUser,
@@ -12,9 +18,6 @@ import type {
   FormIsActiveStatus,
   DeleteAreaResult,
 } from './types';
-import { API_ENDPOINTS } from './constants';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -38,7 +41,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 // =============================================================================
@@ -46,19 +49,49 @@ export function handleSessionExpired(): void {
 // =============================================================================
 
 /**
+ * Check if value is a non-null object
+ */
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
  * Type-safe extraction helper for nested API responses
  */
 function extractArray(response: unknown): unknown[] {
   if (Array.isArray(response)) return response;
-  if (response !== null && typeof response === 'object') {
-    const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data;
-    if (obj.data !== null && typeof obj.data === 'object') {
-      const nested = obj.data as Record<string, unknown>;
-      if (Array.isArray(nested.data)) return nested.data;
-    }
-  }
+  if (!isNonNullObject(response)) return [];
+
+  const obj = response;
+  if (Array.isArray(obj.data)) return obj.data;
+  if (!isNonNullObject(obj.data)) return [];
+
+  const nested = obj.data;
+  if (Array.isArray(nested.data)) return nested.data;
+
   return [];
+}
+
+/**
+ * Parse delete error to extract dependency information
+ */
+interface DeleteErrorInfo {
+  hasDependencies: boolean;
+  message: string | null;
+  status: unknown;
+}
+
+function parseDeleteError(err: unknown): DeleteErrorInfo {
+  if (!isNonNullObject(err)) {
+    return { hasDependencies: false, message: null, status: undefined };
+  }
+
+  const status = err.status;
+  const message = typeof err.message === 'string' ? err.message : null;
+  const details = isNonNullObject(err.details) ? err.details : null;
+  const hasDependencies = details?.hasDependencies === true;
+
+  return { hasDependencies, message, status };
 }
 
 // =============================================================================
@@ -73,8 +106,10 @@ export async function loadAreas(): Promise<{
   error: string | null;
 }> {
   try {
-    const data = await apiClient.get(API_ENDPOINTS.AREAS);
-    const areas = Array.isArray(data) ? data : ((data as { data?: Area[] }).data ?? []);
+    const data: unknown = await apiClient.get(API_ENDPOINTS.AREAS);
+    const areas: Area[] = Array.isArray(data)
+      ? (data as Area[])
+      : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
   } catch (err) {
     console.error('[ManageAreas] Error loading areas:', err);
@@ -131,8 +166,10 @@ export async function loadDepartments(): Promise<{
   error: string | null;
 }> {
   try {
-    const data = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
-    const departments = Array.isArray(data) ? data : ((data as { data?: Department[] }).data ?? []);
+    const data: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
+    const departments: Department[] = Array.isArray(data)
+      ? (data as Department[])
+      : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
   } catch (err) {
     console.error('[ManageAreas] Error loading departments:', err);
@@ -177,7 +214,7 @@ export async function saveArea(
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     if (editId !== null) {
-      await apiClient.put(API_ENDPOINTS.AREA(editId), payload);
+      await apiClient.put(API_ENDPOINTS.area(editId), payload);
     } else {
       await apiClient.post(API_ENDPOINTS.AREAS, payload);
     }
@@ -196,28 +233,19 @@ export async function saveArea(
  */
 export async function deleteArea(areaId: number): Promise<DeleteAreaResult> {
   try {
-    await apiClient.delete(API_ENDPOINTS.AREA(areaId));
+    await apiClient.delete(API_ENDPOINTS.area(areaId));
     return { success: true, error: null };
   } catch (err) {
     console.error('[ManageAreas] Error deleting area:', err);
 
-    // Type-safe error property extraction
-    const isObject = err !== null && typeof err === 'object';
-    const errObj = isObject ? (err as Record<string, unknown>) : null;
-    const status = errObj?.status;
-    const details = errObj?.details;
-    const detailsObj =
-      details !== null && typeof details === 'object' ? (details as Record<string, unknown>) : null;
-    const hasDependencies = detailsObj?.hasDependencies === true;
-    const message = typeof errObj?.message === 'string' ? errObj.message : null;
+    const errorInfo = parseDeleteError(err);
 
-    // Check if it's a dependency error
-    if (status === 409 || hasDependencies) {
+    if (errorInfo.status === 409 || errorInfo.hasDependencies) {
       return {
         success: false,
         error: null,
         hasDependencies: true,
-        dependencyMessage: message ?? undefined,
+        dependencyMessage: errorInfo.message ?? undefined,
       };
     }
 
@@ -235,7 +263,7 @@ export async function forceDeleteArea(
   areaId: number,
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.AREA_FORCE_DELETE(areaId));
+    await apiClient.delete(API_ENDPOINTS.areaForceDelete(areaId));
     return { success: true, error: null };
   } catch (err) {
     console.error('[ManageAreas] Error force deleting area:', err);

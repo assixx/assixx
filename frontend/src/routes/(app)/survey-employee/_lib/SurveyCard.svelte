@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { SurveyWithStatus } from './types';
   import {
     getTextFromBuffer,
     getStatusText,
@@ -8,6 +7,8 @@
     formatSurveyDate,
     getAssignmentInfo,
   } from './utils';
+
+  import type { SurveyWithStatus } from './types';
 
   interface Props {
     survey: SurveyWithStatus;
@@ -34,7 +35,9 @@
   role="button"
   tabindex="0"
   {onclick}
-  onkeydown={(e) => e.key === 'Enter' && onclick()}
+  onkeydown={(e) => {
+    if (e.key === 'Enter') onclick();
+  }}
 >
   <div class="flex justify-between items-start mb-4">
     <h3 class="text-xl font-semibold text-primary m-0">

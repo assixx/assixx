@@ -4,18 +4,25 @@
    * SSR: Data loaded in +page.server.ts
    * Level 3: $derived from SSR data + invalidateAll() after mutations
    */
-  import { onDestroy } from 'svelte';
-  import { invalidateAll } from '$app/navigation';
   import { Calendar, DayGrid, TimeGrid, List, Interaction } from '@event-calendar/core';
+  import { onDestroy } from 'svelte';
+
+  import { browser } from '$app/environment';
+  import { invalidateAll } from '$app/navigation';
+
   import '@event-calendar/core/index.css';
   // Global calendar styles - MUST be imported for legend-*, event-level-*, etc. classes
   import '$styles/calendar.css';
-  import type { PageData } from './$types';
-  import { calendarState } from './_lib/state.svelte';
+
   import * as api from './_lib/api';
-  import { browser } from '$app/environment';
   import { FILTER_OPTIONS, DE_LOCALE } from './_lib/constants';
+  import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
+  import EventDetailModal from './_lib/EventDetailModal.svelte';
+  import EventFormModal from './_lib/EventFormModal.svelte';
+  import { calendarState } from './_lib/state.svelte';
   import { getUpcomingEventTimeStr, getEventLevelInfo, formatDatetimeLocal } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type {
     CalendarEvent,
     FilterLevel,
@@ -23,10 +30,8 @@
     EventInput,
     EventHoverInfo,
   } from './_lib/types';
+
   // Modal components
-  import EventDetailModal from './_lib/EventDetailModal.svelte';
-  import EventFormModal from './_lib/EventFormModal.svelte';
-  import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
 
   // ==========================================================================
   // SSR DATA (single source of truth via $derived)
@@ -35,12 +40,12 @@
   const { data }: { data: PageData } = $props();
 
   // Derived from SSR data
-  const upcomingEvents = $derived(data?.upcomingEvents ?? []);
-  const departments = $derived(data?.departments ?? []);
-  const teams = $derived(data?.teams ?? []);
-  const areas = $derived(data?.areas ?? []);
-  const users = $derived(data?.users ?? []);
-  const currentUser = $derived(data?.currentUser ?? null);
+  const upcomingEvents = $derived(data.upcomingEvents);
+  const departments = $derived(data.departments);
+  const teams = $derived(data.teams);
+  const areas = $derived(data.areas);
+  const users = $derived(data.users);
+  const currentUser = $derived(data.currentUser);
 
   // ==========================================================================
   // UI STATE (local only)
@@ -51,7 +56,7 @@
   let showShifts = $state(
     browser ? localStorage.getItem('showShiftsInCalendar') === 'true' : false,
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Calendar component type from @event-calendar/core
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment -- Calendar component type from @event-calendar/core lacks proper types
   let calendarRef: any = $state();
 
   // Form state
@@ -78,16 +83,18 @@
   // CALENDAR OPTIONS
   // ==========================================================================
 
-  function refetchCalendarEvents() {
-    if (calendarRef) {
+  /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- @event-calendar/core lacks types */
+  function refetchCalendarEvents(): void {
+    if (calendarRef !== undefined) {
       if (typeof calendarRef.refetchEvents === 'function') {
-        console.info('[CALENDAR] Refetching events...');
+        console.warn('[CALENDAR] Refetching events...');
         calendarRef.refetchEvents();
       } else {
         console.warn('[CALENDAR] refetchEvents not available, calendar may not be ready');
       }
     }
   }
+  /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 
   const calendarPlugins = $derived([DayGrid, TimeGrid, List, Interaction]);
   const calendarOptions = $derived({
@@ -123,16 +130,31 @@
     const description = extendedProps.description ?? '';
     const location = extendedProps.location;
 
-    let content = `<strong>${info.event.title}</strong>`;
-    if (description !== '') content += `<br>${description}`;
-    if (location !== undefined && location !== '') {
-      content += `<br><i class="fas fa-map-marker-alt"></i> ${location}`;
-    }
-
+    // Build tooltip using DOM APIs (no innerHTML for security)
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip__content tooltip__content--info tooltip__content--bottom show';
     tooltip.setAttribute('role', 'tooltip');
-    tooltip.innerHTML = content;
+
+    // Title (bold)
+    const titleEl = document.createElement('strong');
+    titleEl.textContent = info.event.title;
+    tooltip.appendChild(titleEl);
+
+    // Description
+    if (description !== '') {
+      tooltip.appendChild(document.createElement('br'));
+      tooltip.appendChild(document.createTextNode(description));
+    }
+
+    // Location with icon
+    if (location !== undefined && location !== '') {
+      tooltip.appendChild(document.createElement('br'));
+      const iconEl = document.createElement('i');
+      iconEl.className = 'fas fa-map-marker-alt';
+      tooltip.appendChild(iconEl);
+      tooltip.appendChild(document.createTextNode(` ${location}`));
+    }
+
     document.body.append(tooltip);
 
     const rect = info.el.getBoundingClientRect();
@@ -194,7 +216,9 @@
    */
   function renderShiftIndicators(): void {
     // Remove existing indicators first
-    document.querySelectorAll('.shift-indicator').forEach((el) => el.remove());
+    document.querySelectorAll('.shift-indicator').forEach((el) => {
+      el.remove();
+    });
 
     if (!showShifts || shiftsCache.size === 0) return;
 
@@ -207,7 +231,7 @@
       if (!timeEl) return;
 
       const dateAttr = timeEl.getAttribute('datetime');
-      if (!dateAttr) return;
+      if (dateAttr === null) return;
 
       const shift = shiftsCache.get(dateAttr);
       if (!shift) return;
@@ -226,7 +250,7 @@
       renderedCount++;
     });
 
-    console.info(
+    console.warn(
       '[CALENDAR] Rendered shift indicators:',
       renderedCount,
       'of',
@@ -244,7 +268,7 @@
       return;
     }
 
-    console.info('[CALENDAR] Fetching shifts for:', startStr, '-', endStr);
+    console.warn('[CALENDAR] Fetching shifts for:', startStr, '-', endStr);
     const shifts = await api.loadUserShifts(startStr, endStr);
 
     // Build cache
@@ -255,7 +279,7 @@
       shiftsCache.set(dateOnly, { type: shift.type });
     }
 
-    console.info('[CALENDAR] Cached shifts:', shiftsCache.size);
+    console.warn('[CALENDAR] Cached shifts:', shiftsCache.size);
 
     // Small delay to ensure DOM is rendered, then add indicators
     setTimeout(renderShiftIndicators, 100);
@@ -283,15 +307,15 @@
     }
   }
 
-  function handleCalendarEventClick(info: { event: { id: string }; jsEvent: MouseEvent }) {
+  function handleCalendarEventClick(info: { event: { id: string }; jsEvent: MouseEvent }): void {
     info.jsEvent.preventDefault();
-    handleEventClick(Number.parseInt(info.event.id, 10));
+    void handleEventClick(Number.parseInt(info.event.id, 10));
   }
 
   function handleCalendarDateClick(info: { date: Date; allDay: boolean }) {
-    console.info('[CALENDAR] Date clicked:', info);
+    console.warn('[CALENDAR] Date clicked:', info);
     if (isFullscreen) {
-      console.info('[CALENDAR] Date click disabled in fullscreen mode');
+      console.warn('[CALENDAR] Date click disabled in fullscreen mode');
       return;
     }
     handleDateClick(info.date, info.allDay);
@@ -328,8 +352,8 @@
   // EVENT FORM
   // ==========================================================================
 
-  function openEventForm(startDate?: Date, endDate?: Date, allDay = false) {
-    console.info('[CALENDAR] Opening event form:', { startDate, endDate, allDay });
+  function openEventForm(startDate?: Date, endDate?: Date, allDay: boolean = false): void {
+    console.warn('[CALENDAR] Opening event form:', { startDate, endDate, allDay });
     const now = startDate ?? new Date();
     const later = endDate ?? new Date(now.getTime() + 60 * 60 * 1000);
 
@@ -353,7 +377,7 @@
     };
 
     calendarState.openEventModal(startDate);
-    console.info(
+    console.warn(
       `[CALENDAR] Modal configured for ${calendarState.isAdmin ? 'admin (all event types)' : 'employee (personal only)'}`,
     );
   }
@@ -424,17 +448,16 @@
   // FULLSCREEN
   // ==========================================================================
 
-  async function toggleFullscreen() {
+  async function toggleFullscreen(): Promise<void> {
+    // Note: isFullscreen is synced via fullscreenchange event in $effect below
     if (!isFullscreen) {
       try {
         await document.documentElement.requestFullscreen();
-        isFullscreen = true;
       } catch (err) {
         console.error('[CALENDAR] Fullscreen error:', err);
       }
     } else {
       await document.exitFullscreen();
-      isFullscreen = false;
     }
   }
 
@@ -474,7 +497,9 @@
                 class="toggle-group__btn"
                 class:active={calendarState.currentFilter === option.value}
                 data-value={option.value}
-                onclick={() => handleFilterChange(option.value as FilterLevel)}
+                onclick={() => {
+                  handleFilterChange(option.value as FilterLevel);
+                }}
                 title={option.title}
               >
                 <i class="fas {option.icon}"></i>
@@ -491,7 +516,7 @@
               data-action="toggle-shifts"
               onclick={() => {
                 showShifts = !showShifts;
-                console.info('[CALENDAR] Shifts toggle:', showShifts);
+                console.warn('[CALENDAR] Shifts toggle:', showShifts);
                 // Persist to localStorage
                 if (browser) {
                   localStorage.setItem('showShiftsInCalendar', String(showShifts));
@@ -501,7 +526,9 @@
                   refetchCalendarEvents(); // This triggers fetchAndRenderShifts
                 } else {
                   // Remove all shift indicators
-                  document.querySelectorAll('.shift-indicator').forEach((el) => el.remove());
+                  document.querySelectorAll('.shift-indicator').forEach((el) => {
+                    el.remove();
+                  });
                   shiftsCache.clear();
                 }
               }}
@@ -564,7 +591,9 @@
             type="button"
             id="newEventBtn"
             class="btn btn-primary"
-            onclick={() => openEventForm()}
+            onclick={() => {
+              openEventForm();
+            }}
           >
             <i class="fas fa-plus mr-2"></i>
             Neuer Termin
@@ -635,7 +664,9 @@
     event={calendarState.viewingEvent}
     canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
     canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
-    onclose={() => calendarState.closeDetailModal()}
+    onclose={() => {
+      calendarState.closeDetailModal();
+    }}
     onedit={openEditForm}
     ondelete={handleDeleteClick}
   />
@@ -649,14 +680,18 @@
     departments={calendarState.departments}
     teams={calendarState.teams}
     areas={calendarState.areas}
-    onclose={() => calendarState.closeEventModal()}
+    onclose={() => {
+      calendarState.closeEventModal();
+    }}
     onsave={handleSaveEvent}
   />
 {/if}
 
 {#if calendarState.showDeleteModal}
   <DeleteConfirmModal
-    onclose={() => calendarState.closeDeleteModal()}
+    onclose={() => {
+      calendarState.closeDeleteModal();
+    }}
     onconfirm={handleConfirmDelete}
   />
 {/if}

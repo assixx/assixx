@@ -111,11 +111,11 @@ if (user.isRoleSwitched) {
 
 ```javascript
 // In sensitiven Endpoints prüfen
-if (req.user.isRoleSwitched && req.user.activeRole === "employee") {
+if (req.user.isRoleSwitched && req.user.activeRole === 'employee') {
   // Blockiere Zugriff auf private Daten anderer
   if (requestedUserId !== req.user.id) {
     return res.status(403).json({
-      message: "Im Employee-Modus nur eigene Daten einsehbar",
+      message: 'Im Employee-Modus nur eigene Daten einsehbar',
     });
   }
 }

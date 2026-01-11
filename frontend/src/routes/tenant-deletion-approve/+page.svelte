@@ -1,37 +1,42 @@
-<script>
-  import { base } from '$app/paths';
+<script lang="ts">
+  import { untrack } from 'svelte';
+
+  import { resolve } from '$app/paths';
+
+  import { getApiClient } from '$lib/utils/api-client';
+
+  import type { PageData } from './$types';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // API Client (for approve action only)
-  import { getApiClient } from '$lib/utils/api-client';
   const apiClient = getApiClient();
 
   // SSR Data
-  /** @type {{ data: import('./$types').PageData }} */
-  const { data } = $props();
+  const { data }: { data: PageData } = $props();
 
   // =============================================================================
   // TYPES
   // =============================================================================
 
-  /**
-   * @typedef {Object} DeletionStatusData
-   * @property {number} queueId
-   * @property {number} tenantId
-   * @property {string} status
-   * @property {number} requestedBy
-   * @property {string} [requestedByName]
-   * @property {boolean} canApprove
-   */
+  interface DeletionStatusData {
+    queueId: number;
+    tenantId: number;
+    status: string;
+    requestedBy: number;
+    requestedByName?: string;
+    canApprove: boolean;
+  }
 
   // =============================================================================
   // SSR DATA (via $derived - single source of truth)
   // =============================================================================
 
-  /** @type {number | null} */
-  const queueId = $derived(data?.queueId ?? null);
-
-  /** @type {DeletionStatusData | null} */
-  const queueData = $derived(data?.queueData ?? null);
+  const queueId = $derived<number | null>(data.queueId ?? null);
+  const queueData = $derived<DeletionStatusData | null>(data.queueData ?? null);
 
   // =============================================================================
   // UI STATE (client-side only)
@@ -41,8 +46,8 @@
   let submitting = $state(false);
   let success = $state(false);
 
-  /** @type {string | null} - writable $derived: syncs from SSR, can be locally overridden */
-  let errorMessage = $derived(data?.error ?? null);
+  // Initialize from SSR error (intentionally capturing initial value, not tracking)
+  let errorMessage = $state<string | null>(untrack(() => data.error));
 
   // Form inputs
   let confirmationInput = $state('');
@@ -60,24 +65,15 @@
   // API FUNCTIONS
   // =============================================================================
 
-  /**
-   * Approve deletion
-   * @param {number} id
-   * @param {string} password
-   */
-  async function approveDeletion(id, password) {
-    await apiClient.post(`/root/deletion-approvals/${id}/approve`, { password });
+  async function approveDeletion(id: number, password: string): Promise<void> {
+    await apiClient.post(`/root/deletion-approvals/${String(id)}/approve`, { password });
   }
 
   // =============================================================================
   // HANDLERS
   // =============================================================================
 
-  /**
-   * Handle form submission
-   * @param {Event} event
-   */
-  async function handleSubmit(event) {
+  async function handleSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
     if (!canSubmit || queueId === null) return;
@@ -92,7 +88,7 @@
 
       // Redirect after delay (full page reload to switch from standalone to app layout)
       setTimeout(() => {
-        window.location.href = `${base}/tenant-deletion-status`;
+        window.location.href = resolvePath('/tenant-deletion-status');
       }, 2000);
     } catch (err) {
       console.error('[TenantDeletionApprove] Error approving:', err);
@@ -110,10 +106,11 @@
         <i class="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
         <p class="text-[var(--color-text-secondary)]">Lade Löschanfrage...</p>
       </div>
-    {:else if errorMessage && !queueData}
+    {:else if errorMessage !== null && queueData === null}
       <!-- Error State (no data loaded) -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
+        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
+          rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
@@ -123,14 +120,19 @@
           <p class="alert__message">{errorMessage}</p>
         </div>
       </div>
-      <a href="{base}/tenant-deletion-status" class="btn btn-primary" data-sveltekit-reload>
+      <a
+        href={resolvePath('/tenant-deletion-status')}
+        class="btn btn-primary"
+        data-sveltekit-reload
+      >
         <i class="fas fa-arrow-left mr-2"></i>
         Zurück zur Übersicht
       </a>
     {:else if success}
       <!-- Success State -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full text-[40px] text-[var(--color-success)] bg-[rgb(76_175_80/15%)]"
+        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
+          rounded-full text-[40px] text-[var(--color-success)] bg-[rgb(76_175_80/15%)]"
       >
         <i class="fas fa-check-circle"></i>
       </div>
@@ -148,11 +150,12 @@
         <i class="fas fa-spinner fa-spin mr-2"></i>
         Weiterleitung zur Statusübersicht...
       </p>
-    {:else if queueData}
+    {:else if queueData !== null}
       <!-- Approval Form -->
       <!-- Warning Icon -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
+        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
+          rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
@@ -250,7 +253,7 @@
         <!-- Action Buttons -->
         <div class="flex gap-3">
           <a
-            href="{base}/tenant-deletion-status"
+            href={resolvePath('/tenant-deletion-status')}
             class="btn btn-cancel flex-1"
             data-sveltekit-reload
           >

@@ -24,10 +24,10 @@
 
 Siehe `docker/.env` für Passwörter.
 
-| User | Zweck | RLS |
-|------|-------|-----|
-| `app_user` | Backend-Verbindung | Ja (unterliegt RLS) |
-| `assixx_user` | Migrationen, Admin | Nein (BYPASSRLS) |
+| User          | Zweck              | RLS                 |
+| ------------- | ------------------ | ------------------- |
+| `app_user`    | Backend-Verbindung | Ja (unterliegt RLS) |
+| `assixx_user` | Migrationen, Admin | Nein (BYPASSRLS)    |
 
 Für Migrationen immer `assixx_user` verwenden.
 
@@ -56,11 +56,11 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
 
 Diese Tabellen enthalten globale Konfiguration und unterliegen NICHT der RLS:
 
-| Tabelle | Beschreibung | RLS |
-|---------|--------------|-----|
-| `plans` | Subscription-Pläne (Basic, Professional, Enterprise) | Nein |
-| `features` | Verfügbare Features | Nein |
-| `plan_features` | Zuordnung Plan zu Features | Nein |
+| Tabelle         | Beschreibung                                         | RLS  |
+| --------------- | ---------------------------------------------------- | ---- |
+| `plans`         | Subscription-Pläne (Basic, Professional, Enterprise) | Nein |
+| `features`      | Verfügbare Features                                  | Nein |
+| `plan_features` | Zuordnung Plan zu Features                           | Nein |
 
 Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security.
 
@@ -68,11 +68,11 @@ Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security.
 
 Pfad: `/database/migrations/`
 
-| Datei | Inhalt |
-|-------|--------|
+| Datei                              | Inhalt                                               |
+| ---------------------------------- | ---------------------------------------------------- |
 | `001_baseline_complete_schema.sql` | Komplettes Schema (Tabellen, Indexes, RLS, Triggers) |
-| `002_seed_data.sql` | System-Tabellen Daten |
-| `003_xxx.sql` | Inkrementelle Änderungen |
+| `002_seed_data.sql`                | System-Tabellen Daten                                |
+| `003_xxx.sql`                      | Inkrementelle Änderungen                             |
 
 ### Workflow: Schema oder Seed ändern
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Department, Admin, TeamMember, Machine, FormIsActiveStatus } from './types';
   import { MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -10,6 +9,8 @@
     getLeaderDisplayText,
     toggleIdInArray,
   } from './utils';
+
+  import type { Department, Admin, TeamMember, Machine, FormIsActiveStatus } from './types';
 
   interface Props {
     isEditMode: boolean;
@@ -38,12 +39,17 @@
     }) => void;
   }
 
-  const props: Props = $props();
-
-  // Destructure read-only props for convenience (these don't need reactivity)
+  // Destructure all props directly from $props() for ESLint compatibility
   const {
     isEditMode,
     modalTitle,
+    formName,
+    formDescription,
+    formDepartmentId,
+    formLeaderId,
+    formMemberIds,
+    formMachineIds,
+    formIsActive,
     allDepartments,
     allAdmins,
     allEmployees,
@@ -51,7 +57,7 @@
     submitting,
     onclose,
     onsubmit,
-  } = props;
+  }: Props = $props();
 
   // Local form state - initialize with defaults, sync via $effect
   let localName = $state('');
@@ -62,15 +68,15 @@
   let localMachineIds = $state<number[]>([]);
   let localIsActive = $state<FormIsActiveStatus>(1);
 
-  // Sync props to local state when they change (access via props object for reactivity)
+  // Sync props to local state when they change
   $effect(() => {
-    localName = props.formName;
-    localDescription = props.formDescription;
-    localDepartmentId = props.formDepartmentId;
-    localLeaderId = props.formLeaderId;
-    localMemberIds = [...props.formMemberIds];
-    localMachineIds = [...props.formMachineIds];
-    localIsActive = props.formIsActive;
+    localName = formName;
+    localDescription = formDescription;
+    localDepartmentId = formDepartmentId;
+    localLeaderId = formLeaderId;
+    localMemberIds = [...formMemberIds];
+    localMachineIds = [...formMachineIds];
+    localIsActive = formIsActive;
   });
 
   // Dropdown states
@@ -158,23 +164,30 @@
     });
   }
 
+  /** Close dropdown if click is outside its container */
+  function closeDropdownIfOutside(target: HTMLElement, isOpen: boolean, selector: string): boolean {
+    return isOpen && !target.closest(selector) ? false : isOpen;
+  }
+
   function handleOutsideClick(e: MouseEvent): void {
     const target = e.target as HTMLElement;
-    if (departmentDropdownOpen && !target.closest('#department-dropdown')) {
-      departmentDropdownOpen = false;
-    }
-    if (leaderDropdownOpen && !target.closest('#team-lead-dropdown')) {
-      leaderDropdownOpen = false;
-    }
-    if (membersDropdownOpen && !target.closest('#team-members-dropdown')) {
-      membersDropdownOpen = false;
-    }
-    if (machinesDropdownOpen && !target.closest('#team-machines-dropdown')) {
-      machinesDropdownOpen = false;
-    }
-    if (statusDropdownOpen && !target.closest('#status-dropdown')) {
-      statusDropdownOpen = false;
-    }
+    departmentDropdownOpen = closeDropdownIfOutside(
+      target,
+      departmentDropdownOpen,
+      '#department-dropdown',
+    );
+    leaderDropdownOpen = closeDropdownIfOutside(target, leaderDropdownOpen, '#team-lead-dropdown');
+    membersDropdownOpen = closeDropdownIfOutside(
+      target,
+      membersDropdownOpen,
+      '#team-members-dropdown',
+    );
+    machinesDropdownOpen = closeDropdownIfOutside(
+      target,
+      machinesDropdownOpen,
+      '#team-machines-dropdown',
+    );
+    statusDropdownOpen = closeDropdownIfOutside(target, statusDropdownOpen, '#status-dropdown');
   }
 </script>
 
@@ -187,13 +200,19 @@
   aria-labelledby="team-modal-title"
   tabindex="-1"
   onclick={handleOverlayClick}
-  onkeydown={(e) => e.key === 'Escape' && onclose()}
+  onkeydown={(e) => {
+    if (e.key === 'Escape') onclose();
+  }}
 >
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.stopPropagation()}
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
+    onkeydown={(e) => {
+      e.stopPropagation();
+    }}
     onsubmit={handleFormSubmit}
   >
     <div class="ds-modal__header">
@@ -241,14 +260,22 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <div class="dropdown__menu" class:active={departmentDropdownOpen}>
-            <button type="button" class="dropdown__option" onclick={() => selectDepartment(null)}>
+            <button
+              type="button"
+              class="dropdown__option"
+              onclick={() => {
+                selectDepartment(null);
+              }}
+            >
               {MESSAGES.NO_DEPARTMENT}
             </button>
             {#each allDepartments as dept (dept.id)}
               <button
                 type="button"
                 class="dropdown__option"
-                onclick={() => selectDepartment(dept.id)}
+                onclick={() => {
+                  selectDepartment(dept.id);
+                }}
               >
                 {dept.name}
               </button>
@@ -270,11 +297,23 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <div class="dropdown__menu" class:active={leaderDropdownOpen}>
-            <button type="button" class="dropdown__option" onclick={() => selectLeader(null)}>
+            <button
+              type="button"
+              class="dropdown__option"
+              onclick={() => {
+                selectLeader(null);
+              }}
+            >
               {MESSAGES.NO_LEADER}
             </button>
             {#each allAdmins as admin (admin.id)}
-              <button type="button" class="dropdown__option" onclick={() => selectLeader(admin.id)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectLeader(admin.id);
+                }}
+              >
                 {admin.firstName}
                 {admin.lastName}
               </button>
@@ -300,14 +339,20 @@
               <button
                 type="button"
                 class="dropdown__option dropdown__option--checkbox"
-                onclick={() => toggleMember(employee.id)}
+                onclick={() => {
+                  toggleMember(employee.id);
+                }}
               >
                 <input
                   type="checkbox"
                   checked={localMemberIds.includes(employee.id)}
                   class="mr-2"
-                  onclick={(e) => e.stopPropagation()}
-                  onchange={() => toggleMember(employee.id)}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onchange={() => {
+                    toggleMember(employee.id);
+                  }}
                 />
                 {employee.firstName}
                 {employee.lastName}
@@ -342,14 +387,20 @@
               <button
                 type="button"
                 class="dropdown__option dropdown__option--checkbox"
-                onclick={() => toggleMachine(machine.id)}
+                onclick={() => {
+                  toggleMachine(machine.id);
+                }}
               >
                 <input
                   type="checkbox"
                   checked={localMachineIds.includes(machine.id)}
                   class="mr-2"
-                  onclick={(e) => e.stopPropagation()}
-                  onchange={() => toggleMachine(machine.id)}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onchange={() => {
+                    toggleMachine(machine.id);
+                  }}
                 />
                 {machine.name}
               </button>
@@ -381,13 +432,31 @@
               <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown__menu" class:active={statusDropdownOpen}>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(1)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectStatus(1);
+                }}
+              >
                 <span class="badge badge--success">Aktiv</span>
               </button>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(0)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectStatus(0);
+                }}
+              >
                 <span class="badge badge--warning">Inaktiv</span>
               </button>
-              <button type="button" class="dropdown__option" onclick={() => selectStatus(3)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectStatus(3);
+                }}
+              >
                 <span class="badge badge--error">Archiviert</span>
               </button>
             </div>

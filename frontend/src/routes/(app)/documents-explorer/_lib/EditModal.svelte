@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { Document } from './types';
   import { DB_CATEGORY_LABELS } from './constants';
   import { formatDateTime } from './utils';
+
+  import type { Document, EditData } from './types';
 
   interface Props {
     show: boolean;
@@ -9,12 +10,6 @@
     onclose: () => void;
     onsubmit: (data: EditData) => void;
     submitting: boolean;
-  }
-
-  export interface EditData {
-    documentName: string;
-    category: string;
-    tags: string[];
   }
 
   const { show, document, onclose, onsubmit, submitting }: Props = $props();
@@ -65,7 +60,9 @@
         if (el && !el.contains(target)) categoryDropdownOpen = false;
       };
       globalThis.document.addEventListener('click', handleOutsideClick);
-      return () => globalThis.document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        globalThis.document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -78,7 +75,9 @@
     <form
       id="edit-form"
       class="ds-modal ds-modal--md"
-      onclick={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
       onsubmit={(e) => {
         e.preventDefault();
         handleSubmit();
@@ -138,25 +137,45 @@
             <div class="dropdown__menu" class:active={categoryDropdownOpen}>
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectCategory('general')}>
+              <div
+                class="dropdown__option"
+                onclick={() => {
+                  selectCategory('general');
+                }}
+              >
                 <i class="fas fa-folder"></i>
                 Allgemein
               </div>
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectCategory('work')}>
+              <div
+                class="dropdown__option"
+                onclick={() => {
+                  selectCategory('work');
+                }}
+              >
                 <i class="fas fa-briefcase"></i>
                 Arbeit
               </div>
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectCategory('personal')}>
+              <div
+                class="dropdown__option"
+                onclick={() => {
+                  selectCategory('personal');
+                }}
+              >
                 <i class="fas fa-user"></i>
                 Persönlich
               </div>
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown__option" onclick={() => selectCategory('salary')}>
+              <div
+                class="dropdown__option"
+                onclick={() => {
+                  selectCategory('salary');
+                }}
+              >
                 <i class="fas fa-money-bill-wave"></i>
                 Gehalt
               </div>

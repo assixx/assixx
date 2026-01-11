@@ -5,25 +5,32 @@
    *
    * SSR: Data loaded in +page.server.ts (no onMount fetching)
    */
-  import { base } from '$app/paths';
   import { invalidateAll } from '$app/navigation';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+  import { resolve } from '$app/paths';
+
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/root-dashboard.css';
 
   // Module imports
   import { saveEmployeeNumber as saveEmployeeNumberApi } from './_lib/api';
-  import {
-    getActionLabel,
-    getActionBadgeClass,
-    getRoleLabel,
-    getRoleBadgeClass,
-    getDisplayName,
-    filterEmployeeNumberInput,
-  } from './_lib/utils';
   import { EMPLOYEE_NUMBER, MESSAGES } from './_lib/constants';
+  import {
+    filterEmployeeNumberInput,
+    getActionBadgeClass,
+    getActionLabel,
+    getDisplayName,
+    getRoleBadgeClass,
+    getRoleLabel,
+  } from './_lib/utils';
+
+  import type { PageData } from './$types';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // =============================================================================
   // SSR DATA - Loaded server-side in +page.server.ts
@@ -33,9 +40,9 @@
   /** Props from server load function */
   const { data }: { data: PageData } = $props();
 
-  // SSR data with safe fallbacks
-  const stats = $derived(data?.stats ?? { adminCount: 0, employeeCount: 0, totalUsers: 0 });
-  const activityLogs = $derived(data?.activityLogs ?? []);
+  // SSR data (always populated by server load function)
+  const stats = $derived(data.stats);
+  const activityLogs = $derived(data.activityLogs);
 
   // Employee Number Modal State (initialized from SSR, can change client-side)
   let showEmployeeModal = $state(false);
@@ -44,8 +51,8 @@
 
   // Sync SSR showEmployeeModal to local state on first render
   $effect(() => {
-    if (data?.showEmployeeModal) {
-      showEmployeeModal = data.showEmployeeModal;
+    if (data.showEmployeeModal) {
+      showEmployeeModal = true;
     }
   });
 
@@ -55,21 +62,22 @@
 
   async function saveEmployeeNumber(): Promise<void> {
     const trimmed = employeeNumberInput.trim();
-    if (!trimmed) {
+    if (trimmed === '') {
       showWarningAlert(MESSAGES.employeeNumberRequired);
       return;
     }
 
     employeeNumberSaving = true;
+    // Clear immediately after capturing value to prevent race conditions
+    employeeNumberInput = '';
+    showEmployeeModal = false;
 
     const result = await saveEmployeeNumberApi(trimmed);
 
     if (result.success) {
-      showEmployeeModal = false;
-      employeeNumberInput = '';
       // Level 3: Refresh SSR data after mutation
       await invalidateAll();
-    } else if (result.error) {
+    } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
 
@@ -182,12 +190,10 @@
         <i class="fas fa-history mr-2"></i>
         Aktivitätsverlauf
       </h2>
-      <!-- eslint-disable svelte/no-navigation-without-resolve -- /logs route doesn't exist yet -->
-      <a href={`${base}/logs`} class="btn btn-link">
+      <a href={resolvePath('/logs')} class="btn btn-link">
         <i class="fas fa-external-link-alt mr-1.5"></i>
         Alle Logs anzeigen
       </a>
-      <!-- eslint-enable svelte/no-navigation-without-resolve -->
     </div>
     <div class="card__body">
       <div class="table-responsive">

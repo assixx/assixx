@@ -2,8 +2,10 @@
 // MANAGE ADMINS - UTILITY FUNCTIONS
 // =============================================================================
 
-import type { Admin, AdminFormData, BadgeInfo, FormIsActiveStatus, IsActiveStatus } from './types';
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
 import {
+  BADGE_CLASS,
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
   POSITION_DISPLAY_MAP,
@@ -11,6 +13,8 @@ import {
   PASSWORD_CRACK_TIMES,
   MESSAGES,
 } from './constants';
+
+import type { Admin, AdminFormData, BadgeInfo, FormIsActiveStatus, IsActiveStatus } from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -20,14 +24,14 @@ import {
  * Get CSS class for status badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
  * Get localized status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -69,7 +73,7 @@ export function hasFullAccess(admin: Admin): boolean {
 export function getAreasBadge(admin: Admin): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
-      class: 'badge--primary',
+      class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
       title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Bereiche`,
       icon: 'fa-globe',
@@ -77,7 +81,7 @@ export function getAreasBadge(admin: Admin): BadgeInfo {
   }
   if (!admin.areas || admin.areas.length === 0) {
     return {
-      class: 'badge--secondary',
+      class: BADGE_CLASS.SECONDARY,
       text: MESSAGES.BADGE_NONE,
       title: MESSAGES.BADGE_NO_AREAS,
     };
@@ -86,10 +90,45 @@ export function getAreasBadge(admin: Admin): BadgeInfo {
   const label = count === 1 ? 'Bereich' : 'Bereiche';
   const names = admin.areas.map((a) => a.name).join(', ');
   return {
-    class: 'badge--info',
+    class: BADGE_CLASS.INFO,
     text: `${count} ${label}`,
     title: names,
   };
+}
+
+/**
+ * Get department count safely
+ */
+function getDepartmentCount(admin: Admin): number {
+  return admin.departments?.length ?? 0;
+}
+
+/**
+ * Get area count safely
+ */
+function getAreaCount(admin: Admin): number {
+  return admin.areas?.length ?? 0;
+}
+
+/**
+ * Get comma-separated department names
+ */
+function getDepartmentNames(admin: Admin): string {
+  return admin.departments?.map((d) => d.name).join(', ') ?? '';
+}
+
+/**
+ * Get comma-separated area names
+ */
+function getAreaNames(admin: Admin): string {
+  return admin.areas?.map((a) => a.name).join(', ') ?? '';
+}
+
+/**
+ * Get singular/plural label for departments
+ */
+function getDepartmentLabel(count: number): string {
+  return count === 1 ? 'Abteilung' : 'Abteilungen';
 }
 
 /**
@@ -98,49 +137,64 @@ export function getAreasBadge(admin: Admin): BadgeInfo {
 export function getDepartmentsBadge(admin: Admin): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
-      class: 'badge--primary',
+      class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
       title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Abteilungen`,
       icon: 'fa-globe',
     };
   }
 
-  const deptCount = admin.departments?.length ?? 0;
-  const areaCount = admin.areas?.length ?? 0;
+  const deptCount = getDepartmentCount(admin);
+  const areaCount = getAreaCount(admin);
 
   if (deptCount > 0 && areaCount > 0) {
-    const deptNames = admin.departments?.map((d) => d.name).join(', ') ?? '';
     return {
-      class: 'badge--info',
+      class: BADGE_CLASS.INFO,
       text: `${deptCount} Abtlg. + ${MESSAGES.BADGE_INHERITED}`,
-      title: `Direkt: ${deptNames} + Vererbt von ${areaCount} Bereichen`,
+      title: `Direkt: ${getDepartmentNames(admin)} + Vererbt von ${areaCount} Bereichen`,
     };
   }
 
   if (deptCount > 0) {
-    const deptNames = admin.departments?.map((d) => d.name).join(', ') ?? '';
     return {
-      class: 'badge--info',
-      text: `${deptCount} ${deptCount === 1 ? 'Abteilung' : 'Abteilungen'}`,
-      title: deptNames,
+      class: BADGE_CLASS.INFO,
+      text: `${deptCount} ${getDepartmentLabel(deptCount)}`,
+      title: getDepartmentNames(admin),
     };
   }
 
   if (areaCount > 0) {
-    const areaNames = admin.areas?.map((a) => a.name).join(', ') ?? '';
     return {
-      class: 'badge--info',
+      class: BADGE_CLASS.INFO,
       text: MESSAGES.BADGE_INHERITED,
-      title: `Vererbt von: ${areaNames}`,
+      title: `Vererbt von: ${getAreaNames(admin)}`,
       icon: 'fa-sitemap',
     };
   }
 
   return {
-    class: 'badge--secondary',
+    class: BADGE_CLASS.SECONDARY,
     text: MESSAGES.BADGE_NONE,
     title: MESSAGES.BADGE_NO_DEPARTMENTS,
   };
+}
+
+/**
+ * Build inheritance description for teams badge
+ */
+function buildTeamsInheritanceTitle(admin: Admin): string {
+  const parts: string[] = [];
+  const areaNames = getAreaNames(admin);
+  const deptNames = getDepartmentNames(admin);
+
+  if (areaNames !== '') {
+    parts.push(`Bereiche: ${areaNames}`);
+  }
+  if (deptNames !== '') {
+    parts.push(`Abteilungen: ${deptNames}`);
+  }
+
+  return `Teams vererbt von: ${parts.join(' | ')}`;
 }
 
 /**
@@ -149,30 +203,27 @@ export function getDepartmentsBadge(admin: Admin): BadgeInfo {
 export function getTeamsBadge(admin: Admin): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
-      class: 'badge--primary',
+      class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
       title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Teams`,
       icon: 'fa-globe',
     };
   }
 
-  const hasAreas = (admin.areas?.length ?? 0) > 0;
-  const hasDepts = (admin.departments?.length ?? 0) > 0;
+  const hasAreas = getAreaCount(admin) > 0;
+  const hasDepts = getDepartmentCount(admin) > 0;
 
   if (hasAreas || hasDepts) {
-    const parts: string[] = [];
-    if (hasAreas) parts.push(`Bereiche: ${admin.areas?.map((a) => a.name).join(', ')}`);
-    if (hasDepts) parts.push(`Abteilungen: ${admin.departments?.map((d) => d.name).join(', ')}`);
     return {
-      class: 'badge--info',
+      class: BADGE_CLASS.INFO,
       text: MESSAGES.BADGE_INHERITED,
-      title: `Teams vererbt von: ${parts.join(' | ')}`,
+      title: buildTeamsInheritanceTitle(admin),
       icon: 'fa-sitemap',
     };
   }
 
   return {
-    class: 'badge--secondary',
+    class: BADGE_CLASS.SECONDARY,
     text: MESSAGES.BADGE_NONE,
     title: MESSAGES.BADGE_NO_TEAMS,
   };
@@ -184,15 +235,22 @@ export function getTeamsBadge(admin: Admin): BadgeInfo {
 
 /**
  * Highlight search term in text with <strong> tags
- * @param text - Text to highlight in
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to highlight in (potentially untrusted)
  * @param query - Search query to highlight
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
@@ -287,13 +345,34 @@ export function buildAdminFormData(form: FormState, isEditMode: boolean): AdminF
   };
 
   // Add password only if creating new admin or updating password
-  if (!isEditMode) {
-    data.password = form.password;
-  } else if (form.password && form.password.length >= 8) {
+  if (!isEditMode || form.password.length >= 8) {
     data.password = form.password;
   }
 
   return data;
+}
+
+/**
+ * Get area IDs from admin (either direct or extracted from areas array)
+ */
+function extractAreaIds(admin: Admin): number[] {
+  if (admin.areaIds !== undefined) return admin.areaIds;
+  return admin.areas?.map((a) => a.id) ?? [];
+}
+
+/**
+ * Get department IDs from admin (either direct or extracted from departments array)
+ */
+function extractDepartmentIds(admin: Admin): number[] {
+  if (admin.departmentIds !== undefined) return admin.departmentIds;
+  return admin.departments?.map((d) => d.id) ?? [];
+}
+
+/**
+ * Normalize isActive status for form (convert deleted=4 to inactive=0)
+ */
+function normalizeIsActiveForForm(isActive: number): FormIsActiveStatus {
+  return (isActive === 4 ? 0 : isActive) as FormIsActiveStatus;
 }
 
 /**
@@ -307,10 +386,10 @@ export function populateFormFromAdmin(admin: Admin): FormState {
     password: '',
     position: admin.position ?? '',
     notes: admin.notes ?? '',
-    isActive: (admin.isActive === 4 ? 0 : admin.isActive) as FormIsActiveStatus,
+    isActive: normalizeIsActiveForForm(admin.isActive),
     employeeNumber: admin.employeeNumber ?? '',
     hasFullAccess: hasFullAccess(admin),
-    areaIds: admin.areaIds ?? admin.areas?.map((a) => a.id) ?? [],
-    departmentIds: admin.departmentIds ?? admin.departments?.map((d) => d.id) ?? [],
+    areaIds: extractAreaIds(admin),
+    departmentIds: extractDepartmentIds(admin),
   };
 }

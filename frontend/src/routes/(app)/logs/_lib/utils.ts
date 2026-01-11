@@ -3,8 +3,9 @@
  * Helper functions for system logs
  */
 
-import type { LogEntry, PaginationPageItem, DropdownOption } from './types';
 import { ACTION_LABELS, ROLE_LABELS, ROLE_BADGE_CLASSES } from './constants';
+
+import type { LogEntry, PaginationPageItem, DropdownOption } from './types';
 
 // ============================================================================
 // Filter Helpers

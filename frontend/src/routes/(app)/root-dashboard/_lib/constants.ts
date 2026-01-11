@@ -3,10 +3,8 @@
  * @module root-dashboard/_lib/constants
  */
 
-import type { ActionType, UserRole } from './types';
-
 /** Action labels (German) */
-export const ACTION_LABELS: Record<ActionType | string, string> = {
+export const ACTION_LABELS: Record<string, string> = {
   create: 'Erstellt',
   update: 'Aktualisiert',
   delete: 'Gelöscht',
@@ -22,7 +20,7 @@ export const ACTION_LABELS: Record<ActionType | string, string> = {
 } as const;
 
 /** Action badge CSS classes */
-export const ACTION_BADGE_CLASSES: Record<ActionType | string, string> = {
+export const ACTION_BADGE_CLASSES: Record<string, string> = {
   create: 'create',
   update: 'update',
   delete: 'delete',
@@ -38,14 +36,14 @@ export const ACTION_BADGE_CLASSES: Record<ActionType | string, string> = {
 } as const;
 
 /** Role labels (German) */
-export const ROLE_LABELS: Record<UserRole | string, string> = {
+export const ROLE_LABELS: Record<string, string> = {
   root: 'Root',
   admin: 'Admin',
   employee: 'Mitarbeiter',
 } as const;
 
 /** Role badge CSS classes */
-export const ROLE_BADGE_CLASSES: Record<UserRole | string, string> = {
+export const ROLE_BADGE_CLASSES: Record<string, string> = {
   root: 'danger',
   admin: 'warning',
   employee: 'info',

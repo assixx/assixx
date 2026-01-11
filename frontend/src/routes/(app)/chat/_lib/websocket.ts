@@ -2,6 +2,8 @@
 // CHAT PAGE - WEBSOCKET UTILITIES
 // =============================================================================
 
+import { WS_MESSAGE_TYPES, WEBSOCKET_CONFIG } from './constants';
+
 import type {
   Message,
   RawWebSocketMessage,
@@ -12,7 +14,6 @@ import type {
   Conversation,
   UserStatus,
 } from './types';
-import { WS_MESSAGE_TYPES, WEBSOCKET_CONFIG } from './constants';
 
 // =============================================================================
 // WEBSOCKET URL BUILDER
@@ -33,11 +34,9 @@ export function buildWebSocketUrl(token: string): string {
 // =============================================================================
 
 /**
- * Transform raw WebSocket message (snake_case) to camelCase Message
- * @param raw - Raw message from WebSocket
- * @returns Normalized Message object
+ * Extract base message fields with defaults
  */
-export function transformRawMessage(raw: RawWebSocketMessage): Message {
+function extractBaseMessageFields(raw: RawWebSocketMessage) {
   return {
     id: raw.id ?? 0,
     conversationId: raw.conversationId ?? 0,
@@ -47,15 +46,33 @@ export function transformRawMessage(raw: RawWebSocketMessage): Message {
     isRead: raw.isRead ?? false,
     type: (raw.type as Message['type']) ?? 'text',
     attachments: raw.attachments ?? [],
+  };
+}
+
+/**
+ * Extract sender object from raw message
+ */
+function extractSender(raw: RawWebSocketMessage) {
+  return {
+    id: raw.senderId ?? 0,
+    firstName: raw.firstName ?? '',
+    lastName: raw.lastName ?? '',
+    username: raw.senderUsername ?? '',
+  };
+}
+
+/**
+ * Transform raw WebSocket message (snake_case) to camelCase Message
+ * @param raw - Raw message from WebSocket
+ * @returns Normalized Message object
+ */
+export function transformRawMessage(raw: RawWebSocketMessage): Message {
+  return {
+    ...extractBaseMessageFields(raw),
     senderName: raw.senderName,
     senderUsername: raw.senderUsername,
     senderProfilePicture: raw.senderProfilePicture,
-    sender: {
-      id: raw.senderId ?? 0,
-      firstName: raw.firstName ?? '',
-      lastName: raw.lastName ?? '',
-      username: raw.senderUsername ?? '',
-    },
+    sender: extractSender(raw),
   };
 }
 

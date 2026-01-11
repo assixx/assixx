@@ -4,9 +4,11 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { LogEntry, PaginationInfo, LogsApiResponse, DeleteLogsBody } from './types';
+
 import { LOGS_PER_PAGE, TIMERANGE_DAYS_MAP } from './constants';
 import { shouldIncludeFilter, calculateStartDate } from './utils';
+
+import type { LogEntry, PaginationInfo, LogsApiResponse, DeleteLogsBody } from './types';
 
 // ============================================================================
 // API Client

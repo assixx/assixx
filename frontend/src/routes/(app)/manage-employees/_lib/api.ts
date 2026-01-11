@@ -2,69 +2,114 @@
 // MANAGE EMPLOYEES - API FUNCTIONS
 // =============================================================================
 
-import type { Employee, EmployeePayload, Team } from './types';
-import { API_ENDPOINTS } from './constants';
 import { goto } from '$app/navigation';
-import { base } from '$app/paths';
+import { resolve } from '$app/paths';
+
+import { getApiClient, ApiError } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
+import type { Employee, EmployeePayload, Team } from './types';
+
+const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
 
 /**
- * Get authorization headers with token
+ * Type-safe extraction helper for nested API responses
  */
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('accessToken');
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
-
-/**
- * Handle unauthorized response
- */
-function handleUnauthorized(status: number): boolean {
-  if (status === 401) {
-    goto(`${base}/login?session=expired`);
-    return true;
+function extractArray<T>(response: unknown): T[] {
+  if (Array.isArray(response)) return response as T[];
+  if (response !== null && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as T[];
   }
-  return false;
+  return [];
 }
 
 /**
- * Check if user is authenticated and redirect if not
+ * Convert empty string to undefined (for optional API fields)
  */
-export function checkAuth(): string | null {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    goto(`${base}/login`);
-    return null;
-  }
-  return token;
+function toOptional(value: string): string | undefined {
+  return value !== '' ? value : undefined;
 }
+
+/**
+ * Extract created resource ID from API response
+ */
+function extractCreatedId(result: unknown): number {
+  if (result === null || typeof result !== 'object') {
+    return 0;
+  }
+
+  const resultObj = result as Record<string, unknown>;
+
+  // Check top-level id
+  if (typeof resultObj.id === 'number') {
+    return resultObj.id;
+  }
+
+  // Check nested data.id
+  if (resultObj.data !== null && typeof resultObj.data === 'object') {
+    const dataObj = resultObj.data as Record<string, unknown>;
+    if (typeof dataObj.id === 'number') {
+      return dataObj.id;
+    }
+  }
+
+  return 0;
+}
+
+// =============================================================================
+// AUTH HELPERS
+// =============================================================================
+
+/**
+ * Handle unauthorized response - redirect to login
+ */
+function handleUnauthorized(): void {
+  void goto(`${resolve('/login', {})}?session=expired`);
+}
+
+/**
+ * Check if user is authenticated
+ */
+export function checkAuth(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  const token = localStorage.getItem('accessToken');
+  if (token === null) {
+    void goto(resolve('/login', {}));
+    return false;
+  }
+  return true;
+}
+
+// =============================================================================
+// API FUNCTIONS
+// =============================================================================
 
 /**
  * Load employees from API
  * @returns Promise with employees array or throws error
  */
 export async function loadEmployees(): Promise<Employee[]> {
-  const token = checkAuth();
-  if (!token) return [];
+  if (!checkAuth()) return [];
 
-  const response = await fetch(API_ENDPOINTS.EMPLOYEES, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  try {
+    const result = await apiClient.get<Employee[]>(API_ENDPOINTS.EMPLOYEES);
+    const employees = extractArray<Employee>(result);
 
-  if (!response.ok) {
-    if (handleUnauthorized(response.status)) return [];
-    throw new Error(`HTTP ${response.status}`);
+    // Filter to only employees (in case API returns mixed roles)
+    return employees.filter((u) => u.role === 'employee');
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      handleUnauthorized();
+      return [];
+    }
+    throw err;
   }
-
-  const result = await response.json();
-  const employeeData = result.data ?? result ?? [];
-
-  // Filter to only employees (in case API returns mixed roles)
-  return Array.isArray(employeeData)
-    ? employeeData.filter((u: { role?: string }) => u.role === 'employee')
-    : [];
 }
 
 /**
@@ -72,18 +117,9 @@ export async function loadEmployees(): Promise<Employee[]> {
  * @returns Promise with teams array
  */
 export async function loadTeams(): Promise<Team[]> {
-  const token = localStorage.getItem('accessToken');
-  if (!token) return [];
-
   try {
-    const response = await fetch(API_ENDPOINTS.TEAMS, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) return [];
-
-    const result = await response.json();
-    return Array.isArray(result) ? result : (result.data ?? []);
+    const result = await apiClient.get<Team[]>(API_ENDPOINTS.TEAMS);
+    return extractArray<Team>(result);
   } catch (err) {
     console.error('[ManageEmployees] Error loading teams:', err);
     return [];
@@ -110,26 +146,18 @@ export async function saveEmployee(
   payload: EmployeePayload,
   editId: number | null,
 ): Promise<number> {
-  const token = checkAuth();
-  if (!token) throw new Error('Not authenticated');
+  if (!checkAuth()) throw new Error('Not authenticated');
 
   const isEdit = editId !== null;
-  const endpoint = isEdit ? API_ENDPOINTS.USER(editId) : API_ENDPOINTS.USERS;
-  const method = isEdit ? 'PUT' : 'POST';
+  const endpoint = isEdit ? API_ENDPOINTS.user(editId) : API_ENDPOINTS.USERS;
 
-  const response = await fetch(endpoint, {
-    method,
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message ?? errorData.message ?? `HTTP ${response.status}`);
+  if (isEdit) {
+    await apiClient.put(endpoint, payload);
+    return editId;
   }
 
-  const result = await response.json();
-  return editId ?? result.id ?? result.data?.id;
+  const result = await apiClient.post(endpoint, payload);
+  return extractCreatedId(result);
 }
 
 /**
@@ -138,21 +166,13 @@ export async function saveEmployee(
  * @param teamId - Team ID
  */
 export async function assignTeamMember(userId: number, teamId: number): Promise<void> {
-  const token = localStorage.getItem('accessToken');
-  if (!token) return;
-
   try {
-    const response = await fetch(API_ENDPOINTS.TEAM_MEMBERS(teamId), {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ userId }),
-    });
-
-    // 409 Conflict is OK - user is already a member (should not happen with diff logic)
-    if (!response.ok && response.status !== 409) {
-      console.error('[ManageEmployees] Error assigning team:', response.status);
-    }
+    await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err) {
+    // 409 Conflict is OK - user is already a member
+    if (err instanceof ApiError && err.status === 409) {
+      return;
+    }
     console.error('[ManageEmployees] Error assigning team:', err);
   }
 }
@@ -163,20 +183,13 @@ export async function assignTeamMember(userId: number, teamId: number): Promise<
  * @param teamId - Team ID
  */
 export async function removeTeamMember(userId: number, teamId: number): Promise<void> {
-  const token = localStorage.getItem('accessToken');
-  if (!token) return;
-
   try {
-    const response = await fetch(`${API_ENDPOINTS.TEAM_MEMBERS(teamId)}/${userId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    // 404 Not Found is OK - user was not a member
-    if (!response.ok && response.status !== 404) {
-      console.error('[ManageEmployees] Error removing team member:', response.status);
-    }
+    await apiClient.delete(`${API_ENDPOINTS.teamMembers(teamId)}/${userId}`);
   } catch (err) {
+    // 404 Not Found is OK - user was not a member
+    if (err instanceof ApiError && err.status === 404) {
+      return;
+    }
     console.error('[ManageEmployees] Error removing team member:', err);
   }
 }
@@ -186,16 +199,40 @@ export async function removeTeamMember(userId: number, teamId: number): Promise<
  * @param employeeId - Employee ID to delete
  */
 export async function deleteEmployee(employeeId: number): Promise<void> {
-  const token = checkAuth();
-  if (!token) throw new Error('Not authenticated');
+  if (!checkAuth()) throw new Error('Not authenticated');
+  await apiClient.delete(API_ENDPOINTS.user(employeeId));
+}
 
-  const response = await fetch(API_ENDPOINTS.USER(employeeId), {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
+/**
+ * Sync team memberships for an employee
+ * Calculates diff between original and new team IDs, then adds/removes as needed
+ * @param userId - Employee user ID
+ * @param newTeamIds - New team IDs to assign
+ * @param originalTeamIds - Original team IDs (before edit)
+ * @param isEditMode - Whether editing existing employee
+ */
+export async function syncTeamMemberships(
+  userId: number,
+  newTeamIds: number[],
+  originalTeamIds: number[],
+  isEditMode: boolean,
+): Promise<void> {
+  if (userId === 0) return;
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  // Calculate teams to add (new teams not in original)
+  const teamsToAdd = newTeamIds.filter((id) => !originalTeamIds.includes(id));
+
+  // Add new team memberships
+  for (const teamId of teamsToAdd) {
+    await assignTeamMember(userId, teamId);
+  }
+
+  // Remove old team memberships (only in edit mode)
+  if (isEditMode) {
+    const teamsToRemove = originalTeamIds.filter((id) => !newTeamIds.includes(id));
+    for (const teamId of teamsToRemove) {
+      await removeTeamMember(userId, teamId);
+    }
   }
 }
 
@@ -225,23 +262,22 @@ export function buildEmployeePayload(
     lastName: formData.lastName,
     email: formData.email,
     username: generateUsernameFromEmail(formData.email),
-    position: formData.position || undefined,
-    phone: formData.phone || undefined,
-    dateOfBirth: formData.dateOfBirth || undefined,
-    employeeNumber: formData.employeeNumber || `EMP${Date.now()}`,
+    position: toOptional(formData.position),
+    phone: toOptional(formData.phone),
+    dateOfBirth: toOptional(formData.dateOfBirth),
+    employeeNumber: formData.employeeNumber !== '' ? formData.employeeNumber : `EMP${Date.now()}`,
     isActive: formData.isActive,
     role: 'employee',
     availabilityStatus: formData.availabilityStatus as EmployeePayload['availabilityStatus'],
-    availabilityStart: formData.availabilityStart || undefined,
-    availabilityEnd: formData.availabilityEnd || undefined,
-    availabilityNotes: formData.availabilityNotes || undefined,
+    availabilityStart: toOptional(formData.availabilityStart),
+    availabilityEnd: toOptional(formData.availabilityEnd),
+    availabilityNotes: toOptional(formData.availabilityNotes),
   };
 
-  // Add password for new employees or when changed
-  if (!isEdit && formData.password) {
-    payload.password = formData.password;
-  } else if (isEdit && formData.password && formData.password.length >= 8) {
-    payload.password = formData.password;
+  // Add password: new employee requires it, edit only if valid new password provided
+  const hasValidPassword = formData.password !== '' && formData.password.length >= 8;
+  if (!isEdit || hasValidPassword) {
+    payload.password = toOptional(formData.password);
   }
 
   return payload;

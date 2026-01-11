@@ -1,14 +1,20 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { base, resolve } from '$app/paths';
-  import { showWarningAlert, showErrorAlert, showInfoAlert } from '$lib/stores/toast.js';
+  import { resolve } from '$app/paths';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
+
+  import { showWarningAlert, showErrorAlert, showInfoAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../styles/signup.css';
   import '../../styles/password-strength.css';
 
   // Local modules
-  import type { Country, Plan } from './_lib/types';
+  import { registerUser, createRegisterPayload } from './_lib/api';
   import {
     COUNTRIES,
     PLANS,
@@ -28,7 +34,8 @@
     getPasswordStrengthScore,
     getPasswordStrengthLabel,
   } from './_lib/validators';
-  import { registerUser, createRegisterPayload } from './_lib/api';
+
+  import type { Country, Plan } from './_lib/types';
 
   // =============================================================================
   // SVELTE 5 RUNES - Form State
@@ -175,7 +182,7 @@
       showSuccess = true;
 
       setTimeout(() => {
-        goto(resolve('/login'));
+        void goto(resolvePath('/login'));
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
@@ -207,7 +214,7 @@
 <svelte:window onclick={handleClickOutside} />
 
 <!-- Back to Homepage Button -->
-<a href={resolve('/')} class="back-button">
+<a href={resolvePath('/')} class="back-button">
   <span class="icon">←</span>
   <span>Zurück zur Hauptseite</span>
 </a>
@@ -386,7 +393,12 @@
             </div>
             <div class="country-dropdown" class:active={countryDropdownOpen}>
               {#each COUNTRIES as country (country.code)}
-                <div class="country-option" onclick={() => selectCountry(country)}>
+                <div
+                  class="country-option"
+                  onclick={() => {
+                    selectCountry(country);
+                  }}
+                >
                   {country.flag}
                   {country.code}
                 </div>
@@ -500,7 +512,12 @@
           </div>
           <div class="plan-dropdown" class:active={planDropdownOpen}>
             {#each PLANS as plan (plan.value)}
-              <div class="plan-option" onclick={() => selectPlanOption(plan)}>
+              <div
+                class="plan-option"
+                onclick={() => {
+                  selectPlanOption(plan);
+                }}
+              >
                 <span>{plan.name}</span>
                 <span class="plan-price">{plan.price}</span>
               </div>
@@ -522,16 +539,18 @@
           />
           <span>
             Ich akzeptiere die&nbsp;
-            <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Static file, not a SvelteKit route -->
-            <a href={`${base}/TERMS-OF-USE.md`} target="_blank" class="terms-link"
-              >Nutzungsbedingungen</a
+            <a
+              href={resolvePath('/TERMS-OF-USE.md')}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="terms-link">Nutzungsbedingungen</a
             >
           </span>
         </label>
         <button type="submit" class="btn btn-primary" disabled={loading || !isFormValid}>
           {buttonText}
         </button>
-        <a href={resolve('/login')} class="login-link">Bereits registriert?</a>
+        <a href={resolvePath('/login')} class="login-link">Bereits registriert?</a>
       </div>
     </div>
   </form>

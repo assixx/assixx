@@ -5,9 +5,10 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import type { Area, Department, Machine, Team, ShiftFavorite, SelectedContext } from './types';
   import { DROPDOWN_PLACEHOLDERS } from './constants';
   import { shouldShowAddFavoriteButton } from './favorites';
+
+  import type { Area, Department, Machine, Team, ShiftFavorite, SelectedContext } from './types';
 
   /**
    * Props interface for FilterDropdowns
@@ -112,7 +113,9 @@
         class="dropdown__trigger"
         class:active={areaDropdownOpen}
         onclick={ontoggleAreaDropdown}
-        onkeydown={(e) => e.key === 'Enter' && ontoggleAreaDropdown()}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') ontoggleAreaDropdown();
+        }}
         role="button"
         tabindex="0"
       >
@@ -156,9 +159,12 @@
       <div
         class="dropdown__trigger"
         class:active={departmentDropdownOpen}
-        onclick={() => selectedContext.areaId !== null && ontoggleDepartmentDropdown()}
-        onkeydown={(e) =>
-          e.key === 'Enter' && selectedContext.areaId !== null && ontoggleDepartmentDropdown()}
+        onclick={() => {
+          if (selectedContext.areaId !== null) ontoggleDepartmentDropdown();
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' && selectedContext.areaId !== null) ontoggleDepartmentDropdown();
+        }}
         role="button"
         tabindex={selectedContext.areaId === null ? -1 : 0}
         style={selectedContext.areaId === null ? 'pointer-events: none; opacity: 0.5;' : ''}
@@ -203,9 +209,12 @@
       <div
         class="dropdown__trigger"
         class:active={machineDropdownOpen}
-        onclick={() => selectedContext.departmentId !== null && ontoggleMachineDropdown()}
-        onkeydown={(e) =>
-          e.key === 'Enter' && selectedContext.departmentId !== null && ontoggleMachineDropdown()}
+        onclick={() => {
+          if (selectedContext.departmentId !== null) ontoggleMachineDropdown();
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' && selectedContext.departmentId !== null) ontoggleMachineDropdown();
+        }}
         role="button"
         tabindex={selectedContext.departmentId === null ? -1 : 0}
         style={selectedContext.departmentId === null ? 'pointer-events: none; opacity: 0.5;' : ''}
@@ -250,9 +259,12 @@
       <div
         class="dropdown__trigger"
         class:active={teamDropdownOpen}
-        onclick={() => selectedContext.machineId !== null && ontoggleTeamDropdown()}
-        onkeydown={(e) =>
-          e.key === 'Enter' && selectedContext.machineId !== null && ontoggleTeamDropdown()}
+        onclick={() => {
+          if (selectedContext.machineId !== null) ontoggleTeamDropdown();
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' && selectedContext.machineId !== null) ontoggleTeamDropdown();
+        }}
         role="button"
         tabindex={selectedContext.machineId === null ? -1 : 0}
         style={selectedContext.machineId === null ? 'pointer-events: none; opacity: 0.5;' : ''}

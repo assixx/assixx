@@ -3,14 +3,15 @@
 
   interface Props {
     show: boolean;
-    date: string;
-    time: string;
+    date?: string; // Optional for $bindable() - parent uses bind:date
+    time?: string; // Optional for $bindable() - parent uses bind:time
     onclose: () => void;
     onconfirm: () => void;
   }
 
   /* eslint-disable prefer-const */
-  let { show, date = $bindable(), time = $bindable(), onclose, onconfirm }: Props = $props();
+  // $bindable() required for two-way binding (bind:date, bind:time) in Svelte 5
+  let { show, date = $bindable(''), time = $bindable(''), onclose, onconfirm }: Props = $props();
   /* eslint-enable prefer-const */
 </script>
 
@@ -22,7 +23,12 @@
           <i class="far fa-clock"></i>
           &nbsp; {MESSAGES.labelScheduleTitle}
         </h2>
-        <button class="ds-modal__close" aria-label={MESSAGES.labelCloseModal} onclick={onclose}>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label={MESSAGES.labelCloseModal}
+          onclick={onclose}
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -60,8 +66,10 @@
         </small>
       </div>
       <div class="ds-modal__footer ds-modal__footer--spaced">
-        <button class="btn btn-cancel" onclick={onclose}>{MESSAGES.labelCancel}</button>
-        <button class="btn btn-modal" onclick={onconfirm}>
+        <button type="button" class="btn btn-cancel" onclick={onclose}
+          >{MESSAGES.labelCancel}</button
+        >
+        <button type="button" class="btn btn-modal" onclick={onconfirm}>
           <i class="far fa-clock"></i>
           {MESSAGES.labelSchedule}
         </button>

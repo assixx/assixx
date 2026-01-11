@@ -48,6 +48,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import {
   AddCommentDto,
   CreateSuggestionDto,
@@ -278,7 +279,7 @@ export class KvpController {
   @HttpCode(HttpStatus.CREATED)
   async uploadAttachments(
     @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @UploadedFiles() files: MulterFile[] | undefined,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<KVPAttachment[]> {

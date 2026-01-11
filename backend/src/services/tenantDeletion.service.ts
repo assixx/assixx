@@ -5,9 +5,9 @@
  * No manual maintenance needed - adapts to schema changes automatically!
  */
 import fs from 'fs/promises';
+import { Redis } from 'ioredis';
 import path from 'path';
 
-import { getRedisClient } from '../config/redis.js';
 import {
   PoolConnection,
   ResultSetHeader,
@@ -99,6 +99,9 @@ interface DeletionWarningUser extends RowDataPacket {
  * Finds and deletes ALL data for a tenant automatically
  */
 export class TenantDeletionService {
+  /** Redis client for cache clearing (lazy-initialized) */
+  private redisClient: Redis | null = null;
+
   private readonly CRITICAL_TABLES = [
     'tenant_deletion_queue', // Needed for the deletion process itself
     'deletion_audit_trail', // Audit must be kept
@@ -823,10 +826,34 @@ export class TenantDeletionService {
   }
 
   /**
+   * Get or create Redis client (lazy initialization)
+   */
+  private getRedis(): Redis {
+    if (this.redisClient === null) {
+      const redisPassword = process.env['REDIS_PASSWORD'];
+      this.redisClient = new Redis({
+        host: process.env['REDIS_HOST'] ?? 'redis',
+        port: Number.parseInt(process.env['REDIS_PORT'] ?? '6379', 10),
+        // SECURITY: Redis authentication - only include password if configured
+        ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+        keyPrefix: 'tenant-deletion:',
+        lazyConnect: true,
+        maxRetriesPerRequest: 3,
+        connectTimeout: 5000,
+      });
+
+      this.redisClient.on('error', (err: Error) => {
+        logger.error('TenantDeletion Redis Client Error:', err);
+      });
+    }
+    return this.redisClient;
+  }
+
+  /**
    * Clear Redis cache for tenant
    */
   private async clearRedisCache(tenantId: number): Promise<void> {
-    const redis = await getRedisClient();
+    const redis = this.getRedis();
     const pattern = `tenant:${tenantId}:*`;
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {

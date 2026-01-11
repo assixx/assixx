@@ -40,28 +40,28 @@ Browser → Nginx (:80) ─┬→ /api/*     → Backend (:3000)
 
 ## Port Reference
 
-| Port | Service | Mode | Description |
-|------|---------|------|-------------|
-| **80** | Nginx | Production | Reverse Proxy - Main entry point |
-| **3000** | NestJS Backend | Both | API Server (Fastify) |
-| **3001** | SvelteKit | Production | SSR Frontend (adapter-node) |
-| **3002** | Deletion Worker | Both | Background worker for tenant deletion |
-| **5173** | Vite Dev Server | Development | SvelteKit with HMR |
-| **5432** | PostgreSQL | Both | Database |
-| **6379** | Redis | Both | Cache & Rate Limiting (internal) |
+| Port     | Service         | Mode        | Description                           |
+| -------- | --------------- | ----------- | ------------------------------------- |
+| **80**   | Nginx           | Production  | Reverse Proxy - Main entry point      |
+| **3000** | NestJS Backend  | Both        | API Server (Fastify)                  |
+| **3001** | SvelteKit       | Production  | SSR Frontend (adapter-node)           |
+| **3002** | Deletion Worker | Both        | Background worker for tenant deletion |
+| **5173** | Vite Dev Server | Development | SvelteKit with HMR                    |
+| **5432** | PostgreSQL      | Both        | Database                              |
+| **6379** | Redis           | Both        | Cache & Rate Limiting (internal)      |
 
 ---
 
 ## Container Reference
 
-| Container Name | Image | Purpose | Ports |
-|----------------|-------|---------|-------|
-| `assixx-backend` | `assixx-backend:dev` | NestJS + Fastify API | 3000 |
-| `assixx-frontend` | `assixx-frontend:prod` | SvelteKit SSR | 3001 |
-| `assixx-nginx` | `nginx:alpine` | Reverse Proxy | 80 |
-| `assixx-postgres` | `postgres:17-alpine` | PostgreSQL Database | 5432 |
-| `assixx-redis` | `redis:7-alpine` | Redis Cache | 6379 (internal) |
-| `assixx-deletion-worker` | `assixx-backend:dev` | Tenant Deletion Worker | 3002 |
+| Container Name           | Image                  | Purpose                | Ports           |
+| ------------------------ | ---------------------- | ---------------------- | --------------- |
+| `assixx-backend`         | `assixx-backend:dev`   | NestJS + Fastify API   | 3000            |
+| `assixx-frontend`        | `assixx-frontend:prod` | SvelteKit SSR          | 3001            |
+| `assixx-nginx`           | `nginx:alpine`         | Reverse Proxy          | 80              |
+| `assixx-postgres`        | `postgres:17-alpine`   | PostgreSQL Database    | 5432            |
+| `assixx-redis`           | `redis:7-alpine`       | Redis Cache            | 6379 (internal) |
+| `assixx-deletion-worker` | `assixx-backend:dev`   | Tenant Deletion Worker | 3002            |
 
 ---
 
@@ -93,12 +93,12 @@ pnpm run dev:svelte
 
 ### Development URLs
 
-| URL | What it serves |
-|-----|----------------|
-| `http://localhost:5173` | SvelteKit Dev Server (HMR enabled) |
-| `http://localhost:5173/login` | Login page with hot reload |
-| `http://localhost:3000/api/v2/...` | Backend API directly |
-| `http://localhost:3000/health` | Backend health check |
+| URL                                | What it serves                     |
+| ---------------------------------- | ---------------------------------- |
+| `http://localhost:5173`            | SvelteKit Dev Server (HMR enabled) |
+| `http://localhost:5173/login`      | Login page with hot reload         |
+| `http://localhost:3000/api/v2/...` | Backend API directly               |
+| `http://localhost:3000/health`     | Backend health check               |
 
 ### Development Workflow
 
@@ -151,14 +151,14 @@ docker-compose --profile production down
 
 ### Production URLs
 
-| URL | What it serves | Route |
-|-----|----------------|-------|
-| `http://localhost` | Landing page | Nginx → SvelteKit |
-| `http://localhost/login` | Login page | Nginx → SvelteKit |
-| `http://localhost/api/v2/auth/login` | Login API | Nginx → Backend |
-| `http://localhost/health` | Backend health | Nginx → Backend |
-| `http://localhost:3001` | SvelteKit direct | Bypasses Nginx |
-| `http://localhost:3000` | Backend direct | Bypasses Nginx |
+| URL                                  | What it serves   | Route             |
+| ------------------------------------ | ---------------- | ----------------- |
+| `http://localhost`                   | Landing page     | Nginx → SvelteKit |
+| `http://localhost/login`             | Login page       | Nginx → SvelteKit |
+| `http://localhost/api/v2/auth/login` | Login API        | Nginx → Backend   |
+| `http://localhost/health`            | Backend health   | Nginx → Backend   |
+| `http://localhost:3001`              | SvelteKit direct | Bypasses Nginx    |
+| `http://localhost:3000`              | Backend direct   | Bypasses Nginx    |
 
 ### Production Workflow
 
@@ -387,30 +387,30 @@ echo "API:      http://localhost/api/v2/"
 
 ## File References
 
-| File | Purpose |
-|------|---------|
-| `docker/docker-compose.yml` | Docker Compose configuration |
-| `docker/Dockerfile.frontend` | SvelteKit production build (uses pnpm deploy) |
-| `docker/Dockerfile.dev` | Backend development build |
-| `docker/nginx/nginx.conf` | Nginx reverse proxy config |
-| `frontend/svelte.config.js` | SvelteKit adapter-node config |
-| `frontend/src/routes/health/+server.ts` | Frontend health endpoint |
-| `.npmrc` | pnpm configuration (inject-workspace-packages) |
-| `pnpm-lock.yaml` | Locked dependency versions |
+| File                                    | Purpose                                        |
+| --------------------------------------- | ---------------------------------------------- |
+| `docker/docker-compose.yml`             | Docker Compose configuration                   |
+| `docker/Dockerfile.frontend`            | SvelteKit production build (uses pnpm deploy)  |
+| `docker/Dockerfile.dev`                 | Backend development build                      |
+| `docker/nginx/nginx.conf`               | Nginx reverse proxy config                     |
+| `frontend/svelte.config.js`             | SvelteKit adapter-node config                  |
+| `frontend/src/routes/health/+server.ts` | Frontend health endpoint                       |
+| `.npmrc`                                | pnpm configuration (inject-workspace-packages) |
+| `pnpm-lock.yaml`                        | Locked dependency versions                     |
 
 ---
 
 ## Version Information (as of 2026-01-06)
 
-| Component | Version | Notes |
-|-----------|---------|-------|
-| Node.js | 24.12.0 LTS | Alpine image |
-| PostgreSQL | 17.7 | Alpine image |
-| Nginx | 1.29.4 | Alpine image |
-| Redis | 7.4.7 | Alpine image |
-| NestJS | 11.1.11 | Latest |
-| pnpm | 10.27.0 | Modern deploy (no --legacy) |
-| SvelteKit | 5.x | adapter-node for SSR |
+| Component  | Version     | Notes                       |
+| ---------- | ----------- | --------------------------- |
+| Node.js    | 24.12.0 LTS | Alpine image                |
+| PostgreSQL | 17.7        | Alpine image                |
+| Nginx      | 1.29.4      | Alpine image                |
+| Redis      | 7.4.7       | Alpine image                |
+| NestJS     | 11.1.11     | Latest                      |
+| pnpm       | 10.27.0     | Modern deploy (no --legacy) |
+| SvelteKit  | 5.x         | adapter-node for SSR        |
 
 ### pnpm Configuration
 

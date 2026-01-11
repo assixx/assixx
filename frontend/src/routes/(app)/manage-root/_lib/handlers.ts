@@ -2,8 +2,10 @@
 // MANAGE ROOT - EVENT HANDLERS
 // =============================================================================
 
-import { showWarningAlert, showErrorAlert } from '$lib/stores/toast.js';
-import type { RootUser, StatusFilter, FormIsActiveStatus } from './types';
+import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+
+import { buildRootUserPayload, loadRootUsers, saveRootUser, deleteRootUser } from './api';
+import { MESSAGES } from './constants';
 import { applyAllFilters } from './filters';
 import {
   calculatePasswordStrength,
@@ -12,8 +14,8 @@ import {
   validateEmailMatch,
   validatePasswordMatch,
 } from './utils';
-import { buildRootUserPayload, loadRootUsers, saveRootUser, deleteRootUser } from './api';
-import { MESSAGES } from './constants';
+
+import type { RootUser, StatusFilter, FormIsActiveStatus } from './types';
 
 // =============================================================================
 // TYPES

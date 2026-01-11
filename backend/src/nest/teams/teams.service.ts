@@ -370,7 +370,6 @@ export class TeamsService {
     ];
 
     for (const [dtoKey, dbCol] of fieldMap) {
-      // eslint-disable-next-line security/detect-object-injection -- dtoKey from trusted fieldMap
       const value = dto[dtoKey];
       if (value !== undefined) {
         fields.push(`${dbCol} = $${values.length + 1}`);

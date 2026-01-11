@@ -5,6 +5,7 @@
  * SSR: Loads deletion status for the current tenant.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { DeletionStatusData } from './_lib/types';
 
@@ -50,10 +51,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -69,9 +68,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     token,
     fetch,
   );
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] account-settings loaded in ${duration}ms`);
 
   return {
     pendingDeletion: deletionStatus,

@@ -1,11 +1,21 @@
-<script>
+<script lang="ts">
   /**
    * Toast Container Component
    * 1:1 Copy from frontend/src/scripts/services/notification.service.ts
    * Renders toast notifications in fixed position
    */
 
-  import { toasts } from '$lib/stores/toast.js';
+  import { toasts, type ToastType } from '$lib/stores/toast';
+
+  // =============================================================================
+  // TYPES
+  // =============================================================================
+
+  interface NotificationColors {
+    bgColor: string;
+    borderColor: string;
+    textColor: string;
+  }
 
   // =============================================================================
   // HELPER FUNCTIONS (1:1 from legacy notification.service.ts)
@@ -13,10 +23,8 @@
 
   /**
    * Get notification colors based on type
-   * @param {'success' | 'error' | 'warning' | 'info'} type
-   * @returns {{ bgColor: string; borderColor: string; textColor: string }}
    */
-  function getNotificationColors(type) {
+  function getNotificationColors(type: ToastType): NotificationColors {
     switch (type) {
       case 'success':
         return {
@@ -48,10 +56,8 @@
 
   /**
    * Get icon class for notification type
-   * @param {'success' | 'error' | 'warning' | 'info'} type
-   * @returns {string}
    */
-  function getIconClass(type) {
+  function getIconClass(type: ToastType): string {
     switch (type) {
       case 'success':
         return 'fa-check-circle';
@@ -103,7 +109,9 @@
 
       <!-- Text -->
       <span style="flex: 1; color: {colors.textColor};">
-        {toast.title}{toast.message ? `: ${toast.message}` : ''}
+        {toast.title}{toast.message !== undefined && toast.message !== ''
+          ? `: ${toast.message}`
+          : ''}
       </span>
     </div>
   {/each}

@@ -6,8 +6,10 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { Document, CalendarEvent, BlackboardEntry } from './types';
+
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './constants';
+
+import type { Document, CalendarEvent, BlackboardEntry } from './types';
 
 const apiClient = getApiClient();
 

@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP } from './constants';
+
 import type { BufferData, QuestionType } from './types';
 
 /**
@@ -101,7 +102,8 @@ export function getQuestionTypeLabel(type: QuestionType): string {
     number: 'Zahl',
     date: 'Datum',
   };
-  return typeLabels[type] ?? 'Textantwort';
+
+  return typeLabels[type];
 }
 
 /**

@@ -5,6 +5,7 @@
  * SSR: Loads machines + reference data (departments, areas, teams) in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Machine, Department, Area, Team } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -67,9 +66,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
   const teams = Array.isArray(teamsData) ? teamsData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] manage-machines loaded in ${duration}ms (4 parallel API calls)`);
 
   return {
     machines,

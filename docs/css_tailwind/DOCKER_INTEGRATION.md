@@ -72,49 +72,37 @@ Nach erfolgreichem Setup:
 ✅ WAS IST INSTALLIERT & KONFIGURIERT:
 
 1. Tailwind CSS v4 ✅
-
-
-    - Installiert als @tailwindcss/postcss Plugin
-    - Konfiguriert in postcss.config.js und tailwind.config.js
-    - Build läuft erfolgreich ohne Fehler
+   - Installiert als @tailwindcss/postcss Plugin
+   - Konfiguriert in postcss.config.js und tailwind.config.js
+   - Build läuft erfolgreich ohne Fehler
 
 2. Design Tokens System ✅
-
-
-    - Quelle: /home/scs/projects/Assixx/design-system/tokens/
-    - Generierte CSS: /app/design-system/build/web/css/ (im Docker Container)
-    - 3 Themes generiert: variables-dark.css, variables-light.css, variables-contrast.css
-    - CSS Variablen aktiv in der Build-Pipeline
+   - Quelle: /home/scs/projects/Assixx/design-system/tokens/
+   - Generierte CSS: /app/design-system/build/web/css/ (im Docker Container)
+   - 3 Themes generiert: variables-dark.css, variables-light.css, variables-contrast.css
+   - CSS Variablen aktiv in der Build-Pipeline
 
 3. PostCSS Pipeline ✅
-
-
-    - Tailwind v4 integriert
-    - CSS Nesting funktioniert
-    - Import von Design Tokens aktiv
+   - Tailwind v4 integriert
+   - CSS Nesting funktioniert
+   - Import von Design Tokens aktiv
 
 🔍 WAS WIRD AKTUELL GENUTZT:
 
 TEILWEISE! - Hybrid-Zustand:
 
 1. Design System Demo Seite (design-system-demo.html):
-
-
-    - ✅ Nutzt Tailwind Klassen: bg-background, text-text-primary, flex, mx-auto, etc.
-    - ✅ CSS: 636KB (zeigt dass Tailwind aktiv ist)
+   - ✅ Nutzt Tailwind Klassen: bg-background, text-text-primary, flex, mx-auto, etc.
+   - ✅ CSS: 636KB (zeigt dass Tailwind aktiv ist)
 
 2. Andere Seiten:
-
-
-    - ❌ Nutzen noch Bootstrap + Custom CSS
-    - ❌ 61 separate CSS Dateien
-    - ⚠️ Glass-Komponenten mussten zu custom-glass-card umbenannt werden
+   - ❌ Nutzen noch Bootstrap + Custom CSS
+   - ❌ 61 separate CSS Dateien
+   - ⚠️ Glass-Komponenten mussten zu custom-glass-card umbenannt werden
 
 3. In der Browser Console siehst du:
-
-
-    - CSS Variablen aus Design Tokens (z.B. --color-primary, --glass-background)
-    - Gemischte Styles: Bootstrap + Custom CSS + einzelne Tailwind Utilities
+   - CSS Variablen aus Design Tokens (z.B. --color-primary, --glass-background)
+   - Gemischte Styles: Bootstrap + Custom CSS + einzelne Tailwind Utilities
 
 📁 WO SIND DIE DESIGN TOKENS:
 
@@ -147,25 +135,19 @@ TEILWEISE! - Hybrid-Zustand:
 Migration Bootstrap → Tailwind (Schrittweise):
 
 1. Eine Komponente nach der anderen:
-
-
-    - Starte mit kleinen, isolierten Komponenten (z.B. Buttons, Forms)
-    - Teste jede Migration gründlich
-    - Behalte Bootstrap parallel bis alles migriert ist
+   - Starte mit kleinen, isolierten Komponenten (z.B. Buttons, Forms)
+   - Teste jede Migration gründlich
+   - Behalte Bootstrap parallel bis alles migriert ist
 
 2. Konsolidierung der 61 CSS Dateien:
-
-
-    - Identifiziere gemeinsame Patterns
-    - Erstelle Tailwind Component Classes
-    - Reduziere Redundanzen
+   - Identifiziere gemeinsame Patterns
+   - Erstelle Tailwind Component Classes
+   - Reduziere Redundanzen
 
 3. Theme Switching (später):
-
-
-    - JavaScript für Theme-Toggle
-    - LocalStorage für Präferenz
-    - data-theme Attribute am <html> Element
+   - JavaScript für Theme-Toggle
+   - LocalStorage für Präferenz
+   - data-theme Attribute am <html> Element
 
 💡 WICHTIG ZU VERSTEHEN:
 

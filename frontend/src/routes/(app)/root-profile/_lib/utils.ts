@@ -31,7 +31,6 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.log(`[Toast:${type}] ${message}`);
 }
 
 /**

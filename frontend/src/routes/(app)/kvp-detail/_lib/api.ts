@@ -2,10 +2,15 @@
 // KVP-DETAIL - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
-import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 import { getAuthToken } from '$lib/utils/auth';
+import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
 import { API_ENDPOINTS, SHARE_LEVEL_TEXT } from './constants';
+
 import type {
   User,
   KvpSuggestion,
@@ -17,8 +22,6 @@ import type {
   OrgLevel,
   KvpStatus,
 } from './types';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -36,7 +39,7 @@ function isSessionExpiredError(err: unknown): boolean {
 }
 
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 function checkSessionExpired(err: unknown): boolean {
@@ -58,7 +61,6 @@ function checkSessionExpired(err: unknown): boolean {
 export async function fetchUserData(): Promise<User | null> {
   try {
     const result = await fetchSharedUser();
-    console.info('[KVP-DETAIL API] User data loaded');
     return result.user as User | null;
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching user:', err);
@@ -73,9 +75,7 @@ export async function fetchUserData(): Promise<User | null> {
 
 export async function fetchSuggestion(idOrUuid: string): Promise<KvpSuggestion | null> {
   try {
-    const suggestion = await apiClient.get<KvpSuggestion>(API_ENDPOINTS.KVP_BY_ID(idOrUuid));
-    console.info('[KVP-DETAIL API] Suggestion loaded:', suggestion.uuid);
-    return suggestion;
+    return await apiClient.get<KvpSuggestion>(API_ENDPOINTS.kvpById(idOrUuid));
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching suggestion:', err);
     checkSessionExpired(err);
@@ -95,8 +95,7 @@ export async function updateSuggestionStatus(
     }
 
     // API client returns the suggestion directly (already unwrapped from { success, data } envelope)
-    const suggestion = await apiClient.put<KvpSuggestion>(API_ENDPOINTS.KVP_BY_ID(idOrUuid), data);
-    console.info('[KVP-DETAIL API] Status updated to:', status);
+    const suggestion = await apiClient.put<KvpSuggestion>(API_ENDPOINTS.kvpById(idOrUuid), data);
     return { success: true, suggestion };
   } catch (err) {
     console.error('[KVP-DETAIL API] Error updating status:', err);
@@ -110,8 +109,7 @@ export async function archiveSuggestion(
   idOrUuid: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.KVP_BY_ID(idOrUuid));
-    console.info('[KVP-DETAIL API] Suggestion archived');
+    await apiClient.delete(API_ENDPOINTS.kvpById(idOrUuid));
     return { success: true };
   } catch (err) {
     console.error('[KVP-DETAIL API] Error archiving suggestion:', err);
@@ -131,8 +129,7 @@ export async function shareSuggestion(
   orgId: number,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.put(API_ENDPOINTS.KVP_SHARE(idOrUuid), { orgLevel, orgId });
-    console.info('[KVP-DETAIL API] Suggestion shared at:', orgLevel);
+    await apiClient.put(API_ENDPOINTS.kvpShare(idOrUuid), { orgLevel, orgId });
     return { success: true };
   } catch (err) {
     console.error('[KVP-DETAIL API] Error sharing suggestion:', err);
@@ -146,8 +143,7 @@ export async function unshareSuggestion(
   idOrUuid: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.post(API_ENDPOINTS.KVP_UNSHARE(idOrUuid), {});
-    console.info('[KVP-DETAIL API] Suggestion unshared');
+    await apiClient.post(API_ENDPOINTS.kvpUnshare(idOrUuid), {});
     return { success: true };
   } catch (err) {
     console.error('[KVP-DETAIL API] Error unsharing suggestion:', err);
@@ -158,7 +154,7 @@ export async function unshareSuggestion(
 }
 
 export function getShareLevelText(orgLevel: OrgLevel): string {
-  return SHARE_LEVEL_TEXT[orgLevel] ?? orgLevel;
+  return SHARE_LEVEL_TEXT[orgLevel];
 }
 
 // =============================================================================
@@ -167,9 +163,7 @@ export function getShareLevelText(orgLevel: OrgLevel): string {
 
 export async function fetchComments(idOrUuid: string): Promise<Comment[]> {
   try {
-    const comments = await apiClient.get<Comment[]>(API_ENDPOINTS.KVP_COMMENTS(idOrUuid));
-    console.info('[KVP-DETAIL API] Comments loaded:', comments.length);
-    return comments;
+    return await apiClient.get<Comment[]>(API_ENDPOINTS.kvpComments(idOrUuid));
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching comments:', err);
     return [];
@@ -181,8 +175,7 @@ export async function addComment(
   comment: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.post(API_ENDPOINTS.KVP_COMMENTS(idOrUuid), { comment });
-    console.info('[KVP-DETAIL API] Comment added');
+    await apiClient.post(API_ENDPOINTS.kvpComments(idOrUuid), { comment });
     return { success: true };
   } catch (err) {
     console.error('[KVP-DETAIL API] Error adding comment:', err);
@@ -198,9 +191,7 @@ export async function addComment(
 
 export async function fetchAttachments(idOrUuid: string): Promise<Attachment[]> {
   try {
-    const attachments = await apiClient.get<Attachment[]>(API_ENDPOINTS.KVP_ATTACHMENTS(idOrUuid));
-    console.info('[KVP-DETAIL API] Attachments loaded:', attachments.length);
-    return attachments;
+    return await apiClient.get<Attachment[]>(API_ENDPOINTS.kvpAttachments(idOrUuid));
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching attachments:', err);
     return [];
@@ -213,7 +204,7 @@ export function downloadAttachment(fileUuid: string): void {
     console.error('[KVP-DETAIL API] Not authenticated for download');
     return;
   }
-  const url = `/api/v2${API_ENDPOINTS.ATTACHMENT_DOWNLOAD(fileUuid)}?token=${encodeURIComponent(token)}`;
+  const url = `/api/v2${API_ENDPOINTS.attachmentDownload(fileUuid)}?token=${encodeURIComponent(token)}`;
   window.open(url, '_blank');
 }
 
@@ -222,7 +213,7 @@ export function getAttachmentPreviewUrl(fileUuid: string): string {
   if (token === null || token === '') {
     return '';
   }
-  return `/api/v2${API_ENDPOINTS.ATTACHMENT_DOWNLOAD(fileUuid)}?token=${encodeURIComponent(token)}`;
+  return `/api/v2${API_ENDPOINTS.attachmentDownload(fileUuid)}?token=${encodeURIComponent(token)}`;
 }
 
 // =============================================================================
@@ -231,7 +222,7 @@ export function getAttachmentPreviewUrl(fileUuid: string): string {
 
 export async function fetchDepartments(): Promise<Department[]> {
   try {
-    const departments = await apiClient.get<Department[]>(API_ENDPOINTS.DEPARTMENTS);
+    const departments = await apiClient.get<Department[]>(API_ENDPOINTS.departments);
     return Array.isArray(departments) ? departments : [];
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching departments:', err);
@@ -241,7 +232,7 @@ export async function fetchDepartments(): Promise<Department[]> {
 
 export async function fetchTeams(): Promise<Team[]> {
   try {
-    const teams = await apiClient.get<Team[]>(API_ENDPOINTS.TEAMS);
+    const teams = await apiClient.get<Team[]>(API_ENDPOINTS.teams);
     return Array.isArray(teams) ? teams : [];
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching teams:', err);
@@ -251,7 +242,7 @@ export async function fetchTeams(): Promise<Team[]> {
 
 export async function fetchAreas(): Promise<Area[]> {
   try {
-    const areas = await apiClient.get<Area[]>(API_ENDPOINTS.AREAS);
+    const areas = await apiClient.get<Area[]>(API_ENDPOINTS.areas);
     return Array.isArray(areas) ? areas : [];
   } catch (err) {
     console.error('[KVP-DETAIL API] Error fetching areas:', err);

@@ -81,7 +81,7 @@ export const MESSAGES = {
   // Search
   SEARCH_PLACEHOLDER: 'Bereiche suchen...',
   SEARCH_NO_RESULTS: 'Keine Bereiche gefunden für',
-  MORE_RESULTS: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
+  moreResults: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
 
   // Form labels
   LABEL_NAME: 'Name',
@@ -108,7 +108,7 @@ export const MESSAGES = {
     'Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte Abteilungen werden diesem Bereich zugeordnet.',
   NO_DEPARTMENTS: 'Keine',
   ONE_DEPARTMENT: '1 Abteilung',
-  MULTIPLE_DEPARTMENTS: (count: number) => `${count} Abteilungen`,
+  multipleDepartments: (count: number) => `${count} Abteilungen`,
 
   // Status
   STATUS_HINT: 'Inaktive/Archivierte Bereiche werden nicht angezeigt',
@@ -153,8 +153,8 @@ export const MESSAGES = {
  */
 export const API_ENDPOINTS = {
   AREAS: '/areas',
-  AREA: (id: number) => `/areas/${id}`,
-  AREA_FORCE_DELETE: (id: number) => `/areas/${id}?force=true`,
+  area: (id: number) => `/areas/${id}`,
+  areaForceDelete: (id: number) => `/areas/${id}?force=true`,
   USERS_ADMIN: '/users?role=admin',
   USERS_ROOT: '/users?role=root',
   DEPARTMENTS: '/departments',
