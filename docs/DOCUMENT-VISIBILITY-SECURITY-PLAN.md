@@ -14,15 +14,18 @@
 **Critical Issues Found:** 3
 
 ### Critical Issues:
+
 1. ❌ **Frontend category dropdown uses wrong values** (work/training vs personal/team)
 2. ❌ **Payroll filtering completely broken** (string.includes() on ENUM)
 3. ❌ **No automatic visibility mapping** (user must manually select recipient type)
 
 ### What User Wants:
+
 > "die sichtbarkeit sollte mit dem dropdown automatisch klar sein"
 > **Translation:** Visibility should be automatically determined by dropdown selection
 
 **Security Requirements:**
+
 - ✅ `personal` → Only specific user can see
 - ✅ `payroll` → Only specific user can see (special case)
 - ✅ `team` → Only team members can see
@@ -78,6 +81,7 @@ CREATE TABLE documents (
 ```
 
 **Key Insight:**
+
 - `recipient_type` + IDs = **ACCESS CONTROL** (WHO can see)
 - `category` field = **METADATA** (WHAT type of document)
 
@@ -85,10 +89,10 @@ CREATE TABLE documents (
 
 ```typescript
 interface User {
-  id: number;              // Current user ID
-  tenant_id: number;       // Company isolation
-  department_id?: number;  // User's department
-  team_id?: number;        // User's team (can be multiple via user_teams)
+  id: number; // Current user ID
+  tenant_id: number; // Company isolation
+  department_id?: number; // User's department
+  team_id?: number; // User's team (can be multiple via user_teams)
   role: 'admin' | 'employee' | 'root';
 }
 ```
@@ -130,6 +134,7 @@ private matchesCategory(doc: Document, category: DocumentCategory): boolean {
 ```
 
 **BUG ANALYSIS:**
+
 - `doc.category` is ENUM: `'salary'` (not a freeform string)
 - `'salary'.includes('gehalt')` = **FALSE**
 - `'salary'.includes('payroll')` = **FALSE**
@@ -137,6 +142,7 @@ private matchesCategory(doc: Document, category: DocumentCategory): boolean {
 - **Result:** Payroll documents NEVER show in payroll sidebar!
 
 **CORRECT FIX:**
+
 ```typescript
 if (category === 'payroll') {
   return doc.category === 'salary' && doc.recipientType === 'user';
@@ -192,13 +198,13 @@ private async checkDocumentAccess(
 
 **User-Facing Categories** (Dropdown) → **Backend Storage** (Automatic Mapping)
 
-| User Selects | recipientType | user_id | team_id | department_id | category (DB) | Who Can See |
-|---|---|---|---|---|---|---|
-| **Persönlich** | `'user'` | currentUser.id | NULL | NULL | `'personal'` | Only me |
-| **Team** | `'team'` | NULL | currentUser.teamId | NULL | `'work'` | My team members |
-| **Abteilung** | `'department'` | NULL | NULL | currentUser.deptId | `'work'` | My department |
-| **Firma** | `'company'` | NULL | NULL | NULL | `'general'` | Everyone in company |
-| **Gehalt** | `'user'` | currentUser.id | NULL | NULL | `'salary'` | Only me (special) |
+| User Selects   | recipientType  | user_id        | team_id            | department_id      | category (DB) | Who Can See         |
+| -------------- | -------------- | -------------- | ------------------ | ------------------ | ------------- | ------------------- |
+| **Persönlich** | `'user'`       | currentUser.id | NULL               | NULL               | `'personal'`  | Only me             |
+| **Team**       | `'team'`       | NULL           | currentUser.teamId | NULL               | `'work'`      | My team members     |
+| **Abteilung**  | `'department'` | NULL           | NULL               | currentUser.deptId | `'work'`      | My department       |
+| **Firma**      | `'company'`    | NULL           | NULL               | NULL               | `'general'`   | Everyone in company |
+| **Gehalt**     | `'user'`       | currentUser.id | NULL               | NULL               | `'salary'`    | Only me (special)   |
 
 ### Why This Mapping?
 
@@ -216,6 +222,7 @@ private async checkDocumentAccess(
 **File:** `frontend/src/pages/documents-explorer.html` (Lines 365-384)
 
 **BEFORE (WRONG):**
+
 ```html
 <div class="dropdown__menu" id="category-menu">
   <div class="dropdown__option" data-value="work">Arbeitsdokumente</div>
@@ -226,6 +233,7 @@ private async checkDocumentAccess(
 ```
 
 **AFTER (CORRECT):**
+
 ```html
 <div class="dropdown__menu" id="category-menu">
   <div class="dropdown__option" data-value="personal">
@@ -256,6 +264,7 @@ private async checkDocumentAccess(
 **File:** `frontend/src/scripts/documents/explorer/upload-modal.ts`
 
 **Add Mapping Object:**
+
 ```typescript
 /**
  * Category Mapping: User-facing → Backend storage
@@ -405,6 +414,7 @@ private async buildFormData(file: File, category: string): Promise<FormData | nu
 Since visibility is now automatic, the visibility radio buttons are redundant.
 
 **Option A: Hide them completely**
+
 ```typescript
 // In upload-modal.ts
 private hideVisibilityOptions(): void {
@@ -416,6 +426,7 @@ private hideVisibilityOptions(): void {
 ```
 
 **Option B: Auto-set them (keep for visual feedback)**
+
 ```typescript
 private updateVisibilityDisplay(category: string): void {
   const mapping = CATEGORY_MAPPINGS[category];
@@ -437,6 +448,7 @@ private updateVisibilityDisplay(category: string): void {
 **File:** `frontend/src/scripts/documents/explorer/state.ts` (Lines 251-257)
 
 **BEFORE (BROKEN):**
+
 ```typescript
 if (category === 'payroll') {
   return (
@@ -448,19 +460,19 @@ if (category === 'payroll') {
 ```
 
 **AFTER (FIXED):**
+
 ```typescript
 // Payroll: recipient_type='user' AND category='salary' AND user_id=currentUser
 if (category === 'payroll') {
   // Note: currentUser.id should be available in state
   return (
-    doc.category === 'salary' &&
-    doc.recipientType === 'user' &&
-    doc.userId === this.currentUserId  // Add currentUserId to state
+    doc.category === 'salary' && doc.recipientType === 'user' && doc.userId === this.currentUserId // Add currentUserId to state
   );
 }
 ```
 
 **Alternative (if currentUserId not in state):**
+
 ```typescript
 if (category === 'payroll') {
   return doc.category === 'salary' && doc.recipientType === 'user';
@@ -473,6 +485,7 @@ if (category === 'payroll') {
 **File:** `backend/src/routes/v2/documents/documents.validation.zod.ts`
 
 **BEFORE:**
+
 ```typescript
 const CategorySchema = z.enum(['personal', 'work', 'training', 'general', 'salary'], {
   message: 'Invalid category',
@@ -480,31 +493,44 @@ const CategorySchema = z.enum(['personal', 'work', 'training', 'general', 'salar
 ```
 
 **AFTER:**
+
 ```typescript
 // Accept both frontend AND backend values for backwards compatibility
-const CategorySchema = z.enum([
-  // Frontend values (user-facing)
-  'personal', 'team', 'department', 'company', 'payroll',
-  // Backend DB values (for API compatibility)
-  'work', 'training', 'general', 'salary'
-], {
-  message: 'Invalid category',
-}).transform((val) => {
-  // Map frontend values to DB values
-  const mapping: Record<string, string> = {
-    'personal': 'personal',
-    'team': 'work',
-    'department': 'work',
-    'company': 'general',
-    'payroll': 'salary',
-    // DB values pass through unchanged
-    'work': 'work',
-    'training': 'training',
-    'general': 'general',
-    'salary': 'salary',
-  };
-  return mapping[val] || val;
-});
+const CategorySchema = z
+  .enum(
+    [
+      // Frontend values (user-facing)
+      'personal',
+      'team',
+      'department',
+      'company',
+      'payroll',
+      // Backend DB values (for API compatibility)
+      'work',
+      'training',
+      'general',
+      'salary',
+    ],
+    {
+      message: 'Invalid category',
+    },
+  )
+  .transform((val) => {
+    // Map frontend values to DB values
+    const mapping: Record<string, string> = {
+      personal: 'personal',
+      team: 'work',
+      department: 'work',
+      company: 'general',
+      payroll: 'salary',
+      // DB values pass through unchanged
+      work: 'work',
+      training: 'training',
+      general: 'general',
+      salary: 'salary',
+    };
+    return mapping[val] || val;
+  });
 ```
 
 **Alternative (simpler - recommended):**
@@ -517,27 +543,28 @@ Keep backend validation as-is, but ensure frontend ALWAYS sends DB ENUM values (
 
 ### Test Scenarios (Must ALL Pass)
 
-| # | Scenario | Expected Result | Verification |
-|---|---|---|---|
-| 1 | User A uploads "Persönlich" doc | Only User A can see it | ✅ recipient_type='user', user_id=A |
-| 2 | User A uploads "Team" doc (team_id=5) | Only members of team 5 can see | ✅ recipient_type='team', team_id=5 |
-| 3 | User B (team_id=7) tries to see A's team doc | Access denied | ✅ checkDocumentAccess returns false |
-| 4 | User A uploads "Abteilung" (dept_id=3) | Only dept 3 members can see | ✅ recipient_type='department' |
-| 5 | User C (dept_id=8) tries to see A's dept doc | Access denied | ✅ department_id mismatch |
-| 6 | User A uploads "Firma" doc | All tenant users can see | ✅ recipient_type='company' |
-| 7 | User D (different tenant) tries to see A's doc | Access denied (404) | ✅ tenant_id filter in query |
-| 8 | User A uploads "Gehalt" doc | Only User A can see | ✅ recipient_type='user', category='salary' |
-| 9 | Admin views any tenant doc | Success | ✅ Admin bypass in checkDocumentAccess |
-| 10 | User without team tries to upload "Team" | Validation error | ✅ Frontend validation |
-| 11 | User without dept tries "Abteilung" | Validation error | ✅ Frontend validation |
-| 12 | User switches teams | Loses access to old team docs | ✅ Dynamic team_id check |
-| 13 | Sidebar "Gehalt" click | Shows only salary docs for me | ✅ Fixed payroll filter |
-| 14 | Sidebar "Team" click | Shows all my team docs | ✅ recipient_type='team' filter |
-| 15 | API call without tenant_id | Blocked | ✅ All queries filter by tenant_id |
+| #   | Scenario                                       | Expected Result                | Verification                                |
+| --- | ---------------------------------------------- | ------------------------------ | ------------------------------------------- |
+| 1   | User A uploads "Persönlich" doc                | Only User A can see it         | ✅ recipient_type='user', user_id=A         |
+| 2   | User A uploads "Team" doc (team_id=5)          | Only members of team 5 can see | ✅ recipient_type='team', team_id=5         |
+| 3   | User B (team_id=7) tries to see A's team doc   | Access denied                  | ✅ checkDocumentAccess returns false        |
+| 4   | User A uploads "Abteilung" (dept_id=3)         | Only dept 3 members can see    | ✅ recipient_type='department'              |
+| 5   | User C (dept_id=8) tries to see A's dept doc   | Access denied                  | ✅ department_id mismatch                   |
+| 6   | User A uploads "Firma" doc                     | All tenant users can see       | ✅ recipient_type='company'                 |
+| 7   | User D (different tenant) tries to see A's doc | Access denied (404)            | ✅ tenant_id filter in query                |
+| 8   | User A uploads "Gehalt" doc                    | Only User A can see            | ✅ recipient_type='user', category='salary' |
+| 9   | Admin views any tenant doc                     | Success                        | ✅ Admin bypass in checkDocumentAccess      |
+| 10  | User without team tries to upload "Team"       | Validation error               | ✅ Frontend validation                      |
+| 11  | User without dept tries "Abteilung"            | Validation error               | ✅ Frontend validation                      |
+| 12  | User switches teams                            | Loses access to old team docs  | ✅ Dynamic team_id check                    |
+| 13  | Sidebar "Gehalt" click                         | Shows only salary docs for me  | ✅ Fixed payroll filter                     |
+| 14  | Sidebar "Team" click                           | Shows all my team docs         | ✅ recipient_type='team' filter             |
+| 15  | API call without tenant_id                     | Blocked                        | ✅ All queries filter by tenant_id          |
 
 ### SQL Security Verification
 
 **Query Pattern (Always Used):**
+
 ```sql
 SELECT * FROM documents
 WHERE tenant_id = ?
@@ -551,6 +578,7 @@ WHERE tenant_id = ?
 ```
 
 **Security Guarantees:**
+
 1. ✅ `tenant_id` ALWAYS in WHERE clause (multi-tenant isolation)
 2. ✅ Access control via recipient_type + IDs
 3. ✅ No documents leak across tenants
@@ -566,6 +594,7 @@ WHERE tenant_id = ?
 **Problem:** User is member of teams 5, 7, and 9. How to handle?
 
 **Solution:** ✅ Already handled!
+
 ```typescript
 case 'team': {
   const teamMembers = await Team.getTeamMembers(document.team_id);
@@ -574,6 +603,7 @@ case 'team': {
 ```
 
 **SQL Query:**
+
 ```sql
 SELECT * FROM documents
 WHERE recipient_type = 'team'
@@ -587,6 +617,7 @@ WHERE recipient_type = 'team'
 **Problem:** User was in team 5, now in team 7. What happens to old docs?
 
 **Solution:**
+
 - Documents uploaded to team 5 stay with team 5
 - User loses access to team 5 documents ✅
 - User gains access to team 7 documents ✅
@@ -597,6 +628,7 @@ WHERE recipient_type = 'team'
 **Problem:** User tries to upload "Team" document but has no team_id.
 
 **Solution:**
+
 ```typescript
 if (mapping.requiresTeam && !user.team_id) {
   showWarningAlert('Sie müssen einem Team zugeordnet sein!');
@@ -605,6 +637,7 @@ if (mapping.requiresTeam && !user.team_id) {
 ```
 
 **Additional:** Disable "Team" option in dropdown if user has no team:
+
 ```typescript
 private async updateCategoryOptions(): Promise<void> {
   const user = await this.getCurrentUser();
@@ -630,6 +663,7 @@ private async updateCategoryOptions(): Promise<void> {
 **Current Behavior:** `ON DELETE CASCADE` → Documents are deleted! ⚠️
 
 **Better Solution:** Change to `ON DELETE SET NULL`:
+
 ```sql
 ALTER TABLE documents
 DROP FOREIGN KEY fk_documents_team_id;
@@ -641,6 +675,7 @@ ON DELETE SET NULL;
 ```
 
 Then handle orphaned documents:
+
 ```typescript
 if (document.recipient_type === 'team' && !document.team_id) {
   // Team was deleted - mark as orphaned
@@ -660,8 +695,10 @@ if (document.recipient_type === 'team' && !document.team_id) {
 **Problem:** Admin uploads "Team" document but might not be in any team.
 
 **Solution:**
+
 - Admins should select WHICH team when uploading
 - Add team selector for admins:
+
 ```html
 <!-- Show only for admins when category='team' -->
 <div id="team-selector" style="display: none;">
@@ -679,7 +716,9 @@ Same for department documents.
 **Problem:** Admin wants to upload payroll for specific employee.
 
 **Solution:**
+
 - Add user selector when category='payroll' AND user.role='admin':
+
 ```html
 <!-- Show only for admins when category='payroll' -->
 <div id="user-selector" style="display: none;">
@@ -691,6 +730,7 @@ Same for department documents.
 ```
 
 Then:
+
 ```typescript
 if (category === 'payroll' && user.role === 'admin') {
   const targetUserId = (document.getElementById('target-user') as HTMLSelectElement).value;
@@ -714,12 +754,14 @@ if (category === 'payroll' && user.role === 'admin') {
 ### Post-Implementation Tests
 
 #### Unit Tests
+
 - [ ] Category mapping object returns correct values
 - [ ] validateCategorySelection correctly checks team/dept membership
 - [ ] buildFormData includes all required fields
 - [ ] Payroll filter correctly checks category='salary'
 
 #### Integration Tests (Upload Flow)
+
 - [ ] Upload "Persönlich" → Check DB: recipient_type='user', user_id=me, category='personal'
 - [ ] Upload "Team" → Check DB: recipient_type='team', team_id=myTeam, category='work'
 - [ ] Upload "Abteilung" → Check DB: recipient_type='department', department_id=myDept, category='work'
@@ -727,6 +769,7 @@ if (category === 'payroll' && user.role === 'admin') {
 - [ ] Upload "Gehalt" → Check DB: recipient_type='user', user_id=me, category='salary'
 
 #### Integration Tests (Visibility/Access)
+
 - [ ] User A sees own personal docs, not User B's personal docs
 - [ ] User A sees own team docs, not User C's team docs (different team)
 - [ ] User A sees own department docs, not User D's dept docs (different dept)
@@ -735,6 +778,7 @@ if (category === 'payroll' && user.role === 'admin') {
 - [ ] Admin sees all documents in their tenant
 
 #### Integration Tests (Sidebar Filtering)
+
 - [ ] Click "Persönlich" → Shows only my personal docs (recipient_type='user')
 - [ ] Click "Team" → Shows only my team docs (recipient_type='team', team_id IN myTeams)
 - [ ] Click "Abteilung" → Shows only my dept docs (recipient_type='department', department_id=myDept)
@@ -742,11 +786,13 @@ if (category === 'payroll' && user.role === 'admin') {
 - [ ] Click "Gehalt" → Shows only my payroll docs (category='salary', recipient_type='user')
 
 #### Security Tests (Cross-Tenant)
+
 - [ ] User in tenant 1 cannot see docs from tenant 2
 - [ ] API call with tenant_id=1 cannot access documents with tenant_id=2
 - [ ] SQL injection attempt with tenant_id parameter fails safely
 
 #### Edge Case Tests
+
 - [ ] User with no team cannot select "Team" category (validation error)
 - [ ] User with no dept cannot select "Abteilung" category (validation error)
 - [ ] User switches teams → Loses access to old team docs, gains access to new team docs
@@ -758,12 +804,14 @@ if (category === 'payroll' && user.role === 'admin') {
 ## 🚀 DEPLOYMENT CHECKLIST
 
 ### Phase 1: Preparation (30 min)
+
 - [ ] Backup database: `bash scripts/quick-backup.sh "before_visibility_fix"`
 - [ ] Create feature branch: `git checkout -b fix/document-visibility-security`
 - [ ] Read all relevant docs (this file, DATABASE-MIGRATION-GUIDE.md)
 - [ ] Verify current system behavior (take screenshots of broken payroll filter)
 
 ### Phase 2: Frontend Changes (1 hour)
+
 - [ ] Fix dropdown values in documents-explorer.html
 - [ ] Add CATEGORY_MAPPINGS object in upload-modal.ts
 - [ ] Implement getCurrentUser() method
@@ -776,12 +824,14 @@ if (category === 'payroll' && user.role === 'admin') {
 - [ ] Run `docker exec assixx-backend pnpm run lint`
 
 ### Phase 3: Backend Changes (30 min)
+
 - [ ] Review validation in documents.validation.zod.ts (no change needed if frontend maps correctly)
 - [ ] Test API with new category values
 - [ ] Verify access control logic (should already be correct)
 - [ ] Run `docker exec assixx-backend pnpm run type-check`
 
 ### Phase 4: Testing (2 hours)
+
 - [ ] Build frontend: `docker exec assixx-backend pnpm run build`
 - [ ] Restart backend: `docker-compose restart backend`
 - [ ] Clear browser cache (Ctrl+Shift+R)
@@ -790,12 +840,14 @@ if (category === 'payroll' && user.role === 'admin') {
 - [ ] Re-test until all pass
 
 ### Phase 5: Documentation (30 min)
+
 - [ ] Update docs/FEATURES.md with correct visibility behavior
 - [ ] Update docs/DATABASE-SETUP-README.md with security notes
 - [ ] Add this plan to docs/ folder (already done)
 - [ ] Document any issues/workarounds discovered
 
 ### Phase 6: Deployment (15 min)
+
 - [ ] Commit changes: `git add -A && git commit -m "Fix: Document visibility and security isolation"`
 - [ ] Test one final time
 - [ ] Create PR (if using PR workflow) or merge to main
@@ -816,11 +868,13 @@ if (category === 'payroll' && user.role === 'admin') {
 ## 🔗 REFERENCES
 
 ### Best Practices (2025)
+
 - Multi-Tenant RLS: [AWS PostgreSQL RLS Guide](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/)
 - Access Control Patterns: [Recipient Type ENUM Pattern](https://cazzer.medium.com/designing-the-most-performant-row-level-security-strategy-in-postgres-a06084f31945)
 - Security Standards: [OWASP SaaS Security](https://owasp.org/www-project-saas-security/)
 
 ### Code References
+
 - Backend Access Control: `backend/src/routes/v2/documents/documents.service.ts:693-726`
 - Frontend Filtering: `frontend/src/scripts/documents/explorer/state.ts:242-261`
 - Database Schema: `database/schema/02-modules/documents.sql`
@@ -841,6 +895,7 @@ if (category === 'payroll' && user.role === 'admin') {
 ### Q: Can we add a "supervisor" recipient type?
 
 **A:** Yes! Add `'supervisor'` to the recipient_type ENUM, then add logic in checkDocumentAccess:
+
 ```typescript
 case 'supervisor': {
   const subordinates = await User.getSubordinates(userId);
@@ -855,6 +910,7 @@ case 'supervisor': {
 ### Q: Performance impact of these queries?
 
 **A:** Minimal. The database has indexes on:
+
 - `idx_tenant_id` (tenant isolation)
 - `idx_recipient_type` (access filtering)
 - `idx_team_id`, `idx_department_id` (FK indexes)
@@ -865,6 +921,6 @@ Queries will be fast even with millions of documents.
 
 **END OF DOCUMENT**
 
-*Generated by Claude Code Analysis - 2025-01-10*
-*Version 1.0 - Security Implementation Plan*
-*Status: READY FOR IMPLEMENTATION*
+_Generated by Claude Code Analysis - 2025-01-10_
+_Version 1.0 - Security Implementation Plan_
+_Status: READY FOR IMPLEMENTATION_

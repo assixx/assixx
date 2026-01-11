@@ -16,7 +16,7 @@ Status: In Progress
 
 - Bootstrap CSS (bootstrap.min.css)
 - Bootstrap JavaScript (bootstrap.bundle.min.js)
-- Bootstrap compatibility layers (all compat/*.css files)
+- Bootstrap compatibility layers (all compat/\*.css files)
 - ALL inline `<script>` tags with vanilla JS
 - ALL inline style="" attributes
 - ALL non-Tailwind CSS classes
@@ -123,7 +123,9 @@ Before:
 ```html
 <script>
   let currentCountryCode = '+49';
-  function validateEmail(email) { return /.../.test(email); }
+  function validateEmail(email) {
+    return /.../.test(email);
+  }
   // 400+ lines inline...
 </script>
 ```
@@ -133,6 +135,7 @@ After:
 ```html
 <script type="module">
   import { SignupFormController } from '/scripts/auth/signup-form.js';
+
   new SignupFormController().init();
 </script>
 ```
@@ -182,20 +185,18 @@ export class SignupFormController {
 
 - [x] documents-explorer.html ✅ (2025-11-13) - 100% Design System compliant (NUCLEAR REFACTORING: deleted 1,227 lines legacy CSS, created minimal 195-line CSS, fixed all inline styles, TypeScript modules, NO Bootstrap, NO inline JS)
 
-
 ### Features and unified-navigation !!!! CRITICAL and biggest
 
 - [x] calendar.html ✅ (2025-11-23) - 100% Design System compliant (toggle-group for filters, ds-modal, form-field, dropdown, confirm-modal for delete events, TypeScript modules split to api/filters/modals/state/types/ui/index layers, FullCalendar integration with Design System theming, Schichten toggle button independent from organization filters, fixed field mapping startTime/endTime from API v2, no inline styles/JS, no Bootstrap)
 - [x] blackboard.html ✅ (2025-12-02) - 100% Design System compliant (card, toggle-group for level filter, dropdown for sort, ds-modal for entry form, confirm-modal--danger for two-step delete, toggle-switch--danger for company-wide toggle, file-upload-zone with drag&drop, color-picker component, TypeScript modules split to 11 files: api/data/filters/forms/modals/types/ui/zoom/widget/sticky-note-component/index layers, navigation to dedicated detail page instead of modal, no inline styles/JS, no Bootstrap)
 - [x] chat.html ✅ (2025-12-02) - 100% Design System compliant (ds-modal for new conversation, toggle-group for employee/admin tabs, dropdown for department/employee/admin selection, form-field for group name, btn-icon for actions, custom chat UI preserved for domain-specific requirements, TypeScript modules split to 11 files: api/emoji-data/index/input/messages/modals/state/types/ui/utils/websocket layers, chat.css reduced 1451→1203 lines -17% by removing redundant modal/button/dropdown/tab styles, no inline styles/JS, no Bootstrap)
-- [x] shifts.html ✅ (2025-12-11) - 100% Design System compliant (ds-modal for rotation config, form-field with tooltip info icons, toggle-switch for autofill/rotation/custom-rotation, dropdown for filters cascade (area→department→machine→team), card with card__header/card__body, badge variants, btn-secondary/btn-manage/btn-danger/btn-cancel, favorites system with btn-float, week-navigation with u-hidden toggle, employee-sidebar for drag-drop assignments, TypeScript modules split to 23 files: api/autofill/constants/custom-rotation/custom-rotation-types/data-processing/drag-drop/events/favorites/filters/handlers/index/kontischicht/kontischicht-types/lock-mode/modals/rotation/state/types/ui/utils/validation/week-renderer layers, fixed snake_case→camelCase in types.ts/rotation.ts/validation.ts, fixed inline styles→u-hidden class, no inline styles/JS, no Bootstrap)
-- [x] logs.html ✅ (2025-12-12) - 100% Design System compliant (dropdown→dropdown__trigger/dropdown__menu/dropdown__option, ds-modal/ds-modal__close for details modal, modal-overlay, spinner/spinner--lg, empty-state/empty-state--sm/empty-state--error, form-field/form-field__control, pagination, TypeScript modules split to index/ui layers, logs.css reduced 304→145 lines -52%, eliminated custom dropdown CSS→Design System dropdown, eliminated .details-modal/.close-btn→Design System modal, eliminated .loading-spinner (broken class), eliminated .container/.table-responsive (redundant), fixed DELETE with search filter bug in backend, no inline styles/JS, no Bootstrap)
+- [x] shifts.html ✅ (2025-12-11) - 100% Design System compliant (ds-modal for rotation config, form-field with tooltip info icons, toggle-switch for autofill/rotation/custom-rotation, dropdown for filters cascade (area→department→machine→team), card with card**header/card**body, badge variants, btn-secondary/btn-manage/btn-danger/btn-cancel, favorites system with btn-float, week-navigation with u-hidden toggle, employee-sidebar for drag-drop assignments, TypeScript modules split to 23 files: api/autofill/constants/custom-rotation/custom-rotation-types/data-processing/drag-drop/events/favorites/filters/handlers/index/kontischicht/kontischicht-types/lock-mode/modals/rotation/state/types/ui/utils/validation/week-renderer layers, fixed snake_case→camelCase in types.ts/rotation.ts/validation.ts, fixed inline styles→u-hidden class, no inline styles/JS, no Bootstrap)
+- [x] logs.html ✅ (2025-12-12) - 100% Design System compliant (dropdown→dropdown**trigger/dropdown**menu/dropdown**option, ds-modal/ds-modal**close for details modal, modal-overlay, spinner/spinner--lg, empty-state/empty-state--sm/empty-state--error, form-field/form-field\_\_control, pagination, TypeScript modules split to index/ui layers, logs.css reduced 304→145 lines -52%, eliminated custom dropdown CSS→Design System dropdown, eliminated .details-modal/.close-btn→Design System modal, eliminated .loading-spinner (broken class), eliminated .container/.table-responsive (redundant), fixed DELETE with search filter bug in backend, no inline styles/JS, no Bootstrap)
 - [x] unified-navigation.ts und css ✅ (2025-12-12) - 100% Design System compliant (MAJOR REFACTORING: Split 1,800+ line monolith into 12 modular TypeScript files: constants/handlers/icons/index/menu-config/render/role-switch-ui/services/sidebar/types/utils layers, unified-navigation.css reduced to domain-specific sidebar/mobile styles, Design System badges for role indicators, role-switch modal with glassmorphism, TypeScript modules with proper type definitions, no inline styles/JS, no Bootstrap)
 - [x] tenant-deletion-status.html - last one -finished 14.12.2025
 
 - [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
 - [x] kvp-detail.html ✅ (2025-11-15) - 100% Design System compliant (ds-modal, form-field, dropdown, choice-card, data-list, badge, btn-cancel, TypeScript modules split to actions/data-loader/index/permissions/renderer/share-modal/ui layers, lightbox photo gallery, comments section with avatar, kvp-detail.css 399 lines domain-specific only, fixed Bootstrap btn-secondary→btn-cancel and btn-light→btn-cancel, no inline styles/JS, no Bootstrap)
-
 
 ### Surveys
 
@@ -206,18 +207,16 @@ export class SignupFormController {
 ### Admin/Root
 
 - [x] root-features.html ✅ (2025-11-19) - 100% Design System compliant (feature-card from choice-card.feature.css with .feature-status badges, .features-grid responsive layout, plan-card from choice-card.plan.css with radio selection and ::before "Empfohlen" badge, toggle-group for filters, TypeScript modules split to types/data/ui/index layers, fixed feature codes to match database (employees, documents), fixed tenant_id initialization with dual format support, fixed plan selection radio reset on cancel/error, fixed addon save route POST→PUT with camelCase body format, root-features.css reduced 617→232 lines -62%, eliminated ALL redundant CSS: feature/plan cards→Design System components, buttons→.btn variants, grids→.features-grid/Tailwind, no inline styles/JS, no Bootstrap)
-- [x] root-profile.html ✅ (2025-11-20) - 100% Design System compliant (form-field, form-field__label, form-field__control for all forms, profile-card glassmorphism cards, approval-section for deletion approvals with cooling-off warnings, TypeScript modules split to 5-layer architecture: types/data/ui/forms/index, 629 lines inline JavaScript→TypeScript modules (913 lines structured), HTML reduced 783→153 lines -80%, root-profile.css reduced 740→253 lines -66%, eliminated ALL inline scripts: profile/password forms→forms.ts, API calls→data.ts, DOM manipulation→ui.ts, event orchestration→index.ts RootProfileManager class, eliminated ALL redundant CSS: .form-control→.form-field__control, .btn-* overrides→Design System, .alert-*→Design System via notificationService, .modal-*→removed (unused), custom styles→Design System variables (--spacing-*, --color-*, --radius-*), fixed form field names firstName/lastName to match API v2, fixed alert consistency: custom showMessage→showSuccessAlert/showErrorAlert from alerts.ts (notificationService toasts), kept showSuccessOverlay for special animations, removed #message-container (unused with toast notifications), type-safe profile picture upload/removal, deletion approval workflow with data-action attributes, no inline styles/JS, no Bootstrap)
+- [x] root-profile.html ✅ (2025-11-20) - 100% Design System compliant (form-field, form-field**label, form-field**control for all forms, profile-card glassmorphism cards, approval-section for deletion approvals with cooling-off warnings, TypeScript modules split to 5-layer architecture: types/data/ui/forms/index, 629 lines inline JavaScript→TypeScript modules (913 lines structured), HTML reduced 783→153 lines -80%, root-profile.css reduced 740→253 lines -66%, eliminated ALL inline scripts: profile/password forms→forms.ts, API calls→data.ts, DOM manipulation→ui.ts, event orchestration→index.ts RootProfileManager class, eliminated ALL redundant CSS: .form-control→.form-field\_\_control, .btn-* overrides→Design System, .alert-*→Design System via notificationService, .modal-_→removed (unused), custom styles→Design System variables (--spacing-_, --color-_, --radius-_), fixed form field names firstName/lastName to match API v2, fixed alert consistency: custom showMessage→showSuccessAlert/showErrorAlert from alerts.ts (notificationService toasts), kept showSuccessOverlay for special animations, removed #message-container (unused with toast notifications), type-safe profile picture upload/removal, deletion approval workflow with data-action attributes, no inline styles/JS, no Bootstrap)
 - [x] admin-profile.html ✅ (2025-11-20) - 100% Design System compliant
 - [x] employee-profile.html ✅ (2025-11-20) - 100% Design System compliant
-- [x] account-settings.html ✅ (2025-11-20) - 100% Design System compliant (FIXED: Inconsistent structure→Standard .card with .card__header/.card__body pattern matching manage-root/manage-admins, ds-modal with ds-modal--md size, ds-modal__header--danger/primary variants, .card--danger-border modifier for danger zone visual indicator, alert--danger for warnings, form-field__control for inputs/textarea, @container on main element, subtitle with text-[var(--color-text-secondary)] mt-2, icon spacing mr-2, CRITICAL MODAL BUG FIX: modal.classList.add('active')→modal.classList.add('modal-overlay--active') [Design System uses BEM modifier .modal-overlay--active with double dash, NOT chained class .modal-overlay.active - modal.base.css sets visibility:hidden/opacity:0% which overrides display:flex], removed custom .modal-overlay.active CSS (redundant with Design System), TypeScript modules split to 4-layer architecture: types/api/ui/index, 195 lines inline JavaScript→TypeScript modules (265 lines structured), HTML reduced 422→242 lines -43%, account-settings.css reduced 244→57 lines -77%, eliminated .settings-container custom wrapper, eliminated ALL inline scripts: modal handlers→ui.ts, API calls→api.ts, event delegation→index.ts AccountSettingsController class, eliminated ALL redundant CSS: modal styles→.ds-modal, button styles→.btn variants, form controls→.form-field__control, .settings-container→removed, kept ONLY domain-specific styles (deletion-status-icon animation, deletion-info box, card--danger-border variant), two-person-principle validation for tenant deletion, root user count check before delete, deletion queue status modal with 30-day grace period, keyboard shortcuts (Escape to close), data-action event delegation pattern, no inline styles/JS, no Bootstrap)
+- [x] account-settings.html ✅ (2025-11-20) - 100% Design System compliant (FIXED: Inconsistent structure→Standard .card with .card**header/.card**body pattern matching manage-root/manage-admins, ds-modal with ds-modal--md size, ds-modal**header--danger/primary variants, .card--danger-border modifier for danger zone visual indicator, alert--danger for warnings, form-field**control for inputs/textarea, @container on main element, subtitle with text-[var(--color-text-secondary)] mt-2, icon spacing mr-2, CRITICAL MODAL BUG FIX: modal.classList.add('active')→modal.classList.add('modal-overlay--active') [Design System uses BEM modifier .modal-overlay--active with double dash, NOT chained class .modal-overlay.active - modal.base.css sets visibility:hidden/opacity:0% which overrides display:flex], removed custom .modal-overlay.active CSS (redundant with Design System), TypeScript modules split to 4-layer architecture: types/api/ui/index, 195 lines inline JavaScript→TypeScript modules (265 lines structured), HTML reduced 422→242 lines -43%, account-settings.css reduced 244→57 lines -77%, eliminated .settings-container custom wrapper, eliminated ALL inline scripts: modal handlers→ui.ts, API calls→api.ts, event delegation→index.ts AccountSettingsController class, eliminated ALL redundant CSS: modal styles→.ds-modal, button styles→.btn variants, form controls→.form-field\_\_control, .settings-container→removed, kept ONLY domain-specific styles (deletion-status-icon animation, deletion-info box, card--danger-border variant), two-person-principle validation for tenant deletion, root user count check before delete, deletion queue status modal with 30-day grace period, keyboard shortcuts (Escape to close), data-action event delegation pattern, no inline styles/JS, no Bootstrap)
 
 ### Other
 
 - [x] index.html (landing page) - **COMPLETED 2025-11-21** - Full migration: 712→472 lines (-34%), 5 TypeScript modules, CSS cleanup (-158 lines)
 - [x] storage-upgrade.html - **COMPLETED 2025-11-21** - Full migration: 420→178 lines (-58%), 1 TypeScript module (256 lines inline JS extracted), 4 inline styles → CSS classes, alert() → toasts, btn-cancel → btn-secondary
 - [x] rate-limit.html - **COMPLETED 2025-11-21** - Full migration: 100→38 lines (-62%), 1 TypeScript module (73 lines inline JS → 133 lines structured), Design System `.card` + Tailwind utilities, CSS: 119→48 lines (-60%), only domain-specific animations kept (fade-in-up, pulse), countdown timer with auto-redirect
-
-
 
 ## Migration Strategy
 
@@ -227,7 +226,7 @@ export class SignupFormController {
 
 **Current State:**
 
-- Forms already use Design System (form-field__control)
+- Forms already use Design System (form-field\_\_control)
 - Custom dropdowns (plan-select, country-select) use vanilla JS
 - Buttons use .btn btn-primary (could be Bootstrap or Design System)
 - Alerts use inline styles
@@ -261,7 +260,7 @@ Note: File count varies per page based on inline JS complexity.
 - NO inline styles (style="...")
 - NO inline JavaScript (< script > with code)
 - ONLY Tailwind classes for styling
-- ONLY TypeScript modules (*.ts files)
+- ONLY TypeScript modules (\*.ts files)
 - ONLY Design System components from Storybook
 - ALL functions have proper TypeScript types (no `any`)
 
@@ -294,8 +293,8 @@ Note: File count varies per page based on inline JS complexity.
 
 **TypeScript Files to Update:**
 
-- scripts/dashboard/*.ts
-- scripts/admin/*.ts
+- scripts/dashboard/\*.ts
+- scripts/admin/\*.ts
 
 **Acceptance Criteria:**
 
@@ -306,7 +305,7 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Phase 3: Management Pages (Priority Medium)
 
-**Files:** manage-*.html (8 files)
+**Files:** manage-\*.html (8 files)
 
 **Common Patterns:**
 
@@ -325,7 +324,7 @@ Note: File count varies per page based on inline JS complexity.
 
 **TypeScript Files to Update:**
 
-- scripts/manage/*.ts
+- scripts/manage/\*.ts
 
 **Acceptance Criteria:**
 
@@ -336,7 +335,7 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Phase 4: Document Pages (Priority Medium)
 
-**Files:** documents*.html (8 files)
+**Files:** documents\*.html (8 files)
 
 **Common Patterns:**
 
@@ -355,7 +354,7 @@ Note: File count varies per page based on inline JS complexity.
 
 **TypeScript Files to Update:**
 
-- scripts/documents/*.ts
+- scripts/documents/\*.ts
 
 **Acceptance Criteria:**
 
@@ -366,7 +365,7 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Phase 5: Feature Pages (Priority Medium)
 
-**Files:** blackboard.html, calendar.html, chat.html, shifts.html, kvp*.html, logs.html
+**Files:** blackboard.html, calendar.html, chat.html, shifts.html, kvp\*.html, logs.html
 
 **Complex Components:**
 
@@ -384,10 +383,10 @@ Note: File count varies per page based on inline JS complexity.
 
 **TypeScript Files to Update:**
 
-- scripts/calendar/*.ts
-- scripts/chat/*.ts
-- scripts/shifts/*.ts
-- scripts/blackboard/*.ts
+- scripts/calendar/\*.ts
+- scripts/chat/\*.ts
+- scripts/shifts/\*.ts
+- scripts/blackboard/\*.ts
 
 **Acceptance Criteria:**
 
@@ -398,7 +397,7 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Phase 6: Survey Pages (Priority Low)
 
-**Files:** survey-*.html (4 files)
+**Files:** survey-\*.html (4 files)
 
 **Migration Tasks:**
 
@@ -408,7 +407,7 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Phase 7: Profile & Settings (Priority Low)
 
-**Files:** *-profile.html, account-settings.html
+**Files:** \*-profile.html, account-settings.html
 
 **Migration Tasks:**
 
@@ -455,30 +454,30 @@ Note: File count varies per page based on inline JS complexity.
 
 ### Bootstrap to Design System
 
-| Bootstrap Class | Design System Replacement |
-|----------------|---------------------------|
-| .btn | .btn (Design System) |
-| .btn-primary | .btn-primary (Design System) |
-| .btn-cancel | .btn-cancel (Design System) |
-| .btn-danger | .btn-danger (Design System) |
-| .form-control | .form-field__control |
-| .form-label | .form-field__label |
-| .form-group | .form-field |
-| .modal | .modal (Design System) |
-| .modal-dialog | .modal__dialog |
-| .modal-content | .modal__content |
-| .modal-header | .modal__header |
-| .modal-body | .modal__body |
-| .modal-footer | .modal__footer |
-| .card | .card (Design System) |
-| .card-body | .card__body |
-| .card-header | .card__header |
-| .table | .data-table |
-| .table-striped | .data-table--striped |
-| .alert | .alert (Design System) |
-| .alert-success | .alert--success |
-| .badge | .badge (Design System) |
-| .dropdown | .dropdown (Design System) |
+| Bootstrap Class | Design System Replacement    |
+| --------------- | ---------------------------- |
+| .btn            | .btn (Design System)         |
+| .btn-primary    | .btn-primary (Design System) |
+| .btn-cancel     | .btn-cancel (Design System)  |
+| .btn-danger     | .btn-danger (Design System)  |
+| .form-control   | .form-field\_\_control       |
+| .form-label     | .form-field\_\_label         |
+| .form-group     | .form-field                  |
+| .modal          | .modal (Design System)       |
+| .modal-dialog   | .modal\_\_dialog             |
+| .modal-content  | .modal\_\_content            |
+| .modal-header   | .modal\_\_header             |
+| .modal-body     | .modal\_\_body               |
+| .modal-footer   | .modal\_\_footer             |
+| .card           | .card (Design System)        |
+| .card-body      | .card\_\_body                |
+| .card-header    | .card\_\_header              |
+| .table          | .data-table                  |
+| .table-striped  | .data-table--striped         |
+| .alert          | .alert (Design System)       |
+| .alert-success  | .alert--success              |
+| .badge          | .badge (Design System)       |
+| .dropdown       | .dropdown (Design System)    |
 
 ### JavaScript API Changes
 
@@ -506,8 +505,8 @@ Before marking a page as complete:
 - [ ] **NO Bootstrap classes** found in HTML (search for: .btn, .modal, .form-control, .card, .table)
 - [ ] **NO inline styles** (search for: style=")
 - [ ] **NO inline JavaScript** (no < script > tags with code, only module imports allowed)
-- [ ] **ALL styles use Tailwind** (bg-*, text-*, flex, grid, etc.)
-- [ ] **ALL JavaScript in TypeScript files** (*.ts in scripts/ folder)
+- [ ] **ALL styles use Tailwind** (bg-_, text-_, flex, grid, etc.)
+- [ ] **ALL JavaScript in TypeScript files** (\*.ts in scripts/ folder)
 - [ ] **ALL components from Storybook** (verified against <http://localhost:6006>)
 
 ### 🟢 FUNCTIONALITY
@@ -543,7 +542,6 @@ Before marking a page as complete:
 2. Chat real-time functionality
 3. File upload with drag and drop
 4. Complex forms with multi-step validation
-
 
 ## Next Steps
 

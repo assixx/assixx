@@ -21,11 +21,11 @@
   .container {
     /* Container adapts to parent container size */
     container-type: inline-size;
+    margin: 0 auto;
+    padding: var(--spacing-6);
 
     /* Responsive max-width using container queries */
     max-width: 100%;
-    margin: 0 auto;
-    padding: var(--spacing-6);
   }
 
   /* At larger container sizes, limit width for readability */

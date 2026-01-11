@@ -8,23 +8,23 @@
  * Reduced from 823 lines to ~400 lines (51% reduction!)
  */
 
-@import "./user-info-update.css";
+@import './user-info-update.css';
 
 /* ========================================
    KVP-SPECIFIC: Suggestion Cards
    ======================================== */
 
 .kvp-card {
-  cursor: pointer;
   position: relative;
+  cursor: pointer;
 }
 
 .kvp-card:hover {
   transform: translateY(-4px);
-  border-color: rgb(0 142 255 / 50%);
   box-shadow:
     0 12px 40px rgb(0 0 0 / 50%),
     inset 0 1px 0 rgb(255 255 255 / 15%);
+  border-color: rgb(0 142 255 / 50%);
 }
 
 /* ========================================
@@ -48,8 +48,8 @@
 
 .visibility-badge {
   display: inline-flex;
-  gap: 4px;
   align-items: center;
+  gap: 4px;
 
   margin-top: var(--spacing-2);
   border-radius: 16px;
@@ -58,24 +58,24 @@
 }
 
 .visibility-badge.department {
-  padding: 6px 12px;
   border: 1px solid rgb(78 205 196 / 50%);
-  color: #4ecdc4;
   background: rgb(78 205 196 / 20%);
+  padding: 6px 12px;
+  color: #4ecdc4;
 }
 
 .visibility-badge.company {
-  padding: 6px 12px;
   border: 1px solid rgb(102 126 234 / 50%);
-  color: #667eea;
   background: rgb(102 126 234 / 20%);
+  padding: 6px 12px;
+  color: #667eea;
 }
 
 .visibility-badge.team {
-  padding: 6px 12px;
   border: 1px solid rgb(255 159 67 / 50%);
-  color: #ff9f43;
   background: rgb(255 159 67 / 20%);
+  padding: 6px 12px;
+  color: #ff9f43;
 }
 
 /* ========================================
@@ -84,24 +84,24 @@
 
 .suggestion-title {
   margin-bottom: var(--spacing-2);
-  font-size: 1.1rem;
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .suggestion-meta {
   display: flex;
-  gap: var(--spacing-4);
   align-items: center;
+  gap: var(--spacing-4);
+  color: rgb(255 255 255 / 60%);
 
   font-size: 0.85rem;
-  color: rgb(255 255 255 / 60%);
 }
 
 .suggestion-meta span {
   display: inline-flex;
-  gap: var(--spacing-2); /* Space between icon and text */
   align-items: center;
+  gap: var(--spacing-2); /* Space between icon and text */
 }
 
 .suggestion-meta i {
@@ -110,49 +110,49 @@
 
 .suggestion-description {
   position: relative;
-
-  overflow: hidden;
+  margin: var(--spacing-4) 0;
 
   max-height: 4.8em; /* 3 lines * 1.6 line-height */
-  margin: var(--spacing-4) 0;
+
+  overflow: hidden;
+  color: rgb(255 255 255 / 80%);
 
   font-size: 0.9rem;
   line-height: 1.6;
-  color: rgb(255 255 255 / 80%);
 }
 
 .suggestion-description::after {
-  content: "...";
-
   position: absolute;
   right: 0;
   bottom: 0;
 
   padding-left: 20px;
+  content: '...';
 }
 
 .suggestion-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  align-items: flex-start;
 
   margin-top: var(--spacing-6);
-  padding-top: var(--spacing-4);
   border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: var(--spacing-4);
 }
 
 .category-tag {
   display: inline-flex;
-  gap: 4px;
   align-items: center;
-
-  padding: 4px 12px;
+  gap: 4px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: 16px;
 
-  font-size: 0.8rem;
-
   background: rgb(255 255 255 / 5%);
+
+  padding: 4px 12px;
+
+  font-size: 0.8rem;
 }
 
 /* ========================================
@@ -161,15 +161,15 @@
 
 .action-btn {
   cursor: pointer;
-
-  padding: 6px 12px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
-  font-size: 0.85rem;
+  background: rgb(255 255 255 / 5%);
+
+  padding: 6px 12px;
   color: var(--text-primary);
 
-  background: rgb(255 255 255 / 5%);
+  font-size: 0.85rem;
 }
 
 .action-btn:hover {
@@ -192,14 +192,14 @@
 
 .upload-box {
   cursor: pointer;
-
-  padding: var(--spacing-8);
   border: 2px dashed rgb(255 255 255 / 20%);
   border-radius: var(--radius-xl);
 
-  text-align: center;
-
   background: rgb(255 255 255 / 2%);
+
+  padding: var(--spacing-8);
+
+  text-align: center;
 }
 
 .upload-box:hover {
@@ -209,8 +209,8 @@
 
 .upload-box i {
   margin-bottom: var(--spacing-4);
-  font-size: 2.5rem;
   color: rgb(255 255 255 / 50%);
+  font-size: 2.5rem;
 }
 
 .upload-box p {
@@ -220,14 +220,14 @@
 
 .photo-preview-item {
   position: relative;
-
-  overflow: hidden;
-
-  width: 100px;
-  height: 100px;
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
+
+  width: 100px;
+  height: 100px;
+
+  overflow: hidden;
 }
 
 .photo-preview-item img {
@@ -237,25 +237,24 @@
 }
 
 .photo-preview-item .remove-photo {
-  cursor: pointer;
+  display: flex;
 
   position: absolute;
   top: 4px;
   right: 4px;
-
-  display: flex;
-  align-items: center;
   justify-content: center;
-
-  width: 24px;
-  height: 24px;
+  align-items: center;
+  cursor: pointer;
   border: none;
   border-radius: 50%;
 
-  font-size: 0.9rem;
+  background: rgb(244 67 54 / 90%);
+
+  width: 24px;
+  height: 24px;
   color: #fff;
 
-  background: rgb(244 67 54 / 90%);
+  font-size: 0.9rem;
 }
 
 .photo-preview-item .remove-photo:hover {
@@ -275,14 +274,13 @@
 
 .share-info {
   display: inline-flex;
-  gap: 0.5rem;
   align-items: center;
-  margin-top: 10px;
+  gap: 0.5rem;
 }
 
 .share-info > i {
-  font-size: 0.875rem;
   color: #666;
+  font-size: 0.875rem;
 }
 
 /* ========================================

@@ -1,298 +1,239 @@
 /**
- * Calendar System Styles - Calendar-Specific Only
- * Design System components (modals, buttons, forms, etc.) are used from /design-system/
- * This file contains ONLY FullCalendar customizations and calendar-specific layouts
+ * Calendar System Styles - @event-calendar/core
+ * Minimal CSS - only overrides, library handles most styling
+ * Design System components (modals, buttons, forms) from /design-system/
  */
 
 /* ============================================================================
-   FULLCALENDAR CUSTOMIZATIONS
+   @EVENT-CALENDAR CSS VARIABLES (Library uses these)
+   Define here so library picks up our theme colors automatically
+   ============================================================================ */
+:root {
+  --ec-border-color: hsl(0deg 0% 83.5% / 35%); /* Light gray, 35% opacity - more visible */
+}
+
+/* ============================================================================
+   @EVENT-CALENDAR BUTTON OVERRIDES
+   Match Design System (btn-secondary, sidebar style)
+   ============================================================================ */
+.ec {
+  --ec-bg-color: none !important;
+  --ec-border-color: unset !important;
+
+  color-scheme: none !important;
+}
+
+/* Remove time grid background lines */
+.ec-time-grid .ec-body .ec-day {
+  background-image: none !important;
+}
+
+/* Calendar main grid - rounded corners */
+.ec-main {
+  overflow: hidden; /* Ensures children respect border-radius */
+  border-radius: var(--radius-xl);
+}
+
+.ec-button {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.ec-button:hover {
+  color: var(--color-black) !important;
+  background-color: var(--color-icon-primary) !important;
+}
+
+.ec-active {
+  color: var(--color-black) !important;
+  background-color: var(--color-icon-primary) !important;
+}
+
+/* Button group - rounded corners on edges */
+.ec-button-group .ec-button {
+  border-radius: 0 !important;
+}
+
+.ec-button-group .ec-button:first-child {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+.ec-button-group .ec-button:last-child {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* ============================================================================
+   @EVENT-CALENDAR TOOLBAR
    ============================================================================ */
 
-/* FullCalendar Icon Fix - Use Font Awesome icons */
-.fc-icon-chevron-left::before {
-  content: "\f053";
-
-  display: inline-block;
-
-  font-family: "Font Awesome 6 Free", sans-serif;
-  font-size: 1em;
-  font-weight: 900;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-.fc-icon-chevron-right::before {
-  content: "\f054";
-
-  display: inline-block;
-
-  font-family: "Font Awesome 6 Free", sans-serif;
-  font-size: 1em;
-  font-weight: 900;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-/* Fix icon positioning in buttons */
-.fc-button .fc-icon {
-  position: relative;
-  top: 0;
-
-  display: inline-flex;
+.ec-toolbar {
+  display: flex;
+  gap: 20px;
   align-items: center;
-  justify-content: center;
 
-  width: 1.2em;
-  height: 1.2em;
-  margin: 0;
-  padding: 0;
+  margin-bottom: 0.5em;
+  padding: 0.5em 1em;
 }
 
-/* Ensure buttons have proper height and alignment */
-.fc-button {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  min-height: 2.25em;
-  padding: 0.375em 0.75em !important;
-
-  line-height: 1.5 !important;
+.ec-title {
+  font-size: 1.5em !important;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
-/* Fix for prev/next buttons specifically */
-.fc-prev-button,
-.fc-next-button {
-  width: 2.5em;
-  padding: 0.375em 0.75em !important;
-}
-
-.fc-prev-button .fc-icon,
-.fc-next-button .fc-icon {
-  font-size: 0.9em;
-  line-height: 1;
-}
-
-/* Remove any default FullCalendar icon styles */
-.fc .fc-button .fc-icon {
-  font-size: 1em !important;
-  vertical-align: middle !important;
-}
+/* ============================================================================
+   @EVENT-CALENDAR DAY CELLS
+   ============================================================================ */
 
 #calendar {
   width: 100%;
   padding: 10px;
 }
 
-/* Calendar Header */
-.fc-header-toolbar {
-  margin-bottom: 0.5em !important;
-  padding: 0.5em 1em;
+/* Grid borders - Override border COLOR only, keep library's border-style structure */
+.ec-day-grid .ec-header,
+.ec-day-grid .ec-all-day,
+.ec-day-grid .ec-body,
+.ec-day-grid .ec-days,
+.ec-day-grid .ec-day,
+.ec-day-grid .ec-day-head {
+  border-color: hsl(0deg 0% 83.5% / 35%);
 }
 
-/* Override FullCalendar toolbar layout */
-.fc .fc-toolbar {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-
-.fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky > * {
-  top: auto;
-}
-
-/* Dark theme background for sticky headers */
-.fc .fc-scrollgrid-section-sticky > * {
-  background: #1a1a1a87;
-}
-
-.fc-theme-standard .fc-scrollgrid {
-  border: 0 solid #ddd;
-}
-
-.fc-theme-standard td,
-.fc-theme-standard th {
-  border: 0 solid #ddd;
-}
-
-.fc-direction-ltr .fc-button-group > .fc-button:not(:last-child) {
-  border-radius: 12px 0 0 12px !important;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.fc-direction-ltr .fc-button-group > .fc-button:not(:first-child) {
-  margin-left: -1px;
-  border-radius: 0 12px 12px 0 !important;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.fc-direction-ltr .fc-toolbar > * > :not(:first-child) {
-  margin-left: 0.75em;
-  border-radius: 12px;
-}
-
-.fc-toolbar-title {
-  font-size: 1.5em !important;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Calendar Buttons - Angepasst an Assixx Design */
-.fc-button-primary {
-  box-shadow: var(--shadow-sm);
-}
-
-.fc-button-primary:hover {
-  color: var(--color-black) !important;
-  background-color: var(--color-icon-primary) !important;
-}
-
-/*
-.fc-button-active {
-  border-color: var(--primary-dark) !important;
-  background-color: var(--primary-dark) !important;
-} */
-
-/* View selector button group styling - make it consistent with prev/next/today */
-.fc-toolbar-chunk:last-child .fc-button-group {
-  display: inline-flex !important;
-  gap: 0 !important;
-}
-
-.fc-toolbar-chunk:last-child .fc-button-group .fc-button {
-  margin-left: 0 !important;
-  border-radius: 0 !important;
-}
-
-.fc-toolbar-chunk:last-child .fc-button-group .fc-button:first-child {
-  border-top-left-radius: 12px !important;
-  border-bottom-left-radius: 12px !important;
-}
-
-.fc-toolbar-chunk:last-child .fc-button-group .fc-button:last-child {
-  border-top-right-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
-}
-
-.fc-toolbar-chunk:last-child .fc-button-group .fc-button:not(:last-child) {
-  border-right: none !important;
-}
-
-/* Calendar body */
-.fc-daygrid-day-frame {
+.ec-day {
+  position: relative;
   color: var(--text-primary);
   background-color: transparent;
 }
 
-.fc-day-today {
-  background-color: rgb(var(--primary-rgb), 0.1) !important;
+/* Day cells in month view - proper height like original demo
+   IMPORTANT: Must override library's .ec-day-grid .ec-uniform .ec-day { min-height: 0 }
+   Using higher specificity to win regardless of CSS load order (Dev vs Prod) */
+.ec-day-grid .ec-body .ec-day[role='cell'] {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  min-height: 6em; /* Override library's min-height: 0 */
+  min-block-size: 6em; /* 5em is default, 6em for more space */
 }
 
-.fc-daygrid-day-number,
-.fc-col-header-cell a {
-  color: var(--text-primary);
-  text-decoration: none;
+/* Fullscreen mode: larger day cells */
+.calendar-fullscreen-mode .ec-day-grid .ec-body .ec-day[role='cell'] {
+  min-height: 11em;
+  min-block-size: 11em;
 }
 
-/* Fix: Wochentage müssen IMMER zentriert sein, nicht nur im Fullscreen
-   FullCalendar setzt inline-styles (width) auf die Header-Zellen, die das Centering verhindern.
-   Wir müssen mit !important überschreiben, um Reflow-Probleme zu vermeiden. */
-.fc-col-header-cell-cushion {
-  display: block !important;
-  width: 100% !important;
-  text-align: center !important;
+.ec-day:hover {
+  background-color: rgb(var(--primary-rgb), 0.05) !important;
 }
 
-/* Event styling */
-.fc-event {
+.ec-today {
+  background-color: rgb(92 185 247 / 12%) !important; /* Light yellow highlight */
+}
+
+.ec-other-month {
+  opacity: 50%;
+}
+
+/* ============================================================================
+   @EVENT-CALENDAR EVENTS
+   ============================================================================ */
+
+/* Remove unnecessary right margin from library default */
+.ec-events {
+  margin-right: 0 !important;
+}
+
+.ec-event {
   cursor: pointer;
   border: none !important;
+  border-radius: 4px;
   box-shadow: var(--shadow-sm);
 }
 
-.fc-event:hover {
+.ec-event:hover {
   box-shadow: var(--shadow-md);
 }
 
-/* Event colors by organization level */
-.fc-event[data-org-level="company"],
-.fc-event-company {
-  border-color: #3498db !important;
-  background-color: #3498db !important;
-}
-
-.fc-event[data-org-level="department"],
-.fc-event-department {
-  border-color: #e67e22 !important;
-  background-color: #e67e22 !important;
-}
-
-.fc-event[data-org-level="team"],
-.fc-event-team {
-  border-color: #2ecc71 !important;
-  background-color: #2ecc71 !important;
-}
-
-.fc-event[data-org-level="personal"],
-.fc-event-personal {
-  border-color: #9b59b6 !important;
-  background-color: #9b59b6 !important;
-}
-
-.fc-event-title {
+.ec-event-title {
   padding: 1px 2px;
   font-size: 0.85em !important;
   font-weight: 500 !important;
 }
 
-.fc-event-time {
+.ec-event-time {
   font-size: 0.8em !important;
   font-weight: 400 !important;
   opacity: 80%;
 }
 
-/* Event colors based on org level (for non-FullCalendar contexts) */
-.event-company {
+/* Event colors by organization level */
+.ec-event-company {
   border-color: #3498db !important;
   background-color: #3498db !important;
 }
 
-.event-department {
+.ec-event-department {
   border-color: #e67e22 !important;
   background-color: #e67e22 !important;
 }
 
-.event-team {
+.ec-event-team {
   border-color: #2ecc71 !important;
   background-color: #2ecc71 !important;
 }
 
-.event-personal {
+.ec-event-area {
+  border-color: #1abc9c !important;
+  background-color: #1abc9c !important;
+}
+
+.ec-event-personal {
   border-color: #9b59b6 !important;
   background-color: #9b59b6 !important;
 }
 
-/* Day cell styling for better event visibility */
-.fc-daygrid-day {
-  border: 1px solid var(--border-color) !important;
+/* ============================================================================
+   SHIFT INDICATORS FOR CALENDAR (F, S, N) - DO NOT MODIFY
+   ============================================================================ */
+
+.shift-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  margin-top: 3px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  background: #ffffff0d;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
 }
 
-.fc-daygrid-day:hover {
-  background-color: rgb(var(--primary-rgb), 0.05) !important;
+.shift-indicator.shift-F {
+  color: var(--color-blue-400); /* Frühschicht */
 }
 
-/* Event dot indicator for list view */
-.fc-daygrid-dot-event .fc-event-title {
-  font-weight: 500;
+.shift-indicator.shift-S {
+  color: var(--color-yellow-400); /* Spätschicht */
+}
+
+.shift-indicator.shift-N {
+  color: var(--color-purple-400); /* Nachtschicht */
 }
 
 /* ============================================================================
-   CALENDAR-SPECIFIC COMPONENTS
+   UPCOMING EVENTS SECTION
    ============================================================================ */
 
-/* Upcoming Events Section */
 .upcoming-events {
   overflow-y: auto;
   max-height: 300px;
@@ -399,7 +340,10 @@
   background-color: #9b59b6;
 }
 
-/* Legend for color codes */
+/* ============================================================================
+   LEGEND FOR COLOR CODES
+   ============================================================================ */
+
 .legend-container {
   display: flex;
   flex-wrap: wrap;
@@ -442,7 +386,6 @@
 
 /* ============================================================================
    EVENT DETAIL MODAL CONTENT STYLES
-   (Modal component from Design System, content styling here)
    ============================================================================ */
 
 #eventDetailContent h3 {
@@ -534,7 +477,7 @@
 }
 
 #eventDetailContent h4::before {
-  content: "";
+  content: '';
 
   width: 4px;
   height: 20px;
@@ -589,23 +532,8 @@
 }
 
 /* ============================================================================
-   BUTTON FIXES - Icon buttons should stay square
+   FULLSCREEN MODE
    ============================================================================ */
-
-/* Fix: .btn-secondary padding overrides .btn-icon padding
-   Icon buttons MUST be square, so force same padding on all sides */
-.btn-icon.btn-secondary,
-.btn-secondary.btn-icon {
-  padding: var(--spacing-2); /* 8px all sides - maintains square aspect ratio */
-}
-
-/* ============================================================================
-   FULLSCREEN MODE - Header stays but transforms to minimal top bar
-   ============================================================================ */
-
-.calendar-fullscreen-mode .fc .fc-scroller-harness {
-  margin-bottom: -96px;
-}
 
 .calendar-fullscreen-mode #calendarContainer {
   position: fixed !important;
@@ -621,7 +549,6 @@
   background: none;
 }
 
-/* Header stays visible but transforms to minimal top bar */
 .calendar-fullscreen-mode #calendarContainer .card__header {
   position: fixed !important;
   z-index: 10000 !important;
@@ -635,22 +562,18 @@
   background: transparent !important;
 }
 
-/* Hide title in fullscreen, keep only buttons */
 .calendar-fullscreen-mode #calendarContainer .card__title {
   display: none !important;
 }
 
-/* Hide fullscreen button in fullscreen mode - use ESC key to exit instead (like Blackboard) */
 .calendar-fullscreen-mode #fullscreenBtn {
   display: none !important;
 }
 
-/* Hide "Neuer Termin" button in fullscreen mode */
 .calendar-fullscreen-mode #newEventBtn {
   display: none !important;
 }
 
-/* Buttons get enhanced visibility in fullscreen */
 .calendar-fullscreen-mode #calendarContainer .card__header .btn {
   border: 1px solid rgb(255 255 255 / 10%);
   backdrop-filter: blur(10px);
@@ -669,14 +592,12 @@
   height: calc(100vh - 60px) !important;
 }
 
-/* Override FullCalendar default styles in fullscreen mode */
-.calendar-fullscreen-mode .fc td,
-.calendar-fullscreen-mode .fc th {
+.calendar-fullscreen-mode .ec td,
+.calendar-fullscreen-mode .ec th {
   padding-bottom: 65px;
   vertical-align: top;
 }
 
-/* Hide other elements in fullscreen mode */
 .calendar-fullscreen-mode .sidebar,
 .calendar-fullscreen-mode .header,
 .calendar-fullscreen-mode .stats-container,
@@ -685,59 +606,21 @@
   display: none !important;
 }
 
-/* Override FullCalendar's inline width styles in fullscreen
-   FullCalendar sets fixed pixel widths that don't adapt to fullscreen */
-.calendar-fullscreen-mode .fc-daygrid-body,
-.calendar-fullscreen-mode .fc-scrollgrid-sync-table {
+.calendar-fullscreen-mode .ec-body {
   width: 100% !important;
 }
 
-/* ============================================================================
-   SHIFT INDICATORS FOR CALENDAR
-   ============================================================================ */
-
-.shift-indicator {
-  position: absolute;
-  z-index: 10;
-  right: 21px;
-  bottom: 6px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-
-  font-size: 16px;
-  font-weight: 700;
-
-  background: #ffffff0d;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+/* Modal must appear ABOVE fullscreen calendar AND notification-container (z-index: 1000000) */
+.calendar-fullscreen-mode .modal-overlay {
+  z-index: 1000001 !important;
 }
 
-.shift-indicator.shift-F {
-  color: var(--color-blue-400); /* Frühschicht */
+.calendar-fullscreen-mode .ds-modal {
+  z-index: 1000002 !important;
 }
-
-.shift-indicator.shift-S {
-  color: var(--color-yellow-400); /* Spätschicht */
-}
-
-.shift-indicator.shift-N {
-  color: var(--color-purple-400); /* Nachtschicht */
-}
-
-/* Make day cell position relative for absolute positioning */
-.fc-daygrid-day-top {
-  position: relative !important;
-}
-
-/* UNREAD EVENTS MODAL - REMOVED (requires_response feature deprecated) */
 
 /* ============================================================================
-   RESPONSIVE ADJUSTMENTS
+   RESPONSIVE
    ============================================================================ */
 
 @media (width <= 767.98px) {
@@ -745,11 +628,7 @@
     flex: 0 0 70px;
   }
 
-  .fc-toolbar {
+  .ec-toolbar {
     flex-direction: column;
-  }
-
-  .fc-toolbar-chunk {
-    margin-bottom: 10px;
   }
 }

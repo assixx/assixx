@@ -10,16 +10,21 @@ PostCSS ist jetzt vollständig in Assixx integriert und funktioniert automatisch
 
 ```css
 /* ALTE Schreibweise */
-.sidebar { }
-.sidebar .nav { }
-.sidebar .nav .item { }
-.sidebar .nav .item:hover { }
+.sidebar {
+}
+.sidebar .nav {
+}
+.sidebar .nav .item {
+}
+.sidebar .nav .item:hover {
+}
 
 /* NEUE Schreibweise mit Nesting */
 .sidebar {
   & .nav {
     & .item {
-      &:hover { }
+      &:hover {
+      }
     }
   }
 }
@@ -62,9 +67,9 @@ PostCSS ist jetzt vollständig in Assixx integriert und funktioniert automatisch
 
 ```css
 .notification {
-  margin-inline-start: 1rem;  /* statt margin-left */
-  padding-inline: 2rem;        /* statt padding-left/right */
+  margin-inline-start: 1rem; /* statt margin-left */
   border-inline-start: 4px solid blue; /* statt border-left */
+  padding-inline: 2rem; /* statt padding-left/right */
 }
 ```
 
@@ -81,27 +86,38 @@ PostCSS ist jetzt vollständig in Assixx integriert und funktioniert automatisch
 ## 📝 Wie nutze ich es?
 
 ### Für NEUE CSS-Dateien:
+
 Schreibe einfach moderne CSS Features - sie werden automatisch kompiliert!
 
 ### Für BESTEHENDE CSS-Dateien:
+
 Nutze neue Features nur bei Änderungen - keine Migration nötig!
 
 ### Beispiel: Refactoring unified-navigation.css
 
 **VORHER:**
+
 ```css
-.header { }
-.header .header-content { }
-.header .logo-container { }
-.header .logo { }
+.header {
+}
+.header .header-content {
+}
+.header .logo-container {
+}
+.header .logo {
+}
 ```
 
 **NACHHER:**
+
 ```css
 .header {
-  & .header-content { }
-  & .logo-container { }
-  & .logo { }
+  & .header-content {
+  }
+  & .logo-container {
+  }
+  & .logo {
+  }
 }
 ```
 
@@ -134,16 +150,19 @@ docker exec assixx-backend sh -c "cd frontend && pnpm run build"
 ## 🔥 Quick Wins für Assixx
 
 ### 1. Reduziere Wiederholungen in Navigation
+
 ```css
 /* unified-navigation.css kann von 1303 auf ~800 Zeilen reduziert werden */
 ```
 
 ### 2. Vereinfache Dashboard Cards
+
 ```css
 /* Alle .card Varianten können mit Nesting vereinfacht werden */
 ```
 
 ### 3. Responsive ohne Media Query Chaos
+
 ```css
 /* Definiere Breakpoints einmal, nutze sie überall */
 ```

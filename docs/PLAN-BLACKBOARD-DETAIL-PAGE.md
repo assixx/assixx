@@ -12,11 +12,13 @@
 Replace the modal-based entry detail view in blackboard with a dedicated detail page (like kvp-detail).
 
 **URL Pattern:**
+
 ```
 http://localhost:3000/blackboard-detail?uuid=019xxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 **Reference Page:**
+
 ```
 http://localhost:3000/kvp-detail?uuid=019a88fd-747a-7380-accf-18d290296a7f
 ```
@@ -25,18 +27,18 @@ http://localhost:3000/kvp-detail?uuid=019a88fd-747a-7380-accf-18d290296a7f
 
 ## Key Differences from KVP
 
-| Feature | KVP Detail | Blackboard Detail |
-|---------|-----------|-------------------|
-| Status Management | YES (new → in_review → approved → implemented → rejected) | NO |
-| Share Logic | YES (share to team/dept/area/company) | NO (separate system) |
-| Comments | YES | YES (NEW - needs DB table!) |
-| Photo Gallery | YES | YES |
-| Lightbox/Zoom | YES | YES |
-| PDF Preview | NO (only download) | YES (like document-explorer) |
-| Read Status | YES (via read_at) | YES (via confirmations table) |
-| Priority Badge | YES | YES |
-| Author Info | YES | YES |
-| Attachments | YES | YES |
+| Feature           | KVP Detail                                                | Blackboard Detail             |
+| ----------------- | --------------------------------------------------------- | ----------------------------- |
+| Status Management | YES (new → in_review → approved → implemented → rejected) | NO                            |
+| Share Logic       | YES (share to team/dept/area/company)                     | NO (separate system)          |
+| Comments          | YES                                                       | YES (NEW - needs DB table!)   |
+| Photo Gallery     | YES                                                       | YES                           |
+| Lightbox/Zoom     | YES                                                       | YES                           |
+| PDF Preview       | NO (only download)                                        | YES (like document-explorer)  |
+| Read Status       | YES (via read_at)                                         | YES (via confirmations table) |
+| Priority Badge    | YES                                                       | YES                           |
+| Author Info       | YES                                                       | YES                           |
+| Attachments       | YES                                                       | YES                           |
 
 ---
 
@@ -82,15 +84,17 @@ CREATE TABLE IF NOT EXISTS blackboard_comments (
 ```
 
 **Service Methods:**
+
 - `getComments(entryId: number | string, tenantId: number): Promise<Comment[]>`
 - `addComment(entryId: number | string, userId: number, tenantId: number, comment: string): Promise<{ id: number }>`
 - `deleteComment(commentId: number, tenantId: number): Promise<void>`
 
 **Zod Validation:**
+
 ```typescript
 // blackboard.validation.zod.ts - Add:
 const addCommentSchema = z.object({
-  comment: z.string().min(1).max(5000)
+  comment: z.string().min(1).max(5000),
 });
 ```
 
@@ -99,6 +103,7 @@ const addCommentSchema = z.object({
 **File:** `backend/src/models/blackboard.ts`
 
 Add methods:
+
 - `getComments(entryId: number, tenantId: number)`
 - `addComment(entryId: number, userId: number, tenantId: number, comment: string)`
 - `deleteComment(commentId: number, tenantId: number)`
@@ -116,172 +121,166 @@ Add methods:
 ```html
 <!doctype html>
 <html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Eintrag - Schwarzes Brett - Assixx</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eintrag - Schwarzes Brett - Assixx</title>
 
-  <!-- Critical Layout State -->
-  <script src="/scripts/critical/sidebar-init.js"></script>
+    <!-- Critical Layout State -->
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="/styles/main.css" />
-  <link rel="stylesheet" href="/styles/unified-navigation.css" />
-  <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-  <link rel="stylesheet" href="/styles/user-info-update.css" />
-  <link rel="stylesheet" href="/styles/blackboard-detail.css" />
-</head>
-<body class="blackboard-detail-page">
-  <!-- Navigation Container -->
-  <div id="navigation-container"></div>
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/blackboard-detail.css" />
+  </head>
+  <body class="blackboard-detail-page">
+    <!-- Navigation Container -->
+    <div id="navigation-container"></div>
 
-  <!-- Main Layout -->
-  <div class="layout-container">
-    <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
-      <!-- Breadcrumb -->
-      <div id="breadcrumb-container"></div>
+    <!-- Main Layout -->
+    <div class="layout-container">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
 
-      <div class="container">
-        <div class="detail-container">
-          <!-- Main Content -->
-          <div class="detail-main">
-            <!-- Header -->
-            <div class="detail-header">
-              <div>
-                <div class="detail-title" id="entryTitle">Lädt...</div>
-                <div class="detail-meta">
-                  <span><i class="fas fa-user"></i> <span id="authorName"></span></span>
-                  <span><i class="fas fa-calendar"></i> <span id="createdAt"></span></span>
+        <div class="container">
+          <div class="detail-container">
+            <!-- Main Content -->
+            <div class="detail-main">
+              <!-- Header -->
+              <div class="detail-header">
+                <div>
+                  <div class="detail-title" id="entryTitle">Lädt...</div>
+                  <div class="detail-meta">
+                    <span><i class="fas fa-user"></i> <span id="authorName"></span></span>
+                    <span><i class="fas fa-calendar"></i> <span id="createdAt"></span></span>
+                  </div>
+                </div>
+                <div class="priority-badge">
+                  <span class="badge" id="priorityBadge"></span>
                 </div>
               </div>
-              <div class="priority-badge">
-                <span class="badge" id="priorityBadge"></span>
+
+              <!-- Details Section -->
+              <div class="content-section">
+                <h3 class="section-title"><i class="fas fa-info-circle"></i> Details</h3>
+                <div class="data-list data-list--grid">
+                  <div class="data-list__item">
+                    <span class="data-list__label">Kategorie</span>
+                    <span class="data-list__value" id="category"></span>
+                  </div>
+                  <div class="data-list__item" id="expiresAtItem" hidden>
+                    <span class="data-list__label">Gültig bis</span>
+                    <span class="data-list__value" id="expiresAt"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Content Section -->
+              <div class="content-section">
+                <h3 class="section-title"><i class="fas fa-align-left"></i> Inhalt</h3>
+                <div class="section-content" id="entryContent"></div>
+              </div>
+
+              <!-- Photo Gallery Section -->
+              <div class="content-section" id="photoSection" hidden>
+                <h3 class="section-title"><i class="fas fa-images"></i> Bilder</h3>
+                <div class="photo-gallery" id="photoGallery"></div>
+              </div>
+
+              <!-- Comments Section -->
+              <div class="comments-section">
+                <h3 class="section-title"><i class="fas fa-comments"></i> Kommentare</h3>
+
+                <!-- Comment Form -->
+                <form id="commentForm" class="flex gap-4 mb-6">
+                  <div class="form-field flex-1">
+                    <textarea
+                      class="form-field__control"
+                      id="commentInput"
+                      placeholder="Kommentar hinzufügen..."
+                      rows="3"
+                      required
+                    ></textarea>
+                  </div>
+                  <div class="flex items-start">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Senden</button>
+                  </div>
+                </form>
+
+                <!-- Comment List -->
+                <div class="comment-list" id="commentList"></div>
               </div>
             </div>
 
-            <!-- Details Section -->
-            <div class="content-section">
-              <h3 class="section-title"><i class="fas fa-info-circle"></i> Details</h3>
-              <div class="data-list data-list--grid">
-                <div class="data-list__item">
-                  <span class="data-list__label">Kategorie</span>
-                  <span class="data-list__value" id="category"></span>
-                </div>
-                <div class="data-list__item" id="expiresAtItem" hidden>
-                  <span class="data-list__label">Gültig bis</span>
-                  <span class="data-list__value" id="expiresAt"></span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Content Section -->
-            <div class="content-section">
-              <h3 class="section-title"><i class="fas fa-align-left"></i> Inhalt</h3>
-              <div class="section-content" id="entryContent"></div>
-            </div>
-
-            <!-- Photo Gallery Section -->
-            <div class="content-section" id="photoSection" hidden>
-              <h3 class="section-title"><i class="fas fa-images"></i> Bilder</h3>
-              <div class="photo-gallery" id="photoGallery"></div>
-            </div>
-
-            <!-- Comments Section -->
-            <div class="comments-section">
-              <h3 class="section-title"><i class="fas fa-comments"></i> Kommentare</h3>
-
-              <!-- Comment Form -->
-              <form id="commentForm" class="flex gap-4 mb-6">
-                <div class="form-field flex-1">
-                  <textarea
-                    class="form-field__control"
-                    id="commentInput"
-                    placeholder="Kommentar hinzufügen..."
-                    rows="3"
-                    required
-                  ></textarea>
-                </div>
-                <div class="flex items-start">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> Senden
+            <!-- Sidebar -->
+            <div class="detail-sidebar">
+              <!-- Read Status (Confirmation) -->
+              <div class="sidebar-card" id="confirmationCard">
+                <h3 class="section-title"><i class="fas fa-check-circle"></i> Lesebestätigung</h3>
+                <div id="confirmationStatus">
+                  <button class="btn btn-primary w-full" id="confirmBtn" data-action="confirm-entry">
+                    <i class="fas fa-check"></i> Als gelesen markieren
                   </button>
                 </div>
-              </form>
-
-              <!-- Comment List -->
-              <div class="comment-list" id="commentList"></div>
-            </div>
-          </div>
-
-          <!-- Sidebar -->
-          <div class="detail-sidebar">
-            <!-- Read Status (Confirmation) -->
-            <div class="sidebar-card" id="confirmationCard">
-              <h3 class="section-title"><i class="fas fa-check-circle"></i> Lesebestätigung</h3>
-              <div id="confirmationStatus">
-                <button class="btn btn-primary w-full" id="confirmBtn" data-action="confirm-entry">
-                  <i class="fas fa-check"></i> Als gelesen markieren
-                </button>
               </div>
-            </div>
 
-            <!-- Attachments -->
-            <div class="sidebar-card" id="attachmentsCard" hidden>
-              <h3 class="section-title"><i class="fas fa-paperclip"></i> Anhänge</h3>
-              <div class="attachment-list" id="attachmentList"></div>
-            </div>
+              <!-- Attachments -->
+              <div class="sidebar-card" id="attachmentsCard" hidden>
+                <h3 class="section-title"><i class="fas fa-paperclip"></i> Anhänge</h3>
+                <div class="attachment-list" id="attachmentList"></div>
+              </div>
 
-            <!-- Actions (Admin Only) -->
-            <div class="sidebar-card admin-only" id="actionsCard" hidden>
-              <h3 class="section-title"><i class="fas fa-cog"></i> Aktionen</h3>
-              <div class="action-buttons">
-                <button class="btn btn-secondary w-full" id="editBtn">
-                  <i class="fas fa-edit"></i> Bearbeiten
-                </button>
-                <button class="btn btn-light w-full" id="archiveBtn">
-                  <i class="fas fa-archive"></i> Archivieren
-                </button>
+              <!-- Actions (Admin Only) -->
+              <div class="sidebar-card admin-only" id="actionsCard" hidden>
+                <h3 class="section-title"><i class="fas fa-cog"></i> Aktionen</h3>
+                <div class="action-buttons">
+                  <button class="btn btn-secondary w-full" id="editBtn"><i class="fas fa-edit"></i> Bearbeiten</button>
+                  <button class="btn btn-light w-full" id="archiveBtn">
+                    <i class="fas fa-archive"></i> Archivieren
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-  </div>
+      </main>
+    </div>
 
-  <!-- Lightbox -->
-  <div class="lightbox" id="photoLightbox">
-    <span class="lightbox-close" data-action="close-lightbox">&times;</span>
-    <img id="lightboxImage" src="" alt="Vollbild" />
-  </div>
+    <!-- Lightbox -->
+    <div class="lightbox" id="photoLightbox">
+      <span class="lightbox-close" data-action="close-lightbox">&times;</span>
+      <img id="lightboxImage" src="" alt="Vollbild" />
+    </div>
 
-  <!-- Preview Modal (PDF/Image) -->
-  <div class="modal-overlay" id="previewModal" hidden>
-    <div class="ds-modal ds-modal--lg">
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="previewTitle">Vorschau</h3>
-        <button class="ds-modal__close" data-action="close-preview">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body p-0" id="previewBody">
-        <!-- iframe for PDF / img for images -->
-      </div>
-      <div class="ds-modal__footer">
-        <a class="btn btn-primary" id="previewDownload" download>
-          <i class="fas fa-download"></i> Herunterladen
-        </a>
+    <!-- Preview Modal (PDF/Image) -->
+    <div class="modal-overlay" id="previewModal" hidden>
+      <div class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="previewTitle">Vorschau</h3>
+          <button class="ds-modal__close" data-action="close-preview">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body p-0" id="previewBody">
+          <!-- iframe for PDF / img for images -->
+        </div>
+        <div class="ds-modal__footer">
+          <a class="btn btn-primary" id="previewDownload" download> <i class="fas fa-download"></i> Herunterladen </a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Scripts -->
-  <script type="module" src="/scripts/auth/index.ts"></script>
-  <script type="module" src="/scripts/pages/blackboard-detail/index.ts"></script>
-  <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-  <script type="module" src="/scripts/auth/role-switch.ts"></script>
-  <script type="module" src="/scripts/components/breadcrumb.js"></script>
-</body>
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth/index.ts"></script>
+    <script type="module" src="/scripts/pages/blackboard-detail/index.ts"></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+  </body>
 </html>
 ```
 
@@ -291,15 +290,15 @@ Add methods:
 
 **Files to create:**
 
-| File | Purpose | Reference |
-|------|---------|-----------|
-| `index.ts` | Main orchestrator | `kvp-detail/index.ts` |
-| `types.ts` | TypeScript interfaces | `blackboard/types.ts` |
-| `data-loader.ts` | API calls | `kvp-detail/data-loader.ts` |
-| `renderer.ts` | DOM rendering | `kvp-detail/renderer.ts` |
-| `ui.ts` | UI helpers (lightbox, preview) | `kvp-detail/ui.ts` + `document-explorer/modal.ts` |
-| `permissions.ts` | Role-based visibility | `kvp-detail/permissions.ts` |
-| `actions.ts` | Button handlers | `kvp-detail/actions.ts` |
+| File             | Purpose                        | Reference                                         |
+| ---------------- | ------------------------------ | ------------------------------------------------- |
+| `index.ts`       | Main orchestrator              | `kvp-detail/index.ts`                             |
+| `types.ts`       | TypeScript interfaces          | `blackboard/types.ts`                             |
+| `data-loader.ts` | API calls                      | `kvp-detail/data-loader.ts`                       |
+| `renderer.ts`    | DOM rendering                  | `kvp-detail/renderer.ts`                          |
+| `ui.ts`          | UI helpers (lightbox, preview) | `kvp-detail/ui.ts` + `document-explorer/modal.ts` |
+| `permissions.ts` | Role-based visibility          | `kvp-detail/permissions.ts`                       |
+| `actions.ts`     | Button handlers                | `kvp-detail/actions.ts`                           |
 
 **Key Differences in Implementation:**
 
@@ -322,6 +321,7 @@ Add methods:
 **File:** `backend/src/loaders/page-routes.ts`
 
 Add:
+
 ```typescript
 // Blackboard detail page
 app.get('/blackboard-detail', pageAuth.optional, (req, res) => {
@@ -334,6 +334,7 @@ app.get('/blackboard-detail', pageAuth.optional, (req, res) => {
 **File:** `frontend/vite.config.js`
 
 Add to `build.rollupOptions.input`:
+
 ```javascript
 'blackboard-detail': resolve(pagesDir, 'blackboard-detail.html'),
 ```
@@ -343,6 +344,7 @@ Add to `build.rollupOptions.input`:
 **File:** `frontend/src/scripts/blackboard/ui.ts`
 
 Change card click to navigate to detail page instead of opening modal:
+
 ```typescript
 // Before:
 showViewEntryModal(entry);
@@ -393,22 +395,22 @@ window.location.href = `/blackboard-detail?uuid=${entry.uuid}`;
 
 ### Existing (Confirmed Working)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/v2/blackboard/entries/:id` | Get entry by ID/UUID |
-| POST | `/api/v2/blackboard/entries/:id/confirm` | Mark as read |
-| GET | `/api/v2/blackboard/entries/:id/confirmations` | Get confirmations |
-| GET | `/api/v2/blackboard/entries/:id/attachments` | Get attachments |
-| GET | `/api/v2/blackboard/attachments/:id` | Download attachment |
-| GET | `/api/v2/blackboard/attachments/:id/preview` | Preview attachment |
+| Method | Endpoint                                       | Purpose              |
+| ------ | ---------------------------------------------- | -------------------- |
+| GET    | `/api/v2/blackboard/entries/:id`               | Get entry by ID/UUID |
+| POST   | `/api/v2/blackboard/entries/:id/confirm`       | Mark as read         |
+| GET    | `/api/v2/blackboard/entries/:id/confirmations` | Get confirmations    |
+| GET    | `/api/v2/blackboard/entries/:id/attachments`   | Get attachments      |
+| GET    | `/api/v2/blackboard/attachments/:id`           | Download attachment  |
+| GET    | `/api/v2/blackboard/attachments/:id/preview`   | Preview attachment   |
 
 ### New (To Be Created)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/v2/blackboard/entries/:id/comments` | Get comments |
-| POST | `/api/v2/blackboard/entries/:id/comments` | Add comment |
-| DELETE | `/api/v2/blackboard/comments/:commentId` | Delete comment (admin) |
+| Method | Endpoint                                  | Purpose                |
+| ------ | ----------------------------------------- | ---------------------- |
+| GET    | `/api/v2/blackboard/entries/:id/comments` | Get comments           |
+| POST   | `/api/v2/blackboard/entries/:id/comments` | Add comment            |
+| DELETE | `/api/v2/blackboard/comments/:commentId`  | Delete comment (admin) |
 
 ---
 
@@ -452,12 +454,12 @@ database/migrations/
 
 ## Risk Assessment
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Breaking existing modal | Medium | Keep modal code, add feature flag if needed |
-| UUID not present on old entries | Low | Already migrated in migration 024 |
-| Comments spam | Medium | Rate limiting on API |
-| Performance | Low | Proper indexing on comments table |
+| Risk                            | Impact | Mitigation                                  |
+| ------------------------------- | ------ | ------------------------------------------- |
+| Breaking existing modal         | Medium | Keep modal code, add feature flag if needed |
+| UUID not present on old entries | Low    | Already migrated in migration 024           |
+| Comments spam                   | Medium | Rate limiting on API                        |
+| Performance                     | Low    | Proper indexing on comments table           |
 
 ---
 
@@ -487,12 +489,12 @@ database/migrations/
 
 ## Estimated Effort
 
-| Phase | Tasks | Effort |
-|-------|-------|--------|
-| Phase 1: Backend | Migration + Model + Service + Controller + Routes + Validation | ~4-6 hours |
-| Phase 2: Frontend Page | HTML + CSS + 7 TypeScript modules | ~6-8 hours |
-| Phase 3: Integration | Grid update + Widget + Testing | ~2-3 hours |
-| **Total** | | **~12-17 hours** |
+| Phase                  | Tasks                                                          | Effort           |
+| ---------------------- | -------------------------------------------------------------- | ---------------- |
+| Phase 1: Backend       | Migration + Model + Service + Controller + Routes + Validation | ~4-6 hours       |
+| Phase 2: Frontend Page | HTML + CSS + 7 TypeScript modules                              | ~6-8 hours       |
+| Phase 3: Integration   | Grid update + Widget + Testing                                 | ~2-3 hours       |
+| **Total**              |                                                                | **~12-17 hours** |
 
 ---
 

@@ -9,34 +9,42 @@
  */
 
 .btn-light {
-  /* Padding - matches other variants */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-  border: 1px solid rgb(189 189 189); /* Solid gray border - avatar style */
-
-  /* Colors */
-  color: var(--color-white);
-
-  background: linear-gradient(145deg, rgb(224 224 224 / 11%), rgb(158 158 158 / 15%)); /* Subtle gray gradient */
+  /* Transitions */
+  transition: var(--transition-all);
 
   /* Shadow - subtle */
   box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
+  border: 1px solid rgb(189 189 189); /* Solid gray border - avatar style */
 
-  /* Transitions */
-  transition: var(--transition-all);
+  background: linear-gradient(
+    145deg,
+    rgb(224 224 224 / 11%),
+    rgb(158 158 158 / 15%)
+  ); /* Subtle gray gradient */
+
+  /* Padding - matches other variants */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Colors */
+  color: var(--color-white);
 }
 
 /* Hover State - Brighten the gradient */
 .btn-light:hover:not(:disabled) {
-  background: linear-gradient(145deg, rgb(224 224 224 / 18%), rgb(158 158 158 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
+  background: linear-gradient(
+    145deg,
+    rgb(224 224 224 / 18%),
+    rgb(158 158 158 / 25%)
+  ); /* Intensiver */
 }
 
 /* Active/Pressed State */
 .btn-light:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: var(--shadow-btn-light-active, inset 0 1px 2px rgb(0 0 0 / 10%));
   border-color: var(--color-gray-500);
   background: var(--color-gray-300);
-  box-shadow: var(--shadow-btn-light-active, inset 0 1px 2px rgb(0 0 0 / 10%));
 }
 
 /* Focus State */
@@ -51,15 +59,14 @@
 /* Disabled State */
 .btn-light:disabled,
 .btn-light.disabled {
+  opacity: 60%;
   cursor: not-allowed;
+  box-shadow: none;
 
   border-color: var(--color-gray-200);
+  background: var(--color-gray-50);
 
   color: var(--color-gray-500);
-
-  opacity: 60%;
-  background: var(--color-gray-50);
-  box-shadow: none;
 }
 
 /* Loading State */
@@ -69,21 +76,20 @@
 }
 
 .btn-light.loading::after {
-  content: "";
-
   position: absolute;
   top: 50%;
   left: 50%;
 
-  width: 16px;
-  height: 16px;
+  animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
   border: 2px solid var(--color-gray-900);
   border-top-color: transparent;
   border-radius: 50%;
 
-  animation: spin 0.6s linear infinite;
+  width: 16px;
+  height: 16px;
+  content: '';
 }
 
 /* Loading spinner animation */

@@ -256,7 +256,9 @@ closeBtn.addEventListener('click', () => {
     <div class="ds-modal__body">
       <form style="display: grid; gap: var(--spacing-4);">
         <div class="form-field">
-          <label class="form-field__label form-field__label--required" for="eventTitle"> Title </label>
+          <label class="form-field__label form-field__label--required" for="eventTitle">
+            Title
+          </label>
           <input type="text" id="eventTitle" class="form-field__control" required />
         </div>
 

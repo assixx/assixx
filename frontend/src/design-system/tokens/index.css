@@ -9,19 +9,19 @@
  */
 
 /* Semantic color mappings */
-@import "./colors.css";
+@import './colors.css';
 
 /* Shadow system (glassmorphism) */
-@import "./shadows.css";
+@import './shadows.css';
 
 /* Gradient definitions */
-@import "./gradients.css";
+@import './gradients.css';
 
 /* Animation & transition tokens */
-@import "./animations.css";
+@import './animations.css';
 
 /* Form control tokens */
-@import "./forms.css";
+@import './forms.css';
 
 /**
  * NOTE: Base design tokens (spacing, typography, base colors)

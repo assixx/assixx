@@ -1,0 +1,161 @@
+/**
+ * Blackboard Detail API
+ * API functions specific to the detail view
+ */
+
+import { getApiClient } from '$lib/utils/api-client';
+
+import type {
+  DetailEntry,
+  Comment,
+  Attachment,
+  CurrentUser,
+  FullEntryResponse,
+  MeResponse,
+} from './types';
+
+const apiClient = getApiClient();
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Type guard to check if error is a 404 Not Found response
+ */
+function isNotFoundError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false;
+  return 'status' in err && err.status === 404;
+}
+
+// ============================================================================
+// Entry API
+// ============================================================================
+
+/**
+ * Fetch full entry with comments and attachments
+ */
+export async function fetchFullEntry(
+  uuid: string,
+): Promise<{ entry: DetailEntry; comments: Comment[]; attachments: Attachment[] } | null> {
+  try {
+    const result = await apiClient.get<FullEntryResponse>(`/blackboard/entries/${uuid}/full`);
+
+    if (!result.success) {
+      throw new Error(result.error?.message ?? 'Fehler beim Laden');
+    }
+
+    return {
+      entry: result.data.entry,
+      comments: result.data.comments ?? [],
+      attachments: result.data.attachments ?? [],
+    };
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Load current user info
+ */
+export async function loadCurrentUser(): Promise<CurrentUser | null> {
+  try {
+    const result = await apiClient.get<MeResponse>('/auth/me');
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// Confirmation API
+// ============================================================================
+
+/**
+ * Confirm entry as read
+ */
+export async function confirmEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/confirm`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Unconfirm entry (mark as unread)
+ */
+export async function unconfirmEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/blackboard/entries/${uuid}/confirm`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Comment API
+// ============================================================================
+
+/**
+ * Add comment to entry
+ */
+export async function addComment(uuid: string, comment: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/comments`, { comment: comment.trim() });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Admin Actions API
+// ============================================================================
+
+/**
+ * Archive entry (admin only)
+ */
+export async function archiveEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.patch(`/blackboard/entries/${uuid}/archive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Delete entry
+ * Allowed for: root, admin with hasFullAccess, or creator
+ */
+export async function deleteEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/blackboard/entries/${uuid}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Attachment Helper
+// ============================================================================
+
+/**
+ * Build authenticated download URL from the API-provided downloadUrl
+ * Uses document ID-based URL (like documents-explorer and kvp-detail)
+ * NOTE: Only call this function on the client (after mount) to avoid SSR issues
+ */
+export function buildDownloadUrl(downloadUrl: string): string {
+  if (typeof localStorage === 'undefined') return downloadUrl;
+  const token = localStorage.getItem('accessToken') ?? '';
+  // The API returns URLs like /api/v2/documents/:id/download
+  // We just need to append the auth token
+  return token !== '' ? `${downloadUrl}?token=${encodeURIComponent(token)}` : downloadUrl;
+}

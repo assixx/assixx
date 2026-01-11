@@ -10,14 +10,30 @@
 
 # Tech Stack Context
 
-**NOW USING:**
+wir bleibebn und arbeiten in dev : pnpm run dev:svelte
+
+## URL Quick Reference
+
+| URL                             | Mode            | Was                   | Command                                     |
+| ------------------------------- | --------------- | --------------------- | ------------------------------------------- |
+| `http://localhost/login`        | **Production**  | Nginx → SvelteKit     | `docker-compose --profile production up -d` |
+| `http://localhost:3001/login`   | Production      | SvelteKit direkt      | (umgeht Nginx)                              |
+| `http://localhost:5173/login`   | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte`                       |
+| `http://localhost:3000/api/v2/` | Both            | Backend API           | `docker-compose up -d`                      |
+| `http://localhost/health`       | Production      | Health Check          | via Nginx                                   |
+
+**NOW USING (2026-01 Standard):**
+
+- **Frontend:** SvelteKit 5 (`frontend/`) mit adapter-node für SSR - KEIN Vite-only mehr!
+- **Backend:** NestJS 11 + Fastify (NICHT Express!)
+- **Database:** PostgreSQL 17.7 + `pg` library v8.16.3
+- **Production:** Nginx als Reverse Proxy (Port 80 → SvelteKit:3001 + Backend:3000)
+- **Package Manager:** pnpm 10.27.0 mit `inject-workspace-packages=true`
 - API V2 (no V1 fallback)
-- PostgreSQL 17.7 + `pg` library v8.16.3
 - `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
-- `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete) - is_active ist smallint (INTEGER) mit DEFAULT 1
+- `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete)
 
 ---
-
 
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 
@@ -27,12 +43,12 @@
 
 - Project: Multi-Tenant SaaS for Industrial Companies
 - GitHub: <https://github.com/SCS-Technik/Assixx>
-- Current Branch: debugging/v0.1.0--R2Stable
-- Tech Stack: TypeScript, Express, MySQL, Docker, Redis, Vite
-- Dev URL: <http://localhost:3000>
+- Tech Stack: TypeScript, NestJS+Fastify, PostgreSQL, Docker, Redis, SvelteKit, Nginx
+- Dev URL: <http://localhost:5173> (SvelteKit) / <http://localhost:3000> (API)
+- Prod URL: <http://localhost> (via Nginx)
 - Docker Dir: /home/scs/projects/Assixx/docker
-- Package Manager: pnpm
-- Database: MySQL (Port 3307), Redis (Port 6379)
+- Package Manager: pnpm 10.27.0
+- Database: PostgreSQL (Port 5432), Redis (Port 6379)
 
 **Multi-Tenant-Isolation:** tenant_id = One Company → don't forget this! It must not be mixed.
 
@@ -82,12 +98,17 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 ### Common Development Tasks
 
-**Frontend Change:**
+**Frontend Change (SvelteKit):**
 
 ```bash
-docker exec assixx-backend pnpm run build
-# Clear Browser Cache (Ctrl+Shift+R)
-# Test on http://localhost:3000
+# Development: SvelteKit Dev Server mit HMR
+cd frontend && pnpm run dev
+# Test on http://localhost:5173
+
+# Production Test: Rebuild Docker image
+docker-compose --profile production build frontend
+docker-compose --profile production up -d
+# Test on http://localhost (via Nginx)
 ```
 
 **Backend API Change:**
@@ -120,8 +141,25 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/XXX-migration.
 
 ```bash
 cd /home/scs/projects/Assixx/docker
-docker-compose ps
+
+# Development (Backend only)
 docker-compose up -d
+docker-compose ps
+
+frontend neu bauen:  Bash(docker-compose --profile production build frontend 2>&1 | tail -30)
+
+ # Nach Frontend-Code-Änderungen:
+  docker-compose --profile production up -d --build frontend
+
+  # Oder alles neu bauen + starten:
+  docker-compose --profile production up -d --build
+
+
+# Production (mit SvelteKit + Nginx)
+docker-compose --profile production up -d
+docker-compose --profile production ps
+./scripts/check-production.sh  # Health Check Script
+
 docker-compose down
 docker-compose restart backend
 ```
@@ -134,21 +172,18 @@ docker-compose restart backend
 4. Read(~/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md) (MANDATORY for Backend, read whole File)
 5. Read(~/projects/Assixx/README.md)
 6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
-7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-8. Read(~/projects/Assixx/docs/STORYBOOK.md) for UI context (read whole File)
+7. Read(~/projects/Assixx/eslint.config.mjs and ~/projects/Assixx/frontend/eslint.config.mjs) for rules (read whole File)
+8. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT.md) (read whole File)
 9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
 10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
 12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
 13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-BRUNO.md) for context (read whole File)
-14. Dont do more than this and than recap fast and than ask user that youre ready.
-15. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
-16. change directory to root  Bash(cd /home/scs/projects/Assixx && pwd)
-  ⎿  /home/scs/projects/Assixx
-
-
-
-  docs/HOW-TO-TEST-WITH-BRUNO.md
+14. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT-SVELTE.md) for context (read whole File)
+15. **Read(~/projects/Assixx/docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md)** - Docker/Nginx/SvelteKit Setup!
+16. Always fetch original docs: like fetch this: https://svelte.dev/docs/svelte/overview and https://svelte.dev/docs/svelte/what-are-runes and https://svelte.dev/docs/kit/$app-paths#resolve
+17. Dont do more than this and than recap fast and than ask user that youre ready.
+18. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
 
 ## 📊 PROGRESS DOCUMENTATION
 
@@ -233,6 +268,6 @@ git diff master..<branch-name> -- TODO.md
 - Use TypeScript instead of any
 - See TYPESCRIPT-STANDARDS.md for details
 
-**MySQL Password:** See `docker/.env` for credentials (MYSQL_PASSWORD)
+**PostgreSQL Password:** See `docker/.env` for credentials (DB_PASSWORD, POSTGRES_PASSWORD)
 
 **Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear. KISS PRINCIPLE

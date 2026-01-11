@@ -22,6 +22,7 @@ pnpm run build-storybook
 ## What's Documented
 
 ### 📦 Design System/Buttons
+
 - **Primary** - Main CTA (gradient)
 - **Primary-First** - Hero CTA (transparent)
 - **Secondary** - Outline + glassmorphism
@@ -33,6 +34,7 @@ pnpm run build-storybook
 - **States** - Loading, disabled
 
 ### 🎨 Design System/Tokens
+
 - **Colors** - Material Design palette
 - **Spacing** - 13-step scale (4px-96px)
 - **Typography** - Font sizes, weights
@@ -96,12 +98,12 @@ pnpm run build-storybook        # Build static site → storybook-static/
 
 ### Was passiert bei Änderungen?
 
-| Datei geändert | Was passiert | Neu starten? |
-|---|---|---|
-| **Story** (.stories.js) | ✅ Auto-Reload <1s | ❌ NEIN |
-| **CSS** (design-system/*.css) | ✅ Auto-Reload <1s | ❌ NEIN |
-| **Button CSS** (button.*.css) | ✅ Auto-Reload <1s | ❌ NEIN |
-| **Config** (main.js) | ⚠️ Manuell | ✅ JA |
+| Datei geändert                 | Was passiert       | Neu starten? |
+| ------------------------------ | ------------------ | ------------ |
+| **Story** (.stories.js)        | ✅ Auto-Reload <1s | ❌ NEIN      |
+| **CSS** (design-system/\*.css) | ✅ Auto-Reload <1s | ❌ NEIN      |
+| **Button CSS** (button.\*.css) | ✅ Auto-Reload <1s | ❌ NEIN      |
+| **Config** (main.js)           | ⚠️ Manuell         | ✅ JA        |
 
 ### Beispiel Workflow:
 
@@ -130,6 +132,7 @@ http://localhost:6006 ✅
 ## Real Life Production Preview
 
 ✅ **Storybook zeigt exakt wie Production aussieht:**
+
 - Tailwind Utilities komplett aktiviert (via @tailwindcss/vite plugin)
 - Google Fonts Outfit geladen (preview-head.html)
 - FontAwesome CDN integriert
@@ -137,6 +140,7 @@ http://localhost:6006 ✅
 - Gleiche PostCSS Config wie Hauptapp
 
 **Config-Details:**
+
 - `.storybook/main.js` → Tailwind Plugin + PostCSS
 - `.storybook/preview-head.html` → Fonts & Icons
 - `frontend/tailwind.config.js` → Stories werden gescannt

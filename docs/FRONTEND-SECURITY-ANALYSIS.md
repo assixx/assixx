@@ -12,6 +12,7 @@ The Assixx frontend contains **systematic security vulnerabilities** and archite
 ## 🚨 CRITICAL PATTERN 1: JWT Token Handling
 
 ### Current Implementation (UNSAFE)
+
 ```javascript
 // Found in: admin-dashboard.html, employee-dashboard.html, root-dashboard.html, etc.
 const token = localStorage.getItem('token');
@@ -19,6 +20,7 @@ const payload = JSON.parse(atob(token.split('.')[1])); // NO VALIDATION!
 ```
 
 ### Problems Identified
+
 1. **No token structure validation** - Assumes 3 parts exist
 2. **No malformed token handling** - Crashes on invalid base64
 3. **No expiration checking** - Expired tokens accepted
@@ -27,6 +29,7 @@ const payload = JSON.parse(atob(token.split('.')[1])); // NO VALIDATION!
 6. **No signature verification** - Trusting client-side decode
 
 ### Affected Files (Preliminary)
+
 - `/pages/admin-dashboard.html`
 - `/pages/employee-dashboard.html`
 - `/pages/root-dashboard.html`
@@ -42,6 +45,7 @@ const payload = JSON.parse(atob(token.split('.')[1])); // NO VALIDATION!
 ## 🚨 CRITICAL PATTERN 2: XSS Vulnerabilities
 
 ### Current Implementation (UNSAFE)
+
 ```javascript
 // Pattern found everywhere
 tbody.innerHTML = documents.map(createDocumentRow).join('');
@@ -50,6 +54,7 @@ window.setHTML(element, unsanitizedHTML);
 ```
 
 ### Problems Identified
+
 1. **Direct innerHTML with user data**
 2. **String concatenation for HTML**
 3. **No input sanitization**
@@ -57,6 +62,7 @@ window.setHTML(element, unsanitizedHTML);
 5. **Template literals with user input**
 
 ### Vulnerable Patterns Count
+
 - `innerHTML =`: **200+ occurrences**
 - `${user.`: **500+ occurrences**
 - String concatenation HTML: **300+ occurrences**
@@ -64,6 +70,7 @@ window.setHTML(element, unsanitizedHTML);
 ## 🚨 CRITICAL PATTERN 3: Global Namespace Pollution
 
 ### Current Implementation (PROBLEMATIC)
+
 ```javascript
 // Every HTML file adds 10-50 global functions
 window.showModal = function() {...}
@@ -74,6 +81,7 @@ window.deleteUser = function() {...}
 ```
 
 ### Collision Examples
+
 - `showModal` defined in 15+ files differently
 - `loadData` exists with different signatures
 - `selectDropdownOption` implemented 20+ times
@@ -81,12 +89,14 @@ window.deleteUser = function() {...}
 ## 📊 ARCHITECTURE ANTI-PATTERNS
 
 ### 1. Inline JavaScript in HTML
+
 - **Average lines per HTML file**: 1500-2500
 - **JavaScript percentage**: 60-70% of file
 - **TypeScript usage**: 0%
 - **Module usage**: <5%
 
 ### 2. No Error Boundaries
+
 ```javascript
 // Current pattern - crashes entire page
 const data = JSON.parse(response); // No try-catch
@@ -94,27 +104,31 @@ const user = data.user.profile.settings; // No null checks
 ```
 
 ### 3. Duplicate API Implementations
+
 ```javascript
 // Same fetch pattern copy-pasted 100+ times
 fetch('/api/endpoint', {
-  headers: { Authorization: `Bearer ${token}` }
-})
+  headers: { Authorization: `Bearer ${token}` },
+});
 ```
 
 ## 🐌 PERFORMANCE ISSUES
 
 ### 1. No Request Caching
+
 - Departments API called 5+ times per page
 - User data fetched on every navigation
 - No debouncing on searches
 
 ### 2. Excessive DOM Queries
+
 ```javascript
 document.querySelector('#modal'); // Called 10+ times per function
 document.querySelectorAll('.btn'); // Full DOM scan repeatedly
 ```
 
 ### 3. Synchronous Blocking
+
 ```javascript
 localStorage.getItem(); // Called 50+ times per page load
 JSON.parse(atob()); // Blocks main thread
@@ -122,51 +136,59 @@ JSON.parse(atob()); // Blocks main thread
 
 ## 📋 ESLint Violations Summary
 
-| Rule | Violations | Severity |
-|------|------------|----------|
-| `no-console` | 1000+ | Error |
-| `@typescript-eslint/no-explicit-any` | ALL (no TS) | Error |
-| `max-lines` | ALL files | Warning |
-| `max-lines-per-function` | 500+ functions | Warning |
-| `cognitive-complexity` | 200+ functions | Warning |
-| `security/detect-object-injection` | 100+ | Error |
-| `@typescript-eslint/strict-boolean-expressions` | 2000+ | Error |
+| Rule                                            | Violations     | Severity |
+| ----------------------------------------------- | -------------- | -------- |
+| `no-console`                                    | 1000+          | Error    |
+| `@typescript-eslint/no-explicit-any`            | ALL (no TS)    | Error    |
+| `max-lines`                                     | ALL files      | Warning  |
+| `max-lines-per-function`                        | 500+ functions | Warning  |
+| `cognitive-complexity`                          | 200+ functions | Warning  |
+| `security/detect-object-injection`              | 100+           | Error    |
+| `@typescript-eslint/strict-boolean-expressions` | 2000+          | Error    |
 
 ## 🔧 SYSTEMATIC FIX STRATEGY
 
 ### Phase 1: Security Foundation (Week 1)
+
 1. **Create Centralized JWT Service**
+
    ```typescript
    // /src/services/auth/jwt-service.ts
    export class JWTService {
-     validateToken(token: string): DecodedToken | null
-     isExpired(token: DecodedToken): boolean
-     getSecureToken(): string | null
+     validateToken(token: string): DecodedToken | null;
+     isExpired(token: DecodedToken): boolean;
+     getSecureToken(): string | null;
    }
    ```
 
 2. **Create XSS Protection Layer**
+
    ```typescript
    // /src/utils/dom-security.ts
-   export function safeHTML(template: string, data: Record<string, unknown>): string
-   export function sanitizeUserInput(input: unknown): string
+   export function safeHTML(template: string, data: Record<string, unknown>): string;
+   export function sanitizeUserInput(input: unknown): string;
    ```
 
 3. **Implement CSP Headers**
 
 ### Phase 2: Architecture Migration (Week 2-3)
+
 1. **Extract JavaScript to TypeScript modules**
    - One module per page
    - Shared utilities extracted
    - Type definitions for all APIs
 
 2. **Implement Module Pattern**
+
    ```typescript
    // Instead of window.functions
    export class AdminDashboard {
-     constructor(private api: ApiClient, private auth: AuthService) {}
-     async initialize(): Promise<void>
-     private bindEvents(): void
+     constructor(
+       private api: ApiClient,
+       private auth: AuthService,
+     ) {}
+     async initialize(): Promise<void>;
+     private bindEvents(): void;
    }
    ```
 
@@ -177,6 +199,7 @@ JSON.parse(atob()); // Blocks main thread
    - Form handlers
 
 ### Phase 3: State Management (Week 4)
+
 1. **Implement EventBus for communication**
 2. **Add Request caching layer**
 3. **Create centralized error handling**
@@ -184,6 +207,7 @@ JSON.parse(atob()); // Blocks main thread
 ## 🎯 IMMEDIATE ACTIONS REQUIRED
 
 ### STOP Doing:
+
 1. ❌ No more inline JavaScript in HTML
 2. ❌ No more global functions
 3. ❌ No more innerHTML with user data
@@ -191,6 +215,7 @@ JSON.parse(atob()); // Blocks main thread
 5. ❌ No more token in URLs
 
 ### START Doing:
+
 1. ✅ TypeScript modules for all logic
 2. ✅ Centralized JWT handling
 3. ✅ Template literals with sanitization
@@ -200,16 +225,19 @@ JSON.parse(atob()); // Blocks main thread
 ## 📊 Impact Assessment
 
 ### Security Risk
+
 - **Current**: 🔴 CRITICAL (9/10)
 - **After Phase 1**: 🟡 MODERATE (5/10)
 - **After Phase 3**: 🟢 LOW (2/10)
 
 ### Technical Debt
+
 - **Current Lines**: ~75,000 (HTML + inline JS)
 - **Target Lines**: ~20,000 (HTML) + ~15,000 (TS modules)
 - **Reduction**: ~53%
 
 ### Performance Impact
+
 - **Current Page Load**: 2-5 seconds
 - **Target Page Load**: <1 second
 - **API Calls Reduction**: -70%
@@ -226,6 +254,7 @@ JSON.parse(atob()); // Blocks main thread
 ## ⚠️ CRITICAL WARNING
 
 **Do NOT attempt to fix individual files!** The problems are systematic and require a coordinated refactoring effort. Fixing one file while others remain vulnerable creates:
+
 - False sense of security
 - Inconsistent codebase
 - More technical debt

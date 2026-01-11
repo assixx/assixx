@@ -101,7 +101,7 @@ export function snakeToCamel(obj: unknown): unknown {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const camelKey = snakeToCamelString(key);
       // ESLint disable needed: camelKey is derived from object's own properties (checked with hasOwnProperty)
-      // eslint-disable-next-line security/detect-object-injection
+
       converted[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
     }
   }
@@ -129,7 +129,7 @@ export function camelToSnake(obj: unknown): unknown {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const snakeKey = camelToSnakeString(key);
       // ESLint disable needed: snakeKey is derived from object's own properties (checked with hasOwnProperty)
-      // eslint-disable-next-line security/detect-object-injection
+
       converted[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key]);
     }
   }
@@ -137,10 +137,10 @@ export function camelToSnake(obj: unknown): unknown {
 }
 
 /**
- * Normalize MySQL boolean values to JavaScript boolean
- * MySQL returns 0/1 for boolean fields, this converts them properly
+ * Normalize database boolean values to JavaScript boolean
+ * PostgreSQL/databases return 0/1 for boolean fields, this converts them properly
  */
-export function normalizeMySQLBoolean(value: unknown): boolean {
+export function normalizeDbBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') {
     return value;
   }

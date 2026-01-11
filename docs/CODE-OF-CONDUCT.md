@@ -27,18 +27,18 @@
 
 ## Power of Ten (NASA/JPL) - Summary
 
-| # | Rule | Application |
-|---|------|-------------|
-| 1 | Simple control flow | No recursion |
-| 2 | Bounded loops | `while` needs MAX_ITERATIONS |
-| 3 | No dynamic allocation | Object pools in hot paths |
-| 4 | Max 60 lines/function | ESLint enforced |
-| 5 | Min 2 assertions/function | Zod + business checks |
-| 6 | Smallest scope | `const` > `let` > never `var` |
-| 7 | Check return values | No floating promises |
-| 8 | Minimal build config | Max 2-3 env flags |
-| 9 | Max 3 reference levels | No `a.b.c.d.e.f` chains |
-| 10 | Zero warnings | All errors = blockers |
+| #   | Rule                      | Application                   |
+| --- | ------------------------- | ----------------------------- |
+| 1   | Simple control flow       | No recursion                  |
+| 2   | Bounded loops             | `while` needs MAX_ITERATIONS  |
+| 3   | No dynamic allocation     | Object pools in hot paths     |
+| 4   | Max 60 lines/function     | ESLint enforced               |
+| 5   | Min 2 assertions/function | Zod + business checks         |
+| 6   | Smallest scope            | `const` > `let` > never `var` |
+| 7   | Check return values       | No floating promises          |
+| 8   | Minimal build config      | Max 2-3 env flags             |
+| 9   | Max 3 reference levels    | No `a.b.c.d.e.f` chains       |
+| 10  | Zero warnings             | All errors = blockers         |
 
 ---
 
@@ -46,25 +46,25 @@
 
 ### Forbidden
 
-| Bad | Why | Good |
-|-----|-----|------|
-| `any` | Destroys type-safety | `unknown` + type guard |
-| `\|\|` for defaults | `0` and `""` are falsy | `??` |
-| `if (value)` | Truthy check unsafe | `if (value !== null)` |
-| `!` assertion | Lies to compiler | Explicit null checks |
-| Floating promises | Errors disappear | `await` or `void` |
-| `?` placeholders | MySQL syntax | `$1, $2, $3` |
-| `// TODO:` | Never done | Implement now |
-| `var` | Scope chaos | `const` or `let` |
+| Bad                 | Why                    | Good                   |
+| ------------------- | ---------------------- | ---------------------- |
+| `any`               | Destroys type-safety   | `unknown` + type guard |
+| `\|\|` for defaults | `0` and `""` are falsy | `??`                   |
+| `if (value)`        | Truthy check unsafe    | `if (value !== null)`  |
+| `!` assertion       | Lies to compiler       | Explicit null checks   |
+| Floating promises   | Errors disappear       | `await` or `void`      |
+| `?` placeholders    | MySQL syntax           | `$1, $2, $3`           |
+| `// TODO:`          | Never done             | Implement now          |
+| `var`               | Scope chaos            | `const` or `let`       |
 
 ### Required
 
-| Rule | Example |
-|------|---------|
+| Rule                  | Example                            |
+| --------------------- | ---------------------------------- |
 | Explicit return types | `function calc(x: number): number` |
-| Zod validation | `z.object({...})` |
-| Strict booleans | `if (arr.length > 0)` |
-| RETURNING clause | `INSERT ... RETURNING id` |
+| Zod validation        | `z.object({...})`                  |
+| Strict booleans       | `if (arr.length > 0)`              |
+| RETURNING clause      | `INSERT ... RETURNING id`          |
 
 ---
 
@@ -83,12 +83,14 @@ Max classes per file:   2
 ## Naming Conventions
 
 ```typescript
-const userId = 42;                    // camelCase: variables, functions
-interface UserProfile { }             // PascalCase: types, interfaces
-const MAX_RETRY = 3;                  // UPPER_SNAKE: constants
-enum Status { ACTIVE = 1 }            // UPPER_SNAKE: enum members
+const userId = 42; // camelCase: variables, functions
+interface UserProfile {} // PascalCase: types, interfaces
+const MAX_RETRY = 3; // UPPER_SNAKE: constants
+enum Status {
+  ACTIVE = 1,
+} // UPPER_SNAKE: enum members
 // user-profile.ts                    // kebab-case: files
-const isActive = true;                // is/has/can: booleans
+const isActive = true; // is/has/can: booleans
 ```
 
 ---
@@ -182,13 +184,13 @@ Functions > 60 lines           Functions <= 60 lines
 
 ## Violations
 
-| Violation | Consequence |
-|-----------|-------------|
-| ESLint error | PR blocked |
-| `any` without justification | Code review reject |
-| Quick fix instead of root cause | Refactoring required |
-| Missing tests | PR blocked |
-| SQL injection possible | Immediate fix + post-mortem |
+| Violation                       | Consequence                 |
+| ------------------------------- | --------------------------- |
+| ESLint error                    | PR blocked                  |
+| `any` without justification     | Code review reject          |
+| Quick fix instead of root cause | Refactoring required        |
+| Missing tests                   | PR blocked                  |
+| SQL injection possible          | Immediate fix + post-mortem |
 
 ---
 

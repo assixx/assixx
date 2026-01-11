@@ -23,6 +23,9 @@ uploads/
 # Build outputs
 frontend/dist/
 frontend/build/
+frontend/.svelte-kit/
+frontend/stats.html
+frontend-legacy/
 *.min.js
 *.min.css
 dist/
@@ -41,6 +44,9 @@ dist/
 .idea/
 *.swp
 *.swo
+
+# Claude Code
+.claude/
 
 # OS
 .DS_Store
@@ -86,3 +92,6 @@ backup_*.sql
 
 # Bruno API Testing (komplett ignorieren)
 api-tests/
+
+# Credentials Archive (NEVER commit - contains passwords!)
+.locklock

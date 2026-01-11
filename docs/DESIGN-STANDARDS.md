@@ -290,45 +290,28 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 /* Autofill Styles für verschiedene Browser */
 /* WICHTIG: Browser-Autofill überschreibt normalerweise unsere Glassmorphismus-Farben! */
+/* Referenz: https://developer.mozilla.org/en-US/docs/Web/CSS/:autofill */
 
-/* Webkit browsers (Chrome, Safari, Edge) */
-.form-control:-webkit-autofill,
-.form-control:-webkit-autofill:hover,
-.form-control:-webkit-autofill:focus,
-.form-control:-webkit-autofill:active,
-.form-input:-webkit-autofill,
-.form-input:-webkit-autofill:hover,
-.form-input:-webkit-autofill:focus,
-.form-input:-webkit-autofill:active {
+/* Cross-Browser mit :is() forgiving selector list */
+/* - Chrome/Safari: :-webkit-autofill */
+/* - Firefox/Standard: :autofill */
+.form-control:is(:-webkit-autofill, :autofill),
+.form-control:is(:-webkit-autofill, :autofill):hover,
+.form-control:is(:-webkit-autofill, :autofill):focus,
+.form-control:is(:-webkit-autofill, :autofill):active,
+.form-input:is(:-webkit-autofill, :autofill),
+.form-input:is(:-webkit-autofill, :autofill):hover,
+.form-input:is(:-webkit-autofill, :autofill):focus,
+.form-input:is(:-webkit-autofill, :autofill):active {
   /* Box-Shadow Trick um Browser-Background zu überschreiben */
   -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.04) inset !important;
+  box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.04) inset !important;
   -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
   background-color: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(33, 150, 243, 0.3) !important;
   /* Verhindert sofortiges Zurücksetzen der Farbe */
   transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Firefox */
-.form-control:autofill,
-.form-input:autofill {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(33, 150, 243, 0.3) !important;
-  color: var(--text-primary) !important;
-}
-
-/* Firefox specific - :-moz-autofill pseudo-class */
-.form-control:-moz-autofill,
-.form-input:-moz-autofill {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(33, 150, 243, 0.3) !important;
-}
-
-/* Edge Legacy */
-.form-control:-ms-input-placeholder,
-.form-input:-ms-input-placeholder {
-  color: var(--text-secondary);
-  opacity: 0.6;
 }
 ```
 
@@ -570,7 +553,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-cancel:hover {
-
   border-color: var(--primary-color);
   background: rgba(255, 255, 255, 0.08);
 }
@@ -592,7 +574,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-status-active:hover {
-
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
   border-color: #ff5722;
   background: rgba(255, 107, 53, 0.1);
@@ -612,7 +593,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-status-inactive:hover {
-
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
   border-color: #218838;
   background: rgba(40, 167, 69, 0.1);
@@ -634,7 +614,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .btn-danger:hover {
-
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
   background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
 }
@@ -783,7 +762,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 #logout-btn:hover {
-
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
 }
@@ -1274,7 +1252,6 @@ function showSuccessMessage() {
 }
 
 .btn-role-switch:hover {
-
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
   border-color: var(--employee-color);
   background: rgba(255, 255, 255, 0.15);

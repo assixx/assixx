@@ -25,22 +25,22 @@
 /* Info Box - Two-person-principle information */
 .info-box {
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 20%);
   border-radius: var(--radius-xl);
 
-  font-size: 0.875rem;
+  background: rgb(33 150 243 / 5%);
+  padding: var(--spacing-3);
   color: var(--text-secondary);
 
-  background: rgb(33 150 243 / 5%);
+  font-size: 0.875rem;
 }
 
 /* Deletion Status Icon - Domain-specific animation */
 .deletion-status-icon {
-  margin-bottom: 20px;
-  font-size: 64px;
-  color: var(--color-blue-500);
   animation: pulse-icon 2s infinite;
+  margin-bottom: 20px;
+  color: var(--color-blue-500);
+  font-size: 64px;
 }
 
 @keyframes pulse-icon {
@@ -57,11 +57,11 @@
 /* Deletion Info Box - Domain-specific info display */
 .deletion-info {
   margin: 20px 0;
-  padding: 16px;
   border: 1px solid rgb(33 150 243 / 30%);
   border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 10%);
+  padding: 16px;
 }
 
 .deletion-info p {

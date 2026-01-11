@@ -11,15 +11,15 @@
  */
 
 .btn-primary {
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  /* ========== VISUAL ========== */
+  box-shadow: var(--shadow-btn-primary);
 
   /* No border - gradient is the visual boundary */
   border: none;
-  color: var(--color-white);
 
-  /* ========== VISUAL ========== */
-  box-shadow: var(--shadow-btn-primary);
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  color: var(--color-white);
 }
 
 /* Focus state - Accessibility */

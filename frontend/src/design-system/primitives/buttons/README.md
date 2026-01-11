@@ -342,7 +342,14 @@ This CSS structure maps directly to React components:
 
 ```tsx
 interface ButtonProps {
-  variant: 'primary' | 'primary-first' | 'secondary' | 'danger' | 'success' | 'status-active' | 'status-inactive';
+  variant:
+    | 'primary'
+    | 'primary-first'
+    | 'secondary'
+    | 'danger'
+    | 'success'
+    | 'status-active'
+    | 'status-inactive';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   icon?: ReactNode;

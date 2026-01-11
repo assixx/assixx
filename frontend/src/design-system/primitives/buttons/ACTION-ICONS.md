@@ -146,7 +146,11 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 **Example:**
 
 ```html
-<button class="action-icon action-icon--delete" title="Löschen" aria-label="Eintrag dauerhaft löschen">
+<button
+  class="action-icon action-icon--delete"
+  title="Löschen"
+  aria-label="Eintrag dauerhaft löschen"
+>
   <i class="fas fa-trash"></i>
 </button>
 ```

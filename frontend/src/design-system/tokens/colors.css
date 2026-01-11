@@ -58,10 +58,10 @@
   --color-status-inactive-hover: #218838; /* Darker green on hover */
 
   /* ========== NEUTRALS (Grayscale Semantics) ========== */
+  /* NOTE: --color-text-primary/secondary are defined in variables-dark.css
+   * to allow theme-specific overrides (gray-300 for dark, gray-600 for light) */
   --color-background-dark: var(--color-gray-950); /* #121212 - Main dark BG */
   --color-background-light: var(--color-gray-900); /* #212121 - Lighter dark BG */
-  --color-text-primary: var(--color-white); /* #fff - Primary text */
-  --color-text-secondary: var(--color-gray-400); /* #bdbdbd - Secondary text */
   --color-border: var(--color-gray-800); /* #424242 - Borders */
   --color-border-subtle: var(--color-gray-900); /* #212121 - Subtle borders */
 

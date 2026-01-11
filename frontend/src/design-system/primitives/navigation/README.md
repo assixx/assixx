@@ -422,7 +422,10 @@ export function Tabs({ variant = 'underline', tabs, defaultActive }: TabsProps) 
         ))}
       </div>
       {tabs.map((tab) => (
-        <div key={tab.id} className={cn('tabs__content', active === tab.id && 'tabs__content--active')}>
+        <div
+          key={tab.id}
+          className={cn('tabs__content', active === tab.id && 'tabs__content--active')}
+        >
           {tab.content}
         </div>
       ))}
@@ -457,7 +460,10 @@ export function Accordion({ items, variant = 'default', alwaysOpen }: AccordionP
   return (
     <div className={cn('accordion', `accordion--${variant}`)}>
       {items.map((item) => (
-        <div key={item.id} className={cn('accordion__item', openItems.has(item.id) && 'accordion__item--active')}>
+        <div
+          key={item.id}
+          className={cn('accordion__item', openItems.has(item.id) && 'accordion__item--active')}
+        >
           <button className="accordion__header" onClick={() => toggle(item.id)}>
             <span className="accordion__title">{item.title}</span>
             <i className="fas fa-chevron-down accordion__icon"></i>

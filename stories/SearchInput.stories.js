@@ -11,42 +11,42 @@
  */
 
 export default {
-  title: "Design System/Search Input",
-  tags: ["autodocs"],
+  title: 'Design System/Search Input',
+  tags: ['autodocs'],
 
   parameters: {
-    layout: "centered"
+    layout: 'centered',
   },
 
   argTypes: {
     placeholder: {
-      control: "text",
-      description: "Placeholder text",
+      control: 'text',
+      description: 'Placeholder text',
     },
     value: {
-      control: "text",
-      description: "Input value",
+      control: 'text',
+      description: 'Input value',
     },
     size: {
-      control: "select",
-      options: ["sm", "md", "lg"],
-      description: "Input size",
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      description: 'Input size',
     },
     disabled: {
-      control: "boolean",
-      description: "Disabled state",
+      control: 'boolean',
+      description: 'Disabled state',
     },
     loading: {
-      control: "boolean",
-      description: "Loading state",
+      control: 'boolean',
+      description: 'Loading state',
     },
   },
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -54,19 +54,19 @@ export default {
  */
 export const BasicSearch = {
   args: {
-    placeholder: "Search...",
-    value: "",
-    size: "md",
+    placeholder: 'Search...',
+    value: '',
+    size: 'md',
     disabled: false,
     loading: false,
   },
   render: (args) => {
-    const wrapper = document.createElement("div");
-    wrapper.style.width = "400px";
+    const wrapper = document.createElement('div');
+    wrapper.style.width = '400px';
 
-    const sizeClass = args.size !== "md" ? `search-input--${args.size}` : "";
-    const disabledClass = args.disabled ? "search-input--disabled" : "";
-    const loadingClass = args.loading ? "search-input--loading" : "";
+    const sizeClass = args.size !== 'md' ? `search-input--${args.size}` : '';
+    const disabledClass = args.disabled ? 'search-input--disabled' : '';
+    const loadingClass = args.loading ? 'search-input--loading' : '';
 
     wrapper.innerHTML = `
       <div class="search-input ${sizeClass} ${disabledClass} ${loadingClass}">
@@ -76,7 +76,7 @@ export const BasicSearch = {
           class="search-input__field"
           placeholder="${args.placeholder}"
           value="${args.value}"
-          ${args.disabled ? "disabled" : ""}
+          ${args.disabled ? 'disabled' : ''}
         >
         <button class="search-input__clear" type="button" aria-label="Clear search">
           <i class="fas fa-times"></i>
@@ -87,7 +87,7 @@ export const BasicSearch = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      const searchElement = wrapper.querySelector(".search-input");
+      const searchElement = wrapper.querySelector('.search-input');
     }, 0);
 
     return wrapper;
@@ -99,7 +99,7 @@ export const BasicSearch = {
  */
 export const SizeVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 1.5rem; width: 400px;">
         <div>
@@ -142,8 +142,7 @@ export const SizeVariants = {
 
     // Initialize JavaScript for all
     setTimeout(() => {
-      wrapper.querySelectorAll(".search-input").forEach((el) => {
-      });
+      wrapper.querySelectorAll('.search-input').forEach((el) => {});
     }, 0);
 
     return wrapper;
@@ -155,7 +154,7 @@ export const SizeVariants = {
  */
 export const States = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 1.5rem; width: 400px;">
         <div>
@@ -236,8 +235,7 @@ export const States = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      wrapper.querySelectorAll(".search-input:not(.search-input--disabled)").forEach((el) => {
-      });
+      wrapper.querySelectorAll('.search-input:not(.search-input--disabled)').forEach((el) => {});
     }, 0);
 
     return wrapper;
@@ -249,7 +247,7 @@ export const States = {
  */
 export const WithResults = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="width: 500px;">
         <div class="search-input-wrapper search-input-wrapper--open">
@@ -279,7 +277,7 @@ export const WithResults = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      const searchElement = wrapper.querySelector(".search-input");
+      const searchElement = wrapper.querySelector('.search-input');
     }, 0);
 
     return wrapper;
@@ -291,10 +289,10 @@ export const WithResults = {
  */
 export const GlobalSearch = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 600px; padding: 2rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; backdrop-filter: blur(10px);">
         <h3 style="margin: 0 0 1.5rem 0; color: var(--color-text-primary);">Global Search</h3>
@@ -327,7 +325,7 @@ export const GlobalSearch = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      const searchElement = wrapper.querySelector(".search-input");
+      const searchElement = wrapper.querySelector('.search-input');
     }, 0);
 
     return wrapper;
@@ -339,10 +337,10 @@ export const GlobalSearch = {
  */
 export const UserFilter = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 800px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -371,7 +369,7 @@ export const UserFilter = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      const searchElement = wrapper.querySelector(".search-input");
+      const searchElement = wrapper.querySelector('.search-input');
     }, 0);
 
     return wrapper;
@@ -383,10 +381,10 @@ export const UserFilter = {
  */
 export const AllVariants = {
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 3rem; max-width: 600px;">
         <!-- Sizes -->
@@ -477,8 +475,7 @@ export const AllVariants = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      wrapper.querySelectorAll(".search-input:not(.search-input--disabled)").forEach((el) => {
-      });
+      wrapper.querySelectorAll('.search-input:not(.search-input--disabled)').forEach((el) => {});
     }, 0);
 
     return wrapper;

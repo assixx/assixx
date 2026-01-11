@@ -230,15 +230,15 @@
 
 ## 📊 Fortschritt Übersicht
 
-| Phase | Komponente              | Status       | ETA/Completed |
-| ----- | ----------------------- | ------------ | ------------- |
-| 10    | Toggle Switch (ON/OFF)  | ✅ Done      | 2025-10-07    |
-| 11    | File Upload             | ✅ Done      | 2025-10-07    |
-| 12    | Avatar (WhatsApp Style) | ✅ Done      | 2025-10-07    |
-| 13    | Search Input            | ✅ Done      | 2025-10-07    |
-| 14    | Empty States            | ✅ Done      | 2025-10-07    |
-| 15    | Tooltip (Hover Info)    | ✅ Done      | 2025-10-07    |
-| 16    | Accordion/Collapse      | 🔜 Next      | TBD           |
+| Phase | Komponente              | Status  | ETA/Completed |
+| ----- | ----------------------- | ------- | ------------- |
+| 10    | Toggle Switch (ON/OFF)  | ✅ Done | 2025-10-07    |
+| 11    | File Upload             | ✅ Done | 2025-10-07    |
+| 12    | Avatar (WhatsApp Style) | ✅ Done | 2025-10-07    |
+| 13    | Search Input            | ✅ Done | 2025-10-07    |
+| 14    | Empty States            | ✅ Done | 2025-10-07    |
+| 15    | Tooltip (Hover Info)    | ✅ Done | 2025-10-07    |
+| 16    | Accordion/Collapse      | 🔜 Next | TBD           |
 
 ---
 

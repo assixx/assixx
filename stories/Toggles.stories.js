@@ -8,7 +8,7 @@ export default {
   title: 'Design System/Toggles',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
@@ -26,9 +26,9 @@ export default {
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**

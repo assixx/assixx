@@ -14,35 +14,35 @@
  */
 
 .btn {
-  /* ========== INTERACTIVITY ========== */
-  cursor: pointer;
-  user-select: none; /* Prevent text selection on click */
-
-  position: relative; /* For pseudo-elements (shine) */
-
-  overflow: hidden; /* Contain shine effect */
-
   /* ========== LAYOUT ========== */
   display: inline-flex;
-  gap: var(--spacing-2); /* 8px gap for icons */
-  align-items: center;
-  justify-content: center;
 
-  /* ========== SPACING ========== */
-  padding: 0; /* Reset for variants to define */
+  position: relative; /* For pseudo-elements (shine) */
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2); /* 8px gap for icons */
+
+  /* ========== INTERACTIVITY ========== */
+  cursor: pointer;
   border: none; /* Remove default border */
 
   /* ========== VISUAL ========== */
   border-radius: var(--glass-card-radius);
 
+  background: transparent; /* Variants define background */
+
+  /* ========== SPACING ========== */
+  padding: 0; /* Reset for variants to define */
+
+  overflow: hidden; /* Contain shine effect */
+  font-weight: var(--font-weight-medium); /* 500 - readable weight */
+  font-size: var(--font-size-base); /* 14px - SaaS standard */
+
   /* ========== TYPOGRAPHY ========== */
   font-family: inherit; /* Use system font */
-  font-size: var(--font-size-base); /* 14px - SaaS standard */
-  font-weight: var(--font-weight-medium); /* 500 - readable weight */
+  user-select: none; /* Prevent text selection on click */
   text-align: center;
   white-space: nowrap; /* Prevent text wrapping */
-
-  background: transparent; /* Variants define background */
 }
 
 /* For <a> tags styled as buttons */
@@ -58,10 +58,10 @@ a.btn {
 
 /* Disabled state - applies to ALL variants */
 .btn:disabled,
-.btn[aria-disabled="true"] {
-  pointer-events: none; /* Prevent any interaction */
-  cursor: not-allowed;
+.btn[aria-disabled='true'] {
   opacity: 50%; /* 50% opacity - clear visual feedback */
+  cursor: not-allowed;
+  pointer-events: none; /* Prevent any interaction */
 }
 
 /* Active (pressed) state - subtle feedback */
@@ -73,8 +73,8 @@ a.btn {
 
 /* Small - Compact UI elements */
 .btn-sm {
-  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
   border-radius: var(--radius-md); /* 6px */
+  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
   font-size: var(--font-size-sm); /* 13px */
 }
 
@@ -95,8 +95,8 @@ a.btn {
 
 /* Icon-only buttons - square aspect */
 .btn-icon {
-  aspect-ratio: 1; /* Perfect square */
   padding: var(--spacing-3); /* Square padding */
+  aspect-ratio: 1; /* Perfect square */
 }
 
 .btn-icon svg {
@@ -107,27 +107,26 @@ a.btn {
 /* ========== LOADING STATE ========== */
 
 /* Loading spinner (optional enhancement) */
-.btn[data-loading="true"] {
-  pointer-events: none; /* Prevent clicks */
+.btn[data-loading='true'] {
   position: relative;
+  pointer-events: none; /* Prevent clicks */
   color: transparent; /* Hide text */
 }
 
-.btn[data-loading="true"]::after {
-  content: "";
-
+.btn[data-loading='true']::after {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 
-  width: 1em;
-  height: 1em;
+  animation: spin var(--duration-slow) linear infinite;
   border: 2px solid currentcolor;
   border-right-color: transparent;
   border-radius: 50%;
 
-  animation: spin var(--duration-slow) linear infinite;
+  width: 1em;
+  height: 1em;
+  content: '';
 }
 
 /* ========== LOADING ANIMATION ========== */

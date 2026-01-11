@@ -1,0 +1,318 @@
+/**
+ * Rotation Controller
+ *
+ * REST API endpoints for shift rotation pattern management.
+ * Handles CRUD operations, assignments, generation, and history.
+ */
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../common/guards/roles.guard.js';
+import type { JwtPayload } from '../common/interfaces/auth.interface.js';
+import { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
+import { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
+import { DeleteRotationHistoryByDateRangeDto } from './dto/delete-rotation-history-by-date-range.dto.js';
+import { GenerateRotationShiftsDto } from './dto/generate-rotation-shifts.dto.js';
+import { QueryRotationHistoryDto } from './dto/query-rotation-history.dto.js';
+import { GenerateRotationFromConfigDto } from './dto/rotation-config.dto.js';
+import { DeleteRotationHistoryDto } from './dto/rotation-delete.dto.js';
+import { UpdateRotationPatternDto } from './dto/update-rotation-pattern.dto.js';
+import type {
+  DeleteHistoryCountsResponse,
+  GeneratedShiftsResponse,
+  RotationAssignmentResponse,
+  RotationHistoryResponse,
+  RotationPatternResponse,
+} from './rotation.service.js';
+import { RotationService } from './rotation.service.js';
+
+// ============================================================
+// RESPONSE TYPES
+// ============================================================
+
+interface SuccessResponse<T = unknown> {
+  success: true;
+  data: T;
+  message?: string;
+}
+
+@Controller('shifts/rotation')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class RotationController {
+  private readonly logger = new Logger(RotationController.name);
+
+  constructor(private readonly rotationService: RotationService) {}
+
+  // ============= PATTERNS CRUD =============
+
+  /**
+   * GET /api/v2/shifts/rotation/patterns
+   * List rotation patterns
+   */
+  @Get('patterns')
+  async getRotationPatterns(
+    @CurrentUser() user: JwtPayload,
+    @Query('active_only') activeOnly?: string,
+  ): Promise<SuccessResponse<{ patterns: RotationPatternResponse[] }>> {
+    this.logger.debug(`Getting rotation patterns for tenant ${user.tenantId}`);
+    const isActiveOnly = activeOnly !== 'false';
+    const patterns = await this.rotationService.getRotationPatterns(user.tenantId, isActiveOnly);
+    return { success: true, data: { patterns } };
+  }
+
+  /**
+   * GET /api/v2/shifts/rotation/patterns/:id
+   * Get single rotation pattern
+   */
+  @Get('patterns/:id')
+  async getRotationPattern(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
+    this.logger.debug(`Getting rotation pattern ${id}`);
+    const pattern = await this.rotationService.getRotationPattern(id, user.tenantId);
+    return { success: true, data: { pattern } };
+  }
+
+  /**
+   * POST /api/v2/shifts/rotation/patterns
+   * Create rotation pattern (admin only)
+   */
+  @Post('patterns')
+  @Roles('admin', 'root')
+  @HttpCode(HttpStatus.CREATED)
+  async createRotationPattern(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateRotationPatternDto,
+  ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
+    this.logger.debug(`Creating rotation pattern for tenant ${user.tenantId}`);
+    const pattern = await this.rotationService.createRotationPattern(
+      dto,
+      user.tenantId,
+      user.id,
+      user.role,
+    );
+    return { success: true, data: { pattern } };
+  }
+
+  /**
+   * PUT /api/v2/shifts/rotation/patterns/:id
+   * Update rotation pattern (admin only)
+   */
+  @Put('patterns/:id')
+  @Roles('admin', 'root')
+  async updateRotationPattern(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateRotationPatternDto,
+  ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
+    this.logger.debug(`Updating rotation pattern ${id}`);
+    const pattern = await this.rotationService.updateRotationPattern(
+      id,
+      dto,
+      user.tenantId,
+      user.role,
+    );
+    return { success: true, data: { pattern } };
+  }
+
+  /**
+   * DELETE /api/v2/shifts/rotation/patterns/:id
+   * Delete rotation pattern (admin only)
+   */
+  @Delete('patterns/:id')
+  @Roles('admin', 'root')
+  async deleteRotationPattern(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<null>> {
+    this.logger.debug(`Deleting rotation pattern ${id}`);
+    await this.rotationService.deleteRotationPattern(id, user.tenantId, user.role);
+    return { success: true, data: null };
+  }
+
+  // ============= ASSIGNMENTS =============
+
+  /**
+   * POST /api/v2/shifts/rotation/assign
+   * Assign users to rotation pattern (admin only)
+   */
+  @Post('assign')
+  @Roles('admin', 'root')
+  async assignUsersToPattern(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: AssignUsersToPatternDto,
+  ): Promise<SuccessResponse<{ assignments: RotationAssignmentResponse[] }>> {
+    this.logger.debug(`Assigning users to pattern for tenant ${user.tenantId}`);
+    const assignments = await this.rotationService.assignUsersToPattern(
+      dto,
+      user.tenantId,
+      user.id,
+      user.role,
+    );
+    return { success: true, data: { assignments } };
+  }
+
+  // ============= GENERATION =============
+
+  /**
+   * POST /api/v2/shifts/rotation/generate
+   * Generate rotation shifts from pattern (admin only)
+   */
+  @Post('generate')
+  @Roles('admin', 'root')
+  async generateRotationShifts(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: GenerateRotationShiftsDto,
+  ): Promise<SuccessResponse<{ generatedShifts: GeneratedShiftsResponse }>> {
+    this.logger.debug(`Generating rotation shifts for tenant ${user.tenantId}`);
+    const generatedShifts = await this.rotationService.generateRotationShifts(
+      dto,
+      user.tenantId,
+      user.id,
+      user.role,
+    );
+    return { success: true, data: { generatedShifts } };
+  }
+
+  /**
+   * POST /api/v2/shifts/rotation/generate-from-config
+   * Generate rotation shifts from algorithm config (admin only)
+   */
+  @Post('generate-from-config')
+  @Roles('admin', 'root')
+  async generateRotationFromConfig(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: GenerateRotationFromConfigDto,
+  ): Promise<SuccessResponse<Record<string, unknown>>> {
+    this.logger.debug(`Generating rotation from config for tenant ${user.tenantId}`);
+    const result = await this.rotationService.generateRotationFromConfig(
+      dto,
+      user.tenantId,
+      user.id,
+      user.role,
+    );
+    return { success: true, data: result };
+  }
+
+  // ============= HISTORY =============
+
+  /**
+   * GET /api/v2/shifts/rotation/history
+   * Get rotation history
+   */
+  @Get('history')
+  async getRotationHistory(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: QueryRotationHistoryDto,
+  ): Promise<SuccessResponse<{ history: RotationHistoryResponse[] }>> {
+    this.logger.debug(`Getting rotation history for tenant ${user.tenantId}`);
+
+    const filters = {
+      patternId: query.patternId,
+      userId: query.userId,
+      teamId: query.teamId,
+      startDate: query.startDate,
+      endDate: query.endDate,
+      status: query.status,
+    };
+
+    const history = await this.rotationService.getRotationHistory(user.tenantId, filters);
+    return { success: true, data: { history } };
+  }
+
+  /**
+   * DELETE /api/v2/shifts/rotation/history
+   * Delete rotation history for a team (admin only)
+   * - If patternId provided: deletes ONLY that pattern
+   * - If only teamId: deletes ALL patterns for the team
+   */
+  @Delete('history')
+  @Roles('admin', 'root')
+  async deleteRotationHistory(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: DeleteRotationHistoryDto,
+  ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
+    const { teamId, patternId } = query;
+    const hasPatternId = patternId !== undefined;
+    this.logger.debug(
+      hasPatternId ?
+        `Deleting rotation pattern ${patternId} for team ${teamId}`
+      : `Deleting ALL rotation data for team ${teamId}`,
+    );
+    const deletedCounts = await this.rotationService.deleteRotationHistory(
+      user.tenantId,
+      teamId,
+      user.role,
+      patternId, // Optional: if provided, only delete this pattern
+    );
+    const message =
+      hasPatternId ?
+        `Successfully deleted rotation pattern ${patternId} for team ${teamId}`
+      : `Successfully deleted all rotation data for team ${teamId}`;
+    return {
+      success: true,
+      data: { message, deletedCounts },
+    };
+  }
+
+  /**
+   * DELETE /api/v2/shifts/rotation/history/week
+   * Delete rotation history by date range (admin only)
+   */
+  @Delete('history/week')
+  @Roles('admin', 'root')
+  async deleteRotationHistoryByDateRange(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: DeleteRotationHistoryByDateRangeDto,
+  ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
+    this.logger.debug(
+      `Deleting rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
+    );
+    const deletedCounts = await this.rotationService.deleteRotationHistoryByDateRange(
+      user.tenantId,
+      query.teamId,
+      query.startDate,
+      query.endDate,
+      user.role,
+    );
+    return {
+      success: true,
+      data: {
+        message: `Successfully deleted rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
+        deletedCounts,
+      },
+    };
+  }
+
+  /**
+   * DELETE /api/v2/shifts/rotation/history/:id
+   * Delete single rotation history entry (admin only)
+   */
+  @Delete('history/:id')
+  @Roles('admin', 'root')
+  async deleteRotationHistoryEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<{ message: string }>> {
+    this.logger.debug(`Deleting rotation history entry ${id}`);
+    await this.rotationService.deleteRotationHistoryEntry(id, user.tenantId, user.role);
+    return { success: true, data: { message: 'Entry deleted successfully' } };
+  }
+}

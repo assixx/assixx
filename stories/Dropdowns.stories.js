@@ -9,7 +9,7 @@ export default {
   title: 'Design System/Dropdowns',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
@@ -27,9 +27,9 @@ export default {
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -187,7 +187,10 @@ export const CountrySelector = {
           </div>
           <div class="dropdown__menu ${scrollableClass}" id="countryMenu">
             ${Object.entries(countries)
-              .map(([code, name]) => `<div class="dropdown__option" data-value="${code}">${name}</div>`)
+              .map(
+                ([code, name]) =>
+                  `<div class="dropdown__option" data-value="${code}">${name}</div>`,
+              )
               .join('')}
           </div>
         </div>
@@ -383,15 +386,15 @@ export const NativeVsCustom = {
             </select>
           </div>
           ${
-            args.showBenefits
-              ? `
+            args.showBenefits ?
+              `
           <ul style="color: var(--color-text-secondary); font-size: 0.75rem; margin-top: 12px; padding-left: 20px;">
             <li>Bessere Accessibility</li>
             <li>Native keyboard navigation</li>
             <li>Mobile-optimiert</li>
             <li>Einfacher Code</li>
           </ul>`
-              : ''
+            : ''
           }
         </div>
       `;
@@ -426,15 +429,15 @@ export const NativeVsCustom = {
             </div>
           </div>
           ${
-            args.showBenefits
-              ? `
+            args.showBenefits ?
+              `
           <ul style="color: var(--color-text-secondary); font-size: 0.75rem; margin-top: 12px; padding-left: 20px;">
             <li>Icons, Flaggen, Emojis</li>
             <li>Zweispaltige Layouts (Name + Preis)</li>
             <li>Custom Styling</li>
             <li>Complex interactions</li>
           </ul>`
-              : ''
+            : ''
           }
         </div>
       `;

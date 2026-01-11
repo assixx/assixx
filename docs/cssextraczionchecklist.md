@@ -69,7 +69,7 @@ SEI EXTRREM VORSICHITG BEI DER EXTRAKTION UND ENTFERNEN VON ALTENM STYLES IN HTM
 
 - [x] **root-dashboard.html** - 1 style block | ✅ DONE root-dashboard.css
 - [x] **root-profile.html** - 1 style block | ✅ DONE root-profile.css
-- [x] **root-features.html** - No style block found | ✅ CLEAN
+- [x] **features.html** - No style block found | ✅ CLEAN
 
 #### Other Pages
 

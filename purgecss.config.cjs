@@ -18,118 +18,118 @@ module.exports = {
   //   - base/** (CSS variables - must keep)
   css: [
     // Page-specific stylesheets only (no subdirectories)
-    "frontend/src/styles/account-settings.css",
-    "frontend/src/styles/admin-dashboard.css",
-    "frontend/src/styles/admin-profile.css",
-    "frontend/src/styles/alerts.css",
-    "frontend/src/styles/blackboard.css",
-    "frontend/src/styles/blackboard-widget.css",
-    "frontend/src/styles/bootstrap-override.css",
-    "frontend/src/styles/breadcrumb-alignment.css",
-    "frontend/src/styles/calendar.css",
-    "frontend/src/styles/chat.css",
-    "frontend/src/styles/chat-icons.css",
-    "frontend/src/styles/container-padding-fix.css",
-    "frontend/src/styles/dashboard-theme.css",
-    "frontend/src/styles/documents-explorer.css",
-    "frontend/src/styles/employee-dashboard.css",
-    "frontend/src/styles/employee-profile.css",
-    "frontend/src/styles/feature-management.css",
-    "frontend/src/styles/fonts-outfit.css",
-    "frontend/src/styles/index.css",
-    "frontend/src/styles/kvp.css",
-    "frontend/src/styles/kvp-detail.css",
-    "frontend/src/styles/login.css",
-    "frontend/src/styles/logs.css",
-    "frontend/src/styles/main.css",
-    "frontend/src/styles/manage-admins.css",
-    "frontend/src/styles/manage-areas.css",
-    "frontend/src/styles/manage-department-groups.css",
-    "frontend/src/styles/manage-employees.css",
-    "frontend/src/styles/manage-machines.css",
-    "frontend/src/styles/manage-root.css",
-    "frontend/src/styles/manage-teams.css",
-    "frontend/src/styles/password-strength.css",
-    "frontend/src/styles/profile-picture.css",
-    "frontend/src/styles/rate-limit.css",
-    "frontend/src/styles/root-dashboard.css",
-    "frontend/src/styles/root-features.css",
-    "frontend/src/styles/root-profile.css",
-    "frontend/src/styles/shifts.css",
-    "frontend/src/styles/signup.css",
-    "frontend/src/styles/storage-upgrade.css",
-    "frontend/src/styles/style.css",
-    "frontend/src/styles/survey-admin.css",
-    "frontend/src/styles/survey-employee.css",
-    "frontend/src/styles/survey-results.css",
-    "frontend/src/styles/tenant-deletion-status.css",
-    "frontend/src/styles/unified-navigation.css",
-    "frontend/src/styles/user-info-update.css",
+    'frontend/src/styles/account-settings.css',
+    'frontend/src/styles/admin-dashboard.css',
+    'frontend/src/styles/admin-profile.css',
+    'frontend/src/styles/alerts.css',
+    'frontend/src/styles/blackboard.css',
+    'frontend/src/styles/blackboard-widget.css',
+    'frontend/src/styles/bootstrap-override.css',
+    'frontend/src/styles/breadcrumb-alignment.css',
+    'frontend/src/styles/calendar.css',
+    'frontend/src/styles/chat.css',
+    'frontend/src/styles/chat-icons.css',
+    'frontend/src/styles/container-padding-fix.css',
+    'frontend/src/styles/dashboard-theme.css',
+    'frontend/src/styles/documents-explorer.css',
+    'frontend/src/styles/employee-dashboard.css',
+    'frontend/src/styles/employee-profile.css',
+    'frontend/src/styles/feature-management.css',
+    'frontend/src/styles/fonts-outfit.css',
+    'frontend/src/styles/index.css',
+    'frontend/src/styles/kvp.css',
+    'frontend/src/styles/kvp-detail.css',
+    'frontend/src/styles/login.css',
+    'frontend/src/styles/logs.css',
+    'frontend/src/styles/main.css',
+    'frontend/src/styles/manage-admins.css',
+    'frontend/src/styles/manage-areas.css',
+    'frontend/src/styles/manage-department-groups.css',
+    'frontend/src/styles/manage-employees.css',
+    'frontend/src/styles/manage-machines.css',
+    'frontend/src/styles/manage-root.css',
+    'frontend/src/styles/manage-teams.css',
+    'frontend/src/styles/password-strength.css',
+    'frontend/src/styles/profile-picture.css',
+    'frontend/src/styles/rate-limit.css',
+    'frontend/src/styles/root-dashboard.css',
+    'frontend/src/styles/features.css',
+    'frontend/src/styles/root-profile.css',
+    'frontend/src/styles/shifts.css',
+    'frontend/src/styles/signup.css',
+    'frontend/src/styles/storage-upgrade.css',
+    'frontend/src/styles/style.css',
+    'frontend/src/styles/survey-admin.css',
+    'frontend/src/styles/survey-employee.css',
+    'frontend/src/styles/survey-results.css',
+    'frontend/src/styles/tenant-deletion-status.css',
+    'frontend/src/styles/unified-navigation.css',
+    'frontend/src/styles/user-info-update.css',
   ],
 
   // Content files to scan for class usage
   content: [
     // HTML files
-    "frontend/src/pages/**/*.html",
-    "frontend/src/**/*.html",
+    'frontend/src/pages/**/*.html',
+    'frontend/src/**/*.html',
 
     // TypeScript files (main source)
-    "frontend/src/scripts/**/*.ts",
-    "frontend/src/utils/**/*.ts",
+    'frontend/src/scripts/**/*.ts',
+    'frontend/src/utils/**/*.ts',
 
     // JavaScript files (legacy + compiled)
-    "frontend/src/scripts/**/*.js",
-    "frontend/src/**/*.js",
+    'frontend/src/scripts/**/*.js',
+    'frontend/src/**/*.js',
 
     // Storybook stories
-    "stories/**/*.js",
-    "stories/**/*.ts",
+    'stories/**/*.js',
+    'stories/**/*.ts',
 
     // Backend templates (might reference frontend classes)
-    "backend/templates/**/*.html",
+    'backend/templates/**/*.html',
   ],
 
   // Output directory for cleaned CSS
-  output: "frontend/src/styles-purged/",
+  output: 'frontend/src/styles-purged/',
 
   // CRITICAL: Safelist to prevent false positives
   safelist: {
     // Exact class names to always keep
     standard: [
       // HTML/Body basics
-      "html",
-      "body",
-      "root",
+      'html',
+      'body',
+      'root',
 
       // Common state classes
-      "active",
-      "disabled",
-      "hidden",
-      "visible",
-      "open",
-      "closed",
-      "loading",
-      "loaded",
-      "error",
-      "success",
-      "warning",
-      "info",
+      'active',
+      'disabled',
+      'hidden',
+      'visible',
+      'open',
+      'closed',
+      'loading',
+      'loaded',
+      'error',
+      'success',
+      'warning',
+      'info',
 
       // Focus/hover states
-      "focus",
-      "hover",
-      "focus-visible",
+      'focus',
+      'hover',
+      'focus-visible',
 
       // Accessibility
-      "sr-only",
-      "visually-hidden",
+      'sr-only',
+      'visually-hidden',
 
       // Third-party libraries
-      "tippy-box",
-      "tippy-content",
-      "tippy-arrow",
-      "toastify",
-      "Toastify",
+      'tippy-box',
+      'tippy-content',
+      'tippy-arrow',
+      'toastify',
+      'Toastify',
     ],
 
     // Regex patterns - classes matching these are ALWAYS kept
@@ -403,8 +403,7 @@ module.exports = {
     const broadMatches = content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [];
     // Match classes in classList.add/remove/toggle
     const classListMatches =
-      content.match(/classList\.(add|remove|toggle)\(['"]([^'"]+)['"]\)/g) ||
-      [];
+      content.match(/classList\.(add|remove|toggle)\(['"]([^'"]+)['"]\)/g) || [];
     // Match classes in className assignments
     const classNameMatches = content.match(/className\s*=\s*['"]([^'"]+)['"]/g) || [];
 

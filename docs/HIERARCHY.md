@@ -2,8 +2,8 @@
 
 **Multi-Tenant SaaS Platform - Vollständige Entity-Beziehungen**
 
-*Erstellt: 2025-10-23*
-*Basierend auf: Live-Datenbank Analyse (Tenant 5601)*
+_Erstellt: 2025-10-23_
+_Basierend auf: Live-Datenbank Analyse (Tenant 5601)_
 
 ---
 
@@ -339,29 +339,29 @@ User: "Max Mustermann"
 
 ### Direkte Beziehungen (1:N oder 1:1)
 
-| Von (Parent) | Zu (Child) | Feld | Typ | Beschreibung |
-|--------------|------------|------|-----|--------------|
-| **TENANT** | AREA | `tenant_id` | 1:N | Ein Tenant hat viele Areas |
-| **TENANT** | DEPARTMENT | `tenant_id` | 1:N | Ein Tenant hat viele Departments |
-| **TENANT** | DEPT_GROUP | `tenant_id` | 1:N | Ein Tenant hat viele Groups |
-| **AREA** | AREA | `parent_id` | 1:N | Area-Hierarchie (verschachtelt) |
-| **AREA** | DEPARTMENT | `area_id` | 1:N | Ein Area hat viele Departments |
-| **AREA** | MACHINE | `area_id` | 1:N | Ein Area hat viele Machines |
-| **DEPT_GROUP** | DEPT_GROUP | `parent_group_id` | 1:N | Group-Hierarchie |
-| **DEPARTMENT** | DEPARTMENT | `parent_id` | 1:N | Dept-Hierarchie |
-| **DEPARTMENT** | TEAM | `department_id` | 1:N | Ein Dept hat viele Teams |
-| **DEPARTMENT** | MACHINE | `department_id` | 1:N | Ein Dept hat viele Machines |
-| **DEPARTMENT** | USER | `department_id` | 1:N | Ein Dept hat viele Users |
+| Von (Parent)   | Zu (Child) | Feld              | Typ | Beschreibung                     |
+| -------------- | ---------- | ----------------- | --- | -------------------------------- |
+| **TENANT**     | AREA       | `tenant_id`       | 1:N | Ein Tenant hat viele Areas       |
+| **TENANT**     | DEPARTMENT | `tenant_id`       | 1:N | Ein Tenant hat viele Departments |
+| **TENANT**     | DEPT_GROUP | `tenant_id`       | 1:N | Ein Tenant hat viele Groups      |
+| **AREA**       | AREA       | `parent_id`       | 1:N | Area-Hierarchie (verschachtelt)  |
+| **AREA**       | DEPARTMENT | `area_id`         | 1:N | Ein Area hat viele Departments   |
+| **AREA**       | MACHINE    | `area_id`         | 1:N | Ein Area hat viele Machines      |
+| **DEPT_GROUP** | DEPT_GROUP | `parent_group_id` | 1:N | Group-Hierarchie                 |
+| **DEPARTMENT** | DEPARTMENT | `parent_id`       | 1:N | Dept-Hierarchie                  |
+| **DEPARTMENT** | TEAM       | `department_id`   | 1:N | Ein Dept hat viele Teams         |
+| **DEPARTMENT** | MACHINE    | `department_id`   | 1:N | Ein Dept hat viele Machines      |
+| **DEPARTMENT** | USER       | `department_id`   | 1:N | Ein Dept hat viele Users         |
 
 ---
 
 ### N:M Beziehungen (Join-Tables)
 
-| Entity A | Entity B | Join-Table | Beschreibung |
-|----------|----------|------------|--------------|
+| Entity A       | Entity B       | Join-Table                 | Beschreibung                                                            |
+| -------------- | -------------- | -------------------------- | ----------------------------------------------------------------------- |
 | **DEPT_GROUP** | **DEPARTMENT** | `department_group_members` | Groups können mehrere Depts haben, Depts können in mehreren Groups sein |
-| **TEAM** | **USER** | `user_teams` | Users können in mehreren Teams sein |
-| **MACHINE** | **TEAM** | `machine_teams` | Machines können mehreren Teams zugeordnet sein |
+| **TEAM**       | **USER**       | `user_teams`               | Users können in mehreren Teams sein                                     |
+| **MACHINE**    | **TEAM**       | `machine_teams`            | Machines können mehreren Teams zugeordnet sein                          |
 
 ---
 
@@ -674,10 +674,10 @@ SELECT * FROM area_tree ORDER BY level, name;
 
 **NEIN!** Komplett unterschiedliche Konzepte:
 
-| Konzept | Entity | Feld | Bedeutung |
-|---------|--------|------|-----------|
-| **Areas** | `areas`, `departments`, `machines` | `area_id` | **Physischer Standort** (Wo ist etwas?) |
-| **Parent Groups** | `department_groups` | `parent_group_id` | **Logische Hierarchie** von Gruppen |
+| Konzept           | Entity                             | Feld              | Bedeutung                               |
+| ----------------- | ---------------------------------- | ----------------- | --------------------------------------- |
+| **Areas**         | `areas`, `departments`, `machines` | `area_id`         | **Physischer Standort** (Wo ist etwas?) |
+| **Parent Groups** | `department_groups`                | `parent_group_id` | **Logische Hierarchie** von Gruppen     |
 
 **Beispiel:**
 

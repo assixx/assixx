@@ -1,49 +1,146 @@
-PROPRIETÄRE SOFTWARE-LIZENZ AGREEMENT
-SCS-Technik - Assixx SaaS-Plattform 
+ASSIXX PROPRIETARY LICENSE
+===========================
 
-Copyright (c) 2024-2025 Simon Öztürk, SCS-Technik. Alle Rechte vorbehalten.
+Copyright (c) 2025 SCS-Technik
+All rights reserved.
 
-WICHTIGER HINWEIS: Durch die Verwendung, Verbreitung, Einsicht oder Modifikation dieser Software 
-akzeptieren Sie die folgenden Bedingungen. LESEN SIE DIESE VEREINBARUNG SORGFÄLTIG DURCH.
+Version 1.0 - December 2025
 
-1. EIGENTUM UND LIZENZ
-   Diese Software, einschließlich sämtlicher Komponenten, Quellcode, Dokumentation und 
-   zugehöriger Materialien ("die Software"), ist ausschließliches Eigentum von 
-   Simon Öztürk bzw. SCS-Technik ("der Eigentümer"). Die Software ist urheberrechtlich 
-   geschützt und durch Gesetze zum Schutz geistigen Eigentums und durch internationale 
-   Verträge geschützt.
 
-2. EINGESCHRÄNKTE NUTZUNGSRECHTE
-   Der Eigentümer gewährt Ihnen kein Recht zur Nutzung, Kopie, Modifikation, Zusammenführung, 
-   Veröffentlichung, Verteilung, Unterlizenzierung und/oder zum Verkauf von Kopien der 
-   Software ohne vorherige ausdrückliche schriftliche Genehmigung.
+1. DEFINITIONS
+--------------
 
-3. BESCHRÄNKUNGEN
-   Es ist Ihnen untersagt:
-   a) Die Software zu kopieren, zu modifizieren, anzupassen oder abgeleitete Werke zu erstellen
-   b) Die Software zurückzuentwickeln, zu dekompilieren oder zu disassemblieren
-   c) Urheberrechts- oder andere Eigentumshinweise zu entfernen oder zu ändern
-   d) Die Software zu vermieten, zu verleasen, zu verleihen oder zu verkaufen
-   e) Die Software an Dritte zu übertragen oder unterzulizenzieren
-   f) Die Software für kommerzielle Zwecke zu nutzen, die nicht ausdrücklich 
-      vom Eigentümer genehmigt wurden
+"Software" refers to the Assixx SaaS platform, including all source code,
+documentation, designs, and related materials.
 
-4. HAFTUNGSBESCHRÄNKUNG
-   DIE SOFTWARE WIRD "WIE BESEHEN" OHNE JEGLICHE AUSDRÜCKLICHE ODER IMPLIZITE 
-   GEWÄHRLEISTUNG BEREITGESTELLT. IN KEINEM FALL HAFTET DER EIGENTÜMER FÜR ANSPRÜCHE, 
-   SCHÄDEN ODER ANDERE HAFTUNGSANSPRÜCHE, OB AUS VERTRAG, UNERLAUBTER HANDLUNG ODER 
-   ANDERWEITIG, DIE AUS ODER IN VERBINDUNG MIT DER SOFTWARE ENTSTEHEN.
+"Licensor" refers to SCS-Technik as the owner of all rights to the Software.
 
-5. BEENDIGUNG
-   Diese Lizenz gilt bis zur Beendigung. Ihre Rechte im Rahmen dieser Lizenz 
-   werden automatisch beendet, wenn Sie gegen eine Bedingung dieser Lizenz verstoßen. 
-   Nach Beendigung müssen Sie die Nutzung der Software einstellen und alle Kopien vernichten.
+"Authorized User" refers to individuals or companies that have been
+explicitly granted access to the repository in writing by the Licensor.
 
-6. GELTENDES RECHT
-   Diese Vereinbarung unterliegt dem deutschen Recht unter Ausschluss des UN-Kaufrechts.
 
-7. KONTAKT
-   Bei Fragen zu dieser Lizenz oder für Genehmigungen zur Nutzung wenden Sie sich bitte an:
-   info@scs-technik.de
+2. GRANTED RIGHTS
+-----------------
 
-Version 1.0, Mai 2025
+Authorized Users are granted a limited, non-exclusive, non-transferable
+right to:
+
+  ✓ View and study the source code
+  ✓ Use the Software under a valid SaaS agreement
+  ✓ Suggest changes (Pull Requests)
+  ✓ Report bugs and suggest improvements
+  ✓ Create local copies for development and testing purposes
+
+
+3. RESTRICTIONS
+---------------
+
+The following actions are expressly PROHIBITED:
+
+  ✗ Commercial use of the Software outside of the SaaS agreement
+  ✗ Creating your own products or services based on this Software
+  ✗ Redistribution, sale, or sublicensing of the source code
+  ✗ Removal or modification of copyright notices
+  ✗ Use for competing products or services
+  ✗ Public disclosure or publication of the source code
+  ✗ Reverse engineering of the hosted SaaS version (unless permitted by law)
+
+
+4. CONTRIBUTIONS
+----------------
+
+By submitting contributions (Pull Requests, Issues, code, documentation)
+to this repository:
+
+  a) You irrevocably transfer all rights to your contribution to the Licensor.
+
+  b) You confirm that you are authorized to transfer these rights.
+
+  c) You waive all claims regarding the contributed code.
+
+The Licensor is entitled to use, modify, and integrate contributions into
+the Software without restriction.
+
+
+5. CONFIDENTIALITY
+------------------
+
+The source code and all related materials are confidential business
+information. Authorized Users agree to:
+
+  - Not disclose the code to third parties
+  - Take reasonable measures to protect confidentiality
+  - Restrict access to employees who require it
+
+
+6. DISCLAIMER OF WARRANTY
+-------------------------
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. THE
+LICENSOR MAKES NO WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABILITY, OR NON-INFRINGEMENT OF THIRD-PARTY RIGHTS.
+
+
+7. LIMITATION OF LIABILITY
+--------------------------
+
+THE LICENSOR SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+OR CONSEQUENTIAL DAMAGES ARISING FROM THE USE OR INABILITY TO USE THE
+SOFTWARE.
+
+Liability is limited to intent and gross negligence to the extent
+permitted by law. Liability for personal injury remains unaffected.
+
+
+8. TERM AND TERMINATION
+-----------------------
+
+  a) This license applies as long as the Authorized User has access
+     to the repository.
+
+  b) The Licensor may revoke access at any time without giving reasons.
+
+  c) Upon termination, all local copies of the source code must be
+     deleted immediately.
+
+  d) Sections 3, 4, 5, 6, and 7 shall survive termination.
+
+
+9. GOVERNING LAW
+----------------
+
+This license is governed by German law. The place of jurisdiction is
+the Licensor's registered office, to the extent permitted by law.
+
+
+10. SEVERABILITY
+----------------
+
+If any provision of this license is or becomes invalid, the validity
+of the remaining provisions shall not be affected.
+
+
+11. CONTACT
+-----------
+
+For questions about this license or to request access rights:
+
+  SCS-Technik
+  GitHub: https://github.com/SCS-Technik
+
+
+================================================================================
+
+SUMMARY (not legally binding):
+------------------------------
+
+  ✓ View & study code             - Allowed (for authorized users)
+  ✓ Submit contributions          - Allowed (rights transfer to SCS-Technik)
+  ✓ Local development/testing     - Allowed
+
+  ✗ Build your own products       - PROHIBITED
+  ✗ Commercial use                - PROHIBITED (except via SaaS agreement)
+  ✗ Redistribute                  - PROHIBITED
+  ✗ Make public                   - PROHIBITED
+
+================================================================================

@@ -22,6 +22,7 @@
 ## Overview
 
 The Assixx password validation system implements modern security standards with intelligent strength analysis, combining:
+
 - **BCrypt** for secure password hashing (bcryptjs v3.0.3)
 - **zxcvbn-ts** for intelligent password strength estimation
 - **Real-time validation** with visual feedback
@@ -139,7 +140,8 @@ export const PasswordSchema = z
       return categoriesPresent >= 3;
     },
     {
-      message: 'Password must contain characters from at least 3 of the following: uppercase, lowercase, numbers, special characters (!@#$%^&*)',
+      message:
+        'Password must contain characters from at least 3 of the following: uppercase, lowercase, numbers, special characters (!@#$%^&*)',
     },
   );
 ```
@@ -159,6 +161,7 @@ const isValid = await bcryptjs.compare(plainPassword, hashedPassword);
 ```
 
 **BCrypt Limitations:**
+
 - **Input:** Max 72 bytes (enforced by algorithm)
 - **Output:** Always 60 characters
 - **Salt:** Embedded in hash (no separate storage needed)
@@ -175,7 +178,6 @@ const isValid = await bcryptjs.compare(plainPassword, hashedPassword);
  * Uses zxcvbn-ts for intelligent password strength estimation
  * Implements lazy loading to minimize bundle impact
  */
-
 import type { ZxcvbnResult } from '@zxcvbn-ts/core';
 
 // Module state - lazy loaded
@@ -187,11 +189,7 @@ let zxcvbnInstance: ((password: string, userInputs?: string[]) => ZxcvbnResult) 
  */
 export async function initPasswordStrength(): Promise<void> {
   // Dynamic imports for code splitting
-  const [
-    { zxcvbn, zxcvbnOptions },
-    zxcvbnCommonPackage,
-    zxcvbnDePackage,
-  ] = await Promise.all([
+  const [{ zxcvbn, zxcvbnOptions }, zxcvbnCommonPackage, zxcvbnDePackage] = await Promise.all([
     import('@zxcvbn-ts/core'),
     import('@zxcvbn-ts/language-common'),
     import('@zxcvbn-ts/language-de'),
@@ -216,10 +214,7 @@ export async function initPasswordStrength(): Promise<void> {
  * @param password - Password to analyze
  * @param userInputs - User-specific context (name, email, etc.)
  */
-export async function checkPasswordStrength(
-  password: string,
-  userInputs: string[] = [],
-): Promise<ZxcvbnResult | null> {
+export async function checkPasswordStrength(password: string, userInputs: string[] = []): Promise<ZxcvbnResult | null> {
   if (password === '') return null;
 
   // Initialize if needed
@@ -228,13 +223,7 @@ export async function checkPasswordStrength(
   }
 
   // Add Assixx-specific context
-  const context = [
-    'assixx',
-    'scs',
-    'technik',
-    'scs-technik',
-    ...userInputs.filter((input) => input !== ''),
-  ];
+  const context = ['assixx', 'scs', 'technik', 'scs-technik', ...userInputs.filter((input) => input !== '')];
 
   return zxcvbnInstance(password, context);
 }
@@ -304,12 +293,7 @@ try {
       maxlength="72"
       required
     />
-    <button
-      type="button"
-      class="form-field__password-toggle"
-      aria-label="Passwort anzeigen"
-      id="new-password-toggle"
-    >
+    <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="new-password-toggle">
       <i class="fas fa-eye"></i>
     </button>
   </div>
@@ -343,56 +327,56 @@ try {
 ```css
 /* Container */
 .password-strength-container {
+  transition: all var(--transition-normal);
   margin-top: var(--spacing-3);
-  padding: var(--spacing-3);
   border-radius: var(--radius-md);
   background: rgb(255 255 255 / 3%);
-  transition: all var(--transition-normal);
+  padding: var(--spacing-3);
 }
 
 /* Strength Meter (Progress Bar) */
 .password-strength-meter {
-  height: 6px;
-  background: rgb(255 255 255 / 10%);
-  border-radius: 3px;
-  overflow: hidden;
   margin-bottom: var(--spacing-2);
+  border-radius: 3px;
+  background: rgb(255 255 255 / 10%);
+  height: 6px;
+  overflow: hidden;
 }
 
 .password-strength-bar {
-  height: 100%;
-  width: 0;
-  border-radius: 3px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: left;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 3px;
+  width: 0;
+  height: 100%;
 }
 
 /* Score-based colors */
-.password-strength-bar[data-score="0"] {
-  width: 20%;
-  background: linear-gradient(90deg, #d32f2f, #e53935);
+.password-strength-bar[data-score='0'] {
   box-shadow: 0 0 10px rgb(211 47 47 / 40%);
+  background: linear-gradient(90deg, #d32f2f, #e53935);
+  width: 20%;
 }
 
-.password-strength-bar[data-score="1"] {
-  width: 40%;
+.password-strength-bar[data-score='1'] {
   background: linear-gradient(90deg, #f57c00, #ff9800);
+  width: 40%;
 }
 
-.password-strength-bar[data-score="2"] {
-  width: 60%;
+.password-strength-bar[data-score='2'] {
   background: linear-gradient(90deg, #fbc02d, #fdd835);
+  width: 60%;
 }
 
-.password-strength-bar[data-score="3"] {
-  width: 80%;
+.password-strength-bar[data-score='3'] {
   background: linear-gradient(90deg, #689f38, #7cb342);
+  width: 80%;
 }
 
-.password-strength-bar[data-score="4"] {
-  width: 100%;
-  background: linear-gradient(90deg, #388e3c, #4caf50);
+.password-strength-bar[data-score='4'] {
   animation: pulse-success 2s ease-in-out;
+  background: linear-gradient(90deg, #388e3c, #4caf50);
+  width: 100%;
 }
 
 /* Strength Info */
@@ -404,23 +388,23 @@ try {
 }
 
 .password-strength-label {
-  font-weight: 600;
   transition: color var(--transition-fast);
+  font-weight: 600;
 }
 
 .password-strength-time {
-  font-size: 0.813rem;
   color: var(--color-text-secondary);
   font-style: italic;
+  font-size: 0.813rem;
 }
 
 /* Feedback Section */
 .password-feedback {
   margin-top: var(--spacing-3);
-  padding: var(--spacing-3);
   border-left: 3px solid var(--color-warning);
-  background: rgb(255 193 7 / 5%);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: rgb(255 193 7 / 5%);
+  padding: var(--spacing-3);
   font-size: 0.875rem;
 }
 
@@ -458,6 +442,7 @@ CREATE TABLE `users` (
 ```
 
 **Important:**
+
 - `password` column: `VARCHAR(255)` - More than enough for 60-char BCrypt hash
 - Never store plain passwords
 - BCrypt hash includes salt (no separate salt column needed)
@@ -524,41 +509,41 @@ CREATE TABLE `password_history` (
 
 ```javascript
 // Minimum valid (12 chars, 3 categories)
-"SecurePass123"      // ✅ Upper, lower, numbers
-"myPassword2024!"    // ✅ All 4 categories
-"SuperSecret$999"    // ✅ Upper, lower, numbers, special
+'SecurePass123'; // ✅ Upper, lower, numbers
+'myPassword2024!'; // ✅ All 4 categories
+'SuperSecret$999'; // ✅ Upper, lower, numbers, special
 
 // Maximum valid (72 chars)
-"This1sAVeryLongPasswordThatReachesTheMaximumLimitOf72CharactersExactly!"  // ✅
+'This1sAVeryLongPasswordThatReachesTheMaximumLimitOf72CharactersExactly!'; // ✅
 ```
 
 ### 2. Invalid Password Examples
 
 ```javascript
 // Too short
-"Short1!"            // ❌ Only 7 characters
+'Short1!'; // ❌ Only 7 characters
 
 // Too long
-"a".repeat(73)       // ❌ 73 characters (exceeds BCrypt limit)
+'a'.repeat(73); // ❌ 73 characters (exceeds BCrypt limit)
 
 // Not enough categories
-"onlylowercase"      // ❌ Only 1 category
-"ONLYUPPERCASE"      // ❌ Only 1 category
-"12345678901"        // ❌ Only 1 category
-"lower123456"        // ❌ Only 2 categories
+('onlylowercase'); // ❌ Only 1 category
+('ONLYUPPERCASE'); // ❌ Only 1 category
+('12345678901'); // ❌ Only 1 category
+('lower123456'); // ❌ Only 2 categories
 ```
 
 ### 3. Edge Cases
 
 ```javascript
 // Special characters in password
-"Test@#$%^&*()123"   // ✅ Should work
+'Test@#$%^&*()123'; // ✅ Should work
 
 // International characters
-"Prüfung123!"        // ✅ Should work (but counts ü as lowercase)
+'Prüfung123!'; // ✅ Should work (but counts ü as lowercase)
 
 // Spaces
-"My Secure Pass 1!"  // ✅ Spaces are allowed
+'My Secure Pass 1!'; // ✅ Spaces are allowed
 ```
 
 ---
@@ -610,6 +595,7 @@ console.log('Hash length:', hash.length); // Should be 60
 ### Bundle Sizes (OPTIMIZED - Lazy Loading Verified ✅)
 
 **Password Pages Initial Load:**
+
 ```
 password-strength-core.js:        12 KB  (lazy wrapper)
 password-strength-integration.js: 30 KB  (UI integration)
@@ -619,6 +605,7 @@ Total Initial:                    ~42 KB ✅
 ```
 
 **After First Password Field Focus:**
+
 ```
 vendor-zxcvbn.js:           3.1 MB uncompressed
                             1.4 MB gzipped
@@ -626,6 +613,7 @@ vendor-zxcvbn.js:           3.1 MB uncompressed
 ```
 
 **Non-Password Pages (87% of app):**
+
 ```
 password-strength modules:         0 KB  (not loaded at all!)
 ────────────────────────────────────────
@@ -650,6 +638,7 @@ Total Overhead:                    0 KB ✅✅✅
 ### Pages Using Password Strength
 
 **7 out of 54 pages load password-strength modules (13%):**
+
 - signup.js
 - admin-profile.js
 - employee-profile.js
@@ -697,11 +686,7 @@ export async function initPasswordStrength(): Promise<void> {
     console.info('[PasswordStrength] Lazy loading zxcvbn modules...');
 
     // Dynamic imports for code splitting (triggers vendor-zxcvbn.js load)
-    const [
-      { zxcvbn, zxcvbnOptions },
-      zxcvbnCommonPackage,
-      zxcvbnDePackage
-    ] = await Promise.all([
+    const [{ zxcvbn, zxcvbnOptions }, zxcvbnCommonPackage, zxcvbnDePackage] = await Promise.all([
       import('@zxcvbn-ts/core'),
       import('@zxcvbn-ts/language-common'),
       import('@zxcvbn-ts/language-de'),
@@ -726,6 +711,7 @@ export async function initPasswordStrength(): Promise<void> {
 ```
 
 **Key Design Decisions:**
+
 - **Promise Caching:** Prevents duplicate loads if multiple fields initialize simultaneously
 - **Singleton Pattern:** Only one global instance, reused across all password fields
 - **Null Checks:** Graceful handling if initialization fails
@@ -763,6 +749,7 @@ export function setupPasswordStrength(config: PasswordStrengthConfig): void {
 ```
 
 **Loading Trigger:**
+
 - **Event:** `focus` on password input field
 - **Frequency:** Once per page load (cached after first focus)
 - **User Experience:** ~500ms delay before validation becomes available
@@ -793,6 +780,7 @@ build: {
 ```
 
 **Build Result:**
+
 ```
 dist/js/
 ├─ password-strength-core-[hash].js        12 KB  ← Lazy wrapper
@@ -815,13 +803,11 @@ dist/js/
 
 ```javascript
 // Before focusing password field:
-window.performance.getEntriesByType('resource')
-  .filter(r => r.name.includes('vendor-zxcvbn'));
+window.performance.getEntriesByType('resource').filter((r) => r.name.includes('vendor-zxcvbn'));
 // → [] (empty array)
 
 // After focusing password field:
-window.performance.getEntriesByType('resource')
-  .filter(r => r.name.includes('vendor-zxcvbn'));
+window.performance.getEntriesByType('resource').filter((r) => r.name.includes('vendor-zxcvbn'));
 // → [{name: "...vendor-zxcvbn-[hash].js", transferSize: 1433420, ...}]
 ```
 
@@ -873,15 +859,19 @@ ls dist/js/*.js | wc -l
 ### Common Misconceptions
 
 **Misconception 1:** "Bundle size is 3 MB, that's too big!"
+
 - **Reality:** Only 42 KB loaded initially. 3 MB loads on-demand.
 
 **Misconception 2:** "Every page loads password strength!"
+
 - **Reality:** Only 13% of pages (7/54) load the modules.
 
 **Misconception 3:** "Lazy loading is complex to implement!"
+
 - **Reality:** Just use dynamic imports + focus event. Done.
 
 **Misconception 4:** "We should optimize this further!"
+
 - **Reality:** Current implementation is **OPTIMAL**. No further optimization needed.
 
 ---
@@ -940,6 +930,7 @@ ls dist/js/*.js | wc -l
 ## Changelog
 
 ### Version 2.0.0 (2025-11-21)
+
 - ✅ **VERIFIED:** Lazy loading already optimally implemented
 - ✅ **MEASURED:** Bundle sizes and loading patterns documented
 - ✅ **CONFIRMED:** Only 13% of pages load password strength modules
@@ -951,6 +942,7 @@ ls dist/js/*.js | wc -l
 - 🎯 Confirmed: NO further optimization needed - already optimal
 
 ### Version 1.0.0 (2024-11-20)
+
 - Initial implementation
 - BCrypt integration with 72-char limit
 - zxcvbn-ts with German localization
@@ -963,6 +955,7 @@ ls dist/js/*.js | wc -l
 ## Contact
 
 For questions or issues related to the password validation system:
+
 - **Technical Lead:** Development Team
 - **Security:** security@assixx.de
 - **Documentation:** docs@assixx.de

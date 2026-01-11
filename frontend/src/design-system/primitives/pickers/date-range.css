@@ -30,20 +30,19 @@
 
 .date-range {
   display: flex;
-  gap: var(--spacing-4);
   align-items: center;
+  gap: var(--spacing-4);
   width: 100%;
 }
 
 /* Separator between start and end date */
 .date-range__separator {
-  user-select: none;
-
   flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 
   font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  user-select: none;
 }
 
 /* Ensure date pickers inside range take equal space */
@@ -117,7 +116,7 @@
 
 /* Arrow separator (→ instead of text) */
 .date-range--arrow .date-range__separator::before {
-  content: "→";
+  content: '→';
   font-size: 18px;
 }
 

@@ -1,0 +1,197 @@
+// =============================================================================
+// KVP-DETAIL - COMPOSED STATE (Svelte 5 Runes)
+// =============================================================================
+
+import { createDataState } from './state-data.svelte';
+import { createUIState } from './state-ui.svelte';
+import { createUserState } from './state-user.svelte';
+
+import type { Attachment, OrgLevel } from './types';
+
+/**
+ * KVP Detail State Factory
+ * Composes user, data, and UI state modules
+ */
+// eslint-disable-next-line max-lines-per-function -- Facade pattern: composing 3 sub-modules into unified API. Actual reactive logic is in sub-modules.
+function createKvpDetailState() {
+  const user = createUserState();
+  const data = createDataState();
+  const ui = createUIState();
+
+  // Modal action methods
+  const openShareModal = () => {
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+    ui.setShowShareModal(true);
+  };
+
+  const closeShareModal = () => {
+    ui.setShowShareModal(false);
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+  };
+
+  const openRejectionModal = () => {
+    ui.setShowRejectionModal(true);
+  };
+
+  const closeRejectionModal = () => {
+    ui.setShowRejectionModal(false);
+  };
+
+  const openPreviewModal = (attachment: Attachment) => {
+    ui.setPreviewAttachment(attachment);
+    ui.setShowPreviewModal(true);
+  };
+
+  const closePreviewModal = () => {
+    ui.setShowPreviewModal(false);
+    ui.setPreviewAttachment(null);
+  };
+
+  const setSelectedShareLevel = (level: OrgLevel | null) => {
+    ui.setSelectedShareLevel(level);
+    ui.setSelectedOrgId(null);
+  };
+
+  // Dropdown methods
+  const toggleDropdown = (dropdownId: string) => {
+    ui.setActiveDropdown(ui.activeDropdown === dropdownId ? null : dropdownId);
+  };
+
+  const closeAllDropdowns = () => {
+    ui.setActiveDropdown(null);
+  };
+
+  // Reset all state
+  const reset = () => {
+    user.setUser(null);
+    data.setSuggestion(null);
+    data.setComments([]);
+    data.setAttachments([]);
+    data.setDepartments([]);
+    data.setTeams([]);
+    data.setAreas([]);
+    ui.setLoading(true);
+    ui.setUpdatingStatus(false);
+    ui.setAddingComment(false);
+    ui.setSharing(false);
+    ui.setShowShareModal(false);
+    ui.setShowRejectionModal(false);
+    ui.setShowPreviewModal(false);
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+    ui.setPreviewAttachment(null);
+    ui.setActiveDropdown(null);
+  };
+
+  return {
+    // User state
+    get currentUser() {
+      return user.currentUser;
+    },
+    get effectiveRole() {
+      return user.effectiveRole;
+    },
+    get isAdmin() {
+      return user.isAdmin;
+    },
+    setUser: user.setUser,
+    updateEffectiveRole: user.updateEffectiveRole,
+
+    // Data state
+    get suggestion() {
+      return data.suggestion;
+    },
+    get comments() {
+      return data.comments;
+    },
+    get attachments() {
+      return data.attachments;
+    },
+    get departments() {
+      return data.departments;
+    },
+    get teams() {
+      return data.teams;
+    },
+    get areas() {
+      return data.areas;
+    },
+    get photoAttachments() {
+      return data.photoAttachments;
+    },
+    get otherAttachments() {
+      return data.otherAttachments;
+    },
+    setSuggestion: data.setSuggestion,
+    setComments: data.setComments,
+    setAttachments: data.setAttachments,
+    setDepartments: data.setDepartments,
+    setTeams: data.setTeams,
+    setAreas: data.setAreas,
+
+    // UI state - Loading
+    get isLoading() {
+      return ui.isLoading;
+    },
+    get isUpdatingStatus() {
+      return ui.isUpdatingStatus;
+    },
+    get isAddingComment() {
+      return ui.isAddingComment;
+    },
+    get isSharing() {
+      return ui.isSharing;
+    },
+    setLoading: ui.setLoading,
+    setUpdatingStatus: ui.setUpdatingStatus,
+    setAddingComment: ui.setAddingComment,
+    setSharing: ui.setSharing,
+
+    // UI state - Modals
+    get showShareModal() {
+      return ui.showShareModal;
+    },
+    get showRejectionModal() {
+      return ui.showRejectionModal;
+    },
+    get showPreviewModal() {
+      return ui.showPreviewModal;
+    },
+    get selectedShareLevel() {
+      return ui.selectedShareLevel;
+    },
+    get selectedOrgId() {
+      return ui.selectedOrgId;
+    },
+    get previewAttachment() {
+      return ui.previewAttachment;
+    },
+    setSelectedOrgId: ui.setSelectedOrgId,
+
+    // UI state - Dropdowns
+    get activeDropdown() {
+      return ui.activeDropdown;
+    },
+
+    // Modal methods
+    openShareModal,
+    closeShareModal,
+    openRejectionModal,
+    closeRejectionModal,
+    openPreviewModal,
+    closePreviewModal,
+    setSelectedShareLevel,
+
+    // Dropdown methods
+    toggleDropdown,
+    closeAllDropdowns,
+
+    // Reset
+    reset,
+  };
+}
+
+// Singleton export
+export const kvpDetailState = createKvpDetailState();

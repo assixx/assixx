@@ -35,7 +35,7 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
    - Modals wurden durch Template-Parsing erstellt:
 
    ```typescript
-   const div = document.createElement("div");
+   const div = document.createElement('div');
    div.innerHTML = template;
    return div.firstElementChild as HTMLElement;
    ```

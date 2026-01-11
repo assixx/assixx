@@ -49,26 +49,11 @@ Lines: 639 total (400+ inline JS, 239 HTML/CSS)
 4. `togglePlanDropdown()` - Toggle plan dropdown
 5. `selectPlan()` - Set selected plan
 
-**Validation Logic:**
-6. `validateEmailMatch()` - Check email confirmation matches
-7. `validatePasswordMatch()` - Check password confirmation matches
-8. `isDACHCountry()` - Check if DACH region (Germany/Austria/Switzerland)
-9. `validatePhoneNumber()` - Validate phone format
-10. `validateForm()` - Master validation before submit
+**Validation Logic:** 6. `validateEmailMatch()` - Check email confirmation matches 7. `validatePasswordMatch()` - Check password confirmation matches 8. `isDACHCountry()` - Check if DACH region (Germany/Austria/Switzerland) 9. `validatePhoneNumber()` - Validate phone format 10. `validateForm()` - Master validation before submit
 
-**Form Submission:**
-11. `isUsingV2Api()` - Feature flag (always v2 now)
-12. `prepareSignupData()` - Transform form data for API
-13. `parseResponse()` - Parse API JSON response
-14. `handleSuccessfulSignup()` - Success flow (redirect)
-15. `resetSubmitButton()` - Reset button state
-16. `handleError()` - Error handling
-17. `submitSignupForm()` - API call
-18. `isSignupSuccessful()` - Check response status
-19. `getErrorMessage()` - Extract error message
+**Form Submission:** 11. `isUsingV2Api()` - Feature flag (always v2 now) 12. `prepareSignupData()` - Transform form data for API 13. `parseResponse()` - Parse API JSON response 14. `handleSuccessfulSignup()` - Success flow (redirect) 15. `resetSubmitButton()` - Reset button state 16. `handleError()` - Error handling 17. `submitSignupForm()` - API call 18. `isSignupSuccessful()` - Check response status 19. `getErrorMessage()` - Extract error message
 
-**Other:**
-20. `showHelp()` - Show help alert
+**Other:** 20. `showHelp()` - Show help alert
 
 **Event Listeners:**
 
@@ -149,6 +134,7 @@ Replace `<script>` with:
 ```html
 <script type="module">
   import { SignupFormController } from '/scripts/auth/signup-form-controller.js';
+
   new SignupFormController().init();
 </script>
 ```

@@ -15,25 +15,25 @@
  */
 
 .btn-modal {
-  /* Spacing - Same as primary */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  /* Simple transition */
+  transition: all 0.2s ease;
+
+  /* No shadow on default */
+  box-shadow: none;
 
   /* Transparent border for gradient trick */
   border: 1px solid transparent;
-
-  /* Text */
-  color: rgb(255 255 255 / 95%);
 
   /* GRADIENT BORDER - This is the signature */
   background:
     linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
     linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
 
-  /* No shadow on default */
-  box-shadow: none;
+  /* Spacing - Same as primary */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
-  /* Simple transition */
-  transition: all 0.2s ease;
+  /* Text */
+  color: rgb(255 255 255 / 95%);
 }
 
 /* Hover State - Intensify Gradient */
@@ -46,13 +46,13 @@
 
 /* Active State - Pressed Effect */
 .btn-modal:active {
+  /* Stronger glow */
+  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+
   /* Full gradient */
   background:
     linear-gradient(rgb(5 5 5 / 98%), rgb(25 25 25)) padding-box,
     linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
-
-  /* Stronger glow */
-  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
 }
 
 /* Focus State - Accessibility */
@@ -64,23 +64,23 @@
 
 /* Disabled State */
 .btn-modal:disabled {
+  /* No shadow */
+  box-shadow: none;
+
   /* Muted border */
   border-color: rgb(255 255 255 / 20%);
 
   /* Reduced opacity */
   color: rgb(255 255 255 / 30%);
-
-  /* No shadow */
-  box-shadow: none;
 }
 
 /* Loading State */
 .btn-modal.is-loading {
-  /* Disable pointer events */
-  pointer-events: none;
-
   /* Reduce opacity */
   opacity: 70%;
+
+  /* Disable pointer events */
+  pointer-events: none;
 }
 
 /* Reduced Motion Support */
