@@ -92,3 +92,6 @@ backup_*.sql
 
 # Bruno API Testing (komplett ignorieren)
 api-tests/
+
+# Credentials Archive (NEVER commit - contains passwords!)
+.locklock

@@ -2,9 +2,14 @@
 // CALENDAR - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
 import { API_ENDPOINTS, ORG_LEVEL_COLORS } from './constants';
+
 import type {
   CalendarEvent,
   EventInput,
@@ -16,8 +21,6 @@ import type {
   FilterLevel,
   PaginatedResponse,
 } from './types';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -41,7 +44,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 /**
@@ -84,7 +87,7 @@ function formatEventForCalendar(event: CalendarEvent): EventInput | null {
     return null;
   }
 
-  const color = ORG_LEVEL_COLORS[event.orgLevel] ?? '#3498db';
+  const color = ORG_LEVEL_COLORS[event.orgLevel];
 
   return {
     id: event.id.toString(),
@@ -149,9 +152,7 @@ export async function loadCalendarEvents(
 
     // Handle response: api-client unwraps { success, data } → returns { events: [...], pagination: {...} }
     // Support both array (legacy) and object (current) response formats
-    const events: CalendarEvent[] = Array.isArray(response) ? response : (response.events ?? []);
-
-    console.info('[CALENDAR API] Loaded events:', events.length);
+    const events: CalendarEvent[] = Array.isArray(response) ? response : response.events;
 
     return events.map(formatEventForCalendar).filter((e): e is EventInput => e !== null);
   } catch (err) {
@@ -171,7 +172,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
     );
 
     // Handle response: api-client unwraps { success, data } → returns { events: [...] } or array directly
-    return Array.isArray(response) ? response : (response.events ?? []);
+    return Array.isArray(response) ? response : response.events;
   } catch (err) {
     console.error('[CALENDAR API] Error loading upcoming events:', err);
     checkSessionExpired(err);
@@ -185,7 +186,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
 export async function fetchEventData(eventId: number): Promise<CalendarEvent | null> {
   try {
     const response = await apiClient.get<CalendarEvent | { event: CalendarEvent }>(
-      API_ENDPOINTS.EVENT(eventId),
+      API_ENDPOINTS.event(eventId),
     );
 
     // Handle both direct event and wrapped response
@@ -209,7 +210,7 @@ function convertToIsoDateTime(datetimeLocal: string): string {
     throw new Error(`Invalid datetime-local format: ${datetimeLocal}`);
   }
   const [, year, month, day, hours, minutes] = parts;
-  return `${year ?? ''}-${month ?? ''}-${day ?? ''}T${hours ?? ''}:${minutes ?? ''}:00Z`;
+  return `${year}-${month}-${day}T${hours}:${minutes}:00Z`;
 }
 
 /**
@@ -235,16 +236,12 @@ export async function saveEvent(
       attendeeIds: formData.attendeeIds,
     };
 
-    console.info('[CALENDAR API] Saving event:', payload);
-
     const isUpdate = eventId !== undefined;
     const response = await (isUpdate
-      ? apiClient.put<{ id?: number }>(API_ENDPOINTS.EVENT(eventId), payload)
+      ? apiClient.put<{ id?: number }>(API_ENDPOINTS.event(eventId), payload)
       : apiClient.post<{ id?: number }>(API_ENDPOINTS.EVENTS, payload));
 
-    console.info('[CALENDAR API] Save successful:', response);
-
-    return { success: true, id: response?.id ?? eventId };
+    return { success: true, id: response.id ?? eventId };
   } catch (err) {
     console.error('[CALENDAR API] Error saving event:', err);
     checkSessionExpired(err);
@@ -259,7 +256,7 @@ export async function saveEvent(
  */
 export async function deleteEvent(eventId: number): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.EVENT(eventId));
+    await apiClient.delete(API_ENDPOINTS.event(eventId));
     return { success: true };
   } catch (err) {
     console.error('[CALENDAR API] Error deleting event:', err);
@@ -299,9 +296,7 @@ export async function loadUserShifts(startDate: string, endDate: string): Promis
     );
 
     // Handle response format
-    const shifts: UserShift[] = Array.isArray(response) ? response : (response.data ?? []);
-
-    console.info('[CALENDAR API] Loaded user shifts:', shifts.length);
+    const shifts: UserShift[] = Array.isArray(response) ? response : response.data;
 
     return shifts;
   } catch (err) {
@@ -322,7 +317,7 @@ export async function loadDepartments(): Promise<Department[]> {
     const response = await apiClient.get<PaginatedResponse<Department> | Department[]>(
       API_ENDPOINTS.DEPARTMENTS,
     );
-    return Array.isArray(response) ? response : (response.data ?? []);
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[CALENDAR API] Error loading departments:', err);
     return [];
@@ -335,7 +330,7 @@ export async function loadDepartments(): Promise<Department[]> {
 export async function loadTeams(): Promise<Team[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
-    return Array.isArray(response) ? response : (response.data ?? []);
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[CALENDAR API] Error loading teams:', err);
     return [];
@@ -348,7 +343,7 @@ export async function loadTeams(): Promise<Team[]> {
 export async function loadAreas(): Promise<Area[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<Area> | Area[]>(API_ENDPOINTS.AREAS);
-    return Array.isArray(response) ? response : (response.data ?? []);
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[CALENDAR API] Error loading areas:', err);
     return [];
@@ -361,7 +356,7 @@ export async function loadAreas(): Promise<Area[]> {
 export async function loadUsers(): Promise<User[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<User> | User[]>(API_ENDPOINTS.USERS);
-    return Array.isArray(response) ? response : (response.data ?? []);
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[CALENDAR API] Error loading users:', err);
     return [];
@@ -383,13 +378,6 @@ export async function loadOrganizationData(): Promise<{
     loadAreas(),
     loadUsers(),
   ]);
-
-  console.info('[CALENDAR API] Loaded org data:', {
-    departments: departments.length,
-    teams: teams.length,
-    areas: areas.length,
-    users: users.length,
-  });
 
   return { departments, teams, areas, users };
 }

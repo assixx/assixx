@@ -6,6 +6,7 @@
  * Employee number check uses parent() layout data.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { DashboardData, ActivityLog, LogsApiResponse } from './_lib/types';
 
@@ -59,19 +60,45 @@ async function apiFetch<T>(
 }
 
 /**
+ * Process logs API response - handles multiple response formats
+ */
+function processLogsResponse(logsData: LogsApiResponse | null): ActivityLog[] {
+  if (logsData === null) {
+    return [];
+  }
+  if ('data' in logsData && logsData.data?.logs) {
+    return logsData.data.logs;
+  }
+  if ('logs' in logsData && Array.isArray(logsData.logs)) {
+    return logsData.logs;
+  }
+  if (Array.isArray(logsData)) {
+    return logsData as unknown as ActivityLog[];
+  }
+  return [];
+}
+
+/**
+ * Check if employee number modal should be shown
+ */
+function shouldShowEmployeeModal(employeeNumber: string | null | undefined): boolean {
+  if (employeeNumber === null || employeeNumber === undefined) {
+    return false;
+  }
+  return employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_');
+}
+
+/**
  * Server-side load function
  *
  * PERFORMANCE: Dashboard stats + activity logs fetched IN PARALLEL
  * Employee number check uses layout data (via parent())
  */
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   // 1. Get auth token from httpOnly cookie
   const token = cookies.get('accessToken');
 
-  if (!token) {
-    console.info('[SSR] No accessToken cookie, redirecting to login');
+  if (token === undefined) {
     redirect(302, '/login');
   }
 
@@ -92,28 +119,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   };
 
   // 5. Process logs response (handles both wrapper formats)
-  let activityLogs: ActivityLog[] = [];
-  if (logsData !== null) {
-    if ('data' in logsData && logsData.data?.logs) {
-      activityLogs = logsData.data.logs;
-    } else if ('logs' in logsData && Array.isArray(logsData.logs)) {
-      activityLogs = logsData.logs;
-    } else if (Array.isArray(logsData)) {
-      activityLogs = logsData as unknown as ActivityLog[];
-    }
-  }
+  const activityLogs = processLogsResponse(logsData);
 
   // 6. Check if employee number modal should be shown
   // Uses user data from layout (no extra API call)
-  const employeeNumber = parentData.user?.employeeNumber ?? '';
-  const showEmployeeModal =
-    employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_');
+  const showEmployeeModal = shouldShowEmployeeModal(parentData.user?.employeeNumber);
 
-  // 7. Log performance
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] root-dashboard loaded in ${duration}ms (2 parallel API calls)`);
-
-  // 8. Return typed data for +page.svelte
+  // 7. Return typed data for +page.svelte
   return {
     stats,
     activityLogs,

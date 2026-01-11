@@ -1,295 +1,181 @@
 // =============================================================================
-// KVP-DETAIL - REACTIVE STATE (Svelte 5 Runes)
+// KVP-DETAIL - COMPOSED STATE (Svelte 5 Runes)
 // =============================================================================
 
-import type {
-  User,
-  KvpSuggestion,
-  Comment,
-  Attachment,
-  Department,
-  Team,
-  Area,
-  OrgLevel,
-} from './types';
+import { createDataState } from './state-data.svelte';
+import { createUIState } from './state-ui.svelte';
+import { createUserState } from './state-user.svelte';
+
+import type { Attachment, OrgLevel } from './types';
 
 /**
- * KVP Detail State using Svelte 5 Runes
+ * KVP Detail State Factory
+ * Composes user, data, and UI state modules
  */
+// eslint-disable-next-line max-lines-per-function -- Facade pattern: composing 3 sub-modules into unified API. Actual reactive logic is in sub-modules.
 function createKvpDetailState() {
-  // Current user
-  let currentUser = $state<User | null>(null);
-  let effectiveRole = $state<string>('employee');
+  const user = createUserState();
+  const data = createDataState();
+  const ui = createUIState();
 
-  // Suggestion data
-  let suggestion = $state<KvpSuggestion | null>(null);
-  let comments = $state<Comment[]>([]);
-  let attachments = $state<Attachment[]>([]);
+  // Modal action methods
+  const openShareModal = () => {
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+    ui.setShowShareModal(true);
+  };
 
-  // Organization data (for share modal)
-  let departments = $state<Department[]>([]);
-  let teams = $state<Team[]>([]);
-  let areas = $state<Area[]>([]);
+  const closeShareModal = () => {
+    ui.setShowShareModal(false);
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+  };
 
-  // Loading states
-  let isLoading = $state(true);
-  let isUpdatingStatus = $state(false);
-  let isAddingComment = $state(false);
-  let isSharing = $state(false);
+  const openRejectionModal = () => {
+    ui.setShowRejectionModal(true);
+  };
 
-  // Modal states
-  let showShareModal = $state(false);
-  let showRejectionModal = $state(false);
-  let showPreviewModal = $state(false);
-  let selectedShareLevel = $state<OrgLevel | null>(null);
-  let selectedOrgId = $state<number | null>(null);
-  let previewAttachment = $state<Attachment | null>(null);
+  const closeRejectionModal = () => {
+    ui.setShowRejectionModal(false);
+  };
 
-  // Dropdown states
-  let activeDropdown = $state<string | null>(null);
+  const openPreviewModal = (attachment: Attachment) => {
+    ui.setPreviewAttachment(attachment);
+    ui.setShowPreviewModal(true);
+  };
 
-  // Derived: Is admin or root
-  const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');
+  const closePreviewModal = () => {
+    ui.setShowPreviewModal(false);
+    ui.setPreviewAttachment(null);
+  };
 
-  // Derived: Photo attachments
-  const photoAttachments = $derived(
-    attachments.filter((att) => ['image/jpeg', 'image/jpg', 'image/png'].includes(att.fileType)),
-  );
-
-  // Derived: Other attachments
-  const otherAttachments = $derived(
-    attachments.filter((att) => !['image/jpeg', 'image/jpg', 'image/png'].includes(att.fileType)),
-  );
-
-  // Methods
-  function setUser(user: User | null) {
-    currentUser = user;
-    updateEffectiveRole();
-  }
-
-  function updateEffectiveRole() {
-    if (currentUser === null) {
-      effectiveRole = 'employee';
-      return;
-    }
-
-    // Check sessionStorage for role switch
-    if (typeof sessionStorage !== 'undefined') {
-      const roleSwitch = sessionStorage.getItem('roleSwitch');
-      if (
-        (currentUser.role === 'admin' || currentUser.role === 'root') &&
-        roleSwitch === 'employee'
-      ) {
-        effectiveRole = 'employee';
-        return;
-      }
-    }
-
-    // Check localStorage for activeRole
-    if (typeof localStorage !== 'undefined') {
-      const activeRole = localStorage.getItem('activeRole');
-      if (activeRole !== null && activeRole !== '' && activeRole !== currentUser.role) {
-        effectiveRole = activeRole;
-        return;
-      }
-    }
-
-    effectiveRole = currentUser.role;
-  }
-
-  function setSuggestion(data: KvpSuggestion | null) {
-    suggestion = data;
-  }
-
-  function setComments(data: Comment[]) {
-    comments = data;
-  }
-
-  function setAttachments(data: Attachment[]) {
-    attachments = data;
-  }
-
-  function setDepartments(data: Department[]) {
-    departments = data;
-  }
-
-  function setTeams(data: Team[]) {
-    teams = data;
-  }
-
-  function setAreas(data: Area[]) {
-    areas = data;
-  }
-
-  function setLoading(val: boolean) {
-    isLoading = val;
-  }
-
-  function setUpdatingStatus(val: boolean) {
-    isUpdatingStatus = val;
-  }
-
-  function setAddingComment(val: boolean) {
-    isAddingComment = val;
-  }
-
-  function setSharing(val: boolean) {
-    isSharing = val;
-  }
-
-  // Modal methods
-  function openShareModal() {
-    selectedShareLevel = null;
-    selectedOrgId = null;
-    showShareModal = true;
-  }
-
-  function closeShareModal() {
-    showShareModal = false;
-    selectedShareLevel = null;
-    selectedOrgId = null;
-  }
-
-  function openRejectionModal() {
-    showRejectionModal = true;
-  }
-
-  function closeRejectionModal() {
-    showRejectionModal = false;
-  }
-
-  function openPreviewModal(attachment: Attachment) {
-    previewAttachment = attachment;
-    showPreviewModal = true;
-  }
-
-  function closePreviewModal() {
-    showPreviewModal = false;
-    previewAttachment = null;
-  }
-
-  function setSelectedShareLevel(level: OrgLevel | null) {
-    selectedShareLevel = level;
-    selectedOrgId = null;
-  }
-
-  function setSelectedOrgId(id: number | null) {
-    selectedOrgId = id;
-  }
+  const setSelectedShareLevel = (level: OrgLevel | null) => {
+    ui.setSelectedShareLevel(level);
+    ui.setSelectedOrgId(null);
+  };
 
   // Dropdown methods
-  function toggleDropdown(dropdownId: string) {
-    activeDropdown = activeDropdown === dropdownId ? null : dropdownId;
-  }
+  const toggleDropdown = (dropdownId: string) => {
+    ui.setActiveDropdown(ui.activeDropdown === dropdownId ? null : dropdownId);
+  };
 
-  function closeAllDropdowns() {
-    activeDropdown = null;
-  }
+  const closeAllDropdowns = () => {
+    ui.setActiveDropdown(null);
+  };
 
-  function reset() {
-    currentUser = null;
-    effectiveRole = 'employee';
-    suggestion = null;
-    comments = [];
-    attachments = [];
-    departments = [];
-    teams = [];
-    areas = [];
-    isLoading = true;
-    isUpdatingStatus = false;
-    isAddingComment = false;
-    isSharing = false;
-    showShareModal = false;
-    showRejectionModal = false;
-    showPreviewModal = false;
-    selectedShareLevel = null;
-    selectedOrgId = null;
-    previewAttachment = null;
-    activeDropdown = null;
-  }
+  // Reset all state
+  const reset = () => {
+    user.setUser(null);
+    data.setSuggestion(null);
+    data.setComments([]);
+    data.setAttachments([]);
+    data.setDepartments([]);
+    data.setTeams([]);
+    data.setAreas([]);
+    ui.setLoading(true);
+    ui.setUpdatingStatus(false);
+    ui.setAddingComment(false);
+    ui.setSharing(false);
+    ui.setShowShareModal(false);
+    ui.setShowRejectionModal(false);
+    ui.setShowPreviewModal(false);
+    ui.setSelectedShareLevel(null);
+    ui.setSelectedOrgId(null);
+    ui.setPreviewAttachment(null);
+    ui.setActiveDropdown(null);
+  };
 
   return {
-    // Getters (reactive)
+    // User state
     get currentUser() {
-      return currentUser;
+      return user.currentUser;
     },
     get effectiveRole() {
-      return effectiveRole;
-    },
-    get suggestion() {
-      return suggestion;
-    },
-    get comments() {
-      return comments;
-    },
-    get attachments() {
-      return attachments;
-    },
-    get departments() {
-      return departments;
-    },
-    get teams() {
-      return teams;
-    },
-    get areas() {
-      return areas;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get isUpdatingStatus() {
-      return isUpdatingStatus;
-    },
-    get isAddingComment() {
-      return isAddingComment;
-    },
-    get isSharing() {
-      return isSharing;
-    },
-    get showShareModal() {
-      return showShareModal;
-    },
-    get showRejectionModal() {
-      return showRejectionModal;
-    },
-    get showPreviewModal() {
-      return showPreviewModal;
-    },
-    get selectedShareLevel() {
-      return selectedShareLevel;
-    },
-    get selectedOrgId() {
-      return selectedOrgId;
-    },
-    get previewAttachment() {
-      return previewAttachment;
-    },
-    get activeDropdown() {
-      return activeDropdown;
+      return user.effectiveRole;
     },
     get isAdmin() {
-      return isAdmin;
+      return user.isAdmin;
+    },
+    setUser: user.setUser,
+    updateEffectiveRole: user.updateEffectiveRole,
+
+    // Data state
+    get suggestion() {
+      return data.suggestion;
+    },
+    get comments() {
+      return data.comments;
+    },
+    get attachments() {
+      return data.attachments;
+    },
+    get departments() {
+      return data.departments;
+    },
+    get teams() {
+      return data.teams;
+    },
+    get areas() {
+      return data.areas;
     },
     get photoAttachments() {
-      return photoAttachments;
+      return data.photoAttachments;
     },
     get otherAttachments() {
-      return otherAttachments;
+      return data.otherAttachments;
+    },
+    setSuggestion: data.setSuggestion,
+    setComments: data.setComments,
+    setAttachments: data.setAttachments,
+    setDepartments: data.setDepartments,
+    setTeams: data.setTeams,
+    setAreas: data.setAreas,
+
+    // UI state - Loading
+    get isLoading() {
+      return ui.isLoading;
+    },
+    get isUpdatingStatus() {
+      return ui.isUpdatingStatus;
+    },
+    get isAddingComment() {
+      return ui.isAddingComment;
+    },
+    get isSharing() {
+      return ui.isSharing;
+    },
+    setLoading: ui.setLoading,
+    setUpdatingStatus: ui.setUpdatingStatus,
+    setAddingComment: ui.setAddingComment,
+    setSharing: ui.setSharing,
+
+    // UI state - Modals
+    get showShareModal() {
+      return ui.showShareModal;
+    },
+    get showRejectionModal() {
+      return ui.showRejectionModal;
+    },
+    get showPreviewModal() {
+      return ui.showPreviewModal;
+    },
+    get selectedShareLevel() {
+      return ui.selectedShareLevel;
+    },
+    get selectedOrgId() {
+      return ui.selectedOrgId;
+    },
+    get previewAttachment() {
+      return ui.previewAttachment;
+    },
+    setSelectedOrgId: ui.setSelectedOrgId,
+
+    // UI state - Dropdowns
+    get activeDropdown() {
+      return ui.activeDropdown;
     },
 
-    // Methods
-    setUser,
-    updateEffectiveRole,
-    setSuggestion,
-    setComments,
-    setAttachments,
-    setDepartments,
-    setTeams,
-    setAreas,
-    setLoading,
-    setUpdatingStatus,
-    setAddingComment,
-    setSharing,
+    // Modal methods
     openShareModal,
     closeShareModal,
     openRejectionModal,
@@ -297,9 +183,12 @@ function createKvpDetailState() {
     openPreviewModal,
     closePreviewModal,
     setSelectedShareLevel,
-    setSelectedOrgId,
+
+    // Dropdown methods
     toggleDropdown,
     closeAllDropdowns,
+
+    // Reset
     reset,
   };
 }

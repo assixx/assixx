@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Area, Department, FormIsActiveStatus } from './types';
   import { POSITION_OPTIONS, MESSAGES, STATUS_OPTIONS } from './constants';
-  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
   import { filterAvailableDepartments, filterDepartmentIdsByAreas } from './filters';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
+
+  import type { Area, Department, FormIsActiveStatus } from './types';
 
   // =============================================================================
   // PROPS
@@ -34,31 +35,10 @@
     onsubmit: (e: Event) => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
-    show,
-    isEditMode,
-    modalTitle,
-    allAreas,
-    allDepartments,
-    submitting,
-    formFirstName = $bindable(),
-    formLastName = $bindable(),
-    formEmail = $bindable(),
-    formEmailConfirm = $bindable(),
-    formPassword = $bindable(),
-    formPasswordConfirm = $bindable(),
-    formEmployeeNumber = $bindable(),
-    formPosition = $bindable(),
-    formNotes = $bindable(),
-    formIsActive = $bindable(),
-    formHasFullAccess = $bindable(),
-    formAreaIds = $bindable(),
-    formDepartmentIds = $bindable(),
-    onclose,
-    onsubmit,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit }: Props = $props();
+  /* eslint-enable */
 
   // =============================================================================
   // LOCAL STATE
@@ -124,11 +104,11 @@
   }
 
   function validateEmails() {
-    emailError = formEmailConfirm ? formEmail !== formEmailConfirm : false;
+    emailError = formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
   }
 
   function validatePasswords() {
-    passwordError = formPasswordConfirm ? formPassword !== formPasswordConfirm : false;
+    passwordError = formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
   }
 
   function updatePasswordStrength() {
@@ -156,7 +136,9 @@
         }
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -170,14 +152,20 @@
     aria-labelledby="admin-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="admin-form"
       class="ds-modal"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -371,14 +359,19 @@
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{formPosition || 'Bitte wählen...'}</span>
+              <span>{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown__menu" class:active={positionDropdownOpen}>
               {#each POSITION_OPTIONS as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectPosition(position)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectPosition(position);
+                  }}
+                >
                   {position}
                 </div>
               {/each}
@@ -443,7 +436,9 @@
             >
               {#each allAreas as area (area.id)}
                 <option value={area.id} selected={formAreaIds.includes(area.id)}>
-                  {area.name}{area.departmentCount ? ` (${area.departmentCount} Abt.)` : ''}
+                  {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
+                    ? ` (${area.departmentCount} Abt.)`
+                    : ''}
                 </option>
               {/each}
             </select>
@@ -473,7 +468,9 @@
             >
               {#each availableDepartments as dept (dept.id)}
                 <option value={dept.id} selected={formDepartmentIds.includes(dept.id)}>
-                  {dept.name}{dept.areaName ? ` (${dept.areaName})` : ''}
+                  {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
+                    ? ` (${dept.areaName})`
+                    : ''}
                 </option>
               {/each}
             </select>
@@ -523,7 +520,12 @@
                 {#each STATUS_OPTIONS as opt (opt.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="dropdown__option" onclick={() => selectStatus(opt.value)}>
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectStatus(opt.value);
+                    }}
+                  >
                     <span class="badge {opt.class}">{opt.label}</span>
                   </div>
                 {/each}

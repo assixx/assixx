@@ -22,10 +22,13 @@ const MS_HOUR = 3_600_000;
       useFactory: (config: ConfigService) => {
         const redisHost = config.get<string>('REDIS_HOST', 'redis');
         const redisPort = config.get<number>('REDIS_PORT', 6379);
+        const redisPassword = config.get<string>('REDIS_PASSWORD');
 
         const redisClient = new Redis({
           host: redisHost,
           port: redisPort,
+          // SECURITY: Redis authentication - only include password if configured
+          ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
           keyPrefix: 'throttle:',
           lazyConnect: true,
           maxRetriesPerRequest: 3,

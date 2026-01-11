@@ -216,9 +216,25 @@ function setupHtmlRoutes(fastify: FastifyInstance, pagesPath: string, publicPath
 
 /** Register security plugins */
 async function setupSecurity(app: NestFastifyApplication): Promise<void> {
-  // Helmet with CSP disabled (frontend needs inline scripts)
+  // Helmet with Content Security Policy
+  // Note: 'unsafe-inline' for scripts/styles is needed for SvelteKit
+  // TODO: Implement nonce-based CSP for stricter security
   await app.register(fastifyHelmet, {
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // SvelteKit needs inline scripts
+        styleSrc: ["'self'", "'unsafe-inline'"], // SvelteKit needs inline styles
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        fontSrc: ["'self'"],
+        connectSrc: ["'self'", 'wss:', 'ws:'], // WebSocket connections
+        objectSrc: ["'none'"], // Disable plugins/embeds
+        frameAncestors: ["'self'"], // Allow same-origin iframe for PDF preview
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS
+      },
+    },
   });
 
   // Cookie parser
@@ -227,9 +243,14 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
   // Multipart for file uploads
   await app.register(import('@fastify/multipart'));
 
-  // CORS
+  // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)
+  const allowedOrigins = (
+    process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173'
+  )
+    .split(',')
+    .map((origin: string) => origin.trim());
   app.enableCors({
-    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

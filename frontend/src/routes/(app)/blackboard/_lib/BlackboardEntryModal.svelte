@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { Priority, EntryColor, Department, Team, Area, FormMode } from './types';
   import { COLOR_OPTIONS, PRIORITY_OPTIONS, MESSAGES, FILE_UPLOAD_CONFIG } from './constants';
   import { getPriorityLabel } from './utils';
+
+  import type { Priority, EntryColor, Department, Team, Area, FormMode } from './types';
 
   interface Props {
     mode: FormMode;
@@ -14,7 +15,7 @@
     departmentIds: number[];
     teamIds: number[];
     areaIds: number[];
-    attachmentFiles: FileList | null;
+    attachmentFiles: File[] | null;
     departments: Department[];
     teams: Team[];
     areas: Area[];
@@ -29,7 +30,7 @@
     ondepartmentschange: (value: number[]) => void;
     onteamschange: (value: number[]) => void;
     onareaschange: (value: number[]) => void;
-    onfileschange: (files: FileList | null) => void;
+    onfileschange: (files: File[] | null) => void;
   }
 
   const {
@@ -72,11 +73,8 @@
 
   function removeAttachment(index: number): void {
     if (!attachmentFiles) return;
-    const dt = new DataTransfer();
-    for (let i = 0; i < attachmentFiles.length; i++) {
-      if (i !== index) dt.items.add(attachmentFiles[i]);
-    }
-    onfileschange(dt.files);
+    const filtered = attachmentFiles.filter((_, i) => i !== index);
+    onfileschange(filtered.length > 0 ? filtered : null);
   }
 
   function handleClickOutside(e: MouseEvent): void {
@@ -97,7 +95,9 @@
 <div
   class="modal-overlay modal-overlay--active"
   onclick={onclose}
-  onkeydown={(e) => e.key === 'Escape' && onclose()}
+  onkeydown={(e) => {
+    if (e.key === 'Escape') onclose();
+  }}
   role="dialog"
   aria-modal="true"
   tabindex="-1"
@@ -105,8 +105,12 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal ds-modal--lg"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.stopPropagation()}
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
+    onkeydown={(e) => {
+      e.stopPropagation();
+    }}
     {onsubmit}
   >
     <div class="ds-modal__header">
@@ -127,7 +131,9 @@
           required
           placeholder="Was ist das Thema?"
           value={title}
-          oninput={(e) => ontitlechange((e.target as HTMLInputElement).value)}
+          oninput={(e) => {
+            ontitlechange((e.target as HTMLInputElement).value);
+          }}
         />
       </div>
       <div class="form-field">
@@ -139,7 +145,9 @@
           required
           placeholder="Ihre Nachricht hier..."
           value={content}
-          oninput={(e) => oncontentchange((e.target as HTMLTextAreaElement).value)}
+          oninput={(e) => {
+            oncontentchange((e.target as HTMLTextAreaElement).value);
+          }}
         ></textarea>
       </div>
 
@@ -154,7 +162,9 @@
             type="checkbox"
             class="toggle-switch__input"
             checked={companyWide}
-            onchange={(e) => oncompanywidechange((e.target as HTMLInputElement).checked)}
+            onchange={(e) => {
+              oncompanywidechange((e.target as HTMLInputElement).checked);
+            }}
           />
           <span class="toggle-switch__slider"></span>
           <span class="toggle-switch__label"><i class="fas fa-building mr-2"></i>Ganze Firma</span>
@@ -233,7 +243,9 @@
             onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
             role="button"
             tabindex="0"
-            onkeydown={(e) => e.key === 'Enter' && (priorityDropdownOpen = !priorityDropdownOpen)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
+            }}
           >
             <span>{priorityLabel}</span>
             <i class="fas fa-chevron-down"></i>
@@ -243,8 +255,12 @@
               {#each PRIORITY_OPTIONS as opt (opt.value)}
                 <div
                   class="dropdown__option"
-                  onclick={() => setPriority(opt.value)}
-                  onkeydown={(e) => e.key === 'Enter' && setPriority(opt.value)}
+                  onclick={() => {
+                    setPriority(opt.value);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') setPriority(opt.value);
+                  }}
                   role="option"
                   tabindex="0"
                   aria-selected={priority === opt.value}
@@ -265,7 +281,9 @@
           class="form-field__control"
           id="entryExpiresAt"
           value={expiresAt}
-          oninput={(e) => onexpireschange((e.target as HTMLInputElement).value)}
+          oninput={(e) => {
+            onexpireschange((e.target as HTMLInputElement).value);
+          }}
         />
       </div>
 
@@ -279,7 +297,9 @@
               class="color-option"
               class:active={color === opt.value}
               data-color={opt.value}
-              onclick={() => oncolorchange(opt.value)}
+              onclick={() => {
+                oncolorchange(opt.value);
+              }}
               role="radio"
               aria-checked={color === opt.value}
             >
@@ -300,7 +320,10 @@
             id="attachmentInput"
             multiple
             accept={FILE_UPLOAD_CONFIG.ACCEPTED_TYPES}
-            onchange={(e) => onfileschange((e.target as HTMLInputElement).files)}
+            onchange={(e) => {
+              const files = (e.target as HTMLInputElement).files;
+              onfileschange(files !== null ? Array.from(files) : null);
+            }}
           />
           <label for="attachmentInput" class="file-upload-zone__label">
             <div class="file-upload-zone__icon"><i class="fas fa-cloud-upload-alt"></i></div>
@@ -311,7 +334,7 @@
         </div>
         {#if attachmentFiles && attachmentFiles.length > 0}
           <div class="file-upload-list file-upload-list--compact">
-            {#each Array.from(attachmentFiles) as file, i (i)}
+            {#each attachmentFiles as file, i (i)}
               <div class="file-upload-list__item">
                 <i class="fas fa-file file-upload-list__icon"></i>
                 <span class="file-upload-list__name">{file.name}</span>
@@ -320,7 +343,9 @@
                 <button
                   type="button"
                   class="file-upload-list__remove"
-                  onclick={() => removeAttachment(i)}
+                  onclick={() => {
+                    removeAttachment(i);
+                  }}
                   aria-label="Datei entfernen"
                 >
                   <i class="fas fa-times"></i>

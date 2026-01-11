@@ -7,13 +7,14 @@
    * Note: Uses hybrid approach with client-side filtering for filter changes.
    */
   import { untrack } from 'svelte';
+
   import { invalidateAll, goto } from '$app/navigation';
-  import { base } from '$app/paths';
-  import type { PageData } from './$types';
+  import { resolve } from '$app/paths';
+
   // KVP-specific styles (migrated from legacy)
   import '../../../styles/kvp.css';
-  import { kvpState } from './_lib/state.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+
   import {
     fetchSuggestions,
     shareSuggestion,
@@ -21,6 +22,8 @@
     findUserTeamAsLead,
   } from './_lib/api';
   import { FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from './_lib/constants';
+  import KvpCreateModal from './_lib/KvpCreateModal.svelte';
+  import { kvpState } from './_lib/state.svelte';
   import {
     getStatusBadgeClass,
     getStatusText,
@@ -33,7 +36,8 @@
     getAttachmentText,
     debounce,
   } from './_lib/utils';
-  import KvpCreateModal from './_lib/KvpCreateModal.svelte';
+
+  import type { PageData } from './$types';
   import type { KvpCategory, Department, KvpSuggestion, KvpStats, CurrentUser } from './_lib/types';
 
   // =============================================================================
@@ -43,11 +47,12 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const ssrCategories = $derived<KvpCategory[]>(data?.categories ?? []);
-  const ssrDepartments = $derived<Department[]>(data?.departments ?? []);
-  const ssrSuggestions = $derived<KvpSuggestion[]>(data?.suggestions ?? []);
-  const ssrStatistics = $derived<KvpStats | null>(data?.statistics ?? null);
-  const ssrCurrentUser = $derived<CurrentUser | null>(data?.currentUser ?? null);
+  // PageData is always defined from $props(), and server guarantees array values
+  const ssrCategories = $derived<KvpCategory[]>(data.categories);
+  const ssrDepartments = $derived<Department[]>(data.departments);
+  const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
+  const ssrStatistics = $derived<KvpStats | null>(data.statistics);
+  const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -169,7 +174,7 @@
   // ==========================================================================
 
   function viewSuggestion(uuid: string) {
-    goto(`${base}/kvp-detail?uuid=${uuid}`);
+    void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
   }
 
   async function handleShare(id: number): Promise<void> {
@@ -331,15 +336,18 @@
         <div class="toggle-group">
           {#each FILTER_OPTIONS as option (option.value)}
             <button
+              type="button"
               class="toggle-group__btn"
               class:active={kvpState.currentFilter === option.value}
               title={option.title}
-              onclick={() => handleFilterChange(option.value)}
+              onclick={() => {
+                handleFilterChange(option.value);
+              }}
             >
               <i class="fas {option.icon}"></i>
               {option.label}
               {#if option.showBadge}
-                <span class="badge">{kvpState.badgeCounts[option.value] ?? 0}</span>
+                <span class="badge">{kvpState.badgeCounts[option.value]}</span>
               {/if}
             </button>
           {/each}
@@ -365,7 +373,9 @@
             type="button"
             class="dropdown__trigger"
             class:active={activeDropdown === 'status'}
-            onclick={() => toggleDropdown('status')}
+            onclick={() => {
+              toggleDropdown('status');
+            }}
           >
             <span>{statusDisplayText}</span>
             <i class="fas fa-chevron-down"></i>
@@ -377,7 +387,9 @@
                 class="dropdown__option"
                 data-action="select-status"
                 data-value={option.value}
-                onclick={() => handleStatusSelect(option.value, option.label)}
+                onclick={() => {
+                  handleStatusSelect(option.value, option.label);
+                }}
               >
                 {option.label}
               </button>
@@ -391,7 +403,9 @@
             type="button"
             class="dropdown__trigger"
             class:active={activeDropdown === 'category'}
-            onclick={() => toggleDropdown('category')}
+            onclick={() => {
+              toggleDropdown('category');
+            }}
           >
             <span>{categoryDisplayText}</span>
             <i class="fas fa-chevron-down"></i>
@@ -402,7 +416,9 @@
               class="dropdown__option"
               data-action="select-category"
               data-value=""
-              onclick={() => handleCategorySelect('', 'Alle Kategorien')}
+              onclick={() => {
+                handleCategorySelect('', 'Alle Kategorien');
+              }}
             >
               Alle Kategorien
             </button>
@@ -412,7 +428,9 @@
                 class="dropdown__option"
                 data-action="select-category"
                 data-value={category.id.toString()}
-                onclick={() => handleCategorySelect(category.id.toString(), category.name)}
+                onclick={() => {
+                  handleCategorySelect(category.id.toString(), category.name);
+                }}
               >
                 {category.name}
               </button>
@@ -426,7 +444,9 @@
             type="button"
             class="dropdown__trigger"
             class:active={activeDropdown === 'department'}
-            onclick={() => toggleDropdown('department')}
+            onclick={() => {
+              toggleDropdown('department');
+            }}
           >
             <span>{departmentDisplayText}</span>
             <i class="fas fa-chevron-down"></i>
@@ -437,7 +457,9 @@
               class="dropdown__option"
               data-action="select-department"
               data-value=""
-              onclick={() => handleDepartmentSelect('', 'Alle Abteilungen')}
+              onclick={() => {
+                handleDepartmentSelect('', 'Alle Abteilungen');
+              }}
             >
               Alle Abteilungen
             </button>
@@ -447,7 +469,9 @@
                 class="dropdown__option"
                 data-action="select-department"
                 data-value={dept.id.toString()}
-                onclick={() => handleDepartmentSelect(dept.id.toString(), dept.name)}
+                onclick={() => {
+                  handleDepartmentSelect(dept.id.toString(), dept.name);
+                }}
               >
                 {dept.name}
               </button>
@@ -475,8 +499,12 @@
               class="glass-card kvp-card text-left w-full cursor-pointer"
               role="button"
               tabindex="0"
-              onclick={() => viewSuggestion(suggestion.uuid)}
-              onkeydown={(e) => e.key === 'Enter' && viewSuggestion(suggestion.uuid)}
+              onclick={() => {
+                viewSuggestion(suggestion.uuid);
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') viewSuggestion(suggestion.uuid);
+              }}
             >
               <span class="badge {getStatusBadgeClass(suggestion.status)} status-badge">
                 {getStatusText(suggestion.status)}
@@ -515,7 +543,9 @@
               <div class="suggestion-footer">
                 <div
                   class="category-tag"
-                  style="background: {suggestion.categoryColor}20; color: {suggestion.categoryColor}; border: 1px solid {suggestion.categoryColor};"
+                  style:background="{suggestion.categoryColor}20"
+                  style:color={suggestion.categoryColor}
+                  style:border="1px solid {suggestion.categoryColor}"
                 >
                   {suggestion.categoryIcon}
                   {suggestion.categoryName}
@@ -570,7 +600,12 @@
 
 <!-- Floating Add Button (employees only) -->
 {#if kvpState.isEmployee}
-  <button class="btn-float" aria-label="Neuen Vorschlag erstellen" onclick={handleOpenCreateModal}>
+  <button
+    type="button"
+    class="btn-float"
+    aria-label="Neuen Vorschlag erstellen"
+    onclick={handleOpenCreateModal}
+  >
     <i class="fas fa-plus"></i>
   </button>
 {/if}

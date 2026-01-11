@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Document, CurrentUser } from './types';
   import { MESSAGES, DB_CATEGORY_LABELS, MIN_LIST_ROWS } from './constants';
   import {
     formatFileSize,
@@ -9,6 +8,8 @@
     canEditDocument,
     canDeleteDocument,
   } from './utils';
+
+  import type { Document, CurrentUser } from './types';
 
   interface Props {
     documents: Document[];
@@ -83,7 +84,9 @@
           class="document-row cursor-pointer"
           data-document-id={doc.id}
           data-read={doc.isRead}
-          onclick={() => onpreview(doc)}
+          onclick={() => {
+            onpreview(doc);
+          }}
         >
           <td>
             <div class="flex items-center gap-3">
@@ -128,6 +131,7 @@
             {#if showActions}
               <div class="flex items-center gap-1">
                 <button
+                  type="button"
                   class="action-icon action-icon--info"
                   title="Vorschau"
                   aria-label="Vorschau anzeigen"
@@ -139,29 +143,38 @@
                   <i class="fas fa-eye"></i>
                 </button>
                 <button
+                  type="button"
                   class="action-icon action-icon--info"
                   title="Herunterladen"
                   aria-label="Dokument herunterladen"
-                  onclick={(e) => ondownload(doc, e)}
+                  onclick={(e) => {
+                    ondownload(doc, e);
+                  }}
                 >
                   <i class="fas fa-download"></i>
                 </button>
                 {#if canEditDocument(doc, currentUser)}
                   <button
+                    type="button"
                     class="action-icon action-icon--edit"
                     title="Bearbeiten"
                     aria-label="Dokument bearbeiten"
-                    onclick={(e) => onedit(doc, e)}
+                    onclick={(e) => {
+                      onedit(doc, e);
+                    }}
                   >
                     <i class="fas fa-edit"></i>
                   </button>
                 {/if}
                 {#if canDeleteDocument(doc, currentUser)}
                   <button
+                    type="button"
                     class="action-icon action-icon--delete"
                     title="Löschen"
                     aria-label="Dokument löschen"
-                    onclick={(e) => ondelete(doc, e)}
+                    onclick={(e) => {
+                      ondelete(doc, e);
+                    }}
                   >
                     <i class="fas fa-trash"></i>
                   </button>

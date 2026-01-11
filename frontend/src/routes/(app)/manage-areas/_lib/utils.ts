@@ -2,6 +2,8 @@
 // MANAGE AREAS - UTILITY FUNCTIONS
 // =============================================================================
 
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, TYPE_LABELS, FORM_DEFAULTS } from './constants';
+
 import type {
   Area,
   AdminUser,
@@ -10,7 +12,6 @@ import type {
   AreaType,
   FormIsActiveStatus,
 } from './types';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, TYPE_LABELS, FORM_DEFAULTS } from './constants';
 
 // =============================================================================
 // STATUS HELPERS
@@ -22,7 +23,7 @@ import { STATUS_BADGE_CLASSES, STATUS_LABELS, TYPE_LABELS, FORM_DEFAULTS } from 
  * @returns CSS class for badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
@@ -31,7 +32,7 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  * @returns Human-readable status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -43,8 +44,11 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
  * @param type - Area type
  * @returns Human-readable type label
  */
-export function getTypeLabel(type: AreaType | string): string {
-  return TYPE_LABELS[type as AreaType] ?? type;
+export function getTypeLabel(type: string): string {
+  if (type in TYPE_LABELS) {
+    return TYPE_LABELS[type as AreaType];
+  }
+  return type;
 }
 
 // =============================================================================
@@ -87,7 +91,7 @@ export function highlightMatch(text: string, query: string): string {
  * @returns Display name string
  */
 export function getAreaLeadDisplayName(areaLeadId: number | null, areaLeads: AdminUser[]): string {
-  if (!areaLeadId) return 'Kein Bereichsleiter';
+  if (areaLeadId === null) return 'Kein Bereichsleiter';
   const lead = areaLeads.find((u) => u.id === areaLeadId);
   if (!lead) return 'Kein Bereichsleiter';
   const roleLabel = lead.role === 'root' ? '(Root)' : '(Admin)';

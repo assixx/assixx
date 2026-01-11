@@ -339,7 +339,7 @@ export class CalendarService {
 
     for (const { key, column, transform } of fields) {
       // Safe: key is from hardcoded array with keyof UpdateEventDto, not user input
-      // eslint-disable-next-line security/detect-object-injection
+
       const fieldValue = (dto as Record<string, unknown>)[key];
       if (fieldValue !== undefined) {
         const value = transform !== undefined ? transform(fieldValue) : fieldValue;

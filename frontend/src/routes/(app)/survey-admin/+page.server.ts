@@ -5,6 +5,7 @@
  * SSR: Loads surveys, templates, and org data in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -70,9 +69,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
   const teams = Array.isArray(teamsData) ? teamsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] survey-admin loaded in ${duration}ms (5 parallel API calls)`);
 
   return {
     surveys,

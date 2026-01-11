@@ -7,9 +7,9 @@
  */
 export const API_ENDPOINTS = {
   SURVEYS: '/surveys',
-  SURVEY_BY_ID: (id: string | number) => `/surveys/${id}`,
+  surveyById: (id: string | number) => `/surveys/${id}`,
   TEMPLATES: '/surveys/templates',
-  TEMPLATE_CREATE: (id: number) => `/surveys/templates/${id}`,
+  templateCreate: (id: number) => `/surveys/templates/${id}`,
   DEPARTMENTS: '/departments',
   TEAMS: '/teams',
   AREAS: '/areas',

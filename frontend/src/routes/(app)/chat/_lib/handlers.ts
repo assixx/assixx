@@ -2,14 +2,8 @@
 // CHAT - EVENT HANDLERS
 // =============================================================================
 
-import type {
-  Conversation,
-  Message,
-  ScheduledMessage,
-  ChatUser,
-  RawWebSocketMessage,
-} from './types';
-import { WEBSOCKET_CONFIG, SCHEDULE_CONSTRAINTS, MESSAGES, WS_MESSAGE_TYPES } from './constants';
+import { browser } from '$app/environment';
+
 import {
   loadConversations as apiLoadConversations,
   loadMessages as apiLoadMessages,
@@ -24,6 +18,7 @@ import {
   findExistingConversation,
   buildNewConversation,
 } from './api';
+import { WEBSOCKET_CONFIG, SCHEDULE_CONSTRAINTS, MESSAGES, WS_MESSAGE_TYPES } from './constants';
 import { isImageFile, validateScheduleTime, getMinScheduleDateTime } from './utils';
 import {
   buildWebSocketUrl,
@@ -44,7 +39,14 @@ import {
   calculateReconnectDelay,
   shouldReconnect,
 } from './websocket';
-import { browser } from '$app/environment';
+
+import type {
+  Conversation,
+  Message,
+  ScheduledMessage,
+  ChatUser,
+  RawWebSocketMessage,
+} from './types';
 
 // ==========================================================================
 // Types
@@ -125,7 +127,7 @@ export async function loadMessages(
 }
 
 export async function searchUsers(query: string): Promise<ChatUser[]> {
-  if (!query.trim()) return [];
+  if (query.trim() === '') return [];
   return await apiSearchUsers(query);
 }
 
@@ -205,7 +207,7 @@ export function validateAndSetSchedule(
   date: string,
   time: string,
 ): { isValid: boolean; date?: Date; error?: string } {
-  if (!date || !time) {
+  if (date === '' || time === '') {
     return { isValid: false, error: MESSAGES.warningSelectDateTime };
   }
 
@@ -249,13 +251,18 @@ export function connectWebSocket(token: string, callbacks: WebSocketCallbacks): 
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.info('WebSocket connected');
       if (ws) callbacks.onConnected(ws);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event: MessageEvent) => {
       try {
-        const message = JSON.parse(event.data);
+        // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
+        const rawData: unknown = event.data;
+        if (typeof rawData !== 'string') {
+          console.error('Unexpected WebSocket message type:', typeof rawData);
+          return;
+        }
+        const message = JSON.parse(rawData) as { type: string; data: unknown };
         handleWebSocketMessage(message, callbacks);
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -267,7 +274,7 @@ export function connectWebSocket(token: string, callbacks: WebSocketCallbacks): 
     };
 
     ws.onclose = () => {
-      console.info('WebSocket disconnected');
+      // Connection closed
     };
 
     return ws;
@@ -277,66 +284,80 @@ export function connectWebSocket(token: string, callbacks: WebSocketCallbacks): 
   }
 }
 
+// Individual message handlers to reduce complexity
+type MessageHandler = (data: unknown, callbacks: WebSocketCallbacks) => void;
+
+function handleConnectionEstablished(_data: unknown, callbacks: WebSocketCallbacks): void {
+  callbacks.getConversations().forEach((conv) => {
+    sendWebSocketMessage(buildJoinMessage(conv.id));
+  });
+}
+
+function handleAuthError(data: unknown, callbacks: WebSocketCallbacks): void {
+  console.error('Authentication failed:', data);
+  callbacks.onAuthError();
+}
+
+function handleNewMessage(data: unknown, callbacks: WebSocketCallbacks): void {
+  const newMessage = transformRawMessage(data as RawWebSocketMessage);
+  callbacks.onNewMessage(newMessage);
+}
+
+function handleTypingStart(data: unknown, callbacks: WebSocketCallbacks): void {
+  const typingData = extractTypingData(data as RawWebSocketMessage);
+  callbacks.onTypingStart(typingData.conversationId, typingData.userId);
+}
+
+function handleTypingStop(data: unknown, callbacks: WebSocketCallbacks): void {
+  const stopData = extractTypingData(data as RawWebSocketMessage);
+  callbacks.onTypingStop(stopData.userId);
+}
+
+function handleUserStatus(data: unknown, callbacks: WebSocketCallbacks): void {
+  const statusData = extractStatusData(data as RawWebSocketMessage);
+  callbacks.onUserStatus(statusData.userId, statusData.status);
+}
+
+function handleMessageRead(data: unknown, callbacks: WebSocketCallbacks): void {
+  const readData = extractReadData(data as RawWebSocketMessage);
+  callbacks.onMessageRead(readData.messageId);
+}
+
+function handleError(data: unknown, callbacks: WebSocketCallbacks): void {
+  console.error('WebSocket Error:', data);
+  callbacks.onError(MESSAGES.errorWebSocket);
+}
+
+// Handler map for message type dispatch
+const messageHandlers: Record<string, MessageHandler> = {
+  [WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED]: handleConnectionEstablished,
+  [WS_MESSAGE_TYPES.AUTH_ERROR]: handleAuthError,
+  [WS_MESSAGE_TYPES.NEW_MESSAGE]: handleNewMessage,
+  [WS_MESSAGE_TYPES.TYPING_START]: handleTypingStart,
+  [WS_MESSAGE_TYPES.USER_TYPING]: handleTypingStart,
+  [WS_MESSAGE_TYPES.TYPING_STOP]: handleTypingStop,
+  [WS_MESSAGE_TYPES.USER_STOPPED_TYPING]: handleTypingStop,
+  [WS_MESSAGE_TYPES.USER_STATUS]: handleUserStatus,
+  [WS_MESSAGE_TYPES.USER_STATUS_CHANGED]: handleUserStatus,
+  [WS_MESSAGE_TYPES.MESSAGE_READ]: handleMessageRead,
+  [WS_MESSAGE_TYPES.ERROR]: handleError,
+};
+
+// No-op types (acknowledged but no action needed)
+const noopMessageTypes = new Set<string>([WS_MESSAGE_TYPES.PONG, WS_MESSAGE_TYPES.MESSAGE_SENT]);
+
 export function handleWebSocketMessage(
   message: { type: string; data: unknown },
   callbacks: WebSocketCallbacks,
 ): void {
-  switch (message.type) {
-    case WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED:
-      callbacks.getConversations().forEach((conv) => {
-        sendWebSocketMessage(buildJoinMessage(conv.id));
-      });
-      break;
-
-    case WS_MESSAGE_TYPES.AUTH_ERROR:
-      console.error('Authentication failed:', message.data);
-      callbacks.onAuthError();
-      break;
-
-    case WS_MESSAGE_TYPES.NEW_MESSAGE: {
-      const newMessage = transformRawMessage(message.data as RawWebSocketMessage);
-      callbacks.onNewMessage(newMessage);
-      break;
-    }
-
-    case WS_MESSAGE_TYPES.TYPING_START:
-    case WS_MESSAGE_TYPES.USER_TYPING: {
-      const typingData = extractTypingData(message.data as RawWebSocketMessage);
-      callbacks.onTypingStart(typingData.conversationId, typingData.userId);
-      break;
-    }
-
-    case WS_MESSAGE_TYPES.TYPING_STOP:
-    case WS_MESSAGE_TYPES.USER_STOPPED_TYPING: {
-      const stopData = extractTypingData(message.data as RawWebSocketMessage);
-      callbacks.onTypingStop(stopData.userId);
-      break;
-    }
-
-    case WS_MESSAGE_TYPES.USER_STATUS:
-    case WS_MESSAGE_TYPES.USER_STATUS_CHANGED: {
-      const statusData = extractStatusData(message.data as RawWebSocketMessage);
-      callbacks.onUserStatus(statusData.userId, statusData.status);
-      break;
-    }
-
-    case WS_MESSAGE_TYPES.MESSAGE_READ: {
-      const readData = extractReadData(message.data as RawWebSocketMessage);
-      callbacks.onMessageRead(readData.messageId);
-      break;
-    }
-
-    case WS_MESSAGE_TYPES.PONG:
-    case WS_MESSAGE_TYPES.MESSAGE_SENT:
-      break;
-
-    case WS_MESSAGE_TYPES.ERROR:
-      console.error('WebSocket Error:', message.data);
-      callbacks.onError(MESSAGES.errorWebSocket);
-      break;
-
-    default:
-      console.info('Unknown message type:', message.type);
+  if (message.type in messageHandlers) {
+    messageHandlers[message.type](message.data, callbacks);
+    return;
+  }
+  // PONG and MESSAGE_SENT are acknowledged but need no action
+  // Unknown types are logged in development for debugging
+  if (!noopMessageTypes.has(message.type)) {
+    console.warn('[WebSocket] Unhandled message type:', message.type);
   }
 }
 
@@ -351,7 +372,7 @@ export function sendWebSocketMessage(message: { type: string; data: unknown }): 
 export function sendTypingStart(conversationId: number): void {
   sendWebSocketMessage(buildTypingStartMessage(conversationId));
 
-  if (typingTimeoutId) clearTimeout(typingTimeoutId);
+  if (typingTimeoutId !== undefined) clearTimeout(typingTimeoutId);
   typingTimeoutId = window.setTimeout(() => {
     sendWebSocketMessage(buildTypingStopMessage(conversationId));
   }, WEBSOCKET_CONFIG.typingTimeout);
@@ -396,7 +417,6 @@ export function attemptReconnect(
   }
 
   const attempts = currentAttempts + 1;
-  console.info(`Attempting to reconnect (${attempts}/${WEBSOCKET_CONFIG.maxReconnectAttempts})...`);
 
   setTimeout(() => {
     connectWebSocket(token, callbacks);

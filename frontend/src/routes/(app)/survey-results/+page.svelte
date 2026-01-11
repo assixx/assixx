@@ -6,11 +6,13 @@
    * Level 3 SSR: All data via $derived from SSR props, no onMount data copying.
    */
   import { SvelteSet } from 'svelte/reactivity';
-  import type { PageData } from './$types';
+
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
+
   import '../../../styles/survey-results.css';
   import { showAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
+
   import { exportToExcel } from './_lib/api';
   import {
     formatGermanDate,
@@ -24,7 +26,14 @@
     calculateTotalResponses,
     calculateOptionPercentage,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type { SurveyQuestion, ResponseAnswer, Survey } from './_lib/types';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // ==========================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -33,20 +42,18 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data as derived - updates automatically when data changes
-  // Using $derived.by() for multi-line logic (Svelte 5 best practice)
-  const surveyId = $derived(data?.surveyId ?? null);
-  const survey = $derived.by<Survey | null>(() => {
-    if (!data?.survey) return null;
-    return {
-      ...data.survey,
-      questions: data.questions ?? data.survey.questions ?? [],
-    };
-  });
-  const statistics = $derived(data?.statistics ?? null);
-  const responses = $derived(data?.responses ?? []);
+  // Server guarantees: surveyId (string), survey (Survey), questions ([]), responses ([])
+  // Only statistics can be null
+  const surveyId = $derived(data.surveyId);
+  const survey = $derived.by<Survey>(() => ({
+    ...data.survey,
+    questions: data.questions.length > 0 ? data.questions : (data.survey.questions ?? []),
+  }));
+  const statistics = $derived(data.statistics);
+  const responses = $derived(data.responses);
 
-  // Derived computed values
-  const hasData = $derived(survey !== null && statistics !== null);
+  // Derived computed values - survey is always defined, only check statistics
+  const hasData = $derived(statistics !== null);
   const totalResponses = $derived(statistics?.totalResponses ?? 0);
   const completedResponses = $derived(statistics?.completedResponses ?? 0);
   const completionRate = $derived(statistics?.completionRate ?? 0);
@@ -69,11 +76,6 @@
   // ==========================================================================
 
   async function handleExportExcel(): Promise<void> {
-    if (surveyId === null) {
-      showErrorAlert('Keine Umfrage-ID verfuegbar');
-      return;
-    }
-
     isExporting = true;
 
     try {
@@ -102,7 +104,7 @@
   }
 
   function handleNavigateBack(): void {
-    goto(`${base}/survey-admin`);
+    void goto(resolvePath('/survey-admin'));
   }
 
   function handleAccordionToggle(index: number): void {
@@ -122,11 +124,11 @@
   }
 
   function getStatisticsAverage(question: SurveyQuestion): number {
-    return Number(question.statistics?.average ?? 0);
+    return question.statistics?.average ?? 0;
   }
 
   function getStatisticsCount(question: SurveyQuestion): number {
-    return Number(question.statistics?.count ?? 0);
+    return question.statistics?.count ?? 0;
   }
 
   function getStatisticsMin(question: SurveyQuestion): number {
@@ -145,7 +147,7 @@
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button class="btn btn-light" onclick={handleNavigateBack}>
+    <button type="button" class="btn btn-light" onclick={handleNavigateBack}>
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
     </button>
   </div>
@@ -163,19 +165,17 @@
       {#if hasData}
         <!-- Survey Header -->
         <div class="card results-header">
-          <h2 class="survey-title">{survey?.title ?? ''}</h2>
+          <h2 class="survey-title">{survey.title}</h2>
           <div class="survey-meta">
             <span
-              ><i class="fas fa-calendar"></i> Erstellt: {formatGermanDate(survey?.createdAt)}</span
+              ><i class="fas fa-calendar"></i> Erstellt: {formatGermanDate(survey.createdAt)}</span
             >
             <span
-              ><i class="fas fa-calendar-check"></i> Endet: {formatGermanDate(
-                survey?.endDate,
-              )}</span
+              ><i class="fas fa-calendar-check"></i> Endet: {formatGermanDate(survey.endDate)}</span
             >
             <span>
               <i class="fas fa-user-shield"></i>
-              {survey !== null && isAnonymousSurvey(survey) ? 'Anonym' : 'Nicht anonym'}
+              {isAnonymousSurvey(survey) ? 'Anonym' : 'Nicht anonym'}
             </span>
           </div>
         </div>
@@ -183,6 +183,7 @@
         <!-- Export Actions -->
         <div class="export-actions">
           <button
+            type="button"
             class="btn btn-upload"
             id="export-excel"
             onclick={handleExportExcel}
@@ -195,10 +196,10 @@
             {/if}
             Excel Export
           </button>
-          <button class="btn btn-upload" id="export-pdf" onclick={handleExportPDF}>
+          <button type="button" class="btn btn-upload" id="export-pdf" onclick={handleExportPDF}>
             <i class="fas fa-file-pdf"></i> PDF Export
           </button>
-          <button class="btn btn-upload" onclick={handlePrint}>
+          <button type="button" class="btn btn-upload" onclick={handlePrint}>
             <i class="fas fa-print"></i> Drucken
           </button>
         </div>
@@ -225,7 +226,7 @@
           </div>
           <div class="card-stat">
             <h3 class="text-3xl font-bold text-blue-500 mb-1">
-              {survey?.status === 'active' ? 'Aktiv' : getStatusText(survey?.status ?? 'completed')}
+              {survey.status === 'active' ? 'Aktiv' : getStatusText(survey.status)}
             </h3>
             <p class="text-sm text-gray-400">Status</p>
           </div>
@@ -340,7 +341,13 @@
                   {@const completedDate = getCompletedDate(response)}
                   {@const isExpanded = isResponseExpanded(index)}
                   <div class="accordion__item" class:accordion__item--active={isExpanded}>
-                    <button class="accordion__header" onclick={() => handleAccordionToggle(index)}>
+                    <button
+                      type="button"
+                      class="accordion__header"
+                      onclick={() => {
+                        handleAccordionToggle(index);
+                      }}
+                    >
                       <span class="accordion__title">
                         {respondentName} &#8226; <i class="fas fa-clock"></i>
                         {completedDate}
@@ -379,7 +386,7 @@
         <div class="empty-state">
           <div class="empty-icon">&#128202;</div>
           <p>Keine Umfrage-Daten verfügbar</p>
-          <button class="btn btn-cancel" onclick={handleNavigateBack}>
+          <button type="button" class="btn btn-cancel" onclick={handleNavigateBack}>
             Zurück zur Übersicht
           </button>
         </div>

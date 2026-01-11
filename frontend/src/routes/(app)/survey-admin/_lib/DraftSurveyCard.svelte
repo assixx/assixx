@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { Survey } from './types';
   import { getTextFromBuffer } from './utils';
+
+  import type { Survey } from './types';
 
   // =============================================================================
   // PROPS
@@ -27,8 +28,12 @@
   class="card card--clickable"
   role="button"
   tabindex="0"
-  onclick={() => onedit(survey.id ?? surveyId)}
-  onkeydown={(e) => e.key === 'Enter' && onedit(survey.id ?? surveyId)}
+  onclick={() => {
+    onedit(survey.id ?? surveyId);
+  }}
+  onkeydown={(e) => {
+    if (e.key === 'Enter') onedit(survey.id ?? surveyId);
+  }}
 >
   <div class="flex justify-between items-start mb-4">
     <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>

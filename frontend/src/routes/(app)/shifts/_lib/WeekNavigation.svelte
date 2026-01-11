@@ -16,7 +16,9 @@
   <button
     type="button"
     class="btn btn-secondary"
-    onclick={() => onnavigateWeek(-1)}
+    onclick={() => {
+      onnavigateWeek(-1);
+    }}
     aria-label="Vorherige Woche"
   >
     <i class="fas fa-chevron-left mr-1"></i>
@@ -28,7 +30,9 @@
   <button
     type="button"
     class="btn btn-secondary"
-    onclick={() => onnavigateWeek(1)}
+    onclick={() => {
+      onnavigateWeek(1);
+    }}
     aria-label="Nächste Woche"
   >
     Nächste Woche

@@ -5,17 +5,54 @@
 
 import { getApiClient } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
+import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
+
 import type {
   UserProfile,
   ApprovalItem,
   ProfileUpdatePayload,
   PasswordChangePayload,
-  ApprovalsResponse,
-  PictureUploadResponse,
 } from './types';
-import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
 
 const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Type-safe extraction of array data from various API response formats
+ * Handles: T[], { data: T[] }, { [key]: T[] }
+ */
+function extractArrayFromResponse<T>(result: unknown, key?: string): T[] {
+  if (Array.isArray(result)) {
+    return result as T[];
+  }
+
+  if (result === null || typeof result !== 'object') {
+    return [];
+  }
+
+  const obj = result as Record<string, unknown>;
+
+  // { [key]: T[] } - e.g. { approvals: ApprovalItem[] }
+
+  if (key !== undefined && Array.isArray(obj[key])) {
+    return obj[key] as T[];
+  }
+
+  // { data: T[] }
+  if (Array.isArray(obj.data)) {
+    return obj.data as T[];
+  }
+
+  return [];
+}
+
+// =============================================================================
+// LOAD FUNCTIONS
+// =============================================================================
 
 /**
  * Load user profile data
@@ -45,12 +82,12 @@ export async function loadProfile(): Promise<{
 export function loadProfilePicture(userPicture?: string): string | null {
   // Check localStorage cache first
   const cached = localStorage.getItem(STORAGE_KEYS.profilePictureCache);
-  if (cached && cached !== 'null' && cached !== '') {
+  if (cached !== null && cached !== 'null' && cached !== '') {
     return cached;
   }
 
   // Use user's profile picture if available
-  if (userPicture) {
+  if (userPicture !== undefined && userPicture !== '') {
     localStorage.setItem(STORAGE_KEYS.profilePictureCache, userPicture);
     return userPicture;
   }
@@ -64,17 +101,8 @@ export function loadProfilePicture(userPicture?: string): string | null {
  */
 export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   try {
-    const result = await apiClient.get('/tenant-deletion/pending-approvals');
-
-    if (Array.isArray(result)) {
-      return result;
-    } else if ('approvals' in result && Array.isArray(result.approvals)) {
-      return result.approvals;
-    } else if ('data' in result && Array.isArray(result.data)) {
-      return result.data;
-    }
-
-    return [];
+    const result: unknown = await apiClient.get('/tenant-deletion/pending-approvals');
+    return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
   } catch (err) {
     console.warn('[RootProfile] Could not load approvals:', err);
     return [];
@@ -108,17 +136,22 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
   const formData = new FormData();
   formData.append('profilePicture', file);
 
-  const result = await apiClient.upload('/users/me/profile-picture', formData);
+  const result: unknown = await apiClient.upload('/users/me/profile-picture', formData);
 
   let newUrl: string | null = null;
 
   if (typeof result === 'string') {
     newUrl = result;
-  } else if (result && typeof result === 'object') {
-    newUrl = result.url ?? result.profilePicture ?? null;
+  } else if (result !== null && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    if (typeof obj.url === 'string') {
+      newUrl = obj.url;
+    } else if (typeof obj.profilePicture === 'string') {
+      newUrl = obj.profilePicture;
+    }
   }
 
-  if (newUrl) {
+  if (newUrl !== null) {
     localStorage.setItem(STORAGE_KEYS.profilePictureCache, newUrl);
   }
 
@@ -163,8 +196,14 @@ export async function rejectRequest(id: number): Promise<void> {
  */
 export function parseJwtRole(token: string): string | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.role ?? null;
+    const payload: unknown = JSON.parse(atob(token.split('.')[1]));
+    if (payload !== null && typeof payload === 'object') {
+      const obj = payload as Record<string, unknown>;
+      if (typeof obj.role === 'string') {
+        return obj.role;
+      }
+    }
+    return null;
   } catch {
     return null;
   }

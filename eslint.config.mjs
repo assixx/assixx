@@ -1,8 +1,7 @@
 // ESLint Configuration - PostgreSQL 17 + pg (Raw SQL) + TypeScript
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+// Modernized for typescript-eslint v8+ (unified package)
+// For more info, see https://typescript-eslint.io/getting-started/
 import js from '@eslint/js';
-import typescriptPlugin from '@typescript-eslint/eslint-plugin';
-import typescript from '@typescript-eslint/parser';
 import vitestPlugin from '@vitest/eslint-plugin';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
@@ -15,11 +14,22 @@ import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import storybook from 'eslint-plugin-storybook';
 import tsdocPlugin from 'eslint-plugin-tsdoc';
 import unicornPlugin from 'eslint-plugin-unicorn';
+import tseslint from 'typescript-eslint';
 
 export default [
   // Global ignores - must be first to apply to all configs
+  // NOTE: Frontend has its own eslint.config.mjs with Svelte + strict rules
+  // Run: cd frontend && pnpm run lint
   {
     ignores: [
+      // =============================================================
+      // FRONTEND - Has separate ESLint config with Svelte support
+      // =============================================================
+      'frontend/**',
+
+      // =============================================================
+      // STANDARD IGNORES
+      // =============================================================
       'node_modules/**',
       'archive/**',
       'scripts/analyze-css.cjs',
@@ -29,32 +39,25 @@ export default [
       'dist/**',
       'build/**',
       '*.min.js',
-      '**/*.bak', // Ignore all backup files
+      '**/*.bak',
       'backend/dist/**',
       'backend/src/routes/v1/**',
-      'backend/archive/**', // Archived code - not actively maintained
-      'frontend/dist/**',
-      'frontend/.svelte-kit/**',
-      '**/.svelte-kit/**',
+      'backend/archive/**',
       'coverage/**',
       '*.log',
       'backend/logs/**',
       '.env',
       '.env.*',
       'backend/**/*.js',
-      '!frontend/dist/**/*.js',
       '!scripts/fix-esm-imports.js',
       'scripts/fix-*.js',
       'uploads/**',
       '**/*.yml',
       '**/*.yaml',
-      'frontend/src/scripts/lib/**',
-      'frontend/src/styles/lib/**',
       'backups/**',
       '.storybook/**',
       'stories/**',
       'design-system/build/**',
-      'frontend/public/**',
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',
@@ -68,7 +71,6 @@ export default [
       '**/test/**',
       '**/tests/**',
       '**/*.html',
-      // Legacy Frontend - archived
       'frontend-legacy/**',
     ],
   }, // Base JavaScript configuration
@@ -82,11 +84,11 @@ export default [
     files: ['backend/**/*.ts', 'backend/**/*.tsx'],
     ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
     languageOptions: {
-      parser: typescript,
+      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2022, // ES2022 für BigInt (PostgreSQL BIGINT/BIGSERIAL)
         sourceType: 'module',
-        project: './backend/tsconfig.json',
+        projectService: true, // v8 recommended: automatic tsconfig discovery
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -112,7 +114,7 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': typescriptPlugin,
+      '@typescript-eslint': tseslint.plugin,
       prettier,
       'import-x': importPlugin,
       tsdoc: tsdocPlugin,
@@ -133,8 +135,9 @@ export default [
       'import-x/external-module-folders': ['node_modules', 'node_modules/@types'],
     },
     rules: {
-      ...typescriptPlugin.configs['strict-type-checked'].rules,
-      ...typescriptPlugin.configs['stylistic-type-checked'].rules,
+      // v8: Access rules via tseslint.plugin.configs (same structure as before)
+      ...tseslint.plugin.configs['strict-type-checked'].rules,
+      ...tseslint.plugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
       'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
@@ -158,7 +161,8 @@ export default [
       ],
 
       // PostgreSQL BigInt Precision (BIGINT/BIGSERIAL)
-      '@typescript-eslint/no-loss-of-precision': 'error',
+      // NOTE: @typescript-eslint/no-loss-of-precision deprecated in v8, use base ESLint rule
+      'no-loss-of-precision': 'error',
 
       // Enterprise Code Quality Standards
       // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
@@ -240,7 +244,7 @@ export default [
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
       'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
       '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-misused-promises': 'error',
+      // no-misused-promises configured below with detailed options
       '@typescript-eslint/await-thenable': 'error',
       // Backend erlaubt || für strings und numbers
       '@typescript-eslint/prefer-nullish-coalescing': [
@@ -305,7 +309,6 @@ export default [
       ],
 
       '@typescript-eslint/return-await': ['error', 'always'],
-      // eslint-disable-next-line no-dupe-keys
       '@typescript-eslint/no-misused-promises': [
         'error',
         {
@@ -348,8 +351,12 @@ export default [
       'security/detect-no-csrf-before-method-override': 'error',
       'security/detect-possible-timing-attacks': 'error',
       'security/detect-pseudoRandomBytes': 'error',
-      // detect-object-injection bleibt warn - zu viele false positives bei computed properties
-      'security/detect-object-injection': 'warn',
+      // detect-object-injection DEAKTIVIERT für Frontend
+      // Grund: Extrem hohe False-Positive-Rate, keine Konfigurationsoptionen
+      // TypeScript types schützen bereits bei Record<K,V>[key] Zugriffen
+      // Siehe: https://github.com/nodesecurity/eslint-plugin-security/issues/21
+      // GitLab hat diese Regel ebenfalls deaktiviert: https://gitlab.com/gitlab-org/gitlab/-/issues/351399
+      'security/detect-object-injection': 'off',
 
       'no-unsanitized/method': 'error', // Regel 10: Zero Warnings
       'no-unsanitized/property': 'error',
@@ -499,273 +506,21 @@ export default [
     },
   },
 
-  // TypeScript configuration for frontend
-  {
-    files: ['frontend/**/*.ts', 'frontend/**/*.tsx'],
-    languageOptions: {
-      parser: typescript,
-      parserOptions: {
-        ecmaVersion: 2021,
-        sourceType: 'module',
-        project: './frontend/tsconfig.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        console: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        fetch: 'readonly',
-        FormData: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        alert: 'readonly',
-        confirm: 'readonly',
-        Element: 'readonly',
-        HTMLElement: 'readonly',
-        Event: 'readonly',
-        CustomEvent: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        atob: 'readonly',
-        btoa: 'readonly',
-        NodeJS: 'readonly',
-        closeAdminModal: 'readonly',
-        showModal: 'readonly',
-        hideModal: 'readonly',
-        navigator: 'readonly',
-        screen: 'readonly',
-        crypto: 'readonly',
-        MutationObserver: 'readonly',
-        IntersectionObserver: 'readonly',
-        requestAnimationFrame: 'readonly',
-        Audio: 'readonly',
-        prompt: 'readonly',
-        performance: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        FileReader: 'readonly',
-        Blob: 'readonly',
-        event: 'readonly',
-        Toastify: 'readonly',
-        ApiClient: 'readonly',
-        apiClient: 'readonly',
-      },
-    },
-    plugins: {
-      '@typescript-eslint': typescriptPlugin,
-      prettier,
-      'import-x': importPlugin,
-    },
-    settings: {
-      'import-x/resolver': {
-        typescript: {
-          project: './frontend/tsconfig.json',
-          alwaysTryTypes: true,
-        },
-        node: {
-          extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-        },
-      },
-      'import-x/parsers': {
-        '@typescript-eslint/parser': ['.ts', '.tsx'],
-      },
-      'import-x/external-module-folders': ['node_modules', 'node_modules/@types'],
-    },
-    rules: {
-      ...typescriptPlugin.configs['strict-type-checked'].rules,
-      ...typescriptPlugin.configs['stylistic-type-checked'].rules,
-
-      'prettier/prettier': 'error',
-
-      // Disable no-undef for TypeScript - TypeScript handles this better with type checking
-      // ESLint's no-undef doesn't understand TypeScript's global declarations (.d.ts files)
-      // See: https://typescript-eslint.io/linting/troubleshooting/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-runtime-errors
-      'no-undef': 'off',
-
-      // Enterprise Standards for Frontend (stricter than backend)
-      // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
-      // See: docs/POWER-OF-TEN-RULES.md
-      'max-lines': [
-        'error', // Regel 10: Zero Warnings
-        {
-          max: 400,
-          skipBlankLines: true,
-          skipComments: true,
-        },
-      ],
-      'max-lines-per-function': [
-        'error', // Regel 10: Zero Warnings
-        {
-          max: 60, // Regel 4: Max 60 Zeilen pro Funktion
-          skipBlankLines: true,
-          skipComments: true,
-          IIFEs: true,
-        },
-      ],
-      'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
-      'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
-      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
-
-      // Line Length Control
-      'max-len': [
-        'error', // Regel 10: Zero Warnings
-        {
-          code: 120,
-          tabWidth: 2,
-          ignoreUrls: true,
-          ignoreStrings: true,
-          ignoreTemplateLiterals: true,
-          ignoreRegExpLiterals: true,
-          ignoreComments: true,
-        },
-      ],
-
-      // Import Dependencies Limit
-      'import-x/max-dependencies': [
-        'error', // Regel 10: Zero Warnings
-        {
-          max: 30,
-          ignoreTypeImports: true,
-        },
-      ],
-
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-        },
-      ],
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/typedef': [
-        'error',
-        {
-          arrayDestructuring: false,
-          arrowParameter: false,
-          memberVariableDeclaration: false,
-          objectDestructuring: false,
-          parameter: true,
-          propertyDeclaration: true,
-          variableDeclaration: false,
-        },
-      ],
-      // Disable no-inferrable-types because it conflicts with typedef rule
-      // We want explicit types for better documentation and consistency
-      '@typescript-eslint/no-inferrable-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-non-null-assertion': 'error',
-      'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
-      '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-misused-promises': 'error',
-      '@typescript-eslint/await-thenable': 'error',
-      // Frontend nutzt strikteres nullish-coalescing
-      '@typescript-eslint/prefer-nullish-coalescing': [
-        'error',
-        {
-          ignoreConditionalTests: false,
-          ignoreTernaryTests: false,
-          ignoreMixedLogicalExpressions: false,
-          allowRuleToRunWithoutStrictNullChecksIKnowWhatIAmDoing: false,
-        },
-      ],
-      '@typescript-eslint/prefer-optional-chain': 'error',
-
-      // Die strenge Regelung für das Frontend bleibt erhalten.
-      '@typescript-eslint/strict-boolean-expressions': [
-        'error',
-        {
-          allowString: false,
-          allowNumber: false,
-          allowNullableObject: true,
-          allowNullableBoolean: false,
-          allowNullableString: false,
-          allowNullableNumber: false,
-          allowAny: false,
-        },
-      ],
-      '@typescript-eslint/no-unsafe-assignment': 'error',
-      '@typescript-eslint/no-unsafe-call': 'error',
-      '@typescript-eslint/no-unsafe-member-access': 'error',
-      '@typescript-eslint/no-unsafe-return': 'error',
-      '@typescript-eslint/no-unsafe-argument': 'error',
-      '@typescript-eslint/only-throw-error': 'error',
-
-      'no-eval': 'error',
-      'no-implied-eval': 'error',
-      'no-new-func': 'error',
-      'no-script-url': 'error',
-      'no-unsafe-finally': 'error',
-      'require-atomic-updates': 'error',
-
-      // --- ANGEPASST --- Radikal vereinfachte Naming Convention (identisch zum Backend).
-      '@typescript-eslint/naming-convention': [
-        'error',
-        { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
-        { selector: 'variable', format: ['camelCase', 'UPPER_CASE', 'PascalCase'] },
-        { selector: ['property', 'objectLiteralProperty', 'typeProperty'], format: null },
-        { selector: 'typeLike', format: ['PascalCase'] },
-        { selector: 'enumMember', format: ['UPPER_CASE'] },
-      ],
-
-      // --- ANGEPASST --- Erlaubt nun Zahlen und Booleans in Template Strings.
-      '@typescript-eslint/restrict-template-expressions': [
-        'error',
-        {
-          allowNumber: true,
-          allowBoolean: true,
-          allowAny: false,
-          allowNullish: false,
-        },
-      ],
-
-      '@typescript-eslint/return-await': ['error', 'always'],
-      // eslint-disable-next-line no-dupe-keys
-      '@typescript-eslint/no-misused-promises': [
-        'error',
-        {
-          checksVoidReturn: true,
-          checksConditionals: true,
-        },
-      ],
-
-      // Import-Reihenfolge - Regel 10: Zero Warnings
-      'import-x/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', ['parent', 'sibling'], 'index'],
-          'newlines-between': 'never',
-          alphabetize: { order: 'ignore' },
-        },
-      ],
-      'import-x/no-duplicates': 'error',
-      'import-x/no-cycle': 'error',
-      'import-x/no-self-import': 'error',
-    },
-  }, // HTML configuration removed - HTML files are ignored
-  // This project doesn't use inline JavaScript in HTML files
-  // All JavaScript is in separate TypeScript modules
-
-  // Frontend-specific DOM rules
-  {
-    files: ['frontend/**/*.ts', 'frontend/**/*.tsx', 'frontend/**/*.js'],
-    rules: {
-      // Keep essential DOM modernization
-      'unicorn/prefer-modern-dom-apis': 'error', // DOM modernization
-    },
-  },
+  // =============================================================================
+  // NOTE: Frontend configuration REMOVED - see frontend/eslint.config.mjs
+  // Frontend has its own config with Svelte support + all strict rules
+  // Run: cd frontend && pnpm run lint
+  // =============================================================================
 
   // Test files configuration - Vitest (Backend)
   {
     files: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
     languageOptions: {
-      parser: typescript,
+      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: './backend/tsconfig.test.json',
+        projectService: true, // v8 recommended
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -788,13 +543,13 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': typescriptPlugin,
+      '@typescript-eslint': tseslint.plugin,
       prettier,
       'import-x': importPlugin,
       vitest: vitestPlugin,
     },
     rules: {
-      ...typescriptPlugin.configs.recommended.rules,
+      ...tseslint.plugin.configs.recommended.rules,
       ...vitestPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'off', // In Tests oft notwendig
@@ -891,86 +646,9 @@ export default [
       'prefer-promise-reject-errors': 'error',
     },
   },
+  // NOTE: Frontend JS/config blocks REMOVED - handled by frontend/eslint.config.mjs
   {
-    files: [
-      'frontend/src/scripts/**/*.js',
-      'frontend/src/components/**/*.js',
-      'frontend/src/pages/**/*.js',
-      'frontend/src/design-system/**/*.js',
-    ],
-    languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'module',
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        location: 'readonly',
-        navigator: 'readonly',
-        fetch: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        alert: 'readonly',
-        confirm: 'readonly',
-        prompt: 'readonly',
-        atob: 'readonly',
-        btoa: 'readonly',
-        FormData: 'readonly',
-        FileReader: 'readonly',
-        Blob: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        WebSocket: 'readonly',
-        XMLHttpRequest: 'readonly',
-        Event: 'readonly',
-        CustomEvent: 'readonly',
-        EventTarget: 'readonly',
-        Element: 'readonly',
-        HTMLElement: 'readonly',
-        MutationObserver: 'readonly',
-        IntersectionObserver: 'readonly',
-        screen: 'readonly',
-        crypto: 'readonly',
-        TextEncoder: 'readonly',
-        TextDecoder: 'readonly',
-        AudioContext: 'readonly',
-        webkitAudioContext: 'readonly',
-        $: 'readonly',
-        jQuery: 'readonly',
-        bootstrap: 'readonly',
-        marked: 'readonly',
-        FullCalendar: 'readonly',
-        tippy: 'readonly',
-        API_BASE_URL: 'readonly',
-        WS_URL: 'readonly',
-        fetchWithAuth: 'readonly',
-        showError: 'readonly',
-        showSuccess: 'readonly',
-        fileNameSpan: 'readonly',
-        authService: 'readonly',
-        showModal: 'readonly',
-        hideModal: 'readonly',
-      },
-    },
-    rules: {
-      'prettier/prettier': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'no-console': 'off',
-    },
-  },
-  {
-    files: ['frontend/vite.config.js', 'frontend/postcss.config.js'],
-    languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'module',
-    },
-  },
-  {
-    files: [
-      'eslint.config.js',
-      'backend/eslint.config.js',
-      'frontend/eslint.config.js',
-      'scripts/fix-esm-imports.js',
-    ],
+    files: ['eslint.config.mjs', 'backend/eslint.config.mjs', 'scripts/fix-esm-imports.js'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',

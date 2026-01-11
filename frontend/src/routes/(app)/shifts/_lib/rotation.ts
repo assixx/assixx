@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+
 import type { RotationPattern, Employee, RotationHistoryEntryAPI, ShiftType } from './types';
 
 const apiClient = getApiClient();

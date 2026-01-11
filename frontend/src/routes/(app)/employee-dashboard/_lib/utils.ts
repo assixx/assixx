@@ -3,13 +3,14 @@
  * @module employee-dashboard/_lib/utils
  */
 
-import type { CalendarEvent, FormattedEventDate } from './types';
 import {
   ORG_LEVEL_TEXT,
   PLACEHOLDER_TEXT,
   PRIORITY_LABELS,
   BLACKBOARD_ORG_LABELS,
 } from './constants';
+
+import type { CalendarEvent, FormattedEventDate } from './types';
 
 /**
  * Get display name from user data
@@ -35,7 +36,7 @@ export function getDisplayValue(
   value?: string,
   fallback: string = PLACEHOLDER_TEXT.notAssigned,
 ): string {
-  return value && value !== '' ? value : fallback;
+  return value !== undefined && value !== '' ? value : fallback;
 }
 
 /**
@@ -59,7 +60,7 @@ export function formatEventDate(event: CalendarEvent): FormattedEventDate {
  * @param orgLevel - Organization level key
  */
 export function getOrgLevelText(orgLevel?: string): string {
-  if (!orgLevel) return ORG_LEVEL_TEXT.personal;
+  if (orgLevel === undefined || orgLevel === '') return ORG_LEVEL_TEXT.personal;
   return ORG_LEVEL_TEXT[orgLevel] ?? ORG_LEVEL_TEXT.personal;
 }
 
@@ -112,6 +113,42 @@ export function getBlackboardOrgLabel(orgLevel: string): string {
   return BLACKBOARD_ORG_LABELS[orgLevel] ?? BLACKBOARD_ORG_LABELS.company;
 }
 
+/** Quill Delta ops type */
+interface QuillDelta {
+  ops?: { insert?: string }[];
+}
+
+/**
+ * Extract text from Quill Delta ops array
+ */
+function extractTextFromOps(delta: QuillDelta): string | null {
+  if (delta.ops === undefined || !Array.isArray(delta.ops)) return null;
+  return delta.ops
+    .map((op) => (typeof op.insert === 'string' ? op.insert : ''))
+    .join('')
+    .trim();
+}
+
+/**
+ * Try parsing content string as JSON Quill Delta
+ * Returns extracted text or original content if not JSON Delta
+ */
+function parseStringContent(content: string): string {
+  try {
+    const parsed = JSON.parse(content) as QuillDelta;
+    return extractTextFromOps(parsed) ?? content;
+  } catch {
+    return content;
+  }
+}
+
+/**
+ * Check if value is a stringifiable primitive
+ */
+function isStringifiablePrimitive(value: unknown): value is number | boolean {
+  return typeof value === 'number' || typeof value === 'boolean';
+}
+
 /**
  * Parse blackboard content from JSON or string
  * @param content - Raw content (JSON, string, or unknown)
@@ -120,34 +157,21 @@ export function parseContent(content: unknown): string {
   if (content === null || content === undefined) return '';
 
   if (typeof content === 'string') {
-    // Try to parse as JSON
-    try {
-      const parsed = JSON.parse(content) as { ops?: { insert?: string }[] };
-      if (parsed.ops && Array.isArray(parsed.ops)) {
-        return parsed.ops
-          .map((op) => (typeof op.insert === 'string' ? op.insert : ''))
-          .join('')
-          .trim();
-      }
-    } catch {
-      // Not JSON, return as-is
-      return content;
-    }
-    return content;
+    return parseStringContent(content);
   }
 
-  // Handle Quill Delta format directly
+  // Handle Quill Delta format directly (object with ops)
   if (typeof content === 'object' && 'ops' in content) {
-    const delta = content as { ops?: { insert?: string }[] };
-    if (delta.ops && Array.isArray(delta.ops)) {
-      return delta.ops
-        .map((op) => (typeof op.insert === 'string' ? op.insert : ''))
-        .join('')
-        .trim();
-    }
+    return extractTextFromOps(content as QuillDelta) ?? '';
   }
 
-  return String(content);
+  // Handle primitives (number, boolean) - stringify safely
+  if (isStringifiablePrimitive(content)) {
+    return String(content);
+  }
+
+  // Unknown object type - return empty string (avoid '[object Object]')
+  return '';
 }
 
 /**

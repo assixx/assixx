@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { ChatFolder } from './types';
   import { MESSAGES, MIN_LIST_ROWS } from './constants';
+
+  import type { ChatFolder } from './types';
 
   interface Props {
     folders: ChatFolder[];
@@ -36,7 +37,9 @@
           : '<i class="fas fa-user" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'}
         <tr
           class="chat-folder-row cursor-pointer hover:bg-surface-2"
-          onclick={() => onfolderClick(folder.conversationId)}
+          onclick={() => {
+            onfolderClick(folder.conversationId);
+          }}
         >
           <td>
             <div class="flex items-center gap-3">

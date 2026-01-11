@@ -86,69 +86,117 @@ export class ChatWebSocketServer {
     });
   }
 
+  /** Extract JWT token from request URL or Authorization header */
+  private extractTokenFromRequest(request: {
+    url: string | undefined;
+    headers: { host: string | undefined; authorization: string | undefined };
+  }): string | null {
+    const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+    const token =
+      url.searchParams.get('token') ?? request.headers.authorization?.replace('Bearer ', '');
+    return token !== undefined && token !== '' ? token : null;
+  }
+
+  /** Verify JWT and return decoded payload, or null if invalid */
+  private verifyToken(token: string): {
+    id: number;
+    tenantId: number;
+    role: string;
+    type?: 'access' | 'refresh';
+  } | null {
+    const jwtSecret = process.env['JWT_SECRET'];
+    if (jwtSecret === undefined || jwtSecret === '') return null;
+
+    try {
+      return jwt.verify(token, jwtSecret) as {
+        id: number;
+        tenantId: number;
+        role: string;
+        type?: 'access' | 'refresh';
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Check if user is active in database (is_active = 1) */
+  private async isUserActive(userId: number, tenantId: number): Promise<boolean> {
+    interface UserActiveResult extends RowDataPacket {
+      is_active: number;
+    }
+    const [userRows] = await query<UserActiveResult[]>(
+      'SELECT is_active FROM users WHERE id = $1 AND tenant_id = $2',
+      [userId, tenantId],
+    );
+    return userRows[0]?.is_active === 1;
+  }
+
+  /** Setup WebSocket client with event handlers */
+  private setupWebSocketClient(
+    ws: ExtendedWebSocket,
+    userId: number,
+    tenantId: number,
+    role: string,
+  ): void {
+    ws.userId = userId;
+    ws.tenantId = tenantId;
+    ws.role = role;
+    ws.isAlive = true;
+    this.clients.set(userId, ws);
+
+    ws.on('message', (data: WebSocketData) => void this.handleMessage(ws, data));
+    ws.on('close', () => void this.handleDisconnection(ws));
+    ws.on('error', (error: Error) => {
+      this.handleError(ws, error);
+    });
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
+  }
+
   private async handleConnection(
     ws: ExtendedWebSocket,
     request: {
       url: string | undefined;
-      headers: {
-        host: string | undefined;
-        authorization: string | undefined;
-      };
+      headers: { host: string | undefined; authorization: string | undefined };
     },
   ): Promise<void> {
     try {
-      // Token aus Query-Parameter oder Header extrahieren
-      const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
-      const token =
-        url.searchParams.get('token') ?? request.headers.authorization?.replace('Bearer ', '');
-
-      if (token === undefined || token === '') {
+      const token = this.extractTokenFromRequest(request);
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- Not a secret comparison, just null check
+      if (token === null) {
         ws.close(1008, 'Token erforderlich');
         return;
       }
 
-      // Token verifizieren
-      const jwtSecret = process.env['JWT_SECRET'];
-      if (jwtSecret === undefined || jwtSecret === '') {
+      const decoded = this.verifyToken(token);
+      if (decoded === null) {
         ws.close(1008, 'JWT Secret nicht konfiguriert');
         return;
       }
 
-      const decoded = jwt.verify(token, jwtSecret) as {
-        id: number;
-        tenantId: number; // v2 uses camelCase!
-        role: string;
-      };
-      const userId = decoded.id;
-      const tenantId = decoded.tenantId; // Use camelCase to match v2 tokens
+      // SECURITY: Reject refresh tokens - only access tokens allowed
+      if (decoded.type !== 'access') {
+        logger.warn('WebSocket: Rejected non-access token', { type: decoded.type });
+        ws.close(1008, 'Invalid token type');
+        return;
+      }
 
-      // Benutzer-Informationen zur Verbindung hinzufügen
-      ws.userId = userId;
-      ws.tenantId = tenantId;
-      ws.role = decoded.role;
-      ws.isAlive = true;
+      // SECURITY: Check if user is active (is_active = 1)
+      if (!(await this.isUserActive(decoded.id, decoded.tenantId))) {
+        logger.warn('WebSocket: Rejected inactive/deleted user', { userId: decoded.id });
+        ws.close(1008, 'User account inactive');
+        return;
+      }
 
-      // Verbindung in Map speichern
-      this.clients.set(userId, ws);
+      this.setupWebSocketClient(ws, decoded.id, decoded.tenantId, decoded.role);
 
-      // Event-Handler registrieren
-      ws.on('message', (data: WebSocketData) => void this.handleMessage(ws, data));
-      ws.on('close', () => void this.handleDisconnection(ws));
-      ws.on('error', (error: Error) => {
-        this.handleError(ws, error);
-      });
-      ws.on('pong', () => {
-        ws.isAlive = true;
-      });
-
-      // Willkommensnachricht senden
       this.sendMessage(ws, {
         type: 'connection_established',
-        data: { userId, timestamp: new Date().toISOString() },
+        data: { userId: decoded.id, timestamp: new Date().toISOString() },
       });
 
-      // Online-Status an andere Benutzer senden
-      await this.broadcastUserStatus(userId, tenantId, 'online');
+      await this.broadcastUserStatus(decoded.id, decoded.tenantId, 'online');
     } catch (error: unknown) {
       logger.error('WebSocket Authentifizierung fehlgeschlagen:', error);
       ws.close(1008, 'Authentifizierung fehlgeschlagen');

@@ -1,22 +1,19 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
+
   import { invalidateAll } from '$app/navigation';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
 
   // Page-specific CSS
   import '../../../styles/tenant-deletion-status.css';
 
-  // SSR Data
-  /** @type {{ data: import('./$types').PageData }} */
-  const { data } = $props();
-
   // Local modules
-  import { REFRESH_INTERVAL_MS, MESSAGES } from './_lib/constants';
   import {
     rejectDeletion as apiRejectDeletion,
     cancelDeletion as apiCancelDeletion,
     emergencyStop as apiEmergencyStop,
   } from './_lib/api';
+  import { REFRESH_INTERVAL_MS, MESSAGES } from './_lib/constants';
   import {
     getStatusText,
     getBadgeClass,
@@ -32,34 +29,35 @@
     showToast,
   } from './_lib/utils';
 
-  /** @typedef {import('./_lib/types').DeletionStatusItem} DeletionStatusItem */
-  /** @typedef {import('./_lib/types').ConfirmModalType} ConfirmModalType */
+  import type { PageData } from './$types';
+  import type { ConfirmModalType } from './_lib/types';
+
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
+
+  // SSR Data - properly typed from PageData
+  const { data }: { data: PageData } = $props();
 
   // =============================================================================
   // DERIVED STATE (from SSR data - single source of truth)
   // =============================================================================
 
-  /** @type {DeletionStatusItem[]} */
-  const statusData = $derived(data?.statusData ?? []);
-
-  /** @type {number | null} */
-  const currentUserId = $derived(data?.currentUserId ?? null);
-
+  const statusData = $derived(data.statusData);
+  const currentUserId = $derived(data.currentUserId);
   const hasStatusData = $derived(statusData.length > 0);
 
   // =============================================================================
   // UI STATE (local only)
   // =============================================================================
 
-  /** @type {ReturnType<typeof setInterval> | null} */
-  let refreshTimer = $state(null);
+  let refreshTimer: ReturnType<typeof setInterval> | null = $state(null);
 
   // Confirm Modal State
   let showConfirmModal = $state(false);
-  /** @type {ConfirmModalType} */
-  let confirmModalType = $state(null);
-  /** @type {number | null} */
-  let confirmModalQueueId = $state(null);
+  let confirmModalType: ConfirmModalType = $state(null);
+  let confirmModalQueueId: number | null = $state(null);
   let confirmModalLoading = $state(false);
   let rejectReason = $state('');
 
@@ -102,8 +100,7 @@
   // MODAL HANDLERS
   // =============================================================================
 
-  /** @param {number} queueId */
-  function openRejectModal(queueId) {
+  function openRejectModal(queueId: number) {
     confirmModalType = 'reject';
     confirmModalQueueId = queueId;
     rejectReason = '';
@@ -116,8 +113,7 @@
     showConfirmModal = true;
   }
 
-  /** @param {number} queueId */
-  function openEmergencyStopModal(queueId) {
+  function openEmergencyStopModal(queueId: number) {
     confirmModalType = 'emergency-stop';
     confirmModalQueueId = queueId;
     showConfirmModal = true;
@@ -131,36 +127,44 @@
     confirmModalLoading = false;
   }
 
+  async function executeModalAction(): Promise<void> {
+    switch (confirmModalType) {
+      case 'reject':
+        if (confirmModalQueueId !== null && isRejectReasonValid) {
+          await apiRejectDeletion(confirmModalQueueId, rejectReason);
+          showToast(MESSAGES.rejected, 'success');
+        }
+        break;
+      case 'cancel':
+        await apiCancelDeletion();
+        showToast(MESSAGES.cancelled, 'success');
+        break;
+      case 'emergency-stop':
+        if (confirmModalQueueId !== null) {
+          await apiEmergencyStop(confirmModalQueueId);
+          showToast(MESSAGES.emergencyStopped, 'success');
+        }
+        break;
+    }
+  }
+
   async function handleConfirmModalAction() {
     if (confirmModalLoading) return;
     confirmModalLoading = true;
 
+    const resetLoading = () => {
+      confirmModalLoading = false;
+    };
+
     try {
-      switch (confirmModalType) {
-        case 'reject':
-          if (confirmModalQueueId !== null && isRejectReasonValid) {
-            await apiRejectDeletion(confirmModalQueueId, rejectReason);
-            showToast(MESSAGES.rejected, 'success');
-          }
-          break;
-        case 'cancel':
-          await apiCancelDeletion();
-          showToast(MESSAGES.cancelled, 'success');
-          break;
-        case 'emergency-stop':
-          if (confirmModalQueueId !== null) {
-            await apiEmergencyStop(confirmModalQueueId);
-            showToast(MESSAGES.emergencyStopped, 'success');
-          }
-          break;
-      }
+      await executeModalAction();
       closeConfirmModal();
       await invalidateAll();
     } catch (err) {
       console.error('[TenantDeletion] Error in modal action:', err);
       const errorMessage = err instanceof Error ? err.message : MESSAGES.genericError;
       showToast(errorMessage, 'error');
-      confirmModalLoading = false;
+      resetLoading();
     }
   }
 
@@ -168,15 +172,13 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  /** @param {KeyboardEvent} event */
-  function handleKeydown(event) {
+  function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && showConfirmModal) {
       closeConfirmModal();
     }
   }
 
-  /** @param {MouseEvent} event */
-  function handleBackdropClick(event) {
+  function handleBackdropClick(event: MouseEvent) {
     if (event.target === event.currentTarget && showConfirmModal) {
       closeConfirmModal();
     }
@@ -245,7 +247,7 @@
                   <p>Tenant ID: {item.tenantId}</p>
                   <p>Beantragt von: {getRequesterName(item)} (User ID: {item.requestedBy})</p>
                   <p>Beantragt am: {formatDate(new Date(item.requestedAt))}</p>
-                  <p><strong>Aktueller User ID:</strong> {currentUserId ?? 'N/A'}</p>
+                  <p><strong>Aktueller User ID:</strong> {currentUserId}</p>
                   <p>
                     <strong>Status Info:</strong> canApprove={item.canApprove}, canCancel={item.canCancel}
                   </p>
@@ -336,11 +338,17 @@
               {#if item.canApprove || item.canCancel}
                 <div class="action-buttons">
                   {#if item.canApprove}
-                    <button class="btn btn-danger" onclick={() => openRejectModal(item.queueId)}>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      onclick={() => {
+                        openRejectModal(item.queueId);
+                      }}
+                    >
                       <i class="fas fa-times mr-2"></i> Ablehnen
                     </button>
                     <a
-                      href="{base}/tenant-deletion-approve?queueId={item.queueId}"
+                      href={resolvePath(`/tenant-deletion-approve?queueId=${item.queueId}`)}
                       class="btn btn-success"
                       data-sveltekit-reload
                     >
@@ -348,7 +356,7 @@
                     </a>
                   {/if}
                   {#if item.canCancel}
-                    <button class="btn btn-cancel" onclick={openCancelModal}>
+                    <button type="button" class="btn btn-cancel" onclick={openCancelModal}>
                       <i class="fas fa-ban mr-2"></i> Abbrechen (als Ersteller)
                     </button>
                   {/if}
@@ -359,8 +367,11 @@
               {#if shouldShowEmergencyStop(item)}
                 <div class="action-buttons mt-6">
                   <button
+                    type="button"
                     class="btn btn-warning"
-                    onclick={() => openEmergencyStopModal(item.queueId)}
+                    onclick={() => {
+                      openEmergencyStopModal(item.queueId);
+                    }}
                   >
                     <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
                   </button>
@@ -399,6 +410,7 @@
         <p class="confirm-modal__message">Möchten Sie Ihre Löschanfrage wirklich abbrechen?</p>
         <div class="confirm-modal__actions">
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--cancel"
             onclick={closeConfirmModal}
             disabled={confirmModalLoading}
@@ -406,6 +418,7 @@
             Nein
           </button>
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--confirm"
             onclick={handleConfirmModalAction}
             disabled={confirmModalLoading}
@@ -433,6 +446,7 @@
         </p>
         <div class="confirm-modal__actions">
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--cancel"
             onclick={closeConfirmModal}
             disabled={confirmModalLoading}
@@ -440,6 +454,7 @@
             Abbrechen
           </button>
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--warning"
             onclick={handleConfirmModalAction}
             disabled={confirmModalLoading}
@@ -469,6 +484,7 @@
         </div>
         <div class="confirm-modal__actions">
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--cancel"
             onclick={closeConfirmModal}
             disabled={confirmModalLoading}
@@ -476,6 +492,7 @@
             Abbrechen
           </button>
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--danger"
             onclick={handleConfirmModalAction}
             disabled={confirmModalLoading || !isRejectReasonValid}

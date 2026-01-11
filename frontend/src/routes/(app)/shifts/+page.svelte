@@ -4,9 +4,26 @@
   import '../../../styles/shifts.css';
 
   import { onMount, tick } from 'svelte';
+
   import { invalidateAll } from '$app/navigation';
-  import type { PageData } from './$types';
-  import { shiftsState } from './_lib/state.svelte';
+
+  import {
+    showSuccessAlert,
+    showErrorAlert,
+    showWarningAlert,
+    showConfirm,
+    showConfirmDanger,
+  } from '$lib/utils/alerts';
+
+  import {
+    saveSchedule,
+    discardWeek,
+    discardTeamPlan,
+    discardYearPlan,
+    deleteFavoriteById,
+    addToFavorites,
+  } from './_lib/admin-actions';
+  import AdminActions from './_lib/AdminActions.svelte';
   import {
     fetchDepartments,
     fetchMachines,
@@ -18,6 +35,34 @@
     generateRotationFromConfig,
     type CustomRotationAssignment,
   } from './_lib/api';
+  import { performAutofill } from './_lib/autofill';
+  import CustomRotationModal from './_lib/CustomRotationModal.svelte';
+  import {
+    processShiftPlanResponse,
+    processRotationHistory,
+    convertTeamMembersToEmployees,
+    convertSSRTeamMembersToEmployees,
+    getWeekDateBounds,
+    loadPatternFromHistory,
+  } from './_lib/data-loader';
+  import { getEmployeeIdFromDrag } from './_lib/drag-drop';
+  import EmployeeSidebar from './_lib/EmployeeSidebar.svelte';
+  import FilterDropdowns from './_lib/FilterDropdowns.svelte';
+  import {
+    handleDragOverEvent,
+    handleDragEnterEvent,
+    handleDragLeaveEvent,
+    handleDragStartEvent,
+    handleDragEndEvent,
+    validateDropOperation,
+    addEmployeeToShiftMap,
+    buildShiftDetail,
+    type DropValidationResult,
+  } from './_lib/handlers';
+  import RotationSetupModal from './_lib/RotationSetupModal.svelte';
+  import ShiftControls from './_lib/ShiftControls.svelte';
+  import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
+  import { shiftsState } from './_lib/state.svelte';
   import {
     formatWeekRange,
     getWeekStart,
@@ -28,63 +73,25 @@
     getEmployeeDisplayName,
     getShiftLabel,
   } from './_lib/utils';
-  import type { ShiftFavorite, ShiftType, Employee } from './_lib/types';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-    showConfirm,
-    showConfirmDanger,
-  } from '$lib/utils/alerts';
-  import { performAutofill } from './_lib/autofill';
-  import {
-    processShiftPlanResponse,
-    processRotationHistory,
-    convertTeamMembersToEmployees,
-    convertSSRTeamMembersToEmployees,
-  } from './_lib/data-loader';
-  import {
-    saveSchedule,
-    discardWeek,
-    discardTeamPlan,
-    discardYearPlan,
-    deleteFavoriteById,
-    addToFavorites,
-  } from './_lib/admin-actions';
-  import {
-    handleDragOverEvent,
-    handleDragEnterEvent,
-    handleDragLeaveEvent,
-    handleDragStartEvent,
-    handleDragEndEvent,
-    validateDropOperation,
-    addEmployeeToShiftMap,
-    buildShiftDetail,
-  } from './_lib/handlers';
-  import RotationSetupModal from './_lib/RotationSetupModal.svelte';
-  import CustomRotationModal from './_lib/CustomRotationModal.svelte';
-  import type { CustomRotationConfig } from './_lib/CustomRotationModal.svelte';
-  import FilterDropdowns from './_lib/FilterDropdowns.svelte';
-  import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
-  import EmployeeSidebar from './_lib/EmployeeSidebar.svelte';
-  import AdminActions from './_lib/AdminActions.svelte';
-  import ShiftControls from './_lib/ShiftControls.svelte';
   import WeekNavigation from './_lib/WeekNavigation.svelte';
+
+  import type { PageData } from './$types';
+  import type { ShiftFavorite, ShiftType, Employee, CustomRotationConfig } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
-  const ssrUser = $derived(data?.user ?? null);
-  const ssrAreas = $derived(data?.areas ?? []);
-  const ssrTeams = $derived(data?.teams ?? []);
-  const ssrTeamMembers = $derived(data?.teamMembers ?? []);
-  const ssrFavorites = $derived(data?.favorites ?? []);
-  const ssrEmployeeTeamInfo = $derived(data?.employeeTeamInfo ?? null);
-  const ssrIsEmployee = $derived(data?.isEmployee ?? false);
+  const ssrUser = $derived(data.user);
+  const ssrAreas = $derived(data.areas);
+  const ssrTeams = $derived(data.teams);
+  const ssrTeamMembers = $derived(data.teamMembers);
+  const ssrFavorites = $derived(data.favorites);
+  const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
+  const ssrIsEmployee = $derived(data.isEmployee);
   let ssrInitialized = $state(false);
 
   // --- SSR INIT ---
   $effect(() => {
-    if (ssrInitialized || !ssrUser) return;
+    if (ssrInitialized) return;
     ssrInitialized = true;
 
     // Initialize state from SSR data
@@ -96,11 +103,11 @@
       shiftsState.setEmployeeTeamInfo(ssrEmployeeTeamInfo);
       shiftsState.setTeams(ssrTeams);
       shiftsState.setSelectedContext({
-        areaId: ssrEmployeeTeamInfo.areaId ?? null,
-        departmentId: ssrEmployeeTeamInfo.departmentId ?? null,
+        areaId: ssrEmployeeTeamInfo.areaId,
+        departmentId: ssrEmployeeTeamInfo.departmentId,
         teamId: ssrEmployeeTeamInfo.teamId,
         machineId: null,
-        teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId ?? null,
+        teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
       shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
       shiftsState.setShowPlanningUI(true);
@@ -131,10 +138,12 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside);
-    if (ssrIsEmployee && ssrEmployeeTeamInfo?.teamId) {
-      loadShiftPlan().catch(() => {});
+    if (ssrIsEmployee && ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
+      void loadShiftPlan();
     }
-    return () => document.removeEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   });
 
   // --- DROPDOWN HANDLERS ---
@@ -175,7 +184,7 @@
     shiftsState.setTeams(tms);
   }
 
-  async function handleMachineChange(machineId: number) {
+  function handleMachineChange(machineId: number): void {
     shiftsState.setSelectedContext({ machineId });
   }
 
@@ -193,132 +202,90 @@
     await loadShiftPlan();
   }
 
-  async function loadShiftPlan() {
+  async function loadShiftPlan(): Promise<void> {
     if (shiftsState.selectedContext.teamId === null) return;
 
-    // PERFORMANCE: Set loading state to prevent FOUC/flickering
-    console.info('[LOAD] Starting loadShiftPlan - isLoading: true');
     shiftsState.setIsLoading(true);
+    await tick(); // Force DOM update BEFORE API calls
 
-    // CRITICAL: Force DOM update BEFORE API calls start
-    // Without this, Svelte batches updates and loading style is never visible
-    await tick();
-    console.info('[LOAD] DOM updated with loading state');
-
-    const weekStart = getWeekStart(shiftsState.currentWeek);
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Local calculation variable
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const startDate = formatDate(weekStart);
-    const endDate = formatDate(weekEnd);
-
-    console.info('[LOAD] Fetching data for week:', startDate, '-', endDate);
+    const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
 
     try {
-      // 1. PARALLEL API Calls (plan + rotation history at the same time)
-      const [planResponse, rotationHistory] = await Promise.all([
-        fetchShiftPlan(startDate, endDate, {
-          teamId: shiftsState.selectedContext.teamId,
-          departmentId: shiftsState.selectedContext.departmentId,
-          areaId: shiftsState.selectedContext.areaId,
-          machineId: shiftsState.selectedContext.machineId,
-        }),
-        fetchRotationHistory(startDate, endDate, shiftsState.selectedContext.teamId),
-      ]);
+      const { planResponse, rotationHistory, planData, rotationData } =
+        await fetchAndProcessShiftData(startDate, endDate);
 
-      console.info(
-        '[LOAD] API responses received - plan:',
-        !!planResponse,
-        'history:',
-        rotationHistory.length,
-      );
-
-      // 2. Process data (no state updates yet - batch at the end)
-      const planData = processShiftPlanResponse(planResponse);
-      const rotationData = processRotationHistory(
+      // Load pattern type from rotation history
+      const { patternId, patternType } = await loadPatternFromHistory(
         rotationHistory,
-        planData.weeklyShifts,
-        planData.shiftDetails,
-        shiftsState.employees,
+        fetchRotationPatternById,
       );
 
-      // 3. Load pattern type if rotation history exists
-      let patternId: number | null = null;
-      let patternType: typeof shiftsState.currentPatternType = null;
-
-      if (rotationHistory.length > 0) {
-        const firstEntry = rotationHistory[0];
-        if (
-          firstEntry !== undefined &&
-          'patternId' in firstEntry &&
-          firstEntry.patternId !== undefined
-        ) {
-          const pattern = await fetchRotationPatternById(firstEntry.patternId as number);
-          if (pattern !== null) {
-            patternId = pattern.id;
-            patternType = pattern.patternType;
-            console.info('[TOGGLE SYNC] Pattern loaded:', pattern.patternType);
-          }
-        }
-      }
-
-      // 4. Calculate lock state BEFORE applying state updates
-      const hasAnyShiftData = rotationData.weeklyShifts.size > 0;
-      const shouldLock = hasAnyShiftData && !shiftsState.isEditMode;
-
-      console.info(
-        '[LOAD] Applying batch state updates - shifts:',
-        rotationData.weeklyShifts.size,
-        'locked:',
-        shouldLock,
-      );
-
-      // 5. BATCH ALL STATE UPDATES (single re-render)
-      // This prevents flickering by updating everything at once
-      shiftsState.setCurrentPlanId(planData.planId);
-      shiftsState.setCurrentShiftNotes(planData.shiftNotes);
-      shiftsState.setWeeklyNotes(planData.shiftNotes);
-      shiftsState.setWeeklyShifts(rotationData.weeklyShifts);
-      shiftsState.setShiftDetails(rotationData.shiftDetails);
-      shiftsState.setRotationHistoryMap(rotationData.rotationHistoryMap);
-      shiftsState.setCurrentPatternId(patternId);
-      shiftsState.setCurrentPatternType(patternType);
-      shiftsState.setIsPlanLocked(shouldLock);
-      if (shouldLock) shiftsState.setIsEditMode(false);
-
-      // 6. Sync rotation toggles (uses already-set state)
-      syncRotationToggles();
+      // Apply all state updates
+      applyShiftPlanState(planData, rotationData, patternId, patternType);
 
       // Clear if nothing loaded
       if (planResponse === null && rotationHistory.length === 0) {
-        console.info('[LOAD] No data found - clearing shift data');
         shiftsState.clearShiftData();
       }
-
-      console.info('[LOAD] Complete - isLoading: false');
     } finally {
-      // ALWAYS turn off loading, even on error
       shiftsState.setIsLoading(false);
     }
+  }
+
+  /** Fetch shift plan and rotation history, then process both */
+  async function fetchAndProcessShiftData(startDate: string, endDate: string) {
+    const [planResponse, rotationHistory] = await Promise.all([
+      fetchShiftPlan(startDate, endDate, {
+        teamId: shiftsState.selectedContext.teamId,
+        departmentId: shiftsState.selectedContext.departmentId,
+        areaId: shiftsState.selectedContext.areaId,
+        machineId: shiftsState.selectedContext.machineId,
+      }),
+      fetchRotationHistory(startDate, endDate, shiftsState.selectedContext.teamId),
+    ]);
+
+    const planData = processShiftPlanResponse(planResponse);
+    const rotationData = processRotationHistory(
+      rotationHistory,
+      planData.weeklyShifts,
+      planData.shiftDetails,
+      shiftsState.employees,
+    );
+
+    return { planResponse, rotationHistory, planData, rotationData };
+  }
+
+  /** Apply processed shift data to state (batched updates) */
+  function applyShiftPlanState(
+    planData: ReturnType<typeof processShiftPlanResponse>,
+    rotationData: ReturnType<typeof processRotationHistory>,
+    patternId: number | null,
+    patternType: typeof shiftsState.currentPatternType,
+  ): void {
+    const hasAnyShiftData = rotationData.weeklyShifts.size > 0;
+    const shouldLock = hasAnyShiftData && !shiftsState.isEditMode;
+
+    shiftsState.setCurrentPlanId(planData.planId);
+    shiftsState.setCurrentShiftNotes(planData.shiftNotes);
+    shiftsState.setWeeklyNotes(planData.shiftNotes);
+    shiftsState.setWeeklyShifts(rotationData.weeklyShifts);
+    shiftsState.setShiftDetails(rotationData.shiftDetails);
+    shiftsState.setRotationHistoryMap(rotationData.rotationHistoryMap);
+    shiftsState.setCurrentPatternId(patternId);
+    shiftsState.setCurrentPatternType(patternType);
+    shiftsState.setIsPlanLocked(shouldLock);
+    if (shouldLock) shiftsState.setIsEditMode(false);
+
+    syncRotationToggles();
   }
 
   /**
    * Sync rotation toggles based on current pattern type and shift data
    * Legacy: lock-mode.ts syncRotationToggles()
    */
-  function syncRotationToggles() {
+  function syncRotationToggles(): void {
     const patternType = shiftsState.currentPatternType;
     const hasShiftData = shiftsState.weeklyShifts.size > 0;
-    const isLocked = shiftsState.isPlanLocked;
-
-    console.info(
-      '[TOGGLE SYNC] patternType:',
-      patternType,
-      'isLocked:',
-      isLocked,
-      'hasShiftData:',
-      hasShiftData,
-    );
 
     // Standard toggle ON wenn: hasShiftData UND (patternType === 'alternate_fs' || patternType === 'fixed_n')
     const isStandard =
@@ -329,14 +296,6 @@
     // Directly set the toggle states (bypassing modal open logic)
     shiftsState.setStandardRotationEnabledDirect(isStandard);
     shiftsState.setCustomRotationEnabledDirect(isCustom);
-
-    console.info(
-      '[TOGGLE SYNC] Standard toggle:',
-      isStandard ? 'ON' : 'OFF',
-      'disabled:',
-      isLocked,
-    );
-    console.info('[TOGGLE SYNC] Custom toggle:', isCustom ? 'ON' : 'OFF', 'disabled:', isLocked);
   }
 
   async function handleFavoriteClick(favorite: ShiftFavorite) {
@@ -366,40 +325,78 @@
   }
 
   // --- DRAG AND DROP ---
-  const handleDragStart = (event: DragEvent, employeeId: number) =>
+  const handleDragStart = (event: DragEvent, employeeId: number) => {
     handleDragStartEvent(
       event,
       employeeId,
       !shiftsState.canEditShifts || (shiftsState.currentPlanId !== null && !shiftsState.isEditMode),
-      () => shiftsState.setIsDragging(true),
+      () => {
+        shiftsState.setIsDragging(true);
+      },
     );
+  };
 
-  const handleDragEnd = () => handleDragEndEvent(() => shiftsState.setIsDragging(false));
-  const handleDragOver = (event: DragEvent) =>
+  const handleDragEnd = () => {
+    handleDragEndEvent(() => {
+      shiftsState.setIsDragging(false);
+    });
+  };
+  const handleDragOver = (event: DragEvent) => {
     handleDragOverEvent(event, shiftsState.canEditShifts);
+  };
 
-  const handleDragEnter = (event: DragEvent) =>
+  const handleDragEnter = (event: DragEvent) => {
     handleDragEnterEvent(event, shiftsState.canEditShifts);
+  };
 
-  const handleDragLeave = (event: DragEvent) => handleDragLeaveEvent(event);
+  const handleDragLeave = (event: DragEvent) => {
+    handleDragLeaveEvent(event);
+  };
 
-  function handleDrop(event: DragEvent, dateKey: string, shiftType: string) {
+  /** Display validation feedback to user - reduces handleDrop complexity */
+  function showValidationFeedback(validation: DropValidationResult): void {
+    if (validation.warning !== undefined) {
+      showWarningAlert(validation.warning);
+    } else if (validation.error !== undefined) {
+      showErrorAlert(validation.error);
+    }
+  }
+
+  /** Perform shift assignment and update state */
+  function assignEmployeeToShift(
+    employeeId: number,
+    employee: Employee,
+    dateKey: string,
+    shiftType: string,
+  ): void {
+    const updatedShifts = addEmployeeToShiftMap(
+      dateKey,
+      shiftType,
+      employeeId,
+      shiftsState.weeklyShifts,
+    );
+    shiftsState.setWeeklyShifts(updatedShifts);
+
+    const detailKey = `${dateKey}_${shiftType}_${employeeId}`;
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Immutable copy for state update
+    const newDetails = new Map(shiftsState.shiftDetails);
+    newDetails.set(detailKey, buildShiftDetail(employee, dateKey, shiftType));
+    shiftsState.setShiftDetails(newDetails);
+  }
+
+  function handleDrop(event: DragEvent, dateKey: string, shiftType: string): void {
     event.preventDefault();
     shiftsState.setIsDragging(false);
 
     const target = event.target as HTMLElement;
-    const shiftCell = target.closest('.shift-cell') as HTMLElement | null;
+    const shiftCell = target.closest<HTMLElement>('.shift-cell');
     shiftCell?.classList.remove('drag-over');
 
     if (!shiftsState.canEditShifts) return;
 
-    const employeeIdStr = event.dataTransfer?.getData('text/plain');
-    if (employeeIdStr === undefined || employeeIdStr === '') return;
+    const employeeId = getEmployeeIdFromDrag(event.dataTransfer);
+    if (employeeId === null) return;
 
-    const employeeId = parseInt(employeeIdStr, 10);
-    if (isNaN(employeeId)) return;
-
-    // Validation using extracted handler
     const validation = validateDropOperation(
       employeeId,
       dateKey,
@@ -409,35 +406,23 @@
     );
 
     if (!validation.valid) {
-      if (validation.warning !== undefined) {
-        showWarningAlert(validation.warning);
-      } else if (validation.error !== undefined) {
-        showErrorAlert(validation.error);
-      }
+      showValidationFeedback(validation);
       return;
     }
 
-    // Assignment using extracted handlers
-    const employee = shiftsState.getEmployeeById(employeeId)!;
-    const updatedShifts = addEmployeeToShiftMap(
-      dateKey,
-      shiftType,
-      employeeId,
-      shiftsState.weeklyShifts,
-    );
-    shiftsState.setWeeklyShifts(updatedShifts);
+    const employee = shiftsState.getEmployeeById(employeeId);
+    if (employee === undefined) {
+      console.error('[DROP] Employee not found:', employeeId);
+      return;
+    }
 
-    // Add shift details using extracted helper
-    const detailKey = `${dateKey}_${shiftType}_${employeeId}`;
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Immutable copy for state update
-    const newDetails = new Map(shiftsState.shiftDetails);
-    newDetails.set(detailKey, buildShiftDetail(employee, dateKey, shiftType));
-    shiftsState.setShiftDetails(newDetails);
+    assignEmployeeToShift(employeeId, employee, dateKey, shiftType);
 
     const employeeName = getEmployeeDisplayName(employee);
     const shiftLabel = getShiftLabel(shiftType as ShiftType);
     showSuccessAlert(`${employeeName} zur ${shiftLabel} hinzugefügt`);
-    const dayName = shiftCell?.dataset['day'];
+
+    const dayName = shiftCell?.dataset.day;
     if (dayName !== undefined && shiftsState.autofillConfig.enabled) {
       executeAutofill(employeeId, employee, dayName, shiftType as ShiftType, shiftLabel);
     }
@@ -453,10 +438,17 @@
   ) {
     const addAssignment = (date: string, shift: ShiftType, empId: number) => {
       const shifts = shiftsState.weeklyShifts;
-      if (!shifts.has(date)) shifts.set(date, new Map());
-      const dayShifts = shifts.get(date)!;
-      if (!dayShifts.has(shift)) dayShifts.set(shift, []);
-      const empsInShift = dayShifts.get(shift)!;
+      let dayShifts = shifts.get(date);
+      if (dayShifts === undefined) {
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Nested data structure, parent state handles reactivity
+        dayShifts = new Map();
+        shifts.set(date, dayShifts);
+      }
+      let empsInShift = dayShifts.get(shift);
+      if (empsInShift === undefined) {
+        empsInShift = [];
+        dayShifts.set(shift, empsInShift);
+      }
       if (!empsInShift.includes(empId)) empsInShift.push(empId);
 
       const emp = shiftsState.getEmployeeById(empId);
@@ -507,10 +499,10 @@
     return dayShifts.get(shiftType) ?? [];
   }
 
-  function handleResetSchedule() {
+  async function handleResetSchedule(): Promise<void> {
     if (shiftsState.isEditMode) {
       shiftsState.setIsEditMode(false);
-      loadShiftPlan();
+      await loadShiftPlan();
     } else {
       shiftsState.clearShiftData();
     }
@@ -643,9 +635,8 @@
   async function handleAddToFavorites() {
     const { areaId, departmentId, teamId } = shiftsState.selectedContext;
     if (areaId === null || departmentId === null || teamId === null) {
-      return showWarningAlert(
-        'Bitte wählen Sie zuerst einen Bereich, eine Abteilung und ein Team aus.',
-      );
+      showWarningAlert('Bitte wählen Sie zuerst einen Bereich, eine Abteilung und ein Team aus.');
+      return;
     }
     try {
       const newFavorite = await addToFavorites({
@@ -666,10 +657,62 @@
     }
   }
 
-  /**
-   * Handle custom rotation generation
-   * Uses single endpoint with full algorithm (matches legacy custom-rotation.ts)
-   */
+  /** Weekday names for custom rotation special rules */
+  const WEEKDAY_NAMES = [
+    'Sonntag',
+    'Montag',
+    'Dienstag',
+    'Mittwoch',
+    'Donnerstag',
+    'Freitag',
+    'Samstag',
+  ] as const;
+
+  /** Build algorithm config from custom rotation config */
+  function buildAlgorithmConfig(config: CustomRotationConfig) {
+    const sequenceArray = config.shiftSequence.split('-') as ('early' | 'late' | 'night')[];
+    const specialRules = config.nthWeekdayFree
+      ? [
+          {
+            type: 'nth_weekday_free' as const,
+            name: `Jeder ${String(config.nthValue)}. ${WEEKDAY_NAMES[config.weekdayValue] ?? 'Tag'} frei`,
+            weekday: config.weekdayValue,
+            n: config.nthValue,
+          },
+        ]
+      : undefined;
+
+    return {
+      shiftBlockLength: config.shiftBlockLength,
+      freeDays: config.freeDays,
+      startShift: config.startShift,
+      shiftSequence: sequenceArray,
+      specialRules,
+    };
+  }
+
+  /** Build employee assignments from config map */
+  function buildRotationAssignments(
+    employeeAssignments: Map<string, number[]>,
+  ): CustomRotationAssignment[] {
+    const assignments: CustomRotationAssignment[] = [];
+    for (const [shiftGroup, userIds] of employeeAssignments) {
+      const startGroup = shiftGroup as 'F' | 'S' | 'N';
+      for (const userId of userIds) {
+        const employee = shiftsState.getEmployeeById(userId);
+        if (employee !== undefined) {
+          assignments.push({
+            userId,
+            userName: getEmployeeDisplayName(employee),
+            startGroup,
+          });
+        }
+      }
+    }
+    return assignments;
+  }
+
+  /** Handle custom rotation generation */
   async function handleCustomRotationGenerate(config: CustomRotationConfig) {
     const teamId = shiftsState.selectedContext.teamId;
     const departmentId = shiftsState.selectedContext.departmentId;
@@ -678,66 +721,15 @@
       return;
     }
 
-    console.info('[CUSTOM ROTATION] Starting generation:', config);
-
     try {
-      // 1. Build algorithm config (matches legacy format)
-      const sequenceArray = config.shiftSequence.split('-') as ('early' | 'late' | 'night')[];
-      const weekdayNames = [
-        'Sonntag',
-        'Montag',
-        'Dienstag',
-        'Mittwoch',
-        'Donnerstag',
-        'Freitag',
-        'Samstag',
-      ];
-
-      const algorithmConfig = {
-        shiftBlockLength: config.shiftBlockLength,
-        freeDays: config.freeDays,
-        startShift: config.startShift,
-        shiftSequence: sequenceArray,
-        specialRules: config.nthWeekdayFree
-          ? [
-              {
-                type: 'nth_weekday_free' as const,
-                name: `Jeder ${config.nthValue}. ${weekdayNames[config.weekdayValue]} frei`,
-                weekday: config.weekdayValue,
-                n: config.nthValue,
-              },
-            ]
-          : undefined,
-      };
-
-      // 2. Build employee assignments with userName and startGroup (CRITICAL!)
-      // Map: 'F' | 'S' | 'N' → employeeIds[]
-      // Output: { userId, userName, startGroup }[]
-      const assignments: CustomRotationAssignment[] = [];
-      for (const [shiftGroup, userIds] of config.employeeAssignments) {
-        // shiftGroup is 'F', 'S', or 'N' - this is the startGroup!
-        const startGroup = shiftGroup as 'F' | 'S' | 'N';
-        for (const userId of userIds) {
-          const employee = shiftsState.getEmployeeById(userId);
-          if (employee !== undefined) {
-            assignments.push({
-              userId,
-              userName: getEmployeeDisplayName(employee),
-              startGroup,
-            });
-          }
-        }
-      }
+      const algorithmConfig = buildAlgorithmConfig(config);
+      const assignments = buildRotationAssignments(config.employeeAssignments);
 
       if (assignments.length === 0) {
         showErrorAlert('Bitte weisen Sie mindestens einem Mitarbeiter eine Schichtgruppe zu.');
         return;
       }
 
-      console.info('[CUSTOM ROTATION] Algorithm config:', algorithmConfig);
-      console.info('[CUSTOM ROTATION] Assignments:', assignments);
-
-      // 3. Call SINGLE endpoint (matches legacy callGenerateRotationAPI)
       const result = await generateRotationFromConfig({
         config: algorithmConfig,
         assignments,
@@ -747,13 +739,8 @@
         departmentId: departmentId ?? undefined,
       });
 
-      console.info('[CUSTOM ROTATION] Result:', result);
-
-      // 4. Close modal and reload
       shiftsState.setShowCustomRotationModal(false);
       showSuccessAlert(`Custom Rotation erstellt! ${result.shiftsCreated} Schichten generiert.`);
-
-      // 5. Navigate to start date and reload
       navigateToWeekContainingDate(config.startDate);
       void loadShiftPlan();
     } catch (error) {
@@ -786,7 +773,8 @@
       <!-- Employee Team Info Bar (for employee view) - Design System Badges -->
       {#if shiftsState.employeeTeamInfo !== null}
         <div
-          class="flex flex-wrap items-center gap-3 mt-4 p-4 rounded-xl border border-[rgba(255,152,0,0.3)] bg-[rgba(255,152,0,0.1)]"
+          class="flex flex-wrap items-center gap-3 mt-4 p-4 rounded-xl border
+            border-[rgba(255,152,0,0.3)] bg-[rgba(255,152,0,0.1)]"
           role="status"
         >
           <i class="fas fa-users text-[var(--color-warning)]"></i>
@@ -814,11 +802,21 @@
           departmentDropdownOpen={shiftsState.departmentDropdownOpen}
           machineDropdownOpen={shiftsState.machineDropdownOpen}
           teamDropdownOpen={shiftsState.teamDropdownOpen}
-          ontoggleAreaDropdown={() => shiftsState.toggleAreaDropdown()}
-          ontoggleDepartmentDropdown={() => shiftsState.toggleDepartmentDropdown()}
-          ontoggleMachineDropdown={() => shiftsState.toggleMachineDropdown()}
-          ontoggleTeamDropdown={() => shiftsState.toggleTeamDropdown()}
-          oncloseAllDropdowns={() => shiftsState.closeAllDropdowns()}
+          ontoggleAreaDropdown={() => {
+            shiftsState.toggleAreaDropdown();
+          }}
+          ontoggleDepartmentDropdown={() => {
+            shiftsState.toggleDepartmentDropdown();
+          }}
+          ontoggleMachineDropdown={() => {
+            shiftsState.toggleMachineDropdown();
+          }}
+          ontoggleTeamDropdown={() => {
+            shiftsState.toggleTeamDropdown();
+          }}
+          oncloseAllDropdowns={() => {
+            shiftsState.closeAllDropdowns();
+          }}
           onareaChange={handleAreaChange}
           ondepartmentChange={handleDepartmentChange}
           onmachineChange={handleMachineChange}
@@ -865,9 +863,15 @@
             standardRotationEnabled={shiftsState.standardRotationEnabled}
             customRotationEnabled={shiftsState.customRotationEnabled}
             isPlanLocked={shiftsState.isPlanLocked}
-            onautofillChange={(enabled) => shiftsState.setAutofillConfig({ enabled })}
-            onstandardRotationChange={(enabled) => shiftsState.setStandardRotationEnabled(enabled)}
-            oncustomRotationChange={(enabled) => shiftsState.setCustomRotationEnabled(enabled)}
+            onautofillChange={(enabled: boolean) => {
+              shiftsState.setAutofillConfig({ enabled });
+            }}
+            onstandardRotationChange={(enabled: boolean) => {
+              shiftsState.setStandardRotationEnabled(enabled);
+            }}
+            oncustomRotationChange={(enabled: boolean) => {
+              shiftsState.setCustomRotationEnabled(enabled);
+            }}
           />
         {/if}
 
@@ -881,15 +885,17 @@
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
             {getShiftEmployees}
-            getEmployeeById={(id) => shiftsState.getEmployeeById(id)}
-            getShiftDetail={(key) => shiftsState.shiftDetails.get(key)}
-            hasRotationShift={(key) => shiftsState.rotationHistoryMap.has(key)}
+            getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
+            getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
+            hasRotationShift={(key: string) => shiftsState.rotationHistoryMap.has(key)}
             ondragover={handleDragOver}
             ondragenter={handleDragEnter}
             ondragleave={handleDragLeave}
             ondrop={handleDrop}
             onremoveEmployee={removeEmployeeFromShift}
-            onnotesChange={(notes) => shiftsState.setWeeklyNotes(notes)}
+            onnotesChange={(notes: string) => {
+              shiftsState.setWeeklyNotes(notes);
+            }}
           />
 
           <!-- Employee Sidebar (Extracted Component) -->
@@ -919,7 +925,9 @@
             ondiscardWeek={handleDiscardWeek}
             ondiscardTeamPlan={handleDiscardTeamPlan}
             ondiscardYearPlan={handleDiscardYearPlan}
-            onenterEditMode={() => shiftsState.setIsEditMode(true)}
+            onenterEditMode={() => {
+              shiftsState.setIsEditMode(true);
+            }}
           />
         {/if}
       {/if}
@@ -942,7 +950,7 @@
       // Reset toggle to match actual pattern state (Legacy behavior)
       syncRotationToggles();
     }}
-    oncomplete={(startDate) => {
+    oncomplete={(startDate: string) => {
       shiftsState.setShowRotationSetupModal(false);
       navigateToWeekContainingDate(startDate);
       void loadShiftPlan();

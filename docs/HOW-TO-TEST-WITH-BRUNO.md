@@ -14,6 +14,7 @@ Tests laufen in einem **isolierten Tenant** namens `brunotest`:
 - **Domain**: brunotest.de
 
 **Vorteile:**
+
 - Test-Daten verschmutzen NICHT den Dev-Tenant
 - Reproduzierbare Tests
 - Einfaches Cleanup (nur Test-Tenant betroffen)
@@ -109,13 +110,13 @@ api-tests/
 
 ## npm Scripts
 
-| Script | Beschreibung |
-|--------|--------------|
-| `pnpm run test:api` | Standard-Tests (ohne _setup, erwartet bestehenden Tenant) |
-| `pnpm run test:api:full` | Vollständig: _setup + alle Module (empfohlen) |
-| `pnpm run test:api:setup` | Nur _setup (erstellt brunotest Tenant) |
-| `pnpm run test:api:noclean` | Erstellt Daten OHNE zu löschen (für DB/UI Inspektion) |
-| `pnpm run test:api:auth` | Nur Auth-Tests |
+| Script                      | Beschreibung                                               |
+| --------------------------- | ---------------------------------------------------------- |
+| `pnpm run test:api`         | Standard-Tests (ohne \_setup, erwartet bestehenden Tenant) |
+| `pnpm run test:api:full`    | Vollständig: \_setup + alle Module (empfohlen)             |
+| `pnpm run test:api:setup`   | Nur \_setup (erstellt brunotest Tenant)                    |
+| `pnpm run test:api:noclean` | Erstellt Daten OHNE zu löschen (für DB/UI Inspektion)      |
+| `pnpm run test:api:auth`    | Nur Auth-Tests                                             |
 
 ### Daten inspizieren (noclean)
 
@@ -255,18 +256,18 @@ tests {
 
 ## Verfügbare Variablen
 
-| Variable                | Beschreibung                   | Gesetzt von                |
-| ----------------------- | ------------------------------ | -------------------------- |
-| `{{base_url}}`          | `http://localhost:3000/api/v2` | environments/local.bru     |
-| `{{brunotest_email}}`   | Admin Email (brunotest)        | environments/local.bru     |
-| `{{brunotest_password}}`| Admin Passwort (brunotest)     | environments/local.bru     |
-| `{{auth_token}}`        | JWT Access Token               | _setup/03-login.bru        |
-| `{{refresh_token}}`     | JWT Refresh Token              | _setup/03-login.bru        |
-| `{{user_id}}`           | Eingeloggter User ID           | _setup/03-login.bru        |
-| `{{tenant_id}}`         | Tenant ID (brunotest)          | _setup/03-login.bru        |
-| `{{chat_participant_id}}`| Test Employee ID für Chat     | _setup/05-get-chat-participant.bru |
-| `{{$timestamp}}`        | Unix Timestamp                 | Bruno built-in             |
-| `{{$randomInt}}`        | Zufällige Zahl                 | Bruno built-in             |
+| Variable                  | Beschreibung                   | Gesetzt von                         |
+| ------------------------- | ------------------------------ | ----------------------------------- |
+| `{{base_url}}`            | `http://localhost:3000/api/v2` | environments/local.bru              |
+| `{{brunotest_email}}`     | Admin Email (brunotest)        | environments/local.bru              |
+| `{{brunotest_password}}`  | Admin Passwort (brunotest)     | environments/local.bru              |
+| `{{auth_token}}`          | JWT Access Token               | \_setup/03-login.bru                |
+| `{{refresh_token}}`       | JWT Refresh Token              | \_setup/03-login.bru                |
+| `{{user_id}}`             | Eingeloggter User ID           | \_setup/03-login.bru                |
+| `{{tenant_id}}`           | Tenant ID (brunotest)          | \_setup/03-login.bru                |
+| `{{chat_participant_id}}` | Test Employee ID für Chat      | \_setup/05-get-chat-participant.bru |
+| `{{$timestamp}}`          | Unix Timestamp                 | Bruno built-in                      |
+| `{{$randomInt}}`          | Zufällige Zahl                 | Bruno built-in                      |
 
 ---
 

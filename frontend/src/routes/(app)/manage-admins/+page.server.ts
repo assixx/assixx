@@ -5,6 +5,7 @@
  * SSR: Loads admins + areas + departments in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Admin, Area, Department } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -65,9 +64,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const admins = Array.isArray(adminsData) ? adminsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] manage-admins loaded in ${duration}ms (3 parallel API calls)`);
 
   return {
     admins,

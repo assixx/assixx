@@ -3,8 +3,9 @@
  * @module features/_lib/utils
  */
 
-import type { Feature, JwtPayload, Plan, TenantAddons } from './types';
 import { PLAN_ORDER, ADDON_PRICING } from './constants';
+
+import type { Feature, JwtPayload, Plan, TenantAddons } from './types';
 
 /**
  * Parse JWT token to extract payload
@@ -42,11 +43,11 @@ export function canActivateFeature(currentPlan: string, minPlan: string): boolea
 export function isFeatureIncludedInPlan(
   featureCode: string,
   currentPlan: string,
-  plans: Record<string, Plan>,
+  plans: Record<string, Plan | undefined>,
 ): boolean {
   if (currentPlan === 'enterprise') return true;
   const planData = plans[currentPlan];
-  if (!planData?.features) return false;
+  if (planData?.features === undefined) return false;
   return planData.features.some((f) => f.featureCode === featureCode);
 }
 

@@ -4,16 +4,18 @@
    * Extracted from +page.svelte for ESLint max-lines compliance
    * Based on: frontend/src/scripts/shifts/rotation.ts
    */
-  import type { Employee, SelectedContext } from './types';
+  import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
+
+  import { createRotationPattern, assignRotation, generateRotationShifts } from './api';
   import {
     validateRotationForm,
     buildRotationPatternData,
     type RotationFormValues,
     type ShiftGroups,
   } from './rotation';
-  import { createRotationPattern, assignRotation, generateRotationShifts } from './api';
-  import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
   import { getEmployeeDisplayName } from './utils';
+
+  import type { Employee, SelectedContext } from './types';
 
   // =============================================================================
   // PROPS
@@ -91,6 +93,11 @@
   // HANDLERS
   // =============================================================================
 
+  /** Reset saving state - extracted to avoid ESLint require-atomic-updates false positive */
+  function resetSavingState(): void {
+    saving = false;
+  }
+
   function togglePatternDropdown(e: MouseEvent) {
     e.stopPropagation();
     patternDropdownOpen = !patternDropdownOpen;
@@ -162,6 +169,31 @@
     return new Date(endMs).toISOString().split('T')[0] ?? startDateStr;
   }
 
+  /** Collect employee assignments from drag-drop state */
+  function collectEmployeeAssignments(assignmentsState: {
+    F: number[];
+    S: number[];
+    N: number[];
+  }): { list: { userId: number; group: 'F' | 'S' | 'N' }[]; groups: ShiftGroups } {
+    const list: { userId: number; group: 'F' | 'S' | 'N' }[] = [];
+    const groups: ShiftGroups = { F: [], S: [], N: [] };
+
+    const shiftTypes = ['F', 'S', 'N'] as const;
+    for (const shiftType of shiftTypes) {
+      for (const empId of assignmentsState[shiftType]) {
+        list.push({ userId: empId, group: shiftType });
+        groups[shiftType].push(empId);
+      }
+    }
+
+    return { list, groups };
+  }
+
+  /** Get error message from unknown error */
+  function getErrorMessage(error: unknown, defaultMsg: string): string {
+    return error instanceof Error ? error.message : defaultMsg;
+  }
+
   async function handleSave(): Promise<void> {
     if (saving) return;
     saving = true;
@@ -181,7 +213,6 @@
       const validation = validateRotationForm(formValues);
       if (!validation.valid) {
         showErrorAlert(validation.error ?? 'Validierungsfehler');
-        saving = false;
         return;
       }
 
@@ -189,30 +220,15 @@
       const teamId = selectedContext.teamId;
       if (teamId === null || teamId === 0) {
         showErrorAlert('Bitte wählen Sie zuerst ein Team aus');
-        saving = false;
         return;
       }
 
       // 4. Collect employees from assignments
-      const employeeAssignments: { userId: number; group: 'F' | 'S' | 'N' }[] = [];
-      const shiftGroups: ShiftGroups = { F: [], S: [], N: [] };
-
-      for (const empId of assignments.F) {
-        employeeAssignments.push({ userId: empId, group: 'F' });
-        shiftGroups.F.push(empId);
-      }
-      for (const empId of assignments.S) {
-        employeeAssignments.push({ userId: empId, group: 'S' });
-        shiftGroups.S.push(empId);
-      }
-      for (const empId of assignments.N) {
-        employeeAssignments.push({ userId: empId, group: 'N' });
-        shiftGroups.N.push(empId);
-      }
+      const { list: employeeAssignments, groups: shiftGroups } =
+        collectEmployeeAssignments(assignments);
 
       if (employeeAssignments.length === 0) {
         showErrorAlert('Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte');
-        saving = false;
         return;
       }
 
@@ -251,9 +267,9 @@
       oncomplete(formValues.startDate);
     } catch (error) {
       console.error('[ROTATION] Error:', error);
-      showErrorAlert(error instanceof Error ? error.message : 'Fehler beim Speichern der Rotation');
+      showErrorAlert(getErrorMessage(error, 'Fehler beim Speichern der Rotation'));
     } finally {
-      saving = false;
+      resetSavingState();
     }
   }
 
@@ -268,8 +284,12 @@
     role="dialog"
     aria-modal="true"
     tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.key === 'Escape' && handleClose()}
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') handleClose();
+    }}
   >
     <div class="ds-modal__header">
       <h2 class="ds-modal__title">Schichtrotation einrichten</h2>
@@ -301,8 +321,9 @@
               role="button"
               tabindex="0"
               onclick={togglePatternDropdown}
-              onkeydown={(e) =>
-                e.key === 'Enter' && togglePatternDropdown(e as unknown as MouseEvent)}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') togglePatternDropdown(e as unknown as MouseEvent);
+              }}
             >
               <span>{patternLabel}</span>
               <i class="fas fa-chevron-down"></i>
@@ -316,9 +337,12 @@
                     role="option"
                     tabindex="0"
                     aria-selected={selectedPattern === pattern.value}
-                    onclick={() => selectPattern(pattern.value, pattern.label)}
-                    onkeydown={(e) =>
-                      e.key === 'Enter' && selectPattern(pattern.value, pattern.label)}
+                    onclick={() => {
+                      selectPattern(pattern.value, pattern.label);
+                    }}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') selectPattern(pattern.value, pattern.label);
+                    }}
                   >
                     {pattern.label}
                   </div>
@@ -407,7 +431,9 @@
                   role="option"
                   aria-selected="false"
                   tabindex="0"
-                  ondragstart={(e) => handleDragStart(e, employee.id)}
+                  ondragstart={(e) => {
+                    handleDragStart(e, employee.id);
+                  }}
                 >
                   <div class="employee-info">
                     <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
@@ -434,7 +460,9 @@
                   data-shift="F"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
-                  ondrop={(e) => handleDrop(e, 'F')}
+                  ondrop={(e) => {
+                    handleDrop(e, 'F');
+                  }}
                   role="listbox"
                   tabindex="0"
                 >
@@ -446,7 +474,9 @@
                         <button
                           type="button"
                           class="btn-remove-rotation"
-                          onclick={() => removeFromAssignment(empId, 'F')}
+                          onclick={() => {
+                            removeFromAssignment(empId, 'F');
+                          }}
                           aria-label="Entfernen"
                         >
                           <i class="fas fa-times"></i>
@@ -467,7 +497,9 @@
                   data-shift="S"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
-                  ondrop={(e) => handleDrop(e, 'S')}
+                  ondrop={(e) => {
+                    handleDrop(e, 'S');
+                  }}
                   role="listbox"
                   tabindex="0"
                 >
@@ -479,7 +511,9 @@
                         <button
                           type="button"
                           class="btn-remove-rotation"
-                          onclick={() => removeFromAssignment(empId, 'S')}
+                          onclick={() => {
+                            removeFromAssignment(empId, 'S');
+                          }}
                           aria-label="Entfernen"
                         >
                           <i class="fas fa-times"></i>
@@ -500,7 +534,9 @@
                   data-shift="N"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
-                  ondrop={(e) => handleDrop(e, 'N')}
+                  ondrop={(e) => {
+                    handleDrop(e, 'N');
+                  }}
                   role="listbox"
                   tabindex="0"
                 >
@@ -512,7 +548,9 @@
                         <button
                           type="button"
                           class="btn-remove-rotation"
-                          onclick={() => removeFromAssignment(empId, 'N')}
+                          onclick={() => {
+                            removeFromAssignment(empId, 'N');
+                          }}
                           aria-label="Entfernen"
                         >
                           <i class="fas fa-times"></i>

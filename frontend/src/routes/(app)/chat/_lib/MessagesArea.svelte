@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SvelteMap } from 'svelte/reactivity';
-  import type { Message, ScheduledMessage } from './types';
+
   import { MESSAGES } from './constants';
   import {
     formatFileSize,
@@ -13,6 +13,8 @@
     shouldShowDateSeparator,
     messageMatchesQuery,
   } from './utils';
+
+  import type { Message, ScheduledMessage } from './types';
 
   interface Props {
     messages: Message[];
@@ -84,7 +86,7 @@
 
     const duration = performance.now() - startTime;
     if (duration > 10) {
-      console.log(
+      console.warn(
         `[MessagesArea] Processed ${messages.length} messages in ${duration.toFixed(2)}ms`,
       );
     }
@@ -110,7 +112,7 @@
 
     const duration = performance.now() - startTime;
     if (duration > 5) {
-      console.log(
+      console.warn(
         `[MessagesArea] Search highlighting took ${duration.toFixed(2)}ms for ${highlights.size} matches`,
       );
     }
@@ -156,10 +158,13 @@
                 {formatScheduleTime(new Date(scheduled.scheduledFor))}
               </span>
               <button
+                type="button"
                 class="message--scheduled-cancel"
                 title={MESSAGES.labelCancelScheduled}
                 aria-label={MESSAGES.labelCancelScheduled}
-                onclick={() => oncancelscheduled(scheduled)}
+                onclick={() => {
+                  oncancelscheduled(scheduled);
+                }}
               >
                 <i class="fas fa-times"></i>
               </button>
@@ -220,7 +225,11 @@
                       <span class="file-size">{formatFileSize(att.fileSize)}</span>
                     </div>
                     <div class="attachment-actions">
-                      <button class="btn btn-icon btn-sm" aria-label={MESSAGES.labelDownloadFile}>
+                      <button
+                        type="button"
+                        class="btn btn-icon btn-sm"
+                        aria-label={MESSAGES.labelDownloadFile}
+                      >
                         <i class="fas fa-download"></i>
                       </button>
                     </div>

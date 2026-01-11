@@ -7,7 +7,7 @@
 export const LIST_LIMITS = {
   recentDocuments: 5,
   upcomingEvents: 3,
-  blackboardEntries: 6,
+  blackboardEntries: 5,
 } as const;
 
 /** Calendar fetch range in months */

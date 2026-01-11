@@ -71,7 +71,7 @@ export const MESSAGES = {
   // Search
   SEARCH_PLACEHOLDER: 'Root-Benutzer suchen...',
   SEARCH_NO_RESULTS: 'Keine Root-Benutzer gefunden für',
-  MORE_RESULTS: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
+  moreResults: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
 
   // Form
   SELECT_POSITION: 'Position auswählen...',
@@ -127,7 +127,7 @@ export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Ja
  */
 export const API_ENDPOINTS = {
   USERS: '/root/users',
-  USER: (id: number) => `/root/users/${id}`,
+  user: (id: number) => `/root/users/${id}`,
 } as const;
 
 /**

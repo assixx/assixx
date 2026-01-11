@@ -441,13 +441,13 @@ class UserPermissionsService {
 ```typescript
 // VORHER (FALSCH):
 if (user.role === 'root' || user.role === 'employee') {
-  next();  // Employee bypasses all!
+  next(); // Employee bypasses all!
   return;
 }
 
 // NACHHER (RICHTIG):
 if (user.role === 'root') {
-  next();  // Only root bypasses
+  next(); // Only root bypasses
   return;
 }
 
@@ -457,7 +457,7 @@ const hasAccess = await userPermissionsService.hasAccess(
   user.tenant_id,
   'department',
   departmentId,
-  requiredPermission
+  requiredPermission,
 );
 ```
 

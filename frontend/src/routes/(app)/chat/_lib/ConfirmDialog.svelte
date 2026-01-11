@@ -22,10 +22,18 @@
       <h3 class="confirm-modal__title">{MESSAGES.labelConfirmDelete}</h3>
       <p class="confirm-modal__message">{message}</p>
       <div class="confirm-modal__actions">
-        <button class="confirm-modal__btn confirm-modal__btn--cancel" onclick={onclose}>
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel"
+          onclick={onclose}
+        >
           {MESSAGES.labelCancel}
         </button>
-        <button class="confirm-modal__btn confirm-modal__btn--danger" onclick={onconfirm}>
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--danger"
+          onclick={onconfirm}
+        >
           {MESSAGES.labelDelete}
         </button>
       </div>

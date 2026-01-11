@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { machineState } from './state.svelte';
   import { MESSAGES } from './constants';
+  import { machineState } from './state.svelte';
 
   interface Props {
     ondelete: () => void;
@@ -31,13 +31,19 @@
     aria-labelledby="delete-modal-title"
     tabindex="-1"
     onclick={handleDeleteOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && machineState.closeDeleteModal()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') machineState.closeDeleteModal();
+    }}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="ds-modal ds-modal--sm"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="delete-modal-title">
@@ -48,7 +54,9 @@
           type="button"
           class="ds-modal__close"
           aria-label="Schließen"
-          onclick={() => machineState.closeDeleteModal()}
+          onclick={() => {
+            machineState.closeDeleteModal();
+          }}
         >
           <i class="fas fa-times"></i>
         </button>
@@ -60,7 +68,9 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={() => machineState.closeDeleteModal()}
+          onclick={() => {
+            machineState.closeDeleteModal();
+          }}
         >
           {MESSAGES.BTN_CANCEL}
         </button>
@@ -82,13 +92,19 @@
     aria-labelledby="delete-confirm-title"
     tabindex="-1"
     onclick={handleDeleteConfirmOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && machineState.closeDeleteConfirmModal()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') machineState.closeDeleteConfirmModal();
+    }}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="confirm-modal confirm-modal--danger"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
     >
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
@@ -105,7 +121,9 @@
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => machineState.closeDeleteConfirmModal()}
+          onclick={() => {
+            machineState.closeDeleteConfirmModal();
+          }}
         >
           {MESSAGES.BTN_CANCEL}
         </button>

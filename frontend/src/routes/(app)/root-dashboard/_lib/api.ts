@@ -3,27 +3,15 @@
  * @module root-dashboard/_lib/api
  */
 
+import { getApiClient, ApiError } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
-import type { DashboardData, ActivityLog, UserData, LogsApiResponse, ApiResponse } from './types';
-import { API_ENDPOINTS, STORAGE_KEYS, MESSAGES } from './constants';
+
+import { API_ENDPOINTS, MESSAGES } from './constants';
 import { isTemporaryEmployeeNumber } from './utils';
 
-/**
- * Get access token from localStorage
- */
-export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(STORAGE_KEYS.accessToken);
-}
+import type { DashboardData, ActivityLog, UserData, LogsApiResponse } from './types';
 
-/**
- * Remove access token from localStorage
- */
-export function removeAccessToken(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(STORAGE_KEYS.accessToken);
-  }
-}
+const apiClient = getApiClient();
 
 /**
  * Load dashboard data from API
@@ -34,32 +22,17 @@ export async function loadDashboardData(): Promise<{
   error: string | null;
   unauthorized: boolean;
 }> {
-  const token = getAccessToken();
-  if (!token) {
-    return { data: null, error: null, unauthorized: true };
-  }
-
   try {
-    const response = await fetch(API_ENDPOINTS.dashboard, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        removeAccessToken();
-        return { data: null, error: null, unauthorized: true };
-      }
-      throw new Error(MESSAGES.dashboardLoadError);
-    }
-
-    const result = (await response.json()) as ApiResponse<DashboardData> | DashboardData;
-    const data = 'data' in result && result.data ? result.data : (result as DashboardData);
-
+    const data = await apiClient.get<DashboardData>(API_ENDPOINTS.dashboard);
     return { data, error: null, unauthorized: false };
   } catch (err) {
     console.error('Error loading dashboard:', err);
+
+    // Handle session expired / unauthorized
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      return { data: null, error: null, unauthorized: true };
+    }
+
     return {
       data: null,
       error: err instanceof Error ? err.message : MESSAGES.genericError,
@@ -73,21 +46,8 @@ export async function loadDashboardData(): Promise<{
  * @returns Array of activity logs
  */
 export async function loadActivityLogs(): Promise<ActivityLog[]> {
-  const token = getAccessToken();
-  if (!token) return [];
-
   try {
-    const response = await fetch(API_ENDPOINTS.logs, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(MESSAGES.logsLoadError);
-    }
-
-    const result = (await response.json()) as LogsApiResponse;
+    const result = await apiClient.get<LogsApiResponse>(API_ENDPOINTS.logs);
     return result.data?.logs ?? result.logs ?? [];
   } catch (err) {
     console.error('Error loading logs:', err);
@@ -104,11 +64,6 @@ export async function checkEmployeeNumber(): Promise<{
   userData: UserData | null;
   showModal: boolean;
 }> {
-  const token = getAccessToken();
-  if (!token) {
-    return { userData: null, showModal: false };
-  }
-
   try {
     const result = await fetchSharedUser();
     const userData = result.user as UserData | null;
@@ -117,7 +72,7 @@ export async function checkEmployeeNumber(): Promise<{
       return { userData: null, showModal: false };
     }
 
-    const employeeNumber = userData?.employeeNumber ?? '';
+    const employeeNumber = userData.employeeNumber ?? '';
     const showModal = isTemporaryEmployeeNumber(employeeNumber);
 
     return { userData, showModal };
@@ -136,27 +91,8 @@ export async function saveEmployeeNumber(employeeNumber: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const token = getAccessToken();
-  if (!token) {
-    return { success: false, error: MESSAGES.genericError };
-  }
-
   try {
-    const response = await fetch(API_ENDPOINTS.userMe, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        employeeNumber,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(MESSAGES.saveError);
-    }
-
+    await apiClient.patch(API_ENDPOINTS.userMe, { employeeNumber });
     return { success: true, error: null };
   } catch (err) {
     console.error('Error saving employee number:', err);

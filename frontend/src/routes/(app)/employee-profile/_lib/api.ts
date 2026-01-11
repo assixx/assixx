@@ -4,8 +4,10 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { PasswordChangePayload, PictureUploadResponse } from './types';
+
 import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
+
+import type { PasswordChangePayload, PictureUploadResponse } from './types';
 
 const apiClient = getApiClient();
 

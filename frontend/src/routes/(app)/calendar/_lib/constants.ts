@@ -9,7 +9,7 @@ import type { OrgLevel, EventLevelInfo } from './types';
  */
 export const API_ENDPOINTS = {
   EVENTS: '/calendar/events',
-  EVENT: (id: number) => `/calendar/events/${id}`,
+  event: (id: number) => `/calendar/events/${id}`,
   DASHBOARD: '/calendar/dashboard',
   DEPARTMENTS: '/departments',
   TEAMS: '/teams',

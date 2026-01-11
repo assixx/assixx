@@ -1,177 +1,118 @@
 // =============================================================================
-// SURVEY-EMPLOYEE - REACTIVE STATE (Svelte 5 Runes)
-// Based on: frontend/src/scripts/survey/employee/index.ts
+// SURVEY-EMPLOYEE - COMBINED STATE (Svelte 5 Runes)
+// Re-exports sub-states and provides combined convenience methods
 // =============================================================================
 
-import type { Survey, SurveyWithStatus, SurveyResponse, AnswerMap } from './types';
+import { surveyDataState } from './state-data.svelte';
+import { surveyUiState } from './state-ui.svelte';
+
+import type { Survey, SurveyResponse } from './types';
+
+// Re-export sub-states for direct access
+export { surveyDataState, surveyUiState };
 
 /**
- * Survey Employee State using Svelte 5 Runes
+ * Combined convenience methods that coordinate multiple state modules
  */
-function createSurveyEmployeeState() {
-  // Data
-  let surveys = $state<SurveyWithStatus[]>([]);
+export const surveyActions = {
+  openSurveyModal: (survey: Survey): void => {
+    surveyDataState.setCurrentSurvey(survey);
+    surveyDataState.clearAnswers();
+    surveyUiState.setShowSurveyModal(true);
+  },
 
-  // Current survey being answered
-  let currentSurvey = $state<Survey | null>(null);
-  let answers = $state<AnswerMap>({});
+  closeSurveyModal: (): void => {
+    surveyUiState.setShowSurveyModal(false);
+    surveyDataState.setCurrentSurvey(null);
+    surveyDataState.clearAnswers();
+  },
 
-  // Modal state
-  let showSurveyModal = $state(false);
-  let showResponseModal = $state(false);
+  openResponseModal: (survey: Survey, response: SurveyResponse): void => {
+    surveyUiState.setViewingSurvey(survey);
+    surveyUiState.setViewingResponse(response);
+    surveyUiState.setShowResponseModal(true);
+  },
 
-  // Response viewing
-  let viewingResponse = $state<SurveyResponse | null>(null);
-  let viewingSurvey = $state<Survey | null>(null);
+  closeResponseModal: (): void => {
+    surveyUiState.setShowResponseModal(false);
+    surveyUiState.setViewingSurvey(null);
+    surveyUiState.setViewingResponse(null);
+  },
 
-  // Loading state - PERFORMANCE: Start true to prevent FOUC (triple-render)
-  let isLoading = $state(true);
-  let isSubmitting = $state(false);
+  reset: (): void => {
+    surveyDataState.setSurveys([]);
+    surveyDataState.setCurrentSurvey(null);
+    surveyDataState.clearAnswers();
+    surveyUiState.resetUi();
+  },
+};
 
-  // Derived: Pending surveys (not responded yet)
-  const pendingSurveys = $derived(surveys.filter((s) => !s.hasResponded));
+/**
+ * Legacy facade for backward compatibility
+ * Provides unified access to all state through a single object
+ */
+export const surveyEmployeeState = {
+  // Data state
+  get surveys() {
+    return surveyDataState.surveys;
+  },
+  get currentSurvey() {
+    return surveyDataState.currentSurvey;
+  },
+  get answers() {
+    return surveyDataState.answers;
+  },
+  get pendingSurveys() {
+    return surveyDataState.pendingSurveys;
+  },
+  get completedSurveys() {
+    return surveyDataState.completedSurveys;
+  },
+  get totalQuestions() {
+    return surveyDataState.totalQuestions;
+  },
+  get answeredCount() {
+    return surveyDataState.answeredCount;
+  },
+  get progressPercentage() {
+    return surveyDataState.progressPercentage;
+  },
 
-  // Derived: Completed surveys (already responded)
-  const completedSurveys = $derived(surveys.filter((s) => s.hasResponded));
+  // UI state
+  get showSurveyModal() {
+    return surveyUiState.showSurveyModal;
+  },
+  get showResponseModal() {
+    return surveyUiState.showResponseModal;
+  },
+  get viewingResponse() {
+    return surveyUiState.viewingResponse;
+  },
+  get viewingSurvey() {
+    return surveyUiState.viewingSurvey;
+  },
+  get isLoading() {
+    return surveyUiState.isLoading;
+  },
+  get isSubmitting() {
+    return surveyUiState.isSubmitting;
+  },
 
-  // Derived: Total questions in current survey
-  const totalQuestions = $derived(currentSurvey?.questions.length ?? 0);
+  // Data methods
+  setSurveys: surveyDataState.setSurveys.bind(surveyDataState),
+  setCurrentSurvey: surveyDataState.setCurrentSurvey.bind(surveyDataState),
+  clearAnswers: surveyDataState.clearAnswers.bind(surveyDataState),
+  setAnswer: surveyDataState.setAnswer.bind(surveyDataState),
+  removeAnswer: surveyDataState.removeAnswer.bind(surveyDataState),
 
-  // Derived: Answered questions count
-  const answeredCount = $derived(Object.keys(answers).length);
+  // UI methods
+  setLoading: surveyUiState.setLoading.bind(surveyUiState),
+  setSubmitting: surveyUiState.setSubmitting.bind(surveyUiState),
 
-  // Derived: Progress percentage
-  const progressPercentage = $derived(
-    totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0,
-  );
-
-  // Methods
-  function setSurveys(data: SurveyWithStatus[]) {
-    surveys = data;
-  }
-
-  function setCurrentSurvey(survey: Survey | null) {
-    currentSurvey = survey;
-  }
-
-  function clearAnswers() {
-    answers = {};
-  }
-
-  function setAnswer(questionId: number, answer: AnswerMap[number]) {
-    answers = { ...answers, [questionId]: answer };
-  }
-
-  function removeAnswer(questionId: number) {
-    const newAnswers = { ...answers };
-    delete newAnswers[questionId];
-    answers = newAnswers;
-  }
-
-  function openSurveyModal(survey: Survey) {
-    currentSurvey = survey;
-    answers = {};
-    showSurveyModal = true;
-  }
-
-  function closeSurveyModal() {
-    showSurveyModal = false;
-    currentSurvey = null;
-    answers = {};
-  }
-
-  function openResponseModal(survey: Survey, response: SurveyResponse) {
-    viewingSurvey = survey;
-    viewingResponse = response;
-    showResponseModal = true;
-  }
-
-  function closeResponseModal() {
-    showResponseModal = false;
-    viewingSurvey = null;
-    viewingResponse = null;
-  }
-
-  function setLoading(val: boolean) {
-    isLoading = val;
-  }
-
-  function setSubmitting(val: boolean) {
-    isSubmitting = val;
-  }
-
-  function reset() {
-    surveys = [];
-    currentSurvey = null;
-    answers = {};
-    showSurveyModal = false;
-    showResponseModal = false;
-    viewingResponse = null;
-    viewingSurvey = null;
-    isLoading = false;
-    isSubmitting = false;
-  }
-
-  return {
-    // Getters (reactive)
-    get surveys() {
-      return surveys;
-    },
-    get currentSurvey() {
-      return currentSurvey;
-    },
-    get answers() {
-      return answers;
-    },
-    get showSurveyModal() {
-      return showSurveyModal;
-    },
-    get showResponseModal() {
-      return showResponseModal;
-    },
-    get viewingResponse() {
-      return viewingResponse;
-    },
-    get viewingSurvey() {
-      return viewingSurvey;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get isSubmitting() {
-      return isSubmitting;
-    },
-    get pendingSurveys() {
-      return pendingSurveys;
-    },
-    get completedSurveys() {
-      return completedSurveys;
-    },
-    get totalQuestions() {
-      return totalQuestions;
-    },
-    get answeredCount() {
-      return answeredCount;
-    },
-    get progressPercentage() {
-      return progressPercentage;
-    },
-
-    // Methods
-    setSurveys,
-    setCurrentSurvey,
-    clearAnswers,
-    setAnswer,
-    removeAnswer,
-    openSurveyModal,
-    closeSurveyModal,
-    openResponseModal,
-    closeResponseModal,
-    setLoading,
-    setSubmitting,
-    reset,
-  };
-}
-
-// Singleton export
-export const surveyEmployeeState = createSurveyEmployeeState();
+  // Combined methods
+  openSurveyModal: surveyActions.openSurveyModal,
+  closeSurveyModal: surveyActions.closeSurveyModal,
+  openResponseModal: surveyActions.openResponseModal,
+  closeResponseModal: surveyActions.closeResponseModal,
+  reset: surveyActions.reset,
+};

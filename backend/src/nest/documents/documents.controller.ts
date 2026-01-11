@@ -42,6 +42,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { DocumentsService } from './documents.service.js';
 import type {
   ChatFolderResponse,
@@ -176,7 +177,7 @@ export class DocumentsController {
   @UseInterceptors(FileInterceptor('document', documentUploadOptions))
   @HttpCode(HttpStatus.CREATED)
   async createDocument(
-    @UploadedFile() file: Express.Multer.File | undefined,
+    @UploadedFile() file: MulterFile | undefined,
     @Body() body: Record<string, string>,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,

@@ -3,6 +3,8 @@
  * API functions specific to the detail view
  */
 
+import { getApiClient } from '$lib/utils/api-client';
+
 import type {
   DetailEntry,
   Comment,
@@ -12,20 +14,18 @@ import type {
   MeResponse,
 } from './types';
 
+const apiClient = getApiClient();
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-function getToken(): string | null {
-  if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem('accessToken');
-}
-
-function createHeaders(token: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+/**
+ * Type guard to check if error is a 404 Not Found response
+ */
+function isNotFoundError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false;
+  return 'status' in err && err.status === 404;
 }
 
 // ============================================================================
@@ -38,46 +38,32 @@ function createHeaders(token: string): HeadersInit {
 export async function fetchFullEntry(
   uuid: string,
 ): Promise<{ entry: DetailEntry; comments: Comment[]; attachments: Attachment[] } | null> {
-  const token = getToken();
-  if (!token) return null;
+  try {
+    const result = await apiClient.get<FullEntryResponse>(`/blackboard/entries/${uuid}/full`);
 
-  const response = await fetch(`/api/v2/blackboard/entries/${uuid}/full`, {
-    headers: createHeaders(token),
-  });
+    if (!result.success) {
+      throw new Error(result.error?.message ?? 'Fehler beim Laden');
+    }
 
-  if (!response.ok) {
-    if (response.status === 404) return null;
-    throw new Error(`HTTP ${response.status}`);
+    return {
+      entry: result.data.entry,
+      comments: result.data.comments ?? [],
+      attachments: result.data.attachments ?? [],
+    };
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      return null;
+    }
+    throw err;
   }
-
-  const result: FullEntryResponse = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.error?.message ?? 'Fehler beim Laden');
-  }
-
-  return {
-    entry: result.data.entry,
-    comments: result.data.comments ?? [],
-    attachments: result.data.attachments ?? [],
-  };
 }
 
 /**
  * Load current user info
  */
 export async function loadCurrentUser(): Promise<CurrentUser | null> {
-  const token = getToken();
-  if (!token) return null;
-
   try {
-    const response = await fetch('/api/v2/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) return null;
-
-    const result: MeResponse = await response.json();
+    const result = await apiClient.get<MeResponse>('/auth/me');
     return result.success ? result.data : null;
   } catch {
     return null;
@@ -92,17 +78,9 @@ export async function loadCurrentUser(): Promise<CurrentUser | null> {
  * Confirm entry as read
  */
 export async function confirmEntry(uuid: string): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
   try {
-    const response = await fetch(`/api/v2/blackboard/entries/${uuid}/confirm`, {
-      method: 'POST',
-      headers: createHeaders(token),
-      body: JSON.stringify({}),
-    });
-
-    return response.ok;
+    await apiClient.post(`/blackboard/entries/${uuid}/confirm`, {});
+    return true;
   } catch {
     return false;
   }
@@ -112,16 +90,9 @@ export async function confirmEntry(uuid: string): Promise<boolean> {
  * Unconfirm entry (mark as unread)
  */
 export async function unconfirmEntry(uuid: string): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
   try {
-    const response = await fetch(`/api/v2/blackboard/entries/${uuid}/confirm`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return response.ok;
+    await apiClient.delete(`/blackboard/entries/${uuid}/confirm`);
+    return true;
   } catch {
     return false;
   }
@@ -135,17 +106,9 @@ export async function unconfirmEntry(uuid: string): Promise<boolean> {
  * Add comment to entry
  */
 export async function addComment(uuid: string, comment: string): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
   try {
-    const response = await fetch(`/api/v2/blackboard/entries/${uuid}/comments`, {
-      method: 'POST',
-      headers: createHeaders(token),
-      body: JSON.stringify({ comment: comment.trim() }),
-    });
-
-    return response.ok;
+    await apiClient.post(`/blackboard/entries/${uuid}/comments`, { comment: comment.trim() });
+    return true;
   } catch {
     return false;
   }
@@ -159,16 +122,22 @@ export async function addComment(uuid: string, comment: string): Promise<boolean
  * Archive entry (admin only)
  */
 export async function archiveEntry(uuid: string): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
   try {
-    const response = await fetch(`/api/v2/blackboard/entries/${uuid}/archive`, {
-      method: 'PATCH',
-      headers: createHeaders(token),
-    });
+    await apiClient.patch(`/blackboard/entries/${uuid}/archive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-    return response.ok;
+/**
+ * Delete entry
+ * Allowed for: root, admin with hasFullAccess, or creator
+ */
+export async function deleteEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/blackboard/entries/${uuid}`);
+    return true;
   } catch {
     return false;
   }
@@ -179,9 +148,14 @@ export async function archiveEntry(uuid: string): Promise<boolean> {
 // ============================================================================
 
 /**
- * Build download URL with auth token
+ * Build authenticated download URL from the API-provided downloadUrl
+ * Uses document ID-based URL (like documents-explorer and kvp-detail)
+ * NOTE: Only call this function on the client (after mount) to avoid SSR issues
  */
-export function buildDownloadUrl(fileUuid: string): string {
-  const token = getToken() ?? '';
-  return `/api/v2/blackboard/attachments/${fileUuid}/download?token=${encodeURIComponent(token)}`;
+export function buildDownloadUrl(downloadUrl: string): string {
+  if (typeof localStorage === 'undefined') return downloadUrl;
+  const token = localStorage.getItem('accessToken') ?? '';
+  // The API returns URLs like /api/v2/documents/:id/download
+  // We just need to append the auth token
+  return token !== '' ? `${downloadUrl}?token=${encodeURIComponent(token)}` : downloadUrl;
 }

@@ -2,6 +2,10 @@
 // MANAGE TEAMS - UTILITY FUNCTIONS
 // =============================================================================
 
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './constants';
+
 import type {
   Team,
   IsActiveStatus,
@@ -12,7 +16,6 @@ import type {
   Department,
   BadgeInfo,
 } from './types';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './constants';
 
 // =============================================================================
 // STATUS BADGE HELPERS
@@ -24,7 +27,7 @@ import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './
  * @returns CSS class for badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
@@ -33,7 +36,7 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  * @returns Human-readable status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -49,7 +52,7 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
  * @returns Badge info with class, text, and title
  */
 export function getDepartmentBadge(team: Team, allDepartments: Department[]): BadgeInfo {
-  if (team.departmentId === undefined || team.departmentId === null) {
+  if (team.departmentId === undefined) {
     return {
       class: 'badge--secondary',
       text: 'Keine Abteilung',
@@ -60,21 +63,24 @@ export function getDepartmentBadge(team: Team, allDepartments: Department[]): Ba
   const dept = allDepartments.find((d) => d.id === team.departmentId);
   const deptName = dept?.name ?? team.departmentName ?? 'Unbekannt';
   const areaName = dept?.areaName;
+  // SECURITY FIX: Escape user-provided names to prevent XSS
+  const safeDeptName = escapeHtml(deptName);
 
-  if (areaName !== undefined && areaName !== null && areaName !== '') {
+  if (areaName !== undefined && areaName !== '') {
     // Show hierarchy: Team → Abteilung → Bereich
-    const tooltip = `${deptName} (gehört zu: ${areaName})`;
+    const safeAreaName = escapeHtml(areaName);
+    const tooltip = `${safeDeptName} (gehört zu: ${safeAreaName})`;
     return {
       class: 'badge--info',
-      text: `<i class="fas fa-sitemap mr-1"></i>${deptName}`,
+      text: `<i class="fas fa-sitemap mr-1"></i>${safeDeptName}`,
       title: tooltip,
     };
   }
 
   return {
     class: 'badge--info',
-    text: deptName,
-    title: deptName,
+    text: safeDeptName,
+    title: safeDeptName,
   };
 }
 
@@ -153,17 +159,23 @@ export function formatDate(dateStr: string): string {
 // =============================================================================
 
 /**
- * Highlight search term in text
- * Wraps matches in <strong> tags for display
- * @param text - Text to search in
+ * Highlight search term in text with <strong> tags
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param query - Search query
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
@@ -220,7 +232,7 @@ export function getDepartmentDisplayText(
   departmentId: number | null,
   allDepartments: Department[],
 ): string {
-  if (!departmentId) return MESSAGES.NO_DEPARTMENT;
+  if (departmentId === null) return MESSAGES.NO_DEPARTMENT;
   const dept = allDepartments.find((d) => d.id === departmentId);
   return dept?.name ?? MESSAGES.NO_DEPARTMENT;
 }
@@ -232,7 +244,7 @@ export function getDepartmentDisplayText(
  * @returns Leader name or default text
  */
 export function getLeaderDisplayText(leaderId: number | null, allAdmins: Admin[]): string {
-  if (!leaderId) return MESSAGES.NO_LEADER;
+  if (leaderId === null) return MESSAGES.NO_LEADER;
   const admin = allAdmins.find((a) => a.id === leaderId);
   return admin ? `${admin.firstName} ${admin.lastName}` : MESSAGES.NO_LEADER;
 }

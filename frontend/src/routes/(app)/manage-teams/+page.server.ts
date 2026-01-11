@@ -5,6 +5,7 @@
  * SSR: Loads teams + reference data (departments, admins, employees, machines) in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Team, Department, Admin, TeamMember, Machine } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -69,9 +68,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const admins = Array.isArray(adminsData) ? adminsData : [];
   const employees = Array.isArray(employeesData) ? employeesData : [];
   const machines = Array.isArray(machinesData) ? machinesData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] manage-teams loaded in ${duration}ms (5 parallel API calls)`);
 
   return {
     teams,

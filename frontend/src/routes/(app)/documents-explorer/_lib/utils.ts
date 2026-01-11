@@ -2,6 +2,8 @@
 // DOCUMENTS EXPLORER - UTILITY FUNCTIONS
 // =============================================================================
 
+import { CATEGORY_LABELS, CATEGORY_MAPPINGS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from './constants';
+
 import type {
   Document,
   DocumentCategory,
@@ -10,7 +12,6 @@ import type {
   UploadFormData,
   CurrentUser,
 } from './types';
-import { CATEGORY_LABELS, CATEGORY_MAPPINGS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from './constants';
 
 // =============================================================================
 // DATE FORMATTING
@@ -200,7 +201,7 @@ export function truncateFilename(filename: string, maxLength: number): string {
  * Get category label for display
  */
 export function getCategoryLabel(category: DocumentCategory): string {
-  return CATEGORY_LABELS[category] ?? category;
+  return CATEGORY_LABELS[category];
 }
 
 // =============================================================================
@@ -260,6 +261,43 @@ export function validateUserForCategory(
 }
 
 /**
+ * Parse tags from comma-separated string
+ */
+function parseTags(tags: string): string[] {
+  return tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Populate target IDs based on access scope
+ */
+function populateTargetIds(
+  uploadData: UploadFormData,
+  accessScope: string,
+  user: CurrentUser,
+): void {
+  if (accessScope === 'personal' || accessScope === 'payroll') {
+    uploadData.ownerUserId = user.id;
+    return;
+  }
+
+  if (accessScope === 'team' && user.teamId !== null && user.teamId !== undefined) {
+    uploadData.targetTeamId = user.teamId;
+    return;
+  }
+
+  if (
+    accessScope === 'department' &&
+    user.departmentId !== null &&
+    user.departmentId !== undefined
+  ) {
+    uploadData.targetDepartmentId = user.departmentId;
+  }
+}
+
+/**
  * Build UploadFormData from form state
  */
 export function buildUploadFormData(
@@ -272,16 +310,12 @@ export function buildUploadFormData(
   salaryYear?: number,
   salaryMonth?: number,
 ): UploadFormData | null {
-  const mapping = CATEGORY_MAPPINGS[category];
-  if (mapping === undefined) {
+  if (!(category in CATEGORY_MAPPINGS)) {
     return null;
   }
+  const mapping = CATEGORY_MAPPINGS[category];
 
-  // Parse tags from comma-separated string
-  const parsedTags = tags
-    .split(',')
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
+  const parsedTags = parseTags(tags);
 
   const uploadData: UploadFormData = {
     file,
@@ -292,30 +326,15 @@ export function buildUploadFormData(
     tags: parsedTags.length > 0 ? parsedTags : undefined,
   };
 
-  // Auto-populate IDs based on access scope
-  switch (mapping.accessScope) {
-    case 'personal':
-    case 'payroll':
-      uploadData.ownerUserId = user.id;
-      break;
-    case 'team':
-      if (user.teamId !== null && user.teamId !== undefined) {
-        uploadData.targetTeamId = user.teamId;
-      }
-      break;
-    case 'department':
-      if (user.departmentId !== null && user.departmentId !== undefined) {
-        uploadData.targetDepartmentId = user.departmentId;
-      }
-      break;
-  }
+  populateTargetIds(uploadData, mapping.accessScope, user);
 
-  // Add payroll period if required
-  if (mapping.requiresPayrollPeriod === true) {
-    if (salaryYear !== undefined && salaryMonth !== undefined) {
-      uploadData.salaryYear = salaryYear;
-      uploadData.salaryMonth = salaryMonth;
-    }
+  if (
+    mapping.requiresPayrollPeriod === true &&
+    salaryYear !== undefined &&
+    salaryMonth !== undefined
+  ) {
+    uploadData.salaryYear = salaryYear;
+    uploadData.salaryMonth = salaryMonth;
   }
 
   return uploadData;

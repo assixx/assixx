@@ -65,6 +65,10 @@ export interface BlackboardEntry {
   attachmentCount?: number;
   commentCount?: number;
   attachments?: BlackboardAttachment[];
+  // Organization targeting (for edit modal)
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
 }
 
 export interface BlackboardAttachment {
@@ -116,7 +120,7 @@ export interface UpdateEntryData {
 }
 
 export interface PaginatedResponse<T> {
-  entries: T[];
+  entries?: T[];
   data?: T[];
   meta?: {
     pagination: PaginationMeta;

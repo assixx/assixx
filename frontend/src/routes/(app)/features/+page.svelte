@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   /**
    * Features Page - Plan & Feature Management
    * @module features/+page
@@ -6,55 +6,61 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast.js';
 
-  // Page-specific CSS
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import '../../../styles/features.css';
 
-  // Local modules
-  import { FEATURE_CATEGORIES, DEFAULT_TENANT_NAME } from './_lib/constants';
-  import {
-    canActivateFeature,
-    isFeatureIncludedInPlan,
-    getPlanBadge,
-    getFeatureStatusText,
-    getFeatureStatusClass,
-    getFeatureCardClasses,
-    calculateTotalCost,
-    countActiveFeatures,
-    cloneFeatureCategories,
-  } from './_lib/utils';
   import {
     applyTenantFeaturesToCategories,
     changePlan as apiChangePlan,
-    toggleFeature as apiToggleFeature,
     saveAddons as apiSaveAddons,
+    toggleFeature as apiToggleFeature,
   } from './_lib/api';
+  import { DEFAULT_TENANT_NAME, FEATURE_CATEGORIES } from './_lib/constants';
+  import {
+    calculateTotalCost,
+    canActivateFeature,
+    cloneFeatureCategories,
+    countActiveFeatures,
+    getFeatureCardClasses,
+    getFeatureStatusClass,
+    getFeatureStatusText,
+    getPlanBadge,
+    isFeatureIncludedInPlan,
+  } from './_lib/utils';
+
+  import type {
+    Feature,
+    FeatureCategory,
+    FeatureFilter,
+    Plan,
+    TenantAddons,
+    TenantFeature,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
 
-  /** @type {{ data: import('./$types').PageData }} */
-  const { data } = $props();
+  interface PageData {
+    plans: Record<string, Plan | undefined>;
+    currentPlanCode: string;
+    addons: TenantAddons;
+    tenantFeatures: TenantFeature[];
+    tenantId: number | null;
+  }
 
-  /** @typedef {import('./_lib/types').Plan} Plan */
-  /** @typedef {import('./_lib/types').FeatureCategory} FeatureCategory */
-  /** @typedef {import('./_lib/types').TenantAddons} TenantAddons */
-  /** @typedef {import('./_lib/types').FeatureFilter} FeatureFilter */
-  /** @typedef {import('./_lib/types').Feature} Feature */
+  const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  /** @type {Record<string, Plan>} */
-  const plans = $derived(data?.plans ?? {});
-  const currentPlan = $derived(data?.currentPlanCode ?? 'basic');
-  const tenantFeatures = $derived(data?.tenantFeatures ?? []);
-  /** @type {number | null} */
-  const currentTenantId = $derived(data?.tenantId ?? null);
+  const plans: Record<string, Plan | undefined> = $derived(data.plans);
+  const currentPlan: string = $derived(data.currentPlanCode);
+  const tenantFeatures: TenantFeature[] = $derived(data.tenantFeatures);
+  const currentTenantId: number | null = $derived(data.tenantId);
 
   // Derived: Feature categories with tenant data applied
-  /** @type {Record<string, FeatureCategory>} */
-  const featureCategories = $derived(
+  const featureCategories: Record<string, FeatureCategory> = $derived(
     applyTenantFeaturesToCategories(cloneFeatureCategories(FEATURE_CATEGORIES), tenantFeatures),
   );
 
@@ -63,16 +69,13 @@
   // =============================================================================
 
   // Addons - writable $derived (Svelte 5.25+): syncs from SSR, can be locally edited
-  /** @type {TenantAddons} */
-  let pendingAddons = $derived({ ...(data?.addons ?? {}) });
+  let pendingAddons: TenantAddons = $derived({ ...data.addons });
 
   const tenantName = DEFAULT_TENANT_NAME;
 
-  /** @type {string | null} */
-  const error = $state(null);
+  const error: string | null = $state(null);
 
-  /** @type {FeatureFilter} */
-  let currentFilter = $state('all');
+  let currentFilter: FeatureFilter = $state('all');
 
   // =============================================================================
   // DERIVED VALUES
@@ -87,8 +90,7 @@
   // FILTER LOGIC
   // =============================================================================
 
-  /** @param {Feature} feature */
-  function isFeatureVisible(feature) {
+  function isFeatureVisible(feature: Feature): boolean {
     switch (currentFilter) {
       case 'active':
         return feature.active;
@@ -108,8 +110,7 @@
   // API ACTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  /** @param {string} newPlanCode */
-  async function changePlan(newPlanCode) {
+  async function changePlan(newPlanCode: string): Promise<void> {
     if (newPlanCode === currentPlan) return;
 
     const planData = plans[newPlanCode];
@@ -127,11 +128,7 @@
     }
   }
 
-  /**
-   * @param {string} featureCode
-   * @param {boolean} activate
-   */
-  async function toggleFeature(featureCode, activate) {
+  async function toggleFeature(featureCode: string, activate: boolean): Promise<void> {
     try {
       await apiToggleFeature(currentTenantId, featureCode, activate);
       // Level 3: Trigger SSR refetch
@@ -144,21 +141,20 @@
 
   /**
    * Adjust pending addon values (local state, not saved yet)
-   * @param {'employees' | 'admins' | 'storage'} type
-   * @param {number} change
    */
-  function adjustAddon(type, change) {
+  function adjustAddon(type: 'employees' | 'admins' | 'storage', change: number): void {
     if (type === 'employees') {
       pendingAddons.employees = Math.max(0, (pendingAddons.employees ?? 0) + change);
     } else if (type === 'admins') {
       pendingAddons.admins = Math.max(0, (pendingAddons.admins ?? 0) + change);
-    } else if (type === 'storage') {
+    } else {
+      // type === 'storage'
       pendingAddons.storage_gb = Math.max(0, (pendingAddons.storage_gb ?? 0) + change);
     }
     pendingAddons = { ...pendingAddons };
   }
 
-  async function saveChanges() {
+  async function saveChanges(): Promise<void> {
     try {
       await apiSaveAddons(pendingAddons);
       showSuccessAlert('Änderungen erfolgreich gespeichert!');
@@ -174,15 +170,13 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  /** @param {FeatureFilter} filter */
-  function handleFilterChange(filter) {
+  function handleFilterChange(filter: FeatureFilter): void {
     currentFilter = filter;
   }
 
-  /** @param {Event} e */
-  function handlePlanChange(e) {
-    const input = /** @type {HTMLInputElement} */ (e.target);
-    if (input.checked) changePlan(input.value);
+  function handlePlanChange(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    if (input.checked) void changePlan(input.value);
   }
 
   // =============================================================================
@@ -280,38 +274,50 @@
       <!-- Toggle Group Filter -->
       <div class="toggle-group" id="feature-status-toggle">
         <button
+          type="button"
           class="toggle-group__btn"
           class:active={currentFilter === 'all'}
           title="Alle Features anzeigen"
-          onclick={() => handleFilterChange('all')}
+          onclick={() => {
+            handleFilterChange('all');
+          }}
         >
           <i class="fas fa-th"></i>
           Alle
         </button>
         <button
+          type="button"
           class="toggle-group__btn"
           class:active={currentFilter === 'active'}
           title="Nur aktive Features"
-          onclick={() => handleFilterChange('active')}
+          onclick={() => {
+            handleFilterChange('active');
+          }}
         >
           <i class="fas fa-check-circle"></i>
           Aktiv
         </button>
         <button
+          type="button"
           class="toggle-group__btn"
           class:active={currentFilter === 'included'}
           title="Im Plan enthaltene Features"
-          onclick={() => handleFilterChange('included')}
+          onclick={() => {
+            handleFilterChange('included');
+          }}
         >
           <i class="fas fa-box"></i>
           Im Plan enthalten
         </button>
         {#if currentPlan !== 'enterprise'}
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentFilter === 'addons'}
             title="Zusätzlich buchbare Features"
-            onclick={() => handleFilterChange('addons')}
+            onclick={() => {
+              handleFilterChange('addons');
+            }}
           >
             <i class="fas fa-plus-circle"></i>
             Zusätzlich buchbar
@@ -325,7 +331,13 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => window.location.reload()}>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => {
+              window.location.reload();
+            }}
+          >
             Erneut versuchen
           </button>
         </div>
@@ -358,6 +370,7 @@
                           <a href="#plans-container" class="btn btn-primary">Plan upgraden</a>
                         {:else if feature.active}
                           <button
+                            type="button"
                             class="btn btn-status-active"
                             onclick={() => toggleFeature(feature.code, false)}
                           >
@@ -365,6 +378,7 @@
                           </button>
                         {:else}
                           <button
+                            type="button"
                             class="btn btn-status-inactive"
                             onclick={() => toggleFeature(feature.code, true)}
                           >
@@ -407,16 +421,22 @@
           </div>
           <div class="addon-controls">
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('employees', -1)}
+              onclick={() => {
+                adjustAddon('employees', -1);
+              }}
               aria-label="Mitarbeiter reduzieren"
             >
               <i class="fas fa-minus"></i>
             </button>
             <span class="addon-value">{pendingAddons.employees ?? 0}</span>
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('employees', 1)}
+              onclick={() => {
+                adjustAddon('employees', 1);
+              }}
               aria-label="Mitarbeiter erhöhen"
             >
               <i class="fas fa-plus"></i>
@@ -435,16 +455,22 @@
           </div>
           <div class="addon-controls">
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('admins', -1)}
+              onclick={() => {
+                adjustAddon('admins', -1);
+              }}
               aria-label="Admins reduzieren"
             >
               <i class="fas fa-minus"></i>
             </button>
             <span class="addon-value">{pendingAddons.admins ?? 0}</span>
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('admins', 1)}
+              onclick={() => {
+                adjustAddon('admins', 1);
+              }}
               aria-label="Admins erhöhen"
             >
               <i class="fas fa-plus"></i>
@@ -463,16 +489,22 @@
           </div>
           <div class="addon-controls">
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('storage', -100)}
+              onclick={() => {
+                adjustAddon('storage', -100);
+              }}
               aria-label="Speicher reduzieren"
             >
               <i class="fas fa-minus"></i>
             </button>
             <span class="addon-value">{pendingAddons.storage_gb ?? 0}GB</span>
             <button
+              type="button"
               class="addon-btn"
-              onclick={() => adjustAddon('storage', 100)}
+              onclick={() => {
+                adjustAddon('storage', 100);
+              }}
               aria-label="Speicher erhöhen"
             >
               <i class="fas fa-plus"></i>
@@ -502,7 +534,7 @@
       </div>
     </div>
     <div class="summary-actions">
-      <button class="btn-save" onclick={saveChanges}>
+      <button type="button" class="btn-save" onclick={saveChanges}>
         <i class="fas fa-save mr-2"></i>
         Änderungen speichern
       </button>

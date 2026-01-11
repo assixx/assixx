@@ -9,6 +9,7 @@
  * Shift plan loading happens client-side on team selection (dynamic context).
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { User, Area, Team, TeamMember, ShiftFavorite, AvailabilityStatus } from './_lib/types';
 
@@ -30,11 +31,33 @@ const VALID_AVAILABILITY_STATUSES: readonly AvailabilityStatus[] = [
   'other',
 ] as const;
 
+/** Team member API response type */
+interface TeamMemberApiResponse {
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  userRole?: string;
+  availabilityStatus?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+}
+
+/** Processed fetch results */
+interface FetchResults {
+  areas: Area[];
+  teams: Team[];
+  teamMembers: TeamMember[];
+  favorites: ShiftFavorite[];
+  teamLeaderId: number | null;
+}
+
 /**
  * Type guard: safely convert API string to AvailabilityStatus
  */
 function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | undefined {
-  if (status === undefined || status === null || status === '') {
+  if (status === undefined || status === '') {
     return undefined;
   }
   if (VALID_AVAILABILITY_STATUSES.includes(status as AvailabilityStatus)) {
@@ -64,15 +87,12 @@ async function apiFetch<T>(
 
     const json = (await response.json()) as ApiResponse<T>;
 
-    // Handle wrapped response { success: true, data: X }
     if ('success' in json && json.success === true) {
       return json.data ?? null;
     }
-    // Handle direct data in response
     if ('data' in json && json.data !== undefined) {
       return json.data;
     }
-    // Raw response
     return json as unknown as T;
   } catch (error) {
     console.error(`[SSR shifts] Fetch error for ${endpoint}:`, error);
@@ -80,188 +100,221 @@ async function apiFetch<T>(
   }
 }
 
-/** Team member API response type */
-interface TeamMemberApiResponse {
-  id: number;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  role?: string;
-  userRole?: string;
-  availabilityStatus?: string;
-  availabilityStart?: string;
-  availabilityEnd?: string;
+/**
+ * Convert API team member response to TeamMember type
+ */
+function convertTeamMember(member: TeamMemberApiResponse): TeamMember {
+  return {
+    id: member.id,
+    username: member.username,
+    firstName: member.firstName ?? '',
+    lastName: member.lastName ?? '',
+    role: member.role === 'lead' ? ('lead' as const) : ('member' as const),
+    userRole: member.userRole as TeamMember['userRole'],
+    availabilityStatus: toAvailabilityStatus(member.availabilityStatus),
+    availabilityStart: member.availabilityStart,
+    availabilityEnd: member.availabilityEnd,
+  };
+}
+
+/**
+ * Safely cast unknown value to typed array
+ */
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+/**
+ * Extract team leader ID from teams array
+ */
+function extractTeamLeaderId(
+  teams: Team[],
+  hasTeam: boolean,
+  primaryTeamId: number | null,
+): number | null {
+  if (!hasTeam || primaryTeamId === null) {
+    return null;
+  }
+  const userTeam = teams.find((t) => t.id === primaryTeamId);
+  return userTeam?.leaderId ?? userTeam?.teamLeadId ?? null;
+}
+
+/**
+ * Process raw team members into typed array (employees only)
+ */
+function processRawTeamMembers(raw: unknown): TeamMember[] {
+  const members = asArray<TeamMemberApiResponse>(raw);
+  return members.filter((m) => m.userRole === 'employee').map(convertTeamMember);
+}
+
+/**
+ * Process parallel fetch results into typed data structures
+ */
+function processFetchResults(
+  results: unknown[],
+  labels: string[],
+  hasTeam: boolean,
+  primaryTeamId: number | null,
+): FetchResults {
+  // Create index map for O(1) lookup
+  const resultByLabel = new Map<string, unknown>();
+  labels.forEach((label, i) => {
+    resultByLabel.set(label, results[i]);
+  });
+
+  // Process each result type declaratively
+  const areas = asArray<Area>(resultByLabel.get('areas'));
+  const teams = asArray<Team>(resultByLabel.get('teams'));
+  const teamMembers = processRawTeamMembers(resultByLabel.get('teamMembers'));
+  const favorites = asArray<ShiftFavorite>(resultByLabel.get('favorites'));
+  const teamLeaderId = extractTeamLeaderId(teams, hasTeam, primaryTeamId);
+
+  return { areas, teams, teamMembers, favorites, teamLeaderId };
+}
+
+/**
+ * Build employee team info object if applicable
+ */
+function buildEmployeeTeamInfo(
+  userData: User,
+  hasTeam: boolean,
+  primaryTeamId: number | null,
+  teamLeaderId: number | null,
+): {
+  teamId: number;
+  teamName: string;
+  departmentId: number;
+  departmentName: string;
+  areaId: number;
+  areaName: string;
+  teamLeaderId: number | null;
+} | null {
+  if (!hasTeam || primaryTeamId === null) {
+    return null;
+  }
+
+  return {
+    teamId: primaryTeamId,
+    teamName: userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
+    departmentId: userData.teamDepartmentId ?? 0,
+    departmentName: userData.teamDepartmentName ?? 'Unbekannte Abteilung',
+    areaId: userData.teamAreaId ?? 0,
+    areaName: userData.teamAreaName ?? 'Unbekannter Bereich',
+    teamLeaderId,
+  };
+}
+
+/**
+ * Build user response object from userData
+ */
+function buildUserResponse(userData: User, primaryTeamId: number | null) {
+  return {
+    id: userData.id,
+    username: userData.username,
+    email: userData.email,
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    role: userData.role,
+    tenantId: userData.tenantId,
+    isActive: userData.isActive,
+    createdAt: userData.createdAt,
+    updatedAt: userData.updatedAt,
+    hasFullAccess: userData.hasFullAccess,
+    teamId: primaryTeamId,
+    teamName: userData.teamNames?.[0] ?? userData.teamName,
+    teamDepartmentId: userData.teamDepartmentId,
+    teamDepartmentName: userData.teamDepartmentName,
+    teamAreaId: userData.teamAreaId,
+    teamAreaName: userData.teamAreaName,
+  };
+}
+
+/**
+ * Prepare fetch promises based on user role and team membership
+ */
+function prepareFetchPromises(
+  token: string,
+  fetchFn: typeof fetch,
+  userData: User,
+  hasTeam: boolean,
+  primaryTeamId: number | null,
+  isAdminOrRoot: boolean,
+): { promises: Promise<unknown>[]; labels: string[] } {
+  const promises: Promise<unknown>[] = [];
+  const labels: string[] = [];
+
+  // Always load areas
+  promises.push(apiFetch<Area[]>('/areas', token, fetchFn));
+  labels.push('areas');
+
+  if (hasTeam && primaryTeamId !== null) {
+    const departmentId = userData.teamDepartmentId;
+    if (departmentId !== undefined && departmentId !== null) {
+      promises.push(apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetchFn));
+      labels.push('teams');
+    }
+    promises.push(
+      apiFetch<TeamMemberApiResponse[]>(`/teams/${primaryTeamId}/members`, token, fetchFn),
+    );
+    labels.push('teamMembers');
+  }
+
+  if (isAdminOrRoot) {
+    promises.push(apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn));
+    labels.push('favorites');
+  }
+
+  return { promises, labels };
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
-  // 1. Auth check
+  // Auth check
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  // 2. Get basic user from parent layout
   const parentData = await parent();
   if (!parentData.user) {
     redirect(302, '/login');
   }
 
-  // 3. Fetch full user data (including team fields not in layout)
+  // Fetch full user data
   const userData = await apiFetch<User>('/users/me', token, fetch);
-
   if (!userData) {
     console.error('[SSR shifts] Failed to fetch user data');
     redirect(302, '/login');
   }
 
+  // Determine user context
   const isEmployee = userData.role === 'employee';
-  // Use teamIds array (new API) - teamId is deprecated and always null
   const primaryTeamId = userData.teamIds?.[0] ?? userData.teamId ?? null;
   const hasTeam = isEmployee && primaryTeamId !== null;
   const isAdminOrRoot = userData.role === 'admin' || userData.role === 'root';
 
-  console.info(
-    '[SSR shifts] User:',
-    userData.email,
-    'Role:',
-    userData.role,
-    'TeamIds:',
-    userData.teamIds,
-    'PrimaryTeamId:',
+  // Prepare and execute parallel fetches
+  const { promises, labels } = prepareFetchPromises(
+    token,
+    fetch,
+    userData,
+    hasTeam,
+    primaryTeamId,
+    isAdminOrRoot,
+  );
+  const results = await Promise.all(promises);
+
+  // Process results
+  const { areas, teams, teamMembers, favorites, teamLeaderId } = processFetchResults(
+    results,
+    labels,
+    hasTeam,
     primaryTeamId,
   );
 
-  // 4. Prepare parallel fetch based on user role
-  const fetchPromises: Promise<unknown>[] = [];
-  const fetchLabels: string[] = [];
+  const employeeTeamInfo = buildEmployeeTeamInfo(userData, hasTeam, primaryTeamId, teamLeaderId);
 
-  // Always load areas for hierarchy display
-  fetchPromises.push(apiFetch<Area[]>('/areas', token, fetch));
-  fetchLabels.push('areas');
-
-  if (hasTeam && primaryTeamId !== null) {
-    // Employee with team: load teams (for teamLeaderId) and team members
-    const departmentId = userData.teamDepartmentId;
-    if (departmentId !== undefined && departmentId !== null) {
-      fetchPromises.push(apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetch));
-      fetchLabels.push('teams');
-    }
-
-    // Use primaryTeamId (from teamIds array)
-    fetchPromises.push(
-      apiFetch<TeamMemberApiResponse[]>(`/teams/${primaryTeamId}/members`, token, fetch),
-    );
-    fetchLabels.push('teamMembers');
-  }
-
-  if (isAdminOrRoot) {
-    // Admin/Root: load favorites
-    fetchPromises.push(apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetch));
-    fetchLabels.push('favorites');
-  }
-
-  // 5. Execute parallel fetch
-  const results = await Promise.all(fetchPromises);
-
-  // 6. Process results
-  let areas: Area[] = [];
-  let teams: Team[] = [];
-  let teamMembers: TeamMember[] = [];
-  let favorites: ShiftFavorite[] = [];
-  let teamLeaderId: number | null = null;
-
-  for (let i = 0; i < fetchLabels.length; i++) {
-    const label = fetchLabels[i];
-    const result = results[i];
-
-    switch (label) {
-      case 'areas':
-        areas = Array.isArray(result) ? (result as Area[]) : [];
-        break;
-
-      case 'teams': {
-        const teamsData = Array.isArray(result) ? (result as Team[]) : [];
-        teams = teamsData;
-
-        // Extract teamLeaderId for employee's team (using primaryTeamId)
-        if (hasTeam && primaryTeamId !== null) {
-          const userTeam = teamsData.find((t) => t.id === primaryTeamId);
-          teamLeaderId = userTeam?.leaderId ?? userTeam?.teamLeadId ?? null;
-        }
-        break;
-      }
-
-      case 'teamMembers': {
-        const membersData = Array.isArray(result) ? (result as TeamMemberApiResponse[]) : [];
-        // Convert to TeamMember type, filtering only employees
-        teamMembers = membersData
-          .filter((member) => member.userRole === 'employee')
-          .map((member) => ({
-            id: member.id,
-            username: member.username,
-            firstName: member.firstName ?? '',
-            lastName: member.lastName ?? '',
-            role: member.role === 'lead' ? ('lead' as const) : ('member' as const),
-            userRole: member.userRole as TeamMember['userRole'],
-            availabilityStatus: toAvailabilityStatus(member.availabilityStatus),
-            availabilityStart: member.availabilityStart,
-            availabilityEnd: member.availabilityEnd,
-          }));
-        break;
-      }
-
-      case 'favorites':
-        favorites = Array.isArray(result) ? (result as ShiftFavorite[]) : [];
-        break;
-    }
-  }
-
-  // 7. Build employee team info if applicable (using primaryTeamId and teamNames array)
-  const employeeTeamInfo =
-    hasTeam && primaryTeamId !== null
-      ? {
-          teamId: primaryTeamId,
-          teamName: userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
-          departmentId: userData.teamDepartmentId ?? 0,
-          departmentName: userData.teamDepartmentName ?? 'Unbekannte Abteilung',
-          areaId: userData.teamAreaId ?? 0,
-          areaName: userData.teamAreaName ?? 'Unbekannter Bereich',
-          teamLeaderId,
-        }
-      : null;
-
-  console.info('[SSR shifts] employeeTeamInfo:', employeeTeamInfo);
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(
-    `[SSR shifts] loaded in ${duration}ms (${fetchLabels.length} parallel API calls): ` +
-      `areas=${areas.length}, teams=${teams.length}, members=${teamMembers.length}, favorites=${favorites.length}`,
-  );
-
-  // 8. Return SSR data
   return {
-    user: {
-      id: userData.id,
-      username: userData.username,
-      email: userData.email,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      role: userData.role,
-      tenantId: userData.tenantId,
-      isActive: userData.isActive,
-      createdAt: userData.createdAt,
-      updatedAt: userData.updatedAt,
-      hasFullAccess: userData.hasFullAccess,
-      // Team fields - use primaryTeamId and teamNames array (teamId is deprecated)
-      teamId: primaryTeamId,
-      teamName: userData.teamNames?.[0] ?? userData.teamName,
-      teamDepartmentId: userData.teamDepartmentId,
-      teamDepartmentName: userData.teamDepartmentName,
-      teamAreaId: userData.teamAreaId,
-      teamAreaName: userData.teamAreaName,
-    },
+    user: buildUserResponse(userData, primaryTeamId),
     areas,
     teams,
     teamMembers,

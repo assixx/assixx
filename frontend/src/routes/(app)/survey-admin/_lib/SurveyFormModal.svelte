@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { surveyAdminState } from './state.svelte';
   import { ASSIGNMENT_TYPE_OPTIONS } from './constants';
-  import { getDepartmentMemberCount, getTeamMemberCount } from './utils';
-  import type { QuestionType } from './types';
   import QuestionItem from './QuestionItem.svelte';
+  import { surveyAdminState } from './state.svelte';
+  import { getDepartmentMemberCount, getTeamMemberCount } from './utils';
+
+  import type { QuestionType } from './types';
 
   // =============================================================================
   // PROPS
@@ -22,13 +23,13 @@
     formSelectedAreas: number[];
     formSelectedDepartments: number[];
     formSelectedTeams: number[];
-    formQuestions: Array<{
+    formQuestions: {
       id: string;
       text: string;
       type: QuestionType;
       isOptional: boolean;
       options: string[];
-    }>;
+    }[];
     assignmentDisplayText: string;
     onclose: () => void;
     onsavedraft: () => void;
@@ -42,34 +43,10 @@
     onassignmentselect: (value: string, label: string) => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
-    formTitle = $bindable(),
-    formDescription = $bindable(),
-    formIsAnonymous = $bindable(),
-    formIsMandatory = $bindable(),
-    formStartDate = $bindable(),
-    formStartTime = $bindable(),
-    formEndDate = $bindable(),
-    formEndTime = $bindable(),
-    formAssignmentType = $bindable(),
-    formSelectedAreas = $bindable(),
-    formSelectedDepartments = $bindable(),
-    formSelectedTeams = $bindable(),
-    formQuestions = $bindable(),
-    assignmentDisplayText,
-    onclose,
-    onsavedraft,
-    onsaveactive,
-    onaddquestion,
-    onremovequestion,
-    onquestiontypechange,
-    onaddoption,
-    onremoveoption,
-    onupdateoption,
-    onassignmentselect,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { formTitle = $bindable(), formDescription = $bindable(), formIsAnonymous = $bindable(), formIsMandatory = $bindable(), formStartDate = $bindable(), formStartTime = $bindable(), formEndDate = $bindable(), formEndTime = $bindable(), formAssignmentType = $bindable(), formSelectedAreas = $bindable(), formSelectedDepartments = $bindable(), formSelectedTeams = $bindable(), formQuestions = $bindable(), assignmentDisplayText, onclose, onsavedraft, onsaveactive, onaddquestion, onremovequestion, onquestiontypechange, onaddoption, onremoveoption, onupdateoption, onassignmentselect }: Props = $props();
+  /* eslint-enable */
 
   // =============================================================================
   // LOCAL STATE
@@ -256,7 +233,9 @@
               type="button"
               class="dropdown__trigger"
               class:active={activeDropdown === 'assignment'}
-              onclick={() => toggleDropdown('assignment')}
+              onclick={() => {
+                toggleDropdown('assignment');
+              }}
             >
               <span>{assignmentDisplayText}</span>
               <i class="fas fa-chevron-down"></i>
@@ -266,7 +245,9 @@
                 <button
                   type="button"
                   class="dropdown__option"
-                  onclick={() => handleAssignmentSelect(option.value, option.label)}
+                  onclick={() => {
+                    handleAssignmentSelect(option.value, option.label);
+                  }}
                 >
                   {option.label}
                 </button>
@@ -350,11 +331,21 @@
                 isMandatory={formIsMandatory}
                 {activeDropdown}
                 ontoggleDropdown={toggleDropdown}
-                onremove={() => onremovequestion(question.id)}
-                ontypechange={(type) => handleQuestionTypeChange(question.id, type)}
-                onaddoption={() => onaddoption(question.id)}
-                onremoveoption={(optIndex) => onremoveoption(question.id, optIndex)}
-                onupdateoption={(optIndex, text) => onupdateoption(question.id, optIndex, text)}
+                onremove={() => {
+                  onremovequestion(question.id);
+                }}
+                ontypechange={(type: QuestionType) => {
+                  handleQuestionTypeChange(question.id, type);
+                }}
+                onaddoption={() => {
+                  onaddoption(question.id);
+                }}
+                onremoveoption={(optIndex: number) => {
+                  onremoveoption(question.id, optIndex);
+                }}
+                onupdateoption={(optIndex: number, text: string) => {
+                  onupdateoption(question.id, optIndex, text);
+                }}
               />
             {/each}
           </div>

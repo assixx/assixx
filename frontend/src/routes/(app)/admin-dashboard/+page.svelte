@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/admin-dashboard.css';
@@ -23,6 +22,8 @@
     goToCalendar,
   } from './_lib/utils';
 
+  import type { PageData } from './$types';
+
   // =============================================================================
   // SSR DATA - Loaded server-side in +page.server.ts
   // Data is INSTANTLY available - no loading states needed!
@@ -31,16 +32,14 @@
   /** Props from server load function */
   const { data }: { data: PageData } = $props();
 
-  // Destructure with safe fallbacks (handles undefined during hydration edge cases)
-  const stats = $derived(
-    data?.stats ?? { employeeCount: 0, documentCount: 0, departmentCount: 0, teamCount: 0 },
-  );
-  const recentEmployees = $derived(data?.recentEmployees ?? []);
-  const recentDocuments = $derived(data?.recentDocuments ?? []);
-  const departments = $derived(data?.departments ?? []);
-  const teams = $derived(data?.teams ?? []);
-  const upcomingEvents = $derived(data?.upcomingEvents ?? []);
-  const blackboardEntries = $derived(data?.blackboardEntries ?? []);
+  // Destructure data - PageData guarantees all properties exist from +page.server.ts
+  const stats = $derived(data.stats);
+  const recentEmployees = $derived(data.recentEmployees);
+  const recentDocuments = $derived(data.recentDocuments);
+  const departments = $derived(data.departments);
+  const teams = $derived(data.teams);
+  const upcomingEvents = $derived(data.upcomingEvents);
+  const blackboardEntries = $derived(data.blackboardEntries);
 
   // =============================================================================
   // LIFECYCLE - Only for DOM manipulation, NOT data loading
@@ -118,11 +117,16 @@
             <div class="sticky-notes-container">
               {#each blackboardEntries as entry (entry.id)}
                 {@const contentText = parseContent(entry.content)}
+                {@const isRead = entry.isConfirmed === true}
                 <div
-                  class="sticky-note sticky-note--{entry.color ?? 'yellow'} sticky-note--large"
+                  class="sticky-note sticky-note--{entry.color} sticky-note--large"
                   id="sticky-note-{entry.id}"
-                  onclick={() => openBlackboardEntry(entry.uuid)}
-                  onkeydown={(e) => e.key === 'Enter' && openBlackboardEntry(entry.uuid)}
+                  onclick={() => {
+                    openBlackboardEntry(entry.uuid);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') openBlackboardEntry(entry.uuid);
+                  }}
                   role="button"
                   tabindex="0"
                 >
@@ -130,6 +134,12 @@
                   <div class="sticky-note__title">{entry.title}</div>
                   <div class="sticky-note__content">{truncateContent(contentText)}</div>
                   <div class="sticky-note__indicators">
+                    {#if (entry.attachmentCount ?? 0) > 0}
+                      <span class="sticky-note__attachments" title="Anhänge">
+                        <i class="fas fa-paperclip"></i>
+                        <span>{entry.attachmentCount}</span>
+                      </span>
+                    {/if}
                     {#if (entry.commentCount ?? 0) > 0}
                       <div class="sticky-note__comments">
                         <i class="fas fa-comments"></i>
@@ -138,26 +148,22 @@
                     {/if}
                     <span
                       class="sticky-note__read-status"
-                      class:sticky-note__read-status--read={entry.isConfirmed}
-                      class:sticky-note__read-status--unread={!entry.isConfirmed}
-                      title={entry.isConfirmed ? 'Gelesen' : 'Ungelesen'}
+                      class:sticky-note__read-status--read={isRead}
+                      class:sticky-note__read-status--unread={!isRead}
+                      title={isRead ? 'Gelesen' : 'Ungelesen'}
                     >
-                      <i class="fas {entry.isConfirmed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                      <i class="fas {isRead ? 'fa-eye' : 'fa-eye-slash'}"></i>
                     </span>
                   </div>
                   <div class="sticky-note__footer">
                     <div class="sticky-note__badges">
                       <span
-                        class="sticky-note__badge sticky-note__badge--priority-{entry.priority ??
-                          'medium'}"
+                        class="sticky-note__badge sticky-note__badge--priority-{entry.priority}"
                       >
-                        {getPriorityLabel(entry.priority ?? 'medium')}
+                        {getPriorityLabel(entry.priority)}
                       </span>
-                      <span
-                        class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel ??
-                          'company'}"
-                      >
-                        {getBlackboardOrgLabel(entry.orgLevel ?? 'company')}
+                      <span class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}">
+                        {getBlackboardOrgLabel(entry.orgLevel)}
                       </span>
                     </div>
                     <div class="sticky-note__footer-row">
@@ -191,8 +197,11 @@
           </div>
           <div class="card-accent__content">
             <button
+              type="button"
               class="btn btn-manage w-4/5 mb-4"
-              onclick={() => navigateTo('/manage-employees')}
+              onclick={() => {
+                navigateTo('/manage-employees');
+              }}
             >
               Mitarbeiter verwalten
             </button>
@@ -222,8 +231,11 @@
           </div>
           <div class="card-accent__content">
             <button
+              type="button"
               class="btn btn-manage w-4/5 mb-4"
-              onclick={() => navigateTo('/document-upload')}
+              onclick={() => {
+                navigateTo('/document-upload');
+              }}
             >
               Dokument hochladen
             </button>
@@ -253,8 +265,11 @@
           </div>
           <div class="card-accent__content">
             <button
+              type="button"
               class="btn btn-manage w-4/5 mb-4"
-              onclick={() => navigateTo('/manage-departments')}
+              onclick={() => {
+                navigateTo('/manage-departments');
+              }}
             >
               Abteilungen verwalten
             </button>
@@ -283,7 +298,13 @@
             </h3>
           </div>
           <div class="card-accent__content">
-            <button class="btn btn-manage w-4/5 mb-4" onclick={() => navigateTo('/manage-teams')}>
+            <button
+              type="button"
+              class="btn btn-manage w-4/5 mb-4"
+              onclick={() => {
+                navigateTo('/manage-teams');
+              }}
+            >
               Teams verwalten
             </button>
             <div class="space-y-2">
@@ -311,7 +332,13 @@
             </h3>
           </div>
           <div class="card-accent__content">
-            <button class="btn btn-manage w-4/5 mb-4" onclick={() => navigateTo('/calendar')}>
+            <button
+              type="button"
+              class="btn btn-manage w-4/5 mb-4"
+              onclick={() => {
+                navigateTo('/calendar');
+              }}
+            >
               Kalender öffnen
             </button>
             <div class="space-y-2">
@@ -328,7 +355,9 @@
                     onclick={goToCalendar}
                     role="button"
                     tabindex="0"
-                    onkeydown={(e) => e.key === 'Enter' && goToCalendar()}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') goToCalendar();
+                    }}
                   >
                     <div class="event-date">
                       <span class="event-day">{dateInfo.day}</span>

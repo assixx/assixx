@@ -2,7 +2,13 @@
 // MANAGE DEPARTMENTS - API FUNCTIONS
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS, DEPENDENCY_LABELS } from './constants';
+
 import type {
   Department,
   Area,
@@ -12,9 +18,6 @@ import type {
   DeleteDepartmentResult,
   DependencyDetails,
 } from './types';
-import { API_ENDPOINTS, DEPENDENCY_LABELS } from './constants';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -23,14 +26,48 @@ const apiClient = getApiClient();
 // =============================================================================
 
 /**
+ * Parsed API error structure
+ */
+interface ParsedApiError {
+  code: string | null;
+  message: string;
+  details: DependencyDetails;
+}
+
+/**
+ * Parse unknown error into structured object
+ */
+function parseApiError(err: unknown): ParsedApiError {
+  if (err === null || typeof err !== 'object') {
+    return { code: null, message: '', details: {} };
+  }
+
+  const errObj = err as Record<string, unknown>;
+  const code = typeof errObj.code === 'string' ? errObj.code : null;
+  const message = typeof errObj.message === 'string' ? errObj.message : '';
+  const detailsRaw = errObj.details;
+  const details =
+    detailsRaw !== null && typeof detailsRaw === 'object' ? (detailsRaw as DependencyDetails) : {};
+
+  return { code, message, details };
+}
+
+/**
  * Check if error is a session expired error
  */
 function isSessionExpiredError(err: unknown): boolean {
+  const { code } = parseApiError(err);
+  return code === 'SESSION_EXPIRED';
+}
+
+/**
+ * Check if error indicates department has dependencies
+ */
+function isDependencyError(parsed: ParsedApiError): boolean {
   return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
+    parsed.code === 'DEPT_400' ||
+    parsed.message.includes('dependencies') ||
+    parsed.message.includes('Abhängigkeiten')
   );
 }
 
@@ -38,7 +75,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 /**
@@ -48,8 +85,8 @@ export function checkSession(): boolean {
   const token = localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('userRole');
 
-  if (!token || (userRole !== 'root' && userRole !== 'admin')) {
-    goto(`${base}/login`);
+  if (token === null || (userRole !== 'root' && userRole !== 'admin')) {
+    void goto(resolve('/login', {}));
     return false;
   }
   return true;
@@ -61,12 +98,13 @@ export function checkSession(): boolean {
 
 /**
  * Type-safe extraction helper for nested API responses
+ * Caller is responsible for ensuring T matches the actual data type
  */
 function extractArray<T>(response: unknown): T[] {
-  if (Array.isArray(response)) return response;
+  if (Array.isArray(response)) return response as T[];
   if (response !== null && typeof response === 'object') {
     const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data;
+    if (Array.isArray(obj.data)) return obj.data as T[];
   }
   return [];
 }
@@ -145,28 +183,14 @@ export async function loadDepartmentLeads(): Promise<{
   error: string | null;
 }> {
   try {
-    const token = localStorage.getItem('accessToken');
-
-    const [adminsRes, rootsRes] = await Promise.all([
-      fetch(`/api/v2${API_ENDPOINTS.USERS_ADMIN}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      fetch(`/api/v2${API_ENDPOINTS.USERS_ROOT}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+    // Fetch both admin and root users in parallel using getApiClient
+    const [adminsData, rootsData] = await Promise.all([
+      apiClient.get<AdminUser[]>(API_ENDPOINTS.USERS_ADMIN).catch(() => []),
+      apiClient.get<AdminUser[]>(API_ENDPOINTS.USERS_ROOT).catch(() => []),
     ]);
 
-    let admins: AdminUser[] = [];
-    let roots: AdminUser[] = [];
-
-    if (adminsRes.ok) {
-      const adminsResult = await adminsRes.json();
-      admins = extractArray<AdminUser>(adminsResult);
-    }
-    if (rootsRes.ok) {
-      const rootsResult = await rootsRes.json();
-      roots = extractArray<AdminUser>(rootsResult);
-    }
+    const admins = extractArray<AdminUser>(adminsData);
+    const roots = extractArray<AdminUser>(rootsData);
 
     // Combine and deduplicate
     const combined = [...roots, ...admins];
@@ -212,7 +236,7 @@ export async function saveDepartment(
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     if (editId !== null) {
-      await apiClient.put(API_ENDPOINTS.DEPARTMENT(editId), payload);
+      await apiClient.put(API_ENDPOINTS.department(editId), payload);
     } else {
       await apiClient.post(API_ENDPOINTS.DEPARTMENTS, payload);
     }
@@ -231,39 +255,25 @@ export async function saveDepartment(
  */
 export async function deleteDepartment(departmentId: number): Promise<DeleteDepartmentResult> {
   try {
-    await apiClient.delete(API_ENDPOINTS.DEPARTMENT(departmentId));
+    await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };
   } catch (err) {
     console.error('[ManageDepartments] Error deleting department:', err);
 
-    // Type-safe error property extraction
-    const isObject = err !== null && typeof err === 'object';
-    const errObj = isObject ? (err as Record<string, unknown>) : null;
-    const code = errObj?.code;
-    const message = typeof errObj?.message === 'string' ? errObj.message : '';
-    const detailsRaw = errObj?.details;
-    const details =
-      detailsRaw !== null && typeof detailsRaw === 'object'
-        ? (detailsRaw as DependencyDetails)
-        : {};
+    const parsed = parseApiError(err);
 
-    // Check if dependencies exist
-    if (
-      code === 'DEPT_400' ||
-      message.includes('dependencies') ||
-      message.includes('Abhängigkeiten')
-    ) {
+    if (isDependencyError(parsed)) {
       return {
         success: false,
         error: null,
         hasDependencies: true,
-        dependencyDetails: details,
+        dependencyDetails: parsed.details,
       };
     }
 
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Fehler beim Löschen',
+      error: parsed.message || 'Fehler beim Löschen',
     };
   }
 }
@@ -275,7 +285,7 @@ export async function forceDeleteDepartment(
   departmentId: number,
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.DEPARTMENT_FORCE_DELETE(departmentId));
+    await apiClient.delete(API_ENDPOINTS.departmentForceDelete(departmentId));
     return { success: true, error: null };
   } catch (err) {
     console.error('[ManageDepartments] Error force deleting department:', err);

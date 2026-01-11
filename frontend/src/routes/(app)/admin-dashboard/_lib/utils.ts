@@ -6,9 +6,11 @@
  * Never use window.location for internal navigation - it causes full page reloads!
  */
 
-import type { User, Priority, OrgLevel, BlackboardOrgLevel, FormattedEventDate } from './types';
-import { ORG_LEVEL_LABELS, BLACKBOARD_ORG_LABELS, PRIORITY_LABELS } from './constants';
 import { goto } from '$app/navigation';
+
+import { ORG_LEVEL_LABELS, BLACKBOARD_ORG_LABELS, PRIORITY_LABELS } from './constants';
+
+import type { User, Priority, OrgLevel, BlackboardOrgLevel, FormattedEventDate } from './types';
 
 /**
  * Get display name for employee
@@ -26,7 +28,10 @@ export function getEmployeeName(user: User): string {
  * @param orgLevel - Organization level
  */
 export function getOrgLevelText(orgLevel: string): string {
-  return ORG_LEVEL_LABELS[orgLevel as OrgLevel] ?? 'Persönlich';
+  if (orgLevel in ORG_LEVEL_LABELS) {
+    return ORG_LEVEL_LABELS[orgLevel as OrgLevel];
+  }
+  return 'Persönlich';
 }
 
 /**
@@ -34,7 +39,7 @@ export function getOrgLevelText(orgLevel: string): string {
  * @param orgLevel - Organization level
  */
 export function getOrgLevelClass(orgLevel: string): string {
-  return `event-level-${orgLevel ?? 'personal'}`;
+  return `event-level-${orgLevel}`;
 }
 
 /**
@@ -42,7 +47,7 @@ export function getOrgLevelClass(orgLevel: string): string {
  * @param priority - Priority level
  */
 export function getPriorityLabel(priority: Priority): string {
-  return PRIORITY_LABELS[priority] ?? 'Normal';
+  return PRIORITY_LABELS[priority];
 }
 
 /**
@@ -50,7 +55,7 @@ export function getPriorityLabel(priority: Priority): string {
  * @param orgLevel - Blackboard organization level
  */
 export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
-  return BLACKBOARD_ORG_LABELS[orgLevel] ?? 'Firma';
+  return BLACKBOARD_ORG_LABELS[orgLevel];
 }
 
 /**
@@ -70,24 +75,45 @@ export function formatBlackboardDate(dateStr: string): string {
   });
 }
 
+/** Buffer-like object structure from API responses */
+interface BufferObject {
+  type: 'Buffer';
+  data: number[];
+}
+
+/**
+ * Type guard to check if value is a Buffer-like object from API
+ */
+function isBufferObject(value: object): value is BufferObject {
+  return (
+    'type' in value &&
+    (value as { type: string }).type === 'Buffer' &&
+    'data' in value &&
+    Array.isArray((value as { data: unknown }).data)
+  );
+}
+
 /**
  * Parse content text (handles Buffer objects from API)
  * @param contentText - Content which may be string or Buffer object
  */
 export function parseContent(contentText: unknown): string {
-  if (typeof contentText !== 'object' || contentText === null) {
-    return String(contentText ?? '');
+  if (contentText === null || contentText === undefined) {
+    return '';
   }
-  // Handle Buffer object from API
-  if (
-    typeof contentText === 'object' &&
-    'type' in contentText &&
-    (contentText as { type: string }).type === 'Buffer' &&
-    'data' in contentText &&
-    Array.isArray((contentText as { data: number[] }).data)
-  ) {
-    return String.fromCharCode(...(contentText as { data: number[] }).data);
+
+  if (typeof contentText === 'string') {
+    return contentText;
   }
+
+  if (typeof contentText === 'number' || typeof contentText === 'boolean') {
+    return String(contentText);
+  }
+
+  if (typeof contentText === 'object' && isBufferObject(contentText)) {
+    return String.fromCharCode(...contentText.data);
+  }
+
   return JSON.stringify(contentText);
 }
 

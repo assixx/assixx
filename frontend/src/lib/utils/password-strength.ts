@@ -35,8 +35,6 @@ export async function initPasswordStrength(): Promise<void> {
   // Create and store the loading promise
   loadPromise = (async () => {
     try {
-      console.info('[PasswordStrength] Lazy loading zxcvbn modules...');
-
       // Dynamic imports for code splitting
       const [{ zxcvbn, zxcvbnOptions }, zxcvbnCommonPackage, zxcvbnDePackage] = await Promise.all([
         import('@zxcvbn-ts/core'),
@@ -56,8 +54,6 @@ export async function initPasswordStrength(): Promise<void> {
 
       zxcvbnOptions.setOptions(options);
       zxcvbnInstance = zxcvbn;
-
-      console.info('[PasswordStrength] Modules loaded successfully');
     } catch (error) {
       console.error('[PasswordStrength] Failed to load modules:', error);
       throw error;
@@ -254,7 +250,7 @@ export async function analyzePassword(
     crackTime: formatCrackTime(result.crackTimesDisplay.offlineSlowHashing1e4PerSecond),
     feedback: {
       warning: result.feedback.warning ?? '',
-      suggestions: result.feedback.suggestions ?? [],
+      suggestions: result.feedback.suggestions,
     },
   };
 }

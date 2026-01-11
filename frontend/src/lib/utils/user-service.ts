@@ -114,18 +114,15 @@ export async function fetchCurrentUser(): Promise<{
 }> {
   // 1. Return cached data if valid
   if (isUserCacheValid()) {
-    console.info('[USER SERVICE] User data loaded from cache:', userCache.data?.username);
     return { user: userCache.data, tenant: userCache.tenant };
   }
 
   // 2. If a request is already in flight, wait for it (promise deduplication)
   if (userCache.promise !== null) {
-    console.info('[USER SERVICE] Waiting for existing user request...');
     return await userCache.promise;
   }
 
   // 3. Make new request
-  console.info('[USER SERVICE] Fetching user data...');
   const apiClient = getApiClient();
 
   const promise = (async () => {
@@ -139,8 +136,6 @@ export async function fetchCurrentUser(): Promise<{
       const rawTenant = result.tenant ?? null;
       const tenant: CurrentTenant | null =
         rawTenant !== null ? { ...rawTenant, companyName: rawTenant.name } : null;
-
-      console.info('[USER SERVICE] User data loaded:', user?.username);
 
       // Update cache
       userCache.data = user;

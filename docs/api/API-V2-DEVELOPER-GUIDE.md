@@ -241,18 +241,18 @@ res.json(paginatedResponse(data, paginationMeta));
 ```typescript
 // Validation errors
 if (!errors.isEmpty()) {
-  res.status(400).json(errorResponse("VALIDATION_ERROR", "Invalid input", errors.array()));
+  res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', errors.array()));
   return;
 }
 
 // Not found
-res.status(404).json(errorResponse("NOT_FOUND", "Resource not found"));
+res.status(404).json(errorResponse('NOT_FOUND', 'Resource not found'));
 
 // Conflict (duplicate)
-res.status(409).json(errorResponse("CONFLICT", "Resource already exists"));
+res.status(409).json(errorResponse('CONFLICT', 'Resource already exists'));
 
 // Server error
-res.status(500).json(errorResponse("SERVER_ERROR", "An error occurred"));
+res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred'));
 ```
 
 ### Multi-Tenant Isolation

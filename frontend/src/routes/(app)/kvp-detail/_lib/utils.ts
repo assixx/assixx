@@ -11,41 +11,42 @@ import {
   VISIBILITY_INFO,
   IMAGE_FILE_TYPES,
 } from './constants';
+
 import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel, Attachment } from './types';
 
 /**
  * Get status badge CSS class
  */
 export function getStatusBadgeClass(status: KvpStatus): string {
-  return STATUS_BADGE_CLASSES[status] ?? 'badge--kvp-new';
+  return STATUS_BADGE_CLASSES[status];
 }
 
 /**
  * Get status display text
  */
 export function getStatusText(status: KvpStatus): string {
-  return STATUS_TEXT[status] ?? status;
+  return STATUS_TEXT[status];
 }
 
 /**
  * Get priority badge CSS class
  */
 export function getPriorityBadgeClass(priority: KvpPriority): string {
-  return PRIORITY_BADGE_CLASSES[priority] ?? 'badge--priority-normal';
+  return PRIORITY_BADGE_CLASSES[priority];
 }
 
 /**
  * Get priority display text
  */
 export function getPriorityText(priority: KvpPriority): string {
-  return PRIORITY_TEXT[priority] ?? priority;
+  return PRIORITY_TEXT[priority];
 }
 
 /**
  * Get visibility badge CSS class
  */
 export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
-  return VISIBILITY_BADGE_CLASSES[orgLevel] ?? 'badge--visibility-team';
+  return VISIBILITY_BADGE_CLASSES[orgLevel];
 }
 
 /**
@@ -59,9 +60,6 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; te
 
   // If shared, show org level info
   const info = VISIBILITY_INFO[suggestion.orgLevel];
-  if (info === undefined) {
-    return { icon: 'fa-users', text: 'Team' };
-  }
 
   // Use specific name if available
   let text = info.text;

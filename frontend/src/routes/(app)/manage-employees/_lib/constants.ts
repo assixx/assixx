@@ -5,6 +5,16 @@
 import type { AvailabilityOption, AvailabilityStatus, IsActiveStatus } from './types';
 
 /**
+ * Default badge class for neutral/no-data states
+ */
+export const DEFAULT_BADGE_CLASS = 'badge--secondary';
+
+/**
+ * Info badge class for informational states (teams, departments, areas)
+ */
+export const INFO_BADGE_CLASS = 'badge--info';
+
+/**
  * Position options for employees
  */
 export const POSITION_OPTIONS: readonly string[] = [
@@ -35,7 +45,7 @@ export const AVAILABILITY_OPTIONS: readonly AvailabilityOption[] = [
 export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
   1: 'badge--success',
   0: 'badge--warning',
-  3: 'badge--secondary',
+  3: DEFAULT_BADGE_CLASS,
   4: 'badge--error',
 };
 
@@ -163,9 +173,9 @@ export const MESSAGES = {
 export const API_ENDPOINTS = {
   EMPLOYEES: '/api/v2/users?role=employee',
   TEAMS: '/api/v2/teams',
-  USER: (id: number) => `/api/v2/users/${id}`,
+  user: (id: number) => `/api/v2/users/${id}`,
   USERS: '/api/v2/users',
-  TEAM_MEMBERS: (teamId: number) => `/api/v2/teams/${teamId}/members`,
+  teamMembers: (teamId: number) => `/api/v2/teams/${teamId}/members`,
 } as const;
 
 /**

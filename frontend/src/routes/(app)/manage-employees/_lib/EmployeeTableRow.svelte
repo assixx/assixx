@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Employee } from './types';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -11,6 +10,8 @@
     getPlannedAvailability,
     getTruncatedNotes,
   } from './utils';
+
+  import type { Employee } from './types';
 
   // =============================================================================
   // PROPS
@@ -79,18 +80,24 @@
   <td>
     <div class="flex gap-2">
       <button
+        type="button"
         class="action-icon action-icon--edit"
         title="Bearbeiten"
         aria-label="Mitarbeiter bearbeiten"
-        onclick={() => onedit(employee.id)}
+        onclick={() => {
+          onedit(employee.id);
+        }}
       >
         <i class="fas fa-edit"></i>
       </button>
       <button
+        type="button"
         class="action-icon action-icon--delete"
         title="Löschen"
         aria-label="Mitarbeiter löschen"
-        onclick={() => ondelete(employee.id)}
+        onclick={() => {
+          ondelete(employee.id);
+        }}
       >
         <i class="fas fa-trash"></i>
       </button>

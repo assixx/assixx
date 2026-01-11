@@ -44,13 +44,13 @@ Multi-tier rate limiting system using `@nestjs/throttler` with Redis storage for
 
 ## 2. Rate Limit Tiers
 
-| Tier | Limit | Window | Use Case | Tracking Key |
-|------|-------|--------|----------|--------------|
-| `auth` | **5** | 15 min | Login, Signup, Refresh | IP |
-| `public` | 100 | 15 min | Public pages | IP |
-| `user` | 1000 | 15 min | Authenticated endpoints | User ID |
-| `admin` | 2000 | 15 min | Admin endpoints | User ID |
-| `upload` | 20 | 1 hour | File uploads | User ID |
+| Tier     | Limit | Window | Use Case                | Tracking Key |
+| -------- | ----- | ------ | ----------------------- | ------------ |
+| `auth`   | **5** | 15 min | Login, Signup, Refresh  | IP           |
+| `public` | 100   | 15 min | Public pages            | IP           |
+| `user`   | 1000  | 15 min | Authenticated endpoints | User ID      |
+| `admin`  | 2000  | 15 min | Admin endpoints         | User ID      |
+| `upload` | 20    | 1 hour | File uploads            | User ID      |
 
 ---
 
@@ -114,14 +114,14 @@ async health() { }
 
 ### Available Decorators
 
-| Decorator | Limit | Window |
-|-----------|-------|--------|
-| `@AuthThrottle()` | 5 | 15 min |
-| `@PublicThrottle()` | 100 | 15 min |
-| `@UserThrottle()` | 1000 | 15 min |
-| `@AdminThrottle()` | 2000 | 15 min |
-| `@UploadThrottle()` | 20 | 1 hour |
-| `@NoThrottle()` | Skip | - |
+| Decorator           | Limit | Window |
+| ------------------- | ----- | ------ |
+| `@AuthThrottle()`   | 5     | 15 min |
+| `@PublicThrottle()` | 100   | 15 min |
+| `@UserThrottle()`   | 1000  | 15 min |
+| `@AdminThrottle()`  | 2000  | 15 min |
+| `@UploadThrottle()` | 20    | 1 hour |
+| `@NoThrottle()`     | Skip  | -      |
 
 ---
 

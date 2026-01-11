@@ -6,11 +6,11 @@
  * API Endpoints
  */
 export const API_ENDPOINTS = {
-  SURVEY_BY_ID: (id: string) => `/surveys/${id}`,
-  SURVEY_QUESTIONS: (id: string) => `/surveys/${id}/questions`,
-  SURVEY_STATISTICS: (id: string) => `/surveys/${id}/statistics`,
-  SURVEY_RESPONSES: (id: string) => `/surveys/${id}/responses`,
-  SURVEY_EXPORT: (id: string, format: string) => `/surveys/${id}/export?format=${format}`,
+  surveyById: (id: string) => `/surveys/${id}`,
+  surveyQuestions: (id: string) => `/surveys/${id}/questions`,
+  surveyStatistics: (id: string) => `/surveys/${id}/statistics`,
+  surveyResponses: (id: string) => `/surveys/${id}/responses`,
+  surveyExport: (id: string, format: string) => `/surveys/${id}/export?format=${format}`,
 } as const;
 
 /**

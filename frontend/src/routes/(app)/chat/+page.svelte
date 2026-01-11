@@ -6,28 +6,23 @@
    */
 
   import { onMount, onDestroy } from 'svelte';
+
   import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
-  import type { PageData } from './$types';
+
   import { getTokenManager } from '$lib/utils/token-manager';
 
-  // Page-specific CSS
   import '../../../styles/chat.css';
 
-  // SSR Data
-  const { data }: { data: PageData } = $props();
-
-  // Local modules
-  import type {
-    ChatUser,
-    Conversation,
-    Message,
-    ScheduledMessage,
-    FilePreviewItem,
-    UserStatus,
-  } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
   import { markConversationAsRead as apiMarkConversationAsRead } from './_lib/api';
+  import ChatHeader from './_lib/ChatHeader.svelte';
+  import ChatSidebar from './_lib/ChatSidebar.svelte';
+  import ConfirmDialog from './_lib/ConfirmDialog.svelte';
+  import { MESSAGES } from './_lib/constants';
+  import * as handlers from './_lib/handlers';
+  import MessageInputArea from './_lib/MessageInputArea.svelte';
+  import MessagesArea from './_lib/MessagesArea.svelte';
+  import ScheduleModal from './_lib/ScheduleModal.svelte';
   import {
     getChatPartner,
     getChatPartnerName,
@@ -44,16 +39,18 @@
     buildSendMessage,
   } from './_lib/websocket';
 
-  // Handlers
-  import * as handlers from './_lib/handlers';
+  import type { PageData } from './$types';
+  import type {
+    ChatUser,
+    Conversation,
+    Message,
+    ScheduledMessage,
+    FilePreviewItem,
+    UserStatus,
+  } from './_lib/types';
 
-  // Components
-  import ChatSidebar from './_lib/ChatSidebar.svelte';
-  import ChatHeader from './_lib/ChatHeader.svelte';
-  import MessagesArea from './_lib/MessagesArea.svelte';
-  import MessageInputArea from './_lib/MessageInputArea.svelte';
-  import ScheduleModal from './_lib/ScheduleModal.svelte';
-  import ConfirmDialog from './_lib/ConfirmDialog.svelte';
+  // SSR Data
+  const { data }: { data: PageData } = $props();
 
   // ==========================================================================
   // SSR DATA (single source of truth for initial load)
@@ -62,16 +59,16 @@
   const tokenManager = getTokenManager();
 
   // Derived from SSR data
-  const ssrUser = $derived(data?.currentUser ?? null);
-  const ssrConversations = $derived(data?.conversations ?? []);
+  const ssrUser = $derived(data.currentUser);
+  const ssrConversations = $derived(data.conversations);
 
   // Current user derived from SSR
   const currentUser = $derived.by<ChatUser | null>(() => {
     if (ssrUser === null) return null;
     return {
       id: ssrUser.id,
-      username: ssrUser.email ?? '',
-      email: ssrUser.email ?? '',
+      username: ssrUser.email,
+      email: ssrUser.email,
       role: ssrUser.role,
     };
   });
@@ -136,15 +133,16 @@
   // Confirm dialog
   let showConfirmDialog = $state(false);
   let confirmMessage = $state('');
-  let confirmCallback = $state<(() => void) | null>(null);
+  let confirmCallback = $state<(() => void | Promise<void>) | null>(null);
 
   // WebSocket
-  let _isConnected = $state(false);
-  let _reconnectAttempts = $state(0);
   let typingUsers: number[] = $state([]);
 
-  // Refs
-  let messagesAreaRef: MessagesArea | null = $state(null);
+  // Refs - typed by expected interface, not component type
+  interface MessagesAreaRef {
+    scrollToBottom: () => void;
+  }
+  let messagesAreaRef = $state<MessagesAreaRef | null>(null);
 
   // ==========================================================================
   // DERIVED - Using $derived.by() for function calls (Svelte 5 best practice)
@@ -158,7 +156,7 @@
   const chatPartnerName = $derived.by(() =>
     getChatPartnerName(chatPartner, activeConversation?.name),
   );
-  const chatPartnerStatus = $derived.by(() => (chatPartner?.status ?? 'offline') as UserStatus);
+  const chatPartnerStatus = $derived.by(() => chatPartner?.status ?? 'offline');
   // Use debounced query for filtering (prevents re-render on every keystroke)
   const filteredMessages = $derived.by(() => filterMessagesByQuery(messages, debouncedSearchQuery));
   const searchResultCount = $derived(filteredMessages.length);
@@ -179,7 +177,7 @@
     // SSR already loaded conversations and user data
     // Just need to connect WebSocket for real-time updates
     const accessToken = tokenManager.getAccessToken();
-    if (!accessToken) {
+    if (accessToken === null || accessToken === '') {
       // Redirect handled by SSR, but fallback for edge cases
       window.location.href = '/login';
       return;
@@ -201,7 +199,8 @@
 
   $effect(() => {
     const currentCount = messages.length;
-    const currentLastId = messages[messages.length - 1]?.id ?? null;
+    const lastMessage = messages[messages.length - 1] as Message | undefined;
+    const currentLastId = lastMessage !== undefined ? lastMessage.id : null;
 
     // Only scroll if:
     // 1. New message added (count increased AND last message ID changed)
@@ -211,10 +210,11 @@
       (currentCount > 0 && previousMessageCount === 0) ||
       (currentLastId !== null && currentLastId !== lastMessageId);
 
-    if (hasNewMessage && messagesAreaRef) {
-      // Use requestAnimationFrame for smoother scroll
+    if (hasNewMessage && messagesAreaRef !== null) {
+      // Capture ref value for async callback (state may change between check and execution)
+      const ref = messagesAreaRef;
       requestAnimationFrame(() => {
-        messagesAreaRef?.scrollToBottom();
+        ref.scrollToBottom();
       });
     }
 
@@ -229,12 +229,10 @@
 
   function connectWebSocket(): void {
     const token = tokenManager.getAccessToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     handlers.connectWebSocket(token, {
       onConnected: () => {
-        _isConnected = true;
-        _reconnectAttempts = 0;
         conversations.forEach((conv) => {
           handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
         });
@@ -243,7 +241,7 @@
         if (activeConversation?.id === newMessage.conversationId) {
           messages = [...messages, newMessage];
           if (newMessage.senderId !== currentUser?.id) {
-            apiMarkConversationAsRead(newMessage.conversationId);
+            void apiMarkConversationAsRead(newMessage.conversationId);
           }
         }
         conversations = updateConversationWithMessage(
@@ -269,7 +267,9 @@
       onMessageRead: (messageId: number) => {
         messages = markMessageAsRead(messages, messageId);
       },
-      onError: (error: string) => showNotification(error, 'error'),
+      onError: (error: string) => {
+        showNotification(error, 'error');
+      },
       onAuthError: () => {
         window.location.href = '/login';
       },
@@ -340,56 +340,71 @@
   // MESSAGE HANDLERS
   // ==========================================================================
 
-  async function sendMessage(): Promise<void> {
-    if (!activeConversation) return;
+  /** Upload files and return attachment IDs, or null on failure */
+  async function uploadFiles(
+    conversationId: number,
+    files: FilePreviewItem[],
+  ): Promise<number[] | null> {
+    if (files.length === 0) return [];
 
-    const content = messageInput.trim();
-    if (!content && selectedFiles.length === 0) return;
+    const attachmentIds = await handlers.uploadFiles(
+      conversationId,
+      files.map((f) => f.file),
+    );
 
-    let attachmentIds: number[] = [];
-    if (selectedFiles.length > 0) {
-      attachmentIds = await handlers.uploadFiles(
-        activeConversation.id,
-        selectedFiles.map((f) => f.file),
-      );
-      if (attachmentIds.length === 0) {
-        showNotification(MESSAGES.errorUploadFiles, 'error');
-        return;
-      }
+    if (attachmentIds.length === 0) {
+      showNotification(MESSAGES.errorUploadFiles, 'error');
+      return null;
     }
 
-    if (scheduledFor) {
+    return attachmentIds;
+  }
+
+  async function sendMessage(): Promise<void> {
+    if (activeConversation === null) return;
+
+    // Capture values before any async operations to prevent race conditions
+    const content = messageInput.trim();
+    const filesToSend = [...selectedFiles];
+    const scheduleTime = scheduledFor;
+    const conversationId = activeConversation.id;
+
+    if (content === '' && filesToSend.length === 0) return;
+
+    // Clear inputs immediately to prevent double-sends
+    messageInput = '';
+    selectedFiles = [];
+    scheduledFor = null;
+
+    const attachmentIds = await uploadFiles(conversationId, filesToSend);
+    if (attachmentIds === null) return;
+
+    if (scheduleTime !== null) {
       try {
         scheduledMessages = await handlers.sendScheduledMessage(
-          activeConversation.id,
+          conversationId,
           content,
-          scheduledFor,
+          scheduleTime,
           attachmentIds,
         );
         showNotification(MESSAGES.successScheduled, 'success');
       } catch {
         showNotification(MESSAGES.errorScheduleMessage, 'error');
-        return;
       }
     } else {
       const sent = handlers.sendWebSocketMessage(
-        buildSendMessage(activeConversation.id, content, attachmentIds),
+        buildSendMessage(conversationId, content, attachmentIds),
       );
       if (!sent) {
         showNotification(MESSAGES.errorConnectionRetry, 'error');
-        return;
       }
     }
-
-    messageInput = '';
-    selectedFiles = [];
-    scheduledFor = null;
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
     if (event.ctrlKey && event.key === 'f') {
       event.preventDefault();
@@ -409,7 +424,7 @@
 
   function handleFileSelect(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (!input?.files) return;
+    if (input.files === null) return;
 
     for (const file of input.files) {
       const preview = handlers.createFilePreview(file);
@@ -423,7 +438,7 @@
 
   function removeFile(index: number): void {
     const item = selectedFiles[index];
-    if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    if (item.previewUrl !== '') URL.revokeObjectURL(item.previewUrl);
     selectedFiles = selectedFiles.filter((_, i) => i !== index);
   }
 
@@ -441,10 +456,11 @@
   function confirmSchedule(): void {
     const result = handlers.validateAndSetSchedule(scheduleDate, scheduleTime);
     if (!result.isValid) {
-      showNotification(result.error!, 'warning');
+      showNotification(result.error ?? MESSAGES.errorScheduleMessage, 'warning');
       return;
     }
-    scheduledFor = result.date!;
+    if (result.date === undefined) return;
+    scheduledFor = result.date;
     showScheduleModal = false;
     showNotification(`${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`, 'info');
   }
@@ -488,8 +504,8 @@
     }
   }
 
-  async function deleteCurrentConversation(): Promise<void> {
-    if (!activeConversation) return;
+  function deleteCurrentConversation(): void {
+    if (activeConversation === null) return;
 
     const conversationId = activeConversation.id;
     confirmMessage = MESSAGES.confirmDeleteConversation;
@@ -514,7 +530,7 @@
   // ==========================================================================
 
   function showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
-    console.info(`[${type}] ${message}`);
+    console.warn(`[${type}] ${message}`);
     // TODO: Integrate with toast store
   }
 </script>
@@ -559,8 +575,12 @@
           {searchResultCount}
           {currentSearchIndex}
           ontogglesearch={toggleSearchBar}
-          onnavigateprev={() => navigateSearch('prev')}
-          onnavigatenext={() => navigateSearch('next')}
+          onnavigateprev={() => {
+            navigateSearch('prev');
+          }}
+          onnavigatenext={() => {
+            navigateSearch('next');
+          }}
           ondelete={deleteCurrentConversation}
         />
 
@@ -620,7 +640,7 @@
     confirmCallback = null;
   }}
   onconfirm={() => {
-    if (confirmCallback) confirmCallback();
+    if (confirmCallback !== null) void confirmCallback();
     showConfirmDialog = false;
     confirmCallback = null;
   }}

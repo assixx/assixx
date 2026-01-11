@@ -2,8 +2,9 @@
 // MANAGE ADMINS - FILTER FUNCTIONS (Pure Functions)
 // =============================================================================
 
-import type { Admin, StatusFilter, Department } from './types';
 import { getPositionDisplay } from './utils';
+
+import type { Admin, StatusFilter, Department } from './types';
 
 /**
  * Filter admins by status

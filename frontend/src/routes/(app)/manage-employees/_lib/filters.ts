@@ -34,7 +34,7 @@ export function filterByStatus(employees: Employee[], status: StatusFilter): Emp
  */
 export function filterBySearch(employees: Employee[], query: string): Employee[] {
   const term = query.toLowerCase().trim();
-  if (!term) return employees;
+  if (term === '') return employees;
 
   return employees.filter((e) => {
     const fullName = `${e.firstName} ${e.lastName}`.toLowerCase();

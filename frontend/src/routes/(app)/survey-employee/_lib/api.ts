@@ -3,11 +3,14 @@
 // Based on: frontend/src/scripts/survey/employee/data.ts
 // =============================================================================
 
-import { getApiClient } from '$lib/utils/api-client';
-import { API_ENDPOINTS } from './constants';
-import type { Survey, ResponseCheck, SurveyResponse, Answer } from './types';
-import { base } from '$app/paths';
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
+import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
+import type { Survey, ResponseCheck, SurveyResponse, Answer } from './types';
 
 const apiClient = getApiClient();
 
@@ -31,7 +34,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(resolve('/login?session=expired', {}));
 }
 
 /**
@@ -55,10 +58,9 @@ export function checkSessionExpired(err: unknown): boolean {
 export async function loadSurveys(): Promise<Survey[]> {
   try {
     const surveys = await apiClient.get<Survey[]>(API_ENDPOINTS.SURVEYS);
-    console.info('[Survey Employee] Surveys loaded:', surveys.length);
 
     // Filter only active and closed surveys (not draft or archived)
-    return surveys.filter((s) => s.status === 'active' || s.status === 'closed');
+    return surveys.filter((s: Survey): boolean => s.status === 'active' || s.status === 'closed');
   } catch (err) {
     console.error('[Survey Employee] Error loading surveys:', err);
     checkSessionExpired(err);
@@ -71,9 +73,7 @@ export async function loadSurveys(): Promise<Survey[]> {
  */
 export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
   try {
-    const survey = await apiClient.get<Survey>(API_ENDPOINTS.SURVEY_BY_ID(surveyId));
-    console.info('[Survey Employee] Survey loaded:', surveyId);
-    return survey;
+    return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
   } catch (err) {
     console.error('[Survey Employee] Error loading survey:', err);
     checkSessionExpired(err);
@@ -87,8 +87,7 @@ export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
  */
 export async function checkUserResponse(surveyId: number): Promise<ResponseCheck> {
   try {
-    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.MY_RESPONSE(surveyId));
-    console.info(`[Survey Employee] Response check for survey ${surveyId}:`, result);
+    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.myResponse(surveyId));
 
     // API returns SurveyResponse directly, not ResponseCheck wrapper
     // If result has 'id' property, user has responded
@@ -110,7 +109,7 @@ export async function checkUserResponse(surveyId: number): Promise<ResponseCheck
  */
 export async function fetchUserResponse(surveyId: number): Promise<ResponseCheck | null> {
   try {
-    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.MY_RESPONSE(surveyId));
+    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.myResponse(surveyId));
 
     // API returns SurveyResponse directly, not ResponseCheck wrapper
     if (result !== null && typeof result === 'object' && 'id' in result) {
@@ -133,14 +132,7 @@ export async function submitResponse(
   answers: Answer[],
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.info('[Survey Employee] Submitting survey answers:', {
-      surveyId,
-      answersCount: answers.length,
-      answers,
-    });
-
-    await apiClient.post(API_ENDPOINTS.SUBMIT_RESPONSE(surveyId), { answers });
-    console.info('[Survey Employee] Response submitted successfully');
+    await apiClient.post(API_ENDPOINTS.submitResponse(surveyId), { answers });
     return { success: true };
   } catch (err) {
     console.error('[Survey Employee] Error submitting survey:', err);

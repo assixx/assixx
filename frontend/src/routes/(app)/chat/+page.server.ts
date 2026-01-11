@@ -5,6 +5,7 @@
  * SSR: Loads conversations list. WebSocket connection happens client-side.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Conversation } from './_lib/types';
 
@@ -14,6 +15,35 @@ interface ApiResponse<T> {
   success?: boolean;
   data?: T;
   conversations?: T;
+}
+
+/**
+ * Extract data from various API response formats.
+ * Handles: T[] | { success: true, data: T } | { data: T } | { conversations: T } | T
+ */
+function extractResponseData<T>(json: ApiResponse<T>): T | null {
+  // Format: T[] (raw array)
+  if (Array.isArray(json)) {
+    return json as unknown as T;
+  }
+
+  // Format: { success: true, data: T }
+  if ('success' in json && json.success === true) {
+    return json.data ?? null;
+  }
+
+  // Format: { data: T }
+  if ('data' in json && json.data !== undefined) {
+    return json.data;
+  }
+
+  // Format: { conversations: T }
+  if ('conversations' in json && json.conversations !== undefined) {
+    return json.conversations;
+  }
+
+  // Format: T (raw response)
+  return json as unknown as T;
 }
 
 async function apiFetch<T>(
@@ -35,21 +65,7 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-
-    // Handle different response formats
-    if (Array.isArray(json)) {
-      return json as unknown as T;
-    }
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    if ('conversations' in json && json.conversations !== undefined) {
-      return json.conversations;
-    }
-    return json as unknown as T;
+    return extractResponseData(json);
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;
@@ -57,10 +73,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -78,11 +92,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
         participants: Array.isArray(conv.participants) ? conv.participants : [],
       }))
     : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(
-    `[SSR] chat loaded in ${duration}ms (1 API call, ${conversations.length} conversations)`,
-  );
 
   return {
     conversations,

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Token Manager - Central JWT Token Lifecycle Management
  * 1:1 Copy from frontend/src/utils/token-manager.ts + SSR safety
@@ -12,9 +13,14 @@
  * CRITICAL RULE:
  * - If token is expired (remaining = 0) → LOGOUT immediately, NO refresh attempt!
  * - Only refresh when: remaining > 0 AND remaining < 600 seconds (10 minutes)
+ *
+ * NOTE: This module MUST NOT import from api-client to avoid circular dependencies.
+ * Cache clearing is handled by api-client via the AuthTokenProvider pattern.
  */
 
 import { parseJwt } from './jwt-utils';
+
+import type { LogoutReason } from './auth-types';
 
 interface TokenCallbacks {
   onTimerUpdate: ((remainingSeconds: number) => void)[];
@@ -23,7 +29,16 @@ interface TokenCallbacks {
   onTokenExpired: (() => void)[];
 }
 
-export type LogoutReason = 'logout' | 'inactivity_timeout' | 'token_expired' | 'refresh_failed';
+// Callback for cache clearing - set by api-client to avoid circular dependency
+let onCacheClearCallback: (() => void) | null = null;
+
+/**
+ * Register a callback to clear caches when tokens change.
+ * Called by api-client during initialization.
+ */
+export function registerCacheClearCallback(callback: () => void): void {
+  onCacheClearCallback = callback;
+}
 
 /**
  * Check if we're in browser
@@ -87,7 +102,6 @@ export class TokenManager {
       // MIGRATION: Old token without tokenReceivedAt
       this.tokenReceivedAt = Date.now();
       localStorage.setItem('tokenReceivedAt', this.tokenReceivedAt.toString());
-      console.info('[TokenManager] Migrated old token: set tokenReceivedAt to now');
     }
   }
 
@@ -108,10 +122,9 @@ export class TokenManager {
 
     // SECURITY: Clear API cache from previous user before setting new tokens
     // Prevents data leakage between different user sessions
-    import('./api-client').then(({ getApiClient }) => {
-      getApiClient().clearCache();
-      console.info('[TokenManager] API cache cleared for new session');
-    });
+    if (onCacheClearCallback !== null) {
+      onCacheClearCallback();
+    }
 
     this.accessToken = access;
     this.refreshToken = refresh;
@@ -146,10 +159,9 @@ export class TokenManager {
     if (!isBrowser()) return;
 
     // SECURITY: Clear API cache to prevent data leakage to next user
-    import('./api-client').then(({ getApiClient }) => {
-      getApiClient().clearCache();
-      console.info('[TokenManager] API cache cleared on logout');
-    });
+    if (onCacheClearCallback !== null) {
+      onCacheClearCallback();
+    }
 
     this.accessToken = null;
     this.refreshToken = null;
@@ -195,13 +207,12 @@ export class TokenManager {
     const now = Math.floor(Date.now() / 1000);
     const remaining = exp - now;
 
-    console.warn('[TokenManager] 🔍 DEBUG - New token validity:', {
+    this.logDebug('🔍 New token validity check', {
       exp: exp,
       now: now,
       remaining: remaining,
       remainingMinutes: Math.floor(remaining / 60),
       isAlreadyExpired: exp <= now,
-      tokenPreview: accessToken.substring(0, 50) + '...',
     });
 
     if (exp <= now) {
@@ -212,24 +223,50 @@ export class TokenManager {
     return true;
   }
 
-  public async refresh(): Promise<boolean> {
-    if (!isBrowser()) return false;
-
-    if (this.isRefreshing) {
-      console.info('[TokenManager] Refresh already in progress, skipping');
+  /**
+   * Check if refresh can proceed
+   */
+  private canRefresh(): boolean {
+    if (!isBrowser()) {
       return false;
     }
-
+    if (this.isRefreshing) {
+      return false;
+    }
     if (this.refreshToken === null) {
       console.error('[TokenManager] No refresh token available');
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Process successful refresh response
+   */
+  private processRefreshResponse(data: {
+    success?: boolean;
+    data?: { accessToken: string; refreshToken: string };
+  }): boolean {
+    if (data.success !== true || data.data === undefined) {
+      throw new Error('Invalid refresh response format');
+    }
+
+    if (!this.validateNewToken(data.data.accessToken)) {
+      throw new Error('Server returned expired token');
+    }
+
+    this.setTokens(data.data.accessToken, data.data.refreshToken);
+    return true;
+  }
+
+  public async refresh(): Promise<boolean> {
+    if (!this.canRefresh()) {
       return false;
     }
 
     this.isRefreshing = true;
 
     try {
-      console.info('[TokenManager] Refreshing access token...');
-
       const response = await fetch(`${window.location.origin}/api/v2/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,25 +282,15 @@ export class TokenManager {
         data?: { accessToken: string; refreshToken: string };
       };
 
-      console.warn('[TokenManager] 🔍 DEBUG - Refresh response:', {
+      this.logDebug('🔍 Refresh response received', {
         status: response.status,
         success: data.success,
         hasData: data.data !== undefined,
-        hasAccessToken: data.data?.accessToken !== undefined && data.data.accessToken !== '',
-        hasRefreshToken: data.data?.refreshToken !== undefined && data.data.refreshToken !== '',
+        hasAccessToken: Boolean(data.data?.accessToken),
+        hasRefreshToken: Boolean(data.data?.refreshToken),
       });
 
-      if (data.success === true && data.data !== undefined) {
-        if (!this.validateNewToken(data.data.accessToken)) {
-          throw new Error('Server returned expired token');
-        }
-
-        this.setTokens(data.data.accessToken, data.data.refreshToken);
-        console.info('[TokenManager] Token refreshed successfully');
-        return true;
-      }
-
-      throw new Error('Invalid refresh response format');
+      return this.processRefreshResponse(data);
     } catch (error) {
       console.error('[TokenManager] Token refresh failed:', error);
       return false;
@@ -316,23 +343,52 @@ export class TokenManager {
 
   // ========================================
   // OBSERVER PATTERN (Event Callbacks)
+  // Returns unsubscribe function to prevent memory leaks
   // ========================================
 
-  public onTimerUpdate(callback: (remainingSeconds: number) => void): void {
+  public onTimerUpdate(callback: (remainingSeconds: number) => void): () => void {
     this.callbacks.onTimerUpdate.push(callback);
     callback(this.getRemainingTime());
+
+    return () => {
+      const index = this.callbacks.onTimerUpdate.indexOf(callback);
+      if (index > -1) {
+        this.callbacks.onTimerUpdate.splice(index, 1);
+      }
+    };
   }
 
-  public onTokenRefreshed(callback: (newToken: string) => void): void {
+  public onTokenRefreshed(callback: (newToken: string) => void): () => void {
     this.callbacks.onTokenRefreshed.push(callback);
+
+    return () => {
+      const index = this.callbacks.onTokenRefreshed.indexOf(callback);
+      if (index > -1) {
+        this.callbacks.onTokenRefreshed.splice(index, 1);
+      }
+    };
   }
 
-  public onTokenExpiringSoon(callback: () => void): void {
+  public onTokenExpiringSoon(callback: () => void): () => void {
     this.callbacks.onTokenExpiringSoon.push(callback);
+
+    return () => {
+      const index = this.callbacks.onTokenExpiringSoon.indexOf(callback);
+      if (index > -1) {
+        this.callbacks.onTokenExpiringSoon.splice(index, 1);
+      }
+    };
   }
 
-  public onTokenExpired(callback: () => void): void {
+  public onTokenExpired(callback: () => void): () => void {
     this.callbacks.onTokenExpired.push(callback);
+
+    return () => {
+      const index = this.callbacks.onTokenExpired.indexOf(callback);
+      if (index > -1) {
+        this.callbacks.onTokenExpired.splice(index, 1);
+      }
+    };
   }
 
   // ========================================
@@ -415,7 +471,6 @@ export class TokenManager {
     if (!isBrowser()) return;
 
     if (this.isRedirecting) {
-      console.info('[TokenManager] Redirect already in progress, skipping duplicate');
       return;
     }
 
@@ -461,7 +516,9 @@ export class TokenManager {
   }
 
   private logDebug(message: string, data?: Record<string, unknown>): void {
-    if (!this.debugMode) return;
+    // Only log in debug mode OR in development environment
+    const isDev = import.meta.env.DEV;
+    if (!this.debugMode && !isDev) return;
 
     const timestamp = new Date().toISOString().split('T')[1]?.slice(0, 8) ?? '';
     const remaining = this.getRemainingTime();
@@ -470,9 +527,9 @@ export class TokenManager {
     const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     if (data !== undefined) {
-      console.info(`[TokenManager ${timestamp}] [${timeStr}] ${message}`, data);
+      console.warn(`[TokenManager ${timestamp}] [${timeStr}] ${message}`, data);
     } else {
-      console.info(`[TokenManager ${timestamp}] [${timeStr}] ${message}`);
+      console.warn(`[TokenManager ${timestamp}] [${timeStr}] ${message}`);
     }
   }
 
@@ -514,12 +571,13 @@ export function getTokenManager(): TokenManager {
   return TokenManager.getInstance();
 }
 
+// Re-export LogoutReason for backward compatibility
+export type { LogoutReason } from './auth-types';
+
 // For browser debugging (development only)
 if (isBrowser()) {
   const hostname = window.location.hostname;
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).tokenManager = TokenManager.getInstance();
-    console.info('[TokenManager] Debug mode - available as window.tokenManager');
+    (window as unknown as { tokenManager: TokenManager }).tokenManager = TokenManager.getInstance();
   }
 }

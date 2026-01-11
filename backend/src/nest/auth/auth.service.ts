@@ -50,9 +50,34 @@ const TOKEN_CONFIG = {
 
 /**
  * JWT secrets from environment
+ * SECURITY: No fallback defaults - must be set in environment
  */
-const JWT_SECRET = process.env['JWT_SECRET'] ?? 'default-jwt-secret';
-const JWT_REFRESH_SECRET = process.env['JWT_REFRESH_SECRET'] ?? JWT_SECRET;
+function getJwtSecrets(): { access: string; refresh: string } {
+  const accessSecret = process.env['JWT_SECRET'];
+  if (accessSecret === undefined || accessSecret === '' || accessSecret.length < 32) {
+    throw new Error(
+      'SECURITY ERROR: JWT_SECRET must be set and at least 32 characters. ' +
+        "Generate one with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
+    );
+  }
+
+  // JWT_REFRESH_SECRET should be different from JWT_SECRET for better security
+  const refreshSecret = process.env['JWT_REFRESH_SECRET'];
+  if (refreshSecret === undefined || refreshSecret === '' || refreshSecret.length < 32) {
+    // If not set, use access secret but log a warning
+    console.warn(
+      'SECURITY WARNING: JWT_REFRESH_SECRET not set or too short. Using JWT_SECRET instead. ' +
+        'For production, set a separate JWT_REFRESH_SECRET.',
+    );
+    return { access: accessSecret, refresh: accessSecret };
+  }
+
+  return { access: accessSecret, refresh: refreshSecret };
+}
+
+const JWT_SECRETS = getJwtSecrets();
+const JWT_SECRET = JWT_SECRETS.access;
+const JWT_REFRESH_SECRET = JWT_SECRETS.refresh;
 
 /**
  * Database row types
@@ -177,7 +202,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hashedPassword = await bcryptjs.hash(dto.password, 10);
+    const hashedPassword = await bcryptjs.hash(dto.password, 12);
 
     // Create user in transaction
     const userId = await this.createUser({

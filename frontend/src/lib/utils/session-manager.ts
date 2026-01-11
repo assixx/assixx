@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Session Manager - Handles user session timeout and activity tracking
  * 1:1 Copy from frontend/src/scripts/utils/session-manager.ts
@@ -39,7 +40,7 @@ export class SessionManager {
     this.DEBUG_MODE = isBrowser() && window.location.hostname === 'localhost';
 
     if (this.DEBUG_MODE) {
-      console.log(
+      console.warn(
         '[SessionManager] 🚀 Initialized - lastActivityTime set to:',
         new Date(this.lastActivityTime).toISOString(),
       );
@@ -123,7 +124,7 @@ export class SessionManager {
 
     const now = Date.now();
 
-    // Throttle updates (max 1 per second)
+    // Throttle updates (max 1 per second for passive events)
     if (now - this.lastActivityTime < 1000 && !isActiveInteraction) {
       return;
     }
@@ -135,55 +136,76 @@ export class SessionManager {
     // 1. User clicking "Aktiv bleiben" (calls extendSession())
     // 2. User clicking "Abmelden" (calls logout())
     // 3. Timer expiring (handled by handleSessionTimeout())
-    // Random clicks should NOT hide the warning modal or reset this flag.
     // Note: warningShown is reset in extendSession() and handleCrossTabActivity()
 
-    // Use RequestIdleCallback for non-critical updates
+    this.scheduleActivityPersistence();
+    this.handleTokenRefreshOnActivity(isActiveInteraction);
+  }
+
+  /**
+   * Schedule activity persistence to localStorage using requestIdleCallback
+   * Battery-optimized: defers non-critical localStorage writes
+   */
+  private scheduleActivityPersistence(): void {
     if ('requestIdleCallback' in window) {
-      // Cancel pending idle callback
       if (this.idleCallbackId !== null) {
         cancelIdleCallback(this.idleCallbackId);
       }
 
       this.idleCallbackId = requestIdleCallback(
         () => {
-          // Store in localStorage during idle time
           localStorage.setItem('lastActivity', this.lastActivityTime.toString());
-
-          // Re-schedule check if needed
           this.scheduleNextCheck();
         },
         { timeout: 2000 },
-      ); // Max 2s delay
-    } else {
-      // Fallback for older browsers
-      localStorage.setItem('lastActivity', this.lastActivityTime.toString());
-      this.scheduleNextCheck();
+      );
+      return;
     }
 
-    // Restore token refresh on ACTIVE user interaction (click, keydown, touchstart)
-    // This ensures the timer resets when user is genuinely active
-    // Only refresh if token is expiring soon (< 10 min remaining)
-    // CRITICAL: Do NOT auto-refresh when warning modal is shown!
-    // User must explicitly click "Aktiv bleiben" to extend session.
-    if (isActiveInteraction && !this.warningShown) {
-      const tokenManager = getTokenManager();
-      const remaining = tokenManager.getRemainingTime();
+    // Fallback for older browsers
+    localStorage.setItem('lastActivity', this.lastActivityTime.toString());
+    this.scheduleNextCheck();
+  }
 
-      // Token < 10 minutes (600s) AND user actively interacting → refresh
-      if (remaining > 0 && remaining < 600) {
-        if (this.DEBUG_MODE) {
-          console.log(
-            `[SessionManager] 🔄 Active interaction + token < 10min (${remaining}s) → refreshing`,
-          );
-        }
-        void tokenManager.refresh();
+  /**
+   * Handle token refresh on active user interaction
+   * Only refreshes if token is expiring soon (< 10 min) and warning modal not shown
+   */
+  private handleTokenRefreshOnActivity(isActiveInteraction: boolean): void {
+    if (!isActiveInteraction) {
+      return;
+    }
+
+    if (this.warningShown) {
+      if (this.DEBUG_MODE) {
+        console.warn(
+          '[SessionManager] ⏸️ Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben".',
+        );
       }
-    } else if (isActiveInteraction && this.warningShown && this.DEBUG_MODE) {
-      console.log(
-        '[SessionManager] ⏸️ Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben".',
+      return;
+    }
+
+    this.refreshTokenIfExpiringSoon();
+  }
+
+  /**
+   * Refresh token if expiring within 10 minutes
+   */
+  private refreshTokenIfExpiringSoon(): void {
+    const tokenManager = getTokenManager();
+    const remaining = tokenManager.getRemainingTime();
+    const TOKEN_REFRESH_THRESHOLD = 600; // 10 minutes in seconds
+
+    if (remaining <= 0 || remaining >= TOKEN_REFRESH_THRESHOLD) {
+      return;
+    }
+
+    if (this.DEBUG_MODE) {
+      console.warn(
+        `[SessionManager] 🔄 Active interaction + token < 10min (${remaining}s) → refreshing`,
       );
     }
+    void tokenManager.refresh();
   }
 
   /**
@@ -313,7 +335,7 @@ export class SessionManager {
     const warningThreshold = this.INACTIVITY_TIMEOUT - this.WARNING_TIME - 60000;
     if (timeSinceActivity >= warningThreshold) {
       const timeSinceActivityMinutes = Math.floor(timeSinceActivity / 60000);
-      console.log(`[SessionManager] Inactivity: ${timeSinceActivityMinutes} min`);
+      console.warn(`[SessionManager] Inactivity: ${timeSinceActivityMinutes} min`);
     }
   }
 
@@ -413,7 +435,7 @@ export class SessionManager {
     if (!isBrowser()) return;
 
     if (this.DEBUG_MODE) {
-      console.log('[SessionManager] 🔔 Creating warning modal...');
+      console.warn('[SessionManager] 🔔 Creating warning modal...');
     }
 
     try {
@@ -431,41 +453,65 @@ export class SessionManager {
 
   /**
    * Create warning modal using Design System confirm-modal component
+   * Uses DOM APIs instead of innerHTML for security (no XSS risk)
    */
   private createWarningModal(): HTMLDivElement {
-    const warningModal = document.createElement('div');
-    warningModal.id = 'session-warning-modal';
-    warningModal.innerHTML = this.getWarningModalHTML();
-    return warningModal;
-  }
+    const wrapper = document.createElement('div');
+    wrapper.id = 'session-warning-modal';
 
-  /**
-   * Generate modal HTML using Design System confirm-modal--warning component
-   * Includes real-time countdown timer element
-   */
-  private getWarningModalHTML(): string {
-    return `
-      <div class="modal-overlay modal-overlay--active">
-        <div class="confirm-modal confirm-modal--warning">
-          <div class="confirm-modal__icon">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <h3 class="confirm-modal__title">Sitzung läuft bald ab</h3>
-          <p class="confirm-modal__message">
-            Ihre Sitzung läuft in <strong id="session-timer-countdown" style="font-variant-numeric: tabular-nums;">--:--</strong> aufgrund von Inaktivität ab.<br>
-            Klicken Sie auf "Aktiv bleiben" um angemeldet zu bleiben.
-          </p>
-          <div class="confirm-modal__actions">
-            <button data-action="session-logout" class="confirm-modal__btn confirm-modal__btn--cancel">
-              Abmelden
-            </button>
-            <button data-action="extend-session" class="confirm-modal__btn confirm-modal__btn--confirm">
-              Aktiv bleiben
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay modal-overlay--active';
+
+    // Modal container
+    const modal = document.createElement('div');
+    modal.className = 'confirm-modal confirm-modal--warning';
+
+    // Icon
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'confirm-modal__icon';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-exclamation-triangle';
+    iconDiv.append(icon);
+
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'confirm-modal__title';
+    title.textContent = 'Sitzung läuft bald ab';
+
+    // Message
+    const message = document.createElement('p');
+    message.className = 'confirm-modal__message';
+    message.append('Ihre Sitzung läuft in ');
+    const countdown = document.createElement('strong');
+    countdown.id = 'session-timer-countdown';
+    countdown.style.fontVariantNumeric = 'tabular-nums';
+    countdown.textContent = '--:--';
+    message.append(countdown);
+    message.append(' aufgrund von Inaktivität ab.');
+    message.append(document.createElement('br'));
+    message.append('Klicken Sie auf "Aktiv bleiben" um angemeldet zu bleiben.');
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'confirm-modal__actions';
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.dataset.action = 'session-logout';
+    logoutBtn.className = 'confirm-modal__btn confirm-modal__btn--cancel';
+    logoutBtn.textContent = 'Abmelden';
+
+    const extendBtn = document.createElement('button');
+    extendBtn.dataset.action = 'extend-session';
+    extendBtn.className = 'confirm-modal__btn confirm-modal__btn--confirm';
+    extendBtn.textContent = 'Aktiv bleiben';
+
+    actions.append(logoutBtn, extendBtn);
+    modal.append(iconDiv, title, message, actions);
+    overlay.append(modal);
+    wrapper.append(overlay);
+
+    return wrapper;
   }
 
   /**
@@ -493,7 +539,7 @@ export class SessionManager {
     if (!isBrowser()) return;
 
     if (this.DEBUG_MODE) {
-      console.log('[SessionManager] 🕒 Starting modal countdown...');
+      console.warn('[SessionManager] 🕒 Starting modal countdown...');
     }
 
     const tokenManager = getTokenManager();
@@ -546,10 +592,6 @@ export class SessionManager {
   }
 
   private handleSessionTimeout(): void {
-    if (this.DEBUG_MODE) {
-      console.info('[SessionManager] Session timeout due to inactivity');
-    }
-
     // Clear the timer
     this.cancelScheduledCheck();
 
@@ -558,12 +600,6 @@ export class SessionManager {
   }
 
   public async extendSession(): Promise<void> {
-    if (this.DEBUG_MODE) {
-      console.info(
-        '[SessionManager] 🔄 User clicked "Aktiv bleiben" - attempting to extend session...',
-      );
-    }
-
     const tokenManager = getTokenManager();
 
     // CRITICAL: FIRST attempt token refresh BEFORE any UI changes!
@@ -578,13 +614,17 @@ export class SessionManager {
       // Update modal to show error (if it still exists)
       const modalMessage = document.querySelector('#session-warning-modal .confirm-modal__message');
       if (modalMessage !== null) {
-        modalMessage.innerHTML = `
-          <span style="color: #f44336;">
-            <i class="fas fa-exclamation-triangle"></i>
-            Session konnte nicht verlängert werden!<br>
-            Sie werden in Kürze ausgeloggt.
-          </span>
-        `;
+        // Clear existing content and build error message with DOM APIs
+        modalMessage.textContent = '';
+        const errorSpan = document.createElement('span');
+        errorSpan.style.color = '#f44336';
+        const errorIcon = document.createElement('i');
+        errorIcon.className = 'fas fa-exclamation-triangle';
+        errorSpan.append(errorIcon);
+        errorSpan.append(' Session konnte nicht verlängert werden!');
+        errorSpan.append(document.createElement('br'));
+        errorSpan.append('Sie werden in Kürze ausgeloggt.');
+        modalMessage.append(errorSpan);
       }
 
       // Wait 2 seconds to show error, then logout
@@ -597,15 +637,6 @@ export class SessionManager {
     }
 
     // SUCCESS: Token was refreshed successfully
-    if (this.DEBUG_MODE) {
-      const newRemainingTime = tokenManager.getRemainingTime();
-      console.info(
-        '[SessionManager] ✅ Token refresh successful! New time:',
-        newRemainingTime,
-        'seconds',
-      );
-    }
-
     // NOW we can safely update UI since we have a valid new token
     // Remove warning modal
     this.removeWarningModal();
@@ -621,10 +652,6 @@ export class SessionManager {
 
     // Re-schedule next check with new timing
     this.scheduleNextCheck();
-
-    if (this.DEBUG_MODE) {
-      console.info('[SessionManager] ✅ Session successfully extended for another 30 minutes!');
-    }
   }
 
   public logout(isTimeout: boolean = false): void {
@@ -689,12 +716,17 @@ export function getSessionManager(): SessionManager {
   return SessionManager.getInstance();
 }
 
+// Type declaration for browser debugging
+declare global {
+  interface Window {
+    sessionManager?: SessionManager;
+  }
+}
+
 // For browser debugging (development only)
 if (isBrowser()) {
   const hostname = window.location.hostname;
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).sessionManager = SessionManager.getInstance();
-    console.info('[SessionManager] Debug mode - available as window.sessionManager');
+    window.sessionManager = SessionManager.getInstance();
   }
 }

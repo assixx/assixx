@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+
 import type { ShiftType } from './types';
 
 const apiClient = getApiClient();

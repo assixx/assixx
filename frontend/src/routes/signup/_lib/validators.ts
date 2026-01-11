@@ -123,12 +123,8 @@ export interface FormValidation {
   };
 }
 
-/**
- * Validates the entire signup form
- * @param data - Form data to validate
- * @returns Validation result with errors
- */
-export function validateForm(data: {
+/** Form data structure for validation */
+interface FormData {
   companyName: string;
   subdomain: string;
   email: string;
@@ -139,7 +135,38 @@ export function validateForm(data: {
   password: string;
   passwordConfirm: string;
   termsAccepted: boolean;
-}): FormValidation {
+}
+
+/** Validate company section fields */
+function isCompanySectionValid(data: FormData, subdomainValid: boolean): boolean {
+  return data.companyName !== '' && data.subdomain !== '' && subdomainValid;
+}
+
+/** Validate contact section fields */
+function isContactSectionValid(data: FormData, emailValid: boolean, emailMatch: boolean): boolean {
+  return data.email !== '' && emailValid && data.emailConfirm !== '' && emailMatch;
+}
+
+/** Validate user section fields */
+function isUserSectionValid(data: FormData, phoneValid: boolean): boolean {
+  return data.firstName !== '' && data.lastName !== '' && data.phone !== '' && phoneValid;
+}
+
+/** Validate security section fields */
+function isSecuritySectionValid(
+  data: FormData,
+  passwordValid: boolean,
+  passwordMatch: boolean,
+): boolean {
+  return passwordValid && data.passwordConfirm !== '' && passwordMatch && data.termsAccepted;
+}
+
+/**
+ * Validates the entire signup form
+ * @param data - Form data to validate
+ * @returns Validation result with errors
+ */
+export function validateForm(data: FormData): FormValidation {
   const subdomainValid = isSubdomainValid(data.subdomain);
   const emailValid = isEmailValid(data.email);
   const emailMatch = emailsMatch(data.email, data.emailConfirm);
@@ -148,21 +175,10 @@ export function validateForm(data: {
   const passwordMatch = passwordsMatch(data.password, data.passwordConfirm);
 
   const isValid =
-    data.companyName !== '' &&
-    data.subdomain !== '' &&
-    subdomainValid &&
-    data.email !== '' &&
-    emailValid &&
-    data.emailConfirm !== '' &&
-    emailMatch &&
-    data.firstName !== '' &&
-    data.lastName !== '' &&
-    data.phone !== '' &&
-    phoneValid &&
-    passwordValid &&
-    data.passwordConfirm !== '' &&
-    passwordMatch &&
-    data.termsAccepted;
+    isCompanySectionValid(data, subdomainValid) &&
+    isContactSectionValid(data, emailValid, emailMatch) &&
+    isUserSectionValid(data, phoneValid) &&
+    isSecuritySectionValid(data, passwordValid, passwordMatch);
 
   return {
     isValid,

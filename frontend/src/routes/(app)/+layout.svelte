@@ -8,31 +8,36 @@
    * - Auth redirects handled server-side (no window.location)
    * - Client-side: token timer, session management, logout only
    */
-  import { onMount, onDestroy } from 'svelte';
-  import { base } from '$app/paths';
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import type { LayoutData } from './$types';
+  import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  // Components
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { page } from '$app/stores';
+
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
-
-  // Session Manager (handles inactivity timeout + warning modal)
-  import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
-
-  // Token Manager (singleton - manages JWT lifecycle)
-  import { getTokenManager } from '$lib/utils/token-manager';
-
-  // API Client (proactive token refresh on activity)
   import { getApiClient } from '$lib/utils/api-client';
-  const apiClient = getApiClient();
-
-  // Shared User Service (for cache clearing on logout)
+  import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
+  import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
-  // Layout-specific CSS (shared across all dashboard pages)
+  import type { LayoutData } from './$types';
+
   import '../../styles/unified-navigation.css';
+
+  /**
+   * Resolve dynamic path with base prefix.
+   * Type assertion needed for runtime-computed paths that can't be
+   * statically typed by SvelteKit's route system.
+   */
+  function resolveDynamicPath(path: string): string {
+    // Dynamic paths computed at runtime can't match SvelteKit's static route types.
+    // This is intentional - we need to resolve paths from data/config, not just literals.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+    return resolve(path as any, {});
+  }
+
+  const apiClient = getApiClient();
 
   // =============================================================================
   // SSR DATA - Loaded server-side in +layout.server.ts
@@ -42,18 +47,18 @@
 
   interface Props {
     data: LayoutData;
-    children: import('svelte').Snippet;
+    children: Snippet;
   }
 
   const { data, children }: Props = $props();
 
   // SSR provides isAuthenticated - if we reached this point, we're authenticated
   // (server-side redirect already happened if not authenticated)
-  const isAuthenticated = $derived(data?.isAuthenticated ?? false);
+  const isAuthenticated = $derived(data.isAuthenticated);
 
   // User from SSR (loaded once server-side, available instantly)
-  const ssrUser = $derived(data?.user ?? null);
-  const ssrTenant = $derived(data?.tenant ?? null);
+  const ssrUser = $derived(data.user ?? null);
+  const ssrTenant = $derived(data.tenant ?? null);
 
   // User State - initialize from SSR data
   let user = $state<{
@@ -230,9 +235,11 @@
 
   /** Get display name */
   function getDisplayName(): string {
-    if (!user) return 'User';
+    if (user === null) return 'User';
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    return fullName || user.email || 'User';
+    if (fullName !== '') return fullName;
+    if (user.email !== undefined && user.email !== '') return user.email;
+    return 'User';
   }
 
   /** Get role badge class */
@@ -252,13 +259,14 @@
   /** Check if menu item is active */
   function isActive(item: NavItem): boolean {
     const currentPath = $page.url.pathname;
-    if (item.url) {
+    if (item.url !== undefined && item.url !== '') {
       return currentPath === item.url || currentPath.startsWith(item.url + '/');
     }
-    if (item.submenu) {
-      return item.submenu.some(
-        (sub) => currentPath === sub.url || currentPath.startsWith(sub.url + '/'),
-      );
+    if (item.submenu !== undefined) {
+      return item.submenu.some((sub) => {
+        if (sub.url === undefined || sub.url === '') return false;
+        return currentPath === sub.url || currentPath.startsWith(sub.url + '/');
+      });
     }
     return false;
   }
@@ -313,7 +321,7 @@
   function getTokenExpiration(token: string): number | null {
     try {
       const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
-      return payload.exp ? payload.exp * 1000 : null;
+      return payload.exp !== undefined ? payload.exp * 1000 : null;
     } catch {
       return null;
     }
@@ -322,13 +330,13 @@
   /** Update token timer display */
   function updateTokenTimer(): void {
     const token = localStorage.getItem('accessToken');
-    if (!token) {
+    if (token === null) {
       tokenTimeLeft = '--:--';
       return;
     }
 
     const exp = getTokenExpiration(token);
-    if (!exp) {
+    if (exp === null) {
       tokenTimeLeft = '--:--';
       return;
     }
@@ -400,7 +408,7 @@
       tenant = ssrTenant;
 
       // Set role from SSR user data
-      const role = ssrUser.role as 'root' | 'admin' | 'employee';
+      const role = ssrUser.role;
       userRole = role;
 
       // Check if activeRole was stored (for role switching persistence)
@@ -417,7 +425,7 @@
 
       // Persist role to localStorage for role switching component
       localStorage.setItem('userRole', role);
-      if (!storedActiveRole) {
+      if (storedActiveRole === null) {
         localStorage.setItem('activeRole', role);
       }
     }
@@ -467,7 +475,12 @@
 {#if isAuthenticated}
   <!-- Header -->
   <header class="header">
-    <button class="sidebar-toggle" onclick={toggleSidebar} title="Sidebar ein-/ausklappen">
+    <button
+      type="button"
+      class="sidebar-toggle"
+      onclick={toggleSidebar}
+      title="Sidebar ein-/ausklappen"
+    >
       <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
         {#if sidebarCollapsed}
           <path d="M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z"></path>
@@ -477,7 +490,7 @@
       </svg>
     </button>
 
-    <a href={`${base}/${currentRole}-dashboard`} class="logo-container">
+    <a href={resolveDynamicPath(`/${currentRole}-dashboard`)} class="logo-container">
       {#if sidebarCollapsed}
         <img src="/images/logo_collapsed.png" alt="Assixx Logo" class="logo" id="header-logo" />
       {:else}
@@ -514,6 +527,7 @@
         </div>
 
         <button
+          type="button"
           id="logout-btn"
           class="btn btn-danger"
           onclick={handleLogoutClick}
@@ -533,13 +547,19 @@
       <nav class="sidebar-nav">
         <ul class="sidebar-menu">
           {#each menuItems as item (item.id)}
-            {#if item.hasSubmenu && item.submenu}
+            {#if item.hasSubmenu === true && item.submenu !== undefined}
               <li
                 class="sidebar-item has-submenu"
                 class:active={isActive(item)}
                 class:open={openSubmenu === item.id}
               >
-                <button class="sidebar-link" onclick={() => toggleSubmenu(item.id)}>
+                <button
+                  type="button"
+                  class="sidebar-link"
+                  onclick={() => {
+                    toggleSubmenu(item.id);
+                  }}
+                >
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
                   <span class="icon">{@html item.icon}</span>
                   <span class="label">{item.label}</span>
@@ -552,22 +572,20 @@
                 <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
                   {#each item.submenu as subItem (subItem.id)}
                     <li class="submenu-item">
-                      <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
-                      <a href={`${base}${subItem.url}`} class="submenu-link">{subItem.label}</a>
-                      <!-- eslint-enable svelte/no-navigation-without-resolve -->
+                      <a href={resolveDynamicPath(subItem.url ?? '')} class="submenu-link"
+                        >{subItem.label}</a
+                      >
                     </li>
                   {/each}
                 </ul>
               </li>
             {:else}
               <li class="sidebar-item" class:active={isActive(item)}>
-                <!-- eslint-disable svelte/no-navigation-without-resolve -- Dynamic menu URLs -->
-                <a href={`${base}${item.url}`} class="sidebar-link">
+                <a href={resolveDynamicPath(item.url ?? '')} class="sidebar-link">
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
                   <span class="icon">{@html item.icon}</span>
                   <span class="label">{item.label}</span>
                 </a>
-                <!-- eslint-enable svelte/no-navigation-without-resolve -->
               </li>
             {/if}
           {/each}
@@ -651,12 +669,17 @@
         </p>
         <div class="confirm-modal__actions confirm-modal__actions--centered">
           <button
+            type="button"
             class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
             onclick={cancelLogout}
           >
             Abbrechen
           </button>
-          <button class="btn btn-danger confirm-modal__btn--wide" onclick={confirmLogout}>
+          <button
+            type="button"
+            class="btn btn-danger confirm-modal__btn--wide"
+            onclick={confirmLogout}
+          >
             Abmelden
           </button>
         </div>

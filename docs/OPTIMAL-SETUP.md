@@ -41,20 +41,20 @@
 
 ## EXECUTIVE SUMMARY
 
-| Layer                  | IST (Current)       | SOLL (Optimal)              | Verdict |
-| ---------------------- | ------------------- | --------------------------- | ------- |
-| **Runtime**            | Node.js 24.11.1     | Node.js 24 LTS              | ✅ KEEP |
-| **Package Manager**    | pnpm 10.24.0        | pnpm 10.x                   | ✅ KEEP |
-| **Backend Framework**  | **NestJS 11 + Fastify** | NestJS 11 + Fastify     | ✅ DONE |
-| **Frontend Framework** | Vanilla TypeScript  | **SvelteKit 2 + Svelte 5**  | CHANGE  |
-| **Build Tool**         | Vite 7.2.6          | Vite 7.x (SvelteKit native) | ✅ KEEP |
-| **CSS Framework**      | Tailwind 4.1.17     | Tailwind 4.x                | ✅ KEEP |
-| **Database**           | PostgreSQL 17 + RLS | PostgreSQL 17 + RLS         | ✅ KEEP |
-| **Cache**              | Redis 7             | Redis 7                     | ✅ KEEP |
-| **Validation**         | Zod 4.x + nestjs-zod| Zod 4.x + nestjs-zod        | ✅ KEEP |
-| **Testing**            | **Vitest 4.0.16**   | Vitest 4.x                  | ✅ DONE |
-| **TypeScript**         | 5.9.3               | 5.9.x                       | ✅ KEEP |
-| **ORM**                | Raw SQL (pg)        | Raw SQL (pg)                | ✅ KEEP |
+| Layer                  | IST (Current)           | SOLL (Optimal)              | Verdict |
+| ---------------------- | ----------------------- | --------------------------- | ------- |
+| **Runtime**            | Node.js 24.11.1         | Node.js 24 LTS              | ✅ KEEP |
+| **Package Manager**    | pnpm 10.24.0            | pnpm 10.x                   | ✅ KEEP |
+| **Backend Framework**  | **NestJS 11 + Fastify** | NestJS 11 + Fastify         | ✅ DONE |
+| **Frontend Framework** | Vanilla TypeScript      | **SvelteKit 2 + Svelte 5**  | CHANGE  |
+| **Build Tool**         | Vite 7.2.6              | Vite 7.x (SvelteKit native) | ✅ KEEP |
+| **CSS Framework**      | Tailwind 4.1.17         | Tailwind 4.x                | ✅ KEEP |
+| **Database**           | PostgreSQL 17 + RLS     | PostgreSQL 17 + RLS         | ✅ KEEP |
+| **Cache**              | Redis 7                 | Redis 7                     | ✅ KEEP |
+| **Validation**         | Zod 4.x + nestjs-zod    | Zod 4.x + nestjs-zod        | ✅ KEEP |
+| **Testing**            | **Vitest 4.0.16**       | Vitest 4.x                  | ✅ DONE |
+| **TypeScript**         | 5.9.3                   | 5.9.x                       | ✅ KEEP |
+| **ORM**                | Raw SQL (pg)            | Raw SQL (pg)                | ✅ KEEP |
 
 **1 Change Remaining (SvelteKit Frontend). 3 Changes COMPLETED (NestJS, Fastify, Vitest). 9 Things Already Optimal.**
 
@@ -357,24 +357,22 @@ bootstrap();
 // backend/src/app.module.ts - MODULAR ARCHITECTURE
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 
-// Feature Modules
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { ShiftsModule } from './modules/shifts/shifts.module';
-import { ChatModule } from './modules/chat/chat.module';
-import { TenantsModule } from './modules/tenants/tenants.module';
-
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 // Guards & Filters
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { TenantGuard } from './common/guards/tenant.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-
+import { TenantGuard } from './common/guards/tenant.guard';
 // Infrastructure
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+// Feature Modules
+import { AuthModule } from './modules/auth/auth.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -411,9 +409,10 @@ export class AppModule {}
 
 ```typescript
 // backend/src/common/guards/jwt-auth.guard.ts
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AuthGuard } from '@nestjs/passport';
+
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
@@ -440,7 +439,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
 ```typescript
 // backend/src/common/guards/tenant.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+
 import { TenantService } from '../../modules/tenants/tenant.service';
 
 @Injectable()
@@ -465,8 +465,9 @@ export class TenantGuard implements CanActivate {
 
 ```typescript
 // backend/src/common/guards/roles.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
@@ -505,12 +506,13 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 ```typescript
 // backend/src/modules/users/users.controller.ts
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { UsersService } from './users.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UsersService } from './users.service';
 
 // Zod Schema (can be imported from existing validation files!)
 const CreateUserSchema = z.object({
@@ -575,8 +577,9 @@ Connection Pattern:
 
 ```typescript
 // backend/src/modules/tenants/tenant.service.ts
-import { Injectable, Scope, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Scope } from '@nestjs/common';
 import { Pool, PoolClient } from 'pg';
+
 import { InjectPool } from '../../infrastructure/database/database.module';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -665,7 +668,8 @@ export class TenantService implements OnModuleDestroy {
 
 ```typescript
 // backend/src/common/guards/tenant.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+
 import { TenantService } from '../../modules/tenants/tenant.service';
 
 @Injectable()
@@ -795,12 +799,14 @@ Why NOT keep Vanilla TS:
 > **Decision:** See [ARCHITECTURE-DECISION-NO-TRPC.md](./ARCHITECTURE-DECISION-NO-TRPC.md)
 >
 > **Reason:** REST API with `api-client.ts` (684 LOC) already provides:
+>
 > - Type safety via Zod + TypeScript
 > - Caching, token refresh, error handling
 > - Mobile/external client compatibility
 > - 20+ tested REST controllers
 >
 > **Current Stack (OPTIMAL):**
+>
 > ```yaml
 > Backend: NestJS + Fastify + REST Controllers + Zod DTOs
 > Frontend: SvelteKit + api-client.ts (REST)
@@ -1293,9 +1299,9 @@ Your significant investments that remain unchanged:
 
 ```typescript
 // backend/src/infrastructure/sentry/sentry.module.ts
-import { Module, Global } from '@nestjs/common';
-import * as Sentry from '@sentry/node';
+import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/node';
 
 @Global()
 @Module({})
@@ -1332,7 +1338,7 @@ export class SentryModule {
 
 ```typescript
 // backend/src/common/filters/sentry-exception.filter.ts
-import { Catch, ArgumentsHost, HttpException, Inject } from '@nestjs/common';
+import { ArgumentsHost, Catch, HttpException, Inject } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import * as Sentry from '@sentry/node';
 
@@ -1370,6 +1376,7 @@ pnpm add @sentry/node
 // backend/src/infrastructure/health/health.module.ts
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
+
 import { HealthController } from './health.controller';
 
 @Module({
@@ -1382,11 +1389,8 @@ export class HealthModule {}
 ```typescript
 // backend/src/infrastructure/health/health.controller.ts
 import { Controller, Get } from '@nestjs/common';
-import {
-  HealthCheck,
-  HealthCheckService,
-  MemoryHealthIndicator,
-} from '@nestjs/terminus';
+import { HealthCheck, HealthCheckService, MemoryHealthIndicator } from '@nestjs/terminus';
+
 import { Public } from '../../common/decorators/public.decorator';
 import { DatabaseHealthIndicator } from './database.health';
 import { RedisHealthIndicator } from './redis.health';
@@ -1564,8 +1568,11 @@ async function bootstrap() {
 
 ```typescript
 // backend/src/infrastructure/logger/winston-logger.service.ts
-import { LoggerService, Injectable } from '@nestjs/common';
-import { logger } from '../../utils/logger'; // Euer existierender Winston Logger
+import { Injectable, LoggerService } from '@nestjs/common';
+
+import { logger } from '../../utils/logger';
+
+// Euer existierender Winston Logger
 
 @Injectable()
 export class WinstonLoggerService implements LoggerService {
@@ -1749,15 +1756,15 @@ async function bootstrap() {
 
 ### 10.2 PHASEN-ÜBERSICHT (OHNE Zeitschätzungen)
 
-| Phase | Aufgabe                             | Abhängigkeit | Status |
-| ----- | ----------------------------------- | ------------ | ------ |
+| Phase | Aufgabe                             | Abhängigkeit | Status                       |
+| ----- | ----------------------------------- | ------------ | ---------------------------- |
 | 0     | FullCalendar → @event-calendar/core | -            | ✅ **COMPLETE** (2025-12-18) |
 | 1     | NestJS Migration (Code)             | Phase 0      | ✅ **COMPLETE** (2025-12-18) |
 | 1.5   | Fastify Adapter (Express → Fastify) | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
 | 2     | Vitest Migration                    | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
-| 3     | SvelteKit Migration                 | Phase 1.5    | ⏳ Pending |
-| 4     | Pre-Launch Polish                   | Phase 3      | ⏳ Pending |
-| 5     | Enterprise Features                 | Launch       | ⏳ Pending |
+| 3     | SvelteKit Migration                 | Phase 1.5    | ⏳ Pending                   |
+| 4     | Pre-Launch Polish                   | Phase 3      | ⏳ Pending                   |
+| 5     | Enterprise Features                 | Launch       | ⏳ Pending                   |
 
 > **Keine Zeitschätzungen.** Wir arbeiten bis es fertig ist.
 > Qualität > Geschwindigkeit. KISS > Deadlines.
@@ -1868,14 +1875,14 @@ async function bootstrap() {
 
 ### Branch pro Phase
 
-| Phase | Branch-Name                      | Inhalt                                                  |
-| ----- | -------------------------------- | ------------------------------------------------------- |
-| 0     | `feature/fullcalendar-migration` | FullCalendar → @event-calendar/core (SEPARAT!)          |
-| 1     | `feature/nestjs-migration`       | NestJS + Fastify, Guards, Module, WebSocket, Bull       |
-| 2     | `refactor/jest-to-vitest`        | jest.fn() → vi.fn(), Config                             |
-| 3     | `feature/sveltekit-migration`    | Pages, api-client.ts, Design System → Svelte            |
-| 4     | `feature/pre-launch-polish`      | Sentry, Health Checks, Graceful Shutdown                |
-| 5     | `feature/enterprise-features`    | Secrets, OpenTelemetry, SOC2                            |
+| Phase | Branch-Name                      | Inhalt                                            |
+| ----- | -------------------------------- | ------------------------------------------------- |
+| 0     | `feature/fullcalendar-migration` | FullCalendar → @event-calendar/core (SEPARAT!)    |
+| 1     | `feature/nestjs-migration`       | NestJS + Fastify, Guards, Module, WebSocket, Bull |
+| 2     | `refactor/jest-to-vitest`        | jest.fn() → vi.fn(), Config                       |
+| 3     | `feature/sveltekit-migration`    | Pages, api-client.ts, Design System → Svelte      |
+| 4     | `feature/pre-launch-polish`      | Sentry, Health Checks, Graceful Shutdown          |
+| 5     | `feature/enterprise-features`    | Secrets, OpenTelemetry, SOC2                      |
 
 ### Workflow
 

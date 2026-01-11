@@ -4,9 +4,60 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
-import type { DeletionStatusItem, ApiResponse, ApiError } from './types';
+
+import type { DeletionStatusItem, ApiError } from './types';
 
 const apiClient = getApiClient();
+
+// =============================================================================
+// HELPER FUNCTIONS (reduce cognitive complexity)
+// =============================================================================
+
+/**
+ * Check if error is a "not found" error (404)
+ */
+function isNotFoundError(err: unknown): boolean {
+  const errorObj = err as ApiError;
+  return (
+    errorObj.error === 'NOT_FOUND' ||
+    (errorObj.message?.includes('No active deletion found') ?? false)
+  );
+}
+
+/**
+ * Extract deletion status items from API response
+ */
+function parseApiResponse(result: unknown): DeletionStatusItem[] {
+  if (result === null) {
+    return [];
+  }
+
+  // Handle wrapped response { data: [...] }
+  const unwrapped = result as { data?: unknown };
+  const data = 'data' in unwrapped && unwrapped.data !== undefined ? unwrapped.data : result;
+
+  if (Array.isArray(data)) {
+    return data as DeletionStatusItem[];
+  }
+
+  // Single item response
+  if (typeof data === 'object' && data !== null && 'queueId' in data) {
+    return [data as DeletionStatusItem];
+  }
+
+  return [];
+}
+
+/**
+ * Format error message for display
+ */
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Fehler beim Laden des Status';
+}
+
+// =============================================================================
+// API FUNCTIONS
+// =============================================================================
 
 /**
  * Load deletion status from API
@@ -18,36 +69,14 @@ export async function loadDeletionStatus(): Promise<{
 }> {
   try {
     const result = await apiClient.get('/root/tenant/deletion-status');
-
-    if (result === null) {
-      return { data: [], error: null };
-    }
-
-    // Handle wrapped response
-    const data = 'data' in result && result.data !== undefined ? result.data : result;
-
-    if (Array.isArray(data)) {
-      return { data, error: null };
-    } else if (typeof data === 'object' && data !== null && 'queueId' in data) {
-      return { data: [data], error: null };
-    }
-
-    return { data: [], error: null };
+    return { data: parseApiResponse(result), error: null };
   } catch (err) {
-    // 404 means no deletion found - not an error
-    const errorObj = err as ApiError;
-    const isNotFound =
-      errorObj.error === 'NOT_FOUND' || errorObj.message?.includes('No active deletion found');
-
-    if (isNotFound) {
+    if (isNotFoundError(err)) {
       return { data: [], error: null };
     }
 
     console.error('[TenantDeletion] Error loading status:', err);
-    return {
-      data: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden des Status',
-    };
+    return { data: [], error: getErrorMessage(err) };
   }
 }
 
@@ -78,6 +107,12 @@ export async function emergencyStop(queueId: number, reason?: string): Promise<v
   });
 }
 
+/** JWT payload structure */
+interface JwtPayload {
+  id: number;
+  role: string;
+}
+
 /**
  * Parse JWT token to extract user info
  * @param token - JWT token string
@@ -85,7 +120,11 @@ export async function emergencyStop(queueId: number, reason?: string): Promise<v
  */
 export function parseJwtToken(token: string): { id: number; role: string } | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    const payload = JSON.parse(atob(parts[1])) as JwtPayload;
     return { id: payload.id, role: payload.role };
   } catch {
     return null;

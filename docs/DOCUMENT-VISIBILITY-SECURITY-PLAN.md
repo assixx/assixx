@@ -466,9 +466,7 @@ if (category === 'payroll') {
 if (category === 'payroll') {
   // Note: currentUser.id should be available in state
   return (
-    doc.category === 'salary' &&
-    doc.recipientType === 'user' &&
-    doc.userId === this.currentUserId  // Add currentUserId to state
+    doc.category === 'salary' && doc.recipientType === 'user' && doc.userId === this.currentUserId // Add currentUserId to state
   );
 }
 ```

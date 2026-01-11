@@ -80,6 +80,56 @@ export function getColorClass(username) {
 }
 
 /**
+ * Create avatar image element
+ * @param {string} name - Full name for alt text
+ * @param {string} imageUrl - Image URL
+ * @returns {HTMLImageElement} Image element
+ */
+function createAvatarImage(name, imageUrl) {
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.alt = name;
+  img.className = 'avatar__image';
+  return img;
+}
+
+/**
+ * Create avatar initials element
+ * @param {string} name - Full name
+ * @returns {HTMLSpanElement} Initials span element
+ */
+function createAvatarInitials(name) {
+  const initials = document.createElement('span');
+  initials.className = 'avatar__initials';
+  initials.textContent = getInitials(name);
+  return initials;
+}
+
+/**
+ * Create status indicator element
+ * @param {string} status - Status type (online, offline, busy, away)
+ * @returns {HTMLSpanElement} Status element
+ */
+function createStatusIndicator(status) {
+  const statusEl = document.createElement('span');
+  statusEl.className = `avatar__status avatar__status--${status}`;
+  statusEl.setAttribute('aria-label', `Status: ${status}`);
+  return statusEl;
+}
+
+/**
+ * Create screen reader text element
+ * @param {string} name - Full name
+ * @returns {HTMLSpanElement} Screen reader text element
+ */
+function createScreenReaderText(name) {
+  const srText = document.createElement('span');
+  srText.className = 'avatar__sr-only';
+  srText.textContent = name;
+  return srText;
+}
+
+/**
  * Create avatar element with initials
  *
  * @param {string} name - Full name
@@ -94,11 +144,10 @@ export function getColorClass(username) {
 export function createAvatar(name, username, options = {}) {
   const { size = 'md', status = null, shape = 'circle', imageUrl = null } = options;
 
-  // Create avatar container
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
 
-  // Add size class
+  // Add size class (non-default only)
   if (size !== 'md') {
     avatar.classList.add(`avatar--${size}`);
   }
@@ -108,38 +157,21 @@ export function createAvatar(name, username, options = {}) {
     avatar.classList.add('avatar--square');
   }
 
-  // Add color class (only if no image)
-  if (!imageUrl) {
-    avatar.classList.add(getColorClass(username));
-  }
-
-  // Add content (image OR initials)
+  // Add content (image OR initials with color)
   if (imageUrl) {
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = name;
-    img.className = 'avatar__image';
-    avatar.appendChild(img);
+    avatar.appendChild(createAvatarImage(name, imageUrl));
   } else {
-    const initials = document.createElement('span');
-    initials.className = 'avatar__initials';
-    initials.textContent = getInitials(name);
-    avatar.appendChild(initials);
+    avatar.classList.add(getColorClass(username));
+    avatar.appendChild(createAvatarInitials(name));
   }
 
   // Add status indicator
   if (status) {
-    const statusEl = document.createElement('span');
-    statusEl.className = `avatar__status avatar__status--${status}`;
-    statusEl.setAttribute('aria-label', `Status: ${status}`);
-    avatar.appendChild(statusEl);
+    avatar.appendChild(createStatusIndicator(status));
   }
 
   // Add screen reader text
-  const srText = document.createElement('span');
-  srText.className = 'avatar__sr-only';
-  srText.textContent = name;
-  avatar.appendChild(srText);
+  avatar.appendChild(createScreenReaderText(name));
 
   return avatar;
 }

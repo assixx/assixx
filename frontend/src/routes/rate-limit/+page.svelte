@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+
   import { goto } from '$app/navigation';
   import '../../styles/rate-limit.css';
 
@@ -105,7 +106,7 @@
 
     // Redirect to login after short delay
     setTimeout(() => {
-      goto('/login?ratelimit=expired', { replaceState: true });
+      void goto('/login?ratelimit=expired', { replaceState: true });
     }, 1000);
   }
 
@@ -143,7 +144,7 @@
       }
 
       setTimeout(() => {
-        goto('/login?ratelimit=expired', { replaceState: true });
+        void goto('/login?ratelimit=expired', { replaceState: true });
       }, 500);
     }
   }

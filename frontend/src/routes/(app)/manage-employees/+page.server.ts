@@ -5,6 +5,7 @@
  * SSR: Loads employees + teams in parallel for instant page render.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Employee, Team } from './_lib/types';
 
@@ -48,10 +49,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -65,9 +64,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     ? employeesData.filter((u) => u.role === 'employee')
     : [];
   const teams = Array.isArray(teamsData) ? teamsData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] manage-employees loaded in ${duration}ms (2 parallel API calls)`);
 
   return {
     employees,

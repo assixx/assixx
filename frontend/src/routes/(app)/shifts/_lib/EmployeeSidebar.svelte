@@ -4,9 +4,10 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import type { Employee } from './types';
   import { AVAILABILITY_ICONS, AVAILABILITY_LABELS, AVAILABILITY_COLORS } from './constants';
   import { getEmployeeDisplayName, getEffectiveAvailabilityForWeek } from './utils';
+
+  import type { Employee } from './types';
 
   /**
    * Props interface for EmployeeSidebar
@@ -62,7 +63,9 @@
         data-employee-id={employee.id}
         data-employee-name={getEmployeeDisplayName(employee)}
         draggable={isDraggable()}
-        ondragstart={(e) => ondragstart(e, employee.id)}
+        ondragstart={(e) => {
+          ondragstart(e, employee.id);
+        }}
         {ondragend}
         role="listitem"
       >

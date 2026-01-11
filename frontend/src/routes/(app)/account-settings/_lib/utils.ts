@@ -3,8 +3,9 @@
  * @module account-settings/_lib/utils
  */
 
-import type { ToastType, DeletionStatus } from './types';
 import { STATUS_LABELS, DELETE_CONFIRMATION_TEXT, MIN_REASON_LENGTH } from './constants';
+
+import type { ToastType, DeletionStatus } from './types';
 
 /**
  * Format date for display (German locale)
@@ -22,10 +23,13 @@ export function formatDate(isoString: string): string {
 
 /**
  * Get status label for display
- * @param status - Deletion status
+ * @param status - Deletion status (known or unknown)
  */
-export function getStatusLabel(status: DeletionStatus | string): string {
-  return STATUS_LABELS[status as DeletionStatus] ?? status;
+export function getStatusLabel(status: string): string {
+  if (status in STATUS_LABELS) {
+    return STATUS_LABELS[status as DeletionStatus];
+  }
+  return status;
 }
 
 /**
@@ -40,7 +44,7 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.log(`[Toast:${type}] ${message}`);
+  console.warn(`[Toast:${type}] ${message}`);
 }
 
 /**

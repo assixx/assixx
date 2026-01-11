@@ -1,8 +1,10 @@
 <script lang="ts">
   import { getAvatarColorClass, getInitials } from '$lib/utils';
-  import type { ChatUser, Conversation, UserStatus } from './types';
+
   import { MESSAGES } from './constants';
   import { getConversationAvatar, getStatusLabel } from './utils';
+
+  import type { ChatUser, Conversation, UserStatus } from './types';
 
   interface Props {
     conversation: Conversation;
@@ -12,7 +14,7 @@
     currentUserId: number;
     isAdmin: boolean;
     showSearchBar: boolean;
-    searchQuery: string;
+    searchQuery?: string; // Optional for $bindable() - parent uses bind:searchQuery
     searchResultCount: number;
     currentSearchIndex: number;
     ontogglesearch: () => void;
@@ -22,6 +24,7 @@
   }
 
   /* eslint-disable prefer-const */
+  // $bindable() required for two-way binding in Svelte 5
   let {
     conversation,
     partner,
@@ -30,7 +33,7 @@
     currentUserId,
     isAdmin,
     showSearchBar,
-    searchQuery = $bindable(),
+    searchQuery = $bindable(''),
     searchResultCount,
     currentSearchIndex,
     ontogglesearch,
@@ -64,6 +67,7 @@
   </div>
   <div class="chat-actions">
     <button
+      type="button"
       class="btn btn-icon btn-secondary"
       title={MESSAGES.labelSearchCtrlF}
       aria-label={MESSAGES.labelSearchCtrlF}
@@ -73,6 +77,7 @@
     </button>
     {#if isAdmin}
       <button
+        type="button"
         class="btn btn-icon btn-danger"
         title={MESSAGES.labelDeleteChat}
         aria-label={MESSAGES.labelDeleteChat}
@@ -102,6 +107,7 @@
         </span>
       {/if}
       <button
+        type="button"
         class="btn btn-icon btn-sm"
         title={MESSAGES.labelPreviousResult}
         aria-label={MESSAGES.labelPreviousResult}
@@ -110,6 +116,7 @@
         <i class="fas fa-chevron-up"></i>
       </button>
       <button
+        type="button"
         class="btn btn-icon btn-sm"
         title={MESSAGES.labelNextResult}
         aria-label={MESSAGES.labelNextResult}
@@ -118,6 +125,7 @@
         <i class="fas fa-chevron-down"></i>
       </button>
       <button
+        type="button"
         class="btn btn-icon btn-sm"
         title={MESSAGES.labelCloseSearch}
         aria-label={MESSAGES.labelCloseSearch}

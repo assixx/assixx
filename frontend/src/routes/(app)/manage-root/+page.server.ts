@@ -5,6 +5,7 @@
  * SSR: Loads root users for management.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { RootUser } from './_lib/types';
 
@@ -48,19 +49,14 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
   // Fetch root users
   const rootUsersData = await apiFetch<RootUser[]>('/users?role=root', token, fetch);
   const rootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] manage-root loaded in ${duration}ms (1 API call)`);
 
   return {
     rootUsers,

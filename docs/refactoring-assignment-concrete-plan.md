@@ -204,7 +204,7 @@ if (user.role === 'root' || user.role === 'employee') {
 
 // NACHHER:
 if (user.role === 'root') {
-  next();  // NUR root bypassed
+  next(); // NUR root bypassed
   return;
 }
 // Admin UND Employee durchlaufen Permission-Check

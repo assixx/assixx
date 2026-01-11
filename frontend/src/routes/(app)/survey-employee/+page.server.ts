@@ -5,6 +5,7 @@
  * SSR: Loads surveys and checks response status for each.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Survey, SurveyResponse, SurveyWithStatus } from './_lib/types';
 
@@ -50,10 +51,8 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -81,9 +80,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
       };
     }),
   );
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] survey-employee loaded in ${duration}ms (1 + ${surveys.length} API calls)`);
 
   return {
     surveys: surveysWithStatus,

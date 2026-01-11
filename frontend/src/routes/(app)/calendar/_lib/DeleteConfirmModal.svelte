@@ -13,7 +13,9 @@
   <div
     class="confirm-modal confirm-modal--danger"
     role="presentation"
-    onclick={(e) => e.stopPropagation()}
+    onclick={(e) => {
+      e.stopPropagation();
+    }}
   >
     <div class="confirm-modal__icon">
       <i class="fas fa-trash"></i>

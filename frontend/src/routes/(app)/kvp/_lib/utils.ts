@@ -9,27 +9,28 @@ import {
   VISIBILITY_INFO,
   UPLOAD_CONFIG,
 } from './constants';
+
 import type { KvpSuggestion, KvpStatus, OrgLevel } from './types';
 
 /**
  * Get status badge CSS class
  */
 export function getStatusBadgeClass(status: KvpStatus): string {
-  return STATUS_BADGE_CLASSES[status] ?? 'badge--kvp-new';
+  return STATUS_BADGE_CLASSES[status];
 }
 
 /**
  * Get status display text
  */
 export function getStatusText(status: KvpStatus): string {
-  return STATUS_TEXT[status] ?? status;
+  return STATUS_TEXT[status];
 }
 
 /**
  * Get visibility badge CSS class
  */
 export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
-  return VISIBILITY_BADGE_CLASSES[orgLevel] ?? 'badge--visibility-team';
+  return VISIBILITY_BADGE_CLASSES[orgLevel];
 }
 
 /**
@@ -42,11 +43,8 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; te
     return { icon: 'fa-lock', text: 'Privat' };
   }
 
-  // If shared, show org level info
+  // If shared, show org level info (Record guarantees all OrgLevel keys exist)
   const info = VISIBILITY_INFO[suggestion.orgLevel];
-  if (info === undefined) {
-    return { icon: 'fa-users', text: 'Team' };
-  }
 
   // Use specific name if available
   let text = info.text;

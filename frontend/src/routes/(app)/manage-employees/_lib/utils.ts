@@ -2,14 +2,8 @@
 // MANAGE EMPLOYEES - UTILITY FUNCTIONS
 // =============================================================================
 
-import type {
-  Employee,
-  IsActiveStatus,
-  AvailabilityStatus,
-  BadgeInfo,
-  PasswordStrengthResult,
-  FormIsActiveStatus,
-} from './types';
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -19,7 +13,18 @@ import {
   PASSWORD_STRENGTH_LABELS,
   PASSWORD_CRACK_TIMES,
   MESSAGES,
+  DEFAULT_BADGE_CLASS,
+  INFO_BADGE_CLASS,
 } from './constants';
+
+import type {
+  Employee,
+  IsActiveStatus,
+  AvailabilityStatus,
+  BadgeInfo,
+  PasswordStrengthResult,
+  FormIsActiveStatus,
+} from './types';
 
 // =============================================================================
 // STATUS BADGE HELPERS
@@ -31,7 +36,7 @@ import {
  * @returns CSS class for badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
@@ -40,7 +45,7 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  * @returns Human-readable status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -71,6 +76,69 @@ export function getInitials(firstName: string, lastName: string): string {
 // TEAM BADGE HELPERS
 // =============================================================================
 
+interface TeamData {
+  count: number;
+  names: string;
+  firstName: string;
+}
+
+/** Check if array has items */
+function hasItems<T>(arr: T[] | undefined): arr is T[] {
+  return Array.isArray(arr) && arr.length > 0;
+}
+
+/** Check if string is non-empty */
+function isNonEmpty(str: string | undefined): str is string {
+  return str !== undefined && str !== '';
+}
+
+/** Extract from teamIds/teamNames API format */
+function extractFromApiFormat(employee: Employee): TeamData | null {
+  const { teamIds, teamNames } = employee;
+  if (!hasItems(teamIds) || !hasItems(teamNames)) return null;
+
+  return {
+    count: teamIds.length,
+    names: teamNames.join(', '),
+    firstName: teamNames[0] ?? '',
+  };
+}
+
+/** Extract from legacy teams array */
+function extractFromTeamsArray(employee: Employee): TeamData | null {
+  if (!hasItems(employee.teams)) return null;
+
+  return {
+    count: employee.teams.length,
+    names: employee.teams.map((t) => t.name).join(', '),
+    firstName: employee.teams[0]?.name ?? '',
+  };
+}
+
+/** Extract from legacy single teamName */
+function extractFromTeamName(employee: Employee): TeamData | null {
+  if (!isNonEmpty(employee.teamName)) return null;
+
+  return {
+    count: 1,
+    names: employee.teamName,
+    firstName: employee.teamName,
+  };
+}
+
+/**
+ * Extract team data from employee object (handles different API formats)
+ * @param employee - Employee object
+ * @returns Team data or null if no teams
+ */
+function extractTeamData(employee: Employee): TeamData | null {
+  return (
+    extractFromApiFormat(employee) ??
+    extractFromTeamsArray(employee) ??
+    extractFromTeamName(employee)
+  );
+}
+
 /**
  * Get teams badge info for display
  * Uses teamIds/teamNames from API response (flat arrays)
@@ -79,52 +147,20 @@ export function getInitials(firstName: string, lastName: string): string {
  * @returns Badge info with class, text, and title
  */
 export function getTeamsBadge(employee: Employee): BadgeInfo {
-  // Check for teamIds/teamNames (API response format)
-  const teamIds = employee.teamIds;
-  const teamNames = employee.teamNames;
+  const teamData = extractTeamData(employee);
 
-  if (
-    Array.isArray(teamIds) &&
-    teamIds.length > 0 &&
-    Array.isArray(teamNames) &&
-    teamNames.length > 0
-  ) {
-    const count = teamIds.length;
-    const names = teamNames.join(', ');
-    const firstTeamName = teamNames[0] ?? '';
-
+  if (teamData === null) {
     return {
-      class: 'badge--info',
-      text: count === 1 ? firstTeamName : `${count} Teams`,
-      title: names,
-    };
-  }
-
-  // Fallback: check legacy teams array (array of Team objects)
-  if (Array.isArray(employee.teams) && employee.teams.length > 0) {
-    const count = employee.teams.length;
-    const names = employee.teams.map((t) => t.name).join(', ');
-
-    return {
-      class: 'badge--info',
-      text: count === 1 ? (employee.teams[0]?.name ?? '') : `${count} Teams`,
-      title: names,
-    };
-  }
-
-  // Fallback: legacy single teamName
-  if (employee.teamName !== undefined && employee.teamName !== null && employee.teamName !== '') {
-    return {
-      class: 'badge--info',
-      text: employee.teamName,
-      title: employee.teamName,
+      class: DEFAULT_BADGE_CLASS,
+      text: MESSAGES.NO_TEAM,
+      title: MESSAGES.NO_TEAM_TITLE,
     };
   }
 
   return {
-    class: 'badge--secondary',
-    text: MESSAGES.NO_TEAM,
-    title: MESSAGES.NO_TEAM_TITLE,
+    class: INFO_BADGE_CLASS,
+    text: teamData.count === 1 ? teamData.firstName : `${teamData.count} Teams`,
+    title: teamData.names,
   };
 }
 
@@ -139,9 +175,10 @@ export function getTeamsBadge(employee: Employee): BadgeInfo {
  */
 export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   const status = employee.availabilityStatus ?? 'available';
+
   return {
-    class: AVAILABILITY_BADGE_CLASSES[status] ?? 'badge--secondary',
-    text: AVAILABILITY_LABELS[status] ?? 'Sonstiges',
+    class: AVAILABILITY_BADGE_CLASSES[status],
+    text: AVAILABILITY_LABELS[status],
   };
 }
 
@@ -151,7 +188,7 @@ export function getAvailabilityBadge(employee: Employee): BadgeInfo {
  * @returns Human-readable label
  */
 export function getAvailabilityLabel(status: AvailabilityStatus): string {
-  return AVAILABILITY_LABELS[status] ?? 'Sonstiges';
+  return AVAILABILITY_LABELS[status];
 }
 
 // =============================================================================
@@ -159,17 +196,23 @@ export function getAvailabilityLabel(status: AvailabilityStatus): string {
 // =============================================================================
 
 /**
- * Highlight search term in text
- * Wraps matches in <strong> tags for display
- * @param text - Text to search in
+ * Highlight search term in text with <strong> tags
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param query - Search query
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
@@ -183,7 +226,7 @@ export function highlightMatch(text: string, query: string): string {
  * @returns PasswordStrengthResult object
  */
 export function calculatePasswordStrength(password: string): PasswordStrengthResult {
-  if (!password) {
+  if (password === '') {
     return { score: -1, label: '', time: '' };
   }
 
@@ -212,12 +255,20 @@ export function calculatePasswordStrength(password: string): PasswordStrengthRes
 // FORM HELPERS
 // =============================================================================
 
-/**
- * Populate form from employee data (for edit mode)
- * @param employee - Employee to edit
- * @returns Form data object
- */
-export function populateFormFromEmployee(employee: Employee): {
+/** Convert isActive to form status (deleted=4 becomes inactive=0) */
+function toFormStatus(isActive: IsActiveStatus): FormIsActiveStatus {
+  return (isActive === 4 ? 0 : isActive) as FormIsActiveStatus;
+}
+
+/** Extract team IDs from employee (handles different API formats) */
+function extractTeamIds(employee: Employee): number[] {
+  if (hasItems(employee.teamIds)) return employee.teamIds;
+  if (hasItems(employee.teams)) return employee.teams.map((t) => t.id);
+  return [];
+}
+
+/** Form data structure for employee */
+interface EmployeeFormData {
   firstName: string;
   lastName: string;
   email: string;
@@ -234,7 +285,14 @@ export function populateFormFromEmployee(employee: Employee): {
   availabilityStart: string;
   availabilityEnd: string;
   availabilityNotes: string;
-} {
+}
+
+/**
+ * Populate form from employee data (for edit mode)
+ * @param employee - Employee to edit
+ * @returns Form data object
+ */
+export function populateFormFromEmployee(employee: Employee): EmployeeFormData {
   return {
     firstName: employee.firstName,
     lastName: employee.lastName,
@@ -246,8 +304,8 @@ export function populateFormFromEmployee(employee: Employee): {
     position: employee.position ?? '',
     phone: employee.phone ?? '',
     dateOfBirth: employee.dateOfBirth ?? '',
-    isActive: (employee.isActive === 4 ? 0 : employee.isActive) as FormIsActiveStatus,
-    teamIds: employee.teamIds ?? employee.teams?.map((t) => t.id) ?? [],
+    isActive: toFormStatus(employee.isActive),
+    teamIds: extractTeamIds(employee),
     availabilityStatus: employee.availabilityStatus ?? 'available',
     availabilityStart: employee.availabilityStart ?? '',
     availabilityEnd: employee.availabilityEnd ?? '',
@@ -308,7 +366,7 @@ export function getDefaultFormValues(): {
  * @returns True if emails match or confirmation is empty
  */
 export function validateEmailMatch(email: string, emailConfirm: string): boolean {
-  if (!emailConfirm) return true;
+  if (emailConfirm === '') return true;
   return email === emailConfirm;
 }
 
@@ -319,8 +377,43 @@ export function validateEmailMatch(email: string, emailConfirm: string): boolean
  * @returns True if passwords match or confirmation is empty
  */
 export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
-  if (!passwordConfirm) return true;
+  if (passwordConfirm === '') return true;
   return password === passwordConfirm;
+}
+
+/**
+ * Validation error types for save employee form
+ */
+export type SaveEmployeeValidationError = 'email' | 'password' | null;
+
+/**
+ * Validate save employee form
+ * Combines email and password validation into a single check
+ * @param email - Email address
+ * @param emailConfirm - Email confirmation
+ * @param password - Password (required for new, optional for edit)
+ * @param passwordConfirm - Password confirmation
+ * @param isEditMode - Whether editing existing employee
+ * @returns Validation error type or null if valid
+ */
+export function validateSaveEmployeeForm(
+  email: string,
+  emailConfirm: string,
+  password: string,
+  passwordConfirm: string,
+  isEditMode: boolean,
+): SaveEmployeeValidationError {
+  if (!validateEmailMatch(email, emailConfirm)) {
+    return 'email';
+  }
+
+  // Password validation: required for new employees, optional for edit (only if provided)
+  const needsPasswordValidation = !isEditMode || password !== '';
+  if (needsPasswordValidation && !validatePasswordMatch(password, passwordConfirm)) {
+    return 'password';
+  }
+
+  return null;
 }
 
 // =============================================================================
@@ -362,12 +455,29 @@ function getTeamNamesString(employee: Employee, hasArray: boolean): string {
 
 /**
  * Build inherited badge HTML string
+ * SECURITY: displayText is escaped to prevent XSS
  */
 function buildInheritedBadge(displayText: string, tooltip: string): BadgeInfo {
+  // SECURITY FIX: Escape user-provided text to prevent XSS
+  const safeText = escapeHtml(displayText);
   return {
-    class: 'badge--info',
-    text: `<i class="fas fa-sitemap mr-1"></i>${displayText}`,
+    class: INFO_BADGE_CLASS,
+    text: `<i class="fas fa-sitemap mr-1"></i>${safeText}`,
     title: tooltip,
+  };
+}
+
+/** Build badge for direct area assignments */
+function buildDirectAreasBadge(areas: Employee['areas']): BadgeInfo | null {
+  if (!hasItems(areas)) return null;
+
+  const count = areas.length;
+  const label = count === 1 ? 'Bereich' : 'Bereiche';
+  const areaNames = areas.map((area) => area.name).join(', ');
+  return {
+    class: INFO_BADGE_CLASS,
+    text: `${count} ${label}`,
+    title: areaNames,
   };
 }
 
@@ -386,25 +496,15 @@ export function getAreasBadge(employee: Employee): BadgeInfo {
   }
 
   // Direct area assignments (rare for employees)
-  if ((employee.areas?.length ?? 0) > 0) {
-    const count = employee.areas?.length ?? 0;
-    const label = count === 1 ? 'Bereich' : 'Bereiche';
-    const areaNames = employee.areas?.map((area) => area.name).join(', ') ?? '';
-    return {
-      class: 'badge--info',
-      text: `${count} ${label}`,
-      title: areaNames,
-    };
-  }
+  const directBadge = buildDirectAreasBadge(employee.areas);
+  if (directBadge !== null) return directBadge;
 
   // Inherited via teams→departments→areas
   const { hasTeams, hasArray } = hasTeamAssignments(employee);
-  if (hasTeams) {
-    return buildAreaInheritedBadge(employee, hasArray);
-  }
+  if (hasTeams) return buildAreaInheritedBadge(employee, hasArray);
 
   return {
-    class: 'badge--secondary',
+    class: DEFAULT_BADGE_CLASS,
     text: 'Keine',
     title: 'Kein Bereich zugewiesen',
   };
@@ -419,7 +519,7 @@ function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeIn
   const teamName =
     (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
-  if (teamAreaName !== undefined && teamAreaName !== null && teamAreaName !== '') {
+  if (teamAreaName !== undefined && teamAreaName !== '') {
     const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
     return buildInheritedBadge(teamAreaName, tooltip);
   }
@@ -432,6 +532,31 @@ function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeIn
 // =============================================================================
 // DEPARTMENTS BADGE HELPERS (BADGE-INHERITANCE-DISPLAY)
 // =============================================================================
+
+/** Build badge for direct department assignments */
+function buildDirectDeptsBadge(departments: Employee['departments']): BadgeInfo | null {
+  if (!hasItems(departments)) return null;
+
+  const count = departments.length;
+  const label = count === 1 ? 'Abteilung' : 'Abteilungen';
+  const deptNames = departments.map((dept) => dept.name).join(', ');
+  return {
+    class: INFO_BADGE_CLASS,
+    text: `${count} ${label}`,
+    title: deptNames,
+  };
+}
+
+/** Build badge for legacy departmentName */
+function buildLegacyDeptBadge(departmentName: string | undefined): BadgeInfo | null {
+  if (!isNonEmpty(departmentName)) return null;
+
+  return {
+    class: INFO_BADGE_CLASS,
+    text: departmentName,
+    title: departmentName,
+  };
+}
 
 /**
  * Get departments badge info for employee table
@@ -448,38 +573,19 @@ export function getDepartmentsBadge(employee: Employee): BadgeInfo {
   }
 
   // Direct department assignments (user_departments table)
-  if ((employee.departments?.length ?? 0) > 0) {
-    const count = employee.departments?.length ?? 0;
-    const label = count === 1 ? 'Abteilung' : 'Abteilungen';
-    const deptNames = employee.departments?.map((dept) => dept.name).join(', ') ?? '';
-    return {
-      class: 'badge--info',
-      text: `${count} ${label}`,
-      title: deptNames,
-    };
-  }
+  const directBadge = buildDirectDeptsBadge(employee.departments);
+  if (directBadge !== null) return directBadge;
 
   // Inherited via teams→departments
   const { hasTeams, hasArray } = hasTeamAssignments(employee);
-  if (hasTeams) {
-    return buildDeptInheritedBadge(employee, hasArray);
-  }
+  if (hasTeams) return buildDeptInheritedBadge(employee, hasArray);
 
   // Legacy departmentName fallback
-  if (
-    employee.departmentName !== undefined &&
-    employee.departmentName !== null &&
-    employee.departmentName !== ''
-  ) {
-    return {
-      class: 'badge--info',
-      text: employee.departmentName,
-      title: employee.departmentName,
-    };
-  }
+  const legacyBadge = buildLegacyDeptBadge(employee.departmentName);
+  if (legacyBadge !== null) return legacyBadge;
 
   return {
-    class: 'badge--secondary',
+    class: DEFAULT_BADGE_CLASS,
     text: 'Keine',
     title: 'Keine Abteilung zugewiesen',
   };
@@ -494,11 +600,7 @@ function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): BadgeIn
   const teamName =
     (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
-  if (
-    teamDepartmentName !== undefined &&
-    teamDepartmentName !== null &&
-    teamDepartmentName !== ''
-  ) {
+  if (teamDepartmentName !== undefined && teamDepartmentName !== '') {
     const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
     return buildInheritedBadge(teamDepartmentName, tooltip);
   }
@@ -534,7 +636,8 @@ export function getPlannedAvailability(employee: Employee): string {
   }
 
   // Get status label
-  const statusText = AVAILABILITY_STATUS_LABELS[status] ?? status;
+
+  const statusText = AVAILABILITY_STATUS_LABELS[status];
 
   // Format dates if available
   const startDate = employee.availabilityStart;
@@ -552,7 +655,10 @@ export function getPlannedAvailability(employee: Employee): string {
 /**
  * Get truncated notes with full text as title
  */
-export function getTruncatedNotes(notes?: string, maxLength = 20): { text: string; title: string } {
+export function getTruncatedNotes(
+  notes?: string,
+  maxLength: number = 20,
+): { text: string; title: string } {
   const text = notes ?? '-';
   return {
     text: text.length > maxLength ? text.substring(0, maxLength) + '...' : text,

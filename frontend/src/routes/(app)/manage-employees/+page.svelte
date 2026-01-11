@@ -6,14 +6,37 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
+
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
-  import type { PageData } from './$types';
 
   // Page-specific CSS
   import '../../../styles/manage-employees.css';
   import '../../../styles/password-strength.css';
 
   // Local modules
+  import {
+    saveEmployee as apiSaveEmployee,
+    deleteEmployee as apiDeleteEmployee,
+    syncTeamMemberships,
+    buildEmployeePayload,
+  } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
+  import DeleteModals from './_lib/DeleteModals.svelte';
+  import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
+  import EmployeeTableRow from './_lib/EmployeeTableRow.svelte';
+  import { applyAllFilters } from './_lib/filters';
+  import SearchResults from './_lib/SearchResults.svelte';
+  import {
+    populateFormFromEmployee,
+    getDefaultFormValues,
+    validateEmailMatch,
+    validatePasswordMatch,
+    validateSaveEmployeeForm,
+  } from './_lib/utils';
+
+  // Extracted Components
+
+  import type { PageData } from './$types';
   import type {
     Employee,
     Team,
@@ -21,27 +44,6 @@
     FormIsActiveStatus,
     AvailabilityStatus,
   } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
-  import {
-    saveEmployee as apiSaveEmployee,
-    deleteEmployee as apiDeleteEmployee,
-    assignTeamMember,
-    removeTeamMember,
-    buildEmployeePayload,
-  } from './_lib/api';
-  import { applyAllFilters } from './_lib/filters';
-  import {
-    populateFormFromEmployee,
-    getDefaultFormValues,
-    validateEmailMatch,
-    validatePasswordMatch,
-  } from './_lib/utils';
-
-  // Extracted Components
-  import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
-  import DeleteModals from './_lib/DeleteModals.svelte';
-  import SearchResults from './_lib/SearchResults.svelte';
-  import EmployeeTableRow from './_lib/EmployeeTableRow.svelte';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -50,8 +52,8 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allEmployees = $derived<Employee[]>(data?.employees ?? []);
-  const allTeams = $derived<Team[]>(data?.teams ?? []);
+  const allEmployees = $derived<Employee[]>(data.employees);
+  const allTeams = $derived<Team[]>(data.teams);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -119,23 +121,23 @@
   async function saveEmployee(): Promise<void> {
     submitting = true;
 
-    try {
-      if (!validateEmailMatch(formEmail, formEmailConfirm)) {
-        emailError = true;
-        submitting = false;
-        return;
-      }
-      if (!isEditMode && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
-        passwordError = true;
-        submitting = false;
-        return;
-      }
-      if (isEditMode && formPassword && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
-        passwordError = true;
-        submitting = false;
-        return;
-      }
+    // Validate form fields
+    const validationError = validateSaveEmployeeForm(
+      formEmail,
+      formEmailConfirm,
+      formPassword,
+      formPasswordConfirm,
+      isEditMode,
+    );
 
+    if (validationError !== null) {
+      emailError = validationError === 'email';
+      passwordError = validationError === 'password';
+      submitting = false;
+      return;
+    }
+
+    try {
       const payload = buildEmployeePayload(
         {
           firstName: formFirstName,
@@ -156,26 +158,7 @@
       );
 
       const userId = await apiSaveEmployee(payload, currentEditId);
-
-      // Handle team assignments with diff logic
-      if (userId) {
-        // Calculate teams to add (new teams not in original)
-        const teamsToAdd = formTeamIds.filter((id) => !originalTeamIds.includes(id));
-        // Calculate teams to remove (original teams not in new selection)
-        const teamsToRemove = originalTeamIds.filter((id) => !formTeamIds.includes(id));
-
-        // Add new team memberships
-        for (const teamId of teamsToAdd) {
-          await assignTeamMember(userId, teamId);
-        }
-
-        // Remove old team memberships (only in edit mode)
-        if (isEditMode) {
-          for (const teamId of teamsToRemove) {
-            await removeTeamMember(userId, teamId);
-          }
-        }
-      }
+      await syncTeamMemberships(userId, formTeamIds, originalTeamIds, isEditMode);
 
       closeEmployeeModal();
       // Level 3: Trigger SSR refetch
@@ -190,12 +173,15 @@
   }
 
   async function deleteEmployee(): Promise<void> {
-    if (deleteEmployeeId === null) return;
+    const idToDelete = deleteEmployeeId;
+    if (idToDelete === null) return;
+
+    // Reset state immediately to prevent double-clicks
+    deleteEmployeeId = null;
+    showDeleteConfirmModal = false;
 
     try {
-      await apiDeleteEmployee(deleteEmployeeId);
-      showDeleteConfirmModal = false;
-      deleteEmployeeId = null;
+      await apiDeleteEmployee(idToDelete);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Mitarbeiter wurde gelöscht');
@@ -332,7 +318,7 @@
 
   function handleFormSubmit(e: Event): void {
     e.preventDefault();
-    saveEmployee();
+    void saveEmployee();
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -355,7 +341,9 @@
         if (el && !el.contains(target)) searchOpen = false;
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -379,37 +367,49 @@
         <!-- Status Toggle Group -->
         <div class="toggle-group" id="employee-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
             title="Aktive Mitarbeiter"
-            onclick={() => handleStatusToggle('active')}
+            onclick={() => {
+              handleStatusToggle('active');
+            }}
           >
             <i class="fas fa-user-check"></i>
             Aktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
             title="Inaktive Mitarbeiter"
-            onclick={() => handleStatusToggle('inactive')}
+            onclick={() => {
+              handleStatusToggle('inactive');
+            }}
           >
             <i class="fas fa-user-times"></i>
             Inaktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
             title="Archivierte Mitarbeiter"
-            onclick={() => handleStatusToggle('archived')}
+            onclick={() => {
+              handleStatusToggle('archived');
+            }}
           >
             <i class="fas fa-archive"></i>
             Archiviert
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
             title="Alle Mitarbeiter"
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-users"></i>
             Alle
@@ -453,7 +453,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
+          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
             Erneut versuchen
           </button>
         </div>
@@ -464,7 +464,7 @@
           </div>
           <h3 class="empty-state__title">{MESSAGES.NO_EMPLOYEES_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_EMPLOYEE}</p>
-          <button class="btn btn-primary" onclick={openAddModal}>
+          <button type="button" class="btn btn-primary" onclick={openAddModal}>
             <i class="fas fa-plus"></i>
             Mitarbeiter hinzufügen
           </button>
@@ -505,6 +505,7 @@
 
 <!-- Floating Action Button -->
 <button
+  type="button"
   class="btn-float add-employee-btn"
   onclick={openAddModal}
   aria-label="Mitarbeiter hinzufügen"

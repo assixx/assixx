@@ -37,7 +37,9 @@
         type="checkbox"
         class="toggle-switch__input"
         checked={autofillConfig.enabled}
-        onchange={(e) => onautofillChange((e.target as HTMLInputElement).checked)}
+        onchange={(e) => {
+          onautofillChange((e.target as HTMLInputElement).checked);
+        }}
       />
       <span class="toggle-switch__slider"></span>
       <span class="toggle-switch__label">
@@ -55,7 +57,9 @@
         class="toggle-switch__input"
         checked={standardRotationEnabled}
         disabled={isPlanLocked}
-        onchange={(e) => onstandardRotationChange((e.target as HTMLInputElement).checked)}
+        onchange={(e) => {
+          onstandardRotationChange((e.target as HTMLInputElement).checked);
+        }}
       />
       <span class="toggle-switch__slider"></span>
       <span class="toggle-switch__label">
@@ -73,7 +77,9 @@
         class="toggle-switch__input"
         checked={customRotationEnabled}
         disabled={isPlanLocked}
-        onchange={(e) => oncustomRotationChange((e.target as HTMLInputElement).checked)}
+        onchange={(e) => {
+          oncustomRotationChange((e.target as HTMLInputElement).checked);
+        }}
       />
       <span class="toggle-switch__slider"></span>
       <span class="toggle-switch__label">

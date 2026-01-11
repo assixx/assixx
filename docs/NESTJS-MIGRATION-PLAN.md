@@ -34,16 +34,17 @@
 
 Die 4 ehemaligen Wrapper-Services wurden vollständig auf native NestJS migriert:
 
-| Service | Zeilen | Status | Bruno Tests |
-|---------|--------|--------|-------------|
-| blackboard.service.ts | ~1300 | ✅ Native | 15/15 ✅ |
-| kvp.service.ts | ~950 | ✅ Native | 13/13 ✅ |
-| surveys.service.ts | ~1370 | ✅ Native | 11/11 ✅ |
-| reports.service.ts | ~1230 | ✅ Native | (keine Tests) |
+| Service               | Zeilen | Status    | Bruno Tests   |
+| --------------------- | ------ | --------- | ------------- |
+| blackboard.service.ts | ~1300  | ✅ Native | 15/15 ✅      |
+| kvp.service.ts        | ~950   | ✅ Native | 13/13 ✅      |
+| surveys.service.ts    | ~1370  | ✅ Native | 11/11 ✅      |
+| reports.service.ts    | ~1230  | ✅ Native | (keine Tests) |
 
 **Bruno API Tests:** 31/31 Requests ✅ | 57/57 Tests ✅ | 66/66 Assertions ✅
 
 **NestJS ist komplett entkoppelt von routes/v2:**
+
 - ✅ Alle NestJS Controller importieren NUR von NestJS Services
 - ✅ Alle Typen sind in NestJS Modulen definiert
 - ✅ 0 Imports von `../../routes/v2/` in `/src/nest/`
@@ -55,13 +56,15 @@ Die 4 ehemaligen Wrapper-Services wurden vollständig auf native NestJS migriert
 ### Was wurde erledigt (2025-12-17 23:30)
 
 **Phase 7.1: Legacy Services Analyse**
-- [x] Geprüft welche /services/*.service.ts noch von NestJS genutzt werden
+
+- [x] Geprüft welche /services/\*.service.ts noch von NestJS genutzt werden
 - [x] Identifiziert: Nur 2 Services werden noch genutzt:
   - `tenantDeletion.service.ts` → von `root.service.ts`
   - `hierarchyPermission.service.ts` → von `blackboard.service.ts`
 - [x] `tenantDeletion.service.ts` von routes/v2 entkoppelt (lokales Interface statt DbUser)
 
 **Phase 7.2: Middleware gelöscht (Dead Code)**
+
 - [x] `middleware/features.ts` → GELÖSCHT (nirgends importiert)
 - [x] `middleware/tenant.ts` → GELÖSCHT (nirgends importiert)
 - [x] `middleware/departmentAccess.ts` → GELÖSCHT (nur von routes/v2 genutzt)
@@ -78,11 +81,13 @@ Die 4 ehemaligen Wrapper-Services wurden vollständig auf native NestJS migriert
 - [x] `middleware/` Ordner → KOMPLETT GELÖSCHT
 
 **Phase 7.3: Utils migriert**
+
 - [x] `utils/emailService.ts` → Neue `utils/featureCheck.ts` erstellt
 - [x] Feature-Import von routes/v2 → lokale Utils umgestellt
 
 **Phase 7.4: Cleanup**
-- [x] 19 Legacy /services/*.service.ts gelöscht
+
+- [x] 19 Legacy /services/\*.service.ts gelöscht
 - [x] routes/v2/ komplett gelöscht (~166 Dateien, 2.5MB)
 - [x] routes/pages/ gelöscht (Legacy HTML Routing)
 - [x] Docker Health Check verifiziert ✅
@@ -91,6 +96,7 @@ Die 4 ehemaligen Wrapper-Services wurden vollständig auf native NestJS migriert
 ### Verbleibende Dateien
 
 **Behalten (von NestJS genutzt):**
+
 ```
 backend/src/services/
 ├── tenantDeletion.service.ts  # Von root.service.ts genutzt
@@ -98,6 +104,7 @@ backend/src/services/
 ```
 
 **middleware/ → KOMPLETT GELÖSCHT (2025-12-18)**
+
 ```
 ❌ backend/src/middleware/  # Ordner existiert nicht mehr
 ❌ types/middleware.types.ts  # Gelöscht, Export aus types/index.ts entfernt
@@ -139,24 +146,26 @@ Express durch Fastify ersetzen für bessere Performance (~4.7x schneller laut Be
 - [x] `pnpm add @webundsoehne/nest-fastify-file-upload fastify-multer` - File Upload
 - [x] `pnpm remove @nestjs/platform-express express @types/express` - Express entfernt
 - [x] `main.ts` anpassen mit FastifyAdapter:
+
   ```typescript
   import { NestFactory } from '@nestjs/core';
   import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: false }),
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: false }));
   await app.listen({ port: 3000, host: '0.0.0.0' }); // Fastify v5 Syntax
   ```
+
 - [x] Controller Types ändern: `FastifyRequest`, `FastifyReply` statt Express
 - [x] FileInterceptor von `@webundsoehne/nest-fastify-file-upload` importieren
 - [x] `fastify-multer` Import für ESM kompatibel gemacht:
+
   ```typescript
   // ESM-kompatibel (fastify-multer ist CommonJS)
   import multer from 'fastify-multer';
+
   const { diskStorage, memoryStorage } = multer;
   ```
+
 - [x] Docker neu gebaut: `docker-compose build --no-cache backend`
 - [x] Docker Health Check verifiziert ✅
 - [x] API Tests verifiziert ✅
@@ -188,13 +197,13 @@ curl -s http://localhost:3000/api/v2/users/me
 
 ### Breaking Changes - GELÖST ✅
 
-| Express | Fastify | Lösung | Status |
-|---------|---------|--------|--------|
-| `@Req() req: Request` | `@Req() req: FastifyRequest` | Type geändert | ✅ |
-| `@Res() res: Response` | `@Res() res: FastifyReply` | Type geändert | ✅ |
-| `@nestjs/platform-express FileInterceptor` | `@webundsoehne/nest-fastify-file-upload` | Package gewechselt | ✅ |
-| `multer.diskStorage()` | `fastify-multer` mit ESM Import | Import angepasst | ✅ |
-| `app.listen(port)` | `app.listen({ port, host })` | Fastify v5 Syntax | ✅ |
+| Express                                    | Fastify                                  | Lösung             | Status |
+| ------------------------------------------ | ---------------------------------------- | ------------------ | ------ |
+| `@Req() req: Request`                      | `@Req() req: FastifyRequest`             | Type geändert      | ✅     |
+| `@Res() res: Response`                     | `@Res() res: FastifyReply`               | Type geändert      | ✅     |
+| `@nestjs/platform-express FileInterceptor` | `@webundsoehne/nest-fastify-file-upload` | Package gewechselt | ✅     |
+| `multer.diskStorage()`                     | `fastify-multer` mit ESM Import          | Import angepasst   | ✅     |
+| `app.listen(port)`                         | `app.listen({ port, host })`             | Fastify v5 Syntax  | ✅     |
 
 ### Gelöste Probleme
 
@@ -208,16 +217,16 @@ curl -s http://localhost:3000/api/v2/users/me
 
 ## 📊 AKTUELLER STATUS
 
-| Metrik | Wert | Status |
-|--------|------|--------|
-| **NestJS Controllers** | 300/300 | ✅ 100% |
-| **NestJS Services** | 26/26 Native | ✅ 100% |
-| **Bruno Tests** | 68/87 | ⚠️ 78% (Shifts Issue) |
-| **routes/v2/** | GELÖSCHT | ✅ ~166 Dateien entfernt |
-| **Legacy Services** | 2/21 behalten | ✅ 19 gelöscht |
-| **Dead Code Middleware** | GELÖSCHT | ✅ 14 Dateien entfernt (inkl. types) |
-| **middleware/ Ordner** | GELÖSCHT | ✅ Komplett entfernt (2025-12-18) |
-| **Framework** | NestJS + Fastify | ✅ Express komplett entfernt |
+| Metrik                   | Wert             | Status                               |
+| ------------------------ | ---------------- | ------------------------------------ |
+| **NestJS Controllers**   | 300/300          | ✅ 100%                              |
+| **NestJS Services**      | 26/26 Native     | ✅ 100%                              |
+| **Bruno Tests**          | 68/87            | ⚠️ 78% (Shifts Issue)                |
+| **routes/v2/**           | GELÖSCHT         | ✅ ~166 Dateien entfernt             |
+| **Legacy Services**      | 2/21 behalten    | ✅ 19 gelöscht                       |
+| **Dead Code Middleware** | GELÖSCHT         | ✅ 14 Dateien entfernt (inkl. types) |
+| **middleware/ Ordner**   | GELÖSCHT         | ✅ Komplett entfernt (2025-12-18)    |
+| **Framework**            | NestJS + Fastify | ✅ Express komplett entfernt         |
 
 ### Was funktioniert
 
@@ -262,9 +271,9 @@ export class BlackboardService {
        FROM blackboard_entries
        WHERE tenant_id = $1 AND is_active = 1
        ORDER BY created_at DESC`,
-      [tenantId]
+      [tenantId],
     );
-    return rows.map(row => this.transformEntry(row));  // ✅ Direkte DB!
+    return rows.map((row) => this.transformEntry(row)); // ✅ Direkte DB!
   }
 }
 ```
@@ -277,41 +286,41 @@ export class BlackboardService {
 
 ### ✅ Native NestJS Services (26/26 = 100%)
 
-| Service | Zeilen | Pattern | Kommentar |
-|---------|--------|---------|-----------|
-| auth.service.ts | ~300 | DatabaseService + bcrypt | JWT, Login, Register |
-| users.service.ts | ~800 | DatabaseService + ClsService | CRUD, Profile, Availability |
-| calendar.service.ts | ~600 | DatabaseService + ClsService | Events CRUD, Dashboard |
-| documents.service.ts | ~400 | DatabaseService | Upload, Download, Archive |
-| chat.service.ts | ~1430 | DatabaseService | Conversations, Messages, Attachments |
-| shifts.service.ts | ~1022 | DatabaseService | Shifts CRUD, Plans, Swap Requests |
-| rotation.service.ts | ~1097 | DatabaseService | Patterns, Assignments, Generation |
-| logs.service.ts | ~660 | DatabaseService + bcrypt | Audit Logs, Deletion |
-| areas.service.ts | ~200 | DatabaseService | War bereits sauber |
-| departments.service.ts | ~200 | DatabaseService | War bereits sauber |
-| teams.service.ts | ~200 | DatabaseService | War bereits sauber |
-| roles.service.ts | ~100 | Static (kein DB) | Nur Konstanten |
-| role-switch.service.ts | ~150 | DatabaseService | JWT Role Switching |
-| **features.service.ts** | ~300 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **plans.service.ts** | ~400 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **machines.service.ts** | ~450 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **admin-permissions.service.ts** | ~350 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **audit-trail.service.ts** | ~745 | DatabaseService + bcrypt | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **settings.service.ts** | ~857 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **signup.service.ts** | ~383 | DatabaseService + transaction | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **notifications.service.ts** | ~900 | DatabaseService | ✅ **NEU MIGRIERT** (2025-12-17) |
-| **root.service.ts** | ~1271 | DatabaseService + tenantDeletionService | ✅ **NEU MIGRIERT** (2025-12-17) |
+| Service                          | Zeilen | Pattern                                 | Kommentar                            |
+| -------------------------------- | ------ | --------------------------------------- | ------------------------------------ |
+| auth.service.ts                  | ~300   | DatabaseService + bcrypt                | JWT, Login, Register                 |
+| users.service.ts                 | ~800   | DatabaseService + ClsService            | CRUD, Profile, Availability          |
+| calendar.service.ts              | ~600   | DatabaseService + ClsService            | Events CRUD, Dashboard               |
+| documents.service.ts             | ~400   | DatabaseService                         | Upload, Download, Archive            |
+| chat.service.ts                  | ~1430  | DatabaseService                         | Conversations, Messages, Attachments |
+| shifts.service.ts                | ~1022  | DatabaseService                         | Shifts CRUD, Plans, Swap Requests    |
+| rotation.service.ts              | ~1097  | DatabaseService                         | Patterns, Assignments, Generation    |
+| logs.service.ts                  | ~660   | DatabaseService + bcrypt                | Audit Logs, Deletion                 |
+| areas.service.ts                 | ~200   | DatabaseService                         | War bereits sauber                   |
+| departments.service.ts           | ~200   | DatabaseService                         | War bereits sauber                   |
+| teams.service.ts                 | ~200   | DatabaseService                         | War bereits sauber                   |
+| roles.service.ts                 | ~100   | Static (kein DB)                        | Nur Konstanten                       |
+| role-switch.service.ts           | ~150   | DatabaseService                         | JWT Role Switching                   |
+| **features.service.ts**          | ~300   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **plans.service.ts**             | ~400   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **machines.service.ts**          | ~450   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **admin-permissions.service.ts** | ~350   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **audit-trail.service.ts**       | ~745   | DatabaseService + bcrypt                | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **settings.service.ts**          | ~857   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **signup.service.ts**            | ~383   | DatabaseService + transaction           | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **notifications.service.ts**     | ~900   | DatabaseService                         | ✅ **NEU MIGRIERT** (2025-12-17)     |
+| **root.service.ts**              | ~1271  | DatabaseService + tenantDeletionService | ✅ **NEU MIGRIERT** (2025-12-17)     |
 
 ### ✅ Ehemalige Wrapper Services - JETZT NATIVE (2025-12-17)
 
 Diese 4 Services wurden am 2025-12-17 vollständig zu Native NestJS migriert:
 
-| Service | Zeilen | Migriert am | Bruno Tests |
-|---------|--------|-------------|-------------|
-| **blackboard.service.ts** | ~1300 | 2025-12-17 | 15/15 ✅ |
-| **kvp.service.ts** | ~950 | 2025-12-17 | 13/13 ✅ |
-| **surveys.service.ts** | ~1370 | 2025-12-17 | 11/11 ✅ |
-| **reports.service.ts** | ~1230 | 2025-12-17 | (keine) |
+| Service                   | Zeilen | Migriert am | Bruno Tests |
+| ------------------------- | ------ | ----------- | ----------- |
+| **blackboard.service.ts** | ~1300  | 2025-12-17  | 15/15 ✅    |
+| **kvp.service.ts**        | ~950   | 2025-12-17  | 13/13 ✅    |
+| **surveys.service.ts**    | ~1370  | 2025-12-17  | 11/11 ✅    |
+| **reports.service.ts**    | ~1230  | 2025-12-17  | (keine)     |
 
 **Gesamt:** ~4850 Zeilen neuer Service-Code, alle nutzen DatabaseService direkt.
 
@@ -324,6 +333,7 @@ Diese 4 Services wurden am 2025-12-17 vollständig zu Native NestJS migriert:
 **Alle 26 Services zu Native NestJS migriert:**
 
 **Migriert (Session 1 - 2025-12-17 früh):**
+
 - [x] features.service.ts → Native (~300 LOC)
 - [x] plans.service.ts → Native (~400 LOC)
 - [x] machines.service.ts → Native (~450 LOC)
@@ -335,6 +345,7 @@ Diese 4 Services wurden am 2025-12-17 vollständig zu Native NestJS migriert:
 - [x] root.service.ts → Native (~1271 LOC)
 
 **Migriert (Session 2 - 2025-12-17 abend):**
+
 - [x] blackboard.service.ts → Native (~1300 LOC) ✅ 15/15 Tests
 - [x] kvp.service.ts → Native (~950 LOC) ✅ 13/13 Tests
 - [x] surveys.service.ts → Native (~1370 LOC) ✅ 11/11 Tests
@@ -345,6 +356,7 @@ Diese 4 Services wurden am 2025-12-17 vollständig zu Native NestJS migriert:
 ### Phase 6.2: NestJS von routes/v2 entkoppelt - 100% COMPLETE ✅
 
 **Alle NestJS Controller/Services importieren NUR noch von /nest/:**
+
 - [x] blackboard.controller.ts → BlackboardComment von service statt routes/v2
 - [x] admin-permissions.controller.ts → PermissionLevel von service statt routes/v2
 - [x] machines.controller.ts → Types von service statt routes/v2
@@ -355,6 +367,7 @@ Diese 4 Services wurden am 2025-12-17 vollständig zu Native NestJS migriert:
 ### Phase 7: Express Removal (IN PROGRESS)
 
 **1. Entry-Points LÖSCHEN:**
+
 ```
 backend/src/
 ├── app.ts              ❌ LÖSCHEN (Express Loader Pattern)
@@ -369,6 +382,7 @@ backend/src/
 ```
 
 **2. Express Routes LÖSCHEN:**
+
 ```
 backend/src/routes/v2/  ❌ KOMPLETT LÖSCHEN (26 Module)
 ├── admin-permissions/
@@ -400,6 +414,7 @@ backend/src/routes/v2/  ❌ KOMPLETT LÖSCHEN (26 Module)
 ```
 
 **3. Behalten (von NestJS genutzt):**
+
 ```
 backend/src/
 ├── config/             ✅ BEHALTEN (DB Config)
@@ -411,6 +426,7 @@ backend/src/
 ```
 
 **4. Package.json anpassen:**
+
 ```json
 // ENTFERNEN:
 "express": "^5.2.1",
@@ -422,6 +438,7 @@ backend/src/
 ```
 
 **5. Docker verifizieren:**
+
 ```dockerfile
 # Bereits korrekt:
 CMD ["node", "dist/nest/main.js"]
@@ -481,6 +498,7 @@ export class FeatureService {
 ```
 
 **Wichtige Patterns:**
+
 - `$1, $2, $3` Placeholders (PostgreSQL)
 - `ClsService` für tenantId, userId aus Request-Context
 - `dbToApi()` für snake_case → camelCase Mapping
@@ -491,13 +509,13 @@ export class FeatureService {
 
 ## ⚠️ ACCURATE PROGRESS ASSESSMENT
 
-| Metric | Value | Details |
-|--------|-------|---------|
-| **Overall Progress** | **100%** | 25/25 Express modules migrated |
-| **Endpoints Migrated** | **300/300** | ✅ 100% of total endpoints |
-| **Phase 3 Status** | ✅ 100% | All 6 modules complete |
-| **Phase 4 Status** | ✅ 100% | All 13 modules complete (tenants has 0 endpoints) |
-| **Phase 5 Status** | 🔄 70% | NestJS running in Docker, cleanup pending |
+| Metric                 | Value       | Details                                           |
+| ---------------------- | ----------- | ------------------------------------------------- |
+| **Overall Progress**   | **100%**    | 25/25 Express modules migrated                    |
+| **Endpoints Migrated** | **300/300** | ✅ 100% of total endpoints                        |
+| **Phase 3 Status**     | ✅ 100%     | All 6 modules complete                            |
+| **Phase 4 Status**     | ✅ 100%     | All 13 modules complete (tenants has 0 endpoints) |
+| **Phase 5 Status**     | 🔄 70%      | NestJS running in Docker, cleanup pending         |
 
 ### Module Status Overview
 
@@ -728,11 +746,7 @@ export class DatabaseService {
     }
   }
 
-  async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>,
-    tenantId?: number,
-    userId?: number
-  ): Promise<T> {
+  async transaction<T>(callback: (client: PoolClient) => Promise<T>, tenantId?: number, userId?: number): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -805,9 +819,9 @@ ClsModule.forRoot({
       cls.set('tenantId', req.user?.tenantId);
       cls.set('userId', req.user?.id);
       cls.set('userRole', req.user?.role);
-    }
-  }
-})
+    },
+  },
+});
 
 // database.service.ts
 @Injectable()
@@ -879,11 +893,11 @@ export class JwtAuthGuard implements CanActivate {
 export class ResponseInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
-      map(data => ({
+      map((data) => ({
         success: true,
         data,
         timestamp: new Date().toISOString(),
-      }))
+      })),
     );
   }
 }
@@ -897,8 +911,8 @@ export class ResponseInterceptor implements NestInterceptor {
 
 **Scope:** Set up NestJS alongside Express
 
-| Task | Description                         | Files                      | Status |
-| ---- | ----------------------------------- | -------------------------- | ------ |
+| Task | Description                         | Files                      | Status  |
+| ---- | ----------------------------------- | -------------------------- | ------- |
 | 0.1  | Install NestJS dependencies         | `package.json`             | ✅ Done |
 | 0.2  | Create NestJS bootstrap             | `main.ts`, `app.module.ts` | ✅ Done |
 | 0.3  | Configure `ConfigModule`            | `config/`                  | ✅ Done |
@@ -920,8 +934,8 @@ pnpm add reflect-metadata rxjs
 
 **Scope:** Migrate authentication completely
 
-| Task | Description                         | Status |
-| ---- | ----------------------------------- | ------ |
+| Task | Description                         | Status  |
+| ---- | ----------------------------------- | ------- |
 | 1.1  | Create `AuthModule` structure       | ✅ Done |
 | 1.2  | Port `JwtAuthGuard`                 | ✅ Done |
 | 1.3  | Port `RolesGuard`                   | ✅ Done |
@@ -930,6 +944,7 @@ pnpm add reflect-metadata rxjs
 | 1.6  | Test auth flow end-to-end           | ✅ Done |
 
 **Implemented Files:**
+
 - `nest/auth/auth.module.ts`
 - `nest/auth/auth.controller.ts`
 - `nest/auth/auth.service.ts`
@@ -942,26 +957,27 @@ pnpm add reflect-metadata rxjs
 
 **Scope:** Migrate high-traffic modules
 
-| Module      | Priority | Complexity | Status | Endpoints | Files |
-| ----------- | -------- | ---------- | ------ | --------- | ----- |
-| Users       | Critical | Medium     | ✅ Done | 11 | 10 files |
-| Departments | Critical | Low        | ✅ Done | 7  | 9 files |
-| Teams       | Critical | Low        | ✅ Done | 11 | 10 files |
-| Calendar    | High     | High       | ✅ Done | 8  | 10 files |
-| Documents   | High     | High       | ✅ Done | 11 | 7 files |
+| Module      | Priority | Complexity | Status  | Endpoints | Files    |
+| ----------- | -------- | ---------- | ------- | --------- | -------- |
+| Users       | Critical | Medium     | ✅ Done | 11        | 10 files |
+| Departments | Critical | Low        | ✅ Done | 7         | 9 files  |
+| Teams       | Critical | Low        | ✅ Done | 11        | 10 files |
+| Calendar    | High     | High       | ✅ Done | 8         | 10 files |
+| Documents   | High     | High       | ✅ Done | 11        | 7 files  |
 
 **Code Quality Tasks Completed:**
 
-| Task | Description | Status |
-| ---- | ----------- | ------ |
-| 2.6 | ESLint compliance (0 errors) | ✅ Done |
-| 2.7 | Fixed deprecated Zod `.datetime()` → `.iso.datetime()` | ✅ Done |
-| 2.8 | Split DTOs to comply with `max-classes-per-file` rule | ✅ Done |
-| 2.9 | Added type annotations for `@typescript-eslint/typedef` | ✅ Done |
-| 2.10 | Reduced cognitive complexity in services | ✅ Done |
-| 2.11 | Extracted constants for duplicated strings | ✅ Done |
+| Task | Description                                             | Status  |
+| ---- | ------------------------------------------------------- | ------- |
+| 2.6  | ESLint compliance (0 errors)                            | ✅ Done |
+| 2.7  | Fixed deprecated Zod `.datetime()` → `.iso.datetime()`  | ✅ Done |
+| 2.8  | Split DTOs to comply with `max-classes-per-file` rule   | ✅ Done |
+| 2.9  | Added type annotations for `@typescript-eslint/typedef` | ✅ Done |
+| 2.10 | Reduced cognitive complexity in services                | ✅ Done |
+| 2.11 | Extracted constants for duplicated strings              | ✅ Done |
 
 **Implemented Files:**
+
 - `nest/users/*` - User CRUD, profile, password change, availability (10 files)
 - `nest/departments/*` - Department CRUD, members, stats (9 files)
 - `nest/teams/*` - Team CRUD, members, machines (10 files)
@@ -970,16 +986,17 @@ pnpm add reflect-metadata rxjs
 
 ### Phase 3: Secondary Modules ✅ COMPLETE (100%)
 
-| Module        | Priority | Complexity | Status       | Endpoints | Files |
-| ------------- | -------- | ---------- | ------------ | --------- | ----- |
-| Blackboard    | Medium   | Low        | ✅ Done      | 8         | 8     |
-| KVP           | Medium   | Medium     | ✅ Done      | 13        | 10    |
-| Surveys       | Medium   | Medium     | ✅ Done      | 14        | 12    |
-| Notifications | Medium   | Medium     | ✅ Done      | 15        | 10    |
-| Shifts        | Medium   | High       | ✅ Done      | 28        | 23    |
-| Chat          | Medium   | High       | ✅ Done      | 26        | 17    |
+| Module        | Priority | Complexity | Status  | Endpoints | Files |
+| ------------- | -------- | ---------- | ------- | --------- | ----- |
+| Blackboard    | Medium   | Low        | ✅ Done | 8         | 8     |
+| KVP           | Medium   | Medium     | ✅ Done | 13        | 10    |
+| Surveys       | Medium   | Medium     | ✅ Done | 14        | 12    |
+| Notifications | Medium   | Medium     | ✅ Done | 15        | 10    |
+| Shifts        | Medium   | High       | ✅ Done | 28        | 23    |
+| Chat          | Medium   | High       | ✅ Done | 26        | 17    |
 
 **Completed Module Files (Phase 3):**
+
 - `nest/blackboard/*` - Posts CRUD, pinning, attachments (8 files)
 - `nest/kvp/*` - Suggestions CRUD, comments, status workflow, dashboard (10 files)
 - `nest/surveys/*` - Surveys CRUD, questions, responses, statistics, export (12 files)
@@ -988,6 +1005,7 @@ pnpm add reflect-metadata rxjs
 - `nest/chat/*` - Conversations CRUD, messages, attachments, scheduled messages, participants, file uploads (17 files)
 
 **Completed Module Files (Phase 4):**
+
 - `nest/areas/*` - Areas CRUD, stats, department assignments (10 files)
 - `nest/roles/*` - Static role definitions, hierarchy, assignable roles, user role check (7 files)
 - `nest/role-switch/*` - Switch to employee/admin view, status check, JWT-based role switching (5 files)
@@ -996,36 +1014,36 @@ pnpm add reflect-metadata rxjs
 
 ### Phase 4: Remaining Modules ✅ NEAR COMPLETE (14 modules, 13 complete)
 
-| Module            | Priority | Complexity | Endpoints | Status       | Files |
-| ----------------- | -------- | ---------- | --------- | ------------ | ----- |
-| Areas             | Low      | Low        | 7         | ✅ Complete  | 10    |
-| Roles             | Low      | Low        | 5         | ✅ Complete  | 7     |
-| Role-Switch       | Low      | Low        | 4         | ✅ Complete  | 5     |
-| Signup            | Low      | Low        | 2         | ✅ Complete  | 6     |
-| Logs              | Low      | Low        | 3         | ✅ Complete  | 6     |
-| Audit Trail       | Medium   | Medium     | 6         | ✅ Complete  | 11    |
-| Settings          | Medium   | Low        | 18        | ✅ Complete  | 10    |
-| Admin Permissions | Medium   | Medium     | 11        | ✅ Complete  | 7     |
-| Plans             | Medium   | Low        | 8         | ✅ Complete  | 8     |
-| Reports           | Medium   | Medium     | 9         | ✅ Complete  | 9     |
-| Machines          | Medium   | Medium     | 12        | ✅ Complete  | 9     |
-| Features          | Low      | Low        | 11        | ✅ Complete  | 8     |
-| Root              | Low      | Medium     | 25        | ✅ Complete  | 10    |
-| Tenants           | Low      | Medium     | 0         | ⏳ Pending   | 0     |
+| Module            | Priority | Complexity | Endpoints | Status      | Files |
+| ----------------- | -------- | ---------- | --------- | ----------- | ----- |
+| Areas             | Low      | Low        | 7         | ✅ Complete | 10    |
+| Roles             | Low      | Low        | 5         | ✅ Complete | 7     |
+| Role-Switch       | Low      | Low        | 4         | ✅ Complete | 5     |
+| Signup            | Low      | Low        | 2         | ✅ Complete | 6     |
+| Logs              | Low      | Low        | 3         | ✅ Complete | 6     |
+| Audit Trail       | Medium   | Medium     | 6         | ✅ Complete | 11    |
+| Settings          | Medium   | Low        | 18        | ✅ Complete | 10    |
+| Admin Permissions | Medium   | Medium     | 11        | ✅ Complete | 7     |
+| Plans             | Medium   | Low        | 8         | ✅ Complete | 8     |
+| Reports           | Medium   | Medium     | 9         | ✅ Complete | 9     |
+| Machines          | Medium   | Medium     | 12        | ✅ Complete | 9     |
+| Features          | Low      | Low        | 11        | ✅ Complete | 8     |
+| Root              | Low      | Medium     | 25        | ✅ Complete | 10    |
+| Tenants           | Low      | Medium     | 0         | ⏳ Pending  | 0     |
 
 **Phase 4 Progress:** 121/121 endpoints migrated (100%), only tenants model remains (0 endpoints)
 
 ### Phase 5: Cleanup & Optimization 🔄 IN PROGRESS
 
-| Task | Description                      | Status |
-| ---- | -------------------------------- | ------ |
-| 5.1  | Update package.json entry-point  | ✅ Complete |
-| 5.2  | Update Docker configuration      | ✅ Complete |
-| 5.3  | Fix circular imports             | ✅ Complete |
-| 5.4  | NestJS startup verified          | ✅ Complete |
-| 5.5  | Remove old loaders               | ⏳ Pending |
-| 5.6  | Remove Express entry-points      | ⏳ Pending |
-| 5.7  | Documentation update             | ✅ Complete |
+| Task | Description                     | Status      |
+| ---- | ------------------------------- | ----------- |
+| 5.1  | Update package.json entry-point | ✅ Complete |
+| 5.2  | Update Docker configuration     | ✅ Complete |
+| 5.3  | Fix circular imports            | ✅ Complete |
+| 5.4  | NestJS startup verified         | ✅ Complete |
+| 5.5  | Remove old loaders              | ⏳ Pending  |
+| 5.6  | Remove Express entry-points     | ⏳ Pending  |
+| 5.7  | Documentation update            | ✅ Complete |
 
 **Phase 5 Progress:** Docker now starts NestJS (2025-12-17). Express services still needed as legacy delegation.
 
@@ -1106,9 +1124,9 @@ ClsModule.forRoot({
     generateId: true,
     setup: (cls, req) => {
       // Set after JWT validation populates req.user
-    }
-  }
-})
+    },
+  },
+});
 
 // 2. After Auth Guard (tenant-context.interceptor.ts)
 @Injectable()
@@ -1158,27 +1176,17 @@ export class DatabaseService {
     return result.rows;
   }
 
-  async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>,
-    tenantId?: number,
-    userId?: number,
-  ): Promise<T> {
+  async transaction<T>(callback: (client: PoolClient) => Promise<T>, tenantId?: number, userId?: number): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
 
       // Set RLS context
       if (tenantId !== undefined) {
-        await client.query(
-          `SELECT set_config('app.tenant_id', $1::text, true)`,
-          [String(tenantId)]
-        );
+        await client.query(`SELECT set_config('app.tenant_id', $1::text, true)`, [String(tenantId)]);
       }
       if (userId !== undefined) {
-        await client.query(
-          `SELECT set_config('app.user_id', $1::text, true)`,
-          [String(userId)]
-        );
+        await client.query(`SELECT set_config('app.user_id', $1::text, true)`, [String(userId)]);
       }
 
       const result = await callback(client);
@@ -1299,10 +1307,7 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check for @Public() decorator
-    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [context.getHandler(), context.getClass()]);
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
@@ -1466,52 +1471,52 @@ pnpm run test:api  # Works for both Express and NestJS
 
 ### Current Progress (2025-12-17 23:30) - **PHASE 7 COMPLETE**
 
-| Metric | Status | Details |
-| ------ | ------ | ------- |
-| **Controller Migration** | **✅ 100%** | 25/25 Express modules migrated, 300/300 endpoints |
-| **Service Migration** | **✅ 100%** | 26/26 Services native NestJS |
-| **Legacy Cleanup** | **✅ 100%** | routes/v2 gelöscht, 19 Legacy Services entfernt |
-| NestJS Infrastructure | ✅ complete | Common, Config, Database |
-| Total Files | ~180 TypeScript files | Nach Cleanup (vorher ~340) |
-| **TypeScript** | **✅ 0 Errors** | Kompiliert erfolgreich |
-| **API Tests** | **⚠️ 78%** | 68/87 passed (Shifts 500 Error) |
-| **Docker** | **✅ Running** | NestJS Health Check OK |
+| Metric                   | Status                | Details                                           |
+| ------------------------ | --------------------- | ------------------------------------------------- |
+| **Controller Migration** | **✅ 100%**           | 25/25 Express modules migrated, 300/300 endpoints |
+| **Service Migration**    | **✅ 100%**           | 26/26 Services native NestJS                      |
+| **Legacy Cleanup**       | **✅ 100%**           | routes/v2 gelöscht, 19 Legacy Services entfernt   |
+| NestJS Infrastructure    | ✅ complete           | Common, Config, Database                          |
+| Total Files              | ~180 TypeScript files | Nach Cleanup (vorher ~340)                        |
+| **TypeScript**           | **✅ 0 Errors**       | Kompiliert erfolgreich                            |
+| **API Tests**            | **⚠️ 78%**            | 68/87 passed (Shifts 500 Error)                   |
+| **Docker**               | **✅ Running**        | NestJS Health Check OK                            |
 
 ### Service Migration Summary (Phase 6)
 
-| Category | Count | LOC | Status |
-| -------- | ----- | --- | ------ |
-| Native vor Phase 6 | 13 | ~8000 | ✅ Complete |
-| Neu migriert (Phase 6) | 9 | ~5656 | ✅ Complete |
-| **Native Total** | **22** | **~13656** | **84.6%** |
-| Wrapper Pattern | 4 | - | Funktional |
+| Category               | Count  | LOC        | Status      |
+| ---------------------- | ------ | ---------- | ----------- |
+| Native vor Phase 6     | 13     | ~8000      | ✅ Complete |
+| Neu migriert (Phase 6) | 9      | ~5656      | ✅ Complete |
+| **Native Total**       | **22** | **~13656** | **84.6%**   |
+| Wrapper Pattern        | 4      | -          | Funktional  |
 
 ### File Breakdown by Module
 
-| Module | Files | DTOs |
-| ------ | ----- | ---- |
-| Common (decorators, guards, filters, interceptors, pipes) | 16 | - |
-| Config | 3 | - |
-| Database | 3 | - |
-| Auth | 5 | 4 |
-| Users | 5 | 6 |
-| Departments | 5 | 5 |
-| Teams | 5 | 6 |
-| Calendar | 5 | 6 |
-| Documents | 5 | 3 |
-| Blackboard | 4 | 4 |
-| KVP | 4 | 6 |
-| Surveys | 4 | 8 |
-| Notifications | 4 | 6 |
-| Shifts | 6 | 17 |
-| Chat | 4 | 13 |
-| Areas | 5 | 5 |
-| Roles | 4 | 3 |
-| Role-Switch | 3 | 2 |
-| Signup | 4 | 2 |
-| Logs | 4 | 4 |
-| Root (main.ts, app.module.ts) | 2 | - |
-| **TOTAL** | **100** | **100** |
+| Module                                                    | Files   | DTOs    |
+| --------------------------------------------------------- | ------- | ------- |
+| Common (decorators, guards, filters, interceptors, pipes) | 16      | -       |
+| Config                                                    | 3       | -       |
+| Database                                                  | 3       | -       |
+| Auth                                                      | 5       | 4       |
+| Users                                                     | 5       | 6       |
+| Departments                                               | 5       | 5       |
+| Teams                                                     | 5       | 6       |
+| Calendar                                                  | 5       | 6       |
+| Documents                                                 | 5       | 3       |
+| Blackboard                                                | 4       | 4       |
+| KVP                                                       | 4       | 6       |
+| Surveys                                                   | 4       | 8       |
+| Notifications                                             | 4       | 6       |
+| Shifts                                                    | 6       | 17      |
+| Chat                                                      | 4       | 13      |
+| Areas                                                     | 5       | 5       |
+| Roles                                                     | 4       | 3       |
+| Role-Switch                                               | 3       | 2       |
+| Signup                                                    | 4       | 2       |
+| Logs                                                      | 4       | 4       |
+| Root (main.ts, app.module.ts)                             | 2       | -       |
+| **TOTAL**                                                 | **100** | **100** |
 
 ### Phase Completion Criteria
 
@@ -1524,15 +1529,15 @@ pnpm run test:api  # Works for both Express and NestJS
 
 ### ESLint Fixes Applied (Phase 2)
 
-| Fix Category | Files Affected | Pattern Applied |
-| ------------ | -------------- | --------------- |
-| Empty NestJS module classes | 5 modules | `eslint-disable` with justification |
-| Deprecated `.datetime()` | 7 DTOs | Changed to `.iso.datetime()` |
-| Missing type annotations | 12 files | Added explicit types in callbacks |
-| Max classes per file (>2) | 4 DTOs | Split into separate files + barrel exports |
-| Cognitive complexity (>10) | 2 services | Extracted helper functions |
-| Duplicated string literals | 2 services | Extracted to constants |
-| Unnecessary optional chains | 2 services | Removed on non-optional fields |
+| Fix Category                | Files Affected | Pattern Applied                            |
+| --------------------------- | -------------- | ------------------------------------------ |
+| Empty NestJS module classes | 5 modules      | `eslint-disable` with justification        |
+| Deprecated `.datetime()`    | 7 DTOs         | Changed to `.iso.datetime()`               |
+| Missing type annotations    | 12 files       | Added explicit types in callbacks          |
+| Max classes per file (>2)   | 4 DTOs         | Split into separate files + barrel exports |
+| Cognitive complexity (>10)  | 2 services     | Extracted helper functions                 |
+| Duplicated string literals  | 2 services     | Extracted to constants                     |
+| Unnecessary optional chains | 2 services     | Removed on non-optional fields             |
 
 ### Final Success Criteria
 
@@ -1584,27 +1589,27 @@ pnpm run test:api  # Works for both Express and NestJS
 
 ## Changelog
 
-| Version | Date | Changes |
-| ------- | ---- | ------- |
-| 3.4 | 2025-12-18 15:00 | **🎉 PHASE 8 COMPLETE: NESTJS + FASTIFY** - Fastify Adapter Migration erfolgreich abgeschlossen! **Installierte Packages:** @nestjs/platform-fastify, fastify v5.2.2, @fastify/static, @fastify/helmet, @fastify/cookie, @fastify/multipart, @webundsoehne/nest-fastify-file-upload, fastify-multer. **Express komplett entfernt:** @nestjs/platform-express, express, @types/express. **main.ts geändert:** FastifyAdapter mit Fastify v5 Syntax `app.listen({ port, host })`. **Controller geändert:** FastifyRequest/FastifyReply Types in 5 Controllern (chat, users, documents, kvp, blackboard). **FileInterceptor geändert:** Von @nestjs/platform-express zu @webundsoehne/nest-fastify-file-upload. **ESM Fix:** fastify-multer CommonJS Import (`import multer from 'fastify-multer'; const { diskStorage } = multer;`). **Gelöste Probleme:** tsconfig.tsbuildinfo Cache, Permission-Probleme, @nestjs/swagger Peer Dependency, file.size undefined. **Verifizierung:** Health Check zeigt `"framework":"NestJS+Fastify"`, Auth, Static Files, Validation alle funktionsfähig. **MIGRATION KOMPLETT!** |
-| 1.0 | 2025-12-16 | Initial plan created |
-| 1.1 | 2025-12-16 | Phase 0, 1, 2 marked as complete. Added progress tracking. |
-| 1.2 | 2025-12-16 | **ESLint Compliance Complete:** Fixed all 42+ ESLint errors across nest directory. Key fixes: deprecated Zod `.datetime()` → `.iso.datetime()`, split DTOs for `max-classes-per-file` compliance, added type annotations in callbacks, extracted ERROR_MESSAGES constants, refactored complex methods to reduce cognitive complexity. Total: 78 TypeScript files, 0 ESLint errors. |
-| 1.3 | 2025-12-16 | **Phase 3 Progress (50%):** Completed Blackboard (8 endpoints, 8 files), KVP (13 endpoints, 10 files), Surveys (14 endpoints, 12 files). All three modules wrap legacy services. Fixed exactOptionalPropertyTypes issues with conditional assignment pattern. |
-| 1.4 | 2025-12-16 | **Phase 3 Progress (67%):** Completed Notifications module (15 endpoints, 10 files). Includes SSE streaming with NestJS @Sse() decorator, push subscription placeholders, preferences management. Extracted SSE helper functions to comply with max-lines-per-function rule. Total: 118 TypeScript files, ~98 endpoints migrated. |
-| 1.5 | 2025-12-16 | **Phase 3 Progress (83%):** Completed Shifts module (28 endpoints, 23 files). Largest module in migration - includes shifts CRUD, shift plans, swap requests, favorites, rotation patterns, rotation assignments, rotation generation, rotation history. Created `rotation.dto.ts` re-export file, fixed `z.record()` calls (needed 2 args), added explicit return types to 28 controller methods, fixed `exactOptionalPropertyTypes` with `\| undefined` in filter interfaces. Total: 141 TypeScript files, ~126 endpoints migrated. Only Chat module remaining in Phase 3. |
-| 1.6 | 2025-12-16 | **VERIFIED PROGRESS:** Filesystem verification revealed inaccurate "83%" claim. Actual: 145 files, ~139 endpoints migrated (~49% of ~285 total). Express V2 has 26 modules; NestJS has 11 business modules + 3 infrastructure. Phase 4 expanded from 6 to 14 modules (added: areas, features, logs, machines, role-switch, root, signup, tenants). Updated all metrics to reflect accurate ~45% overall progress. |
-| 1.7 | 2025-12-16 | **PHASE 3 COMPLETE:** Chat module migrated (26 endpoints, 17 files). Largest DTO count in migration - 13 DTO files split for ESLint `max-classes-per-file` compliance. Features: conversations CRUD, messages with attachments, scheduled messages, participants management, file uploads with Multer (disk + memory storage). Fixed 26 ESLint errors: typedef annotations for Multer callbacks, require-await with `Promise<never>` for stub methods, collapsible-if merge, strict null checks for CLS context. **Phase 3: 100% COMPLETE (6/6 modules)**. Total: 162 files, ~165 endpoints migrated (~58% overall). Ready for Phase 4. |
-| 1.8 | 2025-12-16 | **Phase 4 Progress (14%):** Completed Areas module (7 endpoints, 10 files) and Roles module (5 endpoints, 7 files). Areas: location/area management with stats, department assignments. Roles: static role definitions (root/admin/employee), hierarchy, assignable roles, user role checks. Added `eslint-disable import-x/max-dependencies` to app.module.ts (NestJS root modules require many imports). Total: 179 files, ~177 endpoints migrated (~62% overall). |
-| 1.9 | 2025-12-16 | **Phase 4 Progress (21%):** Completed Role-Switch module (4 endpoints, 5 files). Features: switch to employee view, switch back to original, root-to-admin switch, status check. JWT-based role switching with `activeRole` and `isRoleSwitched` claims. Added `isRoleSwitched` to `NestAuthUser` interface and `JwtPayload`. Updated `jwt-auth.guard.ts` to populate role switch state. Total: 184 files, ~181 endpoints migrated (~64% overall). **Phase 4: 3/14 modules complete (21%)**. |
-| 2.0 | 2025-12-16 | **Phase 4 Progress (36%):** Completed Signup module (2 endpoints, 6 files) and Logs module (3 endpoints, 6 files). **Signup:** Public endpoints for tenant self-registration (`POST /signup`, `GET /signup/check-subdomain/:subdomain`). Uses existing Tenant model with regex-based email validation from common.schema.ts. **Logs:** Root-only endpoints for system audit logs (`GET /logs`, `GET /logs/stats`, `DELETE /logs`). Delete requires password confirmation. Refactored service to reduce cognitive complexity (extracted `verifyPassword`, `hasAnyDeleteFilter`, `buildDeleteFilters` helpers). Total: 228 files, ~186 endpoints migrated (~61% overall). **Phase 4: 5/14 modules complete (36%)**. Remaining: 9 modules, ~117 endpoints. |
-| 2.1 | 2025-12-16 | **Phase 4 Progress (43%):** Completed Audit-Trail module (6 endpoints, 11 files). **Features:** `GET /audit-trail` (entries with pagination), `GET /audit-trail/stats` (admin/root), `POST /audit-trail/reports` (compliance reports: GDPR, data_access, data_changes, user_activity), `GET /audit-trail/export` (JSON/CSV), `DELETE /audit-trail/retention` (data retention, root only), `GET /audit-trail/:id`. DTOs: 6 files with date range validation refinements for reports (dateTo >= dateFrom, max 1 year). CSV export generates properly escaped output. Total: 239 files, ~192 endpoints migrated (~63% overall). **Phase 4: 6/14 modules complete (43%)**. Remaining: 8 modules, ~111 endpoints. |
-| 2.2 | 2025-12-17 | **VERIFICATION UPDATE:** Full filesystem analysis confirmed accurate metrics. **Verified:** 18/26 modules migrated (69.2%), 198/303 endpoints migrated (65.3%), 239 TypeScript files. **Corrections:** Updated percentage from ~63% to ~65-69% (module vs endpoint basis), fixed Phase 4 table (audit-trail now marked complete), tenants module has 0 endpoints (only model file). **Pending endpoints breakdown:** root (25), settings (18), machines (12), admin-permissions (11), features (11), reports (9), plans (8), tenants (0) = 94 total remaining. **Phase 4: 7/14 modules complete (50%)**. |
-| 2.3 | 2025-12-17 | **PHASE 4 COMPLETE:** Migrated all 7 remaining modules in Phase 4: Settings (18 endpoints, 10 files), Admin-Permissions (11 endpoints, 7 files), Machines (12 endpoints, 9 files), Features (11 endpoints, 8 files), Plans (8 endpoints, 8 files), Reports (9 endpoints, 9 files), Root (25 endpoints, 10 files). **New modules created:** `nest/settings/*` - System/tenant/user settings, bulk updates, category management. `nest/admin-permissions/*` - Admin cross-tenant permission management with direct DB queries. `nest/machines/*` - Industrial machine CRUD, maintenance records, stats, assignments. `nest/features/*` - Feature flag management with public/tenant-scoped endpoints. `nest/plans/*` - Subscription plans, addons, cost calculation, upgrades. `nest/reports/*` - Analytics reports (overview, employees, departments, shifts, KVP, attendance, compliance), custom report generation, PDF/Excel/CSV export. `nest/root/*` - Root user management (admins, root users, tenants), dashboard stats, storage info, tenant deletion workflow (request, approve, reject, emergency stop, dry run). **Total:** ~320 TypeScript files, 292/303 endpoints migrated (~96%). **Phase 4: 13/14 modules complete (~100%)**. Only tenants model remains (0 endpoints). Ready for Phase 5 (cleanup). |
-| 2.4 | 2025-12-17 | **🎉 100% ENDPOINT COVERAGE ACHIEVED:** Final verification completed. All 25 modules with endpoints fully migrated. **Final counts:** 300/300 endpoints (100%), all 25 Express modules covered. **Session accomplishments:** Added missing file upload/download endpoints: Blackboard attachments (6 endpoints - upload, list, download, preview, download-by-UUID, delete), Users profile pictures (4 endpoints - PATCH /me, GET/POST/DELETE /me/profile-picture), KVP attachments (2 endpoints - multi-file upload, UUID download), Documents upload (1 endpoint - POST /documents with file content). **Key patterns implemented:** `memoryStorage()` for general uploads, `diskStorage()` for profile pictures, `FileInterceptor`/`FilesInterceptor` for multer, `@Res()` for file streaming, `uuidv7` for file UUIDs, `crypto.createHash('sha256')` for checksums. **Ready for Phase 5:** Testing, validation, Express removal, final deployment. |
-| 2.5 | 2025-12-17 | **🔴 PHASE 6 STARTED: SERVICE NATIVE MIGRATION** - Entdeckt: NestJS Controller sind 100% migriert, aber 13/26 Services delegieren noch zu Express-Legacy-Code via `legacyService` Imports. **Das Problem:** Express kann nicht entfernt werden solange Services Express-Abhängigkeiten haben. **Migrierte Services (13/26 = 50%):** auth (~300 LOC), users (~800 LOC), calendar (~600 LOC), documents (~400 LOC), chat (~1430 LOC), shifts (~1022 LOC), rotation (~1097 LOC), logs (~660 LOC), areas, departments, teams, roles, role-switch. **Verbleibende Services (13/26):** admin-permissions, audit-trail, blackboard, features, kvp, machines, notifications, plans, reports, root, settings, signup, surveys. **Geschätzte Arbeit:** ~6500 Zeilen Service-Code zu nativem NestJS. **Pattern:** `DatabaseService.query<T>()` + `ClsService` + `dbToApi()` statt Express-Delegation. **Ziel:** Komplett Express-frei, NestJS-only. **Nach Service-Migration:** Löschen von app.ts, server.ts, loaders/*, routes/v2/*, Express-Dependencies aus package.json. |
-| 2.6 | 2025-12-17 | **🟡 PHASE 6.1: 84.6% COMPLETE (22/26 Services Native)** - Massive Progress Session: 9 Services zu Native NestJS migriert (~5656 LOC neuer Code). **Migrierte Services:** features.service.ts (~300), plans.service.ts (~400), machines.service.ts (~450), admin-permissions.service.ts (~350), audit-trail.service.ts (~745), settings.service.ts (~857), signup.service.ts (~383), notifications.service.ts (~900), root.service.ts (~1271). **Key Patterns:** PostgreSQL `$1, $2, $3` Placeholders, `QueryResultRow` from `pg`, `db.transaction()` für Multi-Step-Operations, NestJS Exceptions (NotFoundException, ForbiddenException, BadRequestException, ConflictException), snake_case→camelCase Mapping. **Wrapper Pattern (4 Services):** blackboard, kvp, surveys, reports - Diese nutzen komplexe Model-Layer und arbeiten funktional via Delegation. **TypeScript:** Kompiliert erfolgreich (0 Errors). |
-| 3.0 | 2025-12-17 21:00 | **🟢 PHASE 6 COMPLETE: 100% NATIVE NESTJS (26/26 Services)** - Die letzten 4 Wrapper-Services wurden vollständig zu Native NestJS migriert: **blackboard.service.ts** (~1300 LOC, 15/15 Tests ✅), **kvp.service.ts** (~950 LOC, 13/13 Tests ✅), **surveys.service.ts** (~1370 LOC, 11/11 Tests ✅), **reports.service.ts** (~1230 LOC). **Gesamt:** ~4850 LOC neuer Service-Code. **Bruno Tests:** 31/31 Requests ✅, 57/57 Tests ✅, 66/66 Assertions ✅. **Phase 6.2 COMPLETE:** NestJS komplett von routes/v2 entkoppelt - 0 Imports von `../../routes/v2/` in `/src/nest/`. Controller-Imports korrigiert: BlackboardComment, PermissionLevel, Machine-Types, SettingData jetzt alle von NestJS Services. **NÄCHSTER SCHRITT:** Phase 7 - Legacy Code von routes/v2 entkoppeln, routes/v2/ löschen, Express aus package.json entfernen. |
-| 3.1 | 2025-12-17 23:30 | **🟢 PHASE 7 COMPLETE: EXPRESS REMOVAL** - Legacy Code komplett aufgeräumt! **Phase 7.1 (Analyse):** 21 Legacy Services analysiert, nur 2 werden noch von NestJS genutzt (tenantDeletion, hierarchyPermission). `tenantDeletion.service.ts` von routes/v2 entkoppelt (lokales `DeletionWarningUser` Interface statt `DbUser` Import). **Phase 7.2 (Middleware):** 7 Dead-Code-Dateien gelöscht: `middleware/features.ts`, `middleware/tenant.ts`, `middleware/departmentAccess.ts`, `middleware/security.ts`, `middleware/v2/*` (auth, roleCheck, security). **Phase 7.3 (Utils):** Neue `utils/featureCheck.ts` erstellt für Email-Feature-Check, `emailService.ts` von routes/v2 entkoppelt. **Phase 7.4 (Cleanup):** 19 Legacy Services gelöscht, `routes/v2/` komplett gelöscht (~166 Dateien, 2.5MB), `routes/pages/` gelöscht. **Verifizierung:** Docker Health Check ✅, Type-Check ✅, 68/87 API Tests ✅ (19 Shifts-Fehler = separates Issue). **Express bleibt als Infrastruktur** (@nestjs/platform-express benötigt es), aber KEIN Legacy-App-Code mehr! |
-| 3.2 | 2025-12-18 00:40 | **🧹 FINAL CLEANUP: MIDDLEWARE DEAD CODE ENTFERNT** - Vollständige Verifizierung des Migration Plans durchgeführt. **Gelöschte Dateien (8):** `middleware/pageAuth.ts`, `middleware/rateLimiter.ts`, `middleware/role.middleware.ts`, `middleware/security-enhanced.ts`, `middleware/tenantIsolation.ts`, `middleware/tenantStatus.ts`, `middleware/validation.zod.ts`, `types/middleware.types.ts`. **Editiert:** `types/index.ts` (Export von middleware.types.js entfernt). **Verifizierung:** Keine Imports dieser Dateien im gesamten Projekt gefunden (grep bestätigt). **Ergebnis:** `middleware/` Ordner komplett gelöscht, Type-Check ✅, Docker Health Check ✅. **Finale Struktur:** 339 TypeScript Files in `/nest/`, 2 Legacy Services behalten (tenantDeletion, hierarchyPermission), Express nur noch als @nestjs/platform-express Infrastruktur. |
-| 3.3 | 2025-12-18 01:00 | **⏳ PHASE 8 HINZUGEFÜGT: FASTIFY ADAPTER MIGRATION** - Plan korrigiert: Phase 7 (NestJS Code Migration) ist complete, aber Fastify Adapter Migration fehlt noch! **Laut OPTIMAL-SETUP.md:** Ziel ist `@nestjs/platform-fastify`, nicht Express. **Phase 8 Tasks:** Install @nestjs/platform-fastify + fastify, main.ts anpassen (FastifyAdapter), Express entfernen, Edge Cases testen (Multer, SSE, WebSocket). **Breaking Changes dokumentiert:** Request/Response Types, Multer → @fastify/multipart, Helmet → @fastify/helmet. **OPTIMAL-SETUP.md aktualisiert:** Executive Summary von "✅ DONE" zu "⚠️ PARTIAL", Phase 1.5 für Fastify hinzugefügt, Status-Banner korrigiert. |
+| Version | Date             | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.4     | 2025-12-18 15:00 | **🎉 PHASE 8 COMPLETE: NESTJS + FASTIFY** - Fastify Adapter Migration erfolgreich abgeschlossen! **Installierte Packages:** @nestjs/platform-fastify, fastify v5.2.2, @fastify/static, @fastify/helmet, @fastify/cookie, @fastify/multipart, @webundsoehne/nest-fastify-file-upload, fastify-multer. **Express komplett entfernt:** @nestjs/platform-express, express, @types/express. **main.ts geändert:** FastifyAdapter mit Fastify v5 Syntax `app.listen({ port, host })`. **Controller geändert:** FastifyRequest/FastifyReply Types in 5 Controllern (chat, users, documents, kvp, blackboard). **FileInterceptor geändert:** Von @nestjs/platform-express zu @webundsoehne/nest-fastify-file-upload. **ESM Fix:** fastify-multer CommonJS Import (`import multer from 'fastify-multer'; const { diskStorage } = multer;`). **Gelöste Probleme:** tsconfig.tsbuildinfo Cache, Permission-Probleme, @nestjs/swagger Peer Dependency, file.size undefined. **Verifizierung:** Health Check zeigt `"framework":"NestJS+Fastify"`, Auth, Static Files, Validation alle funktionsfähig. **MIGRATION KOMPLETT!**                                                                                                                                                                                                    |
+| 1.0     | 2025-12-16       | Initial plan created                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 1.1     | 2025-12-16       | Phase 0, 1, 2 marked as complete. Added progress tracking.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 1.2     | 2025-12-16       | **ESLint Compliance Complete:** Fixed all 42+ ESLint errors across nest directory. Key fixes: deprecated Zod `.datetime()` → `.iso.datetime()`, split DTOs for `max-classes-per-file` compliance, added type annotations in callbacks, extracted ERROR_MESSAGES constants, refactored complex methods to reduce cognitive complexity. Total: 78 TypeScript files, 0 ESLint errors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 1.3     | 2025-12-16       | **Phase 3 Progress (50%):** Completed Blackboard (8 endpoints, 8 files), KVP (13 endpoints, 10 files), Surveys (14 endpoints, 12 files). All three modules wrap legacy services. Fixed exactOptionalPropertyTypes issues with conditional assignment pattern.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 1.4     | 2025-12-16       | **Phase 3 Progress (67%):** Completed Notifications module (15 endpoints, 10 files). Includes SSE streaming with NestJS @Sse() decorator, push subscription placeholders, preferences management. Extracted SSE helper functions to comply with max-lines-per-function rule. Total: 118 TypeScript files, ~98 endpoints migrated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1.5     | 2025-12-16       | **Phase 3 Progress (83%):** Completed Shifts module (28 endpoints, 23 files). Largest module in migration - includes shifts CRUD, shift plans, swap requests, favorites, rotation patterns, rotation assignments, rotation generation, rotation history. Created `rotation.dto.ts` re-export file, fixed `z.record()` calls (needed 2 args), added explicit return types to 28 controller methods, fixed `exactOptionalPropertyTypes` with `\| undefined` in filter interfaces. Total: 141 TypeScript files, ~126 endpoints migrated. Only Chat module remaining in Phase 3.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 1.6     | 2025-12-16       | **VERIFIED PROGRESS:** Filesystem verification revealed inaccurate "83%" claim. Actual: 145 files, ~139 endpoints migrated (~49% of ~285 total). Express V2 has 26 modules; NestJS has 11 business modules + 3 infrastructure. Phase 4 expanded from 6 to 14 modules (added: areas, features, logs, machines, role-switch, root, signup, tenants). Updated all metrics to reflect accurate ~45% overall progress.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1.7     | 2025-12-16       | **PHASE 3 COMPLETE:** Chat module migrated (26 endpoints, 17 files). Largest DTO count in migration - 13 DTO files split for ESLint `max-classes-per-file` compliance. Features: conversations CRUD, messages with attachments, scheduled messages, participants management, file uploads with Multer (disk + memory storage). Fixed 26 ESLint errors: typedef annotations for Multer callbacks, require-await with `Promise<never>` for stub methods, collapsible-if merge, strict null checks for CLS context. **Phase 3: 100% COMPLETE (6/6 modules)**. Total: 162 files, ~165 endpoints migrated (~58% overall). Ready for Phase 4.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 1.8     | 2025-12-16       | **Phase 4 Progress (14%):** Completed Areas module (7 endpoints, 10 files) and Roles module (5 endpoints, 7 files). Areas: location/area management with stats, department assignments. Roles: static role definitions (root/admin/employee), hierarchy, assignable roles, user role checks. Added `eslint-disable import-x/max-dependencies` to app.module.ts (NestJS root modules require many imports). Total: 179 files, ~177 endpoints migrated (~62% overall).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 1.9     | 2025-12-16       | **Phase 4 Progress (21%):** Completed Role-Switch module (4 endpoints, 5 files). Features: switch to employee view, switch back to original, root-to-admin switch, status check. JWT-based role switching with `activeRole` and `isRoleSwitched` claims. Added `isRoleSwitched` to `NestAuthUser` interface and `JwtPayload`. Updated `jwt-auth.guard.ts` to populate role switch state. Total: 184 files, ~181 endpoints migrated (~64% overall). **Phase 4: 3/14 modules complete (21%)**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 2.0     | 2025-12-16       | **Phase 4 Progress (36%):** Completed Signup module (2 endpoints, 6 files) and Logs module (3 endpoints, 6 files). **Signup:** Public endpoints for tenant self-registration (`POST /signup`, `GET /signup/check-subdomain/:subdomain`). Uses existing Tenant model with regex-based email validation from common.schema.ts. **Logs:** Root-only endpoints for system audit logs (`GET /logs`, `GET /logs/stats`, `DELETE /logs`). Delete requires password confirmation. Refactored service to reduce cognitive complexity (extracted `verifyPassword`, `hasAnyDeleteFilter`, `buildDeleteFilters` helpers). Total: 228 files, ~186 endpoints migrated (~61% overall). **Phase 4: 5/14 modules complete (36%)**. Remaining: 9 modules, ~117 endpoints.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2.1     | 2025-12-16       | **Phase 4 Progress (43%):** Completed Audit-Trail module (6 endpoints, 11 files). **Features:** `GET /audit-trail` (entries with pagination), `GET /audit-trail/stats` (admin/root), `POST /audit-trail/reports` (compliance reports: GDPR, data_access, data_changes, user_activity), `GET /audit-trail/export` (JSON/CSV), `DELETE /audit-trail/retention` (data retention, root only), `GET /audit-trail/:id`. DTOs: 6 files with date range validation refinements for reports (dateTo >= dateFrom, max 1 year). CSV export generates properly escaped output. Total: 239 files, ~192 endpoints migrated (~63% overall). **Phase 4: 6/14 modules complete (43%)**. Remaining: 8 modules, ~111 endpoints.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 2.2     | 2025-12-17       | **VERIFICATION UPDATE:** Full filesystem analysis confirmed accurate metrics. **Verified:** 18/26 modules migrated (69.2%), 198/303 endpoints migrated (65.3%), 239 TypeScript files. **Corrections:** Updated percentage from ~63% to ~65-69% (module vs endpoint basis), fixed Phase 4 table (audit-trail now marked complete), tenants module has 0 endpoints (only model file). **Pending endpoints breakdown:** root (25), settings (18), machines (12), admin-permissions (11), features (11), reports (9), plans (8), tenants (0) = 94 total remaining. **Phase 4: 7/14 modules complete (50%)**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 2.3     | 2025-12-17       | **PHASE 4 COMPLETE:** Migrated all 7 remaining modules in Phase 4: Settings (18 endpoints, 10 files), Admin-Permissions (11 endpoints, 7 files), Machines (12 endpoints, 9 files), Features (11 endpoints, 8 files), Plans (8 endpoints, 8 files), Reports (9 endpoints, 9 files), Root (25 endpoints, 10 files). **New modules created:** `nest/settings/*` - System/tenant/user settings, bulk updates, category management. `nest/admin-permissions/*` - Admin cross-tenant permission management with direct DB queries. `nest/machines/*` - Industrial machine CRUD, maintenance records, stats, assignments. `nest/features/*` - Feature flag management with public/tenant-scoped endpoints. `nest/plans/*` - Subscription plans, addons, cost calculation, upgrades. `nest/reports/*` - Analytics reports (overview, employees, departments, shifts, KVP, attendance, compliance), custom report generation, PDF/Excel/CSV export. `nest/root/*` - Root user management (admins, root users, tenants), dashboard stats, storage info, tenant deletion workflow (request, approve, reject, emergency stop, dry run). **Total:** ~320 TypeScript files, 292/303 endpoints migrated (~96%). **Phase 4: 13/14 modules complete (~100%)**. Only tenants model remains (0 endpoints). Ready for Phase 5 (cleanup). |
+| 2.4     | 2025-12-17       | **🎉 100% ENDPOINT COVERAGE ACHIEVED:** Final verification completed. All 25 modules with endpoints fully migrated. **Final counts:** 300/300 endpoints (100%), all 25 Express modules covered. **Session accomplishments:** Added missing file upload/download endpoints: Blackboard attachments (6 endpoints - upload, list, download, preview, download-by-UUID, delete), Users profile pictures (4 endpoints - PATCH /me, GET/POST/DELETE /me/profile-picture), KVP attachments (2 endpoints - multi-file upload, UUID download), Documents upload (1 endpoint - POST /documents with file content). **Key patterns implemented:** `memoryStorage()` for general uploads, `diskStorage()` for profile pictures, `FileInterceptor`/`FilesInterceptor` for multer, `@Res()` for file streaming, `uuidv7` for file UUIDs, `crypto.createHash('sha256')` for checksums. **Ready for Phase 5:** Testing, validation, Express removal, final deployment.                                                                                                                                                                                                                                                                                                                                                               |
+| 2.5     | 2025-12-17       | **🔴 PHASE 6 STARTED: SERVICE NATIVE MIGRATION** - Entdeckt: NestJS Controller sind 100% migriert, aber 13/26 Services delegieren noch zu Express-Legacy-Code via `legacyService` Imports. **Das Problem:** Express kann nicht entfernt werden solange Services Express-Abhängigkeiten haben. **Migrierte Services (13/26 = 50%):** auth (~300 LOC), users (~800 LOC), calendar (~600 LOC), documents (~400 LOC), chat (~1430 LOC), shifts (~1022 LOC), rotation (~1097 LOC), logs (~660 LOC), areas, departments, teams, roles, role-switch. **Verbleibende Services (13/26):** admin-permissions, audit-trail, blackboard, features, kvp, machines, notifications, plans, reports, root, settings, signup, surveys. **Geschätzte Arbeit:** ~6500 Zeilen Service-Code zu nativem NestJS. **Pattern:** `DatabaseService.query<T>()` + `ClsService` + `dbToApi()` statt Express-Delegation. **Ziel:** Komplett Express-frei, NestJS-only. **Nach Service-Migration:** Löschen von app.ts, server.ts, loaders/_, routes/v2/_, Express-Dependencies aus package.json.                                                                                                                                                                                                                                                   |
+| 2.6     | 2025-12-17       | **🟡 PHASE 6.1: 84.6% COMPLETE (22/26 Services Native)** - Massive Progress Session: 9 Services zu Native NestJS migriert (~5656 LOC neuer Code). **Migrierte Services:** features.service.ts (~300), plans.service.ts (~400), machines.service.ts (~450), admin-permissions.service.ts (~350), audit-trail.service.ts (~745), settings.service.ts (~857), signup.service.ts (~383), notifications.service.ts (~900), root.service.ts (~1271). **Key Patterns:** PostgreSQL `$1, $2, $3` Placeholders, `QueryResultRow` from `pg`, `db.transaction()` für Multi-Step-Operations, NestJS Exceptions (NotFoundException, ForbiddenException, BadRequestException, ConflictException), snake_case→camelCase Mapping. **Wrapper Pattern (4 Services):** blackboard, kvp, surveys, reports - Diese nutzen komplexe Model-Layer und arbeiten funktional via Delegation. **TypeScript:** Kompiliert erfolgreich (0 Errors).                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 3.0     | 2025-12-17 21:00 | **🟢 PHASE 6 COMPLETE: 100% NATIVE NESTJS (26/26 Services)** - Die letzten 4 Wrapper-Services wurden vollständig zu Native NestJS migriert: **blackboard.service.ts** (~1300 LOC, 15/15 Tests ✅), **kvp.service.ts** (~950 LOC, 13/13 Tests ✅), **surveys.service.ts** (~1370 LOC, 11/11 Tests ✅), **reports.service.ts** (~1230 LOC). **Gesamt:** ~4850 LOC neuer Service-Code. **Bruno Tests:** 31/31 Requests ✅, 57/57 Tests ✅, 66/66 Assertions ✅. **Phase 6.2 COMPLETE:** NestJS komplett von routes/v2 entkoppelt - 0 Imports von `../../routes/v2/` in `/src/nest/`. Controller-Imports korrigiert: BlackboardComment, PermissionLevel, Machine-Types, SettingData jetzt alle von NestJS Services. **NÄCHSTER SCHRITT:** Phase 7 - Legacy Code von routes/v2 entkoppeln, routes/v2/ löschen, Express aus package.json entfernen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 3.1     | 2025-12-17 23:30 | **🟢 PHASE 7 COMPLETE: EXPRESS REMOVAL** - Legacy Code komplett aufgeräumt! **Phase 7.1 (Analyse):** 21 Legacy Services analysiert, nur 2 werden noch von NestJS genutzt (tenantDeletion, hierarchyPermission). `tenantDeletion.service.ts` von routes/v2 entkoppelt (lokales `DeletionWarningUser` Interface statt `DbUser` Import). **Phase 7.2 (Middleware):** 7 Dead-Code-Dateien gelöscht: `middleware/features.ts`, `middleware/tenant.ts`, `middleware/departmentAccess.ts`, `middleware/security.ts`, `middleware/v2/*` (auth, roleCheck, security). **Phase 7.3 (Utils):** Neue `utils/featureCheck.ts` erstellt für Email-Feature-Check, `emailService.ts` von routes/v2 entkoppelt. **Phase 7.4 (Cleanup):** 19 Legacy Services gelöscht, `routes/v2/` komplett gelöscht (~166 Dateien, 2.5MB), `routes/pages/` gelöscht. **Verifizierung:** Docker Health Check ✅, Type-Check ✅, 68/87 API Tests ✅ (19 Shifts-Fehler = separates Issue). **Express bleibt als Infrastruktur** (@nestjs/platform-express benötigt es), aber KEIN Legacy-App-Code mehr!                                                                                                                                                                                                                                                 |
+| 3.2     | 2025-12-18 00:40 | **🧹 FINAL CLEANUP: MIDDLEWARE DEAD CODE ENTFERNT** - Vollständige Verifizierung des Migration Plans durchgeführt. **Gelöschte Dateien (8):** `middleware/pageAuth.ts`, `middleware/rateLimiter.ts`, `middleware/role.middleware.ts`, `middleware/security-enhanced.ts`, `middleware/tenantIsolation.ts`, `middleware/tenantStatus.ts`, `middleware/validation.zod.ts`, `types/middleware.types.ts`. **Editiert:** `types/index.ts` (Export von middleware.types.js entfernt). **Verifizierung:** Keine Imports dieser Dateien im gesamten Projekt gefunden (grep bestätigt). **Ergebnis:** `middleware/` Ordner komplett gelöscht, Type-Check ✅, Docker Health Check ✅. **Finale Struktur:** 339 TypeScript Files in `/nest/`, 2 Legacy Services behalten (tenantDeletion, hierarchyPermission), Express nur noch als @nestjs/platform-express Infrastruktur.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 3.3     | 2025-12-18 01:00 | **⏳ PHASE 8 HINZUGEFÜGT: FASTIFY ADAPTER MIGRATION** - Plan korrigiert: Phase 7 (NestJS Code Migration) ist complete, aber Fastify Adapter Migration fehlt noch! **Laut OPTIMAL-SETUP.md:** Ziel ist `@nestjs/platform-fastify`, nicht Express. **Phase 8 Tasks:** Install @nestjs/platform-fastify + fastify, main.ts anpassen (FastifyAdapter), Express entfernen, Edge Cases testen (Multer, SSE, WebSocket). **Breaking Changes dokumentiert:** Request/Response Types, Multer → @fastify/multipart, Helmet → @fastify/helmet. **OPTIMAL-SETUP.md aktualisiert:** Executive Summary von "✅ DONE" zu "⚠️ PARTIAL", Phase 1.5 für Fastify hinzugefügt, Status-Banner korrigiert.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |

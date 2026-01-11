@@ -4,6 +4,9 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+
+import { STORAGE_KEYS, MESSAGES } from './constants';
+
 import type {
   DeletionStatusData,
   DeletionQueueResponse,
@@ -11,7 +14,6 @@ import type {
   RootUsersResponse,
   JwtPayload,
 } from './types';
-import { STORAGE_KEYS, MESSAGES } from './constants';
 
 const apiClient = getApiClient();
 
@@ -89,7 +91,6 @@ export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
     return null;
   } catch {
     // No pending deletion - this is expected in most cases
-    console.info('[AccountSettings] ' + MESSAGES.noPendingDeletion);
     return null;
   }
 }

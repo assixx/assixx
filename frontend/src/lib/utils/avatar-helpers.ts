@@ -27,10 +27,10 @@ export function getAvatarColor(identifier: number | string | undefined | null): 
   }
 
   // If string, hash it for consistent color
-  const str = String(identifier);
+  // identifier is already a string at this point (number/null/undefined handled above)
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < identifier.length; i++) {
+    hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
   }
   return Math.abs(hash) % 10;
 }
@@ -64,7 +64,7 @@ export function getInitials(
   firstName: string | undefined | null,
   lastName: string | undefined | null,
 ): string {
-  const first = firstName?.charAt(0)?.toUpperCase() ?? '';
-  const last = lastName?.charAt(0)?.toUpperCase() ?? '';
+  const first = firstName?.charAt(0).toUpperCase() ?? '';
+  const last = lastName?.charAt(0).toUpperCase() ?? '';
   return first + last || '?';
 }

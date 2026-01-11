@@ -2,8 +2,11 @@
 // DOCUMENTS EXPLORER - API FUNCTIONS
 // =============================================================================
 
+import { browser } from '$app/environment';
+
 import { getApiClient } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
 import type {
   Document,
   ChatFolder,
@@ -12,7 +15,6 @@ import type {
   ApiResponse,
   CurrentUser,
 } from './types';
-import { browser } from '$app/environment';
 
 const apiClient = getApiClient();
 
@@ -232,7 +234,7 @@ export async function uploadDocument(
     });
 
     xhr.open('POST', '/api/v2/documents');
-    // eslint-disable-next-line security/detect-possible-timing-attacks -- False positive: checking token existence, not comparing secret values
+
     if (token !== null) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }

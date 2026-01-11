@@ -8,6 +8,7 @@
 <script lang="ts">
   import { showSuccessAlert, showErrorAlert, showConfirmWarning } from '$lib/utils/alerts';
   import { getApiClient } from '$lib/utils/api-client';
+
   import type { PageData } from './$types';
   import '../../../styles/storage-upgrade.css';
 
@@ -246,7 +247,7 @@
         <li>Chat-Dateianhänge</li>
         <li>Grundlegende Backups</li>
       </ul>
-      <button class="btn btn-secondary" disabled={isPlanCurrent('basic')}>
+      <button type="button" class="btn btn-secondary" disabled={isPlanCurrent('basic')}>
         {isPlanCurrent('basic') ? 'Aktueller Plan' : 'Downgrade auf 5 GB'}
       </button>
     </div>
@@ -267,9 +268,10 @@
         <li>Priorisierter Support</li>
       </ul>
       {#if isPlanCurrent('professional')}
-        <button class="btn btn-secondary" disabled>Aktueller Plan</button>
+        <button type="button" class="btn btn-secondary" disabled>Aktueller Plan</button>
       {:else}
         <button
+          type="button"
           class="btn btn-primary"
           onclick={() => upgradeStorage('professional')}
           disabled={isLoading}
@@ -296,9 +298,10 @@
         <li>Dedizierter Account Manager</li>
       </ul>
       {#if isPlanCurrent('enterprise')}
-        <button class="btn btn-secondary" disabled>Aktueller Plan</button>
+        <button type="button" class="btn btn-secondary" disabled>Aktueller Plan</button>
       {:else}
         <button
+          type="button"
           class="btn btn-primary"
           onclick={() => upgradeStorage('enterprise')}
           disabled={isLoading}
@@ -319,7 +322,7 @@
         Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles
         Angebot.
       </p>
-      <button class="btn btn-primary" onclick={contactSales}>
+      <button type="button" class="btn btn-primary" onclick={contactSales}>
         <i class="fas fa-phone"></i>
         Vertrieb kontaktieren
       </button>

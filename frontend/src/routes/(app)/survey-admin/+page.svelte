@@ -6,12 +6,13 @@
    * Level 3 SSR: All data via $derived from SSR props, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import type { PageData } from './$types';
+
   import '../../../styles/survey-admin.css';
-  import { surveyAdminState } from './_lib/state.svelte';
   import { showErrorAlert } from '$lib/utils';
-  import { questionTypeNeedsOptions, getTextFromBuffer, toBool } from './_lib/utils';
-  import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
+
+  // Extracted Components
+  import ActiveSurveyCard from './_lib/ActiveSurveyCard.svelte';
+  import DraftSurveyCard from './_lib/DraftSurveyCard.svelte';
   import {
     getSurveyId,
     getAssignmentInfoWithData,
@@ -22,11 +23,12 @@
     saveSurveyWithInvalidate,
     type FormState,
   } from './_lib/handlers';
-
-  // Extracted Components
+  import { surveyAdminState } from './_lib/state.svelte';
   import SurveyFormModal from './_lib/SurveyFormModal.svelte';
-  import ActiveSurveyCard from './_lib/ActiveSurveyCard.svelte';
-  import DraftSurveyCard from './_lib/DraftSurveyCard.svelte';
+  import { questionTypeNeedsOptions, getTextFromBuffer, toBool } from './_lib/utils';
+
+  import type { PageData } from './$types';
+  import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -35,11 +37,11 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data as derived - updates automatically when invalidateAll() is called
-  const surveys = $derived<Survey[]>(data?.surveys ?? []);
-  const templates = $derived<SurveyTemplate[]>(data?.templates ?? []);
-  const departments = $derived<Department[]>(data?.departments ?? []);
-  const teams = $derived<Team[]>(data?.teams ?? []);
-  const areas = $derived<Area[]>(data?.areas ?? []);
+  const surveys = $derived<Survey[]>(data.surveys);
+  const templates = $derived<SurveyTemplate[]>(data.templates);
+  const departments = $derived<Department[]>(data.departments);
+  const teams = $derived<Team[]>(data.teams);
+  const areas = $derived<Area[]>(data.areas);
 
   // Derived computed values
   const activeSurveys = $derived(surveys.filter((s) => s.status === 'active'));
@@ -62,7 +64,7 @@
   let formSelectedDepartments = $state<number[]>([]);
   let formSelectedTeams = $state<number[]>([]);
   let formQuestions = $state<
-    Array<{ id: string; text: string; type: QuestionType; isOptional: boolean; options: string[] }>
+    { id: string; text: string; type: QuestionType; isOptional: boolean; options: string[] }[]
   >([]);
   let assignmentDisplayText = $state('Ganze Firma');
 
@@ -229,7 +231,7 @@
     formTitle = template.name;
     formDescription = template.description;
 
-    if (template.questions !== undefined && template.questions.length > 0) {
+    if (template.questions.length > 0) {
       formQuestions = template.questions.map((q) => {
         const qId = `question_${surveyAdminState.incrementQuestionCounter()}`;
         return {
@@ -279,7 +281,8 @@
               assignmentInfo={getAssignmentInfoWithData(survey, departments, teams, areas)}
               onedit={handleEditSurvey}
               onviewresults={handleViewResults}
-              ondelete={(id) => handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+              ondelete={(id: number | string) =>
+                handleDeleteSurveyWithInvalidate(id, invalidateAll)}
             />
           {/each}
         </div>
@@ -303,7 +306,8 @@
                 {survey}
                 surveyId={getSurveyId(survey)}
                 onedit={handleEditSurvey}
-                ondelete={(id) => handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+                ondelete={(id: number | string) =>
+                  handleDeleteSurveyWithInvalidate(id, invalidateAll)}
               />
             {/each}
           </div>
@@ -327,8 +331,12 @@
                 class="card card--clickable"
                 role="button"
                 tabindex="0"
-                onclick={() => handleCreateFromTemplate(template.id)}
-                onkeydown={(e) => e.key === 'Enter' && handleCreateFromTemplate(template.id)}
+                onclick={() => {
+                  handleCreateFromTemplate(template.id);
+                }}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') handleCreateFromTemplate(template.id);
+                }}
               >
                 <h4 class="mb-2 font-semibold text-primary">{template.name}</h4>
                 <p class="text-sm leading-normal text-secondary">{template.description}</p>
@@ -341,7 +349,12 @@
   </div>
 </div>
 
-<button class="btn-float" aria-label="Neue Umfrage erstellen" onclick={handleOpenCreateModal}>
+<button
+  type="button"
+  class="btn-float"
+  aria-label="Neue Umfrage erstellen"
+  onclick={handleOpenCreateModal}
+>
   <i class="fas fa-plus"></i>
 </button>
 

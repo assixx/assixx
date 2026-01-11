@@ -65,6 +65,10 @@ export interface Attachment {
   uploadedBy: number;
   uploadedByName: string;
   uploadedAt: string;
+  /** Download URL (from documents service) */
+  downloadUrl: string;
+  /** Preview URL (from documents service) */
+  previewUrl?: string;
 }
 
 // ============================================================================
@@ -77,6 +81,8 @@ export interface PreviewAttachment {
   mimeType: string;
   fileSize: number;
   uploadedByName: string;
+  downloadUrl: string;
+  previewUrl?: string;
 }
 
 // ============================================================================
@@ -87,6 +93,7 @@ export interface CurrentUser {
   id: number;
   role: string;
   tenantId: number;
+  hasFullAccess: boolean;
 }
 
 // ============================================================================
@@ -97,8 +104,8 @@ export interface FullEntryResponse {
   success: boolean;
   data: {
     entry: DetailEntry;
-    comments: Comment[];
-    attachments: Attachment[];
+    comments?: Comment[];
+    attachments?: Attachment[];
   };
   error?: {
     message: string;

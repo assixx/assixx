@@ -46,10 +46,17 @@
     aria-labelledby="delete-modal-title"
     tabindex="-1"
     onclick={handleDeleteOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && oncloseDelete()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') oncloseDelete();
+    }}
   >
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="ds-modal ds-modal--sm" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="ds-modal ds-modal--sm"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="delete-modal-title">
           <i class="fas fa-trash-alt text-red-500 mr-2"></i>
@@ -87,10 +94,17 @@
     aria-labelledby="delete-confirm-title"
     tabindex="-1"
     onclick={handleDeleteConfirmOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && oncloseDeleteConfirm()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') oncloseDeleteConfirm();
+    }}
   >
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="confirm-modal confirm-modal--danger" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="confirm-modal confirm-modal--danger"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>

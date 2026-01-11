@@ -3,8 +3,15 @@
 // Pure functions for processing shift plan and rotation data
 // =============================================================================
 
-import type { Employee, ShiftDetailData, TeamMember, AvailabilityStatus } from './types';
-import { convertShiftTypeFromDB } from './utils';
+import { convertShiftTypeFromDB, getWeekStart, formatDate } from './utils';
+
+import type {
+  Employee,
+  ShiftDetailData,
+  TeamMember,
+  AvailabilityStatus,
+  RotationPatternType,
+} from './types';
 
 // =============================================================================
 // TEAM MEMBER CONVERSION
@@ -122,6 +129,7 @@ export interface RotationHistoryEntry {
   shiftDate: string;
   shiftType: string;
   userId: number;
+  patternId?: number;
 }
 
 // =============================================================================
@@ -152,16 +160,19 @@ export function processShiftPlanResponse(
     const dateKey = shift.date;
     const shiftType = shift.type.toLowerCase();
 
-    if (!weeklyShifts.has(dateKey)) {
-      weeklyShifts.set(dateKey, new Map());
+    let dayShifts = weeklyShifts.get(dateKey);
+    if (dayShifts === undefined) {
+      dayShifts = new Map();
+      weeklyShifts.set(dateKey, dayShifts);
     }
 
-    const dayShifts = weeklyShifts.get(dateKey)!;
-    if (!dayShifts.has(shiftType)) {
-      dayShifts.set(shiftType, []);
+    let shiftEmployees = dayShifts.get(shiftType);
+    if (shiftEmployees === undefined) {
+      shiftEmployees = [];
+      dayShifts.set(shiftType, shiftEmployees);
     }
 
-    dayShifts.get(shiftType)!.push(shift.userId);
+    shiftEmployees.push(shift.userId);
 
     // Store shift details
     if (shift.user !== undefined) {
@@ -191,6 +202,60 @@ export function processShiftPlanResponse(
 // =============================================================================
 
 /**
+ * Normalize date format from API (removes time portion if present)
+ */
+function normalizeDateKey(shiftDate: string): string {
+  if (shiftDate.includes('T')) {
+    return shiftDate.split('T')[0] ?? shiftDate;
+  }
+  return shiftDate;
+}
+
+/**
+ * Ensure a day entry exists in weeklyShifts map and return shift employees array
+ */
+function ensureShiftEntry(
+  weeklyShifts: Map<string, Map<string, number[]>>,
+  dateKey: string,
+  shiftType: string,
+): number[] {
+  let dayShifts = weeklyShifts.get(dateKey);
+  if (dayShifts === undefined) {
+    dayShifts = new Map();
+    weeklyShifts.set(dateKey, dayShifts);
+  }
+
+  let shiftEmployees = dayShifts.get(shiftType);
+  if (shiftEmployees === undefined) {
+    shiftEmployees = [];
+    dayShifts.set(shiftType, shiftEmployees);
+  }
+
+  return shiftEmployees;
+}
+
+/**
+ * Create shift detail data for an employee
+ */
+function createShiftDetail(
+  employeeId: number,
+  dateKey: string,
+  shiftType: string,
+  employees: Employee[],
+): ShiftDetailData {
+  const employee = employees.find((e) => e.id === employeeId);
+  return {
+    employeeId,
+    firstName: employee?.firstName ?? '',
+    lastName: employee?.lastName ?? '',
+    username: employee?.username ?? '',
+    date: dateKey,
+    shiftType,
+    isRotationShift: true,
+  };
+}
+
+/**
  * Process rotation history and merge into existing weekly shifts
  */
 export function processRotationHistory(
@@ -205,10 +270,7 @@ export function processRotationHistory(
   const rotationHistoryMap = new Map<string, number>();
 
   for (const entry of rotationHistory) {
-    // Normalize date format: API returns "2025-12-08T00:00:00.000Z", we need "2025-12-08"
-    const dateKey = entry.shiftDate.includes('T')
-      ? (entry.shiftDate.split('T')[0] ?? entry.shiftDate)
-      : entry.shiftDate;
+    const dateKey = normalizeDateKey(entry.shiftDate);
     const shiftType = convertShiftTypeFromDB(entry.shiftType);
     const employeeId = entry.userId;
 
@@ -217,30 +279,14 @@ export function processRotationHistory(
     rotationHistoryMap.set(historyKey, entry.id);
 
     // Add to weeklyShifts (MERGE, not replace!)
-    if (!weeklyShifts.has(dateKey)) {
-      weeklyShifts.set(dateKey, new Map());
-    }
-    const dayShifts = weeklyShifts.get(dateKey)!;
-    if (!dayShifts.has(shiftType)) {
-      dayShifts.set(shiftType, []);
-    }
-    const shiftEmployees = dayShifts.get(shiftType)!;
+    const shiftEmployees = ensureShiftEntry(weeklyShifts, dateKey, shiftType);
     if (!shiftEmployees.includes(employeeId)) {
       shiftEmployees.push(employeeId);
     }
 
     // Add to shiftDetails for employee display info
-    const employee = employees.find((e) => e.id === employeeId);
     const detailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
-    shiftDetails.set(detailKey, {
-      employeeId,
-      firstName: employee?.firstName ?? '',
-      lastName: employee?.lastName ?? '',
-      username: employee?.username ?? '',
-      date: dateKey,
-      shiftType,
-      isRotationShift: true,
-    });
+    shiftDetails.set(detailKey, createShiftDetail(employeeId, dateKey, shiftType, employees));
   }
 
   return {
@@ -274,29 +320,92 @@ export interface ShiftPlanSaveData {
   shifts: ShiftSaveData[];
 }
 
+/** Default shift times if not configured */
+const DEFAULT_SHIFT_TIMES = { start: '06:00', end: '14:00' } as const;
+
 /**
  * Build shift assignments from weeklyShifts Map for saving
  */
 export function buildShiftSaveData(
   weeklyShifts: Map<string, Map<string, number[]>>,
-  shiftTimes: Record<string, { start: string; end: string }>,
+  shiftTimes: Partial<Record<string, { start: string; end: string }>>,
 ): ShiftSaveData[] {
   const shifts: ShiftSaveData[] = [];
 
   for (const [dateKey, dayShifts] of weeklyShifts.entries()) {
     for (const [shiftType, employeeIds] of dayShifts.entries()) {
-      const shiftTime = shiftTimes[shiftType];
+      // shiftType comes from our own Map iteration, not user input - safe access
+
+      const times = shiftTimes[shiftType] ?? DEFAULT_SHIFT_TIMES;
       for (const userId of employeeIds) {
         shifts.push({
           userId,
           date: dateKey,
           type: shiftType,
-          startTime: shiftTime?.start ?? '06:00',
-          endTime: shiftTime?.end ?? '14:00',
+          startTime: times.start,
+          endTime: times.end,
         });
       }
     }
   }
 
   return shifts;
+}
+
+// =============================================================================
+// WEEK DATE CALCULATION
+// =============================================================================
+
+export interface WeekDateBounds {
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * Calculate week start and end dates from a reference date
+ */
+export function getWeekDateBounds(currentWeek: Date): WeekDateBounds {
+  const weekStart = getWeekStart(currentWeek);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  return {
+    startDate: formatDate(weekStart),
+    endDate: formatDate(weekEnd),
+  };
+}
+
+// =============================================================================
+// PATTERN LOADING FROM HISTORY
+// =============================================================================
+
+export interface PatternInfo {
+  patternId: number | null;
+  patternType: RotationPatternType | null;
+}
+
+/**
+ * Load pattern type from rotation history if exists
+ */
+export async function loadPatternFromHistory(
+  rotationHistory: RotationHistoryEntry[],
+  fetchPatternById: (id: number) => Promise<{ id: number; patternType: string } | null>,
+): Promise<PatternInfo> {
+  if (rotationHistory.length === 0) {
+    return { patternId: null, patternType: null };
+  }
+
+  const firstEntry = rotationHistory[0];
+  if (!('patternId' in firstEntry) || firstEntry.patternId === undefined) {
+    return { patternId: null, patternType: null };
+  }
+
+  const pattern = await fetchPatternById(firstEntry.patternId);
+  if (pattern === null) {
+    return { patternId: null, patternType: null };
+  }
+
+  return {
+    patternId: pattern.id,
+    patternType: pattern.patternType as PatternInfo['patternType'],
+  };
 }

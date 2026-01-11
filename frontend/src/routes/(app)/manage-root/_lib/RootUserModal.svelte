@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { FormIsActiveStatus } from './types';
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
+
+  import type { FormIsActiveStatus } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -27,30 +28,10 @@
     onValidatePasswords: () => void;
   }
 
-  /* eslint-disable prefer-const -- $props() with $bindable() requires let for all props */
-  let {
-    show,
-    isEditMode,
-    modalTitle,
-    firstName = $bindable(),
-    lastName = $bindable(),
-    email = $bindable(),
-    emailConfirm = $bindable(),
-    password = $bindable(),
-    passwordConfirm = $bindable(),
-    employeeNumber = $bindable(),
-    position = $bindable(),
-    notes = $bindable(),
-    isActive = $bindable(),
-    emailError,
-    passwordError,
-    submitting,
-    onclose,
-    onsubmit,
-    onValidateEmails,
-    onValidatePasswords,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { show, isEditMode, modalTitle, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  /* eslint-enable */
 
   // Local dropdown and visibility state
   let positionDropdownOpen = $state(false);
@@ -102,7 +83,9 @@
         }
       };
       document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
+      return () => {
+        document.removeEventListener('click', handleClick);
+      };
     }
   });
 </script>
@@ -116,10 +99,19 @@
     aria-labelledby="root-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-    <form id="root-form" class="ds-modal" onclick={(e) => e.stopPropagation()} {onsubmit}>
+    <form
+      id="root-form"
+      class="ds-modal"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      {onsubmit}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="root-modal-title">{modalTitle}</h3>
         <button
@@ -311,13 +303,20 @@
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{position || MESSAGES.SELECT_POSITION}</span>
+              <span>{position !== '' ? position : MESSAGES.SELECT_POSITION}</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown__menu" class:active={positionDropdownOpen}>
               {#each POSITION_OPTIONS as pos (pos)}
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectPosition(pos)}>{pos}</div>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectPosition(pos);
+                  }}
+                >
+                  {pos}
+                </div>
               {/each}
             </div>
           </div>
@@ -348,15 +347,30 @@
               </div>
               <div class="dropdown__menu" class:active={statusDropdownOpen}>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(1)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(1);
+                  }}
+                >
                   <span class="badge badge--success">Aktiv</span>
                 </div>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(0)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(0);
+                  }}
+                >
                   <span class="badge badge--warning">Inaktiv</span>
                 </div>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(3)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(3);
+                  }}
+                >
                   <span class="badge badge--error">Archiviert</span>
                 </div>
               </div>

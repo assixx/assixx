@@ -3,7 +3,6 @@
  * @module root-dashboard/_lib/utils
  */
 
-import type { ActivityLog } from './types';
 import {
   ACTION_LABELS,
   ACTION_BADGE_CLASSES,
@@ -12,12 +11,14 @@ import {
   EMPLOYEE_NUMBER,
 } from './constants';
 
+import type { ActivityLog } from './types';
+
 /**
  * Get readable action label
  * @param action - Action type
  */
 export function getActionLabel(action: string): string {
-  return ACTION_LABELS[action] ?? action;
+  return Object.hasOwn(ACTION_LABELS, action) ? ACTION_LABELS[action] : action;
 }
 
 /**
@@ -25,7 +26,7 @@ export function getActionLabel(action: string): string {
  * @param action - Action type
  */
 export function getActionBadgeClass(action: string): string {
-  return ACTION_BADGE_CLASSES[action] ?? 'info';
+  return Object.hasOwn(ACTION_BADGE_CLASSES, action) ? ACTION_BADGE_CLASSES[action] : 'info';
 }
 
 /**
@@ -33,7 +34,7 @@ export function getActionBadgeClass(action: string): string {
  * @param role - User role
  */
 export function getRoleLabel(role: string): string {
-  return ROLE_LABELS[role] ?? role;
+  return Object.hasOwn(ROLE_LABELS, role) ? ROLE_LABELS[role] : role;
 }
 
 /**
@@ -41,7 +42,10 @@ export function getRoleLabel(role: string): string {
  * @param role - User role
  */
 export function getRoleBadgeClass(role: string): string {
-  return ROLE_BADGE_CLASSES[role.toLowerCase()] ?? 'info';
+  const normalizedRole = role.toLowerCase();
+  return Object.hasOwn(ROLE_BADGE_CLASSES, normalizedRole)
+    ? ROLE_BADGE_CLASSES[normalizedRole]
+    : 'info';
 }
 
 /**

@@ -2,7 +2,8 @@
 // MANAGE ROOT - UTILITY FUNCTIONS
 // =============================================================================
 
-import type { RootUser, IsActiveStatus, FormIsActiveStatus, PasswordStrengthResult } from './types';
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -10,6 +11,8 @@ import {
   PASSWORD_CRACK_TIMES,
   FORM_DEFAULTS,
 } from './constants';
+
+import type { RootUser, IsActiveStatus, FormIsActiveStatus, PasswordStrengthResult } from './types';
 
 // =============================================================================
 // STATUS BADGE HELPERS
@@ -21,7 +24,7 @@ import {
  * @returns CSS class for badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
@@ -30,7 +33,7 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  * @returns Human-readable status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -43,7 +46,7 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
  * @returns Formatted date string (de-DE locale)
  */
 export function formatDate(dateStr: string): string {
-  if (!dateStr) return '-';
+  if (dateStr === '') return '-';
   try {
     return new Date(dateStr).toLocaleDateString('de-DE');
   } catch {
@@ -69,17 +72,23 @@ export function getAvatarColor(id: number): number {
 // =============================================================================
 
 /**
- * Highlight search term in text
- * Wraps matches in <strong> tags for display
- * @param text - Text to search in
+ * Highlight search term in text with <strong> tags
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param query - Search query
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
@@ -92,17 +101,22 @@ export function highlightMatch(text: string, query: string): string {
  * @returns Password strength result
  */
 export function calculatePasswordStrength(password: string): PasswordStrengthResult {
-  if (!password) {
+  if (password === '') {
     return { score: -1, label: '', time: '' };
   }
 
   let score = 0;
+
+  // Length checks
   if (password.length >= 8) score++;
   if (password.length >= 12) score++;
+
+  // Character variety checks
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
   if (/\d/.test(password)) score++;
   if (/[!@#$%^&*]/.test(password)) score++;
 
+  // Cap score at 4
   const finalScore = Math.min(score, 4);
 
   return {
@@ -166,7 +180,7 @@ export function getDefaultFormValues(): typeof FORM_DEFAULTS {
  * @returns True if emails match or confirm is empty
  */
 export function validateEmailMatch(email: string, emailConfirm: string): boolean {
-  if (!emailConfirm) return true;
+  if (emailConfirm === '') return true;
   return email === emailConfirm;
 }
 
@@ -177,6 +191,6 @@ export function validateEmailMatch(email: string, emailConfirm: string): boolean
  * @returns True if passwords match or confirm is empty
  */
 export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
-  if (!passwordConfirm) return true;
+  if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }

@@ -7,6 +7,7 @@
     canUnshareSuggestion,
     canArchiveSuggestion,
   } from './utils';
+
   import type { KvpSuggestion } from './types';
 
   interface Props {
@@ -33,8 +34,12 @@
             class="attachment-item"
             role="button"
             tabindex="0"
-            onclick={() => kvpDetailState.openPreviewModal(attachment)}
-            onkeydown={(e) => e.key === 'Enter' && kvpDetailState.openPreviewModal(attachment)}
+            onclick={() => {
+              kvpDetailState.openPreviewModal(attachment);
+            }}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') kvpDetailState.openPreviewModal(attachment);
+            }}
           >
             <i class="fas {getFileIconClass(attachment.fileType)}"></i>
             <div class="flex-1 truncate">
@@ -56,19 +61,19 @@
       </h3>
       <div class="action-buttons">
         {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole)}
-          <button class="btn btn-edit" onclick={onopensharemodal}>
+          <button type="button" class="btn btn-edit" onclick={onopensharemodal}>
             <i class="fas fa-share-alt"></i>
             Teilen
           </button>
         {/if}
         {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id)}
-          <button class="btn btn-secondary" onclick={onunshare}>
+          <button type="button" class="btn btn-secondary" onclick={onunshare}>
             <i class="fas fa-undo"></i>
             Teilen rueckgaengig
           </button>
         {/if}
         {#if canArchiveSuggestion(kvpDetailState.effectiveRole)}
-          <button class="btn btn-light" onclick={onarchive}>
+          <button type="button" class="btn btn-light" onclick={onarchive}>
             <i class="fas fa-archive"></i>
             Archivieren
           </button>

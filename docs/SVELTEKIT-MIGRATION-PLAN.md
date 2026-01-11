@@ -1,6 +1,6 @@
 # SvelteKit Migration Plan
 
-additional context:  docs/LONG-FILES-RANKING.md and frontend-svelte/docs/SSR-MIGRATION-STRATEGY.md read this before reading this
+additional context: docs/LONG-FILES-RANKING.md and frontend-svelte/docs/SSR-MIGRATION-STRATEGY.md read this before reading this
 
 > **Phase 3 des OPTIMAL-SETUP.md Roadmap**
 > Erstellt: 2025-12-18 | Aktualisiert: 2026-01-06 | Branch: feature/nestjs-migration
@@ -54,38 +54,39 @@ Gesamtfortschritt:                    ██████████████
 **Status:** ALLE SEITEN MIGRIERT! 34/34 Seiten. Frontend-Migration 100% ABGESCHLOSSEN!
 
 ### Fertige Seiten:
-| Seite | Route | Status | Notes |
-|-------|-------|--------|-------|
-| Landing Page | `/` | ✅ 100% | |
-| Login | `/login` | ✅ 100% | Standalone |
-| Signup | `/signup` | ✅ 100% | Standalone |
-| Dashboard Root | `/root-dashboard` | ✅ 100% | (app) layout |
-| Dashboard Admin | `/admin-dashboard` | ✅ 100% | (app) layout, Blackboard Widget, RoleSwitch fixes |
-| Blackboard | `/blackboard` | ✅ 100% | (app) layout |
-| Blackboard Detail | `/blackboard/[uuid]` | ✅ 100% | (app) layout |
-| Manage Root | `/manage-root` | ✅ 100% | (app) layout |
-| Manage Admins | `/manage-admins` | ✅ 100% | (app) layout |
-| Manage Areas | `/manage-areas` | ✅ 100% | (app) layout |
-| Manage Departments | `/manage-departments` | ✅ 100% | (app) layout |
-| Chat | `/chat` | ✅ 100% | (app) layout |
-| Features | `/features` | ✅ 100% | (app) layout |
-| Logs | `/logs` | ✅ 100% | (app) layout |
-| Root Profile | `/root-profile` | ✅ 100% | (app) layout |
-| Account Settings | `/account-settings` | ✅ 100% | (app) layout |
-| Tenant Deletion Status | `/tenant-deletion-status` | ✅ 100% | (app) layout |
-| Tenant Deletion Approve | `/tenant-deletion-approve?queueId=X` | ✅ 100% | **Standalone** (kein Header/Sidebar) |
-| Documents Explorer | `/documents-explorer` | ✅ 100% | (app) layout |
-| Calendar | `/calendar` | ✅ 100% | (app) layout, @event-calendar/core v5.x |
-| KVP | `/kvp` | ✅ 100% | (app) layout, _lib/ Pattern |
-| KVP-Detail | `/kvp-detail` | ✅ 100% | (app) layout, _lib/ Pattern |
-| Survey-Admin | `/survey-admin` | ✅ 100% | (app) layout, Survey Management |
-| Survey-Employee | `/survey-employee` | ✅ 100% | (app) layout, _lib/ Pattern |
-| Shifts | `/shifts` | ✅ 100% | (app) layout, _lib/ Pattern |
-| Admin Profile | `/admin-profile` | ✅ 100% | (app) layout, readonly fields, tenant companyName |
-| Employee Dashboard | `/employee-dashboard` | ✅ 100% | (app) layout, Welcome Hero, Sakura Petals, SSR |
-| Employee Profile | `/employee-profile` | ✅ 100% | (app) layout, readonly fields, departmentName |
-| Rate Limit | `/rate-limit` | ✅ 100% | **Standalone** (kein Header/Sidebar), Countdown Timer |
-| Storage Upgrade | `/storage-upgrade` | ✅ 100% | (app) layout, Plan-Übersicht, SSR |
+
+| Seite                   | Route                                | Status  | Notes                                                 |
+| ----------------------- | ------------------------------------ | ------- | ----------------------------------------------------- |
+| Landing Page            | `/`                                  | ✅ 100% |                                                       |
+| Login                   | `/login`                             | ✅ 100% | Standalone                                            |
+| Signup                  | `/signup`                            | ✅ 100% | Standalone                                            |
+| Dashboard Root          | `/root-dashboard`                    | ✅ 100% | (app) layout                                          |
+| Dashboard Admin         | `/admin-dashboard`                   | ✅ 100% | (app) layout, Blackboard Widget, RoleSwitch fixes     |
+| Blackboard              | `/blackboard`                        | ✅ 100% | (app) layout                                          |
+| Blackboard Detail       | `/blackboard/[uuid]`                 | ✅ 100% | (app) layout                                          |
+| Manage Root             | `/manage-root`                       | ✅ 100% | (app) layout                                          |
+| Manage Admins           | `/manage-admins`                     | ✅ 100% | (app) layout                                          |
+| Manage Areas            | `/manage-areas`                      | ✅ 100% | (app) layout                                          |
+| Manage Departments      | `/manage-departments`                | ✅ 100% | (app) layout                                          |
+| Chat                    | `/chat`                              | ✅ 100% | (app) layout                                          |
+| Features                | `/features`                          | ✅ 100% | (app) layout                                          |
+| Logs                    | `/logs`                              | ✅ 100% | (app) layout                                          |
+| Root Profile            | `/root-profile`                      | ✅ 100% | (app) layout                                          |
+| Account Settings        | `/account-settings`                  | ✅ 100% | (app) layout                                          |
+| Tenant Deletion Status  | `/tenant-deletion-status`            | ✅ 100% | (app) layout                                          |
+| Tenant Deletion Approve | `/tenant-deletion-approve?queueId=X` | ✅ 100% | **Standalone** (kein Header/Sidebar)                  |
+| Documents Explorer      | `/documents-explorer`                | ✅ 100% | (app) layout                                          |
+| Calendar                | `/calendar`                          | ✅ 100% | (app) layout, @event-calendar/core v5.x               |
+| KVP                     | `/kvp`                               | ✅ 100% | (app) layout, \_lib/ Pattern                          |
+| KVP-Detail              | `/kvp-detail`                        | ✅ 100% | (app) layout, \_lib/ Pattern                          |
+| Survey-Admin            | `/survey-admin`                      | ✅ 100% | (app) layout, Survey Management                       |
+| Survey-Employee         | `/survey-employee`                   | ✅ 100% | (app) layout, \_lib/ Pattern                          |
+| Shifts                  | `/shifts`                            | ✅ 100% | (app) layout, \_lib/ Pattern                          |
+| Admin Profile           | `/admin-profile`                     | ✅ 100% | (app) layout, readonly fields, tenant companyName     |
+| Employee Dashboard      | `/employee-dashboard`                | ✅ 100% | (app) layout, Welcome Hero, Sakura Petals, SSR        |
+| Employee Profile        | `/employee-profile`                  | ✅ 100% | (app) layout, readonly fields, departmentName         |
+| Rate Limit              | `/rate-limit`                        | ✅ 100% | **Standalone** (kein Header/Sidebar), Countdown Timer |
+| Storage Upgrade         | `/storage-upgrade`                   | ✅ 100% | (app) layout, Plan-Übersicht, SSR                     |
 
 ---
 
@@ -95,14 +96,14 @@ Migration des Assixx Frontends von **Vanilla TypeScript + Vite Multi-Page** zu *
 
 ### Aktuelle Architektur
 
-| Komponente | Aktuell | Ziel |
-|------------|---------|------|
-| Frontend Framework | Vanilla TS + Vite MPA | SvelteKit 5 |
-| Styling | Tailwind v4 + CSS Variables | Tailwind v4 + Svelte Scoped |
-| API Client | fetch + api-client.ts | api-client.ts (REST) |
-| Routing | HTML Files (34 Seiten) | SvelteKit File-based Routing |
-| Components | Storybook JS (25 Stories) | Svelte Components |
-| Backend | NestJS + Fastify (Port 3000) | Unverändert |
+| Komponente         | Aktuell                      | Ziel                         |
+| ------------------ | ---------------------------- | ---------------------------- |
+| Frontend Framework | Vanilla TS + Vite MPA        | SvelteKit 5                  |
+| Styling            | Tailwind v4 + CSS Variables  | Tailwind v4 + Svelte Scoped  |
+| API Client         | fetch + api-client.ts        | api-client.ts (REST)         |
+| Routing            | HTML Files (34 Seiten)       | SvelteKit File-based Routing |
+| Components         | Storybook JS (25 Stories)    | Svelte Components            |
+| Backend            | NestJS + Fastify (Port 3000) | Unverändert                  |
 
 ---
 
@@ -112,17 +113,18 @@ Migration des Assixx Frontends von **Vanilla TypeScript + Vite Multi-Page** zu *
 
 > **WICHTIG:** Das bestehende `frontend/` Verzeichnis ist **PERFEKT** und die **EINZIGE Referenz** für das neue SvelteKit Frontend.
 
-| Aspekt | Regel |
-|--------|-------|
-| **Design** | 1:1 identisch zum Legacy Frontend - **KEINE Abweichungen!** |
-| **CSS** | Alle Styles aus `frontend/src/styles/` übernehmen |
-| **HTML Struktur** | Exakt die gleichen Klassen und Elemente |
-| **Variablen** | **ALLE Variablen müssen exakt übereinstimmen** |
-| **Design System** | **ALLE Design System Komponenten nutzen** |
-| **Funktionalität** | Gleiche Features, gleiche UX |
-| **Keine Eigenkreationen** | Keine "Verbesserungen" ohne explizite Anfrage |
+| Aspekt                    | Regel                                                       |
+| ------------------------- | ----------------------------------------------------------- |
+| **Design**                | 1:1 identisch zum Legacy Frontend - **KEINE Abweichungen!** |
+| **CSS**                   | Alle Styles aus `frontend/src/styles/` übernehmen           |
+| **HTML Struktur**         | Exakt die gleichen Klassen und Elemente                     |
+| **Variablen**             | **ALLE Variablen müssen exakt übereinstimmen**              |
+| **Design System**         | **ALLE Design System Komponenten nutzen**                   |
+| **Funktionalität**        | Gleiche Features, gleiche UX                                |
+| **Keine Eigenkreationen** | Keine "Verbesserungen" ohne explizite Anfrage               |
 
 **Workflow für jede neue Seite:**
+
 1. Legacy HTML lesen (`frontend/src/pages/*.html`)
 2. Legacy CSS lesen (`frontend/src/styles/*.css`)
 3. Legacy JS/TS lesen (`frontend/src/scripts/**/*.ts`)
@@ -139,11 +141,11 @@ Migration des Assixx Frontends von **Vanilla TypeScript + Vite Multi-Page** zu *
 
 #### TypeScript Support nach Dateiendung
 
-| Dateiendung | TypeScript | Runes | Einschränkungen |
-|-------------|------------|-------|-----------------|
-| `*.ts` | ✅ Voll | ❌ Nein | Keine |
-| `*.svelte.ts` | ✅ Voll | ✅ Ja | `$state` Export nur als Objekt |
-| `*.svelte` + `<script lang="ts">` | ✅ mit vitePreprocess | ✅ Ja | Keine Enums, keine Access Modifiers |
+| Dateiendung                       | TypeScript            | Runes   | Einschränkungen                     |
+| --------------------------------- | --------------------- | ------- | ----------------------------------- |
+| `*.ts`                            | ✅ Voll               | ❌ Nein | Keine                               |
+| `*.svelte.ts`                     | ✅ Voll               | ✅ Ja   | `$state` Export nur als Objekt      |
+| `*.svelte` + `<script lang="ts">` | ✅ mit vitePreprocess | ✅ Ja   | Keine Enums, keine Access Modifiers |
 
 #### Was in `.svelte` Dateien funktioniert (MIT vitePreprocess):
 
@@ -215,6 +217,7 @@ _lib/
 ```
 
 Dann in `+page.svelte` nur importieren:
+
 ```svelte
 <script lang="ts">
   import type { User } from './_lib/types';
@@ -228,6 +231,7 @@ Dann in `+page.svelte` nur importieren:
 > **⚠️ WICHTIG:** Diese Pattern werden oft vergessen und führen zu nicht-funktionierenden UI-Komponenten!
 
 **Modal Active State:**
+
 ```svelte
 <!-- Modal wird nur angezeigt wenn showModal = true -->
 <div class="modal-overlay" class:modal-overlay--active={showModal}>
@@ -251,6 +255,7 @@ Dann in `+page.svelte` nur importieren:
 ```
 
 **Dropdown Active State:**
+
 ```svelte
 <!-- Dropdown öffnet/schließt mit active class -->
 <div class="dropdown" id="my-dropdown">
@@ -296,6 +301,7 @@ Dann in `+page.svelte` nur importieren:
 ```
 
 **Checkliste für jede neue Seite:**
+
 - [ ] Modal hat `class:modal-overlay--active={showModal}`
 - [ ] Modal Overlay hat `onclick` für Close
 - [ ] Modal Content hat `onclick|stopPropagation`
@@ -308,24 +314,30 @@ Dann in `+page.svelte` nur importieren:
 
 > **AUSNAHME:** Wenn das Legacy Frontend einen offensichtlichen **UX-Bug** hat, darf dieser gefixt werden.
 
-| Situation | Aktion |
-|-----------|--------|
-| **UX-Bug im Legacy** | Bug fixen, dann 1:1 übernehmen |
+| Situation                   | Aktion                              |
+| --------------------------- | ----------------------------------- |
+| **UX-Bug im Legacy**        | Bug fixen, dann 1:1 übernehmen      |
 | **Fehlende Styles/Klassen** | Im Legacy ergänzen, dann übernehmen |
-| **Sicherheitslücke** | Sofort fixen in beiden Frontends |
+| **Sicherheitslücke**        | Sofort fixen in beiden Frontends    |
 
 **Beispiel gefunden (2025-12-19):**
+
 ```html
 <!-- Legacy Bug: Fehlermeldungen ohne u-hidden -->
-<p id="phoneError" class="form-field__message">...</p>        <!-- ❌ War sichtbar -->
-<p id="passwordError" class="form-field__message">...</p>     <!-- ❌ War sichtbar -->
+<p id="phoneError" class="form-field__message">...</p>
+<!-- ❌ War sichtbar -->
+<p id="passwordError" class="form-field__message">...</p>
+<!-- ❌ War sichtbar -->
 
 <!-- Fix: Konsistent wie emailMatchError -->
-<p id="phoneError" class="form-field__message form-field__message--error u-hidden">...</p>    <!-- ✅ -->
-<p id="passwordError" class="form-field__message form-field__message--error u-hidden">...</p> <!-- ✅ -->
+<p id="phoneError" class="form-field__message form-field__message--error u-hidden">...</p>
+<!-- ✅ -->
+<p id="passwordError" class="form-field__message form-field__message--error u-hidden">...</p>
+<!-- ✅ -->
 ```
 
 **Workflow bei Legacy-Bug:**
+
 1. Bug im Legacy identifizieren
 2. Bug im Legacy fixen
 3. Svelte-Version an gefixtes Legacy anpassen
@@ -336,18 +348,18 @@ Dann in `+page.svelte` nur importieren:
 
 #### Schritt-für-Schritt Vorgehensweise:
 
-| Schritt | Aktion | Warum |
-|---------|--------|-------|
-| **1. HTML lesen** | `frontend/src/pages/*.html` vollständig lesen | Struktur, IDs, Klassen verstehen |
-| **2. CSS lesen** | `frontend/src/styles/*.css` lesen | Spezielle Styles identifizieren (meist: Design System = keine) |
-| **3. TS-Dateien lesen** | `frontend/src/scripts/**/*.ts` lesen | Types, API-Calls, Event Handler, State |
-| **4. Types extrahieren** | JSDoc `@typedef` für alle Interfaces | Svelte 5 kann kein `interface` in `.svelte` |
-| **5. State definieren** | `$state()` für alle Variablen | Genau gleiche Namen wie Legacy |
-| **6. Derived definieren** | `$derived()` für gefilterte Listen | Ersetzt computed/filter Funktionen |
-| **7. API-Funktionen** | fetch-Calls 1:1 übernehmen | Gleiche Endpoints, gleiche Response-Handling |
-| **8. HTML Template** | Legacy HTML → Svelte Template | class:active für Toggling |
-| **9. Modals** | Alle Modals mit svelte-ignore | Modal-Pattern ist Standard |
-| **10. Dropdowns** | Custom Dropdowns mit $effect | Outside-Click Handler |
+| Schritt                   | Aktion                                        | Warum                                                          |
+| ------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| **1. HTML lesen**         | `frontend/src/pages/*.html` vollständig lesen | Struktur, IDs, Klassen verstehen                               |
+| **2. CSS lesen**          | `frontend/src/styles/*.css` lesen             | Spezielle Styles identifizieren (meist: Design System = keine) |
+| **3. TS-Dateien lesen**   | `frontend/src/scripts/**/*.ts` lesen          | Types, API-Calls, Event Handler, State                         |
+| **4. Types extrahieren**  | JSDoc `@typedef` für alle Interfaces          | Svelte 5 kann kein `interface` in `.svelte`                    |
+| **5. State definieren**   | `$state()` für alle Variablen                 | Genau gleiche Namen wie Legacy                                 |
+| **6. Derived definieren** | `$derived()` für gefilterte Listen            | Ersetzt computed/filter Funktionen                             |
+| **7. API-Funktionen**     | fetch-Calls 1:1 übernehmen                    | Gleiche Endpoints, gleiche Response-Handling                   |
+| **8. HTML Template**      | Legacy HTML → Svelte Template                 | class:active für Toggling                                      |
+| **9. Modals**             | Alle Modals mit svelte-ignore                 | Modal-Pattern ist Standard                                     |
+| **10. Dropdowns**         | Custom Dropdowns mit $effect                  | Outside-Click Handler                                          |
 
 #### Worauf achten:
 
@@ -390,11 +402,11 @@ Dann in `+page.svelte` nur importieren:
 
 #### Erfolgsquote:
 
-| Seite | One-Shot? | Nacharbeit |
-|-------|-----------|------------|
-| manage-root | ✅ Ja | Nur: unused vars entfernt |
-| manage-admins | ✅ Ja | Nur: positionMap type, a11y-ignores |
-| manage-areas | ✅ Ja | Nur: unused functions, a11y-ignores |
+| Seite         | One-Shot? | Nacharbeit                          |
+| ------------- | --------- | ----------------------------------- |
+| manage-root   | ✅ Ja     | Nur: unused vars entfernt           |
+| manage-admins | ✅ Ja     | Nur: positionMap type, a11y-ignores |
+| manage-areas  | ✅ Ja     | Nur: unused functions, a11y-ignores |
 
 **Fazit:** Mit dieser Strategie funktioniert jede Seite beim ersten Versuch!
 
@@ -409,16 +421,18 @@ Dann in `+page.svelte` nur importieren:
 
 > **Quelle:** https://svelte.dev/docs/svelte/typescript + https://svelte.dev/docs/svelte/$state
 
-| Dateiendung | TypeScript | Runes ($state, $derived) | Wann verwenden |
-|-------------|------------|--------------------------|----------------|
-| `*.ts` | ✅ Voll | ❌ Nein | Types, API, Utils, Filters, Constants |
-| `*.svelte.ts` | ✅ Voll | ✅ Ja | Reaktiver State der exportiert wird |
-| `*.svelte` + `<script lang="ts">` | ✅ mit vitePreprocess | ✅ Ja | Components (mit Einschränkungen) |
+| Dateiendung                       | TypeScript            | Runes ($state, $derived) | Wann verwenden                        |
+| --------------------------------- | --------------------- | ------------------------ | ------------------------------------- |
+| `*.ts`                            | ✅ Voll               | ❌ Nein                  | Types, API, Utils, Filters, Constants |
+| `*.svelte.ts`                     | ✅ Voll               | ✅ Ja                    | Reaktiver State der exportiert wird   |
+| `*.svelte` + `<script lang="ts">` | ✅ mit vitePreprocess | ✅ Ja                    | Components (mit Einschränkungen)      |
 
 **Runes Export-Regel (aus Svelte Docs):**
+
 > "You can only export `$state` if it's not directly reassigned."
 
 **Was bedeutet das?**
+
 ```typescript
 // ❌ VERBOTEN - direktes Reassignment
 export let count = $state(0);
@@ -452,6 +466,7 @@ frontend/src/scripts/manage/teams/
 ```
 
 **Vorteile:**
+
 - Jede Datei hat EINE Verantwortung (Single Responsibility)
 - Einfach zu testen (API separat von UI)
 - Einfach zu debuggen (Fehler lokalisierbar)
@@ -465,6 +480,7 @@ frontend-svelte/src/routes/(app)/manage-teams/
 ```
 
 **Probleme:**
+
 - ESLint max-lines (300) wird 4.6x überschritten
 - Cognitive Complexity explodiert
 - Nicht unit-testbar
@@ -501,6 +517,7 @@ frontend-svelte/src/lib/features/manage-teams/
 #### Konkrete Beispiele
 
 **types.ts (Volles TypeScript):**
+
 ```typescript
 // frontend-svelte/src/routes/(app)/manage-teams/_lib/types.ts
 
@@ -533,9 +550,11 @@ export interface TeamFormData {
 ```
 
 **api.ts (Volles TypeScript):**
+
 ```typescript
 // frontend-svelte/src/routes/(app)/manage-teams/_lib/api.ts
 import { getApiClient } from '$lib/utils/api-client';
+
 import type { Team, TeamFormData } from './types';
 
 const apiClient = getApiClient();
@@ -560,9 +579,10 @@ export async function deleteTeam(teamId: number, force = false): Promise<void> {
 ```
 
 **state.svelte.ts (Svelte 5 Runes mit TypeScript):**
+
 ```typescript
 // frontend-svelte/src/routes/(app)/manage-teams/_lib/state.svelte.ts
-import type { Team, StatusFilter } from './types';
+import type { StatusFilter, Team } from './types';
 
 // WICHTIG: Objekt-Pattern für exportierbaren $state (keine direkte Reassignment!)
 // Quelle: https://svelte.dev/docs/svelte/$state
@@ -592,9 +612,10 @@ export const hasTeams = $derived(teamsState.filtered.length > 0);
 ```
 
 **filters.ts (Pure Functions, volles TypeScript):**
+
 ```typescript
 // frontend-svelte/src/routes/(app)/manage-teams/_lib/filters.ts
-import type { Team, StatusFilter } from './types';
+import type { StatusFilter, Team } from './types';
 
 export function filterByStatus(teams: Team[], status: StatusFilter): Team[] {
   switch (status) {
@@ -621,11 +642,7 @@ export function filterBySearch(teams: Team[], query: string): Team[] {
   });
 }
 
-export function applyFilters(
-  teams: Team[],
-  status: StatusFilter,
-  search: string
-): Team[] {
+export function applyFilters(teams: Team[], status: StatusFilter, search: string): Team[] {
   let result = filterByStatus(teams, status);
   result = filterBySearch(result, search);
   return result;
@@ -633,6 +650,7 @@ export function applyFilters(
 ```
 
 **utils.ts (Wiederverwendbare Helpers, volles TypeScript):**
+
 ```typescript
 // frontend-svelte/src/routes/(app)/manage-teams/_lib/utils.ts
 
@@ -676,6 +694,7 @@ export function highlightMatch(text: string, query: string): string {
 ```
 
 **+page.svelte (Template mit TypeScript):**
+
 ```svelte
 <!-- frontend-svelte/src/routes/(app)/manage-teams/+page.svelte -->
 <script lang="ts">
@@ -719,17 +738,17 @@ export function highlightMatch(text: string, query: string): string {
 
 #### Wann auslagern?
 
-| Situation | Datei | Endung |
-|-----------|-------|--------|
-| Datei > 300 Zeilen | **Sofort** aufteilen | - |
-| Gleiche Funktion 2x verwendet | `utils.ts` | `.ts` |
-| API Call | `api.ts` | `.ts` |
-| Interface/Type Definition | `types.ts` | `.ts` |
-| Filter/Sort Logik | `filters.ts` | `.ts` |
-| Reaktiver State (exportiert) | `state.svelte.ts` | `.svelte.ts` |
-| Komplexe Event Handler | `handlers.ts` | `.ts` |
-| Constants (Labels, Classes) | `constants.ts` | `.ts` |
-| Sub-Component sinnvoll | `ComponentName.svelte` | `.svelte` |
+| Situation                     | Datei                  | Endung       |
+| ----------------------------- | ---------------------- | ------------ |
+| Datei > 300 Zeilen            | **Sofort** aufteilen   | -            |
+| Gleiche Funktion 2x verwendet | `utils.ts`             | `.ts`        |
+| API Call                      | `api.ts`               | `.ts`        |
+| Interface/Type Definition     | `types.ts`             | `.ts`        |
+| Filter/Sort Logik             | `filters.ts`           | `.ts`        |
+| Reaktiver State (exportiert)  | `state.svelte.ts`      | `.svelte.ts` |
+| Komplexe Event Handler        | `handlers.ts`          | `.ts`        |
+| Constants (Labels, Classes)   | `constants.ts`         | `.ts`        |
+| Sub-Component sinnvoll        | `ComponentName.svelte` | `.svelte`    |
 
 #### Checkliste für neue Seiten
 
@@ -746,14 +765,14 @@ export function highlightMatch(text: string, query: string): string {
 
 #### Refactoring-Plan für existierende Seiten
 
-| Seite | Zeilen | Priorität | Status |
-|-------|--------|-----------|--------|
-| manage-teams | 1393 | HIGH | ⏳ Pending |
-| manage-admins | ~1200 | HIGH | ⏳ Pending |
-| manage-areas | ~1100 | HIGH | ⏳ Pending |
-| manage-root | ~1000 | MEDIUM | ⏳ Pending |
-| chat | ~900 | MEDIUM | ⏳ Pending |
-| blackboard | ~800 | LOW | ⏳ Pending |
+| Seite         | Zeilen | Priorität | Status     |
+| ------------- | ------ | --------- | ---------- |
+| manage-teams  | 1393   | HIGH      | ⏳ Pending |
+| manage-admins | ~1200  | HIGH      | ⏳ Pending |
+| manage-areas  | ~1100  | HIGH      | ⏳ Pending |
+| manage-root   | ~1000  | MEDIUM    | ⏳ Pending |
+| chat          | ~900   | MEDIUM    | ⏳ Pending |
+| blackboard    | ~800   | LOW       | ⏳ Pending |
 
 **Wichtig:** Logische Trennung ist wichtiger als Zeilenzahl!
 Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen Chaos.
@@ -952,10 +971,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    sveltekit(),
-  ],
+  plugins: [tailwindcss(), sveltekit()],
 
   server: {
     port: 5173,
@@ -975,7 +991,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': '/src',
-      '$styles': '/src/styles',
+      $styles: '/src/styles',
     },
   },
 });
@@ -987,10 +1003,10 @@ export default defineConfig({
 /* frontend-svelte/src/app.css */
 
 /* Tailwind v4 Core */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Design System Variables (Dark Theme Default) */
-@import "../design-system/build/web/css/variables-dark.css";
+@import '../design-system/build/web/css/variables-dark.css';
 
 /* @theme Block - Kopiert von frontend/src/styles/tailwind.css */
 @theme {
@@ -1006,7 +1022,7 @@ export default defineConfig({
 }
 
 /* Design System Components */
-@import "../design-system/index.css";
+@import '../design-system/index.css';
 ```
 
 #### 3.1.5 SvelteKit Config
@@ -1026,9 +1042,9 @@ const config = {
     }),
 
     alias: {
-      '$components': 'src/lib/components',
-      '$stores': 'src/lib/stores',
-      '$utils': 'src/lib/utils',
+      $components: 'src/lib/components',
+      $stores: 'src/lib/stores',
+      $utils: 'src/lib/utils',
     },
   },
 };
@@ -1355,33 +1371,33 @@ Konvertierung der 25 Storybook Stories zu Svelte Components.
 
 #### 3.2.6 Weitere Components (Prioritätsliste)
 
-| Priorität | Component | Basiert auf Story | Komplexität |
-|-----------|-----------|-------------------|-------------|
-| 1 | Button | Buttons.stories.js | Niedrig |
-| 2 | Badge | Badges.stories.js | Niedrig |
-| 3 | Card | Cards.stories.js | Niedrig |
-| 4 | FormField | FormFields.stories.js | Mittel |
-| 5 | Modal | Modals.stories.js | Mittel |
-| 6 | ConfirmModal | ConfirmModal.stories.js | Mittel |
-| 7 | SearchInput | SearchInput.stories.js | Niedrig |
-| 8 | Dropdown | Dropdowns.stories.js | Mittel |
-| 9 | Toggle | Toggles.stories.js | Niedrig |
-| 10 | ToggleSwitch | ToggleSwitch.stories.js | Niedrig |
-| 11 | Avatar | Avatar.stories.js | Niedrig |
-| 12 | Tooltip | Tooltip.stories.js | Mittel |
-| 13 | Collapse | Collapse.stories.js | Mittel |
-| 14 | DataDisplay | DataDisplay.stories.js | Hoch |
-| 15 | Navigation | Navigation.stories.js | Hoch |
-| 16 | FileUpload | FileUpload.stories.js | Hoch |
-| 17 | MultiSelect | MultiSelect.stories.js | Hoch |
-| 18 | Pickers | Pickers.stories.js | Hoch |
-| 19 | ExplorerView | ExplorerView.stories.js | Hoch |
-| 20 | EmptyStates | EmptyStates.stories.js | Niedrig |
-| 21 | Feedback | Feedback.stories.js | Mittel |
-| 22 | Containers | Containers.stories.js | Niedrig |
-| 23 | ChoiceCards | ChoiceCards.stories.js | Mittel |
-| 24 | AssignmentBadges | AssignmentBadges.stories.js | Niedrig |
-| 25 | DesignTokens | DesignTokens.stories.js | Niedrig |
+| Priorität | Component        | Basiert auf Story           | Komplexität |
+| --------- | ---------------- | --------------------------- | ----------- |
+| 1         | Button           | Buttons.stories.js          | Niedrig     |
+| 2         | Badge            | Badges.stories.js           | Niedrig     |
+| 3         | Card             | Cards.stories.js            | Niedrig     |
+| 4         | FormField        | FormFields.stories.js       | Mittel      |
+| 5         | Modal            | Modals.stories.js           | Mittel      |
+| 6         | ConfirmModal     | ConfirmModal.stories.js     | Mittel      |
+| 7         | SearchInput      | SearchInput.stories.js      | Niedrig     |
+| 8         | Dropdown         | Dropdowns.stories.js        | Mittel      |
+| 9         | Toggle           | Toggles.stories.js          | Niedrig     |
+| 10        | ToggleSwitch     | ToggleSwitch.stories.js     | Niedrig     |
+| 11        | Avatar           | Avatar.stories.js           | Niedrig     |
+| 12        | Tooltip          | Tooltip.stories.js          | Mittel      |
+| 13        | Collapse         | Collapse.stories.js         | Mittel      |
+| 14        | DataDisplay      | DataDisplay.stories.js      | Hoch        |
+| 15        | Navigation       | Navigation.stories.js       | Hoch        |
+| 16        | FileUpload       | FileUpload.stories.js       | Hoch        |
+| 17        | MultiSelect      | MultiSelect.stories.js      | Hoch        |
+| 18        | Pickers          | Pickers.stories.js          | Hoch        |
+| 19        | ExplorerView     | ExplorerView.stories.js     | Hoch        |
+| 20        | EmptyStates      | EmptyStates.stories.js      | Niedrig     |
+| 21        | Feedback         | Feedback.stories.js         | Mittel      |
+| 22        | Containers       | Containers.stories.js       | Niedrig     |
+| 23        | ChoiceCards      | ChoiceCards.stories.js      | Mittel      |
+| 24        | AssignmentBadges | AssignmentBadges.stories.js | Niedrig     |
+| 25        | DesignTokens     | DesignTokens.stories.js     | Niedrig     |
 
 ---
 
@@ -1543,6 +1559,7 @@ Konvertierung der 25 Storybook Stories zu Svelte Components.
 > **Decision:** See [ARCHITECTURE-DECISION-NO-TRPC.md](./ARCHITECTURE-DECISION-NO-TRPC.md)
 >
 > **Reason:** REST API with `api-client.ts` (684 LOC) already provides:
+>
 > - Type safety via Zod + TypeScript
 > - Caching, token refresh, error handling
 > - Mobile/external client compatibility
@@ -1555,42 +1572,42 @@ Konvertierung der 25 Storybook Stories zu Svelte Components.
 
 #### 3.5.1 Seiten-Mapping (34 HTML → SvelteKit Routes)
 
-| HTML Seite | SvelteKit Route | Priorität |
-|------------|-----------------|-----------|
-| login.html | /login | 1 |
-| signup.html | /signup | 1 |
-| index.html | / | 1 |
-| admin-dashboard.html | /(app)/dashboard | 2 |
-| employee-dashboard.html | /(app)/dashboard | 2 |
-| root-dashboard.html | /(root)/dashboard | 2 |
-| calendar.html | /(app)/calendar | 3 |
-| blackboard.html | /(app)/blackboard | 3 |
-| blackboard-detail.html | /(app)/blackboard/[id] | 3 |
-| chat.html | /(app)/chat | 3 |
-| documents-explorer.html | /(app)/documents | 4 |
-| kvp.html | /(app)/kvp | 4 |
-| kvp-detail.html | /(app)/kvp/[id] | 4 |
-| shifts.html | /(app)/shifts | 4 |
-| survey-admin.html | /(app)/surveys | 5 |
-| survey-employee.html | /(app)/surveys | 5 |
-| survey-results.html | /(app)/surveys/[id]/results | 5 |
-| manage-employees.html | /(app)/manage/employees | 5 |
-| manage-departments.html | /(app)/manage/departments | 5 |
-| manage-teams.html | /(app)/manage/teams | 5 |
-| manage-machines.html | /(app)/manage/machines | 5 |
-| manage-admins.html | /(app)/manage/admins | 5 |
-| manage-areas.html | /(app)/manage/areas | 5 |
-| admin-profile.html | /(app)/profile | 6 |
-| employee-profile.html | /(app)/profile | 6 |
-| root-profile.html | /(root)/profile | 6 |
-| account-settings.html | /(app)/settings | 6 |
-| logs.html | /(app)/logs | 6 |
-| features.html | /(root)/features | 7 |
-| manage-root.html | /(root)/manage | 7 |
-| storage-upgrade.html | /(app)/storage | 7 |
-| tenant-deletion-status.html | /(root)/tenants/deletion | 7 |
-| tenant-deletion-approve.html | /(root)/tenants/deletion/approve | 7 |
-| rate-limit.html | /rate-limit | 7 |
+| HTML Seite                   | SvelteKit Route                  | Priorität |
+| ---------------------------- | -------------------------------- | --------- |
+| login.html                   | /login                           | 1         |
+| signup.html                  | /signup                          | 1         |
+| index.html                   | /                                | 1         |
+| admin-dashboard.html         | /(app)/dashboard                 | 2         |
+| employee-dashboard.html      | /(app)/dashboard                 | 2         |
+| root-dashboard.html          | /(root)/dashboard                | 2         |
+| calendar.html                | /(app)/calendar                  | 3         |
+| blackboard.html              | /(app)/blackboard                | 3         |
+| blackboard-detail.html       | /(app)/blackboard/[id]           | 3         |
+| chat.html                    | /(app)/chat                      | 3         |
+| documents-explorer.html      | /(app)/documents                 | 4         |
+| kvp.html                     | /(app)/kvp                       | 4         |
+| kvp-detail.html              | /(app)/kvp/[id]                  | 4         |
+| shifts.html                  | /(app)/shifts                    | 4         |
+| survey-admin.html            | /(app)/surveys                   | 5         |
+| survey-employee.html         | /(app)/surveys                   | 5         |
+| survey-results.html          | /(app)/surveys/[id]/results      | 5         |
+| manage-employees.html        | /(app)/manage/employees          | 5         |
+| manage-departments.html      | /(app)/manage/departments        | 5         |
+| manage-teams.html            | /(app)/manage/teams              | 5         |
+| manage-machines.html         | /(app)/manage/machines           | 5         |
+| manage-admins.html           | /(app)/manage/admins             | 5         |
+| manage-areas.html            | /(app)/manage/areas              | 5         |
+| admin-profile.html           | /(app)/profile                   | 6         |
+| employee-profile.html        | /(app)/profile                   | 6         |
+| root-profile.html            | /(root)/profile                  | 6         |
+| account-settings.html        | /(app)/settings                  | 6         |
+| logs.html                    | /(app)/logs                      | 6         |
+| features.html                | /(root)/features                 | 7         |
+| manage-root.html             | /(root)/manage                   | 7         |
+| storage-upgrade.html         | /(app)/storage                   | 7         |
+| tenant-deletion-status.html  | /(root)/tenants/deletion         | 7         |
+| tenant-deletion-approve.html | /(root)/tenants/deletion/approve | 7         |
+| rate-limit.html              | /rate-limit                      | 7         |
 
 #### 3.5.2 Beispiel: Dashboard Seite
 
@@ -1821,7 +1838,7 @@ services:
     container_name: assixx-frontend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - API_URL=http://backend:3000
     depends_on:
@@ -1908,27 +1925,27 @@ services:
 
 ## 5. Risiken & Mitigationen
 
-| Risiko | Wahrscheinlichkeit | Auswirkung | Mitigation |
-|--------|-------------------|------------|------------|
-| Design System Inkompatibilität | Mittel | Hoch | CSS Variables beibehalten, schrittweise Migration |
-| Performance Regression | Niedrig | Mittel | Lighthouse CI, Bundle Analyzer |
-| Feature Parity | Mittel | Hoch | Feature-by-Feature Testing, Parallel Deployment |
+| Risiko                         | Wahrscheinlichkeit | Auswirkung | Mitigation                                        |
+| ------------------------------ | ------------------ | ---------- | ------------------------------------------------- |
+| Design System Inkompatibilität | Mittel             | Hoch       | CSS Variables beibehalten, schrittweise Migration |
+| Performance Regression         | Niedrig            | Mittel     | Lighthouse CI, Bundle Analyzer                    |
+| Feature Parity                 | Mittel             | Hoch       | Feature-by-Feature Testing, Parallel Deployment   |
 
 ---
 
 ## 6. Zeitplan
 
-| Phase | Beschreibung | Dauer | Status |
-|-------|--------------|-------|--------|
-| 3.1 | Projekt-Setup | 2 Tage | ✅ DONE (2025-12-18) |
-| 3.2 | Design System Components | 5 Tage | 🔄 In Progress |
-| 3.3 | Layout & Navigation | 3 Tage | Pending |
-| 3.4 | ~~tRPC Integration~~ | - | ❌ REJECTED |
-| 3.5 | Seiten-Migration | 15 Tage | 🔄 In Progress (Login ✅) |
-| 3.6 | Feature-Module | 15 Tage | Pending |
-| 3.7 | Docker Integration | 3 Tage | Pending |
-| 3.8 | Testing & QA | 5 Tage | Pending |
-| **Total** | | **52 Tage** | |
+| Phase     | Beschreibung             | Dauer       | Status                    |
+| --------- | ------------------------ | ----------- | ------------------------- |
+| 3.1       | Projekt-Setup            | 2 Tage      | ✅ DONE (2025-12-18)      |
+| 3.2       | Design System Components | 5 Tage      | 🔄 In Progress            |
+| 3.3       | Layout & Navigation      | 3 Tage      | Pending                   |
+| 3.4       | ~~tRPC Integration~~     | -           | ❌ REJECTED               |
+| 3.5       | Seiten-Migration         | 15 Tage     | 🔄 In Progress (Login ✅) |
+| 3.6       | Feature-Module           | 15 Tage     | Pending                   |
+| 3.7       | Docker Integration       | 3 Tage      | Pending                   |
+| 3.8       | Testing & QA             | 5 Tage      | Pending                   |
+| **Total** |                          | **52 Tage** |                           |
 
 ### Fortschritts-Log
 
@@ -1938,12 +1955,13 @@ services:
 
 **Migrierte Seiten:**
 
-| Seite | Route | Besonderheiten |
-|-------|-------|----------------|
-| Rate Limit | `/rate-limit` | **Standalone** (kein Header/Sidebar), Countdown Timer, Auto-Redirect |
-| Storage Upgrade | `/storage-upgrade` | (app) layout, Plan-Cards, SSR mit +page.server.ts |
+| Seite           | Route              | Besonderheiten                                                       |
+| --------------- | ------------------ | -------------------------------------------------------------------- |
+| Rate Limit      | `/rate-limit`      | **Standalone** (kein Header/Sidebar), Countdown Timer, Auto-Redirect |
+| Storage Upgrade | `/storage-upgrade` | (app) layout, Plan-Cards, SSR mit +page.server.ts                    |
 
 **Dateien erstellt:**
+
 - `frontend-svelte/src/routes/rate-limit/+page.svelte` - Standalone Countdown-Page
 - `frontend-svelte/src/routes/(app)/storage-upgrade/+page.svelte` - Plan-Übersicht
 - `frontend-svelte/src/routes/(app)/storage-upgrade/+page.server.ts` - SSR Data Loading
@@ -1951,12 +1969,13 @@ services:
 - `frontend-svelte/src/styles/storage-upgrade.css` - Kopiert von Legacy
 
 **Endstand:**
+
 - ✅ **34/34 Seiten migriert (100%)**
 - ✅ **100% Design System kopiert (102 CSS Dateien)**
 - ✅ **100% Types migriert + erweitert**
 - ✅ **100% Utils migriert + erweitert**
 - ✅ **29 Seiten mit SSR (+page.server.ts)**
-- ✅ **29 Seiten mit _lib/ Pattern**
+- ✅ **29 Seiten mit \_lib/ Pattern**
 
 **Frontend-Migration Status: ABGESCHLOSSEN!**
 
@@ -1966,14 +1985,15 @@ services:
 
 **Migrierte Seiten:**
 
-| Seite | Route | Besonderheiten |
-|-------|-------|----------------|
-| KVP | `/kvp` | KVP-Übersicht, Filter, Status-Management, _lib/ Pattern |
-| KVP-Detail | `/kvp-detail` | Detail-Ansicht, Kommentare, Anhänge |
-| Survey-Admin | `/survey-admin` | Survey CRUD, Fragen-Editor, Statistiken |
-| Survey-Employee | `/survey-employee` | Umfragen beantworten, Antworten ansehen |
+| Seite           | Route              | Besonderheiten                                           |
+| --------------- | ------------------ | -------------------------------------------------------- |
+| KVP             | `/kvp`             | KVP-Übersicht, Filter, Status-Management, \_lib/ Pattern |
+| KVP-Detail      | `/kvp-detail`      | Detail-Ansicht, Kommentare, Anhänge                      |
+| Survey-Admin    | `/survey-admin`    | Survey CRUD, Fragen-Editor, Statistiken                  |
+| Survey-Employee | `/survey-employee` | Umfragen beantworten, Antworten ansehen                  |
 
 **Fortschritt:**
+
 - 25 von 34 Seiten migriert (~76%)
 - Nächste Priorität: Shifts, Survey-Results, Manage-Employees, Manage-Teams
 
@@ -1982,6 +2002,7 @@ services:
 #### 2025-12-23: Calendar Migration Complete
 
 **Calendar Route (`/calendar`) - 100% migriert:**
+
 - ✅ `+page.svelte` mit @event-calendar/core v5.x
 - ✅ `_lib/` Ordnerstruktur (api.ts, types.ts, state.svelte.ts, constants.ts, utils.ts)
 - ✅ Code-Organisation nach Sektion 0.6 Pattern
@@ -1993,6 +2014,7 @@ services:
 - ✅ CSS identisch zum Legacy Frontend
 
 **Fortschritt:**
+
 - 21 von 34 Seiten migriert (~64%)
 - Nächste Priorität: KVP, Shifts, Surveys, Employee-Seiten
 
@@ -2001,10 +2023,12 @@ services:
 #### 2025-12-21: Code-Organisation Dokumentation (Sektion 0.6)
 
 **Problem erkannt:** Aktuelle SvelteKit-Seiten haben ALLES in einer Datei!
+
 - `manage-teams/+page.svelte` → 1393 Zeilen (sollte max ~300 sein)
 - Legacy Frontend hat saubere Trennung: `types.ts`, `api.ts`, `ui.ts`, etc.
 
 **Dokumentiert:**
+
 - ✅ Legacy-Pattern als Goldstandard erklärt
 - ✅ Falsches Pattern (Monolith-Datei) dokumentiert
 - ✅ Richtiges Pattern mit `_lib/` Ordner
@@ -2022,19 +2046,20 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 
 **Migrierte Seiten (alle 100% identisch zu Legacy):**
 
-| Seite | Route | Besonderheiten |
-|-------|-------|----------------|
-| Dashboard Root | `/dashboard/root` | Root-User Dashboard mit Stats |
-| Manage Departments | `/manage-departments` | CRUD mit Force-Delete Modal |
-| Chat | `/chat` | WebSocket-ready, Conversations |
-| Features | `/features` | Feature-Toggle Grid |
-| Logs | `/logs` | Audit-Log mit Filtering |
-| Root Profile | `/root-profile` | Profil-Bearbeitung |
-| Account Settings | `/account-settings` | Tenant-Löschung anfordern |
-| Tenant Deletion Status | `/tenant-deletion-status` | Status-Übersicht mit Aktionen |
+| Seite                   | Route                      | Besonderheiten                    |
+| ----------------------- | -------------------------- | --------------------------------- |
+| Dashboard Root          | `/dashboard/root`          | Root-User Dashboard mit Stats     |
+| Manage Departments      | `/manage-departments`      | CRUD mit Force-Delete Modal       |
+| Chat                    | `/chat`                    | WebSocket-ready, Conversations    |
+| Features                | `/features`                | Feature-Toggle Grid               |
+| Logs                    | `/logs`                    | Audit-Log mit Filtering           |
+| Root Profile            | `/root-profile`            | Profil-Bearbeitung                |
+| Account Settings        | `/account-settings`        | Tenant-Löschung anfordern         |
+| Tenant Deletion Status  | `/tenant-deletion-status`  | Status-Übersicht mit Aktionen     |
 | Tenant Deletion Approve | `/tenant-deletion-approve` | **Standalone** (ohne App-Layout!) |
 
 **Kritischer Security Fix (Backend):**
+
 - ❌ **BUG GEFUNDEN:** Passwort wurde bei Tenant-Löschungs-Genehmigung NICHT verifiziert!
 - ✅ **FIX:** `deletion-approval-body.dto.ts` - `password` Feld hinzugefügt (required)
 - ✅ **FIX:** `root.controller.ts` - Password an Service übergeben
@@ -2042,11 +2067,13 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 - 🔒 **Zwei-Personen-Prinzip** jetzt korrekt implementiert
 
 **SvelteKit Layout-Wechsel Pattern:**
+
 - Problem: Client-Side Navigation zwischen (app) und Standalone Layout funktioniert nicht
 - Lösung: `data-sveltekit-reload` auf Links die Layout wechseln
 - Lösung: `window.location.href` statt `goto()` für programmatische Navigation
 
 **Dateien geändert:**
+
 - `backend/src/nest/root/dto/deletion-approval-body.dto.ts` - Password required
 - `backend/src/nest/root/root.controller.ts` - Password Parameter
 - `backend/src/nest/root/root.service.ts` - Password Verification mit bcrypt
@@ -2058,6 +2085,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 #### 2025-12-19: Signup-Seite fertiggestellt
 
 **Signup Route (`/signup`) - 100% identisch zu Legacy:**
+
 - ✅ `+page.svelte` mit Svelte 5 Runes API (`$state()`, `$derived()`)
 - ✅ 3-Spalten Form Grid (responsiv auf 2 und 1 Spalte)
 - ✅ Company Name, Subdomain mit `.assixx.com` Suffix
@@ -2072,14 +2100,17 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 - ✅ API Integration (`/api/v2/auth/register`)
 
 **Migration-Philosophie dokumentiert:**
+
 - Legacy Frontend = Goldstandard (1:1 Kopie)
 - esrap Parser Limitation dokumentiert (keine TypeScript Annotations)
 - JSDoc statt `<script lang="ts">` für Svelte-Dateien
 
 **Dateien erstellt:**
+
 - `frontend-svelte/src/routes/signup/+page.svelte`
 
 **CSS Imports hinzugefügt:**
+
 - `app.css`: signup.css + password-strength.css
 
 ---
@@ -2087,6 +2118,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 #### 2025-12-19: Svelte 5 Runes + esrap Limitation
 
 **esrap Parser Problem entdeckt und dokumentiert:**
+
 - ❌ `<script lang="ts">` mit Function Annotations funktioniert NICHT
 - ❌ `$props<T>()` Generics funktioniert NICHT
 - ✅ Lösung: JSDoc statt TypeScript in `.svelte` Dateien
@@ -2100,6 +2132,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 | `{@render}` | +layout.svelte (children rendering) |
 
 **@event-calendar Version:**
+
 - ✅ **Aktuell: v5.0.5** (gepinnt mit `~`) - Upgrade durchgeführt 2025-12-22
 - Alle Plugins in `@event-calendar/core` enthalten (keine separaten Packages mehr)
 - Neue API: `createCalendar(target, plugins, options)` statt Component Syntax
@@ -2110,6 +2143,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 #### 2025-12-19: Login-Seite fertiggestellt + CSS Cleanup
 
 **Login Route (`/login`) - 100% identisch zu Legacy:**
+
 - ✅ `+page.svelte` mit Svelte 5 Runes API (`$state()`, `$props()`)
 - ✅ Form mit Email/Password Binding
 - ✅ Loading State und Error Handling
@@ -2118,6 +2152,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 - ✅ Back-Button, Help-Button, Footer Links
 
 **CSS/Design System Cleanup (Beide Frontends):**
+
 - ✅ Bootstrap Margin-Overrides entfernt aus `style.css`
   - Legacy-Problem: `mt-4 { margin-top: 1.5rem !important; }` (Bootstrap-Scale)
   - Tailwind nutzt: `mt-4 = 1rem`, `mt-6 = 1.5rem`
@@ -2133,6 +2168,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
   - `.login-footer a { color: var(--primary-color); }` übernimmt
 
 **Dateien geändert:**
+
 - `frontend/src/styles/style.css` - Bootstrap-Overrides entfernt
 - `frontend/src/design-system/tokens/colors.css` - Duplicate entfernt
 - `frontend/src/pages/login.html` - Klassen aktualisiert
@@ -2143,6 +2179,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 - `frontend-svelte/src/app.css` - style.css Import hinzugefügt
 
 **Lessons Learned:**
+
 1. Bootstrap → Tailwind Migration erfordert Klassennamen-Updates
 2. CSS Variable Duplicates führen zu Import-Order-Bugs
 3. Whitespace zwischen Inline-Elements ist sichtbar (~4px)
@@ -2153,6 +2190,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 ---
 
 #### 2025-12-18: Phase 3.1 abgeschlossen
+
 - ✅ SvelteKit Projekt erstellt (`frontend-svelte/`)
 - ✅ Dependencies installiert (Tailwind, EventCalendar, etc.)
 - ✅ `vite.config.ts` mit Tailwind + Proxy konfiguriert

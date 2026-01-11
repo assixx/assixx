@@ -92,7 +92,6 @@ export function getUploadDirectory(type: string): string {
     kvp: path.join(baseUploadDir, 'kvp-attachments'),
   };
 
-  // eslint-disable-next-line security/detect-object-injection -- Safe: type is validated against predefined keys
   const dir = uploadDirs[type];
   if (dir === undefined) {
     throw new Error(`Invalid upload type: ${type}`);

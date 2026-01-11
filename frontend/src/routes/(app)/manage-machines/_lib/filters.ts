@@ -26,7 +26,7 @@ export function filterByStatus(machines: Machine[], status: MachineStatusFilter)
  */
 export function filterBySearch(machines: Machine[], query: string): Machine[] {
   const term = query.toLowerCase().trim();
-  if (!term) return machines;
+  if (term === '') return machines;
 
   return machines.filter((machine) => {
     const name = machine.name.toLowerCase();

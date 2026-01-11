@@ -7,22 +7,22 @@
    * Note: Personal info is readonly for admins (only password can be changed).
    */
   import { goto, invalidateAll } from '$app/navigation';
-  import { analyzePassword } from '$lib/utils/password-strength';
+
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
-  import type { PageData } from './$types';
+  import { analyzePassword } from '$lib/utils/password-strength';
 
   // Page-specific CSS
   import '../../../styles/admin-profile.css';
   import '../../../styles/password-strength.css';
 
   // Local modules
-  import { MESSAGES, PASSWORD_TOOLTIP, PASSWORD_RULES, READONLY_INFO_TEXT } from './_lib/constants';
   import {
     loadProfilePicture as apiLoadProfilePicture,
     uploadProfilePicture,
     removeProfilePicture,
     changePassword as apiChangePassword,
   } from './_lib/api';
+  import { MESSAGES, PASSWORD_TOOLTIP, PASSWORD_RULES, READONLY_INFO_TEXT } from './_lib/constants';
   import {
     showToast,
     triggerFileInput,
@@ -31,7 +31,10 @@
     doPasswordsMatch,
     getDisplayPosition,
     getDisplayCompany,
+    getPictureUploadErrorMessage,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
   import type { AdminProfile, PasswordStrengthResult } from './_lib/types';
 
   // =============================================================================
@@ -41,15 +44,15 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const user = $derived<AdminProfile | null>(data?.profile ?? null);
+  const user = $derived<AdminProfile | null>(data.profile ?? null);
 
   // Tenant company name from SSR (from tenant_id, not user profile)
-  const tenantCompanyName = $derived<string | null>(data?.tenantCompanyName ?? null);
+  const tenantCompanyName = $derived<string | null>(data.tenantCompanyName ?? null);
 
   // Initialize form values from SSR data
   $effect(() => {
-    if (user) {
-      formEmail = user.email ?? '';
+    if (user !== null) {
+      formEmail = user.email;
       formFirstName = user.firstName ?? '';
       formLastName = user.lastName ?? '';
       formPosition = getDisplayPosition(user.position);
@@ -117,16 +120,13 @@
 
     try {
       const newUrl = await uploadProfilePicture(file);
-      if (newUrl) {
+      if (newUrl !== null && newUrl !== '') {
         profilePicture = newUrl;
         showToast(MESSAGES.pictureUpdated, 'success');
         await invalidateAll();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'INVALID_TYPE') showToast(MESSAGES.invalidImageType, 'error');
-      else if (msg === 'FILE_TOO_LARGE') showToast(MESSAGES.fileTooLarge, 'error');
-      else showToast(MESSAGES.pictureUploadError, 'error');
+      showToast(getPictureUploadErrorMessage(err), 'error');
     } finally {
       pictureUploading = false;
       target.value = '';
@@ -172,16 +172,18 @@
       await apiChangePassword({ currentPassword, newPassword });
       showToast(MESSAGES.passwordChanged, 'success');
 
-      // Reset form
+      // Reset form - using direct assignment (not based on previous values)
+      /* eslint-disable require-atomic-updates */
       currentPassword = '';
       newPassword = '';
       confirmPassword = '';
+      /* eslint-enable require-atomic-updates */
       passwordStrength = null;
 
       // Logout after 2 seconds (password changed = security logout)
       setTimeout(() => {
         localStorage.removeItem('accessToken');
-        goto('/login', { replaceState: true });
+        void goto('/login', { replaceState: true });
       }, 2000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
@@ -210,6 +212,19 @@
     } finally {
       strengthLoading = false;
     }
+  }
+
+  function validateConfirmPassword(): void {
+    if (confirmPassword === '') {
+      passwordMismatchError = false;
+      return;
+    }
+    passwordMismatchError = !passwordsMatch;
+  }
+
+  async function handleNewPasswordInput(): Promise<void> {
+    await checkPassword();
+    validateConfirmPassword();
   }
 
   // =============================================================================
@@ -250,7 +265,9 @@
           <button
             type="button"
             class="btn btn-modal"
-            onclick={() => triggerFileInput('profile-picture-input')}
+            onclick={() => {
+              triggerFileInput('profile-picture-input');
+            }}
             disabled={pictureUploading}
           >
             {#if pictureUploading}<i class="fas fa-spinner fa-spin"></i>{:else}<i
@@ -355,7 +372,7 @@
               id="current_password"
               name="current_password"
               class="form-field__control"
-              class:form-field__control--error={currentPasswordError}
+              class:is-error={currentPasswordError}
               autocomplete="current-password"
               bind:value={currentPassword}
               required
@@ -364,7 +381,9 @@
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('current')}
+              onclick={() => {
+                togglePasswordVisibility('current');
+              }}
             >
               <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
@@ -394,30 +413,32 @@
               id="new_password"
               name="new_password"
               class="form-field__control"
-              class:form-field__control--error={newPasswordError}
+              class:is-error={newPasswordError}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
               bind:value={newPassword}
-              oninput={checkPassword}
+              oninput={handleNewPasswordInput}
               required
             />
             <button
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('new')}
+              onclick={() => {
+                togglePasswordVisibility('new');
+              }}
             >
               <i class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
           </div>
 
-          {#if passwordStrength || strengthLoading}
+          {#if passwordStrength !== null || strengthLoading}
             <div class="password-strength-container" class:is-loading={strengthLoading}>
               <div class="password-strength-meter">
                 <div class="password-strength-bar" data-score={passwordStrength?.score ?? -1}></div>
               </div>
-              {#if passwordStrength}
+              {#if passwordStrength !== null}
                 <div class="password-strength-info">
                   <span class="password-strength-label">{passwordStrength.label}</span>
                   <span class="password-strength-time">{passwordStrength.crackTime}</span>
@@ -432,19 +453,23 @@
             </span>
           {/if}
 
-          {#if passwordStrength?.feedback.warning || (passwordStrength?.feedback.suggestions && passwordStrength.feedback.suggestions.length > 0)}
-            <div class="password-feedback">
-              {#if passwordStrength.feedback.warning}
-                <span class="password-feedback-warning">{passwordStrength.feedback.warning}</span>
-              {/if}
-              {#if passwordStrength.feedback.suggestions && passwordStrength.feedback.suggestions.length > 0}
-                <ul class="password-feedback-suggestions">
-                  {#each passwordStrength.feedback.suggestions as suggestion, i (i)}
-                    <li>{suggestion}</li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
+          {#if passwordStrength !== null}
+            {@const warningText = passwordStrength.feedback.warning}
+            {@const suggestions = passwordStrength.feedback.suggestions}
+            {#if warningText !== '' || suggestions.length > 0}
+              <div class="password-feedback">
+                {#if warningText !== ''}
+                  <span class="password-feedback-warning">{warningText}</span>
+                {/if}
+                {#if suggestions.length > 0}
+                  <ul class="password-feedback-suggestions">
+                    {#each suggestions as suggestion, i (i)}
+                      <li>{suggestion}</li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
+            {/if}
           {/if}
         </div>
 
@@ -457,18 +482,21 @@
               id="confirm_password"
               name="confirm_password"
               class="form-field__control"
-              class:form-field__control--error={passwordMismatchError}
+              class:is-error={passwordMismatchError}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
               bind:value={confirmPassword}
+              oninput={validateConfirmPassword}
               required
             />
             <button
               type="button"
               class="form-field__password-toggle"
               aria-label="Passwort anzeigen"
-              onclick={() => togglePasswordVisibility('confirm')}
+              onclick={() => {
+                togglePasswordVisibility('confirm');
+              }}
             >
               <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>

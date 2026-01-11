@@ -56,6 +56,12 @@ export const MESSAGES = {
   passwordTooWeak: 'Passwort ist zu schwach - bitte wählen Sie ein sichereres Passwort',
 } as const;
 
+/** Picture upload error code to message mapping */
+export const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
+  INVALID_TYPE: MESSAGES.invalidImageType,
+  FILE_TOO_LARGE: MESSAGES.fileTooLarge,
+} as const;
+
 /** Password tooltip text */
 export const PASSWORD_TOOLTIP =
   'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)';

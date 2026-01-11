@@ -213,8 +213,8 @@ interface KvpComment {
    ```typescript
    // Always check token exists
    const token = getAuthToken();
-   if (token === null || token === "") {
-     window.location.href = "/login";
+   if (token === null || token === '') {
+     window.location.href = '/login';
      return;
    }
    ```

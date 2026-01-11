@@ -196,6 +196,29 @@ export interface UpdateDocumentData {
 }
 
 /**
+ * Edit form data (required fields for EditModal)
+ */
+export interface EditData {
+  documentName: string;
+  category: string;
+  tags: string[];
+}
+
+/**
+ * Upload form data from UploadModal
+ * Note: file/category can be null until user selects them
+ */
+export interface UploadData {
+  file: File | null;
+  category: string;
+  docName: string;
+  description: string;
+  tags: string;
+  salaryYear: number;
+  salaryMonth: number;
+}
+
+/**
  * Generic API response wrapper
  */
 export interface ApiResponse<T> {

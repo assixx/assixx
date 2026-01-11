@@ -5,23 +5,15 @@
    * Level 3 Hybrid: SSR initial + client-side filtering/sorting
    */
   import { onMount } from 'svelte';
+
   import { goto, invalidateAll } from '$app/navigation';
-  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+
+  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/documents-explorer.css';
 
   // Import from _lib/ modules
-  import type {
-    Document,
-    DocumentCategory,
-    ViewMode,
-    SortOption,
-    ChatFolder,
-    CurrentUser,
-  } from './_lib/types';
-  import { SORT_OPTIONS, SORT_LABELS, CATEGORY_MAPPINGS, MESSAGES } from './_lib/constants';
   import {
     fetchDocuments as apiFetchDocuments,
     markDocumentAsRead as apiMarkAsRead,
@@ -33,7 +25,16 @@
     getCurrentUser as apiGetCurrentUser,
     isSessionExpiredError,
   } from './_lib/api';
+  import ChatFoldersList from './_lib/ChatFoldersList.svelte';
+  import { SORT_OPTIONS, SORT_LABELS, CATEGORY_MAPPINGS, MESSAGES } from './_lib/constants';
+  import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
+  import DocumentGridView from './_lib/DocumentGridView.svelte';
+  import DocumentListView from './_lib/DocumentListView.svelte';
+  import EditModal from './_lib/EditModal.svelte';
   import { applyAllFilters, calculateCategoryCounts, calculateStats } from './_lib/filters';
+  import FolderSidebar from './_lib/FolderSidebar.svelte';
+  import PreviewModal from './_lib/PreviewModal.svelte';
+  import UploadModal from './_lib/UploadModal.svelte';
   import {
     validateUserForCategory,
     buildUploadFormData,
@@ -44,14 +45,18 @@
   } from './_lib/utils';
 
   // Import Components
-  import PreviewModal from './_lib/PreviewModal.svelte';
-  import UploadModal, { type UploadData } from './_lib/UploadModal.svelte';
-  import EditModal, { type EditData } from './_lib/EditModal.svelte';
-  import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
-  import DocumentListView from './_lib/DocumentListView.svelte';
-  import DocumentGridView from './_lib/DocumentGridView.svelte';
-  import ChatFoldersList from './_lib/ChatFoldersList.svelte';
-  import FolderSidebar from './_lib/FolderSidebar.svelte';
+
+  import type { PageData } from './$types';
+  import type {
+    EditData,
+    UploadData,
+    Document,
+    DocumentCategory,
+    ViewMode,
+    SortOption,
+    ChatFolder,
+    CurrentUser,
+  } from './_lib/types';
 
   // ==========================================================================
   // SSR DATA (initial values from server)
@@ -60,9 +65,9 @@
   const { data }: { data: PageData } = $props();
 
   // Derived SSR data as baseline
-  const ssrDocuments = $derived(data?.documents ?? []);
-  const ssrChatFolders = $derived(data?.chatFolders ?? []);
-  const ssrUser = $derived(data?.currentUser ?? null);
+  const ssrDocuments = $derived(data.documents);
+  const ssrChatFolders = $derived(data.chatFolders);
+  const ssrUser = $derived(data.currentUser ?? null);
 
   // ==========================================================================
   // HYBRID STATE - SSR initial, client updates for filtering/sorting
@@ -139,8 +144,7 @@
     } catch (err) {
       console.error('[DocumentsExplorer] Error loading documents:', err);
       if (isSessionExpiredError(err)) {
-        goto('/login?session=expired');
-        return;
+        return void goto('/login?session=expired');
       }
       error = err instanceof Error ? err.message : MESSAGES.ERROR_LOAD_FAILED;
     } finally {
@@ -150,12 +154,11 @@
 
   async function loadChatFolders() {
     if (chatFoldersLoaded) return;
+    chatFoldersLoaded = true; // Set before await to prevent race condition
     try {
       chatFolders = await apiFetchChatFolders();
-      chatFoldersLoaded = true;
     } catch (err) {
       console.error('[DocumentsExplorer] Error loading chat folders:', err);
-      chatFoldersLoaded = true;
     }
   }
 
@@ -195,11 +198,12 @@
     currentCategory = category;
     selectedConversationId = null;
     if (category === 'chat' && !chatFoldersLoaded) {
-      loadChatFolders();
+      void loadChatFolders();
     }
     if (category !== 'chat') {
       applyFilters();
-    } else if (selectedConversationId === null) {
+    } else {
+      // Switching to chat category - clear documents until conversation selected
       filteredDocuments = [];
     }
   }
@@ -245,7 +249,7 @@
   function openPreview(doc: Document) {
     selectedDocument = doc;
     showPreviewModal = true;
-    if (!doc.isRead) markAsRead(doc.id);
+    if (!doc.isRead) void markAsRead(doc.id);
   }
 
   function closePreview() {
@@ -343,55 +347,91 @@
   // UPLOAD HANDLING
   function openUploadModal() {
     showUploadModal = true;
-    loadCurrentUser();
+    void loadCurrentUser();
   }
 
   function closeUploadModal() {
     showUploadModal = false;
   }
 
-  async function handleUploadSubmit(data: UploadData) {
-    if (!data.file) {
-      showWarningAlert(MESSAGES.UPLOAD_NO_FILE);
-      return;
+  /** Validated upload data with guaranteed non-null values */
+  interface ValidatedUploadData {
+    file: File;
+    category: string;
+    user: CurrentUser;
+    requiresPayroll: boolean;
+  }
+
+  /** Validation result: either error info or validated data */
+  type UploadValidationResult =
+    | { valid: false; error: string; type: 'warning' | 'error' }
+    | { valid: true; data: ValidatedUploadData };
+
+  /** Validate upload data before submission */
+  function validateUploadData(data: UploadData, user: CurrentUser | null): UploadValidationResult {
+    if (data.file === null) {
+      return { valid: false, error: MESSAGES.UPLOAD_NO_FILE, type: 'warning' };
     }
-    if (!data.category) {
-      showWarningAlert(MESSAGES.UPLOAD_NO_CATEGORY);
-      return;
+    if (data.category === '') {
+      return { valid: false, error: MESSAGES.UPLOAD_NO_CATEGORY, type: 'warning' };
     }
-    if (!currentUser) {
-      showErrorAlert('Benutzerdaten nicht geladen');
-      return;
+    if (user === null) {
+      return { valid: false, error: 'Benutzerdaten nicht geladen', type: 'error' };
     }
+
     const mapping = CATEGORY_MAPPINGS[data.category];
-    if (mapping) {
-      const validation = validateUserForCategory(mapping, currentUser);
-      if (!validation.valid) {
-        showWarningAlert(validation.error ?? '');
-        return;
-      }
-      if (mapping.requiresPayrollPeriod === true && (!data.salaryYear || !data.salaryMonth)) {
-        showWarningAlert(MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD);
-        return;
-      }
+    const validation = validateUserForCategory(mapping, user);
+    if (!validation.valid) {
+      return { valid: false, error: validation.error ?? '', type: 'warning' };
     }
-    const requiresPayroll = CATEGORY_MAPPINGS[data.category]?.requiresPayrollPeriod === true;
+    if (
+      mapping.requiresPayrollPeriod === true &&
+      (data.salaryYear === 0 || data.salaryMonth === 0)
+    ) {
+      return { valid: false, error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD, type: 'warning' };
+    }
+
+    return {
+      valid: true,
+      data: {
+        file: data.file,
+        category: data.category,
+        user,
+        requiresPayroll: mapping.requiresPayrollPeriod === true,
+      },
+    };
+  }
+
+  async function handleUploadSubmit(data: UploadData) {
+    const result = validateUploadData(data, currentUser);
+    if (!result.valid) {
+      if (result.type === 'warning') {
+        showWarningAlert(result.error);
+      } else {
+        showErrorAlert(result.error);
+      }
+      return;
+    }
+
+    const { file, category, user, requiresPayroll } = result.data;
     const formData = buildUploadFormData(
-      data.file,
-      data.category,
-      currentUser,
+      file,
+      category,
+      user,
       data.docName,
       data.description,
       data.tags,
       requiresPayroll ? data.salaryYear : undefined,
       requiresPayroll ? data.salaryMonth : undefined,
     );
-    if (!formData) {
+
+    if (formData === null) {
       showErrorAlert('Ungültige Kategorie');
       return;
     }
+
     try {
-      await apiUploadDocument(formData, () => {});
+      await apiUploadDocument(formData);
       showSuccessAlert(MESSAGES.UPLOAD_SUCCESS);
       closeUploadModal();
       await invalidateAll();
@@ -411,7 +451,9 @@
         if (el && !el.contains(target)) sortDropdownOpen = false;
       };
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 
@@ -466,6 +508,7 @@
                 oninput={handleSearchInput}
               />
               <button
+                type="button"
                 class="search-input__clear"
                 class:hidden={!searchQuery}
                 onclick={clearSearch}
@@ -475,7 +518,12 @@
               </button>
             </div>
             {#if showUploadButton}
-              <button id="upload-btn" class="btn btn-upload" onclick={openUploadModal}>
+              <button
+                type="button"
+                id="upload-btn"
+                class="btn btn-upload"
+                onclick={openUploadModal}
+              >
                 <i class="fas fa-upload mr-2"></i>
                 Hochladen
               </button>
@@ -485,20 +533,26 @@
           <div class="flex items-center gap-3">
             <div class="flex gap-1">
               <button
+                type="button"
                 class="action-icon"
                 class:action-icon--active={viewMode === 'list'}
                 aria-label="Listen-Ansicht"
                 title="Listen-Ansicht"
-                onclick={() => setViewMode('list')}
+                onclick={() => {
+                  setViewMode('list');
+                }}
               >
                 <i class="fas fa-list"></i>
               </button>
               <button
+                type="button"
                 class="action-icon"
                 class:action-icon--active={viewMode === 'grid'}
                 aria-label="Grid-Ansicht"
                 title="Grid-Ansicht"
-                onclick={() => setViewMode('grid')}
+                onclick={() => {
+                  setViewMode('grid');
+                }}
               >
                 <i class="fas fa-th"></i>
               </button>
@@ -522,7 +576,12 @@
                 {#each SORT_OPTIONS as option (option.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="dropdown__option" onclick={() => handleSortChange(option.value)}>
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      handleSortChange(option.value);
+                    }}
+                  >
                     {option.label}
                   </div>
                 {/each}
@@ -544,7 +603,8 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0
+                  01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               ></path>
             </svg>
             <span class="text-sm text-content-secondary">{stats.total} Dokumente</span>
@@ -581,7 +641,7 @@
                 <div class="text-center">
                   <i class="fas fa-exclamation-triangle text-4xl text-error-500 mb-4"></i>
                   <p class="text-content-secondary mb-4">{error}</p>
-                  <button class="btn btn-primary" onclick={() => loadDocuments()}
+                  <button type="button" class="btn btn-primary" onclick={() => loadDocuments()}
                     >{MESSAGES.BTN_RETRY}</button
                   >
                 </div>
@@ -631,12 +691,7 @@
   ondownload={downloadDocument}
 />
 
-<UploadModal
-  show={showUploadModal}
-  {currentUser}
-  onclose={closeUploadModal}
-  onsubmit={handleUploadSubmit}
-/>
+<UploadModal show={showUploadModal} onclose={closeUploadModal} onsubmit={handleUploadSubmit} />
 
 <EditModal
   show={showEditModal}

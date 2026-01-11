@@ -3,8 +3,9 @@
  * @module employee-profile/_lib/utils
  */
 
-import type { ToastType } from './types';
 import { POSITION_MAP } from './constants';
+
+import type { ToastType } from './types';
 
 /**
  * Show toast notification via custom event
@@ -12,13 +13,12 @@ import { POSITION_MAP } from './constants';
  * @param type - Toast type
  */
 export function showToast(message: string, type: ToastType = 'info'): void {
-  if (typeof window !== 'undefined') {
-    const event = new CustomEvent('show-toast', {
-      detail: { message, type },
-    });
-    window.dispatchEvent(event);
-  }
-  console.log(`[Toast:${type}] ${message}`);
+  if (typeof window === 'undefined') return;
+
+  const event = new CustomEvent('show-toast', {
+    detail: { message, type },
+  });
+  window.dispatchEvent(event);
 }
 
 /**
@@ -64,7 +64,7 @@ export function doPasswordsMatch(password: string, confirmPassword: string): boo
  * @returns German display name or original value
  */
 export function getDisplayPosition(position?: string): string {
-  if (!position || position === '') {
+  if (position === undefined || position === '') {
     return '-';
   }
   return POSITION_MAP[position.toLowerCase()] ?? position;
@@ -76,7 +76,7 @@ export function getDisplayPosition(position?: string): string {
  * @returns Department name or placeholder
  */
 export function getDisplayDepartment(departmentName?: string): string {
-  return departmentName && departmentName !== '' ? departmentName : '-';
+  return departmentName !== undefined && departmentName !== '' ? departmentName : '-';
 }
 
 /**
@@ -86,10 +86,10 @@ export function getDisplayDepartment(departmentName?: string): string {
  * @returns Initials or fallback
  */
 export function getInitials(firstName?: string, lastName?: string): string {
-  const firstInitial = firstName?.charAt(0)?.toUpperCase() ?? '';
-  const lastInitial = lastName?.charAt(0)?.toUpperCase() ?? '';
+  const firstInitial = firstName?.charAt(0).toUpperCase() ?? '';
+  const lastInitial = lastName?.charAt(0).toUpperCase() ?? '';
 
-  if (firstInitial || lastInitial) {
+  if (firstInitial !== '' || lastInitial !== '') {
     return `${firstInitial}${lastInitial}`;
   }
 

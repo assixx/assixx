@@ -5,6 +5,7 @@
  * SSR: Loads categories, departments, suggestions, and stats in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type {
   KvpCategory,
@@ -53,11 +54,33 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
+/**
+ * Possible API response formats for suggestions endpoint
+ */
+type SuggestionsApiResponse = KvpSuggestion[] | { data: KvpSuggestion[] } | SuggestionsResponse;
 
+/**
+ * Parses suggestions from various API response formats
+ */
+function parseSuggestionsResponse(data: SuggestionsApiResponse | null): KvpSuggestion[] {
+  if (data === null) {
+    return [];
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if ('data' in data && Array.isArray(data.data)) {
+    return data.data;
+  }
+  if ('suggestions' in data && Array.isArray(data.suggestions)) {
+    return data.suggestions;
+  }
+  return [];
+}
+
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -68,11 +91,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   // Parallel fetch: categories + departments + suggestions + stats (if admin)
   // Type explicitly to allow mixed Promise types
   const fetchPromises: Promise<
-    KvpCategory[] | Department[] | SuggestionsResponse | KvpStats | null
+    KvpCategory[] | Department[] | SuggestionsApiResponse | KvpStats | null
   >[] = [
     apiFetch<KvpCategory[]>('/kvp/categories', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<SuggestionsResponse>('/kvp', token, fetch),
+    apiFetch<SuggestionsApiResponse>('/kvp', token, fetch),
   ];
 
   // Only fetch stats for admins
@@ -85,30 +108,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   // Extract results
   const categoriesData = results[0] as KvpCategory[] | null;
   const departmentsData = results[1] as Department[] | null;
-  const suggestionsData = results[2] as SuggestionsResponse | null;
+  const suggestionsData = results[2] as SuggestionsApiResponse | null;
   const statsData = isAdmin ? (results[3] as KvpStats | null) : null;
 
   // Safe fallbacks
   const categories = Array.isArray(categoriesData) ? categoriesData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
 
-  // Handle suggestions response (can be array or paginated response)
-  let suggestions: KvpSuggestion[] = [];
-  if (Array.isArray(suggestionsData)) {
-    suggestions = suggestionsData;
-  } else if (
-    suggestionsData !== null &&
-    'data' in suggestionsData &&
-    Array.isArray(suggestionsData.data)
-  ) {
-    suggestions = suggestionsData.data;
-  } else if (suggestionsData !== null && 'suggestions' in suggestionsData) {
-    const withSuggestions = suggestionsData as unknown as { suggestions?: KvpSuggestion[] };
-    suggestions = Array.isArray(withSuggestions.suggestions) ? withSuggestions.suggestions : [];
-  }
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] kvp loaded in ${duration}ms (${isAdmin ? '4' : '3'} parallel API calls)`);
+  // Parse suggestions from various response formats
+  const suggestions = parseSuggestionsResponse(suggestionsData);
 
   return {
     categories,

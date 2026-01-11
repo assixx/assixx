@@ -1,10 +1,15 @@
+/* eslint-disable max-lines */
 // =============================================================================
 // SHIFTS - API FUNCTIONS
 // Based on: frontend/src/scripts/shifts/api.ts
 // =============================================================================
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
 import { getApiClient } from '$lib/utils/api-client';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
+
 import type {
   User,
   Area,
@@ -20,8 +25,6 @@ import type {
   RotationHistoryEntryAPI,
   AvailabilityStatus,
 } from './types';
-import { base } from '$app/paths';
-import { goto } from '$app/navigation';
 
 const apiClient = getApiClient();
 
@@ -73,7 +76,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  goto(`${base}/login?session=expired`);
+  void goto(`${resolve('/login', {})}?session=expired`);
 }
 
 /**
@@ -112,7 +115,6 @@ export async function fetchCurrentUser(): Promise<User | null> {
 export async function fetchAreas(): Promise<Area[]> {
   try {
     const areas = await apiClient.get<Area[]>(API_ENDPOINTS.AREAS);
-    console.info('[SHIFTS API] Areas loaded:', areas.length);
     return Array.isArray(areas) ? areas : [];
   } catch (err) {
     console.error('[SHIFTS API] Error loading areas:', err);
@@ -131,9 +133,7 @@ export async function fetchDepartments(areaId?: number | null): Promise<Departme
     }
 
     const response = await apiClient.get<Department[] | { data: Department[] }>(url);
-    const departments = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[SHIFTS API] Departments loaded:', departments.length);
-    return departments;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[SHIFTS API] Error loading departments:', err);
     return [];
@@ -161,9 +161,7 @@ export async function fetchMachines(
       queryString !== '' ? `${API_ENDPOINTS.MACHINES}?${queryString}` : API_ENDPOINTS.MACHINES;
 
     const response = await apiClient.get<Machine[] | { data: Machine[] }>(url);
-    const machines = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[SHIFTS API] Machines loaded:', machines.length);
-    return machines;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[SHIFTS API] Error loading machines:', err);
     return [];
@@ -181,9 +179,7 @@ export async function fetchTeams(departmentId?: number | null): Promise<Team[]> 
     }
 
     const response = await apiClient.get<Team[] | { data: Team[] }>(url);
-    const teams = Array.isArray(response) ? response : (response.data ?? []);
-    console.info('[SHIFTS API] Teams loaded:', teams.length);
-    return teams;
+    return Array.isArray(response) ? response : response.data;
   } catch (err) {
     console.error('[SHIFTS API] Error loading teams:', err);
     return [];
@@ -218,7 +214,7 @@ const VALID_AVAILABILITY_STATUSES: readonly AvailabilityStatus[] = [
  * Returns undefined for invalid/missing values
  */
 function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | undefined {
-  if (status === undefined || status === null || status === '') {
+  if (status === undefined || status === '') {
     return undefined;
   }
   if (VALID_AVAILABILITY_STATUSES.includes(status as AvailabilityStatus)) {
@@ -238,19 +234,20 @@ export async function fetchTeamMembers(teamId: number): Promise<TeamMember[]> {
       `${API_ENDPOINTS.TEAMS}/${teamId}/members`,
     );
 
-    const members: TeamMember[] = response.map((user) => ({
-      id: user.id,
-      username: user.username,
-      firstName: user.firstName ?? '',
-      lastName: user.lastName ?? '',
-      role: user.role === 'lead' ? 'lead' : 'member',
-      userRole: user.userRole as TeamMember['userRole'],
-      availabilityStatus: toAvailabilityStatus(user.availabilityStatus),
-      availabilityStart: user.availabilityStart,
-      availabilityEnd: user.availabilityEnd,
-    }));
+    const members: TeamMember[] = response.map(
+      (user: TeamMemberApiResponse): TeamMember => ({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        role: user.role === 'lead' ? 'lead' : 'member',
+        userRole: user.userRole as TeamMember['userRole'],
+        availabilityStatus: toAvailabilityStatus(user.availabilityStatus),
+        availabilityStart: user.availabilityStart,
+        availabilityEnd: user.availabilityEnd,
+      }),
+    );
 
-    console.info('[SHIFTS API] Team members loaded:', members.length);
     return members;
   } catch (err) {
     console.error('[SHIFTS API] Error loading team members:', err);
@@ -284,7 +281,6 @@ export async function fetchEmployees(
     }
 
     const response = await apiClient.get<Employee[]>(url);
-    console.info('[SHIFTS API] Employees loaded:', response.length);
     return Array.isArray(response) ? response : [];
   } catch (err) {
     console.error('[SHIFTS API] Error loading employees:', err);
@@ -325,11 +321,9 @@ export async function fetchShiftPlan(
       params.append('areaId', String(context.areaId));
     }
 
-    const response = await apiClient.get<ShiftPlanResponse>(
+    return await apiClient.get<ShiftPlanResponse>(
       `${API_ENDPOINTS.SHIFTS_PLAN}?${params.toString()}`,
     );
-    console.info('[SHIFTS API] Shift plan loaded');
-    return response;
   } catch (err) {
     console.error('[SHIFTS API] Error loading shift plan:', err);
     return null;
@@ -342,12 +336,10 @@ export async function fetchShiftPlan(
 export async function createShiftPlan(
   planData: CreateShiftPlanRequest,
 ): Promise<{ planId: number; shiftIds: number[] }> {
-  const response = await apiClient.post<{ planId: number; shiftIds: number[] }>(
+  return await apiClient.post<{ planId: number; shiftIds: number[] }>(
     API_ENDPOINTS.SHIFTS_PLAN,
     planData,
   );
-  console.info('[SHIFTS API] Shift plan created:', response.planId);
-  return response;
 }
 
 /**
@@ -357,12 +349,10 @@ export async function updateShiftPlan(
   planId: number,
   planData: CreateShiftPlanRequest,
 ): Promise<{ planId: number; shiftIds: number[] }> {
-  const response = await apiClient.put<{ planId: number; shiftIds: number[] }>(
+  return await apiClient.put<{ planId: number; shiftIds: number[] }>(
     `${API_ENDPOINTS.SHIFTS_PLAN}/${planId}`,
     planData,
   );
-  console.info('[SHIFTS API] Shift plan updated:', planId);
-  return response;
 }
 
 /**
@@ -370,7 +360,6 @@ export async function updateShiftPlan(
  */
 export async function deleteShiftPlan(planId: number): Promise<void> {
   await apiClient.delete(`${API_ENDPOINTS.SHIFTS_PLAN}/${planId}`);
-  console.info('[SHIFTS API] Shift plan deleted:', planId);
 }
 
 /**
@@ -387,7 +376,6 @@ export async function assignShift(shiftData: {
   endTime: string;
 }): Promise<void> {
   await apiClient.post(API_ENDPOINTS.SHIFTS, shiftData);
-  console.info('[SHIFTS API] Shift assigned');
 }
 
 // =============================================================================
@@ -400,9 +388,7 @@ export async function assignShift(shiftData: {
 export async function fetchFavorites(): Promise<ShiftFavorite[]> {
   try {
     // apiClient.get extracts response.data automatically via handleV2Response
-    const favorites = await apiClient.get<ShiftFavorite[]>(API_ENDPOINTS.FAVORITES);
-    console.info('[SHIFTS API] Favorites loaded:', favorites?.length ?? 0);
-    return favorites ?? [];
+    return await apiClient.get<ShiftFavorite[]>(API_ENDPOINTS.FAVORITES);
   } catch (err) {
     console.error('[SHIFTS API] Error loading favorites:', err);
     return [];
@@ -425,9 +411,7 @@ export async function saveFavorite(favoriteData: {
 }): Promise<ShiftFavorite | null> {
   try {
     // apiClient.post extracts response.data automatically via handleV2Response
-    const favorite = await apiClient.post<ShiftFavorite>(API_ENDPOINTS.FAVORITES, favoriteData);
-    console.info('[SHIFTS API] Favorite saved');
-    return favorite;
+    return await apiClient.post<ShiftFavorite>(API_ENDPOINTS.FAVORITES, favoriteData);
   } catch (err) {
     console.error('[SHIFTS API] Error saving favorite:', err);
     throw err;
@@ -439,7 +423,6 @@ export async function saveFavorite(favoriteData: {
  */
 export async function deleteFavorite(favoriteId: number | string): Promise<void> {
   await apiClient.delete(`${API_ENDPOINTS.FAVORITES}/${favoriteId}`);
-  console.info('[SHIFTS API] Favorite deleted:', favoriteId);
 }
 
 // =============================================================================
@@ -461,7 +444,6 @@ export async function fetchRotationHistory(
     }
 
     const response = await apiClient.get<{ history?: RotationHistoryEntryAPI[] }>(url);
-    console.info('[SHIFTS API] Rotation history loaded:', response.history?.length ?? 0);
     return response.history ?? [];
   } catch (err) {
     console.error('[SHIFTS API] Error loading rotation history:', err);
@@ -477,7 +459,6 @@ export async function fetchActiveRotationPatterns(): Promise<RotationPattern[]> 
     const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
       `${API_ENDPOINTS.ROTATION_PATTERNS}?active=true`,
     );
-    console.info('[SHIFTS API] Rotation patterns loaded:', response.patterns?.length ?? 0);
     return response.patterns ?? [];
   } catch (err) {
     console.error('[SHIFTS API] Error loading rotation patterns:', err);
@@ -493,12 +474,6 @@ export async function fetchRotationPatternById(patternId: number): Promise<Rotat
   try {
     const response = await apiClient.get<{ pattern?: RotationPattern }>(
       `${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`,
-    );
-    console.info(
-      '[SHIFTS API] Rotation pattern loaded:',
-      patternId,
-      '→',
-      response.pattern?.patternType,
     );
     return response.pattern ?? null;
   } catch (err) {
@@ -524,8 +499,7 @@ export async function createRotationPattern(patternData: {
     API_ENDPOINTS.ROTATION_PATTERNS,
     patternData,
   );
-  console.info('[SHIFTS API] Rotation pattern created:', response.pattern?.id);
-  return { id: response.pattern?.id ?? 0 };
+  return { id: response.pattern.id };
 }
 
 /**
@@ -545,7 +519,6 @@ export async function updateRotationPattern(
   }>,
 ): Promise<void> {
   await apiClient.put(`${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`, patternData);
-  console.info('[SHIFTS API] Rotation pattern updated:', patternId);
 }
 
 /**
@@ -559,7 +532,6 @@ export async function assignRotation(assignData: {
   teamId?: number | null;
 }): Promise<void> {
   await apiClient.post(API_ENDPOINTS.ROTATION_ASSIGN, assignData);
-  console.info('[SHIFTS API] Rotation assigned');
 }
 
 /**
@@ -571,12 +543,10 @@ export async function generateRotationShifts(generateData: {
   endDate: string;
   preview?: boolean;
 }): Promise<{ shiftsGenerated: number }> {
-  const response = await apiClient.post<{ shiftsGenerated: number }>(
+  return await apiClient.post<{ shiftsGenerated: number }>(
     API_ENDPOINTS.ROTATION_GENERATE,
     generateData,
   );
-  console.info('[SHIFTS API] Rotation shifts generated:', response.shiftsGenerated);
-  return response;
 }
 
 /**
@@ -591,7 +561,6 @@ export async function deleteRotationHistoryByWeek(
   const response = await apiClient.delete<{ deletedCounts: { historyDeleted: number } }>(
     `${API_ENDPOINTS.ROTATION_HISTORY}/week?teamId=${teamId}&startDate=${startDate}&endDate=${endDate}`,
   );
-  console.info('[SHIFTS API] Rotation history deleted for week:', response.deletedCounts);
   return response.deletedCounts;
 }
 
@@ -617,9 +586,10 @@ export async function deleteRotationHistoryByTeam(
   patternId?: number,
 ): Promise<DeleteRotationHistoryResponse> {
   // Build URL with optional patternId
-  const url = patternId
-    ? `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`
-    : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`;
+  const url =
+    patternId !== undefined
+      ? `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`
+      : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`;
 
   // apiClient.delete unwraps { success, data } → returns data directly
   const response = await apiClient.delete<{
@@ -631,9 +601,6 @@ export async function deleteRotationHistoryByTeam(
       plans?: number;
     };
   }>(url);
-
-  const scope = patternId ? `pattern ${patternId}` : 'all patterns';
-  console.info(`[SHIFTS API] Deleted ${scope} for team:`, teamId, response.deletedCounts);
 
   // Map backend field names to frontend field names
   return {
@@ -653,27 +620,18 @@ export async function deleteShiftsByWeek(
   startDate: string,
   endDate: string,
 ): Promise<{ shiftsDeleted: number }> {
-  const response = await apiClient.delete<{ shiftsDeleted: number }>(
+  return await apiClient.delete<{ shiftsDeleted: number }>(
     `${API_ENDPOINTS.SHIFTS}/week?teamId=${teamId}&startDate=${startDate}&endDate=${endDate}`,
   );
-  console.info('[SHIFTS API] Shifts deleted for week:', response.shiftsDeleted);
-  return response;
 }
 
 /**
  * Delete ALL shifts for a team (no date range)
  */
 export async function deleteShiftsByTeam(teamId: number): Promise<{ shiftsDeleted: number }> {
-  const response = await apiClient.delete<{ shiftsDeleted: number }>(
+  return await apiClient.delete<{ shiftsDeleted: number }>(
     `${API_ENDPOINTS.SHIFTS}/team?teamId=${teamId}`,
   );
-  console.info(
-    '[SHIFTS API] All shifts deleted for team:',
-    teamId,
-    'count:',
-    response.shiftsDeleted,
-  );
-  return response;
 }
 
 // =============================================================================
@@ -719,10 +677,8 @@ export interface GenerateRotationFromConfigRequest {
 export async function generateRotationFromConfig(
   request: GenerateRotationFromConfigRequest,
 ): Promise<{ success: boolean; shiftsCreated: number }> {
-  const response = await apiClient.post<{ success: boolean; shiftsCreated: number }>(
+  return await apiClient.post<{ success: boolean; shiftsCreated: number }>(
     '/shifts/rotation/generate-from-config',
     request,
   );
-  console.info('[SHIFTS API] Custom rotation generated:', response.shiftsCreated, 'shifts');
-  return response;
 }

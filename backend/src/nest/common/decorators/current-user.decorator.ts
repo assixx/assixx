@@ -39,7 +39,6 @@ export const CurrentUser = createParamDecorator(
     const user = request.user;
 
     if (data !== undefined) {
-      // eslint-disable-next-line security/detect-object-injection -- Safe: data is typed as keyof NestAuthUser
       return user[data];
     }
 

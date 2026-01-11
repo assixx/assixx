@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Team, FormIsActiveStatus, AvailabilityStatus } from './types';
   import { POSITION_OPTIONS, AVAILABILITY_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -7,6 +6,8 @@
     getAvailabilityLabel,
     calculatePasswordStrength,
   } from './utils';
+
+  import type { Team, FormIsActiveStatus, AvailabilityStatus } from './types';
 
   // =============================================================================
   // PROPS
@@ -44,37 +45,10 @@
     onvalidatepasswords: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
-    show,
-    isEditMode,
-    modalTitle,
-    allTeams,
-    submitting,
-    formFirstName = $bindable(),
-    formLastName = $bindable(),
-    formEmail = $bindable(),
-    formEmailConfirm = $bindable(),
-    formPassword = $bindable(),
-    formPasswordConfirm = $bindable(),
-    formEmployeeNumber = $bindable(),
-    formPosition = $bindable(),
-    formPhone = $bindable(),
-    formDateOfBirth = $bindable(),
-    formIsActive = $bindable(),
-    formTeamIds = $bindable(),
-    formAvailabilityStatus = $bindable(),
-    formAvailabilityStart = $bindable(),
-    formAvailabilityEnd = $bindable(),
-    formAvailabilityNotes = $bindable(),
-    emailError = $bindable(),
-    passwordError = $bindable(),
-    onclose,
-    onsubmit,
-    onvalidateemails,
-    onvalidatepasswords,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), formAvailabilityStatus = $bindable(), formAvailabilityStart = $bindable(), formAvailabilityEnd = $bindable(), formAvailabilityNotes = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords }: Props = $props();
+  /* eslint-enable */
 
   // =============================================================================
   // LOCAL STATE
@@ -166,29 +140,34 @@
   // OUTSIDE CLICK HANDLERS
   // =============================================================================
 
+  /**
+   * Checks if a click occurred outside a dropdown element
+   */
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
+    const el = document.getElementById(elementId);
+    return el !== null && !el.contains(target);
+  }
+
   $effect(() => {
     if (positionDropdownOpen || statusDropdownOpen || availabilityDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
-        if (positionDropdownOpen) {
-          const el = document.getElementById('position-dropdown');
-          if (el && !el.contains(target)) positionDropdownOpen = false;
+        if (positionDropdownOpen && isClickOutsideDropdown(target, 'position-dropdown')) {
+          positionDropdownOpen = false;
         }
-
-        if (statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) statusDropdownOpen = false;
+        if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
+          statusDropdownOpen = false;
         }
-
-        if (availabilityDropdownOpen) {
-          const el = document.getElementById('availability-dropdown');
-          if (el && !el.contains(target)) availabilityDropdownOpen = false;
+        if (availabilityDropdownOpen && isClickOutsideDropdown(target, 'availability-dropdown')) {
+          availabilityDropdownOpen = false;
         }
       };
 
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 </script>
@@ -204,10 +183,19 @@
     aria-labelledby="employee-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
-    <form id="employee-form" class="ds-modal" onclick={(e) => e.stopPropagation()} {onsubmit}>
+    <form
+      id="employee-form"
+      class="ds-modal"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      {onsubmit}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="employee-modal-title">{modalTitle}</h3>
         <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
@@ -390,14 +378,19 @@
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{formPosition || 'Bitte wählen...'}</span>
+              <span>{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown__menu" class:active={positionDropdownOpen}>
               {#each POSITION_OPTIONS as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectPosition(position)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectPosition(position);
+                  }}
+                >
                   {position}
                 </div>
               {/each}
@@ -467,7 +460,9 @@
             >
               {#each allTeams as team (team.id)}
                 <option value={team.id} selected={formTeamIds.includes(team.id)}>
-                  {team.name}{team.departmentName ? ` (${team.departmentName})` : ''}
+                  {team.name}{team.departmentName !== undefined && team.departmentName !== ''
+                    ? ` (${team.departmentName})`
+                    : ''}
                 </option>
               {/each}
             </select>
@@ -499,7 +494,12 @@
                 {#each AVAILABILITY_OPTIONS as option (option.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="dropdown__option" onclick={() => selectAvailability(option.value)}>
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectAvailability(option.value);
+                    }}
+                  >
                     {option.label}
                   </div>
                 {/each}
@@ -569,17 +569,32 @@
               <div class="dropdown__menu" class:active={statusDropdownOpen}>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(1)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(1);
+                  }}
+                >
                   <span class="badge badge--success">Aktiv</span>
                 </div>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(0)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(0);
+                  }}
+                >
                   <span class="badge badge--warning">Inaktiv</span>
                 </div>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="dropdown__option" onclick={() => selectStatus(3)}>
+                <div
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(3);
+                  }}
+                >
                   <span class="badge badge--secondary">Archiviert</span>
                 </div>
               </div>

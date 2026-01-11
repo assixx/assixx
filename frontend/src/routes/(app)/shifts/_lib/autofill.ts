@@ -3,9 +3,9 @@
 // Based on: frontend/src/scripts/shifts/autofill.ts
 // =============================================================================
 
-import type { Employee, ShiftType } from './types';
 import { validateEmployeeAvailability, checkDuplicateShiftAssignment } from './validation';
-import { getShiftLabel } from './utils';
+
+import type { Employee, ShiftType } from './types';
 
 // =============================================================================
 // TYPES
@@ -81,7 +81,7 @@ function dayNameToIndex(dayName: string): number {
  */
 function getDateForDay(weekDates: Date[], dayName: string): string {
   const dayIndex = dayNameToIndex(dayName);
-  const date = weekDates[dayIndex];
+  const date = weekDates.at(dayIndex);
   if (date === undefined) return '';
 
   const year = date.getFullYear();
@@ -142,20 +142,50 @@ export function validateAutofillDay(
 // MAIN AUTOFILL FUNCTION
 // =============================================================================
 
+interface ProcessDayParams {
+  dayName: string;
+  employeeId: number;
+  employee: Employee;
+  shiftType: ShiftType;
+  weekDates: Date[];
+  getShiftEmployees: (date: string, shiftType: string) => number[];
+  existingAssignments: Map<string, Map<string, number[]>>;
+  onAssign: (date: string, shiftType: ShiftType, employeeId: number) => void;
+}
+
+/**
+ * Process autofill for a single day
+ * @returns AutofillDayResult with success status and optional reason
+ */
+function processSingleDay(params: ProcessDayParams): AutofillDayResult {
+  const { dayName, employeeId, employee, shiftType, weekDates, getShiftEmployees } = params;
+  const { existingAssignments, onAssign } = params;
+
+  const validation = validateAutofillDay(
+    dayName,
+    weekDates,
+    shiftType,
+    employee,
+    getShiftEmployees,
+    existingAssignments,
+  );
+
+  if (!validation.valid) {
+    return {
+      date: getDateForDay(weekDates, dayName),
+      day: dayName,
+      success: false,
+      reason: validation.reason,
+    };
+  }
+
+  onAssign(validation.date, shiftType, employeeId);
+  return { date: validation.date, day: dayName, success: true };
+}
+
 /**
  * Perform autofill for all weekdays
  * Assigns the same employee to the same shift type for all weekdays
- *
- * @param employeeId - The employee ID to assign
- * @param employee - The full employee object
- * @param assignedDay - The day that was already assigned (to skip)
- * @param shiftType - The shift type to assign
- * @param weekDates - Array of 7 dates for the current week
- * @param config - Autofill configuration
- * @param getShiftEmployees - Function to get current shift assignments
- * @param existingAssignments - Current weekly shift assignments (Map<date, Map<shiftType, employeeIds[]>>)
- * @param onAssign - Callback to perform the actual assignment
- * @returns AutofillResult with count and details
  */
 export function performAutofill(
   employeeId: number,
@@ -168,69 +198,30 @@ export function performAutofill(
   existingAssignments: Map<string, Map<string, number[]>>,
   onAssign: (date: string, shiftType: ShiftType, employeeId: number) => void,
 ): AutofillResult {
-  // Skip if autofill disabled or already in progress
   if (!config.enabled || isAutofilling) {
     return { filled: 0, skipped: 0, details: [] };
   }
 
   isAutofilling = true;
+
   const daysToFill = getDaysToFill(assignedDay, config.skipWeekends);
-  const details: AutofillDayResult[] = [];
-  let filledCount = 0;
-  let skippedCount = 0;
-
-  console.info(
-    '[SHIFTS AUTOFILL] Starting autofill for employee:',
+  const baseParams = {
     employeeId,
-    'Shift:',
+    employee,
     shiftType,
-  );
+    weekDates,
+    getShiftEmployees,
+    existingAssignments,
+    onAssign,
+  };
+  const details = daysToFill.map((dayName) => processSingleDay({ dayName, ...baseParams }));
 
-  for (const dayName of daysToFill) {
-    const validation = validateAutofillDay(
-      dayName,
-      weekDates,
-      shiftType,
-      employee,
-      getShiftEmployees,
-      existingAssignments,
-    );
-
-    if (!validation.valid) {
-      console.info('[SHIFTS AUTOFILL] Skipping', dayName, '-', validation.reason);
-      details.push({
-        date: getDateForDay(weekDates, dayName),
-        day: dayName,
-        success: false,
-        reason: validation.reason,
-      });
-      skippedCount++;
-      continue;
-    }
-
-    // Perform the assignment via callback
-    console.info('[SHIFTS AUTOFILL] Assigning', dayName, 'for employee:', employeeId);
-    onAssign(validation.date, shiftType, employeeId);
-    details.push({
-      date: validation.date,
-      day: dayName,
-      success: true,
-    });
-    filledCount++;
-  }
+  const filledCount = details.filter((d) => d.success).length;
+  const skippedCount = details.filter((d) => !d.success).length;
 
   isAutofilling = false;
 
-  if (filledCount > 0) {
-    const shiftName = getShiftLabel(shiftType);
-    console.info(`[SHIFTS AUTOFILL] Completed: ${filledCount} days filled with ${shiftName}`);
-  }
-
-  return {
-    filled: filledCount,
-    skipped: skippedCount,
-    details,
-  };
+  return { filled: filledCount, skipped: skippedCount, details };
 }
 
 /**

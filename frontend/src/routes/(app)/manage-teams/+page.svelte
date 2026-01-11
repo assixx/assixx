@@ -6,23 +6,13 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
-  import { showErrorAlert } from '$lib/stores/toast.js';
-  import type { PageData } from './$types';
+
+  import { showErrorAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/manage-teams.css';
 
   // Local modules
-  import type {
-    Team,
-    Department,
-    Admin,
-    TeamMember,
-    Machine,
-    StatusFilter,
-    FormIsActiveStatus,
-  } from './_lib/types';
-  import { MESSAGES } from './_lib/constants';
   import {
     saveTeam as apiSaveTeam,
     deleteTeam as apiDeleteTeam,
@@ -32,7 +22,10 @@
     fetchTeamMembers,
     fetchTeamMachines,
   } from './_lib/api';
+  import { MESSAGES } from './_lib/constants';
   import { applyAllFilters } from './_lib/filters';
+  import TeamDeleteModals from './_lib/TeamDeleteModals.svelte';
+  import TeamFormModal from './_lib/TeamFormModal.svelte';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -43,8 +36,17 @@
     getMembersBadge,
     getMachinesBadge,
   } from './_lib/utils';
-  import TeamFormModal from './_lib/TeamFormModal.svelte';
-  import TeamDeleteModals from './_lib/TeamDeleteModals.svelte';
+
+  import type { PageData } from './$types';
+  import type {
+    Team,
+    Department,
+    Admin,
+    TeamMember,
+    Machine,
+    StatusFilter,
+    FormIsActiveStatus,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -53,11 +55,11 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allTeams = $derived<Team[]>(data?.teams ?? []);
-  const allDepartments = $derived<Department[]>(data?.departments ?? []);
-  const allAdmins = $derived<Admin[]>(data?.admins ?? []);
-  const allEmployees = $derived<TeamMember[]>(data?.employees ?? []);
-  const allMachines = $derived<Machine[]>(data?.machines ?? []);
+  const allTeams = $derived<Team[]>(data.teams);
+  const allDepartments = $derived<Department[]>(data.departments);
+  const allAdmins = $derived<Admin[]>(data.admins);
+  const allEmployees = $derived<TeamMember[]>(data.employees);
+  const allMachines = $derived<Machine[]>(data.machines);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -150,14 +152,16 @@
   }
 
   async function deleteTeam(): Promise<void> {
-    if (deleteTeamId === null) return;
+    const teamId = deleteTeamId;
+    if (teamId === null) return;
 
     try {
-      const result = await apiDeleteTeam(deleteTeamId);
+      const result = await apiDeleteTeam(teamId);
 
       if (result.success) {
         showDeleteConfirmModal = false;
-        deleteTeamId = null;
+        // Only reset if unchanged during async operation
+        if (deleteTeamId === teamId) deleteTeamId = null;
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else if (result.hasMembers) {
@@ -172,12 +176,14 @@
   }
 
   async function forceDeleteTeam(): Promise<void> {
-    if (deleteTeamId === null) return;
+    const teamId = deleteTeamId;
+    if (teamId === null) return;
 
     try {
-      await apiForceDeleteTeam(deleteTeamId);
+      await apiForceDeleteTeam(teamId);
       showForceDeleteModal = false;
-      deleteTeamId = null;
+      // Only reset if unchanged during async operation
+      if (deleteTeamId === teamId) deleteTeamId = null;
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
@@ -297,10 +303,10 @@
     // filteredTeams is $derived - automatically updates
   }
 
-  function handleSearchResultClick(teamId: number): void {
-    openEditModal(teamId);
+  async function handleSearchResultClick(teamId: number): Promise<void> {
     searchOpen = false;
     currentSearchQuery = '';
+    await openEditModal(teamId);
   }
 
   // =============================================================================
@@ -316,7 +322,9 @@
       };
 
       document.addEventListener('click', handleOutsideClick);
-      return () => document.removeEventListener('click', handleOutsideClick);
+      return () => {
+        document.removeEventListener('click', handleOutsideClick);
+      };
     }
   });
 
@@ -353,37 +361,49 @@
         <!-- Status Toggle Group -->
         <div class="toggle-group" id="team-status-toggle">
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
             title="Aktive Teams"
-            onclick={() => handleStatusToggle('active')}
+            onclick={() => {
+              handleStatusToggle('active');
+            }}
           >
             <i class="fas fa-check-circle"></i>
             Aktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
             title="Inaktive Teams"
-            onclick={() => handleStatusToggle('inactive')}
+            onclick={() => {
+              handleStatusToggle('inactive');
+            }}
           >
             <i class="fas fa-times-circle"></i>
             Inaktive
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
             title="Archivierte Teams"
-            onclick={() => handleStatusToggle('archived')}
+            onclick={() => {
+              handleStatusToggle('archived');
+            }}
           >
             <i class="fas fa-archive"></i>
             Archiviert
           </button>
           <button
+            type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
             title="Alle Teams"
-            onclick={() => handleStatusToggle('all')}
+            onclick={() => {
+              handleStatusToggle('all');
+            }}
           >
             <i class="fas fa-users"></i>
             Alle
@@ -423,7 +443,9 @@
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
                   class="search-input__result-item"
-                  onclick={() => handleSearchResultClick(team.id)}
+                  onclick={() => {
+                    void handleSearchResultClick(team.id);
+                  }}
                 >
                   <i class="fas fa-users-cog text-blue-500"></i>
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -446,7 +468,7 @@
         <div class="text-center p-6">
           <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button class="btn btn-primary mt-4" onclick={() => invalidateAll()}
+          <button type="button" class="btn btn-primary mt-4" onclick={() => void invalidateAll()}
             >Erneut versuchen</button
           >
         </div>
@@ -457,7 +479,7 @@
           </div>
           <h3 class="empty-state__title">{MESSAGES.NO_TEAMS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_TEAM}</p>
-          <button class="btn btn-primary" onclick={openAddModal}>
+          <button type="button" class="btn btn-primary" onclick={openAddModal}>
             <i class="fas fa-plus"></i>
             Team hinzufügen
           </button>
@@ -492,20 +514,20 @@
                     </td>
                     <td>
                       <span class="badge {deptBadge.class}" title={deptBadge.title}>
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html deptBadge.text}
                       </span>
                     </td>
                     <td>{team.leaderName ?? '-'}</td>
                     <td>
                       <span class="badge {membersBadge.class}" title={membersBadge.title}>
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html membersBadge.text}
                       </span>
                     </td>
                     <td>
                       <span class="badge {machinesBadge.class}" title={machinesBadge.title}>
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags - Safe: Internal badge text with icon, no user input -->
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html machinesBadge.text}
                       </span>
                     </td>
@@ -518,18 +540,22 @@
                     <td>
                       <div class="flex gap-2">
                         <button
+                          type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
                           aria-label="Team bearbeiten"
-                          onclick={() => openEditModal(team.id)}
+                          onclick={() => void openEditModal(team.id)}
                         >
                           <i class="fas fa-edit"></i>
                         </button>
                         <button
+                          type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
                           aria-label="Team löschen"
-                          onclick={() => openDeleteModal(team.id)}
+                          onclick={() => {
+                            openDeleteModal(team.id);
+                          }}
                         >
                           <i class="fas fa-trash"></i>
                         </button>
@@ -547,7 +573,7 @@
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn-float" onclick={openAddModal} aria-label="Team hinzufügen">
+<button type="button" class="btn-float" onclick={openAddModal} aria-label="Team hinzufügen">
   <i class="fas fa-plus"></i>
 </button>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { QUESTION_TYPE_OPTIONS } from './constants';
   import { getQuestionTypeLabel, questionTypeNeedsOptions } from './utils';
+
   import type { QuestionType } from './types';
 
   // =============================================================================
@@ -28,7 +29,7 @@
 
   /* eslint-disable prefer-const */
   let {
-    question = $bindable(),
+    question,
     questionIndex,
     isMandatory,
     activeDropdown,
@@ -82,7 +83,9 @@
         type="button"
         class="dropdown__trigger"
         class:active={isDropdownActive}
-        onclick={() => ontoggleDropdown(dropdownId)}
+        onclick={() => {
+          ontoggleDropdown(dropdownId);
+        }}
       >
         <span>{getQuestionTypeLabel(question.type)}</span>
         <i class="fas fa-chevron-down"></i>
@@ -92,7 +95,9 @@
           <button
             type="button"
             class="dropdown__option"
-            onclick={() => ontypechange(option.value as QuestionType)}
+            onclick={() => {
+              ontypechange(option.value as QuestionType);
+            }}
           >
             {option.label}
           </button>
@@ -131,13 +136,17 @@
               class="option-input"
               placeholder="Option eingeben..."
               value={optionText}
-              oninput={(e) => onupdateoption(optIndex, (e.target as HTMLInputElement).value)}
+              oninput={(e) => {
+                onupdateoption(optIndex, (e.target as HTMLInputElement).value);
+              }}
             />
             <button
               type="button"
               class="remove-option"
               aria-label="Option entfernen"
-              onclick={() => onremoveoption(optIndex)}
+              onclick={() => {
+                onremoveoption(optIndex);
+              }}
             >
               <i class="fas fa-times"></i>
             </button>

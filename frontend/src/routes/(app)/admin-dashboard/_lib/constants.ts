@@ -45,7 +45,7 @@ export const LIST_LIMITS = {
   departments: 5,
   teams: 5,
   upcomingEvents: 3,
-  blackboardEntries: 3,
+  blackboardEntries: 5,
 } as const;
 
 /** Calendar events date range (months ahead) */

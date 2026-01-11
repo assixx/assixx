@@ -1,6 +1,14 @@
-<script>
+<script lang="ts">
+  import { resolve } from '$app/paths';
   import { page } from '$app/stores';
-  import { base } from '$app/paths';
+
+  /**
+   * Resolve a dynamic path with base prefix.
+   * Casts to pathname type for dynamic runtime paths.
+   */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // =============================================================================
   // SVELTE 5 RUNES - Breadcrumb Navigation
@@ -8,16 +16,17 @@
   // =============================================================================
 
   // Props
-  /** @type {{ userRole?: 'root' | 'admin' | 'employee' }} */
-  const { userRole = 'employee' } = $props();
+  interface Props {
+    userRole?: 'root' | 'admin' | 'employee';
+  }
+  const { userRole = 'employee' }: Props = $props();
 
   // =============================================================================
   // FULLSCREEN PAGES (no breadcrumb)
   // Pages that use fullscreen layout and don't need breadcrumb navigation
   // =============================================================================
 
-  /** @type {string[]} */
-  const fullscreenPages = ['/chat'];
+  const fullscreenPages: string[] = ['/chat'];
 
   /**
    * Check if current page is a fullscreen page (no breadcrumb)
@@ -30,8 +39,7 @@
   // URL MAPPINGS (from breadcrumb-config.js)
   // =============================================================================
 
-  /** @type {Record<string, { label: string; icon: string }>} */
-  const urlMappings = {
+  const urlMappings: Partial<Record<string, { label: string; icon: string }>> = {
     '/': { label: 'Home', icon: 'fa-home' },
     '/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
     '/admin-dashboard': { label: 'Admin Dashboard', icon: 'fa-tachometer-alt' },
@@ -68,9 +76,8 @@
   /**
    * Dynamic route patterns - for routes with parameters like /blackboard/[uuid]
    * Pattern: regex to match, result: label + icon
-   * @type {Array<{ pattern: RegExp; label: string; icon: string }>}
    */
-  const dynamicRoutes = [
+  const dynamicRoutes: { pattern: RegExp; label: string; icon: string }[] = [
     { pattern: /^\/blackboard\/[^/]+$/, label: 'Schwarzes Brett Details', icon: 'fa-info-circle' },
     { pattern: /^\/kvp\/[^/]+$/, label: 'KVP-Details', icon: 'fa-info-circle' },
   ];
@@ -78,9 +85,10 @@
   /**
    * Pages that need an intermediate breadcrumb
    * Key: current page path, Value: intermediate breadcrumb to insert
-   * @type {Record<string, { label: string; href: string; icon: string }>}
    */
-  const intermediateBreadcrumbs = {
+  const intermediateBreadcrumbs: Partial<
+    Record<string, { label: string; href: string; icon: string }>
+  > = {
     '/survey-results': { label: 'Umfragen', href: '/survey-admin', icon: 'fa-poll' },
     '/survey-create': { label: 'Umfragen', href: '/survey-admin', icon: 'fa-poll' },
     '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
@@ -92,26 +100,31 @@
   // =============================================================================
 
   /** Get home URL based on user role */
-  function getHomeUrl() {
+  function getHomeUrl(): string {
     if (userRole === 'root') return '/root-dashboard';
     if (userRole === 'admin') return '/admin-dashboard';
     return '/employee-dashboard';
   }
 
+  interface BreadcrumbItem {
+    label: string;
+    href?: string;
+    icon?: string;
+    current?: boolean;
+  }
+
   /**
    * Generate breadcrumb items from current URL
    * Structure: Home > [Intermediate] > Current Page
-   * @returns {Array<{ label: string; href?: string; icon?: string; current?: boolean }>}
    */
-  function generateBreadcrumbItems() {
+  function generateBreadcrumbItems(): BreadcrumbItem[] {
     const currentPath = $page.url.pathname;
-    /** @type {Array<{ label: string; href?: string; icon?: string; current?: boolean }>} */
-    const items = [];
+    const items: BreadcrumbItem[] = [];
 
     // Always add Home first (always a link, never current)
     items.push({
       label: 'Home',
-      href: `${base}${getHomeUrl()}`,
+      href: resolvePath(getHomeUrl()),
       icon: 'fa-home',
     });
 
@@ -120,7 +133,7 @@
     if (intermediate) {
       items.push({
         label: intermediate.label,
-        href: `${base}${intermediate.href}`,
+        href: resolvePath(intermediate.href),
         icon: intermediate.icon,
       });
     }
@@ -146,7 +159,7 @@
         if (dynamicIntermediate && !intermediate) {
           items.push({
             label: dynamicIntermediate.label,
-            href: `${base}${dynamicIntermediate.href}`,
+            href: resolvePath(dynamicIntermediate.href),
             icon: dynamicIntermediate.icon,
           });
         }
@@ -190,8 +203,7 @@
           {item.label}
         </span>
       {:else}
-        <!-- Clickable link -->
-        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- href already includes $app/paths base prefix -->
+        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- pre-resolved -->
         <a href={item.href} class="breadcrumb__item">
           {#if item.icon}
             <i class="fas {item.icon} breadcrumb__icon" aria-hidden="true"></i>

@@ -9,1367 +9,296 @@
 
 ---
 
-just for context
+## Development Commands
 
-scs@SOSCSPC1M16:~/projects/Assixx$ pnpm run dev:svelte
+```bash
+# Frontend Development (HMR)
+pnpm run dev:svelte           # http://localhost:5173
 
-> assixx@1.0.0 predev:svelte /home/scs/projects/Assixx
-> ./scripts/free-port.sh 5173
+# Production Build + Docker
+cd docker && docker-compose --profile production up -d  # http://localhost
 
-[free-port.sh] Port 5173 is free. Ready to start.
+# Rebuild Frontend Container
+docker-compose --profile production build frontend
+docker-compose --profile production up -d --build frontend
 
-> assixx@1.0.0 dev:svelte /home/scs/projects/Assixx
-> cd frontend && pnpm run dev
+# Validate Frontend
+cd frontend && pnpm run validate
+```
 
+## Docker Containers
 
-> assixx-frontend@0.1.0 dev /home/scs/projects/Assixx/frontend
-> vite dev
+| Container              | Port | Purpose             |
+| ---------------------- | ---- | ------------------- |
+| assixx-postgres        | 5432 | PostgreSQL Database |
+| assixx-redis           | 6379 | Cache/Sessions      |
+| assixx-backend         | 3000 | NestJS API          |
+| assixx-frontend        | 3001 | SvelteKit SSR       |
+| assixx-nginx           | 80   | Reverse Proxy       |
+| assixx-deletion-worker | -    | Background Jobs     |
 
-2:13:36 PM [vite] (client) Forced re-optimization of dependencies
+---
 
-  VITE v7.3.0  ready in 688 ms
+## BACKEND API (NestJS)
 
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: use --host to expose
-  ➜  press h + enter to show help
-[SSR Layout] User loaded in 66.8ms: admin@tesfirma.de
-[SSR] admin-dashboard loaded in 71.8ms (6 parallel API calls)
+### Controllers (API Endpoints)
 
+| Controller                      | Path                      | Purpose                  |
+| ------------------------------- | ------------------------- | ------------------------ |
+| auth.controller.ts              | /api/v2/auth              | Login, Logout, Refresh   |
+| users.controller.ts             | /api/v2/users             | User CRUD                |
+| root.controller.ts              | /api/v2/root              | Root User Management     |
+| signup.controller.ts            | /api/v2/signup            | Registration             |
+| departments.controller.ts       | /api/v2/departments       | Department CRUD          |
+| teams.controller.ts             | /api/v2/teams             | Team CRUD                |
+| areas.controller.ts             | /api/v2/areas             | Area CRUD                |
+| machines.controller.ts          | /api/v2/machines          | Machine CRUD             |
+| roles.controller.ts             | /api/v2/roles             | Role Management          |
+| role-switch.controller.ts       | /api/v2/role-switch       | Role Switching           |
+| blackboard.controller.ts        | /api/v2/blackboard        | Blackboard Entries       |
+| calendar.controller.ts          | /api/v2/calendar          | Calendar Events          |
+| chat.controller.ts              | /api/v2/chat              | Chat/Messages            |
+| documents.controller.ts         | /api/v2/documents         | Document Upload/Download |
+| kvp.controller.ts               | /api/v2/kvp               | KVP Suggestions          |
+| shifts.controller.ts            | /api/v2/shifts            | Shift Plans              |
+| rotation.controller.ts          | /api/v2/rotation          | Shift Rotations          |
+| surveys.controller.ts           | /api/v2/surveys           | Survey CRUD              |
+| features.controller.ts          | /api/v2/features          | Feature Flags            |
+| plans.controller.ts             | /api/v2/plans             | Subscription Plans       |
+| settings.controller.ts          | /api/v2/settings          | App Settings             |
+| logs.controller.ts              | /api/v2/logs              | Audit Logs               |
+| reports.controller.ts           | /api/v2/reports           | Report Generation        |
+| notifications.controller.ts     | /api/v2/notifications     | Push Notifications       |
+| admin-permissions.controller.ts | /api/v2/admin-permissions | Permission Management    |
+| audit-trail.controller.ts       | /api/v2/audit-trail       | Audit Trail              |
 
+### Services (Business Logic)
 
+```
+backend/src/nest/
+  auth/auth.service.ts              # JWT, Login Logic
+  users/users.service.ts            # User CRUD
+  root/root.service.ts              # Root User Logic
+  signup/signup.service.ts          # Registration Logic
+  departments/departments.service.ts
+  teams/teams.service.ts
+  areas/areas.service.ts
+  machines/machines.service.ts
+  roles/roles.service.ts
+  role-switch/role-switch.service.ts
+  blackboard/blackboard.service.ts
+  calendar/calendar.service.ts
+  chat/chat.service.ts              # + WebSocket
+  documents/documents.service.ts
+  kvp/kvp.service.ts
+  shifts/shifts.service.ts
+  shifts/rotation.service.ts
+  surveys/surveys.service.ts
+  features/features.service.ts
+  plans/plans.service.ts
+  settings/settings.service.ts
+  logs/logs.service.ts
+  reports/reports.service.ts
+  notifications/notifications.service.ts
+  admin-permissions/admin-permissions.service.ts
+  audit-trail/audit-trail.service.ts
+  config/config.service.ts          # Environment Config
+  database/database.service.ts      # DB Connection
+```
 
+### Common Code
 
-scs@SOSCSPC1M16:~/projects/Assixx$ cd docker
-scs@SOSCSPC1M16:~/projects/Assixx/docker$ docker-compose --profile production up -d
-[+] Running 6/6
- ✔ Container assixx-redis            Healthy                                                                                                                                                            1.4s
- ✔ Container assixx-postgres         Healthy                                                                                                                                                            1.5s
- ✔ Container assixx-backend          Healthy                                                                                                                                                            1.5s
- ✔ Container assixx-frontend         Running                                                                                                                                                            0.0s
- ✔ Container assixx-nginx            Running                                                                                                                                                            0.0s
- ✔ Container assixx-deletion-worker  Running                                                                                                                                                            0.0s
-scs@SOSCSPC1M16:~/projects/Assixx/docker$
+```
+backend/src/nest/common/
+  decorators/
+    public.decorator.ts     # @Public() - skip auth
+    roles.decorator.ts      # @Roles('admin')
+  guards/
+    jwt-auth.guard.ts       # JWT Validation
+    roles.guard.ts          # Role-based Access
+  filters/
+    http-exception.filter.ts
+  interceptors/
+    logging.interceptor.ts
+  pipes/
+    zod-validation.pipe.ts  # Zod Schema Validation
+  interfaces/
+    multer.interface.ts     # File Upload Types
+```
 
+---
 
+## FRONTEND (SvelteKit)
 
-scs@SOSCSPC1M16:~/projects/Assixx/docker$ docker-compose --profile production build frontend
-[+] Building 2.0s (27/27) FINISHED
- => [internal] load local bake definitions                                                                                                                                                              0.0s
- => => reading from stdin 944B                                                                                                                                                                          0.0s
- => [internal] load build definition from Dockerfile.frontend                                                                                                                                           0.0s
- => => transferring dockerfile: 2.51kB                                                                                                                                                                  0.0s
- => [internal] load metadata for docker.io/library/node:24-alpine                                                                                                                                       1.1s
- => [auth] library/node:pull token for registry-1.docker.io                                                                                                                                             0.0s
- => [internal] load .dockerignore                                                                                                                                                                       0.0s
- => => transferring context: 2B                                                                                                                                                                         0.0s
- => [internal] load build context                                                                                                                                                                       0.1s
- => => transferring context: 155.86kB                                                                                                                                                                   0.1s
- => [builder  1/14] FROM docker.io/library/node:24-alpine@sha256:c921b97d4b74f51744057454b306b418cf693865e73b8100559189605f6955b8                                                                       0.0s
- => => resolve docker.io/library/node:24-alpine@sha256:c921b97d4b74f51744057454b306b418cf693865e73b8100559189605f6955b8                                                                                 0.0s
- => CACHED [production 2/6] RUN addgroup -g 1001 -S nodejs &&     adduser -S sveltekit -u 1001                                                                                                          0.0s
- => CACHED [production 3/6] WORKDIR /app                                                                                                                                                                0.0s
- => CACHED [builder  2/14] RUN npm install -g pnpm@10.27.0                                                                                                                                              0.0s
- => CACHED [builder  3/14] WORKDIR /app                                                                                                                                                                 0.0s
- => CACHED [builder  4/14] COPY package.json ./                                                                                                                                                         0.0s
- => CACHED [builder  5/14] COPY pnpm-workspace.yaml ./                                                                                                                                                  0.0s
- => CACHED [builder  6/14] COPY pnpm-lock.yaml ./                                                                                                                                                       0.0s
- => CACHED [builder  7/14] COPY .npmrc ./                                                                                                                                                               0.0s
- => CACHED [builder  8/14] COPY frontend/package.json ./frontend/                                                                                                                                       0.0s
- => CACHED [builder  9/14] RUN pnpm install --frozen-lockfile                                                                                                                                           0.0s
- => CACHED [builder 10/14] COPY frontend/ ./frontend/                                                                                                                                                   0.0s
- => CACHED [builder 11/14] WORKDIR /app/frontend                                                                                                                                                        0.0s
- => CACHED [builder 12/14] RUN pnpm run build                                                                                                                                                           0.0s
- => CACHED [builder 13/14] WORKDIR /app                                                                                                                                                                 0.0s
- => CACHED [builder 14/14] RUN pnpm deploy --filter=assixx-frontend --prod /deploy                                                                                                                      0.0s
- => CACHED [production 4/6] COPY --from=builder --chown=sveltekit:nodejs /deploy/node_modules ./node_modules                                                                                            0.0s
- => CACHED [production 5/6] COPY --from=builder --chown=sveltekit:nodejs /deploy/package.json ./                                                                                                        0.0s
- => CACHED [production 6/6] COPY --from=builder --chown=sveltekit:nodejs /app/frontend/build ./build                                                                                                    0.0s
- => exporting to image                                                                                                                                                                                  0.1s
- => => exporting layers                                                                                                                                                                                 0.0s
- => => exporting manifest sha256:6b693817df02ac77b84bfdf4aaacec2bc136c480aab686a2dc0357e1b2a38775                                                                                                       0.0s
- => => exporting config sha256:ebfb7ba4575ae62551b1140fcbb7eda550dd290b38215fba12661d7b21a7c263                                                                                                         0.0s
- => => exporting attestation manifest sha256:030706b51b2d6426344b453d07bd41573af82b17e492abf2f7ba2a0ab26ad597                                                                                           0.0s
- => => exporting manifest list sha256:d3e24e10782944dbd3375dd44ebe696d51499d8d08b781cfe490b66f86bb6b05                                                                                                  0.0s
- => => naming to docker.io/library/assixx-frontend:prod                                                                                                                                                 0.0s
- => => unpacking to docker.io/library/assixx-frontend:prod                                                                                                                                              0.0s
- => resolving provenance for metadata file                                                                                                                                                              0.0s
-[+] Building 1/1
- ✔ assixx-frontend:prod  Built                                                                                                                                                                          0.0s
-scs@SOSCSPC1M16:~/projects/Assixx/docker$
+### Pages (routes)
 
+| Route       | Page                    | Purpose               |
+| ----------- | ----------------------- | --------------------- |
+| /           | +page.svelte            | Redirect to Dashboard |
+| /login      | login/+page.svelte      | Login Form            |
+| /signup     | signup/+page.svelte     | Registration          |
+| /rate-limit | rate-limit/+page.svelte | Rate Limit Error      |
 
+### App Routes (authenticated)
 
+| Route                   | Purpose           | Components               |
+| ----------------------- | ----------------- | ------------------------ |
+| /admin-dashboard        | Admin Home        | Stats, Quick Actions     |
+| /employee-dashboard     | Employee Home     | Tasks, Notifications     |
+| /root-dashboard         | Root Home         | Tenant Overview          |
+| /admin-profile          | Admin Profile     | Edit Profile             |
+| /employee-profile       | Employee Profile  | Edit Profile             |
+| /root-profile           | Root Profile      | Edit Profile             |
+| /account-settings       | Settings          | Password, Preferences    |
+| /manage-employees       | Employee CRUD     | Table, Form Modal        |
+| /manage-admins          | Admin CRUD        | Table, Form Modal        |
+| /manage-teams           | Team CRUD         | Table, Form Modal        |
+| /manage-departments     | Dept CRUD         | Table, Form Modal        |
+| /manage-areas           | Area CRUD         | Table, Form Modal        |
+| /manage-machines        | Machine CRUD      | Table, Form Modal        |
+| /manage-root            | Root User CRUD    | Table, Form Modal        |
+| /blackboard             | Announcements     | List, Entry Modal        |
+| /blackboard/[uuid]      | Entry Detail      | Comments, Reactions      |
+| /calendar               | Calendar          | FullCalendar, Events     |
+| /chat                   | Messaging         | Conversations, WebSocket |
+| /documents-explorer     | File Manager      | Upload, Preview          |
+| /kvp                    | KVP List          | Suggestions              |
+| /kvp-detail             | KVP Detail        | Comments, Status         |
+| /shifts                 | Shift Planning    | Grid, Drag-Drop          |
+| /survey-admin           | Survey Management | Create, Edit             |
+| /survey-employee        | Answer Surveys    | Survey Form              |
+| /survey-results         | Survey Results    | Charts                   |
+| /features               | Feature Toggle    | Enable/Disable           |
+| /logs                   | Audit Logs        | Filter, Search           |
+| /storage-upgrade        | Storage Plans     | Upgrade Options          |
+| /tenant-deletion-status | Deletion Status   | Progress                 |
 
-scs@SOSCSPC1M16:~/projects/Assixx/frontend$ pnpm run validate
+### Page Module Structure (\_lib/)
 
-> assixx-frontend@0.1.0 validate /home/scs/projects/Assixx/frontend
-> pnpm run format && (pnpm run lint:fix || true) && pnpm run check
+Each page has a `_lib/` folder with:
 
+```
+_lib/
+  api.ts          # API calls for this page
+  types.ts        # TypeScript interfaces
+  constants.ts    # Constants, enums
+  utils.ts        # Helper functions
+  filters.ts      # Filter/search logic (if needed)
+  handlers.ts     # Event handlers (if complex)
+  state.svelte.ts # Svelte 5 state ($state)
+  *.svelte        # Sub-components (Modals, etc.)
+```
 
-> assixx-frontend@0.1.0 format /home/scs/projects/Assixx/frontend
-> prettier --write .
+### Shared Code (lib/)
 
-.prettierrc 25ms (unchanged)
-.stylelintrc.json 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_layout.B8COAue5.css 105ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_layout.BlJVVYy7.css 651ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.1ogEgX9X.css 5ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.B9CtCwrO.css 3ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BcTeqfbt.css 4ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BF-mVo3k.css 4ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BJBtlwqC.css 15ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BNgWOmEs.css 5ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BnqHxiOC.css 8ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BOvDB9yQ.css 8ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BQHfGy5X.css 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BR07TjJc.css 37ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BrO8xIhe.css 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.BU9YSnJv.css 6ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.C18oWBzY.css 32ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.C9oIA-_R.css 7ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.CESRgf7j.css 8ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.Ch5KhUJk.css 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.ClDjVleb.css 7ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.CmK6ZaH7.css 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.CPYVc4Bk.css 34ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.CXULHJ4j.css 23ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.Ds6xiuo4.css 9ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.Dy_Zh6c-.css 6ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.DY8rsl22.css 4ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.j8xE1VcD.css 14ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.k053w_iq.css 2ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.RVFgPqg6.css 1ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.S1dATYUJ.css 20ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/_page.tn0RQdqM.css 0ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/calendar.OdcHDSS7.css 28ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/kvp-detail.BE1wAFi2.css 8ms (unchanged)
-.svelte-kit/adapter-node/_app/immutable/assets/password-strength.BhoQtESI.css 6ms (unchanged)
-.svelte-kit/adapter-node/.vite/manifest.json 19ms (unchanged)
-.svelte-kit/adapter-node/chunks/alerts.js 9ms (unchanged)
-.svelte-kit/adapter-node/chunks/api-client.js 49ms (unchanged)
-.svelte-kit/adapter-node/chunks/avatar-helpers.js 4ms (unchanged)
-.svelte-kit/adapter-node/chunks/calendar.js 318ms (unchanged)
-.svelte-kit/adapter-node/chunks/client.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/constants.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/constants2.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/constants3.js 4ms (unchanged)
-.svelte-kit/adapter-node/chunks/environment.js 1ms (unchanged)
-.svelte-kit/adapter-node/chunks/exports.js 7ms (unchanged)
-.svelte-kit/adapter-node/chunks/hooks.server.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/internal.js 5ms (unchanged)
-.svelte-kit/adapter-node/chunks/routing.js 4ms (unchanged)
-.svelte-kit/adapter-node/chunks/server.js 1ms (unchanged)
-.svelte-kit/adapter-node/chunks/server2.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/session-manager.js 11ms (unchanged)
-.svelte-kit/adapter-node/chunks/shared.js 20ms (unchanged)
-.svelte-kit/adapter-node/chunks/state.svelte.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/stores.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/toast.js 3ms (unchanged)
-.svelte-kit/adapter-node/chunks/token-manager.js 13ms (unchanged)
-.svelte-kit/adapter-node/chunks/utils.js 2ms (unchanged)
-.svelte-kit/adapter-node/chunks/utils2.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/endpoints/health/_server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/fallbacks/error.svelte.js 1ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/_layout.svelte.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/_page.svelte.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/_layout.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/_layout.svelte.js 11ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/account-settings/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/account-settings/_page.svelte.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/admin-dashboard/_page.server.ts.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/admin-dashboard/_page.svelte.js 9ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/admin-profile/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/admin-profile/_page.svelte.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/blackboard/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/blackboard/_page.svelte.js 6ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/blackboard/_uuid_/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/blackboard/_uuid_/_page.svelte.js 13ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/calendar/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/calendar/_page.svelte.js 26ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/chat/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/chat/_page.svelte.js 41ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/documents-explorer/_page.server.ts.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/documents-explorer/_page.svelte.js 14ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/employee-dashboard/_page.server.ts.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/employee-dashboard/_page.svelte.js 8ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/employee-profile/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/employee-profile/_page.svelte.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/features/_page.server.ts.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/features/_page.svelte.js 9ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/kvp-detail/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/kvp-detail/_page.svelte.js 24ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/kvp/_page.server.ts.js 5ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/kvp/_page.svelte.js 18ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/logs/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/logs/_page.svelte.js 9ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-admins/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-admins/_page.svelte.js 32ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-areas/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-areas/_page.svelte.js 16ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-departments/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-departments/_page.svelte.js 13ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-employees/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-employees/_page.svelte.js 25ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-machines/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-machines/_page.svelte.js 21ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-root/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-root/_page.svelte.js 15ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-teams/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/manage-teams/_page.svelte.js 7ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/root-dashboard/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/root-dashboard/_page.svelte.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/root-profile/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/root-profile/_page.svelte.js 5ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/shifts/_page.server.ts.js 5ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/shifts/_page.svelte.js 55ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/storage-upgrade/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/storage-upgrade/_page.svelte.js 4ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-admin/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-admin/_page.svelte.js 25ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-employee/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-employee/_page.svelte.js 16ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-results/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/survey-results/_page.svelte.js 10ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/tenant-deletion-status/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/(app)/tenant-deletion-status/_page.svelte.js 7ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/login/_page.svelte.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/rate-limit/_page.svelte.js 2ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/signup/_page.svelte.js 6ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/tenant-deletion-approve/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/adapter-node/entries/pages/tenant-deletion-approve/_page.svelte.js 3ms (unchanged)
-.svelte-kit/adapter-node/index.js 126ms (unchanged)
-.svelte-kit/adapter-node/internal.js 1ms (unchanged)
-.svelte-kit/adapter-node/manifest-full.js 8ms (unchanged)
-.svelte-kit/adapter-node/manifest.js 7ms (unchanged)
-.svelte-kit/adapter-node/nodes/0.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/1.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/10.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/11.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/12.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/13.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/14.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/15.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/16.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/17.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/18.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/19.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/2.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/20.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/21.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/22.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/23.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/24.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/25.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/26.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/27.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/28.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/29.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/3.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/30.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/31.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/32.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/33.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/34.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/35.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/36.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/4.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/5.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/6.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/7.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/8.js 1ms (unchanged)
-.svelte-kit/adapter-node/nodes/9.js 1ms (unchanged)
-.svelte-kit/adapter-node/remote-entry.js 16ms (unchanged)
-.svelte-kit/ambient.d.ts 41ms
-.svelte-kit/generated/client-optimized/app.js 4ms (unchanged)
-.svelte-kit/generated/client-optimized/matchers.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/0.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/1.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/10.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/11.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/12.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/13.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/14.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/15.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/16.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/17.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/18.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/19.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/2.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/20.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/21.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/22.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/23.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/24.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/25.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/26.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/27.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/28.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/29.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/3.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/30.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/31.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/32.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/33.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/34.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/35.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/36.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/4.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/5.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/6.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/7.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/8.js 1ms (unchanged)
-.svelte-kit/generated/client-optimized/nodes/9.js 1ms (unchanged)
-.svelte-kit/generated/client/app.js 4ms
-.svelte-kit/generated/client/matchers.js 1ms
-.svelte-kit/generated/client/nodes/0.js 1ms
-.svelte-kit/generated/client/nodes/1.js 1ms
-.svelte-kit/generated/client/nodes/10.js 1ms
-.svelte-kit/generated/client/nodes/11.js 1ms
-.svelte-kit/generated/client/nodes/12.js 1ms
-.svelte-kit/generated/client/nodes/13.js 1ms
-.svelte-kit/generated/client/nodes/14.js 1ms
-.svelte-kit/generated/client/nodes/15.js 1ms
-.svelte-kit/generated/client/nodes/16.js 1ms
-.svelte-kit/generated/client/nodes/17.js 1ms
-.svelte-kit/generated/client/nodes/18.js 1ms
-.svelte-kit/generated/client/nodes/19.js 1ms
-.svelte-kit/generated/client/nodes/2.js 1ms
-.svelte-kit/generated/client/nodes/20.js 1ms
-.svelte-kit/generated/client/nodes/21.js 1ms
-.svelte-kit/generated/client/nodes/22.js 1ms
-.svelte-kit/generated/client/nodes/23.js 1ms
-.svelte-kit/generated/client/nodes/24.js 1ms
-.svelte-kit/generated/client/nodes/25.js 1ms
-.svelte-kit/generated/client/nodes/26.js 1ms
-.svelte-kit/generated/client/nodes/27.js 1ms
-.svelte-kit/generated/client/nodes/28.js 1ms
-.svelte-kit/generated/client/nodes/29.js 1ms
-.svelte-kit/generated/client/nodes/3.js 1ms
-.svelte-kit/generated/client/nodes/30.js 1ms
-.svelte-kit/generated/client/nodes/31.js 1ms
-.svelte-kit/generated/client/nodes/32.js 1ms
-.svelte-kit/generated/client/nodes/33.js 1ms
-.svelte-kit/generated/client/nodes/34.js 1ms
-.svelte-kit/generated/client/nodes/35.js 1ms
-.svelte-kit/generated/client/nodes/36.js 1ms
-.svelte-kit/generated/client/nodes/4.js 1ms
-.svelte-kit/generated/client/nodes/5.js 1ms
-.svelte-kit/generated/client/nodes/6.js 1ms
-.svelte-kit/generated/client/nodes/7.js 1ms
-.svelte-kit/generated/client/nodes/8.js 1ms
-.svelte-kit/generated/client/nodes/9.js 1ms
-.svelte-kit/generated/root.js 1ms
-.svelte-kit/generated/root.svelte 51ms
-.svelte-kit/generated/server/internal.js 6ms
-.svelte-kit/non-ambient.d.ts 18ms
-.svelte-kit/output/client/_app/immutable/assets/0.CVKtR6rA.css 492ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/10.9SDsBNoL.css 38ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/11.1ogEgX9X.css 5ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/12.cdSUfGjX.css 13ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/14._uFDf6VI.css 6ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/15.BG4h2vqR.css 10ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/16.BrO8xIhe.css 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/17.BcTeqfbt.css 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/2.Bp09em7m.css 38ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/22.Ch5KhUJk.css 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/23.RVFgPqg6.css 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/24.tn0RQdqM.css 0ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/25.CmK6ZaH7.css 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/26.DhAxiXfn.css 4ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/27.xrf2Bojp.css 32ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/28.v--MqJrt.css 6ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/29.C9oIA-_R.css 6ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/3.6paqVRiY.css 19ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/30.Dy_Zh6c-.css 6ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/31.DY8rsl22.css 4ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/32.DIdGzXoC.css 7ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/33.Cl0mRYvh.css 8ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/34.BQHfGy5X.css 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/35.BarAahOG.css 14ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/4.BF-mVo3k.css 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/5.Bp-v8JMD.css 4ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/6.DrrfaY-O.css 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/7.m8Br3ob2.css 26ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/8.k053w_iq.css 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/9.Cert5qL4.css 16ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/calendar.BIWe6o_u.css 24ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/kvp-detail.D5i7gQ9Z.css 8ms (unchanged)
-.svelte-kit/output/client/_app/immutable/assets/password-strength.-BTE-FwM.css 7ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/-xZKmSkv.js 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/B0wWUfLK.js 5ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/BAcHc7N6.js 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/BATTKdpy.js 4ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/bdamX4EN.js 30ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/BIFEkzEs.js 17ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/CebbgMJR.js 275ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/COgEmS3V.js 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/CVXOBuCm.js 4ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/CYOjpWgn.js 5ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/DAAddJ7q.js 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/DvFNCVAo.js 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/eDLR82Yi.js 69ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/HRjpPm7y.js 35ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/PPVm8Dsz.js 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/R91nUqDs.js 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/SDMVbHi1.js 127ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/svZ-yCCv.js 10ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/tDxxqS9X.js 11ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/uyoOSPu8.js 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/chunks/yim4v-Ib.js 48ms (unchanged)
-.svelte-kit/output/client/_app/immutable/entry/app.BJgcp_WQ.js 14ms (unchanged)
-.svelte-kit/output/client/_app/immutable/entry/start.CaRGLvxd.js 1ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/0.DZ9764Zp.js 3ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/1.CXGHYERm.js 2ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/10.D4yQ2bDi.js 77ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/11.v_D1Bz5W.js 77ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/12.CyEF23lW.js 21ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/13.BebTo2IO.js 18ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/14.CJXPbA_m.js 19ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/15.yqyfVleK.js 45ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/16.Dpbhi1cU.js 54ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/17.DL-7X6Wp.js 50ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/18.Dg4MuJAw.js 62ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/19._0T3J4OL.js 51ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/2.Nm2Re4C3.js 38ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/20.8IEa9t1l.js 39ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/21.DLxW5Ow5.js 58ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/22.BBimvDoI.js 53ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/23.Bd7sFCtQ.js 43ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/24.QpQhYuqw.js 49ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/25.K7kdd3_6.js 15ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/26.DXB0XVZT.js 24ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/27.6UzGFGzc.js 117ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/28.CWD_WGv_.js 7ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/29.C5rawNwL.js 49ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/3.b48Y43FH.js 5ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/30.BVo9MEiS.js 31ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/31.DkZNmIFH.js 23ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/32.oCO0X-f_.js 17ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/33.CtPCaoPD.js 7ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/34.96k_vmSV.js 5ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/35.DEnk6Whm.js 15ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/36.BIOzU-3d.js 7ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/4.lA73vmxR.js 9ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/5.BFJtnyDP.js 22ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/6.dyIQjYjj.js 18ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/7.3QtR35oS.js 35ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/8.DTpoS1Hv.js 26ms (unchanged)
-.svelte-kit/output/client/_app/immutable/nodes/9.XZqyMeTE.js 46ms (unchanged)
-.svelte-kit/output/client/_app/version.json 1ms (unchanged)
-.svelte-kit/output/client/.vite/manifest.json 6ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_layout.B8COAue5.css 52ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_layout.BlJVVYy7.css 453ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.1ogEgX9X.css 4ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.B9CtCwrO.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BcTeqfbt.css 3ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BF-mVo3k.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BJBtlwqC.css 11ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BNgWOmEs.css 4ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BnqHxiOC.css 7ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BOvDB9yQ.css 5ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BQHfGy5X.css 1ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BR07TjJc.css 36ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BrO8xIhe.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.BU9YSnJv.css 4ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.C18oWBzY.css 27ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.C9oIA-_R.css 5ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.CESRgf7j.css 9ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.Ch5KhUJk.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.ClDjVleb.css 12ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.CmK6ZaH7.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.CPYVc4Bk.css 31ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.CXULHJ4j.css 18ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.Ds6xiuo4.css 9ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.Dy_Zh6c-.css 6ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.DY8rsl22.css 4ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.j8xE1VcD.css 13ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.k053w_iq.css 2ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.RVFgPqg6.css 1ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.S1dATYUJ.css 14ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/_page.tn0RQdqM.css 0ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/calendar.OdcHDSS7.css 23ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/kvp-detail.BE1wAFi2.css 7ms (unchanged)
-.svelte-kit/output/server/_app/immutable/assets/password-strength.BhoQtESI.css 6ms (unchanged)
-.svelte-kit/output/server/.vite/manifest.json 8ms (unchanged)
-.svelte-kit/output/server/chunks/alerts.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/api-client.js 11ms (unchanged)
-.svelte-kit/output/server/chunks/avatar-helpers.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/calendar.js 202ms (unchanged)
-.svelte-kit/output/server/chunks/client.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/constants.js 1ms (unchanged)
-.svelte-kit/output/server/chunks/constants2.js 1ms (unchanged)
-.svelte-kit/output/server/chunks/constants3.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/environment.js 1ms (unchanged)
-.svelte-kit/output/server/chunks/exports.js 5ms (unchanged)
-.svelte-kit/output/server/chunks/hooks.server.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/internal.js 5ms (unchanged)
-.svelte-kit/output/server/chunks/routing.js 3ms (unchanged)
-.svelte-kit/output/server/chunks/server.js 1ms (unchanged)
-.svelte-kit/output/server/chunks/server2.js 1ms (unchanged)
-.svelte-kit/output/server/chunks/session-manager.js 10ms (unchanged)
-.svelte-kit/output/server/chunks/shared.js 16ms (unchanged)
-.svelte-kit/output/server/chunks/state.svelte.js 3ms (unchanged)
-.svelte-kit/output/server/chunks/stores.js 2ms (unchanged)
-.svelte-kit/output/server/chunks/toast.js 3ms (unchanged)
-.svelte-kit/output/server/chunks/token-manager.js 12ms (unchanged)
-.svelte-kit/output/server/chunks/utils.js 3ms (unchanged)
-.svelte-kit/output/server/chunks/utils2.js 3ms (unchanged)
-.svelte-kit/output/server/entries/endpoints/health/_server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/fallbacks/error.svelte.js 1ms (unchanged)
-.svelte-kit/output/server/entries/pages/_layout.svelte.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/_page.svelte.js 4ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/_layout.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/_layout.svelte.js 15ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/account-settings/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/account-settings/_page.svelte.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/admin-dashboard/_page.server.ts.js 7ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/admin-dashboard/_page.svelte.js 9ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/admin-profile/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/admin-profile/_page.svelte.js 6ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/blackboard/_page.server.ts.js 5ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/blackboard/_page.svelte.js 5ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/blackboard/_uuid_/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/blackboard/_uuid_/_page.svelte.js 10ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/calendar/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/calendar/_page.svelte.js 26ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/chat/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/chat/_page.svelte.js 39ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/documents-explorer/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/documents-explorer/_page.svelte.js 16ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/employee-dashboard/_page.server.ts.js 6ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/employee-dashboard/_page.svelte.js 10ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/employee-profile/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/employee-profile/_page.svelte.js 4ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/features/_page.server.ts.js 4ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/features/_page.svelte.js 8ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/kvp-detail/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/kvp-detail/_page.svelte.js 30ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/kvp/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/kvp/_page.svelte.js 13ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/logs/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/logs/_page.svelte.js 7ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-admins/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-admins/_page.svelte.js 20ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-areas/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-areas/_page.svelte.js 14ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-departments/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-departments/_page.svelte.js 12ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-employees/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-employees/_page.svelte.js 23ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-machines/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-machines/_page.svelte.js 19ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-root/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-root/_page.svelte.js 15ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-teams/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/manage-teams/_page.svelte.js 6ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/root-dashboard/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/root-dashboard/_page.svelte.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/root-profile/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/root-profile/_page.svelte.js 4ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/shifts/_page.server.ts.js 6ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/shifts/_page.svelte.js 49ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/storage-upgrade/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/storage-upgrade/_page.svelte.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-admin/_page.server.ts.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-admin/_page.svelte.js 24ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-employee/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-employee/_page.svelte.js 15ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-results/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/survey-results/_page.svelte.js 9ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/tenant-deletion-status/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/(app)/tenant-deletion-status/_page.svelte.js 6ms (unchanged)
-.svelte-kit/output/server/entries/pages/login/_page.svelte.js 2ms (unchanged)
-.svelte-kit/output/server/entries/pages/rate-limit/_page.svelte.js 1ms (unchanged)
-.svelte-kit/output/server/entries/pages/signup/_page.svelte.js 5ms (unchanged)
-.svelte-kit/output/server/entries/pages/tenant-deletion-approve/_page.server.ts.js 3ms (unchanged)
-.svelte-kit/output/server/entries/pages/tenant-deletion-approve/_page.svelte.js 2ms (unchanged)
-.svelte-kit/output/server/index.js 110ms (unchanged)
-.svelte-kit/output/server/internal.js 2ms (unchanged)
-.svelte-kit/output/server/manifest-full.js 11ms (unchanged)
-.svelte-kit/output/server/manifest.js 7ms (unchanged)
-.svelte-kit/output/server/nodes/0.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/1.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/10.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/11.js 2ms (unchanged)
-.svelte-kit/output/server/nodes/12.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/13.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/14.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/15.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/16.js 3ms (unchanged)
-.svelte-kit/output/server/nodes/17.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/18.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/19.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/2.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/20.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/21.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/22.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/23.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/24.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/25.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/26.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/27.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/28.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/29.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/3.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/30.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/31.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/32.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/33.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/34.js 2ms (unchanged)
-.svelte-kit/output/server/nodes/35.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/36.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/4.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/5.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/6.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/7.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/8.js 1ms (unchanged)
-.svelte-kit/output/server/nodes/9.js 1ms (unchanged)
-.svelte-kit/output/server/remote-entry.js 15ms (unchanged)
-.svelte-kit/tsconfig.json 2ms
-.svelte-kit/types/route_meta_data.json 1ms
-.svelte-kit/types/src/routes/(app)/$types.d.ts 12ms
-.svelte-kit/types/src/routes/(app)/account-settings/$types.d.ts 7ms
-.svelte-kit/types/src/routes/(app)/account-settings/proxy+page.server.ts 12ms (unchanged)
-.svelte-kit/types/src/routes/(app)/admin-dashboard/$types.d.ts 6ms
-.svelte-kit/types/src/routes/(app)/admin-dashboard/proxy+page.server.ts 14ms (unchanged)
-.svelte-kit/types/src/routes/(app)/admin-profile/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/admin-profile/proxy+page.server.ts 6ms (unchanged)
-.svelte-kit/types/src/routes/(app)/blackboard/[uuid]/$types.d.ts 6ms
-.svelte-kit/types/src/routes/(app)/blackboard/[uuid]/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/blackboard/$types.d.ts 7ms
-.svelte-kit/types/src/routes/(app)/blackboard/proxy+page.server.ts 9ms (unchanged)
-.svelte-kit/types/src/routes/(app)/calendar/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/calendar/proxy+page.server.ts 7ms (unchanged)
-.svelte-kit/types/src/routes/(app)/chat/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/chat/proxy+page.server.ts 8ms (unchanged)
-.svelte-kit/types/src/routes/(app)/documents-explorer/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/documents-explorer/proxy+page.server.ts 7ms (unchanged)
-.svelte-kit/types/src/routes/(app)/employee-dashboard/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/employee-dashboard/proxy+page.server.ts 10ms (unchanged)
-.svelte-kit/types/src/routes/(app)/employee-profile/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/employee-profile/proxy+page.server.ts 6ms (unchanged)
-.svelte-kit/types/src/routes/(app)/features/$types.d.ts 6ms
-.svelte-kit/types/src/routes/(app)/features/proxy+page.server.ts 9ms (unchanged)
-.svelte-kit/types/src/routes/(app)/kvp-detail/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/kvp-detail/proxy+page.server.ts 7ms (unchanged)
-.svelte-kit/types/src/routes/(app)/kvp/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/kvp/proxy+page.server.ts 7ms (unchanged)
-.svelte-kit/types/src/routes/(app)/logs/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/logs/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-admins/$types.d.ts 6ms
-.svelte-kit/types/src/routes/(app)/manage-admins/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-areas/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/manage-areas/proxy+page.server.ts 6ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-departments/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/manage-departments/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-employees/$types.d.ts 3ms
-.svelte-kit/types/src/routes/(app)/manage-employees/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-machines/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/manage-machines/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-root/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/manage-root/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/manage-teams/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/manage-teams/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/proxy+layout.server.ts 7ms (unchanged)
-.svelte-kit/types/src/routes/(app)/root-dashboard/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/root-dashboard/proxy+page.server.ts 8ms (unchanged)
-.svelte-kit/types/src/routes/(app)/root-profile/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/root-profile/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/shifts/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/shifts/proxy+page.server.ts 15ms (unchanged)
-.svelte-kit/types/src/routes/(app)/storage-upgrade/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/storage-upgrade/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/survey-admin/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/survey-admin/proxy+page.server.ts 6ms (unchanged)
-.svelte-kit/types/src/routes/(app)/survey-employee/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/survey-employee/proxy+page.server.ts 6ms (unchanged)
-.svelte-kit/types/src/routes/(app)/survey-results/$types.d.ts 5ms
-.svelte-kit/types/src/routes/(app)/survey-results/proxy+page.server.ts 5ms (unchanged)
-.svelte-kit/types/src/routes/(app)/tenant-deletion-status/$types.d.ts 4ms
-.svelte-kit/types/src/routes/(app)/tenant-deletion-status/proxy+page.server.ts 4ms (unchanged)
-.svelte-kit/types/src/routes/$types.d.ts 4ms
-.svelte-kit/types/src/routes/health/$types.d.ts 2ms
-.svelte-kit/types/src/routes/login/$types.d.ts 6ms
-.svelte-kit/types/src/routes/login/proxy+page.server.ts 7ms
-.svelte-kit/types/src/routes/rate-limit/$types.d.ts 4ms
-.svelte-kit/types/src/routes/signup/$types.d.ts 3ms
-.svelte-kit/types/src/routes/tenant-deletion-approve/$types.d.ts 4ms
-.svelte-kit/types/src/routes/tenant-deletion-approve/proxy+page.server.ts 6ms (unchanged)
-build/client/_app/immutable/assets/0.CVKtR6rA.css 459ms (unchanged)
-build/client/_app/immutable/assets/10.9SDsBNoL.css 31ms (unchanged)
-build/client/_app/immutable/assets/11.1ogEgX9X.css 4ms (unchanged)
-build/client/_app/immutable/assets/12.cdSUfGjX.css 13ms (unchanged)
-build/client/_app/immutable/assets/14._uFDf6VI.css 7ms (unchanged)
-build/client/_app/immutable/assets/15.BG4h2vqR.css 10ms (unchanged)
-build/client/_app/immutable/assets/16.BrO8xIhe.css 1ms (unchanged)
-build/client/_app/immutable/assets/17.BcTeqfbt.css 3ms (unchanged)
-build/client/_app/immutable/assets/2.Bp09em7m.css 42ms (unchanged)
-build/client/_app/immutable/assets/22.Ch5KhUJk.css 2ms (unchanged)
-build/client/_app/immutable/assets/23.RVFgPqg6.css 1ms (unchanged)
-build/client/_app/immutable/assets/24.tn0RQdqM.css 0ms (unchanged)
-build/client/_app/immutable/assets/25.CmK6ZaH7.css 1ms (unchanged)
-build/client/_app/immutable/assets/26.DhAxiXfn.css 4ms (unchanged)
-build/client/_app/immutable/assets/27.xrf2Bojp.css 33ms (unchanged)
-build/client/_app/immutable/assets/28.v--MqJrt.css 7ms (unchanged)
-build/client/_app/immutable/assets/29.C9oIA-_R.css 7ms (unchanged)
-build/client/_app/immutable/assets/3.6paqVRiY.css 21ms (unchanged)
-build/client/_app/immutable/assets/30.Dy_Zh6c-.css 7ms (unchanged)
-build/client/_app/immutable/assets/31.DY8rsl22.css 4ms (unchanged)
-build/client/_app/immutable/assets/32.DIdGzXoC.css 7ms (unchanged)
-build/client/_app/immutable/assets/33.Cl0mRYvh.css 8ms (unchanged)
-build/client/_app/immutable/assets/34.BQHfGy5X.css 2ms (unchanged)
-build/client/_app/immutable/assets/35.BarAahOG.css 16ms (unchanged)
-build/client/_app/immutable/assets/4.BF-mVo3k.css 2ms (unchanged)
-build/client/_app/immutable/assets/5.Bp-v8JMD.css 4ms (unchanged)
-build/client/_app/immutable/assets/6.DrrfaY-O.css 3ms (unchanged)
-build/client/_app/immutable/assets/7.m8Br3ob2.css 28ms (unchanged)
-build/client/_app/immutable/assets/8.k053w_iq.css 1ms (unchanged)
-build/client/_app/immutable/assets/9.Cert5qL4.css 15ms (unchanged)
-build/client/_app/immutable/assets/calendar.BIWe6o_u.css 24ms (unchanged)
-build/client/_app/immutable/assets/kvp-detail.D5i7gQ9Z.css 9ms (unchanged)
-build/client/_app/immutable/assets/password-strength.-BTE-FwM.css 6ms (unchanged)
-build/client/_app/immutable/chunks/-xZKmSkv.js 2ms (unchanged)
-build/client/_app/immutable/chunks/B0wWUfLK.js 4ms (unchanged)
-build/client/_app/immutable/chunks/BAcHc7N6.js 2ms (unchanged)
-build/client/_app/immutable/chunks/BATTKdpy.js 3ms (unchanged)
-build/client/_app/immutable/chunks/bdamX4EN.js 28ms (unchanged)
-build/client/_app/immutable/chunks/BIFEkzEs.js 15ms (unchanged)
-build/client/_app/immutable/chunks/CebbgMJR.js 258ms (unchanged)
-build/client/_app/immutable/chunks/COgEmS3V.js 3ms (unchanged)
-build/client/_app/immutable/chunks/CVXOBuCm.js 3ms (unchanged)
-build/client/_app/immutable/chunks/CYOjpWgn.js 5ms (unchanged)
-build/client/_app/immutable/chunks/DAAddJ7q.js 1ms (unchanged)
-build/client/_app/immutable/chunks/DvFNCVAo.js 1ms (unchanged)
-build/client/_app/immutable/chunks/eDLR82Yi.js 58ms (unchanged)
-build/client/_app/immutable/chunks/HRjpPm7y.js 28ms (unchanged)
-build/client/_app/immutable/chunks/PPVm8Dsz.js 3ms (unchanged)
-build/client/_app/immutable/chunks/R91nUqDs.js 3ms (unchanged)
-build/client/_app/immutable/chunks/SDMVbHi1.js 129ms (unchanged)
-build/client/_app/immutable/chunks/svZ-yCCv.js 9ms (unchanged)
-build/client/_app/immutable/chunks/tDxxqS9X.js 9ms (unchanged)
-build/client/_app/immutable/chunks/uyoOSPu8.js 1ms (unchanged)
-build/client/_app/immutable/chunks/yim4v-Ib.js 44ms (unchanged)
-build/client/_app/immutable/entry/app.BJgcp_WQ.js 14ms (unchanged)
-build/client/_app/immutable/entry/start.CaRGLvxd.js 1ms (unchanged)
-build/client/_app/immutable/nodes/0.DZ9764Zp.js 3ms (unchanged)
-build/client/_app/immutable/nodes/1.CXGHYERm.js 2ms (unchanged)
-build/client/_app/immutable/nodes/10.D4yQ2bDi.js 65ms (unchanged)
-build/client/_app/immutable/nodes/11.v_D1Bz5W.js 65ms (unchanged)
-build/client/_app/immutable/nodes/12.CyEF23lW.js 19ms (unchanged)
-build/client/_app/immutable/nodes/13.BebTo2IO.js 17ms (unchanged)
-build/client/_app/immutable/nodes/14.CJXPbA_m.js 19ms (unchanged)
-build/client/_app/immutable/nodes/15.yqyfVleK.js 44ms (unchanged)
-build/client/_app/immutable/nodes/16.Dpbhi1cU.js 45ms (unchanged)
-build/client/_app/immutable/nodes/17.DL-7X6Wp.js 33ms (unchanged)
-build/client/_app/immutable/nodes/18.Dg4MuJAw.js 54ms (unchanged)
-build/client/_app/immutable/nodes/19._0T3J4OL.js 40ms (unchanged)
-build/client/_app/immutable/nodes/2.Nm2Re4C3.js 29ms (unchanged)
-build/client/_app/immutable/nodes/20.8IEa9t1l.js 39ms (unchanged)
-build/client/_app/immutable/nodes/21.DLxW5Ow5.js 47ms (unchanged)
-build/client/_app/immutable/nodes/22.BBimvDoI.js 59ms (unchanged)
-build/client/_app/immutable/nodes/23.Bd7sFCtQ.js 38ms (unchanged)
-build/client/_app/immutable/nodes/24.QpQhYuqw.js 40ms (unchanged)
-build/client/_app/immutable/nodes/25.K7kdd3_6.js 8ms (unchanged)
-build/client/_app/immutable/nodes/26.DXB0XVZT.js 18ms (unchanged)
-build/client/_app/immutable/nodes/27.6UzGFGzc.js 129ms (unchanged)
-build/client/_app/immutable/nodes/28.CWD_WGv_.js 7ms (unchanged)
-build/client/_app/immutable/nodes/29.C5rawNwL.js 50ms (unchanged)
-build/client/_app/immutable/nodes/3.b48Y43FH.js 5ms (unchanged)
-build/client/_app/immutable/nodes/30.BVo9MEiS.js 41ms (unchanged)
-build/client/_app/immutable/nodes/31.DkZNmIFH.js 22ms (unchanged)
-build/client/_app/immutable/nodes/32.oCO0X-f_.js 16ms (unchanged)
-build/client/_app/immutable/nodes/33.CtPCaoPD.js 8ms (unchanged)
-build/client/_app/immutable/nodes/34.96k_vmSV.js 4ms (unchanged)
-build/client/_app/immutable/nodes/35.DEnk6Whm.js 17ms (unchanged)
-build/client/_app/immutable/nodes/36.BIOzU-3d.js 7ms (unchanged)
-build/client/_app/immutable/nodes/4.lA73vmxR.js 12ms (unchanged)
-build/client/_app/immutable/nodes/5.BFJtnyDP.js 19ms (unchanged)
-build/client/_app/immutable/nodes/6.dyIQjYjj.js 17ms (unchanged)
-build/client/_app/immutable/nodes/7.3QtR35oS.js 31ms (unchanged)
-build/client/_app/immutable/nodes/8.DTpoS1Hv.js 23ms (unchanged)
-build/client/_app/immutable/nodes/9.XZqyMeTE.js 43ms (unchanged)
-build/client/_app/version.json 1ms (unchanged)
-build/env.js 4ms (unchanged)
-build/handler.js 35ms (unchanged)
-build/index.js 13ms (unchanged)
-build/server/chunks/_layout.svelte-CxvSAoSC.js 13ms (unchanged)
-build/server/chunks/_layout.svelte-Z5gBVRi2.js 3ms (unchanged)
-build/server/chunks/_page.svelte-A1SKCgaX.js 14ms (unchanged)
-build/server/chunks/_page.svelte-B-DSmGVn.js 3ms (unchanged)
-build/server/chunks/_page.svelte-BCdkeR5m.js 12ms (unchanged)
-build/server/chunks/_page.svelte-Bhis8kMJ.js 8ms (unchanged)
-build/server/chunks/_page.svelte-BjOX5jLU.js 9ms (unchanged)
-build/server/chunks/_page.svelte-BnYuYTGH.js 11ms (unchanged)
-build/server/chunks/_page.svelte-BPMjcVU6.js 1ms (unchanged)
-build/server/chunks/_page.svelte-BRBYXiQP.js 4ms (unchanged)
-build/server/chunks/_page.svelte-BUjVQD2H.js 2ms (unchanged)
-build/server/chunks/_page.svelte-C4lLlnv3.js 3ms (unchanged)
-build/server/chunks/_page.svelte-Ca8bSSNw.js 4ms (unchanged)
-build/server/chunks/_page.svelte-CBl6jjFR.js 27ms (unchanged)
-build/server/chunks/_page.svelte-cCSmSva4.js 6ms (unchanged)
-build/server/chunks/_page.svelte-CH55N4c3.js 2ms (unchanged)
-build/server/chunks/_page.svelte-CLRfoZkh.js 13ms (unchanged)
-build/server/chunks/_page.svelte-CNb2IG_0.js 7ms (unchanged)
-build/server/chunks/_page.svelte-D4oz2SB1.js 4ms (unchanged)
-build/server/chunks/_page.svelte-D932ecPm.js 23ms (unchanged)
-build/server/chunks/_page.svelte-DEBh8INc.js 36ms (unchanged)
-build/server/chunks/_page.svelte-Dfi3cp9i.js 3ms (unchanged)
-build/server/chunks/_page.svelte-DfyPQjxQ.js 7ms (unchanged)
-build/server/chunks/_page.svelte-DJUDunpP.js 13ms (unchanged)
-build/server/chunks/_page.svelte-DjZ0F_KR.js 14ms (unchanged)
-build/server/chunks/_page.svelte-DN-x1ZCJ.js 6ms (unchanged)
-build/server/chunks/_page.svelte-DOLU8pfo.js 24ms (unchanged)
-build/server/chunks/_page.svelte-DpUN5m-2.js 52ms (unchanged)
-build/server/chunks/_page.svelte-DSvfPyU6.js 22ms (unchanged)
-build/server/chunks/_page.svelte-DU05M1ev.js 9ms (unchanged)
-build/server/chunks/_page.svelte-DvhO8MBc.js 5ms (unchanged)
-build/server/chunks/_page.svelte-DzuXUweG.js 14ms (unchanged)
-build/server/chunks/_page.svelte-qe1UP-M7.js 7ms (unchanged)
-build/server/chunks/_page.svelte-swj-r1Xc.js 4ms (unchanged)
-build/server/chunks/_page.svelte-u9Tyw5mo.js 18ms (unchanged)
-build/server/chunks/_page.svelte-ydHMvWS5.js 24ms (unchanged)
-build/server/chunks/_server.ts-BvepooVJ.js 1ms (unchanged)
-build/server/chunks/0-B3qJzEs9.js 1ms (unchanged)
-build/server/chunks/1-6dVEpDUt.js 1ms (unchanged)
-build/server/chunks/10-CkwEkBZF.js 3ms (unchanged)
-build/server/chunks/11-CxxMviSZ.js 4ms (unchanged)
-build/server/chunks/12-UT1GW7W7.js 5ms (unchanged)
-build/server/chunks/13-CXzD9cq2.js 3ms (unchanged)
-build/server/chunks/14-Dq9lQLaB.js 4ms (unchanged)
-build/server/chunks/15-v_3JL7DT.js 4ms (unchanged)
-build/server/chunks/16-DZssxQik.js 4ms (unchanged)
-build/server/chunks/17-wxeBF9bL.js 5ms (unchanged)
-build/server/chunks/18-B7jTwxzZ.js 3ms (unchanged)
-build/server/chunks/19-DPchvd2C.js 3ms (unchanged)
-build/server/chunks/2-CrUsP_kM.js 4ms (unchanged)
-build/server/chunks/20-Do0KxUhs.js 3ms (unchanged)
-build/server/chunks/21-BD07lMLt.js 3ms (unchanged)
-build/server/chunks/22-BZA8bn1a.js 3ms (unchanged)
-build/server/chunks/23-DtU26koo.js 3ms (unchanged)
-build/server/chunks/24-xKK00KCw.js 3ms (unchanged)
-build/server/chunks/25-D3t4MZ3b.js 3ms (unchanged)
-build/server/chunks/26-BNPdxRyF.js 3ms (unchanged)
-build/server/chunks/27-CHZBKZ9b.js 5ms (unchanged)
-build/server/chunks/28-Csfgzqkg.js 3ms (unchanged)
-build/server/chunks/29--ANiK6na.js 3ms (unchanged)
-build/server/chunks/3-H7Xb0iQt.js 1ms (unchanged)
-build/server/chunks/30-30iK2CZd.js 3ms (unchanged)
-build/server/chunks/31-CVr24jSA.js 3ms (unchanged)
-build/server/chunks/32-CcdOXpg0.js 3ms (unchanged)
-build/server/chunks/33-VtuemeH-.js 1ms (unchanged)
-build/server/chunks/34-CmtX4Izv.js 1ms (unchanged)
-build/server/chunks/35-B9LuhMPo.js 1ms (unchanged)
-build/server/chunks/36-DwYwFdG3.js 4ms (unchanged)
-build/server/chunks/4-BjScX3Pa.js 2ms (unchanged)
-build/server/chunks/5-DQda8L2Q.js 6ms (unchanged)
-build/server/chunks/6-7Q5Ud8up.js 3ms (unchanged)
-build/server/chunks/7-DdWH5wIp.js 4ms (unchanged)
-build/server/chunks/8-BZEaydW3.js 3ms (unchanged)
-build/server/chunks/9-BKFjAFHr.js 3ms (unchanged)
-build/server/chunks/alerts-BAqo2C81.js 1ms (unchanged)
-build/server/chunks/api-client-CHAiDAUO.js 9ms (unchanged)
-build/server/chunks/avatar-helpers-D1A0FzCI.js 2ms (unchanged)
-build/server/chunks/calendar-BhmAZ04l.js 194ms
-build/server/chunks/client-BNzTU_xz.js 2ms (unchanged)
-build/server/chunks/error.svelte-CLXoJjaL.js 1ms (unchanged)
-build/server/chunks/event-ByDKS2H7.js 2ms (unchanged)
-build/server/chunks/exports-CVNDNXAt.js 7ms (unchanged)
-build/server/chunks/hooks.server-Dqeg-NBw.js 1040ms (unchanged)
-build/server/chunks/index-wpIsICWW.js 5ms (unchanged)
-build/server/chunks/routing-BdGCua8Q.js 3ms (unchanged)
-build/server/chunks/server-Crjo4w1q.js 1ms (unchanged)
-build/server/chunks/server2-7oemTvLR.js 2ms (unchanged)
-build/server/chunks/session-manager-BhLLtsPE.js 10ms (unchanged)
-build/server/chunks/state.svelte-Bbb68Cfp.js 1ms (unchanged)
-build/server/chunks/stores-BzkqzfXV.js 1ms (unchanged)
-build/server/chunks/toast-DNCxZo2o.js 4ms (unchanged)
-build/server/chunks/token-manager-B_j2RGA-.js 12ms (unchanged)
-build/server/chunks/utils2-BA8vJwtD.js 3ms (unchanged)
-build/server/index.js 117ms (unchanged)
-build/server/manifest.js 9ms (unchanged)
-build/shims.js 1ms (unchanged)
-docs/LEVEL3-REFACTOR-TRACKER.md 44ms (unchanged)
-docs/MODAL-RESET-PATTERN.md 13ms (unchanged)
-docs/SSR-MIGRATION-STRATEGY.md 48ms (unchanged)
-eslint.config.js 4ms (unchanged)
-package.json 1ms (unchanged)
-src/app.css 7ms (unchanged)
-src/app.d.ts 2ms (unchanged)
-src/app.html 21ms (unchanged)
-src/design-system/components/card/card.css 5ms (unchanged)
-src/design-system/components/confirm-modal/confirm-modal.css 20ms (unchanged)
-src/design-system/components/confirm-modal/README.md 26ms (unchanged)
-src/design-system/index.css 1ms (unchanged)
-src/design-system/primitives/avatar/avatar.css 10ms (unchanged)
-src/design-system/primitives/avatar/avatar.js 4ms (unchanged)
-src/design-system/primitives/avatar/index.css 1ms (unchanged)
-src/design-system/primitives/avatar/README.md 9ms (unchanged)
-src/design-system/primitives/badges/badge.action.css 3ms (unchanged)
-src/design-system/primitives/badges/badge.base.css 2ms (unchanged)
-src/design-system/primitives/badges/badge.count.css 3ms (unchanged)
-src/design-system/primitives/badges/badge.kvp.css 5ms (unchanged)
-src/design-system/primitives/badges/badge.process.css 3ms (unchanged)
-src/design-system/primitives/badges/badge.role.css 2ms (unchanged)
-src/design-system/primitives/badges/badge.status.css 5ms (unchanged)
-src/design-system/primitives/badges/badge.workflow.css 5ms (unchanged)
-src/design-system/primitives/badges/index.css 1ms (unchanged)
-src/design-system/primitives/badges/README.md 22ms (unchanged)
-src/design-system/primitives/buttons/ACTION-ICONS.md 17ms (unchanged)
-src/design-system/primitives/buttons/button.action-icons.css 6ms (unchanged)
-src/design-system/primitives/buttons/button.base.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.danger.css 2ms (unchanged)
-src/design-system/primitives/buttons/button.dark.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.edit.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.effects.css 4ms (unchanged)
-src/design-system/primitives/buttons/button.float.css 7ms (unchanged)
-src/design-system/primitives/buttons/button.info.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.light.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.link.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.manage.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.modal.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.primary-first.css 1ms (unchanged)
-src/design-system/primitives/buttons/button.primary.css 1ms (unchanged)
-src/design-system/primitives/buttons/button.secondary.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.sizes.css 2ms (unchanged)
-src/design-system/primitives/buttons/button.status.css 3ms (unchanged)
-src/design-system/primitives/buttons/button.success.css 2ms (unchanged)
-src/design-system/primitives/buttons/button.upload.css 2ms (unchanged)
-src/design-system/primitives/buttons/button.warning.css 3ms (unchanged)
-src/design-system/primitives/buttons/index.css 1ms (unchanged)
-src/design-system/primitives/buttons/README.md 46ms (unchanged)
-src/design-system/primitives/cards/card-accent.css 5ms (unchanged)
-src/design-system/primitives/cards/card-base.css 3ms (unchanged)
-src/design-system/primitives/cards/card-stat.css 3ms (unchanged)
-src/design-system/primitives/cards/index.css 1ms (unchanged)
-src/design-system/primitives/cards/README.md 17ms (unchanged)
-src/design-system/primitives/choice-cards/choice-card.base.css 8ms (unchanged)
-src/design-system/primitives/choice-cards/choice-card.feature.css 8ms (unchanged)
-src/design-system/primitives/choice-cards/choice-card.plan.css 9ms (unchanged)
-src/design-system/primitives/choice-cards/index.css 1ms (unchanged)
-src/design-system/primitives/choice-cards/README.md 30ms (unchanged)
-src/design-system/primitives/collapse/collapse.css 5ms (unchanged)
-src/design-system/primitives/collapse/index.css 1ms (unchanged)
-src/design-system/primitives/containers/container.base.css 2ms (unchanged)
-src/design-system/primitives/containers/index.css 1ms (unchanged)
-src/design-system/primitives/containers/README.md 15ms (unchanged)
-src/design-system/primitives/data-display/data-list.css 4ms (unchanged)
-src/design-system/primitives/data-display/empty-state.css 4ms (unchanged)
-src/design-system/primitives/data-display/index.css 1ms (unchanged)
-src/design-system/primitives/data-display/README.md 50ms (unchanged)
-src/design-system/primitives/data-display/table.base.css 5ms (unchanged)
-src/design-system/primitives/data-display/table.bordered.css 1ms (unchanged)
-src/design-system/primitives/data-display/table.borderless.css 1ms (unchanged)
-src/design-system/primitives/data-display/table.compact.css 1ms (unchanged)
-src/design-system/primitives/data-display/table.hover.css 1ms (unchanged)
-src/design-system/primitives/data-display/table.striped.css 1ms (unchanged)
-src/design-system/primitives/dropdowns/custom-dropdown.css 5ms (unchanged)
-src/design-system/primitives/dropdowns/index.css 1ms (unchanged)
-src/design-system/primitives/dropdowns/README.md 16ms (unchanged)
-src/design-system/primitives/empty-states/empty-state.css 7ms (unchanged)
-src/design-system/primitives/empty-states/index.css 1ms (unchanged)
-src/design-system/primitives/feedback/alert.base.css 6ms (unchanged)
-src/design-system/primitives/feedback/alert.variants.css 8ms (unchanged)
-src/design-system/primitives/feedback/index.css 1ms (unchanged)
-src/design-system/primitives/feedback/progress.css 9ms (unchanged)
-src/design-system/primitives/feedback/README.md 55ms (unchanged)
-src/design-system/primitives/feedback/skeleton.css 9ms (unchanged)
-src/design-system/primitives/feedback/spinner.css 9ms (unchanged)
-src/design-system/primitives/feedback/toast.css 11ms (unchanged)
-src/design-system/primitives/file-upload/file-upload-list.css 8ms (unchanged)
-src/design-system/primitives/file-upload/file-upload-zone.css 8ms (unchanged)
-src/design-system/primitives/file-upload/index.css 1ms (unchanged)
-src/design-system/primitives/file-upload/README.md 7ms (unchanged)
-src/design-system/primitives/forms/form.base.css 5ms (unchanged)
-src/design-system/primitives/forms/index.css 1ms (unchanged)
-src/design-system/primitives/forms/multi-select.css 5ms (unchanged)
-src/design-system/primitives/forms/password-toggle.css 2ms (unchanged)
-src/design-system/primitives/forms/README.md 7ms (unchanged)
-src/design-system/primitives/modals/index.css 1ms (unchanged)
-src/design-system/primitives/modals/modal.base.css 8ms (unchanged)
-src/design-system/primitives/modals/README.md 20ms (unchanged)
-src/design-system/primitives/navigation/accordion.css 6ms (unchanged)
-src/design-system/primitives/navigation/breadcrumb.css 3ms (unchanged)
-src/design-system/primitives/navigation/index.css 1ms (unchanged)
-src/design-system/primitives/navigation/pagination.css 4ms (unchanged)
-src/design-system/primitives/navigation/README.md 37ms (unchanged)
-src/design-system/primitives/navigation/stepper.css 7ms (unchanged)
-src/design-system/primitives/navigation/tabs.css 5ms (unchanged)
-src/design-system/primitives/pickers/date-picker.css 6ms (unchanged)
-src/design-system/primitives/pickers/date-range.css 3ms (unchanged)
-src/design-system/primitives/pickers/index.css 1ms (unchanged)
-src/design-system/primitives/pickers/README.md 43ms (unchanged)
-src/design-system/primitives/pickers/time-picker.css 8ms (unchanged)
-src/design-system/primitives/search-input/index.css 1ms (unchanged)
-src/design-system/primitives/search-input/README.md 7ms (unchanged)
-src/design-system/primitives/search-input/search-input.css 8ms (unchanged)
-src/design-system/primitives/sticky-note/index.css 1ms (unchanged)
-src/design-system/primitives/sticky-note/sticky-note.css 9ms (unchanged)
-src/design-system/primitives/toggles/index.css 1ms (unchanged)
-src/design-system/primitives/toggles/README.md 11ms (unchanged)
-src/design-system/primitives/toggles/toggle-button-group.css 3ms (unchanged)
-src/design-system/primitives/toggles/toggle-switch.css 8ms (unchanged)
-src/design-system/primitives/tooltip/index.css 1ms (unchanged)
-src/design-system/primitives/tooltip/tooltip.css 11ms (unchanged)
-src/design-system/README.md 40ms (unchanged)
-src/design-system/tokens/animations.css 4ms (unchanged)
-src/design-system/tokens/colors.css 3ms (unchanged)
-src/design-system/tokens/forms.css 2ms (unchanged)
-src/design-system/tokens/gradients.css 2ms (unchanged)
-src/design-system/tokens/index.css 1ms (unchanged)
-src/design-system/tokens/shadows.css 5ms (unchanged)
-src/design-system/variables-dark.css 7ms (unchanged)
-src/hooks.server.ts 4ms (unchanged)
-src/lib/components/Breadcrumb.svelte 21ms (unchanged)
-src/lib/components/RoleSwitch.svelte 26ms (unchanged)
-src/lib/components/ToastContainer.svelte 16ms (unchanged)
-src/lib/stores/toast.js 5ms (unchanged)
-src/lib/types/api.types.ts 11ms (unchanged)
-src/lib/types/index.ts 2ms (unchanged)
-src/lib/types/utils.types.ts 8ms (unchanged)
-src/lib/utils/alerts.ts 11ms (unchanged)
-src/lib/utils/api-client.ts 29ms (unchanged)
-src/lib/utils/auth.ts 10ms (unchanged)
-src/lib/utils/avatar-helpers.ts 4ms (unchanged)
-src/lib/utils/date-helpers.ts 7ms (unchanged)
-src/lib/utils/index.ts 2ms (unchanged)
-src/lib/utils/jwt-utils.ts 4ms (unchanged)
-src/lib/utils/password-strength.ts 8ms (unchanged)
-src/lib/utils/sanitize-html.ts 5ms (unchanged)
-src/lib/utils/session-manager.ts 22ms (unchanged)
-src/lib/utils/token-manager.ts 22ms (unchanged)
-src/lib/utils/user-service.ts 5ms (unchanged)
-src/routes/(app)/+layout.server.ts 7ms (unchanged)
-src/routes/(app)/+layout.svelte 64ms (unchanged)
-src/routes/(app)/account-settings/_lib/api.ts 6ms (unchanged)
-src/routes/(app)/account-settings/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/account-settings/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/account-settings/_lib/utils.ts 4ms (unchanged)
-src/routes/(app)/account-settings/+page.server.ts 5ms (unchanged)
-src/routes/(app)/account-settings/+page.svelte 30ms (unchanged)
-src/routes/(app)/admin-dashboard/_lib/api.ts 9ms (unchanged)
-src/routes/(app)/admin-dashboard/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/admin-dashboard/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/admin-dashboard/_lib/utils.ts 6ms (unchanged)
-src/routes/(app)/admin-dashboard/+page.server.ts 9ms (unchanged)
-src/routes/(app)/admin-dashboard/+page.svelte 57ms (unchanged)
-src/routes/(app)/admin-profile/_lib/api.ts 5ms (unchanged)
-src/routes/(app)/admin-profile/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/admin-profile/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/admin-profile/_lib/utils.ts 4ms (unchanged)
-src/routes/(app)/admin-profile/+page.server.ts 5ms (unchanged)
-src/routes/(app)/admin-profile/+page.svelte 47ms (unchanged)
-src/routes/(app)/blackboard/_lib/api.ts 11ms (unchanged)
-src/routes/(app)/blackboard/_lib/BlackboardEntryModal.svelte 55ms (unchanged)
-src/routes/(app)/blackboard/_lib/constants.ts 7ms (unchanged)
-src/routes/(app)/blackboard/_lib/types.ts 5ms (unchanged)
-src/routes/(app)/blackboard/_lib/utils.ts 10ms (unchanged)
-src/routes/(app)/blackboard/[uuid]/_lib/api.ts 7ms (unchanged)
-src/routes/(app)/blackboard/[uuid]/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/blackboard/[uuid]/_lib/utils.ts 5ms (unchanged)
-src/routes/(app)/blackboard/[uuid]/+page.server.ts 4ms (unchanged)
-src/routes/(app)/blackboard/[uuid]/+page.svelte 62ms (unchanged)
-src/routes/(app)/blackboard/+page.server.ts 6ms (unchanged)
-src/routes/(app)/blackboard/+page.svelte 89ms (unchanged)
-src/routes/(app)/calendar/_lib/api.ts 15ms (unchanged)
-src/routes/(app)/calendar/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/calendar/_lib/DeleteConfirmModal.svelte 5ms (unchanged)
-src/routes/(app)/calendar/_lib/EventDetailModal.svelte 22ms (unchanged)
-src/routes/(app)/calendar/_lib/EventFormModal.svelte 41ms (unchanged)
-src/routes/(app)/calendar/_lib/state.svelte.ts 11ms (unchanged)
-src/routes/(app)/calendar/_lib/types.ts 5ms (unchanged)
-src/routes/(app)/calendar/_lib/utils.ts 8ms (unchanged)
-src/routes/(app)/calendar/+page.server.ts 9ms (unchanged)
-src/routes/(app)/calendar/+page.svelte 49ms (unchanged)
-src/routes/(app)/chat/_lib/api.ts 8ms (unchanged)
-src/routes/(app)/chat/_lib/ChatHeader.svelte 16ms (unchanged)
-src/routes/(app)/chat/_lib/ChatSidebar.svelte 40ms (unchanged)
-src/routes/(app)/chat/_lib/ConfirmDialog.svelte 7ms (unchanged)
-src/routes/(app)/chat/_lib/constants.ts 5ms (unchanged)
-src/routes/(app)/chat/_lib/handlers.ts 15ms (unchanged)
-src/routes/(app)/chat/_lib/MessageInputArea.svelte 18ms (unchanged)
-src/routes/(app)/chat/_lib/MessagesArea.svelte 39ms (unchanged)
-src/routes/(app)/chat/_lib/ScheduleModal.svelte 13ms (unchanged)
-src/routes/(app)/chat/_lib/types.ts 6ms (unchanged)
-src/routes/(app)/chat/_lib/utils.ts 17ms (unchanged)
-src/routes/(app)/chat/_lib/websocket.ts 9ms (unchanged)
-src/routes/(app)/chat/+page.server.ts 5ms (unchanged)
-src/routes/(app)/chat/+page.svelte 46ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/api.ts 10ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/ChatFoldersList.svelte 13ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/DeleteConfirmModal.svelte 7ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/DocumentGridView.svelte 13ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/DocumentListView.svelte 22ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/EditModal.svelte 16ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/filters.ts 7ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/FolderSidebar.svelte 9ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/PreviewModal.svelte 12ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/types.ts 5ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/UploadModal.svelte 37ms (unchanged)
-src/routes/(app)/documents-explorer/_lib/utils.ts 13ms (unchanged)
-src/routes/(app)/documents-explorer/+page.server.ts 7ms (unchanged)
-src/routes/(app)/documents-explorer/+page.svelte 45ms (unchanged)
-src/routes/(app)/employee-dashboard/_lib/api.ts 4ms (unchanged)
-src/routes/(app)/employee-dashboard/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/employee-dashboard/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/employee-dashboard/_lib/utils.ts 6ms (unchanged)
-src/routes/(app)/employee-dashboard/+page.server.ts 6ms (unchanged)
-src/routes/(app)/employee-dashboard/+page.svelte 39ms (unchanged)
-src/routes/(app)/employee-profile/_lib/api.ts 3ms (unchanged)
-src/routes/(app)/employee-profile/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/employee-profile/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/employee-profile/_lib/utils.ts 5ms (unchanged)
-src/routes/(app)/employee-profile/+page.server.ts 4ms (unchanged)
-src/routes/(app)/employee-profile/+page.svelte 43ms (unchanged)
-src/routes/(app)/features/_lib/api.ts 9ms (unchanged)
-src/routes/(app)/features/_lib/constants.ts 2ms (unchanged)
-src/routes/(app)/features/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/features/_lib/utils.ts 5ms (unchanged)
-src/routes/(app)/features/+page.server.ts 6ms (unchanged)
-src/routes/(app)/features/+page.svelte 44ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/api.ts 10ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/AttachmentPreviewModal.svelte 10ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/CommentsSection.svelte 12ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/constants.ts 4ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/DetailSidebar.svelte 11ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/RejectionModal.svelte 5ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/ShareModal.svelte 29ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/state.svelte.ts 18ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/types.ts 5ms (unchanged)
-src/routes/(app)/kvp-detail/_lib/utils.ts 11ms (unchanged)
-src/routes/(app)/kvp-detail/+page.server.ts 8ms (unchanged)
-src/routes/(app)/kvp-detail/+page.svelte 52ms (unchanged)
-src/routes/(app)/kvp/_lib/api.ts 10ms (unchanged)
-src/routes/(app)/kvp/_lib/constants.ts 5ms (unchanged)
-src/routes/(app)/kvp/_lib/KvpCreateModal.svelte 30ms (unchanged)
-src/routes/(app)/kvp/_lib/state.svelte.ts 8ms (unchanged)
-src/routes/(app)/kvp/_lib/types.ts 4ms (unchanged)
-src/routes/(app)/kvp/_lib/utils.ts 7ms (unchanged)
-src/routes/(app)/kvp/+page.server.ts 6ms (unchanged)
-src/routes/(app)/kvp/+page.svelte 65ms (unchanged)
-src/routes/(app)/logs/_lib/api.ts 5ms (unchanged)
-src/routes/(app)/logs/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/logs/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/logs/_lib/utils.ts 8ms (unchanged)
-src/routes/(app)/logs/+page.server.ts 4ms (unchanged)
-src/routes/(app)/logs/+page.svelte 66ms (unchanged)
-src/routes/(app)/manage-admins/_lib/AdminFormModal.svelte 117ms (unchanged)
-src/routes/(app)/manage-admins/_lib/AdminTableRow.svelte 17ms (unchanged)
-src/routes/(app)/manage-admins/_lib/api.ts 9ms (unchanged)
-src/routes/(app)/manage-admins/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/manage-admins/_lib/DeleteModals.svelte 18ms (unchanged)
-src/routes/(app)/manage-admins/_lib/filters.ts 5ms (unchanged)
-src/routes/(app)/manage-admins/_lib/SearchResults.svelte 12ms (unchanged)
-src/routes/(app)/manage-admins/_lib/types.ts 4ms (unchanged)
-src/routes/(app)/manage-admins/_lib/utils.ts 13ms (unchanged)
-src/routes/(app)/manage-admins/+page.server.ts 5ms (unchanged)
-src/routes/(app)/manage-admins/+page.svelte 44ms (unchanged)
-src/routes/(app)/manage-areas/_lib/api.ts 10ms (unchanged)
-src/routes/(app)/manage-areas/_lib/AreaModal.svelte 38ms (unchanged)
-src/routes/(app)/manage-areas/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/manage-areas/_lib/DeleteModals.svelte 18ms (unchanged)
-src/routes/(app)/manage-areas/_lib/filters.ts 3ms (unchanged)
-src/routes/(app)/manage-areas/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/manage-areas/_lib/utils.ts 5ms (unchanged)
-src/routes/(app)/manage-areas/+page.server.ts 6ms (unchanged)
-src/routes/(app)/manage-areas/+page.svelte 51ms (unchanged)
-src/routes/(app)/manage-departments/_lib/api.ts 13ms (unchanged)
-src/routes/(app)/manage-departments/_lib/constants.ts 5ms (unchanged)
-src/routes/(app)/manage-departments/_lib/DeleteModals.svelte 19ms (unchanged)
-src/routes/(app)/manage-departments/_lib/DepartmentModal.svelte 33ms (unchanged)
-src/routes/(app)/manage-departments/_lib/filters.ts 4ms (unchanged)
-src/routes/(app)/manage-departments/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/manage-departments/_lib/utils.ts 5ms (unchanged)
-src/routes/(app)/manage-departments/+page.server.ts 5ms (unchanged)
-src/routes/(app)/manage-departments/+page.svelte 55ms (unchanged)
-src/routes/(app)/manage-employees/_lib/api.ts 11ms (unchanged)
-src/routes/(app)/manage-employees/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/manage-employees/_lib/DeleteModals.svelte 11ms (unchanged)
-src/routes/(app)/manage-employees/_lib/EmployeeFormModal.svelte 51ms (unchanged)
-src/routes/(app)/manage-employees/_lib/EmployeeTableRow.svelte 17ms (unchanged)
-src/routes/(app)/manage-employees/_lib/filters.ts 4ms (unchanged)
-src/routes/(app)/manage-employees/_lib/SearchResults.svelte 10ms (unchanged)
-src/routes/(app)/manage-employees/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/manage-employees/_lib/utils.ts 18ms (unchanged)
-src/routes/(app)/manage-employees/+page.server.ts 4ms (unchanged)
-src/routes/(app)/manage-employees/+page.svelte 44ms (unchanged)
-src/routes/(app)/manage-machines/_lib/api.ts 8ms (unchanged)
-src/routes/(app)/manage-machines/_lib/constants.ts 6ms (unchanged)
-src/routes/(app)/manage-machines/_lib/DeleteModals.svelte 19ms (unchanged)
-src/routes/(app)/manage-machines/_lib/filters.ts 3ms (unchanged)
-src/routes/(app)/manage-machines/_lib/MachineFormModal.svelte 56ms (unchanged)
-src/routes/(app)/manage-machines/_lib/state.svelte.ts 13ms (unchanged)
-src/routes/(app)/manage-machines/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/manage-machines/_lib/utils.ts 8ms (unchanged)
-src/routes/(app)/manage-machines/+page.server.ts 6ms (unchanged)
-src/routes/(app)/manage-machines/+page.svelte 57ms (unchanged)
-src/routes/(app)/manage-root/_lib/api.ts 7ms (unchanged)
-src/routes/(app)/manage-root/_lib/constants.ts 4ms (unchanged)
-src/routes/(app)/manage-root/_lib/DeleteModals.svelte 12ms (unchanged)
-src/routes/(app)/manage-root/_lib/filters.ts 6ms (unchanged)
-src/routes/(app)/manage-root/_lib/handlers.ts 8ms (unchanged)
-src/routes/(app)/manage-root/_lib/RootUserModal.svelte 41ms (unchanged)
-src/routes/(app)/manage-root/_lib/state.svelte.ts 4ms (unchanged)
-src/routes/(app)/manage-root/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/manage-root/_lib/utils.ts 7ms (unchanged)
-src/routes/(app)/manage-root/+page.server.ts 4ms (unchanged)
-src/routes/(app)/manage-root/+page.svelte 51ms (unchanged)
-src/routes/(app)/manage-teams/_lib/api.ts 11ms (unchanged)
-src/routes/(app)/manage-teams/_lib/constants.ts 4ms (unchanged)
-src/routes/(app)/manage-teams/_lib/filters.ts 3ms (unchanged)
-src/routes/(app)/manage-teams/_lib/TeamDeleteModals.svelte 17ms (unchanged)
-src/routes/(app)/manage-teams/_lib/TeamFormModal.svelte 41ms (unchanged)
-src/routes/(app)/manage-teams/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/manage-teams/_lib/utils.ts 9ms (unchanged)
-src/routes/(app)/manage-teams/+page.server.ts 5ms (unchanged)
-src/routes/(app)/manage-teams/+page.svelte 49ms (unchanged)
-src/routes/(app)/root-dashboard/_lib/api.ts 6ms (unchanged)
-src/routes/(app)/root-dashboard/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/root-dashboard/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/root-dashboard/_lib/utils.ts 3ms (unchanged)
-src/routes/(app)/root-dashboard/+page.server.ts 5ms (unchanged)
-src/routes/(app)/root-dashboard/+page.svelte 18ms (unchanged)
-src/routes/(app)/root-profile/_lib/api.ts 5ms (unchanged)
-src/routes/(app)/root-profile/_lib/constants.ts 2ms (unchanged)
-src/routes/(app)/root-profile/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/root-profile/_lib/utils.ts 3ms (unchanged)
-src/routes/(app)/root-profile/+page.server.ts 4ms (unchanged)
-src/routes/(app)/root-profile/+page.svelte 42ms (unchanged)
-src/routes/(app)/shifts/_lib/admin-actions.ts 8ms (unchanged)
-src/routes/(app)/shifts/_lib/AdminActions.svelte 10ms (unchanged)
-src/routes/(app)/shifts/_lib/api.ts 23ms (unchanged)
-src/routes/(app)/shifts/_lib/autofill.ts 9ms (unchanged)
-src/routes/(app)/shifts/_lib/constants.ts 4ms (unchanged)
-src/routes/(app)/shifts/_lib/custom-rotation.ts 11ms (unchanged)
-src/routes/(app)/shifts/_lib/CustomRotationModal.svelte 48ms (unchanged)
-src/routes/(app)/shifts/_lib/data-loader.ts 12ms (unchanged)
-src/routes/(app)/shifts/_lib/drag-drop.ts 9ms (unchanged)
-src/routes/(app)/shifts/_lib/EmployeeSidebar.svelte 10ms (unchanged)
-src/routes/(app)/shifts/_lib/favorites.ts 9ms (unchanged)
-src/routes/(app)/shifts/_lib/FilterDropdowns.svelte 40ms (unchanged)
-src/routes/(app)/shifts/_lib/handlers.ts 16ms
-src/routes/(app)/shifts/_lib/modals.ts 7ms (unchanged)
-src/routes/(app)/shifts/_lib/rotation.ts 11ms (unchanged)
-src/routes/(app)/shifts/_lib/RotationSetupModal.svelte 43ms (unchanged)
-src/routes/(app)/shifts/_lib/ShiftControls.svelte 12ms (unchanged)
-src/routes/(app)/shifts/_lib/ShiftScheduleGrid.svelte 22ms (unchanged)
-src/routes/(app)/shifts/_lib/state.svelte.ts 17ms (unchanged)
-src/routes/(app)/shifts/_lib/types.ts 6ms (unchanged)
-src/routes/(app)/shifts/_lib/ui-helpers.ts 7ms (unchanged)
-src/routes/(app)/shifts/_lib/utils.ts 12ms (unchanged)
-src/routes/(app)/shifts/_lib/validation.ts 20ms (unchanged)
-src/routes/(app)/shifts/_lib/WeekNavigation.svelte 5ms (unchanged)
-src/routes/(app)/shifts/+page.server.ts 10ms (unchanged)
-src/routes/(app)/shifts/+page.svelte 75ms (unchanged)
-src/routes/(app)/storage-upgrade/+page.server.ts 5ms (unchanged)
-src/routes/(app)/storage-upgrade/+page.svelte 21ms (unchanged)
-src/routes/(app)/survey-admin/_lib/ActiveSurveyCard.svelte 19ms (unchanged)
-src/routes/(app)/survey-admin/_lib/api.ts 12ms (unchanged)
-src/routes/(app)/survey-admin/_lib/constants.ts 3ms (unchanged)
-src/routes/(app)/survey-admin/_lib/DraftSurveyCard.svelte 9ms (unchanged)
-src/routes/(app)/survey-admin/_lib/handlers.ts 21ms (unchanged)
-src/routes/(app)/survey-admin/_lib/QuestionItem.svelte 15ms (unchanged)
-src/routes/(app)/survey-admin/_lib/state.svelte.ts 5ms (unchanged)
-src/routes/(app)/survey-admin/_lib/SurveyFormModal.svelte 36ms (unchanged)
-src/routes/(app)/survey-admin/_lib/types.ts 4ms (unchanged)
-src/routes/(app)/survey-admin/_lib/utils.ts 6ms (unchanged)
-src/routes/(app)/survey-admin/+page.server.ts 5ms (unchanged)
-src/routes/(app)/survey-admin/+page.svelte 32ms (unchanged)
-src/routes/(app)/survey-employee/_lib/api.ts 6ms (unchanged)
-src/routes/(app)/survey-employee/_lib/constants.ts 2ms (unchanged)
-src/routes/(app)/survey-employee/_lib/state.svelte.ts 7ms (unchanged)
-src/routes/(app)/survey-employee/_lib/SurveyCard.svelte 11ms (unchanged)
-src/routes/(app)/survey-employee/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/survey-employee/_lib/utils.ts 9ms (unchanged)
-src/routes/(app)/survey-employee/+page.server.ts 7ms (unchanged)
-src/routes/(app)/survey-employee/+page.svelte 55ms (unchanged)
-src/routes/(app)/survey-results/_lib/api.ts 6ms (unchanged)
-src/routes/(app)/survey-results/_lib/constants.ts 2ms (unchanged)
-src/routes/(app)/survey-results/_lib/state.svelte.ts 5ms (unchanged)
-src/routes/(app)/survey-results/_lib/types.ts 3ms (unchanged)
-src/routes/(app)/survey-results/_lib/utils.ts 7ms (unchanged)
-src/routes/(app)/survey-results/+page.server.ts 6ms (unchanged)
-src/routes/(app)/survey-results/+page.svelte 53ms (unchanged)
-src/routes/(app)/tenant-deletion-status/_lib/api.ts 5ms (unchanged)
-src/routes/(app)/tenant-deletion-status/_lib/constants.ts 2ms (unchanged)
-src/routes/(app)/tenant-deletion-status/_lib/types.ts 2ms (unchanged)
-src/routes/(app)/tenant-deletion-status/_lib/utils.ts 6ms (unchanged)
-src/routes/(app)/tenant-deletion-status/+page.server.ts 4ms (unchanged)
-src/routes/(app)/tenant-deletion-status/+page.svelte 35ms (unchanged)
-src/routes/+layout.svelte 3ms (unchanged)
-src/routes/+page.svelte 18ms (unchanged)
-src/routes/health/+server.ts 1ms (unchanged)
-src/routes/login/+page.server.ts 7ms (unchanged)
-src/routes/login/+page.svelte 25ms (unchanged)
-src/routes/rate-limit/+page.svelte 8ms (unchanged)
-src/routes/signup/_lib/api.ts 3ms (unchanged)
-src/routes/signup/_lib/constants.ts 3ms (unchanged)
-src/routes/signup/_lib/types.ts 2ms (unchanged)
-src/routes/signup/_lib/validators.ts 5ms (unchanged)
-src/routes/signup/+page.svelte 35ms (unchanged)
-src/routes/tenant-deletion-approve/+page.server.ts 5ms (unchanged)
-src/routes/tenant-deletion-approve/+page.svelte 16ms (unchanged)
-src/styles/account-settings.css 3ms (unchanged)
-src/styles/admin-dashboard.css 9ms (unchanged)
-src/styles/admin-profile.css 3ms (unchanged)
-src/styles/alerts.css 1ms (unchanged)
-src/styles/base/variables.css 1ms (unchanged)
-src/styles/blackboard-widget.css 5ms (unchanged)
-src/styles/blackboard.css 28ms (unchanged)
-src/styles/breadcrumb-alignment.css 2ms (unchanged)
-src/styles/calendar.css 17ms (unchanged)
-src/styles/chat-icons.css 2ms (unchanged)
-src/styles/chat.css 29ms (unchanged)
-src/styles/container-padding-fix.css 1ms (unchanged)
-src/styles/design-system/index.css 1ms (unchanged)
-src/styles/design-system/variables-contrast.css 7ms (unchanged)
-src/styles/design-system/variables-dark.css 7ms (unchanged)
-src/styles/design-system/variables-light.css 7ms (unchanged)
-src/styles/documents-explorer.css 4ms (unchanged)
-src/styles/employee-dashboard.css 13ms (unchanged)
-src/styles/employee-profile.css 3ms (unchanged)
-src/styles/feature-management.css 5ms (unchanged)
-src/styles/features.css 6ms (unchanged)
-src/styles/fonts-outfit.css 0ms (unchanged)
-src/styles/index.css 22ms (unchanged)
-src/styles/kvp-detail.css 10ms (unchanged)
-src/styles/kvp.css 7ms (unchanged)
-src/styles/lib/fontawesome.min.css 144ms (unchanged)
-src/styles/lib/fullcalendar.min.css 36ms (unchanged)
-src/styles/login.css 9ms (unchanged)
-src/styles/logs.css 3ms (unchanged)
-src/styles/main.css 1ms (unchanged)
-src/styles/manage-admins.css 1ms (unchanged)
-src/styles/manage-areas.css 1ms (unchanged)
-src/styles/manage-employees.css 0ms (unchanged)
-src/styles/manage-machines.css 2ms (unchanged)
-src/styles/manage-root.css 2ms (unchanged)
-src/styles/manage-teams.css 1ms (unchanged)
-src/styles/password-strength.css 6ms (unchanged)
-src/styles/profile-picture.css 4ms (unchanged)
-src/styles/rate-limit.css 2ms (unchanged)
-src/styles/root-dashboard.css 1ms (unchanged)
-src/styles/root-profile.css 6ms (unchanged)
-src/styles/shifts.css 37ms (unchanged)
-src/styles/signup.css 17ms (unchanged)
-src/styles/storage-upgrade.css 7ms (unchanged)
-src/styles/style.css 3ms (unchanged)
-src/styles/survey-admin.css 6ms (unchanged)
-src/styles/survey-employee.css 7ms (unchanged)
-src/styles/survey-results.css 4ms (unchanged)
-src/styles/tailwind.css 5ms (unchanged)
-src/styles/tailwind/base.css 4ms (unchanged)
-src/styles/tailwind/components/container.css 1ms (unchanged)
-src/styles/tailwind/components/glass.css 6ms (unchanged)
-src/styles/tailwind/utilities.css 6ms (unchanged)
-src/styles/tenant-deletion-status.css 9ms (unchanged)
-src/styles/unified-navigation.css 28ms (unchanged)
-src/styles/user-info-update.css 4ms (unchanged)
-src/types/event-calendar.d.ts 8ms (unchanged)
-stats.html 517ms (unchanged)
-svelte.config.js 3ms (unchanged)
-tsconfig.json 1ms (unchanged)
-vite.config.ts 4ms (unchanged)
+```
+frontend/src/lib/
+  utils/
+    api-client.ts       # Fetch wrapper with auth
+    token-manager.ts    # JWT storage/refresh
+    session-manager.ts  # Session handling
+    auth.ts             # Auth utilities
+    alerts.ts           # Alert/notification helpers
+    avatar-helpers.ts   # Avatar URL generation
+    date-helpers.ts     # Date formatting
+    jwt-utils.ts        # JWT decode
+    password-strength.ts # Password validation
+    sanitize-html.ts    # XSS prevention
+    user-service.ts     # User data helpers
+  types/
+    api.types.ts        # API response types
+    utils.types.ts      # Utility types
+  stores/
+    toast.js            # Toast notifications
+  components/
+    Breadcrumb.svelte   # Navigation breadcrumb
+    RoleSwitch.svelte   # Role switcher
+    ToastContainer.svelte # Toast display
+```
 
-> assixx-frontend@0.1.0 lint:fix /home/scs/projects/Assixx/frontend
-> eslint . --fix
+### Design System
+
+```
+frontend/src/design-system/
+  tokens/
+    colors.css, shadows.css, animations.css, gradients.css
+  primitives/
+    buttons/      # btn-primary, btn-danger, etc.
+    badges/       # badge-status, badge-role, etc.
+    cards/        # card-base, card-stat, card-accent
+    forms/        # form-base, multi-select
+    modals/       # modal-base
+    feedback/     # alert, toast, spinner, skeleton
+    navigation/   # tabs, breadcrumb, pagination
+    data-display/ # tables, empty-state
+    toggles/      # toggle-switch, button-group
+    dropdowns/    # custom-dropdown
+    file-upload/  # upload-zone, upload-list
+    pickers/      # date-picker, time-picker
+    tooltip/      # tooltip
+```
+
+### Page Styles
+
+```
+frontend/src/styles/
+  admin-dashboard.css
+  employee-dashboard.css
+  root-dashboard.css
+  *-profile.css
+  manage-*.css
+  blackboard.css
+  calendar.css
+  chat.css
+  documents-explorer.css
+  kvp.css, kvp-detail.css
+  shifts.css
+  survey-*.css
+  features.css
+  logs.css
+  login.css
+  signup.css
+```
+
+---
+
+## User Roles
+
+| Role     | Scope         | Access                          |
+| -------- | ------------- | ------------------------------- |
+| root     | System-wide   | All tenants, system config      |
+| admin    | Tenant-scoped | Manage tenant users/data        |
+| employee | Tenant-scoped | Self-service, assigned features |
+
+## Multi-Tenant Architecture
+
+- Every DB table has `tenant_id` column
+- User isolation: employees see only their tenant's data
+- Admins manage their own tenant
+- Root users can access all tenants
+
+---
+
+## Key Files
+
+### Configuration
+
+- `docker/docker-compose.yml` - Docker services
+- `docker/.env` - Environment variables
+- `backend/src/nest/config/config.service.ts` - Config access
+- `frontend/svelte.config.js` - SvelteKit config
+- `frontend/vite.config.ts` - Vite config
+- `eslint.config.js` - ESLint rules
+
+### Entry Points
+
+- `backend/src/main.ts` - NestJS bootstrap
+- `frontend/src/app.html` - HTML template
+- `frontend/src/hooks.server.ts` - Server hooks (auth)
+- `frontend/src/routes/(app)/+layout.server.ts` - Auth check
+- `frontend/src/routes/(app)/+layout.svelte` - App shell (sidebar, header)
+
+### Database
+
+- `database/migrations/` - SQL migrations
+- `database/schema/` - Schema definitions

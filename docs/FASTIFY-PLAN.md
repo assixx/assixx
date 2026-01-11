@@ -5,10 +5,10 @@
 
 ## WARUM FASTIFY v5 (nicht v4)
 
-| Version | LTS Ende | Node.js | Empfehlung |
-|---------|----------|---------|------------|
-| v4 | **2025-06-30** (6 Monate!) | 18+ | ❌ EOL bald |
-| v5 | TBD (aktuell) | **20+** | ✅ Verwenden |
+| Version | LTS Ende                   | Node.js | Empfehlung   |
+| ------- | -------------------------- | ------- | ------------ |
+| v4      | **2025-06-30** (6 Monate!) | 18+     | ❌ EOL bald  |
+| v5      | TBD (aktuell)              | **20+** | ✅ Verwenden |
 
 Wir haben Node 24.12.0 → v5 ist die richtige Wahl.
 Quelle: https://fastify.dev/docs/latest/Reference/LTS/
@@ -46,6 +46,7 @@ docker exec -it assixx-backend sh -c "
 ```
 
 **WICHTIG für Fastify v5:**
+
 - `@webundsoehne/nest-fastify-file-upload` ist NestJS 7-11 + Fastify 3-5 kompatibel
 - Bei Fastify v5: KEIN FastifyMulterModule importieren!
 - Stattdessen: `@fastify/multipart` direkt in main.ts registrieren
@@ -57,12 +58,12 @@ docker exec -it assixx-backend sh -c "
 ## PHASE 2: main.ts komplett ersetzen
 
 ```typescript
+import fastifyCookie from '@fastify/cookie';
+import fastifyHelmet from '@fastify/helmet';
+import fastifyStatic from '@fastify/static';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import fastifyStatic from '@fastify/static';
-import fastifyHelmet from '@fastify/helmet';
-import fastifyCookie from '@fastify/cookie';
 import path from 'path';
 import 'reflect-metadata';
 
@@ -76,7 +77,7 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: ['error', 'warn'], trustProxy: true })
+    new FastifyAdapter({ logger: ['error', 'warn'], trustProxy: true }),
   );
 
   const fastify = app.getHttpAdapter().getInstance();
@@ -108,7 +109,8 @@ async function bootstrap(): Promise<void> {
   // HTML Routes - Fastify wildcard
   fastify.get('/:page', async (request, reply) => {
     const page = (request.params as { page: string }).page;
-    if (!page.includes('.')) { // Keine Dateiendung = HTML-Seite
+    if (!page.includes('.')) {
+      // Keine Dateiendung = HTML-Seite
       return reply.sendFile(`pages/${page}.html`);
     }
   });
@@ -137,45 +139,49 @@ bootstrap().catch(console.error);
 ## PHASE 3: Controller @Req/@Res ändern
 
 **Grep-Befehl zum Finden:**
+
 ```bash
 grep -rn "@Req\|@Res" backend/src/nest --include="*.ts"
 ```
 
 **Änderungen (19 Stellen):**
 
-| Datei:Zeile | VON | ZU |
-|-------------|-----|-----|
-| auth.controller.ts:93 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| auth.controller.ts:145 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| signup.controller.ts:46 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| root.controller.ts:295 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| root.controller.ts:327 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| audit-trail.controller.ts:175-176 | `Request, Response` | `FastifyRequest, FastifyReply` |
-| audit-trail.controller.ts:209 | `@Req() req: Request` | `@Req() req: FastifyRequest` |
-| documents.controller.ts:281,301 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| users.controller.ts:289 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| surveys.controller.ts:307 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| shifts.controller.ts:264 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| calendar.controller.ts:118 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| kvp.controller.ts:342 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| blackboard.controller.ts:407,431,455 | `@Res() res: Response` | `@Res() res: FastifyReply` |
-| reports.controller.ts:141 | `@Res() res: Response` | `@Res() res: FastifyReply` |
+| Datei:Zeile                          | VON                    | ZU                             |
+| ------------------------------------ | ---------------------- | ------------------------------ |
+| auth.controller.ts:93                | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| auth.controller.ts:145               | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| signup.controller.ts:46              | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| root.controller.ts:295               | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| root.controller.ts:327               | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| audit-trail.controller.ts:175-176    | `Request, Response`    | `FastifyRequest, FastifyReply` |
+| audit-trail.controller.ts:209        | `@Req() req: Request`  | `@Req() req: FastifyRequest`   |
+| documents.controller.ts:281,301      | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| users.controller.ts:289              | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| surveys.controller.ts:307            | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| shifts.controller.ts:264             | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| calendar.controller.ts:118           | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| kvp.controller.ts:342                | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| blackboard.controller.ts:407,431,455 | `@Res() res: Response` | `@Res() res: FastifyReply`     |
+| reports.controller.ts:141            | `@Res() res: Response` | `@Res() res: FastifyReply`     |
 
 **Import ändern in JEDER Datei:**
+
 ```typescript
 // ENTFERNEN:
 import { Request, Response } from 'express';
 // HINZUFÜGEN:
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 ```
 
 **ACHTUNG res.sendFile() → reply.send(createReadStream()):**
+
 ```typescript
+// ZU (Fastify):
+import { createReadStream } from 'fs';
+
 // VON (Express):
 res.sendFile(filePath);
 
-// ZU (Fastify):
-import { createReadStream } from 'fs';
 reply.type('application/octet-stream').send(createReadStream(filePath));
 ```
 
@@ -184,6 +190,7 @@ reply.type('application/octet-stream').send(createReadStream(filePath));
 ## PHASE 4: FileInterceptor (5 Controller)
 
 **Import ändern:**
+
 ```typescript
 // VON:
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
@@ -195,6 +202,7 @@ import { diskStorage, memoryStorage } from 'fastify-multer';
 ```
 
 **Dateien:**
+
 - `kvp.controller.ts:37,39` - FilesInterceptor + memoryStorage
 - `documents.controller.ts:35,37` - FileInterceptor + memoryStorage
 - `users.controller.ts:41,43` - FileInterceptor + diskStorage
@@ -241,23 +249,23 @@ pnpm run test:api
 
 ## GOTCHAS
 
-| Problem | Lösung |
-|---------|--------|
-| `app.use()` funktioniert nicht | Fastify: `app.register()` |
-| `res.sendFile()` fehlt | `reply.send(createReadStream(path))` |
-| `express.static()` | `@fastify/static` mit `root` option |
-| Trust Proxy | `new FastifyAdapter({ trustProxy: true })` |
-| Middleware | `@fastify/middie` oder Fastify Hooks |
-| File nicht gefunden | Pfade prüfen, `decorateReply: false` setzen |
+| Problem                        | Lösung                                      |
+| ------------------------------ | ------------------------------------------- |
+| `app.use()` funktioniert nicht | Fastify: `app.register()`                   |
+| `res.sendFile()` fehlt         | `reply.send(createReadStream(path))`        |
+| `express.static()`             | `@fastify/static` mit `root` option         |
+| Trust Proxy                    | `new FastifyAdapter({ trustProxy: true })`  |
+| Middleware                     | `@fastify/middie` oder Fastify Hooks        |
+| File nicht gefunden            | Pfade prüfen, `decorateReply: false` setzen |
 
 **Fastify v5 spezifisch:**
 
-| v4 (alt) | v5 (neu) |
-|----------|----------|
+| v4 (alt)                      | v5 (neu)                                      |
+| ----------------------------- | --------------------------------------------- |
 | `app.listen(3000, '0.0.0.0')` | `app.listen({ port: 3000, host: '0.0.0.0' })` |
-| `request.connection` | `request.socket` |
-| `reply.getResponseTime()` | `reply.elapsedTime` |
-| `logger: customLogger` | `loggerInstance: customLogger` |
+| `request.connection`          | `request.socket`                              |
+| `reply.getResponseTime()`     | `reply.elapsedTime`                           |
+| `logger: customLogger`        | `loggerInstance: customLogger`                |
 
 ---
 

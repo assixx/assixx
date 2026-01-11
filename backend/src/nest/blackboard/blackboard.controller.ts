@@ -53,6 +53,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import type {
   BlackboardComment,
   BlackboardEntryResponse,
@@ -372,7 +373,7 @@ export class BlackboardController {
   @HttpCode(HttpStatus.CREATED)
   async uploadAttachment(
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File | undefined,
+    @UploadedFile() file: MulterFile | undefined,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<Record<string, unknown>> {

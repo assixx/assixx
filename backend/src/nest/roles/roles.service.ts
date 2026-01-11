@@ -113,7 +113,7 @@ export class RolesService {
   getRoleById(roleId: RoleName): Role {
     this.logger.log(`Getting role: ${roleId}`);
     // TypeScript ensures roleId is a valid RoleName union type, not arbitrary string
-    // eslint-disable-next-line security/detect-object-injection
+
     return RolesService.ROLES[roleId];
   }
 
@@ -179,9 +179,9 @@ export class RolesService {
 
     const userRole = rows[0].role as RoleName;
     // userRole and requiredRole are typed as RoleName union, not arbitrary strings
-    // eslint-disable-next-line security/detect-object-injection
+
     const userRoleLevel = RolesService.ROLES[userRole].level;
-    // eslint-disable-next-line security/detect-object-injection
+
     const requiredRoleLevel = RolesService.ROLES[requiredRole].level;
 
     return {

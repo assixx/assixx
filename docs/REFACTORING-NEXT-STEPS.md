@@ -181,7 +181,7 @@ switch (document.recipient_type) {
     return document.user_id === userId;
   case 'team':
     const members = await Team.getTeamMembers(document.team_id);
-    return members.some(m => m.id === userId);
+    return members.some((m) => m.id === userId);
   // ...
 }
 ```

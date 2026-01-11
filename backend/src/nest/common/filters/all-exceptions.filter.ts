@@ -233,7 +233,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       503: 'SERVICE_UNAVAILABLE',
     };
 
-    // eslint-disable-next-line security/detect-object-injection -- codeMap is safe, status is a number
     return codeMap[status] ?? 'UNKNOWN_ERROR';
   }
 

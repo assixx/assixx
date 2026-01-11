@@ -4,8 +4,9 @@
 // Adapted for Svelte 5 (no DOM manipulation)
 // =============================================================================
 
-import type { ShiftFavorite, SelectedContext, Area, Department, Machine, Team } from './types';
 import { saveFavorite as apiSaveFavorite, deleteFavorite as apiDeleteFavorite } from './api';
+
+import type { ShiftFavorite, SelectedContext, Area, Department, Machine, Team } from './types';
 
 // =============================================================================
 // VALIDATION
@@ -102,6 +103,57 @@ export function getContextNames(
 // ACTIONS
 // =============================================================================
 
+interface AddFavoriteValidation {
+  valid: boolean;
+  error?: string;
+  names?: { area: Area; department: Department; machine: Machine; team: Team };
+}
+
+/**
+ * Validate context before adding to favorites
+ */
+function validateAddToFavorites(
+  context: SelectedContext,
+  favorites: ShiftFavorite[],
+  areas: Area[],
+  departments: Department[],
+  machines: Machine[],
+  teams: Team[],
+): AddFavoriteValidation {
+  if (isTeamAlreadyFavorited(favorites, context.teamId)) {
+    const existing = favorites.find((fav) => fav.teamId === context.teamId);
+    return {
+      valid: false,
+      error: `Diese Kombination ist bereits als Favorit "${existing?.name ?? 'unbekannt'}" gespeichert!`,
+    };
+  }
+
+  if (!isContextCompleteForFavorite(context)) {
+    return {
+      valid: false,
+      error: 'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
+    };
+  }
+
+  if (isCombinationFavorited(favorites, context)) {
+    return { valid: false, error: 'Diese Kombination existiert bereits als Favorit!' };
+  }
+
+  const names = getContextNames(context, areas, departments, machines, teams);
+  if (names === null) {
+    return { valid: false, error: 'Fehler beim Ermitteln der Namen' };
+  }
+
+  return { valid: true, names };
+}
+
+interface AddFavoriteResult {
+  success: boolean;
+  favorites: ShiftFavorite[];
+  error?: string;
+  favorite?: ShiftFavorite;
+}
+
 /**
  * Add current context to favorites
  */
@@ -112,54 +164,24 @@ export async function addToFavorites(
   departments: Department[],
   machines: Machine[],
   teams: Team[],
-): Promise<{
-  success: boolean;
-  favorites: ShiftFavorite[];
-  error?: string;
-  favorite?: ShiftFavorite;
-}> {
-  // Check if team is already favorited
-  if (isTeamAlreadyFavorited(favorites, context.teamId)) {
-    const existingFavorite = favorites.find((fav) => fav.teamId === context.teamId);
-    return {
-      success: false,
-      favorites,
-      error: `Diese Kombination ist bereits als Favorit "${existingFavorite?.name ?? 'unbekannt'}" gespeichert!`,
-    };
+): Promise<AddFavoriteResult> {
+  const validation = validateAddToFavorites(
+    context,
+    favorites,
+    areas,
+    departments,
+    machines,
+    teams,
+  );
+  if (!validation.valid || validation.names === undefined) {
+    return { success: false, favorites, error: validation.error };
   }
 
-  // Check if context is complete
-  if (!isContextCompleteForFavorite(context)) {
-    return {
-      success: false,
-      favorites,
-      error: 'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
-    };
-  }
-
-  // Check if exact combination is already favorited
-  if (isCombinationFavorited(favorites, context)) {
-    return {
-      success: false,
-      favorites,
-      error: 'Diese Kombination existiert bereits als Favorit!',
-    };
-  }
-
-  // Get names for display
-  const names = getContextNames(context, areas, departments, machines, teams);
-  if (names === null) {
-    return {
-      success: false,
-      favorites,
-      error: 'Fehler beim Ermitteln der Namen',
-    };
-  }
+  const { names } = validation;
 
   try {
-    // Save favorite via API
     const savedFavorite = await apiSaveFavorite({
-      name: names.team.name, // Required by API
+      name: names.team.name,
       areaId: context.areaId ?? 0,
       areaName: names.area.name,
       departmentId: context.departmentId ?? 0,
@@ -171,21 +193,10 @@ export async function addToFavorites(
     });
 
     if (savedFavorite === null) {
-      return {
-        success: false,
-        favorites,
-        error: 'Fehler beim Speichern des Favoriten',
-      };
+      return { success: false, favorites, error: 'Fehler beim Speichern des Favoriten' };
     }
 
-    // Add to local favorites list
-    const updatedFavorites = [...favorites, savedFavorite];
-
-    return {
-      success: true,
-      favorites: updatedFavorites,
-      favorite: savedFavorite,
-    };
+    return { success: true, favorites: [...favorites, savedFavorite], favorite: savedFavorite };
   } catch (error) {
     console.error('[FAVORITES] Error saving favorite:', error);
     return {

@@ -17,7 +17,9 @@
           type="button"
           class="ds-modal__close"
           aria-label="Schliessen"
-          onclick={() => kvpDetailState.closeShareModal()}
+          onclick={() => {
+            kvpDetailState.closeShareModal();
+          }}
         >
           <i class="fas fa-times"></i>
         </button>
@@ -36,7 +38,9 @@
               value="team"
               class="choice-card__input"
               checked={kvpDetailState.selectedShareLevel === 'team'}
-              onchange={() => kvpDetailState.setSelectedShareLevel('team')}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('team');
+              }}
             />
             <span class="choice-card__text">
               Team
@@ -46,7 +50,13 @@
             {#if kvpDetailState.selectedShareLevel === 'team'}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown" data-dropdown="shareTeam" onclick={(e) => e.stopPropagation()}>
+              <div
+                class="dropdown"
+                data-dropdown="shareTeam"
+                onclick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -94,7 +104,9 @@
               value="department"
               class="choice-card__input"
               checked={kvpDetailState.selectedShareLevel === 'department'}
-              onchange={() => kvpDetailState.setSelectedShareLevel('department')}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('department');
+              }}
             />
             <span class="choice-card__text">
               Abteilung
@@ -104,7 +116,13 @@
             {#if kvpDetailState.selectedShareLevel === 'department'}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown" data-dropdown="shareDept" onclick={(e) => e.stopPropagation()}>
+              <div
+                class="dropdown"
+                data-dropdown="shareDept"
+                onclick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -153,7 +171,9 @@
               value="area"
               class="choice-card__input"
               checked={kvpDetailState.selectedShareLevel === 'area'}
-              onchange={() => kvpDetailState.setSelectedShareLevel('area')}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('area');
+              }}
             />
             <span class="choice-card__text">
               Bereich
@@ -163,7 +183,13 @@
             {#if kvpDetailState.selectedShareLevel === 'area'}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="dropdown" data-dropdown="shareArea" onclick={(e) => e.stopPropagation()}>
+              <div
+                class="dropdown"
+                data-dropdown="shareArea"
+                onclick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -211,7 +237,9 @@
               value="company"
               class="choice-card__input"
               checked={kvpDetailState.selectedShareLevel === 'company'}
-              onchange={() => kvpDetailState.setSelectedShareLevel('company')}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('company');
+              }}
             />
             <span class="choice-card__text">
               Firma
@@ -224,7 +252,9 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={() => kvpDetailState.closeShareModal()}
+          onclick={() => {
+            kvpDetailState.closeShareModal();
+          }}
         >
           Abbrechen
         </button>

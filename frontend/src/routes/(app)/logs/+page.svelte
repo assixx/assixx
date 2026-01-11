@@ -5,48 +5,40 @@
    * Level 3 Hybrid: SSR initial + client-side pagination/filtering
    */
   import { invalidateAll } from '$app/navigation';
-  import type { PageData } from './$types';
 
-  // Page-specific CSS
   import '../../../styles/logs.css';
 
-  // SSR Data
-  const { data }: { data: PageData } = $props();
-
-  // _lib/ imports
-  import type { LogEntry, PaginationInfo } from './_lib/types';
+  import { deleteLogs, fetchLogs } from './_lib/api';
   import {
-    LOGS_PER_PAGE,
     ACTION_OPTIONS,
     ENTITY_OPTIONS,
-    TIMERANGE_OPTIONS,
+    LOGS_PER_PAGE,
     MESSAGES,
+    TIMERANGE_OPTIONS,
   } from './_lib/constants';
-  import { fetchLogs, deleteLogs } from './_lib/api';
   import {
-    getActionLabel,
-    getRoleLabel,
-    getRoleBadgeClass,
     formatDate,
+    getActionLabel,
     getDisplayName,
     getDropdownDisplayText,
+    getRoleBadgeClass,
+    getRoleLabel,
     getVisiblePages,
     hasActiveFilters as checkHasActiveFilters,
   } from './_lib/utils';
+
+  import type { PageData } from './$types';
+  import type { LogEntry, PaginationInfo } from './_lib/types';
+
+  // SSR Data
+  const { data }: { data: PageData } = $props();
 
   // =============================================================================
   // SSR DATA (initial values from server)
   // =============================================================================
 
-  const ssrLogs = $derived(data?.logs ?? []);
-  const ssrPagination = $derived(
-    data?.pagination ?? {
-      limit: LOGS_PER_PAGE,
-      offset: 0,
-      total: 0,
-      hasMore: false,
-    },
-  );
+  const ssrLogs = $derived(data.logs);
+  const ssrPagination = $derived(data.pagination);
 
   // =============================================================================
   // HYBRID STATE - SSR initial, client updates for pagination/filtering
@@ -173,7 +165,7 @@
   function applyFilters(): void {
     filtersApplied = true;
     currentOffset = 0;
-    loadLogs();
+    void loadLogs();
   }
 
   function resetFilters(): void {
@@ -183,7 +175,7 @@
     filterTimerange = 'all';
     filtersApplied = false;
     currentOffset = 0;
-    loadLogs();
+    void loadLogs();
   }
 
   function openDeleteModal(): void {
@@ -199,20 +191,20 @@
   function handlePreviousPage(): void {
     if (currentOffset >= LOGS_PER_PAGE) {
       currentOffset -= LOGS_PER_PAGE;
-      loadLogs();
+      void loadLogs();
     }
   }
 
   function handleNextPage(): void {
     if (pagination.hasMore) {
       currentOffset += LOGS_PER_PAGE;
-      loadLogs();
+      void loadLogs();
     }
   }
 
   function goToPage(page: number): void {
     currentOffset = (page - 1) * LOGS_PER_PAGE;
-    loadLogs();
+    void loadLogs();
   }
 
   function selectAction(value: string): void {
@@ -248,7 +240,9 @@
     }
 
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   });
 
   // =============================================================================
@@ -318,7 +312,9 @@
                     type="button"
                     class="dropdown__option"
                     class:selected={filterAction === option.value}
-                    onclick={() => selectAction(option.value)}
+                    onclick={() => {
+                      selectAction(option.value);
+                    }}
                   >
                     {option.text}
                   </button>
@@ -358,7 +354,9 @@
                     type="button"
                     class="dropdown__option"
                     class:selected={filterEntity === option.value}
-                    onclick={() => selectEntity(option.value)}
+                    onclick={() => {
+                      selectEntity(option.value);
+                    }}
                   >
                     {option.text}
                   </button>
@@ -398,7 +396,9 @@
                     type="button"
                     class="dropdown__option"
                     class:selected={filterTimerange === option.value}
-                    onclick={() => selectTimerange(option.value)}
+                    onclick={() => {
+                      selectTimerange(option.value);
+                    }}
                   >
                     {option.text}
                   </button>
@@ -410,15 +410,16 @@
 
         <!-- Filter Actions -->
         <div class="flex flex-wrap gap-3 mt-6">
-          <button class="btn btn-info" onclick={applyFilters}>
+          <button type="button" class="btn btn-info" onclick={applyFilters}>
             <i class="fas fa-filter mr-2"></i>
             Filter anwenden
           </button>
-          <button class="btn btn-cancel" onclick={resetFilters} disabled={!filtersApplied}>
+          <button type="button" class="btn btn-cancel" onclick={resetFilters} disabled={!filtersApplied}>
             <i class="fas fa-undo mr-2"></i>
             Zurücksetzen
           </button>
           <button
+            type="button"
             class="btn btn-danger"
             onclick={openDeleteModal}
             disabled={!canDelete}
@@ -448,7 +449,7 @@
             <div class="empty-state__icon"><i class="fas fa-exclamation-triangle"></i></div>
             <p class="empty-state__title">{error}</p>
             <div class="empty-state__actions">
-              <button class="btn btn-primary btn--sm" onclick={() => loadLogs()}
+              <button type="button" class="btn btn-primary btn--sm" onclick={() => void loadLogs()}
                 >Erneut versuchen</button
               >
             </div>
@@ -511,6 +512,7 @@
       {#if !loading && logs.length > 0}
         <nav class="pagination" id="pagination-container">
           <button
+            type="button"
             class="pagination__btn pagination__btn--prev"
             onclick={handlePreviousPage}
             disabled={currentOffset === 0}
@@ -524,9 +526,12 @@
                 <span class="pagination__ellipsis">...</span>
               {:else if page.type === 'page'}
                 <button
+                  type="button"
                   class="pagination__page"
                   class:pagination__page--active={page.active}
-                  onclick={() => goToPage(page.value)}
+                  onclick={() => {
+                    goToPage(page.value);
+                  }}
                 >
                   {page.value}
                 </button>
@@ -537,6 +542,7 @@
             Seite {currentPage} von {totalPages} ({pagination.total} Einträge)
           </span>
           <button
+            type="button"
             class="pagination__btn pagination__btn--next"
             onclick={handleNextPage}
             disabled={!pagination.hasMore}
@@ -558,14 +564,22 @@
     aria-modal="true"
     aria-labelledby="delete-modal-title"
     tabindex="-1"
-    onclick={(e) => e.target === e.currentTarget && closeDeleteModal()}
-    onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
+    onclick={(e) => {
+      if (e.target === e.currentTarget) closeDeleteModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeDeleteModal();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ds-modal ds-modal--md"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
       role="document"
     >
       <!-- Header -->
@@ -644,8 +658,8 @@
 
       <!-- Footer -->
       <div class="ds-modal__footer">
-        <button class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
-        <button class="btn btn-danger" onclick={handleDeleteLogs} disabled={!canConfirmDelete}>
+        <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
+        <button type="button" class="btn btn-danger" onclick={handleDeleteLogs} disabled={!canConfirmDelete}>
           <i class="fas fa-trash mr-2"></i>
           Endgültig löschen
         </button>

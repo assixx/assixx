@@ -147,7 +147,7 @@ export interface ScheduledMessage {
   status: ScheduledMessageStatus;
   createdAt: string;
   sentAt: string | null;
-  attachment: unknown | null;
+  attachment: unknown;
 }
 
 /**

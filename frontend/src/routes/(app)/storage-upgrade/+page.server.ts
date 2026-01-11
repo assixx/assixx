@@ -3,6 +3,7 @@
  * @module storage-upgrade/+page.server
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
@@ -55,11 +56,9 @@ async function apiFetch<T>(
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   // 1. Auth check
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -73,11 +72,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const storageGb = addons?.storageGb ?? 5;
   const planCode = currentPlan?.plan?.code ?? 'basic';
 
-  // 4. Log performance
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] [storage-upgrade] loaded in ${duration}ms`);
-
-  // 5. Return typed data
+  // 4. Return typed data
   return {
     title: 'Speicher erweitern',
     storageInfo: {

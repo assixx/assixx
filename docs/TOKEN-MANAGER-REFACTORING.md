@@ -204,11 +204,12 @@ unified-navigation.ts: updateTokenDisplay(remaining)
 if (this.isExpired()) {
   console.warn('[TokenManager] Token expired, logging out immediately (no refresh)');
   this.clearTokens('token_expired');
-  return false;  // ❌ KEIN Refresh-Versuch
+  return false; // ❌ KEIN Refresh-Versuch
 }
 
-if (this.isExpiringSoon(600)) {  // < 10 Min
-  return await this.refresh();  // ✅ Refresh bei < 10 Min
+if (this.isExpiringSoon(600)) {
+  // < 10 Min
+  return await this.refresh(); // ✅ Refresh bei < 10 Min
 }
 ```
 

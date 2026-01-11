@@ -12,9 +12,10 @@ import {
   deleteFavorite as apiDeleteFavorite,
   saveFavorite as apiSaveFavorite,
 } from './api';
-import { formatDate, getWeekStart, getWeekNumber } from './utils';
-import { buildShiftSaveData } from './data-loader';
 import { SHIFT_TIMES } from './constants';
+import { buildShiftSaveData } from './data-loader';
+import { formatDate, getWeekStart, getWeekNumber } from './utils';
+
 import type { SelectedContext, Team, Area, Department, Machine, ShiftFavorite } from './types';
 
 // =============================================================================
@@ -196,7 +197,22 @@ export interface AddFavoriteParams {
   teams: Team[];
 }
 
-export async function addToFavorites(params: AddFavoriteParams): Promise<ShiftFavorite | null> {
+interface FavoriteEntities {
+  area: Area;
+  dept: Department;
+  machine: Machine | undefined;
+  team: Team;
+  areaId: number;
+  departmentId: number;
+  machineId: number | null;
+  teamId: number;
+}
+
+/**
+ * Finds and validates all required entities for a favorite
+ * Returns null if required IDs are missing or entities not found
+ */
+function findFavoriteEntities(params: AddFavoriteParams): FavoriteEntities | null {
   const { selectedContext, areas, departments, machines, teams } = params;
   const { areaId, departmentId, machineId, teamId } = selectedContext;
 
@@ -206,12 +222,21 @@ export async function addToFavorites(params: AddFavoriteParams): Promise<ShiftFa
 
   const area = areas.find((a) => a.id === areaId);
   const dept = departments.find((d) => d.id === departmentId);
-  const machine = machineId !== null ? machines.find((m) => m.id === machineId) : null;
   const team = teams.find((t) => t.id === teamId);
 
   if (area === undefined || dept === undefined || team === undefined) {
     return null;
   }
+
+  const machine = machineId !== null ? machines.find((m) => m.id === machineId) : undefined;
+  return { area, dept, machine, team, areaId, departmentId, machineId, teamId };
+}
+
+export async function addToFavorites(params: AddFavoriteParams): Promise<ShiftFavorite | null> {
+  const entities = findFavoriteEntities(params);
+  if (entities === null) return null;
+
+  const { area, dept, machine, team, areaId, departmentId, machineId, teamId } = entities;
 
   return await apiSaveFavorite({
     name: team.name,

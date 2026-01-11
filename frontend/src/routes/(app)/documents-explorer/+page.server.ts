@@ -5,6 +5,7 @@
  * SSR: Loads documents + chat folders in parallel.
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 import type { Document, ChatFolder } from './_lib/types';
 
@@ -12,11 +13,49 @@ const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 interface ApiResponse<T> {
   success?: boolean;
-  data?: T;
+  data?: T | { documents?: T; folders?: T };
   documents?: T;
   folders?: T;
 }
 
+interface DataContainer<T> {
+  documents?: T;
+  folders?: T;
+  [key: string]: unknown;
+}
+
+/**
+ * Extract documents or folders from a data container
+ */
+function extractFromContainer<T>(container: DataContainer<T>): T | null {
+  if ('documents' in container) return (container.documents as T) ?? null;
+  if ('folders' in container) return (container.folders as T) ?? null;
+  return null;
+}
+
+/**
+ * Extract data from nested API response structure
+ */
+function unwrapApiResponse<T>(json: ApiResponse<T>): T | null {
+  // Handle wrapped: { success: true, data: ... }
+  if ('success' in json && json.success === true && json.data !== undefined) {
+    const nested = extractFromContainer(json.data as DataContainer<T>);
+    return nested ?? (json.data as T);
+  }
+
+  // Handle direct: { documents/folders: [...] }
+  const direct = extractFromContainer(json as DataContainer<T>);
+  if (direct !== null) return direct;
+
+  // Handle: { data: T }
+  if ('data' in json && json.data !== undefined) return json.data as T;
+
+  return json as unknown as T;
+}
+
+/**
+ * Generic API fetch with token auth
+ */
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -36,28 +75,7 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      // Handle wrapped response: { success: true, data: { documents: [...] } }
-      const innerData = json.data as unknown as { documents?: T; folders?: T };
-      if (innerData && 'documents' in innerData) {
-        return innerData.documents ?? null;
-      }
-      if (innerData && 'folders' in innerData) {
-        return innerData.folders ?? null;
-      }
-      return json.data ?? null;
-    }
-    // Handle direct object response with documents/folders
-    if ('documents' in json) {
-      return json.documents ?? null;
-    }
-    if ('folders' in json) {
-      return json.folders ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
+    return unwrapApiResponse(json);
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;
@@ -76,10 +94,8 @@ interface RawDocument {
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  const startTime = performance.now();
-
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -102,9 +118,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   })) as Document[];
 
   const chatFolders = Array.isArray(chatFoldersData) ? chatFoldersData : [];
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] documents-explorer loaded in ${duration}ms (2 parallel API calls)`);
 
   return {
     documents,

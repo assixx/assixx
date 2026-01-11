@@ -217,10 +217,10 @@ async function handleUserRegistration(data: RegistrationData): Promise<User> {
 
 // ✅ RICHTIG - Aufgeteilt in logische Einheiten
 async function handleUserRegistration(data: RegistrationData): Promise<User> {
-  const validated = validateRegistrationData(data);      // ~15 Zeilen
-  const user = await createUserInDatabase(validated);    // ~20 Zeilen
-  await sendWelcomeEmail(user);                          // ~10 Zeilen
-  logRegistration(user);                                 // ~5 Zeilen
+  const validated = validateRegistrationData(data); // ~15 Zeilen
+  const user = await createUserInDatabase(validated); // ~20 Zeilen
+  await sendWelcomeEmail(user); // ~10 Zeilen
+  logRegistration(user); // ~5 Zeilen
   return user;
 }
 
@@ -252,6 +252,9 @@ async function createUserInDatabase(data: ValidatedData): Promise<User> {
 **TypeScript-Adaptation:**
 
 ```typescript
+// ✅ RICHTIG - Mit Zod-Validierung
+import { z } from 'zod';
+
 // ❌ UNZUREICHEND - Keine Validierung
 function divideNumbers(a: number, b: number): number {
   return a / b; // Was wenn b === 0?
@@ -278,9 +281,6 @@ function divideNumbers(a: number, b: number): number {
 
   return result;
 }
-
-// ✅ RICHTIG - Mit Zod-Validierung
-import { z } from 'zod';
 
 const UserInputSchema = z.object({
   email: z.string().email(),

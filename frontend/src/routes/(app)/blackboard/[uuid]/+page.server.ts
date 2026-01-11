@@ -5,16 +5,42 @@
  * SSR: Loads full entry with comments and attachments.
  */
 import { redirect, error } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
-import type { DetailEntry, Comment, Attachment, FullEntryResponse } from './_lib/types';
+import type { FullEntryResponse } from './_lib/types';
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
-  const startTime = performance.now();
+interface ParentUser {
+  id: number;
+  role: string;
+  tenantId: number;
+  hasFullAccess?: boolean;
+}
 
+/** Handle API response errors */
+function handleApiError(response: Response, uuid: string): never {
+  if (response.status === 404) {
+    error(404, 'Eintrag nicht gefunden');
+  }
+  console.error(`[SSR] API error ${response.status} for blackboard entry ${uuid}`);
+  error(response.status, 'Fehler beim Laden des Eintrags');
+}
+
+/** Map parent user to current user format */
+function mapCurrentUser(user: ParentUser | null | undefined) {
+  if (user === null || user === undefined) return null;
+  return {
+    id: user.id,
+    role: user.role,
+    tenantId: user.tenantId,
+    hasFullAccess: user.hasFullAccess ?? false,
+  };
+}
+
+export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -23,7 +49,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     error(400, 'UUID fehlt');
   }
 
-  // Fetch full entry with comments and attachments
   const response = await fetch(`${API_BASE}/blackboard/entries/${uuid}/full`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -32,35 +57,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      error(404, 'Eintrag nicht gefunden');
-    }
-    console.error(`[SSR] API error ${response.status} for blackboard entry ${uuid}`);
-    error(response.status, 'Fehler beim Laden des Eintrags');
+    handleApiError(response, uuid);
   }
 
-  const result: FullEntryResponse = await response.json();
+  const result = (await response.json()) as FullEntryResponse;
 
   if (!result.success) {
     error(500, result.error?.message ?? 'Fehler beim Laden des Eintrags');
   }
 
-  // Get user from parent layout (already loaded there)
   const parentData = await parent();
-
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] blackboard/${uuid} loaded in ${duration}ms`);
 
   return {
     entry: result.data.entry,
     comments: result.data.comments ?? [],
     attachments: result.data.attachments ?? [],
-    currentUser: parentData.user
-      ? {
-          id: parentData.user.id,
-          role: parentData.user.role,
-          tenantId: parentData.user.tenantId,
-        }
-      : null,
+    currentUser: mapCurrentUser(parentData.user as ParentUser | null | undefined),
   };
 };

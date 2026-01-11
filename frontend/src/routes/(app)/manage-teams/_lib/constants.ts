@@ -52,7 +52,7 @@ export const MESSAGES = {
 
   // Force delete
   FORCE_DELETE_TITLE: 'Team hat Mitglieder',
-  FORCE_DELETE_MESSAGE: (count: number) =>
+  forceDeleteMessage: (count: number) =>
     `Das Team hat ${count} Mitglieder. Möchten Sie das Team trotzdem löschen? Alle Mitglieder werden automatisch aus dem Team entfernt.`,
 
   // Search
@@ -76,11 +76,11 @@ export const MESSAGES = {
  */
 export const API_ENDPOINTS = {
   TEAMS: '/teams',
-  TEAM: (id: number) => `/teams/${id}`,
-  TEAM_MEMBERS: (teamId: number) => `/teams/${teamId}/members`,
-  TEAM_MEMBER: (teamId: number, userId: number) => `/teams/${teamId}/members/${userId}`,
-  TEAM_MACHINES: (teamId: number) => `/teams/${teamId}/machines`,
-  TEAM_MACHINE: (teamId: number, machineId: number) => `/teams/${teamId}/machines/${machineId}`,
+  team: (id: number) => `/teams/${id}`,
+  teamMembers: (teamId: number) => `/teams/${teamId}/members`,
+  teamMember: (teamId: number, userId: number) => `/teams/${teamId}/members/${userId}`,
+  teamMachines: (teamId: number) => `/teams/${teamId}/machines`,
+  teamMachine: (teamId: number, machineId: number) => `/teams/${teamId}/machines/${machineId}`,
   DEPARTMENTS: '/departments',
   ADMINS: '/users?role=admin',
   EMPLOYEES: '/users?role=employee',

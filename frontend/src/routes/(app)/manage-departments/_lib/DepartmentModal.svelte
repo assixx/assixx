@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { FormIsActiveStatus, Area, AdminUser } from './types';
   import { MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -7,6 +6,8 @@
     getSelectedAreaName,
     getSelectedLeadName,
   } from './utils';
+
+  import type { FormIsActiveStatus, Area, AdminUser } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -25,23 +26,10 @@
     onsubmit: (e: Event) => void;
   }
 
-  /* eslint-disable prefer-const -- $props() with $bindable() requires let for all props */
-  let {
-    show,
-    isEditMode,
-    modalTitle,
-    formName = $bindable(),
-    formDescription = $bindable(),
-    formAreaId = $bindable(),
-    formDepartmentLeadId = $bindable(),
-    formIsActive = $bindable(),
-    allAreas,
-    allDepartmentLeads,
-    submitting,
-    onclose,
-    onsubmit,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formIsActive = $bindable(), allAreas, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
+  /* eslint-enable */
 
   // Local dropdown states
   let areaDropdownOpen = $state(false);
@@ -96,27 +84,36 @@
     if (e.target === e.currentTarget) onclose();
   }
 
+  /**
+   * Checks if click target is outside the specified element
+   */
+  function isClickOutsideElement(target: HTMLElement, elementId: string): boolean {
+    const el = document.getElementById(elementId);
+    return el?.contains(target) !== true;
+  }
+
   // Close dropdowns on outside click
   $effect(() => {
-    if (areaDropdownOpen || leadDropdownOpen || statusDropdownOpen) {
-      const handleClick = (e: MouseEvent): void => {
-        const target = e.target as HTMLElement;
-        if (areaDropdownOpen) {
-          const el = document.getElementById('area-dropdown');
-          if (el && !el.contains(target)) areaDropdownOpen = false;
-        }
-        if (leadDropdownOpen) {
-          const el = document.getElementById('lead-dropdown');
-          if (el && !el.contains(target)) leadDropdownOpen = false;
-        }
-        if (statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) statusDropdownOpen = false;
-        }
-      };
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
-    }
+    const anyDropdownOpen = areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
+    if (!anyDropdownOpen) return;
+
+    const handleClick = (e: MouseEvent): void => {
+      const target = e.target as HTMLElement;
+      if (areaDropdownOpen && isClickOutsideElement(target, 'area-dropdown')) {
+        areaDropdownOpen = false;
+      }
+      if (leadDropdownOpen && isClickOutsideElement(target, 'lead-dropdown')) {
+        leadDropdownOpen = false;
+      }
+      if (statusDropdownOpen && isClickOutsideElement(target, 'status-dropdown')) {
+        statusDropdownOpen = false;
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
   });
 </script>
 
@@ -129,10 +126,19 @@
     aria-labelledby="department-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
-    <form id="department-form" class="ds-modal" onclick={(e) => e.stopPropagation()} {onsubmit}>
+    <form
+      id="department-form"
+      class="ds-modal"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      {onsubmit}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="department-modal-title">{modalTitle}</h3>
         <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
@@ -181,11 +187,23 @@
               <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown__menu" class:active={areaDropdownOpen}>
-              <button type="button" class="dropdown__option" onclick={() => selectArea(null)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectArea(null);
+                }}
+              >
                 {MESSAGES.NO_AREA}
               </button>
               {#each allAreas as area (area.id)}
-                <button type="button" class="dropdown__option" onclick={() => selectArea(area.id)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectArea(area.id);
+                  }}
+                >
                   {area.name}
                 </button>
               {/each}
@@ -210,11 +228,23 @@
               <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown__menu" class:active={leadDropdownOpen}>
-              <button type="button" class="dropdown__option" onclick={() => selectLead(null)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectLead(null);
+                }}
+              >
                 {MESSAGES.NO_DEPARTMENT_LEAD}
               </button>
               {#each allDepartmentLeads as lead (lead.id)}
-                <button type="button" class="dropdown__option" onclick={() => selectLead(lead.id)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectLead(lead.id);
+                  }}
+                >
                   {lead.firstName}
                   {lead.lastName} ({lead.role === 'root' ? 'Root' : 'Admin'})
                 </button>
@@ -246,13 +276,31 @@
                 <i class="fas fa-chevron-down"></i>
               </button>
               <div class="dropdown__menu" class:active={statusDropdownOpen}>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(1)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(1);
+                  }}
+                >
                   <span class="badge badge--success">Aktiv</span>
                 </button>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(0)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(0);
+                  }}
+                >
                   <span class="badge badge--warning">Inaktiv</span>
                 </button>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(3)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(3);
+                  }}
+                >
                   <span class="badge badge--secondary">Archiviert</span>
                 </button>
               </div>

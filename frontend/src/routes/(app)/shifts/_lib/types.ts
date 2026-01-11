@@ -318,6 +318,22 @@ export interface ShiftRotationConfig {
 }
 
 /**
+ * Custom rotation configuration for modal output
+ */
+export interface CustomRotationConfig {
+  startDate: string;
+  endDate: string;
+  shiftBlockLength: number;
+  freeDays: number;
+  startShift: 'early' | 'late' | 'night';
+  shiftSequence: 'early-late-night' | 'night-late-early';
+  nthWeekdayFree: boolean;
+  nthValue: number;
+  weekdayValue: number;
+  employeeAssignments: Map<string, number[]>;
+}
+
+/**
  * Weekly shifts data structure
  * Map<dateKey, Map<shiftType, employeeIds[]>>
  */

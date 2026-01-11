@@ -2,11 +2,14 @@
 // MANAGE ROOT - API FUNCTIONS
 // =============================================================================
 
-import { getApiClient } from '$lib/utils/api-client';
-import type { RootUser, RootUserPayload, RootUsersApiResponse, FormIsActiveStatus } from './types';
-import { API_ENDPOINTS } from './constants';
-import { resolve } from '$app/paths';
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+
+import { getApiClient } from '$lib/utils/api-client';
+
+import { API_ENDPOINTS } from './constants';
+
+import type { RootUser, RootUserPayload, RootUsersApiResponse, FormIsActiveStatus } from './types';
 
 const apiClient = getApiClient();
 
@@ -26,7 +29,7 @@ function isSessionExpiredError(err: unknown): boolean {
  * Handle session expired error
  */
 export function handleSessionExpired(): void {
-  void goto(`${resolve('/login')}?session=expired`);
+  void goto(`${resolve('/login', {})}?session=expired`);
 }
 
 /**
@@ -86,7 +89,7 @@ export async function loadRootUsers(): Promise<{
 
     if (result.success === true && result.data?.users !== undefined) {
       // Exclude current user
-      const users = result.data.users.filter((u) => u.id !== currentUserId);
+      const users = result.data.users.filter((u: RootUser): boolean => u.id !== currentUserId);
       return { users, error: null };
     }
     return { users: [], error: null };
@@ -153,7 +156,7 @@ export async function saveRootUser(
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     if (editId !== null) {
-      await apiClient.put(API_ENDPOINTS.USER(editId), payload);
+      await apiClient.put(API_ENDPOINTS.user(editId), payload);
     } else {
       await apiClient.post(API_ENDPOINTS.USERS, payload);
     }
@@ -174,7 +177,7 @@ export async function deleteRootUser(
   userId: number,
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.USER(userId));
+    await apiClient.delete(API_ENDPOINTS.user(userId));
     return { success: true, error: null };
   } catch (err) {
     console.error('[ManageRoot] Error deleting user:', err);
@@ -193,7 +196,7 @@ export function checkSession(): boolean {
   const userRole = localStorage.getItem('userRole');
 
   if (token === null || userRole !== 'root') {
-    void goto(resolve('/login'));
+    void goto(resolve('/login', {}));
     return false;
   }
   return true;

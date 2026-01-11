@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { SHIFT_TIMES, SHIFT_TYPE_TO_API, SHIFT_TYPE_FROM_API } from './constants';
+
 import type { Employee, AvailabilityStatus, ShiftType } from './types';
 
 // =============================================================================
@@ -151,8 +152,10 @@ export function parseDate(dateString: string): Date {
  * Get shift time info by type
  */
 export function getShiftTimeInfo(shiftType: string): { start: string; end: string; label: string } {
-  const key = shiftType as keyof typeof SHIFT_TIMES;
-  return SHIFT_TIMES[key] ?? { start: '08:00', end: '17:00', label: shiftType };
+  if (shiftType in SHIFT_TIMES) {
+    return SHIFT_TIMES[shiftType as keyof typeof SHIFT_TIMES];
+  }
+  return { start: '08:00', end: '17:00', label: shiftType };
 }
 
 /**
@@ -188,16 +191,20 @@ export function getShiftLabel(shiftType: string): string {
  * Convert frontend shift type to API format (early -> F)
  */
 export function convertShiftTypeForAPI(frontendType: string): string {
-  const key = frontendType as keyof typeof SHIFT_TYPE_TO_API;
-  return SHIFT_TYPE_TO_API[key] ?? frontendType;
+  if (frontendType in SHIFT_TYPE_TO_API) {
+    return SHIFT_TYPE_TO_API[frontendType as keyof typeof SHIFT_TYPE_TO_API];
+  }
+  return frontendType;
 }
 
 /**
  * Convert database shift type to frontend format (F -> early)
  */
 export function convertShiftTypeFromDB(dbShiftType: string): ShiftType {
-  const key = dbShiftType as keyof typeof SHIFT_TYPE_FROM_API;
-  return (SHIFT_TYPE_FROM_API[key] ?? dbShiftType) as ShiftType;
+  if (dbShiftType in SHIFT_TYPE_FROM_API) {
+    return SHIFT_TYPE_FROM_API[dbShiftType as keyof typeof SHIFT_TYPE_FROM_API] as ShiftType;
+  }
+  return dbShiftType as ShiftType;
 }
 
 // =============================================================================

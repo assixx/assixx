@@ -2,8 +2,11 @@
 // MANAGE DEPARTMENTS - UTILITY FUNCTIONS
 // =============================================================================
 
-import type { Department, AdminUser, Area, IsActiveStatus, FormIsActiveStatus } from './types';
+import { escapeHtml } from '$lib/utils/sanitize-html';
+
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants';
+
+import type { Department, AdminUser, Area, IsActiveStatus, FormIsActiveStatus } from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -15,7 +18,7 @@ import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants'
  * @returns CSS class for badge
  */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
-  return STATUS_BADGE_CLASSES[isActive] ?? 'badge--secondary';
+  return STATUS_BADGE_CLASSES[isActive];
 }
 
 /**
@@ -24,7 +27,7 @@ export function getStatusBadgeClass(isActive: IsActiveStatus): string {
  * @returns Human-readable status label
  */
 export function getStatusLabel(isActive: IsActiveStatus): string {
-  return STATUS_LABELS[isActive] ?? 'Unbekannt';
+  return STATUS_LABELS[isActive];
 }
 
 // =============================================================================
@@ -63,17 +66,23 @@ export function getTeamCountText(count: number): string {
 // =============================================================================
 
 /**
- * Highlight search term in text
- * Wraps matches in <strong> tags for display
- * @param text - Text to search in
+ * Highlight search term in text with <strong> tags
+ * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
+ *
+ * @param text - Text to search in (potentially untrusted)
  * @param query - Search query
- * @returns HTML string with highlighted matches
+ * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightMatch(text: string, query: string): string {
-  if (!query?.trim()) return text;
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
+  // SECURITY FIX: Escape HTML first to prevent XSS
+  const safeText = escapeHtml(text);
+  if (query.trim() === '') return safeText;
+
+  // Escape all regex special characters to prevent ReDoS attacks
+  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================

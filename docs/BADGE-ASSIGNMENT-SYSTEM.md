@@ -38,7 +38,7 @@ if (entity.hasFullAccess === true || entity.hasFullAccess === 1)
 
 ```typescript
 if (entity.items?.length > 0) {
-  const names = entity.items.map(i => i.name).join(', ');
+  const names = entity.items.map((i) => i.name).join(', ');
   const count = entity.items.length;
   const label = count === 1 ? 'Bereich' : 'Bereiche';
   return `<span class="badge badge--info" title="${names}">${count} ${label}</span>`;
@@ -61,7 +61,7 @@ const hasTeams = (entity.teams?.length ?? 0) > 0 || entity.teamId != null;
 const hasDirectAssignments = (entity.areas?.length ?? 0) > 0;
 
 if (hasTeams && !hasDirectAssignments) {
-  const teamNames = entity.teams?.map(t => t.name).join(', ') ?? entity.teamName;
+  const teamNames = entity.teams?.map((t) => t.name).join(', ') ?? entity.teamName;
   return `<span class="badge badge--info" title="Vererbt von: ${teamNames}">
     <i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
 }

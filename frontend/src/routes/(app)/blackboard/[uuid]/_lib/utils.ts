@@ -16,7 +16,7 @@ export { formatDateShort, formatFileSize, getFileIconClass } from '../../_lib/ut
  * Format date for display (short)
  */
 export function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -29,7 +29,7 @@ export function formatDate(dateStr: string | null | undefined): string {
  * Format date and time
  */
 export function formatDateTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -74,15 +74,27 @@ export function getPriorityBadgeClass(priority: string): string {
 // Org Level Helpers
 // ============================================================================
 
+/** Fallback names for org levels */
+const ORG_LEVEL_FALLBACKS: Partial<Record<string, string>> = {
+  company: 'Firmenweit',
+  department: 'Abteilung',
+  team: 'Team',
+  area: 'Bereich',
+};
+
 /**
  * Get org level text with entry context
  */
 export function getOrgLevelText(orgLevel: string, entry: DetailEntry | null): string {
   if (orgLevel === 'company') return 'Firmenweit';
-  if (orgLevel === 'department') return entry?.departmentName ?? 'Abteilung';
-  if (orgLevel === 'team') return entry?.teamName ?? 'Team';
-  if (orgLevel === 'area') return entry?.areaName ?? 'Bereich';
-  return orgLevel;
+
+  const dynamicNames: Record<string, string | undefined> = {
+    department: entry?.departmentName,
+    team: entry?.teamName,
+    area: entry?.areaName,
+  };
+
+  return dynamicNames[orgLevel] ?? ORG_LEVEL_FALLBACKS[orgLevel] ?? orgLevel;
 }
 
 /**

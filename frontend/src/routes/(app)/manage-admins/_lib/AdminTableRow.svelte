@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Admin } from './types';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -9,6 +8,8 @@
     getDepartmentsBadge,
     getTeamsBadge,
   } from './utils';
+
+  import type { Admin } from './types';
 
   // =============================================================================
   // PROPS
@@ -69,18 +70,24 @@
   <td>
     <div class="flex gap-2">
       <button
+        type="button"
         class="action-icon action-icon--edit"
         title="Bearbeiten"
         aria-label="Admin bearbeiten"
-        onclick={() => onedit(admin.id)}
+        onclick={() => {
+          onedit(admin.id);
+        }}
       >
         <i class="fas fa-edit"></i>
       </button>
       <button
+        type="button"
         class="action-icon action-icon--delete"
         title="Löschen"
         aria-label="Admin löschen"
-        onclick={() => ondelete(admin.id)}
+        onclick={() => {
+          ondelete(admin.id);
+        }}
       >
         <i class="fas fa-trash"></i>
       </button>

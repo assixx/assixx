@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { FormIsActiveStatus, AreaType, AdminUser, Department } from './types';
   import { TYPE_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -7,6 +6,8 @@
     getTypeLabel,
     getAreaLeadDisplayName,
   } from './utils';
+
+  import type { FormIsActiveStatus, AreaType, AdminUser, Department } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -28,26 +29,10 @@
     onsubmit: (e: Event) => void;
   }
 
-  /* eslint-disable prefer-const -- $props() with $bindable() requires let for all props */
-  let {
-    show,
-    isEditMode,
-    modalTitle,
-    formName = $bindable(),
-    formDescription = $bindable(),
-    formAreaLeadId = $bindable(),
-    formType = $bindable(),
-    formCapacity = $bindable(),
-    formAddress = $bindable(),
-    formDepartmentIds = $bindable(),
-    formIsActive = $bindable(),
-    areaLeads,
-    allDepartments,
-    submitting,
-    onclose,
-    onsubmit,
-  }: Props = $props();
-  /* eslint-enable prefer-const */
+  /* eslint-disable */
+  // prettier-ignore
+  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formAddress = $bindable(), formDepartmentIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, submitting, onclose, onsubmit }: Props = $props();
+  /* eslint-enable */
 
   // Local dropdown states
   let typeDropdownOpen = $state(false);
@@ -117,7 +102,9 @@
         }
       };
       document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
+      return () => {
+        document.removeEventListener('click', handleClick);
+      };
     }
   });
 </script>
@@ -131,10 +118,19 @@
     aria-labelledby="area-modal-title"
     tabindex="-1"
     onclick={handleOverlayClick}
-    onkeydown={(e) => e.key === 'Escape' && onclose()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') onclose();
+    }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
-    <form id="area-form" class="ds-modal" onclick={(e) => e.stopPropagation()} {onsubmit}>
+    <form
+      id="area-form"
+      class="ds-modal"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      {onsubmit}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title" id="area-modal-title">{modalTitle}</h3>
         <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
@@ -192,14 +188,22 @@
               <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown__menu" class:active={areaLeadDropdownOpen}>
-              <button type="button" class="dropdown__option" onclick={() => selectAreaLead(null)}>
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectAreaLead(null);
+                }}
+              >
                 {MESSAGES.NO_AREA_LEAD}
               </button>
               {#each areaLeads as user (user.id)}
                 <button
                   type="button"
                   class="dropdown__option"
-                  onclick={() => selectAreaLead(user.id)}
+                  onclick={() => {
+                    selectAreaLead(user.id);
+                  }}
                 >
                   {user.firstName}
                   {user.lastName}
@@ -235,7 +239,9 @@
                 <button
                   type="button"
                   class="dropdown__option"
-                  onclick={() => selectType(option.value)}
+                  onclick={() => {
+                    selectType(option.value);
+                  }}
                 >
                   {option.label}
                 </button>
@@ -314,13 +320,31 @@
                 <i class="fas fa-chevron-down"></i>
               </button>
               <div class="dropdown__menu" class:active={statusDropdownOpen}>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(1)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(1);
+                  }}
+                >
                   <span class="badge badge--success">Aktiv</span>
                 </button>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(0)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(0);
+                  }}
+                >
                   <span class="badge badge--warning">Inaktiv</span>
                 </button>
-                <button type="button" class="dropdown__option" onclick={() => selectStatus(3)}>
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectStatus(3);
+                  }}
+                >
                   <span class="badge badge--secondary">Archiviert</span>
                 </button>
               </div>

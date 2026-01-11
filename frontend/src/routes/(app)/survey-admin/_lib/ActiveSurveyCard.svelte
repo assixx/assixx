@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Survey } from './types';
   import {
     getTextFromBuffer,
     getStatusText,
@@ -8,6 +7,8 @@
     formatSurveyDate,
     calculateResponseRate,
   } from './utils';
+
+  import type { Survey } from './types';
 
   // =============================================================================
   // PROPS
@@ -43,8 +44,12 @@
   class="card card--clickable"
   role="button"
   tabindex="0"
-  onclick={() => onviewresults(surveyId)}
-  onkeydown={(e) => e.key === 'Enter' && onviewresults(surveyId)}
+  onclick={() => {
+    onviewresults(surveyId);
+  }}
+  onkeydown={(e) => {
+    if (e.key === 'Enter') onviewresults(surveyId);
+  }}
 >
   <div class="flex justify-between items-start mb-4">
     <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>

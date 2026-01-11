@@ -26,6 +26,7 @@ const EnvSchema = z.object({
 
   // JWT
   JWT_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32).optional(),
   JWT_ACCESS_EXPIRY: z.string().default('30m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
@@ -35,7 +36,7 @@ const EnvSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
 
   // CORS
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:5173'),
 
   // Email (optional)
   SMTP_HOST: z.string().optional(),
@@ -61,12 +62,13 @@ export class AppConfigService {
       DB_USER: this.configService.get<string>('DB_USER'),
       DB_PASSWORD: this.configService.get<string>('DB_PASSWORD'),
       JWT_SECRET: this.configService.get<string>('JWT_SECRET'),
+      JWT_REFRESH_SECRET: this.configService.get<string>('JWT_REFRESH_SECRET'),
       JWT_ACCESS_EXPIRY: this.configService.get<string>('JWT_ACCESS_EXPIRY'),
       JWT_REFRESH_EXPIRY: this.configService.get<string>('JWT_REFRESH_EXPIRY'),
       REDIS_HOST: this.configService.get<string>('REDIS_HOST'),
       REDIS_PORT: this.configService.get<string>('REDIS_PORT'),
       REDIS_PASSWORD: this.configService.get<string>('REDIS_PASSWORD'),
-      CORS_ORIGIN: this.configService.get<string>('CORS_ORIGIN'),
+      ALLOWED_ORIGINS: this.configService.get<string>('ALLOWED_ORIGINS'),
       SMTP_HOST: this.configService.get<string>('SMTP_HOST'),
       SMTP_PORT: this.configService.get<string>('SMTP_PORT'),
       SMTP_USER: this.configService.get<string>('SMTP_USER'),
@@ -150,6 +152,10 @@ export class AppConfigService {
     return this.config.JWT_REFRESH_EXPIRY;
   }
 
+  get jwtRefreshSecret(): string | undefined {
+    return this.config.JWT_REFRESH_SECRET;
+  }
+
   // Redis
   get redisHost(): string | undefined {
     return this.config.REDIS_HOST;
@@ -168,8 +174,17 @@ export class AppConfigService {
   }
 
   // CORS
+  get allowedOrigins(): string {
+    return this.config.ALLOWED_ORIGINS;
+  }
+
+  get allowedOriginsArray(): string[] {
+    return this.config.ALLOWED_ORIGINS.split(',').map((origin: string) => origin.trim());
+  }
+
+  /** @deprecated Use allowedOrigins instead */
   get corsOrigin(): string {
-    return this.config.CORS_ORIGIN;
+    return this.config.ALLOWED_ORIGINS;
   }
 
   // Email

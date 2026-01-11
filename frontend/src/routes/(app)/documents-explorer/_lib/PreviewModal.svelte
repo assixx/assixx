@@ -1,8 +1,10 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import type { Document } from './types';
+
   import { MESSAGES } from './constants';
   import { formatFileSize, formatDateTime, getFileType } from './utils';
+
+  import type { Document } from './types';
 
   interface Props {
     show: boolean;
@@ -29,13 +31,24 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div id="preview-modal" class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
-    <div class="ds-modal ds-modal--xl" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="ds-modal ds-modal--xl"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           <i class="fas fa-file-pdf mr-2 text-error-500"></i>
           <span id="preview-title">{document.filename}</span>
         </h3>
-        <button class="ds-modal__close" id="preview-close" onclick={onclose} aria-label="Schließen">
+        <button
+          type="button"
+          class="ds-modal__close"
+          id="preview-close"
+          onclick={onclose}
+          aria-label="Schließen"
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -90,14 +103,17 @@
         </div>
       </div>
       <div class="ds-modal__footer">
-        <button class="btn btn-cancel" id="preview-cancel" onclick={onclose}>
+        <button type="button" class="btn btn-cancel" id="preview-cancel" onclick={onclose}>
           <i class="fas fa-times mr-2"></i>
           {MESSAGES.PREVIEW_CLOSE}
         </button>
         <button
+          type="button"
           class="btn btn-modal"
           id="preview-download"
-          onclick={() => document && ondownload(document)}
+          onclick={() => {
+            ondownload(document);
+          }}
         >
           <i class="fas fa-download mr-2"></i>
           {MESSAGES.PREVIEW_DOWNLOAD}

@@ -14,13 +14,13 @@ Die Behauptungen im `docs/NESTJS-MIGRATION-PLAN.md` sind **VERIFIZIERT UND KORRE
 
 ## Verifizierte Metriken
 
-| Behauptung              | Verifiziert       | Status        |
-|-------------------------|-------------------|---------------|
-| ~320 TypeScript-Dateien | **338 Dateien**   | ✅ ÜBERTRIFFT |
-| 25/25 Module migriert   | **25 Feature-Module** | ✅ KORREKT |
-| 300/300 Endpoints       | **300/300**       | ✅ KORREKT    |
-| TypeScript kompiliert   | **0 Fehler**      | ✅ KORREKT    |
-| ESLint bestanden        | **0 Fehler**      | ✅ KORREKT    |
+| Behauptung              | Verifiziert           | Status        |
+| ----------------------- | --------------------- | ------------- |
+| ~320 TypeScript-Dateien | **338 Dateien**       | ✅ ÜBERTRIFFT |
+| 25/25 Module migriert   | **25 Feature-Module** | ✅ KORREKT    |
+| 300/300 Endpoints       | **300/300**           | ✅ KORREKT    |
+| TypeScript kompiliert   | **0 Fehler**          | ✅ KORREKT    |
+| ESLint bestanden        | **0 Fehler**          | ✅ KORREKT    |
 
 ---
 
@@ -54,34 +54,34 @@ users ✅
 
 ### 3. Endpoint-Vergleich pro Modul
 
-| Modul             | Express v2 | NestJS | Match          |
-|-------------------|------------|--------|----------------|
-| shifts            | 30         | 30     | ✅             |
-| chat              | 26         | 26     | ✅             |
-| root              | 25         | 25     | ✅             |
-| blackboard        | 21         | 21     | ✅             |
-| settings          | 18         | 18     | ✅             |
-| users             | 15         | 15     | ✅             |
-| notifications     | 15         | 15     | ✅ (inkl. SSE) |
-| kvp               | 14         | 14     | ✅             |
-| surveys           | 14         | 14     | ✅             |
-| machines          | 12         | 12     | ✅             |
-| documents         | 12         | 12     | ✅             |
-| teams             | 11         | 11     | ✅             |
-| features          | 11         | 11     | ✅             |
-| admin-permissions | 11         | 11     | ✅             |
-| reports           | 9          | 9      | ✅             |
-| calendar          | 8          | 8      | ✅             |
-| plans             | 8          | 8      | ✅             |
-| departments       | 7          | 7      | ✅             |
-| areas             | 7          | 7      | ✅             |
-| auth              | 6          | 6      | ✅             |
-| audit-trail       | 6          | 6      | ✅             |
-| roles             | 5          | 5      | ✅             |
-| role-switch       | 4          | 4      | ✅             |
-| logs              | 3          | 3      | ✅             |
-| signup            | 2          | 2      | ✅             |
-| **TOTAL**         | **300**    | **300**| ✅ **100%**    |
+| Modul             | Express v2 | NestJS  | Match          |
+| ----------------- | ---------- | ------- | -------------- |
+| shifts            | 30         | 30      | ✅             |
+| chat              | 26         | 26      | ✅             |
+| root              | 25         | 25      | ✅             |
+| blackboard        | 21         | 21      | ✅             |
+| settings          | 18         | 18      | ✅             |
+| users             | 15         | 15      | ✅             |
+| notifications     | 15         | 15      | ✅ (inkl. SSE) |
+| kvp               | 14         | 14      | ✅             |
+| surveys           | 14         | 14      | ✅             |
+| machines          | 12         | 12      | ✅             |
+| documents         | 12         | 12      | ✅             |
+| teams             | 11         | 11      | ✅             |
+| features          | 11         | 11      | ✅             |
+| admin-permissions | 11         | 11      | ✅             |
+| reports           | 9          | 9       | ✅             |
+| calendar          | 8          | 8       | ✅             |
+| plans             | 8          | 8       | ✅             |
+| departments       | 7          | 7       | ✅             |
+| areas             | 7          | 7       | ✅             |
+| auth              | 6          | 6       | ✅             |
+| audit-trail       | 6          | 6       | ✅             |
+| roles             | 5          | 5       | ✅             |
+| role-switch       | 4          | 4       | ✅             |
+| logs              | 3          | 3       | ✅             |
+| signup            | 2          | 2       | ✅             |
+| **TOTAL**         | **300**    | **300** | ✅ **100%**    |
 
 ### 4. Architektur
 

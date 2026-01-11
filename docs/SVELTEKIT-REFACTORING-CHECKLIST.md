@@ -4,47 +4,46 @@
 >
 > **Erstellt:** 2025-12-21 | **Branch:** feature/nestjs-migration
 
-landingpage not needed to refactor
----
+## landingpage not needed to refactor
 
 ## Refactoring-Status nach Priorität
 
-| # | Seite | Route | Zeilen | Priorität | Status |
-|---|-------|-------|--------|-----------|--------|
-| ✅ | **Chat** | `/chat` | 2047→1565 | DONE | ✅ Refactored |
-| ✅ | **Manage Admins** | `/manage-admins` | 1661→1246 | DONE | ✅ Refactored |
-| ✅ | **Manage Employees** | `/manage-employees` | 1581→1273 | DONE | ✅ Refactored |
-| ✅ | **Manage Teams** | `/manage-teams` | 1409→1073 | DONE | ✅ Refactored |
-| ✅ | **Manage Root** | `/manage-root` | 1381→1038 | DONE | ✅ Refactored |
-| ✅ | **Manage Areas** | `/manage-areas` | 1254→986 | DONE | ✅ Refactored |
-| ✅ | **Manage Departments** | `/manage-departments` | 1248→965 | DONE | ✅ Refactored |
-| ✅ | **Blackboard** | `/blackboard` | 1226→630 | DONE | ✅ Refactored |
-| ✅ | **Blackboard Detail** | `/blackboard/[uuid]` | 860→429 | DONE | ✅ Refactored |
-| ✅ | **Logs** | `/logs` | 963→570 | DONE | ✅ Refactored |
-| ✅ | **Features** | `/features` | 896→554 | DONE | ✅ Refactored |
-| ✅ | **Tenant Deletion Status** | `/tenant-deletion-status` | 848→540 | DONE | ✅ Refactored |
-| ✅ | **Admin Dashboard** | `/admin-dashboard` | 829→423 | DONE | ✅ Refactored |
-| ✅ | **Root Profile** | `/root-profile` | 820→538 | DONE | ✅ Refactored |
-| ✅ | **Signup** | `/signup` | 629→535 | DONE | ✅ Refactored |
-| - | Landing Page | `/` | 536 | ✅ OK | Kein Refactoring nötig (kein TS) |
-| ✅ | **Account Settings** | `/account-settings` | 529→382 | DONE | ✅ Refactored |
-| ✅ | **Root Dashboard** | `/root-dashboard` | 450→303 | DONE | ✅ Refactored |
-| - | Tenant Deletion Approve | `/tenant-deletion-approve` | 332 | ✅ OK | Kein Refactoring nötig |
-| - | Login | `/login` | 296 | ✅ OK | Kein Refactoring nötig |
+| #   | Seite                      | Route                      | Zeilen    | Priorität | Status                           |
+| --- | -------------------------- | -------------------------- | --------- | --------- | -------------------------------- |
+| ✅  | **Chat**                   | `/chat`                    | 2047→1565 | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Admins**          | `/manage-admins`           | 1661→1246 | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Employees**       | `/manage-employees`        | 1581→1273 | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Teams**           | `/manage-teams`            | 1409→1073 | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Root**            | `/manage-root`             | 1381→1038 | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Areas**           | `/manage-areas`            | 1254→986  | DONE      | ✅ Refactored                    |
+| ✅  | **Manage Departments**     | `/manage-departments`      | 1248→965  | DONE      | ✅ Refactored                    |
+| ✅  | **Blackboard**             | `/blackboard`              | 1226→630  | DONE      | ✅ Refactored                    |
+| ✅  | **Blackboard Detail**      | `/blackboard/[uuid]`       | 860→429   | DONE      | ✅ Refactored                    |
+| ✅  | **Logs**                   | `/logs`                    | 963→570   | DONE      | ✅ Refactored                    |
+| ✅  | **Features**               | `/features`                | 896→554   | DONE      | ✅ Refactored                    |
+| ✅  | **Tenant Deletion Status** | `/tenant-deletion-status`  | 848→540   | DONE      | ✅ Refactored                    |
+| ✅  | **Admin Dashboard**        | `/admin-dashboard`         | 829→423   | DONE      | ✅ Refactored                    |
+| ✅  | **Root Profile**           | `/root-profile`            | 820→538   | DONE      | ✅ Refactored                    |
+| ✅  | **Signup**                 | `/signup`                  | 629→535   | DONE      | ✅ Refactored                    |
+| -   | Landing Page               | `/`                        | 536       | ✅ OK     | Kein Refactoring nötig (kein TS) |
+| ✅  | **Account Settings**       | `/account-settings`        | 529→382   | DONE      | ✅ Refactored                    |
+| ✅  | **Root Dashboard**         | `/root-dashboard`          | 450→303   | DONE      | ✅ Refactored                    |
+| -   | Tenant Deletion Approve    | `/tenant-deletion-approve` | 332       | ✅ OK     | Kein Refactoring nötig           |
+| -   | Login                      | `/login`                   | 296       | ✅ OK     | Kein Refactoring nötig           |
 
 ---
 
 ## Legende
 
-| Symbol | Bedeutung |
-|--------|-----------|
-| 🔴 CRITICAL | > 1200 Zeilen - SOFORT refactoren |
-| 🔴 HIGH | 700-1200 Zeilen - Bald refactoren |
-| ⚠️ MEDIUM | 300-700 Zeilen - Bei Gelegenheit |
-| ✅ OK | < 300 Zeilen - Kein Refactoring nötig |
-| ⏳ Pending | Noch nicht begonnen |
-| 🔄 In Progress | Wird gerade bearbeitet |
-| ✅ Refactored | Fertig |
+| Symbol         | Bedeutung                             |
+| -------------- | ------------------------------------- |
+| 🔴 CRITICAL    | > 1200 Zeilen - SOFORT refactoren     |
+| 🔴 HIGH        | 700-1200 Zeilen - Bald refactoren     |
+| ⚠️ MEDIUM      | 300-700 Zeilen - Bei Gelegenheit      |
+| ✅ OK          | < 300 Zeilen - Kein Refactoring nötig |
+| ⏳ Pending     | Noch nicht begonnen                   |
+| 🔄 In Progress | Wird gerade bearbeitet                |
+| ✅ Refactored  | Fertig                                |
 
 ---
 
@@ -107,14 +106,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 1565 |
-| _lib/types.ts | 295 |
-| _lib/constants.ts | 181 |
-| _lib/api.ts | 227 |
-| _lib/utils.ts | 378 |
-| _lib/websocket.ts | 323 |
+| \_lib/types.ts | 295 |
+| \_lib/constants.ts | 181 |
+| \_lib/api.ts | 227 |
+| \_lib/utils.ts | 378 |
+| \_lib/websocket.ts | 323 |
 | **Total** | 2969 |
 
 **Extrahiert:**
+
 - Types: `ChatUser`, `Conversation`, `Message`, `ScheduledMessage`, `FilePreviewItem`, `Attachment`, WebSocket types
 - Constants: `WEBSOCKET_CONFIG`, `SCHEDULE_CONSTRAINTS`, `MESSAGES`, `WS_MESSAGE_TYPES`, `API_ENDPOINTS`
 - API: `loadConversations()`, `loadMessages()`, `searchUsers()`, `createConversation()`, `uploadAttachment()`
@@ -122,6 +122,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - WebSocket: `buildWebSocketUrl()`, `transformRawMessage()`, state update helpers, message builders
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - WebSocket-Logik in separater Datei für bessere Wartbarkeit
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
@@ -136,13 +137,14 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 535 |
-| _lib/types.ts | 95 |
-| _lib/constants.ts | 96 |
-| _lib/validators.ts | 176 |
-| _lib/api.ts | 64 |
+| \_lib/types.ts | 95 |
+| \_lib/constants.ts | 96 |
+| \_lib/validators.ts | 176 |
+| \_lib/api.ts | 64 |
 | **Total** | 966 |
 
 **Extrahiert:**
+
 - Types: `Country`, `Plan`, `RegisterPayload`, `FormErrors`
 - Constants: `COUNTRIES`, `PLANS`, `ERROR_MESSAGES`, `HELP_MESSAGE`
 - Validators: `isSubdomainValid()`, `isEmailValid()`, `passwordsMatch()`, etc.
@@ -158,14 +160,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 1246 |
-| _lib/types.ts | 122 |
-| _lib/constants.ts | 209 |
-| _lib/api.ts | 190 |
-| _lib/filters.ts | 109 |
-| _lib/utils.ts | 318 |
+| \_lib/types.ts | 122 |
+| \_lib/constants.ts | 209 |
+| \_lib/api.ts | 190 |
+| \_lib/filters.ts | 109 |
+| \_lib/utils.ts | 318 |
 | **Total** | 2194 |
 
 **Extrahiert:**
+
 - Types: `Admin`, `Area`, `Department`, `BadgeInfo`, `StatusFilter`, `FormIsActiveStatus`, `AdminFormData`, `AdminPermissions`
 - Constants: `POSITION_OPTIONS`, `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `MESSAGES`, `FORM_DEFAULTS`
 - API: `loadAdmins()`, `loadAreas()`, `loadDepartments()`, `saveAdminWithPermissions()`, `deleteAdmin()`
@@ -173,6 +176,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getPositionDisplay()`, `getAreasBadge()`, `getDepartmentsBadge()`, `getTeamsBadge()`, `highlightMatch()`, `calculatePasswordStrength()`, `buildAdminFormData()`, `populateFormFromAdmin()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Pure functions in filters.ts für bessere Testbarkeit
@@ -188,14 +192,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 1273 |
-| _lib/types.ts | 135 |
-| _lib/constants.ts | 165 |
-| _lib/api.ts | 219 |
-| _lib/filters.ts | 69 |
-| _lib/utils.ts | 291 |
+| \_lib/types.ts | 135 |
+| \_lib/constants.ts | 165 |
+| \_lib/api.ts | 219 |
+| \_lib/filters.ts | 69 |
+| \_lib/utils.ts | 291 |
 | **Total** | 2152 |
 
 **Extrahiert:**
+
 - Types: `Employee`, `Team`, `StatusFilter`, `IsActiveStatus`, `FormIsActiveStatus`, `AvailabilityStatus`, `BadgeInfo`, `EmployeeFormData`, `EmployeePayload`, `PasswordStrengthResult`
 - Constants: `POSITION_OPTIONS`, `AVAILABILITY_OPTIONS`, `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `AVAILABILITY_BADGE_CLASSES`, `AVAILABILITY_LABELS`, `MESSAGES`, `API_ENDPOINTS`, `FORM_DEFAULTS`
 - API: `loadEmployees()`, `loadTeams()`, `saveEmployee()`, `deleteEmployee()`, `assignTeamMember()`, `buildEmployeePayload()`
@@ -203,6 +208,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getStatusLabel()`, `getAvatarColor()`, `getTeamsBadge()`, `getAvailabilityBadge()`, `getAvailabilityLabel()`, `highlightMatch()`, `calculatePasswordStrength()`, `populateFormFromEmployee()`, `getDefaultFormValues()`, `validateEmailMatch()`, `validatePasswordMatch()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Pure functions in filters.ts für bessere Testbarkeit
@@ -219,14 +225,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 1073 |
-| _lib/types.ts | 127 |
-| _lib/constants.ts | 109 |
-| _lib/api.ts | 291 |
-| _lib/filters.ts | 63 |
-| _lib/utils.ts | 205 |
+| \_lib/types.ts | 127 |
+| \_lib/constants.ts | 109 |
+| \_lib/api.ts | 291 |
+| \_lib/filters.ts | 63 |
+| \_lib/utils.ts | 205 |
 | **Total** | 1868 |
 
 **Extrahiert:**
+
 - Types: `Team`, `TeamMember`, `Machine`, `Department`, `Admin`, `TeamDetails`, `StatusFilter`, `IsActiveStatus`, `FormIsActiveStatus`, `TeamPayload`, `DeleteTeamResult`, `ApiErrorWithDetails`
 - Constants: `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `MESSAGES`, `API_ENDPOINTS`, `FORM_DEFAULTS`
 - API: `loadTeams()`, `loadDepartments()`, `loadAdmins()`, `loadEmployees()`, `loadMachines()`, `getTeamDetails()`, `saveTeam()`, `addTeamMember()`, `removeTeamMember()`, `addTeamMachine()`, `removeTeamMachine()`, `updateTeamRelations()`, `deleteTeam()`, `forceDeleteTeam()`, `buildTeamPayload()`
@@ -234,6 +241,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getStatusLabel()`, `formatDate()`, `highlightMatch()`, `getMembersDisplayText()`, `getMachinesDisplayText()`, `getDepartmentDisplayText()`, `getLeaderDisplayText()`, `populateFormFromTeam()`, `getDefaultFormValues()`, `toggleIdInArray()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Multi-Select Dropdown Helpers für Members/Machines
@@ -250,14 +258,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 1038 |
-| _lib/types.ts | 87 |
-| _lib/constants.ts | 162 |
-| _lib/api.ts | 179 |
-| _lib/filters.ts | 69 |
-| _lib/utils.ts | 182 |
+| \_lib/types.ts | 87 |
+| \_lib/constants.ts | 162 |
+| \_lib/api.ts | 179 |
+| \_lib/filters.ts | 69 |
+| \_lib/utils.ts | 182 |
 | **Total** | 1717 |
 
 **Extrahiert:**
+
 - Types: `RootUser`, `RootUserPayload`, `StatusFilter`, `IsActiveStatus`, `FormIsActiveStatus`, `PasswordStrengthResult`, `RootUsersApiResponse`
 - Constants: `POSITION_OPTIONS`, `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `MESSAGES`, `PASSWORD_STRENGTH_LABELS`, `PASSWORD_CRACK_TIMES`, `API_ENDPOINTS`, `FORM_DEFAULTS`
 - API: `loadRootUsers()`, `saveRootUser()`, `deleteRootUser()`, `buildRootUserPayload()`, `checkSession()`, `getCurrentUserId()`, `handleSessionExpired()`
@@ -265,6 +274,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getStatusLabel()`, `formatDate()`, `getAvatarColor()`, `highlightMatch()`, `calculatePasswordStrength()`, `populateFormFromUser()`, `getDefaultFormValues()`, `validateEmailMatch()`, `validatePasswordMatch()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Session-Management in api.ts isoliert
@@ -281,14 +291,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 986 |
-| _lib/types.ts | 112 |
-| _lib/constants.ts | 178 |
-| _lib/api.ts | 251 |
-| _lib/filters.ts | 69 |
-| _lib/utils.ts | 159 |
+| \_lib/types.ts | 112 |
+| \_lib/constants.ts | 178 |
+| \_lib/api.ts | 251 |
+| \_lib/filters.ts | 69 |
+| \_lib/utils.ts | 159 |
 | **Total** | 1755 |
 
 **Extrahiert:**
+
 - Types: `Area`, `AdminUser`, `Department`, `StatusFilter`, `IsActiveStatus`, `FormIsActiveStatus`, `AreaType`, `AreaPayload`, `TypeOption`, `AreasApiResponse`, `DepartmentsApiResponse`, `DeleteAreaResult`
 - Constants: `TYPE_LABELS`, `TYPE_OPTIONS`, `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `MESSAGES`, `API_ENDPOINTS`, `FORM_DEFAULTS`
 - API: `loadAreas()`, `loadAreaLeads()`, `loadDepartments()`, `saveArea()`, `deleteArea()`, `forceDeleteArea()`, `buildAreaPayload()`, `handleSessionExpired()`
@@ -296,6 +307,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getStatusLabel()`, `getTypeLabel()`, `escapeHtml()`, `highlightMatch()`, `getAreaLeadDisplayName()`, `getDepartmentIdsForArea()`, `getDepartmentCountText()`, `populateFormFromArea()`, `getDefaultFormValues()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Area-Type-Handling mit typisiertem Dropdown
@@ -312,14 +324,15 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 965 |
-| _lib/types.ts | 123 |
-| _lib/constants.ts | 157 |
-| _lib/api.ts | 287 |
-| _lib/filters.ts | 63 |
-| _lib/utils.ts | 140 |
+| \_lib/types.ts | 123 |
+| \_lib/constants.ts | 157 |
+| \_lib/api.ts | 287 |
+| \_lib/filters.ts | 63 |
+| \_lib/utils.ts | 140 |
 | **Total** | 1735 |
 
 **Extrahiert:**
+
 - Types: `Department`, `Area`, `AdminUser`, `StatusFilter`, `IsActiveStatus`, `FormIsActiveStatus`, `DepartmentPayload`, `DependencyDetails`, `DeleteDepartmentResult`
 - Constants: `STATUS_BADGE_CLASSES`, `STATUS_LABELS`, `DEPENDENCY_LABELS`, `MESSAGES`, `API_ENDPOINTS`, `FORM_DEFAULTS`
 - API: `loadDepartments()`, `loadAreas()`, `loadDepartmentLeads()`, `saveDepartment()`, `deleteDepartment()`, `forceDeleteDepartment()`, `buildDependencyMessage()`, `buildDepartmentPayload()`, `checkSession()`, `handleSessionExpired()`
@@ -327,6 +340,7 @@ frontend-svelte/src/routes/(app)/[page-name]/
 - Utils: `getStatusBadgeClass()`, `getStatusLabel()`, `getAreaDisplay()`, `getLeadDisplay()`, `getTeamCountText()`, `highlightMatch()`, `getSelectedAreaName()`, `getSelectedLeadName()`, `populateFormFromDepartment()`, `getDefaultFormValues()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
 - Force-Delete Pattern für Departments mit Abhängigkeiten (teams, users, machines, shifts, etc.)
@@ -343,19 +357,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 570 |
-| _lib/types.ts | 83 |
-| _lib/constants.ts | 141 |
-| _lib/api.ts | 134 |
-| _lib/utils.ts | 186 |
+| \_lib/types.ts | 83 |
+| \_lib/constants.ts | 141 |
+| \_lib/api.ts | 134 |
+| \_lib/utils.ts | 186 |
 | **Total** | 1114 |
 
 **Extrahiert:**
+
 - Types: `LogEntry`, `PaginationInfo`, `Filters`, `DropdownOption`, `PaginationPageItem`, `LogsApiResponse`, `DeleteLogsBody`
 - Constants: `LOGS_PER_PAGE`, `ACTION_OPTIONS`, `ENTITY_OPTIONS`, `TIMERANGE_OPTIONS`, `ACTION_LABELS`, `ROLE_LABELS`, `ROLE_BADGE_CLASSES`, `TIMERANGE_DAYS_MAP`, `MESSAGES`
 - API: `fetchLogs()`, `deleteLogs()`
 - Utils: `shouldIncludeFilter()`, `calculateStartDate()`, `getActionLabel()`, `getRoleLabel()`, `getRoleBadgeClass()`, `formatDate()`, `getDisplayName()`, `getDropdownDisplayText()`, `getVisiblePages()`, `hasActiveFilters()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - 41% Reduktion der +page.svelte Zeilen (963 → 570)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
@@ -373,19 +389,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 630 |
-| _lib/types.ts | 160 |
-| _lib/constants.ts | 152 |
-| _lib/api.ts | 275 |
-| _lib/utils.ts | 237 |
+| \_lib/types.ts | 160 |
+| \_lib/constants.ts | 152 |
+| \_lib/api.ts | 275 |
+| \_lib/utils.ts | 237 |
 | **Total** | 1454 |
 
 **Extrahiert:**
+
 - Types: `OrgLevel`, `EntryStatus`, `Priority`, `EntryColor`, `BlackboardEntry`, `Department`, `Team`, `Area`, `FormMode`, `EntryPayload`, `EntriesApiResponse`, `OrganizationsApiResponse`
 - Constants: `ZOOM_CONFIG`, `ENTRIES_PER_PAGE`, `PRIORITY_LABELS`, `PRIORITY_CLASSES`, `COLOR_OPTIONS`, `SORT_OPTIONS`, `MESSAGES`
 - API: `fetchEntries()`, `fetchOrganizations()`, `createEntry()`, `updateEntry()`, `deleteEntry()`, `confirmEntry()`, `uploadAttachments()`
 - Utils: `formatDateShort()`, `formatFileSize()`, `truncateText()`, `getPriorityLabel()`, `getPriorityClass()`, `getOrgLevelLabel()`, `getStatusBadgeClass()`, `getColorClass()`, `getFileIconClass()`, `canUserEdit()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - 49% Reduktion der +page.svelte Zeilen (1226 → 630)
 - Alle UI-Strings in `MESSAGES` Konstante für i18n-Vorbereitung
@@ -402,17 +420,19 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 429 |
-| _lib/types.ts | 111 |
-| _lib/api.ts | 187 |
-| _lib/utils.ts | 154 |
+| \_lib/types.ts | 111 |
+| \_lib/api.ts | 187 |
+| \_lib/utils.ts | 154 |
 | **Total** | 881 |
 
 **Extrahiert:**
+
 - Types: `DetailEntry`, `Comment`, `Attachment`, `PreviewAttachment`, `CurrentUser`, `FullEntryResponse`, `MeResponse`
 - API: `fetchFullEntry()`, `loadCurrentUser()`, `confirmEntry()`, `unconfirmEntry()`, `addComment()`, `archiveEntry()`, `buildDownloadUrl()`
 - Utils: `formatDate()`, `formatDateTime()`, `getPriorityText()`, `getPriorityBadgeClass()`, `getOrgLevelText()`, `getVisibilityBadgeClass()`, `getFileIcon()`, `getPreviewFileType()`, `getAvatarColor()`, `filterPhotos()`, `filterOtherFiles()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit)
 - 50% Reduktion der +page.svelte Zeilen (860 → 429)
 - Re-Export Pattern: Detail utils importiert shared functions von parent `_lib/`
@@ -430,19 +450,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 554 |
-| _lib/types.ts | 72 |
-| _lib/constants.ts | 94 |
-| _lib/api.ts | 206 |
-| _lib/utils.ts | 144 |
+| \_lib/types.ts | 72 |
+| \_lib/constants.ts | 94 |
+| \_lib/api.ts | 206 |
+| \_lib/utils.ts | 144 |
 | **Total** | 1070 |
 
 **Extrahiert:**
+
 - Types: `Feature`, `FeatureCategory`, `Plan`, `TenantAddons`, `FeatureFilter`, `AddonType`, `JwtPayload`, `ApiResponse`, `AddonInfo`, `TenantFeature`
 - Constants: `PLAN_ORDER`, `FEATURE_CATEGORIES`, `ADDON_PRICING`, `DEFAULT_TENANT_NAME`
 - API: `loadPlans()`, `loadCurrentPlan()`, `loadTenantFeatures()`, `applyTenantFeaturesToCategories()`, `changePlan()`, `toggleFeature()`, `saveAddons()`
 - Utils: `parseJwt()`, `canActivateFeature()`, `isFeatureIncludedInPlan()`, `getPlanBadge()`, `getFeatureStatusText()`, `getFeatureStatusClass()`, `getFeatureCardClasses()`, `calculateTotalCost()`, `countActiveFeatures()`, `cloneFeatureCategories()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 38% Reduktion der +page.svelte Zeilen (896 → 554)
 - 60% Reduktion der Script-Logik (565 → 225 Zeilen)
@@ -460,19 +482,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 540 |
-| _lib/types.ts | 67 |
-| _lib/constants.ts | 58 |
-| _lib/api.ts | 98 |
-| _lib/utils.ts | 171 |
+| \_lib/types.ts | 67 |
+| \_lib/constants.ts | 58 |
+| \_lib/api.ts | 98 |
+| \_lib/utils.ts | 171 |
 | **Total** | 934 |
 
 **Extrahiert:**
+
 - Types: `DeletionStatus`, `DeletionStatusItem`, `TimelineItem`, `ConfirmModalType`, `ToastType`, `JwtPayload`, `ApiError`, `ApiResponse`
 - Constants: `STATUS_TEXT_MAP`, `STATUS_BADGE_CLASS`, `REFRESH_INTERVAL_MS`, `TIMELINE_ICONS`, `MESSAGES`
 - API: `loadDeletionStatus()`, `rejectDeletion()`, `cancelDeletion()`, `emergencyStop()`, `parseJwtToken()`
 - Utils: `getStatusText()`, `getBadgeClass()`, `calculateCoolingOff()`, `isCurrentUserCreator()`, `getRequesterName()`, `formatDate()`, `formatDateOnly()`, `buildTimeline()`, `shouldShowCoolingOff()`, `shouldShowGracePeriod()`, `shouldShowEmergencyStop()`, `showToast()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 36% Reduktion der +page.svelte Zeilen (848 → 540)
 - 59% Reduktion der Script-Logik (518 → 214 Zeilen)
@@ -490,19 +514,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 423 |
-| _lib/types.ts | 91 |
-| _lib/constants.ts | 68 |
-| _lib/api.ts | 195 |
-| _lib/utils.ts | 152 |
+| \_lib/types.ts | 91 |
+| \_lib/constants.ts | 68 |
+| \_lib/api.ts | 195 |
+| \_lib/utils.ts | 152 |
 | **Total** | 929 |
 
 **Extrahiert:**
+
 - Types: `DashboardStats`, `Department`, `Team`, `User`, `Document`, `CalendarEvent`, `BlackboardEntry`, `FormattedEventDate`, `Priority`, `OrgLevel`, `BlackboardOrgLevel`
 - Constants: `ORG_LEVEL_LABELS`, `BLACKBOARD_ORG_LABELS`, `PRIORITY_LABELS`, `DEFAULT_STATS`, `LIST_LIMITS`, `CALENDAR_MONTHS_AHEAD`, `MESSAGES`
 - API: `getAuthToken()`, `apiGet()`, `loadEmployees()`, `loadDocuments()`, `loadDepartments()`, `loadTeams()`, `loadUpcomingEvents()`, `loadBlackboard()`
 - Utils: `getEmployeeName()`, `getOrgLevelText()`, `getOrgLevelClass()`, `getPriorityLabel()`, `getBlackboardOrgLabel()`, `formatBlackboardDate()`, `parseContent()`, `truncateContent()`, `formatEventDate()`, `isAllDay()`, `openBlackboardEntry()`, `navigateTo()`, `goToCalendar()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 49% Reduktion der +page.svelte Zeilen (829 → 423)
 - 75% Reduktion der Script-Logik (500 → 125 Zeilen)
@@ -520,19 +546,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 303 |
-| _lib/types.ts | 59 |
-| _lib/constants.ts | 90 |
-| _lib/api.ts | 172 |
-| _lib/utils.ts | 89 |
+| \_lib/types.ts | 59 |
+| \_lib/constants.ts | 90 |
+| \_lib/api.ts | 172 |
+| \_lib/utils.ts | 89 |
 | **Total** | 713 |
 
 **Extrahiert:**
+
 - Types: `DashboardData`, `ActivityLog`, `UserData`, `ApiResponse`, `LogsApiResponse`, `UserRole`, `ActionType`
 - Constants: `ACTION_LABELS`, `ACTION_BADGE_CLASSES`, `ROLE_LABELS`, `ROLE_BADGE_CLASSES`, `EMPLOYEE_NUMBER`, `API_ENDPOINTS`, `STORAGE_KEYS`, `MESSAGES`
 - API: `getAccessToken()`, `removeAccessToken()`, `loadDashboardData()`, `loadActivityLogs()`, `checkEmployeeNumber()`, `saveEmployeeNumber()`
 - Utils: `getActionLabel()`, `getActionBadgeClass()`, `getRoleLabel()`, `getRoleBadgeClass()`, `getDisplayName()`, `isTemporaryEmployeeNumber()`, `filterEmployeeNumberInput()`, `isValidEmployeeNumber()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 33% Reduktion der +page.svelte Zeilen (450 → 303)
 - Employee Number Validierung als pure functions
@@ -549,19 +577,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 382 |
-| _lib/types.ts | 57 |
-| _lib/constants.ts | 50 |
-| _lib/api.ts | 126 |
-| _lib/utils.ts | 69 |
+| \_lib/types.ts | 57 |
+| \_lib/constants.ts | 50 |
+| \_lib/api.ts | 126 |
+| \_lib/utils.ts | 69 |
 | **Total** | 684 |
 
 **Extrahiert:**
+
 - Types: `DeletionStatus`, `ToastType`, `DeletionStatusData`, `DeletionQueueResponse`, `DeletionStatusResponse`, `RootUsersResponse`, `JwtPayload`
 - Constants: `STATUS_LABELS`, `DELETE_CONFIRMATION_TEXT`, `MIN_REASON_LENGTH`, `MIN_ROOT_USERS`, `MESSAGES`, `STORAGE_KEYS`
 - API: `parseJwtPayload()`, `getAccessToken()`, `checkAuthRole()`, `loadDeletionStatus()`, `getRootUserCount()`, `deleteTenant()`
 - Utils: `formatDate()`, `getStatusLabel()`, `showToast()`, `isDeleteConfirmationValid()`, `isReasonValid()`, `canDelete()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 28% Reduktion der +page.svelte Zeilen (529 → 382)
 - DSGVO-konforme Löschlogik (Zwei-Personen-Prinzip)
@@ -578,19 +608,21 @@ frontend-svelte/src/routes/(app)/[page-name]/
 | Datei | Zeilen |
 |-------|--------|
 | +page.svelte | 538 |
-| _lib/types.ts | 79 |
-| _lib/constants.ts | 59 |
-| _lib/api.ts | 188 |
-| _lib/utils.ts | 76 |
+| \_lib/types.ts | 79 |
+| \_lib/constants.ts | 59 |
+| \_lib/api.ts | 188 |
+| \_lib/utils.ts | 76 |
 | **Total** | 940 |
 
 **Extrahiert:**
+
 - Types: `UserProfile`, `ApprovalItem`, `PasswordStrengthResult`, `PasswordField`, `ToastType`, `ProfileUpdatePayload`, `PasswordChangePayload`, `UserResponse`, `ApprovalsResponse`, `PictureUploadResponse`, `JwtPayload`
 - Constants: `PASSWORD_RULES`, `PICTURE_CONSTRAINTS`, `STORAGE_KEYS`, `MESSAGES`, `PASSWORD_TOOLTIP`
 - API: `loadProfile()`, `loadProfilePicture()`, `loadPendingApprovals()`, `saveProfile()`, `uploadProfilePicture()`, `removeProfilePicture()`, `changePassword()`, `approveRequest()`, `rejectRequest()`, `parseJwtRole()`
 - Utils: `formatDate()`, `showToast()`, `triggerFileInput()`, `isCurrentPasswordError()`, `isPasswordLengthValid()`, `doPasswordsMatch()`
 
 **Verbesserungen:**
+
 - JSDoc → TypeScript (volle Typsicherheit in `_lib/`)
 - 34% Reduktion der +page.svelte Zeilen (820 → 538)
 - Passwort-Validierung mit min/max Länge

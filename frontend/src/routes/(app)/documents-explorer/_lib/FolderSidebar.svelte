@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { DocumentCategory, CategoryCounts } from './types';
   import { FOLDER_DEFINITIONS } from './constants';
+
+  import type { DocumentCategory, CategoryCounts } from './types';
 
   interface Props {
     currentCategory: DocumentCategory;
@@ -17,17 +18,18 @@
     <ul class="space-y-1">
       {#each FOLDER_DEFINITIONS as folder (folder.category)}
         {@const count =
-          folder.category === 'chat'
-            ? chatFoldersTotalCount
-            : (categoryCounts[folder.category] ?? 0)}
+          folder.category === 'chat' ? chatFoldersTotalCount : categoryCounts[folder.category]}
         {@const isActive = folder.category === currentCategory}
         <li>
           <button
+            type="button"
             class="folder-item w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-left {isActive
               ? 'bg-surface-3 text-primary-500'
               : 'text-content-primary hover:bg-surface-3'}"
             data-category={folder.category}
-            onclick={() => onnavigate(folder.category)}
+            onclick={() => {
+              onnavigate(folder.category);
+            }}
           >
             <span class={isActive ? 'text-primary-500' : 'text-content-secondary'}>
               <!-- eslint-disable-next-line svelte/no-at-html-tags -->

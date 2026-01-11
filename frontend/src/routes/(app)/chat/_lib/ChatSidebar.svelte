@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAvatarColorClass, getInitials } from '$lib/utils';
-  import type { ChatUser, Conversation } from './types';
+
   import { MESSAGES } from './constants';
   import {
     highlightSearchTerm,
@@ -11,13 +11,15 @@
     getRoleBadgeClass,
   } from './utils';
 
+  import type { ChatUser, Conversation } from './types';
+
   interface Props {
     conversations: Conversation[];
     activeConversationId: number | null;
     currentUserId: number;
     canStartNewConversation: boolean;
     showUserSearch: boolean;
-    userSearchQuery: string;
+    userSearchQuery?: string; // Optional for $bindable() - parent uses bind:userSearchQuery
     userSearchResults: ChatUser[];
     isSearchingUsers: boolean;
     isLoading: boolean;
@@ -29,13 +31,14 @@
   }
 
   /* eslint-disable prefer-const */
+  // $bindable() required for two-way binding in Svelte 5
   let {
     conversations,
     activeConversationId,
     currentUserId,
     canStartNewConversation,
     showUserSearch,
-    userSearchQuery = $bindable(),
+    userSearchQuery = $bindable(''),
     userSearchResults,
     isSearchingUsers,
     isLoading,
@@ -56,6 +59,7 @@
     </h2>
     {#if canStartNewConversation}
       <button
+        type="button"
         class="btn btn-icon btn-secondary"
         title={MESSAGES.labelNewConversation}
         aria-label={MESSAGES.labelNewConversation}
@@ -84,7 +88,9 @@
           placeholder={MESSAGES.labelSearchUsers}
           autocomplete="off"
           bind:value={userSearchQuery}
-          oninput={() => onsearchusers(userSearchQuery)}
+          oninput={() => {
+            onsearchusers(userSearchQuery);
+          }}
         />
         <button
           class="search-input__clear"
@@ -103,7 +109,9 @@
             <div
               class="search-input__result-item"
               data-user-id={user.id}
-              onclick={() => onstartconversation(user)}
+              onclick={() => {
+                onstartconversation(user);
+              }}
             >
               <div class="flex items-center gap-3 w-full">
                 <div class="avatar avatar--sm {getAvatarColorClass(user.id)}">
@@ -160,10 +168,13 @@
       {#each conversations as conv (conv.id)}
         {@const partner = conv.participants.find((p) => p.id !== currentUserId)}
         <button
+          type="button"
           class="conversation-item"
           class:active={activeConversationId === conv.id}
-          class:unread={conv.unreadCount && conv.unreadCount > 0}
-          onclick={() => onselectconversation(conv)}
+          class:unread={(conv.unreadCount ?? 0) > 0}
+          onclick={() => {
+            onselectconversation(conv);
+          }}
         >
           <div class="avatar {getAvatarColorClass(partner?.id)}">
             {#if getConversationAvatar(conv, currentUserId)}
@@ -191,7 +202,7 @@
                 {formatConversationTime(conv.lastMessage.createdAt)}
               </span>
             {/if}
-            {#if conv.unreadCount && conv.unreadCount > 0}
+            {#if (conv.unreadCount ?? 0) > 0}
               <span class="badge badge--count">{conv.unreadCount}</span>
             {/if}
           </div>
