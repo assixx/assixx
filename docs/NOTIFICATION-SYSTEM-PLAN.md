@@ -3,24 +3,29 @@
 > **Ziel:** Facebook/Microsoft-Level Benachrichtigungen mit Badge-Updates in Echtzeit
 > **Stack:** NestJS + Fastify + SvelteKit 5 + PostgreSQL
 > **Erstellt:** 2026-01-08
+> **Aktualisiert:** 2026-01-11 - VOLLSTÄNDIG IMPLEMENTIERT
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-### Aktuelle Situation (BRUTAL HONEST)
+### Aktueller Status (2026-01-11)
 
-| Komponente                   | Status    | Problem                                             |
-| ---------------------------- | --------- | --------------------------------------------------- |
-| Backend SSE Endpoint         | ✅ Fertig | Funktioniert, aber NIEMAND ruft ihn auf             |
-| Backend EventBus             | ✅ Fertig | emit-Methoden existieren, werden NIEMALS aufgerufen |
-| Backend NotificationsService | ✅ Fertig | CRUD komplett, unreadCount funktioniert             |
-| Frontend SSE Client          | ❌ FEHLT  | Kein EventSource, keine Verbindung                  |
-| Frontend Notification Store  | ❌ FEHLT  | Kein Svelte Store für Notifications                 |
-| Frontend Badge in Sidebar    | ❌ FEHLT  | Menü hat KEINE Badge-Anzeige                        |
-| Event Emissions in Services  | ❌ FEHLT  | Surveys/Documents/KVP emittieren NICHTS             |
+| Komponente                   | Status    | Details                                           |
+| ---------------------------- | --------- | ------------------------------------------------- |
+| Backend SSE Endpoint         | ✅ Fertig | `/api/v2/notifications/stream`                    |
+| Backend EventBus             | ✅ Fertig | Survey, Document, KVP, Message Events             |
+| Backend NotificationsService | ✅ Fertig | CRUD komplett, unreadCount funktioniert           |
+| Frontend SSE Client          | ✅ Fertig | `notification-sse.ts` mit Auto-Reconnect          |
+| Frontend Notification Store  | ✅ Fertig | `notification.store.svelte.ts` mit Svelte 5 Runes |
+| Frontend Badge in Sidebar    | ✅ Fertig | `NotificationBadge.svelte` mit Animation          |
+| Event Emissions in Services  | ✅ Fertig | Surveys, Documents, KVP, Chat emittieren Events   |
+| Initial Count Loading        | ✅ Fertig | `loadInitialCounts()` beim App-Start              |
+| Count Reset on Page Visit    | ✅ Fertig | Chat-Count wird bei `/chat` Besuch zurückgesetzt  |
 
-**Fazit:** Backend ist 90% fertig, Frontend ist 0% fertig, Events werden nicht gefeuert.
+**Fazit:** System ist vollständig implementiert und funktionsfähig!
+
+> **Siehe auch:** [ADR-003: Notification System Architecture](./adr/ADR-003-notification-system.md) für Details zur Architektur und Anleitung zum Hinzufügen neuer Features.
 
 ---
 
@@ -615,29 +620,62 @@ SSE funktioniert auch auf Mobile, aber Push Notifications sind besser für:
 
 | Task                          | Priorität | Aufwand | Status   |
 | ----------------------------- | --------- | ------- | -------- |
-| EventBus Calls in Services    | KRITISCH  | 1h      | ⬜ TODO  |
-| Frontend SSE Client           | KRITISCH  | 2h      | ⬜ TODO  |
-| Notification Store (Svelte 5) | KRITISCH  | 2h      | ⬜ TODO  |
-| Badge Component               | HOCH      | 30min   | ⬜ TODO  |
-| Layout Integration            | HOCH      | 1h      | ⬜ TODO  |
-| Nginx SSE Config              | MITTEL    | 15min   | ⬜ TODO  |
-| Toast Integration             | MITTEL    | 30min   | ⬜ TODO  |
+| EventBus Calls in Services    | KRITISCH  | 1h      | ✅ DONE  |
+| Frontend SSE Client           | KRITISCH  | 2h      | ✅ DONE  |
+| Notification Store (Svelte 5) | KRITISCH  | 2h      | ✅ DONE  |
+| Badge Component               | HOCH      | 30min   | ✅ DONE  |
+| Layout Integration            | HOCH      | 1h      | ✅ DONE  |
+| Nginx SSE Config              | MITTEL    | 15min   | ✅ DONE  |
+| Initial Count Loading         | HOCH      | 30min   | ✅ DONE  |
+| Count Reset on Visit          | MITTEL    | 15min   | ✅ DONE  |
+| Toast Integration             | MITTEL    | 30min   | ⬜ LATER |
 | Mobile Push (Phase 2)         | NIEDRIG   | 4h      | ⬜ LATER |
 
-**Geschätzter Gesamtaufwand Phase 1:** ~7 Stunden
+**Phase 1 abgeschlossen:** 2026-01-11
 
 ---
 
-## CHECKLISTE VOR START
+## IMPLEMENTIERTE DATEIEN
 
-- [ ] Backend läuft (`docker-compose ps`)
-- [ ] SSE Endpoint erreichbar (`curl /api/v2/notifications/stream`)
-- [ ] Token verfügbar (Login funktioniert)
-- [ ] Nginx Konfiguration geprüft
-- [ ] Browser unterstützt EventSource (alle modernen Browser)
+### Backend
+
+- `backend/src/utils/eventBus.ts` - EventEmitter Singleton
+- `backend/src/nest/notifications/notifications.controller.ts` - SSE Stream
+- `backend/src/nest/surveys/surveys.service.ts` - emit bei Create/Update
+- `backend/src/nest/documents/documents.service.ts` - emit bei Upload
+- `backend/src/nest/kvp/kvp.service.ts` - emit bei Submit
+- `backend/src/nest/chat/chat.service.ts` - emit bei sendMessage
+
+### Frontend
+
+- `frontend/src/lib/utils/notification-sse.ts` - EventSource Client
+- `frontend/src/lib/stores/notification.store.svelte.ts` - Svelte 5 Store
+- `frontend/src/lib/components/NotificationBadge.svelte` - Badge Component
+- `frontend/src/routes/(app)/+layout.svelte` - SSE Connect + Badge Integration
+- `frontend/src/routes/(app)/chat/+page.svelte` - Count Reset
+
+### Config
+
+- `docker/nginx/nginx.conf` - SSE Proxy Settings
+
+---
+
+## NEUES FEATURE HINZUFÜGEN
+
+Siehe **[ADR-003: Notification System Architecture](./adr/ADR-003-notification-system.md)** für eine Schritt-für-Schritt-Anleitung.
+
+**Kurzfassung:**
+
+1. Event in `eventBus.ts` definieren
+2. `emit*()` in deinem Service aufrufen
+3. Handler in `notifications.controller.ts` registrieren
+4. Event-Type in `notification-sse.ts` hinzufügen
+5. Event in `notification.store.svelte.ts` handlen
+6. (Optional) Badge in Sidebar hinzufügen
 
 ---
 
 **Erstellt:** 2026-01-08
+**Aktualisiert:** 2026-01-11
 **Autor:** Claude Code
-**Status:** PLAN FERTIG - BEREIT FÜR IMPLEMENTIERUNG
+**Status:** ✅ PHASE 1 VOLLSTÄNDIG IMPLEMENTIERT

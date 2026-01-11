@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -52,7 +52,8 @@
   // UI STATE (local only)
   // =============================================================================
 
-  let refreshTimer: ReturnType<typeof setInterval> | null = $state(null);
+  // Use regular variable (not $state) for timer - no reactivity needed
+  let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   // Confirm Modal State
   let showConfirmModal = $state(false);
@@ -64,37 +65,21 @@
   const isRejectReasonValid = $derived(rejectReason.length >= 3);
 
   // =============================================================================
-  // LIFECYCLE
+  // LIFECYCLE - use onMount for one-time side effects (not $effect!)
   // =============================================================================
 
-  // Start auto-refresh on mount (auth is handled server-side)
-  $effect(() => {
-    startAutoRefresh();
-
-    // Cleanup on unmount
-    return () => {
-      if (refreshTimer !== null) {
-        clearInterval(refreshTimer);
-      }
-    };
+  onMount(() => {
+    // Start auto-refresh - runs ONCE on mount
+    refreshTimer = setInterval(() => void invalidateAll(), REFRESH_INTERVAL_MS);
   });
 
   onDestroy(() => {
+    // Cleanup timer on unmount
     if (refreshTimer !== null) {
       clearInterval(refreshTimer);
+      refreshTimer = null;
     }
   });
-
-  // =============================================================================
-  // AUTO-REFRESH (uses invalidateAll for SSR reload)
-  // =============================================================================
-
-  function startAutoRefresh() {
-    if (refreshTimer !== null) {
-      clearInterval(refreshTimer);
-    }
-    refreshTimer = setInterval(() => void invalidateAll(), REFRESH_INTERVAL_MS);
-  }
 
   // =============================================================================
   // MODAL HANDLERS

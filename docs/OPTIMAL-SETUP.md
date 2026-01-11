@@ -1,12 +1,12 @@
 # ASSIXX OPTIMAL SETUP 2025
 
 > **Production-Ready Enterprise SaaS Configuration**
-> Last Updated: 18. December 2025
-> Status: TARGET STATE (Phase 0-2 ✅ COMPLETE, Phase 3 Pending)
+> Last Updated: 11. January 2026
+> Status: TARGET STATE (Phase 0-3 ✅ COMPLETE, Phase 4 Pending)
 
 ---
 
-## 🟢 BACKEND + CALENDAR MIGRATION: COMPLETE 🟢
+## 🟢 BACKEND + FRONTEND MIGRATION: COMPLETE 🟢
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -14,26 +14,31 @@
 │  ✅ PHASE 1: NESTJS CODE MIGRATION: COMPLETE                    │
 │  ✅ PHASE 1.5: FASTIFY ADAPTER: COMPLETE                        │
 │  ✅ PHASE 2: VITEST MIGRATION: COMPLETE                         │
+│  ✅ PHASE 3: SVELTEKIT MIGRATION: COMPLETE                      │
 │                                                                 │
-│  Completed: 18. Dezember 2025                                  │
+│  Completed: 11. Januar 2026                                    │
 │                                                                 │
-│  ✅ WAS ERREICHT WURDE:                                         │
+│  ✅ PHASE 0-2 ERREICHT (Backend):                               │
 │     - FullCalendar → @event-calendar/core v3.8.1              │
 │     - 300/300 Endpoints migriert (100%)                        │
 │     - 26/26 Services Native NestJS                             │
 │     - 339 TypeScript Files in /nest/                           │
 │     - routes/v2/ komplett gelöscht (~166 Dateien)              │
-│     - middleware/ komplett gelöscht (Dead Code)                │
-│     - Express Entry-Points gelöscht (app.ts, server.ts)        │
 │     - @nestjs/platform-fastify + Fastify v5.6.2                │
-│     - Express Dependencies komplett entfernt (14 Packages)     │
 │     - Vitest 4.0.16 (Jest komplett entfernt)                   │
 │                                                                 │
-│  📄 DETAILS: docs/NESTJS-MIGRATION-PLAN.md                      │
-│  📄 FASTIFY: docs/FASTIFY-PLAN.md                               │
+│  ✅ PHASE 3 ERREICHT (Frontend):                                │
+│     - 34/34 Seiten migriert                                    │
+│     - SvelteKit 5 + Svelte 5 Runes                             │
+│     - Manuelles Testing bestanden                              │
+│     - Bruno API Tests bestanden                                │
+│     - Docker Production Build funktioniert                     │
 │                                                                 │
-│  NÄCHSTE SCHRITTE:                                              │
-│     - Phase 3: SvelteKit Migration                             │
+│  📄 BACKEND: docs/NESTJS-MIGRATION-PLAN.md                      │
+│  📄 FRONTEND: docs/SVELTEKIT-MIGRATION-PLAN.md                  │
+│                                                                 │
+│  NÄCHSTE SCHRITTE (Phase 4):                                    │
+│     - Unit Tests, E2E Tests, CI/CD, Production Deployment      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,7 +51,7 @@
 | **Runtime**            | Node.js 24.11.1         | Node.js 24 LTS              | ✅ KEEP |
 | **Package Manager**    | pnpm 10.24.0            | pnpm 10.x                   | ✅ KEEP |
 | **Backend Framework**  | **NestJS 11 + Fastify** | NestJS 11 + Fastify         | ✅ DONE |
-| **Frontend Framework** | Vanilla TypeScript      | **SvelteKit 2 + Svelte 5**  | CHANGE  |
+| **Frontend Framework** | **SvelteKit 5**         | **SvelteKit 5 + Svelte 5**  | ✅ DONE |
 | **Build Tool**         | Vite 7.2.6              | Vite 7.x (SvelteKit native) | ✅ KEEP |
 | **CSS Framework**      | Tailwind 4.1.17         | Tailwind 4.x                | ✅ KEEP |
 | **Database**           | PostgreSQL 17 + RLS     | PostgreSQL 17 + RLS         | ✅ KEEP |
@@ -56,9 +61,10 @@
 | **TypeScript**         | 5.9.3                   | 5.9.x                       | ✅ KEEP |
 | **ORM**                | Raw SQL (pg)            | Raw SQL (pg)                | ✅ KEEP |
 
-**1 Change Remaining (SvelteKit Frontend). 3 Changes COMPLETED (NestJS, Fastify, Vitest). 9 Things Already Optimal.**
+**0 Changes Remaining! 4 Changes COMPLETED (NestJS, Fastify, Vitest, SvelteKit). 9 Things Already Optimal.**
 
 > 📄 **NestJS Migration Details:** [docs/NESTJS-MIGRATION-PLAN.md](./NESTJS-MIGRATION-PLAN.md)
+> 📄 **SvelteKit Migration Details:** [docs/SVELTEKIT-MIGRATION-PLAN.md](./SVELTEKIT-MIGRATION-PLAN.md)
 
 ---
 
@@ -121,15 +127,17 @@ Cache:
 
 ```yaml
 Frontend Framework:
-  name: Vanilla TypeScript
+  name: SvelteKit 5 + Svelte 5
   bundler: Vite 7.2.6
-  problems:
-    - Manual DOM manipulation
-    - No component model
-    - No SSR/SSG
-    - No type-safe API calls
-    - State management self-built
-  verdict: REPLACE
+  status: ✅ MIGRATED (11. Januar 2026)
+  migration_details: docs/SVELTEKIT-MIGRATION-PLAN.md
+  achievements:
+    - 34/34 Seiten migriert
+    - Svelte 5 Runes ($state, $derived, $effect, $props)
+    - Manuelles Testing bestanden
+    - Bruno API Tests bestanden
+    - Docker Production Build funktioniert
+  verdict: ✅ DONE
 
 CSS:
   framework: Tailwind CSS
@@ -152,14 +160,15 @@ Design System:
 
 ```yaml
 Testing:
-  framework: Jest
-  version: 30.2.0
-  problems:
-    - Slow with TypeScript
-    - Requires ts-jest configuration
-    - No native ESM support
-    - Separate from Vite ecosystem
-  verdict: REPLACE
+  framework: Vitest
+  version: 4.0.16
+  status: ✅ MIGRATED (18. Dezember 2025)
+  achievements:
+    - Jest komplett entfernt
+    - Native TypeScript Support
+    - Native ESM Support
+    - Vite-Integration
+  verdict: ✅ DONE
 
 Linting:
   tool: ESLint
@@ -1283,89 +1292,95 @@ Your significant investments that remain unchanged:
 
 ---
 
-## PART 8: PRE-LAUNCH CHECKLIST (NACH NESTJS-MIGRATION)
+## PART 8: PRE-LAUNCH CHECKLIST (PHASE 4)
 
-> **WICHTIG: Diese Items erst NACH der NestJS-Migration implementieren!**
-> Der Code unten ist NestJS-spezifisch. Siehe Part 10 für die korrekte Reihenfolge.
+> **Status:** Phase 3 (SvelteKit) abgeschlossen → Phase 4 kann starten!
+> **Details:** Siehe [ADR-002: Alerting & Monitoring](./adr/ADR-002-alerting-monitoring.md)
 
-### 8.1 PFLICHT vor Launch (3 Dinge)
+### 8.1 PFLICHT vor Launch (4 Dinge)
 
-#### 1. Sentry Error Tracking - KRITISCH
+#### 1. Pino Logging Migration - HOCH
 
-| Aspekt             | Details                                         |
-| ------------------ | ----------------------------------------------- |
-| **Warum PFLICHT?** | Ohne Error Tracking bist du BLIND in Production |
-| **Priorität**      | KRITISCH                                        |
-
-```typescript
-// backend/src/infrastructure/sentry/sentry.module.ts
-import { Global, Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as Sentry from '@sentry/node';
-
-@Global()
-@Module({})
-export class SentryModule {
-  static forRoot() {
-    return {
-      module: SentryModule,
-      providers: [
-        {
-          provide: 'SENTRY',
-          useFactory: (configService: ConfigService) => {
-            Sentry.init({
-              dsn: configService.get('SENTRY_DSN'),
-              environment: configService.get('NODE_ENV'),
-              tracesSampleRate: configService.get('NODE_ENV') === 'production' ? 0.1 : 1.0,
-              beforeSend(event) {
-                if (event.request?.data) {
-                  delete event.request.data.password;
-                  delete event.request.data.token;
-                }
-                return event;
-              },
-            });
-            return Sentry;
-          },
-          inject: [ConfigService],
-        },
-      ],
-      exports: ['SENTRY'],
-    };
-  }
-}
-```
-
-```typescript
-// backend/src/common/filters/sentry-exception.filter.ts
-import { ArgumentsHost, Catch, HttpException, Inject } from '@nestjs/common';
-import { BaseExceptionFilter } from '@nestjs/core';
-import * as Sentry from '@sentry/node';
-
-@Catch()
-export class SentryExceptionFilter extends BaseExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
-    Sentry.captureException(exception);
-    super.catch(exception, host);
-  }
-}
-```
-
-**Package:**
+| Aspekt             | Details                                              |
+| ------------------ | ---------------------------------------------------- |
+| **Warum PFLICHT?** | Winston → Pino (5x Performance), console.log Cleanup |
+| **Priorität**      | HOCH (Security + Production Quality)                 |
+| **Plan**           | [docs/PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md)  |
 
 ```bash
-pnpm add @sentry/node
+# Backend
+cd backend
+pnpm remove winston
+pnpm add nestjs-pino pino-http pino-roll
+pnpm add -D pino-pretty
+
+# Frontend
+cd frontend
+pnpm add pino
 ```
 
-> **📌 Nach SvelteKit-Migration:** Frontend-Sentry hinzufügen!
->
-> ```bash
-> pnpm add @sentry/sveltekit
-> ```
+**Was passiert:**
+
+- Winston komplett entfernt
+- Pino mit Fastify's built-in Logger
+- console.log → Pino Logger
+- window.\* Debug-Exposure entfernt (Security!)
+- Production: Keine Console-Ausgabe
 
 ---
 
-#### 2. Health Check erweitern - WICHTIG
+#### 2. Sentry Error Tracking - KRITISCH
+
+| Aspekt             | Details                                                      |
+| ------------------ | ------------------------------------------------------------ |
+| **Warum PFLICHT?** | Ohne Error Tracking bist du BLIND in Production              |
+| **Priorität**      | KRITISCH                                                     |
+| **Entscheidung**   | [ADR-002: Sentry SaaS](./adr/ADR-002-alerting-monitoring.md) |
+
+```bash
+# Backend (NestJS)
+cd backend
+pnpm add @sentry/nestjs
+
+# Frontend (SvelteKit)
+cd frontend
+pnpm add @sentry/sveltekit
+```
+
+```typescript
+// Backend: src/nest/instrument.ts (MUSS erste Zeile in main.ts importiert werden!)
+import * as Sentry from '@sentry/nestjs';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+});
+```
+
+```typescript
+// Frontend: src/hooks.client.ts
+import * as Sentry from '@sentry/sveltekit';
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+});
+```
+
+**Features (SaaS):**
+
+- ✅ Native SDKs für SvelteKit + NestJS
+- ✅ Distributed Tracing (Frontend → Backend)
+- ✅ Session Replay
+- ✅ Source Maps
+- ✅ Alerting (Email, Slack)
+
+---
+
+#### 3. Health Check erweitern - WICHTIG
 
 | Aspekt        | Details                                              |
 | ------------- | ---------------------------------------------------- |
@@ -1496,140 +1511,39 @@ services:
 
 ---
 
-### 8.2 BEREITS VORHANDEN (Nicht ändern!)
+### 8.2 BEREITS VORHANDEN
 
-| Was                         | Status          | Location                        |
-| --------------------------- | --------------- | ------------------------------- |
-| Winston Logger              | ✅ Funktioniert | `backend/src/utils/logger.ts`   |
-| Sensitive Data Sanitization | ✅ Eingebaut    | `sanitizeForLog()`              |
-| Rate Limiting               | ✅ Redis-based  | Middleware                      |
-| Basic Health Check          | ✅ Vorhanden    | `backend/src/loaders/health.ts` |
+| Was                         | Status              | Location / Plan                                |
+| --------------------------- | ------------------- | ---------------------------------------------- |
+| ~~Winston Logger~~          | 🔄 → Pino Migration | [PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md) |
+| Sensitive Data Sanitization | ✅ → Pino `redact`  | Wird in Pino übernommen                        |
+| Rate Limiting               | ✅ Redis-based      | @nestjs/throttler                              |
+| Basic Health Check          | ✅ Vorhanden        | Wird erweitert mit @nestjs/terminus            |
 
-#### Winston + NestJS Integration
-
-> **WICHTIG:** Winston muss in NestJS als Custom Logger integriert werden!
-> Ohne Integration nutzt NestJS seinen eigenen ConsoleLogger.
-
-**Option 1: nest-winston Package (Empfohlen)**
-
-```bash
-pnpm add nest-winston winston
-```
-
-```typescript
-// backend/src/app.module.ts
-import { Module } from '@nestjs/common';
-import { WinstonModule } from 'nest-winston';
-import * as winston from 'winston';
-
-@Module({
-  imports: [
-    WinstonModule.forRoot({
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, context }) => {
-              return `${timestamp} [${context}] ${level}: ${message}`;
-            }),
-          ),
-        }),
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error',
-        }),
-        new winston.transports.File({
-          filename: 'logs/combined.log',
-        }),
-      ],
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-```typescript
-// backend/src/main.ts - Winston als NestJS Logger
-import { NestFactory } from '@nestjs/core';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-
-  // Winston als NestJS Logger setzen
-  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-
-  await app.listen(3000);
-}
-```
-
-**Option 2: Custom LoggerService (Falls ihr existierenden Winston behalten wollt)**
-
-```typescript
-// backend/src/infrastructure/logger/winston-logger.service.ts
-import { Injectable, LoggerService } from '@nestjs/common';
-
-import { logger } from '../../utils/logger';
-
-// Euer existierender Winston Logger
-
-@Injectable()
-export class WinstonLoggerService implements LoggerService {
-  log(message: any, context?: string) {
-    logger.info(message, { context });
-  }
-
-  error(message: any, trace?: string, context?: string) {
-    logger.error(message, { trace, context });
-  }
-
-  warn(message: any, context?: string) {
-    logger.warn(message, { context });
-  }
-
-  debug(message: any, context?: string) {
-    logger.debug(message, { context });
-  }
-
-  verbose(message: any, context?: string) {
-    logger.verbose(message, { context });
-  }
-}
-```
-
-```typescript
-// backend/src/main.ts
-import { WinstonLoggerService } from './infrastructure/logger/winston-logger.service';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.useLogger(new WinstonLoggerService());
-  await app.listen(3000);
-}
-```
+> **Hinweis:** Winston wird durch Pino ersetzt (Phase 4).
+> Details: [docs/PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md)
 
 ---
 
 ## PART 9: NICHT MACHEN (KISS - Over-Engineering vermeiden)
 
-### 9.1 Pino statt Winston --aber pino besser. !! wir sollten pino nehmen. wir müssen noch darüber nachdenken !! KISS heißt nicht faul sein !!!!!!!! nein wir nehemn sicher pino!!!!! docs und setupmigration plan machen wenn soweit !!
+### 9.1 ~~Pino statt Winston~~ → ENTSCHEIDUNG: PINO ✅
 
-| Vorschlag        | Winston → Pino Migration              |
-| ---------------- | ------------------------------------- |
-| **Empfohlen?**   | ❌ NEIN (für jetzt)                   |
-| **Warum nicht?** | 68 Files ändern, Winston funktioniert |
+| Vorschlag      | Winston → Pino Migration                            |
+| -------------- | --------------------------------------------------- |
+| **Empfohlen?** | ✅ JA - Entschieden in Phase 4                      |
+| **Plan**       | [docs/PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md) |
 
-**Pino ist schneller (5x), aber:**
+**Warum doch Pino?**
 
-- Euer Winston hat bereits `sanitizeForLog()`
-- Migration = 68 Files ändern
-- Kein ROI bis >10.000 Requests/Sekunde
+- 5x Performance (30k vs 6k logs/sec)
+- Fastify hat Pino bereits built-in (0 extra cost)
+- JSON-Output für Loki-Integration (Phase 5)
+- `sanitizeForLog()` → Pino `redact` Option
+- Security: console.log + window.\* Exposure eliminieren
 
-**Wann doch Pino?**
-
-- Log-Volume wird zum Performance-Problem
-- Elastic/Loki-Integration zwingend JSON
+> **Status:** Phase 4 - IN PROGRESS
+> Details: [PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md)
 
 ---
 
@@ -1730,25 +1644,29 @@ async function bootstrap() {
 │  ├── Config anpassen                                           │
 │  └── QUICK WIN: 95% API-kompatibel                             │
 │                         ↓                                       │
-│  PHASE 3: SVELTEKIT MIGRATION (Frontend)                       │
-│  ═════════════════════════════════════                          │
-│  ├── Library-Kompatibilität prüfen (siehe Part 2.3.3)          │
-│  ├── Page für Page migrieren                                   │
-│  ├── api-client.ts integrieren (REST)                          │
-│  ├── Design System → Svelte Components                         │
-│  └── WARUM ZULETZT: Braucht stabiles NestJS Backend            │
+│  PHASE 3: SVELTEKIT MIGRATION (Frontend) ✅ COMPLETE!          │
+│  ═════════════════════════════════════════════════════          │
+│  ├── ✅ 34/34 Seiten migriert                                  │
+│  ├── ✅ SvelteKit 5 + Svelte 5 Runes                           │
+│  ├── ✅ api-client.ts integriert (REST)                        │
+│  ├── ✅ Design System → Svelte Components                      │
+│  ├── ✅ Manuelles Testing + Bruno API Tests bestanden          │
+│  └── 📄 Details: docs/SVELTEKIT-MIGRATION-PLAN.md              │
 │                         ↓                                       │
-│  PHASE 4: PRE-LAUNCH POLISH                                    │
-│  ══════════════════════════                                     │
-│  ├── Sentry Error Tracking (siehe Part 8)                      │
-│  ├── @nestjs/terminus Health Checks                            │
-│  ├── Graceful Shutdown                                         │
-│  └── WARUM ZULETZT: Code ist NestJS-spezifisch                 │
+│  PHASE 4: PRE-LAUNCH POLISH ⏳ IN PROGRESS                     │
+│  ═════════════════════════════════════════                      │
+│  ├── 1. Pino Migration (Winston → Pino)                        │
+│  │      📄 docs/PINO-LOGGING-PLAN.md                           │
+│  ├── 2. Sentry SaaS (Error Tracking)                           │
+│  │      📄 docs/adr/ADR-002-alerting-monitoring.md             │
+│  ├── 3. @nestjs/terminus Health Checks                         │
+│  └── 4. Graceful Shutdown                                      │
 │                         ↓                                       │
-│  PHASE 5: ENTERPRISE FEATURES (Nach Launch)                    │
-│  ══════════════════════════════════════════                     │
+│  PHASE 5: OBSERVABILITY & ENTERPRISE (Optional)                │
+│  ═══════════════════════════════════════════════                │
+│  ├── PLG Stack (Prometheus + Loki + Grafana)                   │
+│  │      └── pino-loki Transport für Log Aggregation            │
 │  ├── Doppler/Infisical Secrets                                 │
-│  ├── Full Observability (OpenTelemetry)                        │
 │  └── SOC2 Compliance                                           │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -1762,9 +1680,9 @@ async function bootstrap() {
 | 1     | NestJS Migration (Code)             | Phase 0      | ✅ **COMPLETE** (2025-12-18) |
 | 1.5   | Fastify Adapter (Express → Fastify) | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
 | 2     | Vitest Migration                    | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
-| 3     | SvelteKit Migration                 | Phase 1.5    | ⏳ Pending                   |
-| 4     | Pre-Launch Polish                   | Phase 3      | ⏳ Pending                   |
-| 5     | Enterprise Features                 | Launch       | ⏳ Pending                   |
+| 3     | SvelteKit Migration                 | Phase 1.5    | ✅ **COMPLETE** (2026-01-11) |
+| 4     | Pre-Launch Polish                   | Phase 3      | ⏳ **IN PROGRESS**           |
+| 5     | Observability & Enterprise          | Phase 4      | ⏳ Pending (Optional)        |
 
 > **Keine Zeitschätzungen.** Wir arbeiten bis es fertig ist.
 > Qualität > Geschwindigkeit. KISS > Deadlines.
@@ -1772,6 +1690,8 @@ async function bootstrap() {
 > 📄 **Phase 0 Details:** @event-calendar/core v3.8.1 ersetzt FullCalendar
 > 📄 **Phase 1 Details:** [docs/NESTJS-MIGRATION-PLAN.md](./NESTJS-MIGRATION-PLAN.md)
 > 📄 **Phase 2 Details:** Vitest 4.0.16, Jest komplett entfernt
+> 📄 **Phase 3 Details:** [docs/SVELTEKIT-MIGRATION-PLAN.md](./SVELTEKIT-MIGRATION-PLAN.md) - 34/34 Seiten
+> 📄 **Phase 4 Details:** [docs/PINO-LOGGING-PLAN.md](./PINO-LOGGING-PLAN.md) + [ADR-002](./adr/ADR-002-alerting-monitoring.md)
 
 ### 10.3 WAS SICH NICHT ÄNDERT
 
@@ -1783,11 +1703,10 @@ async function bootstrap() {
 │ ✅ pnpm Workspaces                          │
 │ ✅ PostgreSQL 17 + RLS                      │
 │ ✅ Redis 7                                  │
-│ ✅ Zod Validation (wird mit nestjs-zod besser) │
+│ ✅ Zod Validation (nestjs-zod)              │
 │ ✅ Tailwind 4                               │
 │ ✅ TypeScript 5.9 strict                    │
 │ ✅ Docker Compose Setup                     │
-│ ✅ Winston Logger                           │
 │ ✅ ESLint Security Rules                    │
 └─────────────────────────────────────────────┘
 ```
@@ -1798,11 +1717,11 @@ async function bootstrap() {
 ┌─────────────────────────────────────────────┐
 │           SPÄTER ODER NIE                    │
 ├─────────────────────────────────────────────┤
-│ ❌ Pino Migration (68 Files!)               │
 │ ❌ Kubernetes (Docker Compose reicht)       │
 │ ❌ Microservices (NestJS Monolith ist richtig) │
 │ ❌ Event Sourcing (YAGNI)                   │
 │ ❌ CQRS (YAGNI)                             │
+│ ❌ Sentry Self-Hosted (32GB RAM = Overkill) │
 └─────────────────────────────────────────────┘
 ```
 

@@ -21,6 +21,7 @@ import {
 import { ClsService } from 'nestjs-cls';
 import { v7 as uuidv7 } from 'uuid';
 
+import { eventBus } from '../../utils/eventBus.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   AddParticipantsBody,
@@ -150,7 +151,7 @@ interface ConversationParticipant {
   username: string;
   firstName: string;
   lastName: string;
-  profilePictureUrl: string | null;
+  profileImageUrl: string | undefined;
   joinedAt: Date;
   isActive: boolean;
 }
@@ -546,6 +547,20 @@ export class ChatService {
     );
   }
 
+  /** Get participant IDs for a conversation, excluding the sender */
+  private async getConversationRecipientIds(
+    conversationId: number,
+    excludeUserId: number,
+  ): Promise<number[]> {
+    const participants = await this.databaseService.query<{ user_id: number }>(
+      `SELECT user_id FROM conversation_participants WHERE conversation_id = $1`,
+      [conversationId],
+    );
+    return participants
+      .map((p: { user_id: number }) => p.user_id)
+      .filter((id: number) => id !== excludeUserId);
+  }
+
   /** Transform conversation row to API format */
   private mapConversationToApiFormat(
     conv: ConversationRow,
@@ -560,7 +575,7 @@ export class ChatService {
         username: p.username,
         firstName: p.first_name ?? '',
         lastName: p.last_name ?? '',
-        profilePictureUrl: p.profile_picture,
+        profileImageUrl: p.profile_picture ?? undefined,
         joinedAt: new Date(p.joined_at),
         isActive: true,
       }));
@@ -635,7 +650,7 @@ export class ChatService {
       username: p.username,
       firstName: p.first_name ?? '',
       lastName: p.last_name ?? '',
-      profilePictureUrl: p.profile_picture,
+      profileImageUrl: p.profile_picture ?? undefined,
       joinedAt: new Date(p.joined_at),
       isActive: true,
     }));
@@ -981,6 +996,16 @@ export class ChatService {
     );
     await this.updateConversationTimestamp(conversationId, tenantId);
     const sender = await this.fetchSenderInfo(senderId, tenantId);
+
+    // Emit event for SSE notifications (notify all participants except sender)
+    const recipientIds = await this.getConversationRecipientIds(conversationId, senderId);
+    eventBus.emitNewMessage(tenantId, {
+      id: messageId,
+      conversationId,
+      senderId,
+      recipientIds,
+      preview: content.substring(0, 50),
+    });
 
     return {
       message: this.buildSentMessage(

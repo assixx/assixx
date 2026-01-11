@@ -15,7 +15,9 @@
   import { page } from '$app/stores';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+  import NotificationBadge from '$lib/components/NotificationBadge.svelte';
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
@@ -111,6 +113,8 @@
     url?: string;
     hasSubmenu?: boolean;
     submenu?: NavItem[];
+    /** Badge type for real-time notification count */
+    badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat';
   }
 
   const ICONS: Record<string, string> = {
@@ -144,7 +148,7 @@
     { id: 'admins', icon: ICONS.admin, label: 'Administratoren', url: '/manage-admins' },
     { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
     { id: 'departments', icon: ICONS.building, label: 'Abteilungen', url: '/manage-departments' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat' },
+    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
     { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
     { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
     { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/root-profile' },
@@ -182,7 +186,7 @@
       ],
     },
     { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat' },
+    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
     { id: 'settings', icon: ICONS.settings, label: 'Einstellungen', url: '#settings' },
     { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/admin-profile' },
   ]);
@@ -208,7 +212,7 @@
         { id: 'surveys', label: 'Umfragen', url: '/survey-employee' },
       ],
     },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat' },
+    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
     { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
     { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/employee-profile' },
   ]);
@@ -455,6 +459,10 @@
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)
     sessionManagerInstance = getSessionManager();
+
+    // Load initial counts and connect to SSE for real-time notifications
+    void notificationStore.loadInitialCounts();
+    notificationStore.connect();
   });
 
   onDestroy(() => {
@@ -465,6 +473,8 @@
     if (sessionManagerInstance !== null) {
       sessionManagerInstance.destroy();
     }
+    // Disconnect SSE
+    notificationStore.disconnect();
   });
 </script>
 
@@ -561,7 +571,7 @@
                   }}
                 >
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                  <span class="icon">{@html item.icon}</span>
+                  <span class="icon" style="position: relative;">{@html item.icon}</span>
                   <span class="label">{item.label}</span>
                   <span class="submenu-arrow">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
@@ -582,8 +592,16 @@
             {:else}
               <li class="sidebar-item" class:active={isActive(item)}>
                 <a href={resolveDynamicPath(item.url ?? '')} class="sidebar-link">
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                  <span class="icon">{@html item.icon}</span>
+                  <span class="icon" style="position: relative;">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- Hardcoded ICONS, safe -->
+                    {@html item.icon}
+                    {#if item.badgeType}
+                      <NotificationBadge
+                        count={notificationStore.counts[item.badgeType]}
+                        size="sm"
+                      />
+                    {/if}
+                  </span>
                   <span class="label">{item.label}</span>
                 </a>
               </li>

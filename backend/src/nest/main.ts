@@ -82,7 +82,11 @@ interface ProjectPaths {
 
 /** Calculate project paths based on Docker setup */
 function getProjectPaths(): ProjectPaths {
-  const projectRoot = path.resolve(process.cwd(), '..');
+  // In Docker: process.cwd() = /app (backend directory)
+  // Uploads are at /app/uploads (volume mounted)
+  // Frontend is at /app/../frontend = /frontend (not used in Docker)
+  const backendRoot = process.cwd(); // /app
+  const projectRoot = path.resolve(backendRoot, '..');
   const frontendPath = path.join(projectRoot, 'frontend');
   const distPath = path.join(frontendPath, 'dist');
 
@@ -91,7 +95,8 @@ function getProjectPaths(): ProjectPaths {
     distPath,
     publicPath: path.join(frontendPath, 'public'),
     srcPath: path.join(frontendPath, 'src'),
-    uploadsPath: path.join(projectRoot, 'uploads'),
+    // Uploads are in backend directory, not project root
+    uploadsPath: path.join(backendRoot, 'uploads'),
     pagesPath: path.join(distPath, 'pages'),
     storybookPath: path.join(projectRoot, 'storybook-static'),
   };

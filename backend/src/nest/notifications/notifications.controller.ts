@@ -91,6 +91,13 @@ interface NotificationEventData {
     title: string;
     submitted_by: string;
   };
+  message?: {
+    id: number;
+    conversationId: number;
+    senderId: number;
+    recipientIds: number[];
+    preview?: string;
+  };
 }
 
 /**
@@ -109,6 +116,7 @@ const SSE_EVENTS = {
   SURVEY_UPDATED: 'survey.updated',
   DOCUMENT_UPLOADED: 'document.uploaded',
   KVP_SUBMITTED: 'kvp.submitted',
+  MESSAGE_CREATED: 'message.created',
 } as const;
 
 /**
@@ -137,11 +145,40 @@ function createSSEHandler(
 }
 
 /**
+ * Create SSE message handler that checks if user is a recipient
+ */
+function createMessageHandler(
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): (eventData: NotificationEventData) => void {
+  return (eventData: NotificationEventData): void => {
+    const { message } = eventData;
+    if (eventData.tenantId !== tenantId || message === undefined) return;
+    if (!message.recipientIds.includes(userId)) return;
+
+    eventSubject.next({
+      data: {
+        type: 'NEW_MESSAGE',
+        message: {
+          id: message.id,
+          conversationId: message.conversationId,
+          senderId: message.senderId,
+          preview: message.preview,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+}
+
+/**
  * Register SSE handlers based on user role
  */
 function registerSSEHandlers(
   role: string,
   tenantId: number,
+  userId: number,
   eventSubject: Subject<{ data: SSEMessageData }>,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
@@ -150,6 +187,11 @@ function registerSSEHandlers(
   const documentHandler = createSSEHandler('NEW_DOCUMENT', 'document', tenantId, eventSubject);
   eventBus.on(SSE_EVENTS.DOCUMENT_UPLOADED, documentHandler);
   handlers.push({ event: SSE_EVENTS.DOCUMENT_UPLOADED, handler: documentHandler });
+
+  // Message notifications for all users (checks recipientIds inside handler)
+  const messageHandler = createMessageHandler(userId, tenantId, eventSubject);
+  eventBus.on(SSE_EVENTS.MESSAGE_CREATED, messageHandler);
+  handlers.push({ event: SSE_EVENTS.MESSAGE_CREATED, handler: messageHandler });
 
   // Survey notifications for employees
   if (role === 'employee') {
@@ -442,7 +484,7 @@ export class NotificationsController {
     );
 
     // Register handlers and setup cleanup
-    const handlers = registerSSEHandlers(role, tenantId, eventSubject);
+    const handlers = registerSSEHandlers(role, tenantId, userId, eventSubject);
     eventSubject.pipe(takeUntil(destroy$)).subscribe({
       complete: (): void => {
         cleanupSSEHandlers(handlers);
@@ -483,6 +525,7 @@ export class NotificationsController {
         [SSE_EVENTS.SURVEY_UPDATED]: eventBus.getListenerCount(SSE_EVENTS.SURVEY_UPDATED),
         [SSE_EVENTS.DOCUMENT_UPLOADED]: eventBus.getListenerCount(SSE_EVENTS.DOCUMENT_UPLOADED),
         [SSE_EVENTS.KVP_SUBMITTED]: eventBus.getListenerCount(SSE_EVENTS.KVP_SUBMITTED),
+        [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(SSE_EVENTS.MESSAGE_CREATED),
       },
       timestamp: new Date().toISOString(),
     };

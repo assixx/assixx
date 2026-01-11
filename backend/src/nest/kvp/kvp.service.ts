@@ -7,6 +7,7 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
@@ -567,7 +568,16 @@ export class KvpService {
       throw new Error('Failed to create suggestion');
     }
 
-    return await this.getSuggestionById(rows[0].id, tenantId, userId, 'admin');
+    const createdSuggestion = await this.getSuggestionById(rows[0].id, tenantId, userId, 'admin');
+
+    // Emit SSE event for real-time notifications
+    eventBus.emitKvpSubmitted(tenantId, {
+      id: rows[0].id,
+      title: dto.title,
+      submitted_by: String(userId),
+    });
+
+    return createdSuggestion;
   }
 
   /** Build suggestion update clause from DTO */

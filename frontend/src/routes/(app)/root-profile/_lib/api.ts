@@ -101,7 +101,7 @@ export function loadProfilePicture(userPicture?: string): string | null {
  */
 export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   try {
-    const result: unknown = await apiClient.get('/tenant-deletion/pending-approvals');
+    const result: unknown = await apiClient.get('/root/deletion-approvals/pending');
     return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
   } catch (err) {
     console.warn('[RootProfile] Could not load approvals:', err);
@@ -176,18 +176,18 @@ export async function changePassword(payload: PasswordChangePayload): Promise<vo
 
 /**
  * Approve tenant deletion request
- * @param id - Approval request ID
+ * @param id - Approval queue ID
  */
 export async function approveRequest(id: number): Promise<void> {
-  await apiClient.post(`/tenant-deletion/${id}/approve`);
+  await apiClient.post(`/root/deletion-approvals/${id}/approve`);
 }
 
 /**
  * Reject tenant deletion request
- * @param id - Approval request ID
+ * @param id - Approval queue ID
  */
 export async function rejectRequest(id: number): Promise<void> {
-  await apiClient.post(`/tenant-deletion/${id}/reject`);
+  await apiClient.post(`/root/deletion-approvals/${id}/reject`);
 }
 
 /**

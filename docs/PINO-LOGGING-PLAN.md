@@ -4,8 +4,48 @@
 > **Priority:** HIGH (Security + Production Quality)
 > **Estimated Effort:** 2-3 Development Sessions
 > **Created:** 2026-01-06
-> **Updated:** 2026-01-06 (Corrected after codebase analysis)
+> **Updated:** 2026-01-11
 > **Branch:** `feature/pino-logging`
+> **Related:** [ADR-002: Alerting & Monitoring](./adr/ADR-002-alerting-monitoring.md)
+
+---
+
+## Zusammenhang mit ADR-002 (Alerting & Monitoring)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    OBSERVABILITY STACK                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  LOGGING (dieser Plan)         ERROR TRACKING (ADR-002)     │
+│  ══════════════════════        ═════════════════════════     │
+│  Pino ersetzt Winston          Sentry SaaS                  │
+│  ├── Strukturierte Logs        ├── Exception Capture        │
+│  ├── Redaction (Passwords)     ├── Stack Traces             │
+│  ├── Performance (5x faster)   ├── Session Replay           │
+│  └── JSON Output               └── Alerting                 │
+│           │                                                  │
+│           │ Phase 5 (optional)                              │
+│           ▼                                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  PLG STACK (ADR-002)                                │    │
+│  │  pino-loki → Loki → Grafana                        │    │
+│  │  Prometheus → Grafana                               │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+
+Reihenfolge:
+1. PINO-LOGGING-PLAN (dieser) → Winston → Pino
+2. ADR-002 Sentry              → Error Tracking
+3. ADR-002 PLG Stack           → Pino-Logs nach Loki (optional)
+```
+
+**Warum Pino zuerst?**
+
+- Sentry tracked Errors, ersetzt aber kein Logging
+- PLG Stack braucht Pino-Logs (via pino-loki Transport)
+- Ohne Pino keine saubere Observability
 
 ---
 

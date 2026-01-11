@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   // Parallel fetch: profile + pending approvals
   const [profileData, approvalsData] = await Promise.all([
     apiFetch<UserProfile>('/users/me', token, fetch),
-    apiFetch<ApprovalItem[]>('/tenant-deletion/pending-approvals', token, fetch),
+    apiFetch<ApprovalItem[]>('/root/deletion-approvals/pending', token, fetch),
   ]);
 
   return {

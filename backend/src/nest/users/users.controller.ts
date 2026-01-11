@@ -60,52 +60,30 @@ import {
 import type { PaginatedResult, SafeUserResponse } from './users.service.js';
 import { UsersService } from './users.service.js';
 
-const { diskStorage } = multer;
+const { memoryStorage } = multer;
 
-/** Multer file type for callbacks */
+/** Multer file type for memory storage */
 interface MulterFile {
   fieldname: string;
   originalname: string;
   encoding: string;
   mimetype: string;
-  size?: number;
-  destination?: string;
-  filename?: string;
-  path?: string;
-  buffer?: Buffer;
+  size: number;
+  buffer: Buffer;
 }
 
-/**
- * Multer disk storage for profile pictures
- */
-const profilePictureStorage = diskStorage({
-  destination: (
-    _req: unknown,
-    _file: MulterFile,
-    cb: (error: Error | null, destination: string) => void,
-  ) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'profile-pictures');
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (
-    _req: unknown,
-    file: MulterFile,
-    cb: (error: Error | null, filename: string) => void,
-  ) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv7()}${ext}`);
-  },
-});
+/** Allowed MIME types for profile pictures */
+const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+/** Profile pictures upload directory */
+const PROFILE_PICTURES_DIR = 'uploads/profile_pictures';
 
 /**
- * Multer options for profile picture uploads
+ * Multer options for profile picture uploads (memory storage)
+ * Files are saved manually in the controller for fastify-multer compatibility
  */
 const profilePictureOptions = {
-  storage: profilePictureStorage,
+  storage: memoryStorage(),
   limits: {
     fileSize: 2 * 1024 * 1024, // 2MB
   },
@@ -114,8 +92,7 @@ const profilePictureOptions = {
     file: MulterFile,
     cb: (error: Error | null, acceptFile: boolean) => void,
   ) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedMimes.includes(file.mimetype)) {
+    if (ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new BadRequestException('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
@@ -321,6 +298,7 @@ export class UsersController {
   /**
    * POST /users/me/profile-picture
    * Upload profile picture for current user
+   * Uses memory storage + manual file write for fastify-multer compatibility
    */
   @Post('me/profile-picture')
   @UseInterceptors(FileInterceptor('profilePicture', profilePictureOptions))
@@ -329,10 +307,28 @@ export class UsersController {
     @UploadedFile() file: MulterFile | undefined,
     @CurrentUser() user: NestAuthUser,
   ): Promise<SafeUserResponse> {
-    if (file?.path === undefined) {
+    if (file?.buffer === undefined) {
       throw new BadRequestException('No file uploaded');
     }
-    return await this.usersService.updateProfilePicture(user.id, file.path, user.tenantId);
+
+    // Generate unique filename with UUIDv7
+    const ext = path.extname(file.originalname).toLowerCase();
+    const filename = `${uuidv7()}${ext}`;
+    const uploadDir = path.join(process.cwd(), PROFILE_PICTURES_DIR);
+    const filePath = path.join(uploadDir, filename);
+    const relativePath = path.join(PROFILE_PICTURES_DIR, filename);
+
+    // Ensure upload directory exists
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Write file to disk
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath built from constant dir + UUIDv7 + validated extension
+    fs.writeFileSync(filePath, file.buffer);
+
+    return await this.usersService.updateProfilePicture(user.id, relativePath, user.tenantId);
   }
 
   /**
