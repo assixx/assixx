@@ -4,7 +4,7 @@ FROM node:24.12.0-alpine3.22 AS builder
 
 # pnpm installieren (pinned version matching packageManager field)
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.26.0
+RUN npm install -g npm@latest pnpm@10.28.0
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -35,7 +35,7 @@ FROM node:24.12.0-alpine3.22
 # pnpm installieren (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.26.0
+RUN npm install -g npm@latest pnpm@10.28.0
 
 # Install dumb-init for proper signal handling (SIGTERM, SIGINT)
 # This ensures graceful shutdown when Node.js runs as PID 1

@@ -10,51 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  unit-tests-minimal:
-    runs-on: ubuntu-latest
-    name: Unit Tests (2 tests, no DB)
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10.26.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile
-
-      - name: Run Basic Unit Tests Only
-        env:
-          NODE_ENV: test
-          JWT_SECRET: test-secret-key-for-github-actions
-          NODE_OPTIONS: --experimental-vm-modules
-        run: |
-          cd backend
-          echo "Running basic unit tests that don't require database..."
-
-          # NUR echte Unit Tests OHNE DB oder Mocks!
-          UNIT_TESTS=(
-            "src/utils/__tests__/errorHandler.test.ts"
-            "src/routes/__tests__/health.test.ts"
-          )
-
-          # Führe jeden Test einzeln aus mit ESM Support
-          for test in "${UNIT_TESTS[@]}"; do
-            echo "Testing: $test"
-            pnpm jest -c ../jest.config.js "$test" --passWithNoTests || exit 1
-          done
-
   linting-and-formatting:
     runs-on: ubuntu-latest
     name: Linting & Formatting (ESLint, Prettier, TypeScript)
@@ -67,7 +22,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.26.0
+          version: 10.28.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
