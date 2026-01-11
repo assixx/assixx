@@ -42,7 +42,6 @@
   backdrop-filter: blur(10px);
 
   transition: all var(--transition-normal);
-  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 50%;
 
   background: rgb(255 255 255 / 2%);

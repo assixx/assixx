@@ -16,6 +16,31 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+/**
+ * Extract data from API response, handling multiple response formats.
+ * API can return: {success: true, data: T} or {data: T} or T directly.
+ */
+function extractResponseData<T>(json: ApiResponse<T>): unknown {
+  if ('success' in json && json.success === true) {
+    return json.data ?? null;
+  }
+  if ('data' in json && json.data !== undefined) {
+    return json.data;
+  }
+  return json;
+}
+
+/**
+ * Check if data represents an empty nested response.
+ * API sometimes returns: {success: true, data: {data: null, message: "..."}}
+ */
+function isEmptyNestedResponse(data: unknown): boolean {
+  if (data === null || typeof data !== 'object') {
+    return false;
+  }
+  return 'data' in data && (data as { data: unknown }).data === null;
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -30,20 +55,19 @@ async function apiFetch<T>(
     });
 
     if (!response.ok) {
-      // 404 means no pending deletion
       if (response.status === 404) return null;
       console.error(`[SSR] API error ${response.status} for ${endpoint}`);
       return null;
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
+    const data = extractResponseData(json);
+
+    if (isEmptyNestedResponse(data)) {
+      return null;
     }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
+
+    return data as T | null;
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;
@@ -64,7 +88,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Load pending deletion status
   const deletionStatus = await apiFetch<DeletionStatusData>(
-    '/tenant-deletion/status',
+    '/root/tenant/deletion-status',
     token,
     fetch,
   );

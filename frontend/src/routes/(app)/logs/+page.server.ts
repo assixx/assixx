@@ -33,7 +33,10 @@ function getEmptyResponse(): { logs: LogEntry[]; pagination: PaginationInfo } {
 }
 
 /** Parse API response handling different formats */
-function parseLogsResponse(json: LogsApiResponse): { logs: LogEntry[]; pagination: PaginationInfo } {
+function parseLogsResponse(json: LogsApiResponse): {
+  logs: LogEntry[];
+  pagination: PaginationInfo;
+} {
   const defaultPagination: PaginationInfo = {
     limit: LOGS_PER_PAGE,
     offset: 0,

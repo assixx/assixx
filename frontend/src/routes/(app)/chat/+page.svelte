@@ -10,6 +10,7 @@
   import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getTokenManager } from '$lib/utils/token-manager';
 
   import '../../../styles/chat.css';
@@ -167,6 +168,9 @@
 
   onMount(() => {
     if (!browser) return;
+
+    // Reset chat notification count when visiting the chat page
+    notificationStore.resetCount('chat');
 
     // Initialize local state from SSR data (one-time, browser-only)
     // Best practice: Do state initialization in onMount, not $effect

@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateSurveyDto } from './dto/create-survey.dto.js';
@@ -735,7 +736,17 @@ export class SurveysService {
     if (dto.assignments !== undefined && dto.assignments.length > 0) {
       await this.insertSurveyAssignments(tenantId, surveyId, dto.assignments);
     }
-    return await this.getSurveyById(surveyId, tenantId, userId, 'admin');
+
+    const createdSurvey = await this.getSurveyById(surveyId, tenantId, userId, 'admin');
+
+    // Emit SSE event for real-time notifications
+    eventBus.emitSurveyCreated(tenantId, {
+      id: surveyId,
+      title: dto.title,
+      ...(dto.endDate !== undefined && dto.endDate !== null ? { deadline: dto.endDate } : {}),
+    });
+
+    return createdSurvey;
   }
 
   async updateSurvey(
@@ -785,7 +796,18 @@ export class SurveysService {
       await this.db.query('DELETE FROM survey_assignments WHERE survey_id = $1', [id]);
       await this.insertSurveyAssignments(tenantId, id, dto.assignments);
     }
-    return await this.getSurveyById(id, tenantId, userId, userRole);
+
+    const updatedSurvey = await this.getSurveyById(id, tenantId, userId, userRole);
+
+    // Emit SSE event for real-time notifications
+    const deadline = dto.endDate ?? (existingSurvey['endDate'] as string | undefined);
+    eventBus.emitSurveyUpdated(tenantId, {
+      id,
+      title: dto.title ?? (existingSurvey['title'] as string),
+      ...(deadline !== undefined ? { deadline } : {}),
+    });
+
+    return updatedSurvey;
   }
 
   /** Validates update permissions and state */

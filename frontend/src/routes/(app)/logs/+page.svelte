@@ -414,7 +414,12 @@
             <i class="fas fa-filter mr-2"></i>
             Filter anwenden
           </button>
-          <button type="button" class="btn btn-cancel" onclick={resetFilters} disabled={!filtersApplied}>
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={resetFilters}
+            disabled={!filtersApplied}
+          >
             <i class="fas fa-undo mr-2"></i>
             Zurücksetzen
           </button>
@@ -659,7 +664,12 @@
       <!-- Footer -->
       <div class="ds-modal__footer">
         <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
-        <button type="button" class="btn btn-danger" onclick={handleDeleteLogs} disabled={!canConfirmDelete}>
+        <button
+          type="button"
+          class="btn btn-danger"
+          onclick={handleDeleteLogs}
+          disabled={!canConfirmDelete}
+        >
           <i class="fas fa-trash mr-2"></i>
           Endgültig löschen
         </button>

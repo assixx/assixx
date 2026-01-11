@@ -5,8 +5,8 @@
   import {
     highlightSearchTerm,
     formatConversationTime,
-    getConversationDisplayName,
     getConversationAvatar,
+    getChatPartnerName,
     getRoleLabel,
     getRoleBadgeClass,
   } from './utils';
@@ -114,7 +114,12 @@
               }}
             >
               <div class="flex items-center gap-3 w-full">
-                <div class="avatar avatar--sm {getAvatarColorClass(user.id)}">
+                <div
+                  class="avatar avatar--sm {user.profileImageUrl !== undefined &&
+                  user.profileImageUrl !== ''
+                    ? ''
+                    : getAvatarColorClass(user.id)}"
+                >
                   {#if user.profileImageUrl}
                     <img src={user.profileImageUrl} alt={user.username} class="avatar__image" />
                   {:else}
@@ -176,7 +181,11 @@
             onselectconversation(conv);
           }}
         >
-          <div class="avatar {getAvatarColorClass(partner?.id)}">
+          <div
+            class="avatar {getConversationAvatar(conv, currentUserId) !== null
+              ? ''
+              : getAvatarColorClass(partner?.id)}"
+          >
             {#if getConversationAvatar(conv, currentUserId)}
               <img src={getConversationAvatar(conv, currentUserId)} alt="" class="avatar__image" />
             {:else}
@@ -190,7 +199,7 @@
           </div>
           <div class="conversation-info">
             <h4 class="conversation-name">
-              {getConversationDisplayName(conv, currentUserId)}
+              {conv.name ?? getChatPartnerName(partner ?? null, undefined)}
             </h4>
             {#if conv.lastMessage}
               <p class="conversation-preview">{conv.lastMessage.content}</p>

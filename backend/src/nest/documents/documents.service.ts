@@ -14,6 +14,7 @@ import {
 import fs from 'fs/promises';
 import path from 'path';
 
+import { eventBus } from '../../utils/eventBus.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
@@ -669,23 +670,40 @@ export class DocumentsService {
     tenantId: number,
   ): Promise<DocumentResponse> {
     this.logger.log(`Creating document for tenant ${tenantId}`);
+    this.validateDocumentInput(data);
 
-    // Validate category
-    if (!ALLOWED_CATEGORIES.includes(data.category)) {
-      throw new BadRequestException('Invalid document category');
-    }
-
-    // Validate mime type
-    if (!ALLOWED_MIME_TYPES.includes(data.mimeType)) {
-      throw new BadRequestException('File type not allowed');
-    }
-
-    // Write file to disk if filesystem storage
     if (data.storageType === 'filesystem' && data.filePath !== undefined) {
       await this.writeFileToDisk(data.filePath, data.fileContent);
     }
 
-    // Insert document - uuid is required (NOT NULL), file_uuid is optional
+    const documentId = await this.insertDocumentRecord(data, userId, tenantId);
+    const createdDocument = await this.getDocumentById(documentId, tenantId, userId);
+
+    eventBus.emitDocumentUploaded(tenantId, {
+      id: documentId,
+      filename: data.originalName,
+      category: data.category,
+    });
+
+    return createdDocument;
+  }
+
+  /** Validate document input data */
+  private validateDocumentInput(data: DocumentCreateInput): void {
+    if (!ALLOWED_CATEGORIES.includes(data.category)) {
+      throw new BadRequestException('Invalid document category');
+    }
+    if (!ALLOWED_MIME_TYPES.includes(data.mimeType)) {
+      throw new BadRequestException('File type not allowed');
+    }
+  }
+
+  /** Insert document record and return its ID */
+  private async insertDocumentRecord(
+    data: DocumentCreateInput,
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO documents (
         uuid, tenant_id, filename, original_name, file_size, mime_type, category,
@@ -697,7 +715,7 @@ export class DocumentsService {
         $17, $18, $19, $20, $21, $22, 1
       ) RETURNING id`,
       [
-        data.fileUuid, // uuid column (required, use fileUuid from controller)
+        data.fileUuid,
         tenantId,
         data.filename,
         data.originalName,
@@ -716,7 +734,7 @@ export class DocumentsService {
         data.conversationId ?? null,
         data.tags !== undefined ? JSON.stringify(data.tags) : null,
         userId,
-        data.fileUuid ?? null, // file_uuid column (optional, same value)
+        data.fileUuid ?? null,
         data.fileChecksum ?? null,
         data.filePath ?? null,
         data.storageType ?? 'filesystem',
@@ -727,8 +745,7 @@ export class DocumentsService {
     if (documentId === undefined) {
       throw new Error('Failed to create document');
     }
-
-    return await this.getDocumentById(documentId, tenantId, userId);
+    return documentId;
   }
 
   // ============================================
