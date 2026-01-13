@@ -100,8 +100,9 @@ jobs:
           # Use CI override to reduce resource limits (GitHub runners have only 2 CPUs)
           # IMPORTANT: Build images FIRST, then start. This prevents race conditions where
           # deletion-worker tries to pull assixx-backend:ci before backend finishes building it.
-          cd docker && docker compose -f docker-compose.yml -f docker-compose.ci.yml build
-          cd docker && docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+          cd docker && \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml build && \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
           # Wait for PostgreSQL to be HEALTHY
           echo "Waiting for PostgreSQL to be HEALTHY..."
