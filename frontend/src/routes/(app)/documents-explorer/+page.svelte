@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable max-lines -- SSR page with modals, breadcrumb, document management */
   /**
    * Documents Explorer - Page Component
    * SSR: Data loaded in +page.server.ts
@@ -29,7 +30,13 @@
     isSessionExpiredError,
   } from './_lib/api';
   import ChatFoldersList from './_lib/ChatFoldersList.svelte';
-  import { SORT_OPTIONS, SORT_LABELS, CATEGORY_MAPPINGS, MESSAGES } from './_lib/constants';
+  import {
+    SORT_OPTIONS,
+    SORT_LABELS,
+    CATEGORY_MAPPINGS,
+    CATEGORY_LABELS,
+    MESSAGES,
+  } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import DocumentGridView from './_lib/DocumentGridView.svelte';
   import DocumentListView from './_lib/DocumentListView.svelte';
@@ -132,6 +139,12 @@
   const isViewingChatFolders = $derived(
     currentCategory === 'chat' && selectedConversationId === null,
   );
+  const selectedChatFolderName = $derived.by(() => {
+    if (selectedConversationId === null) return null;
+    const folder = chatFolders.find((f) => f.conversationId === selectedConversationId);
+    if (folder === undefined) return null;
+    return folder.isGroup && folder.groupName !== null ? folder.groupName : folder.participantName;
+  });
 
   function applyFilters() {
     filteredDocuments = applyAllFilters(allDocuments, currentCategory, searchQuery, sortOption);
@@ -166,13 +179,42 @@
   }
 
   async function loadChatAttachments(conversationId: number) {
+    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
+    const folder = chatFolders.find((f) => f.conversationId === conversationId);
+    const folderName =
+      folder !== undefined
+        ? folder.isGroup && folder.groupName !== null
+          ? folder.groupName
+          : folder.participantName
+        : `Conversation#${conversationId}`;
+
     loading = true;
     selectedConversationId = conversationId;
+
+    const newPath = buildBreadcrumbPath(currentCategory, conversationId);
+    log.debug(
+      {
+        action: 'loadChatAttachments',
+        from: { path: previousPath },
+        to: { conversationId, folderName, path: newPath },
+        trigger: 'ChatFoldersList click',
+      },
+      '[NAV] Chat folder click: %s → %s',
+      previousPath,
+      newPath,
+    );
+
     try {
       allDocuments = await apiFetchChatAttachments(conversationId);
+      log.debug(
+        { conversationId, documentCount: allDocuments.length, path: newPath },
+        '[NAV] Loaded %d attachments for conversation %d',
+        allDocuments.length,
+        conversationId,
+      );
       applyFilters();
     } catch (err) {
-      log.error({ err }, 'Error loading chat attachments');
+      log.error({ err, conversationId }, 'Error loading chat attachments');
       error = MESSAGES.ERROR_LOAD_FAILED;
     } finally {
       loading = false;
@@ -197,9 +239,50 @@
 
   // CATEGORY NAVIGATION
   function navigateToCategory(category: DocumentCategory) {
-    if (currentCategory === category) return;
+    const previousCategory = currentCategory;
+    const previousConversationId = selectedConversationId;
+    const previousPath = buildBreadcrumbPath(previousCategory, previousConversationId);
+
+    if (currentCategory === category && selectedConversationId === null) {
+      log.debug({ category, path: previousPath }, '[NAV] Category unchanged, ignoring click');
+      return;
+    }
+
+    // CRITICAL: If leaving chat category OR leaving a chat conversation,
+    // restore allDocuments from SSR data because loadChatAttachments()
+    // replaced allDocuments with only chat attachments
+    const leavingChatCategory = previousCategory === 'chat' && category !== 'chat';
+    const wasInChatConversation = previousConversationId !== null;
+    if (leavingChatCategory || wasInChatConversation) {
+      log.debug(
+        {
+          leavingChatCategory,
+          wasInChatConversation,
+          previousConversationId,
+          ssrDocCount: ssrDocuments.length,
+        },
+        '[NAV] Restoring allDocuments from SSR data',
+      );
+      allDocuments = [...ssrDocuments];
+    }
+
     currentCategory = category;
     selectedConversationId = null;
+
+    const newPath = buildBreadcrumbPath(category, null);
+    log.debug(
+      {
+        action: 'navigateToCategory',
+        from: { category: previousCategory, path: previousPath },
+        to: { category, path: newPath },
+        label: CATEGORY_LABELS[category],
+        restoredDocs: leavingChatCategory || wasInChatConversation,
+      },
+      '[NAV] Folder tree click: %s → %s',
+      previousPath,
+      newPath,
+    );
+
     if (category === 'chat' && !chatFoldersLoaded) {
       void loadChatFolders();
     }
@@ -211,7 +294,37 @@
     }
   }
 
+  /** Build breadcrumb path string for logging */
+  function buildBreadcrumbPath(category: DocumentCategory, conversationId: number | null): string {
+    if (category === 'all') return '/Alle Dokumente';
+    const categoryLabel = CATEGORY_LABELS[category];
+    if (conversationId === null) return `/Alle Dokumente/${categoryLabel}`;
+    const folder = chatFolders.find((f) => f.conversationId === conversationId);
+    const folderName =
+      folder !== undefined
+        ? folder.isGroup && folder.groupName !== null
+          ? folder.groupName
+          : folder.participantName
+        : `Conversation#${conversationId}`;
+    return `/Alle Dokumente/${categoryLabel}/${folderName}`;
+  }
+
   function backToFolders() {
+    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
+    const newPath = buildBreadcrumbPath(currentCategory, null);
+
+    log.debug(
+      {
+        action: 'backToFolders',
+        from: { conversationId: selectedConversationId, path: previousPath },
+        to: { category: currentCategory, path: newPath },
+        trigger: 'back-to-folders-row OR breadcrumb',
+      },
+      '[NAV] Back to folders: %s → %s',
+      previousPath,
+      newPath,
+    );
+
     selectedConversationId = null;
     filteredDocuments = [];
   }
@@ -622,6 +735,46 @@
 
     <!-- Card Body -->
     <div class="card__body">
+      <!-- Breadcrumb Navigation -->
+      <nav class="breadcrumb mb-2" aria-label="Ordnerpfad">
+        {#if currentCategory === 'all'}
+          <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
+            <i class="fas fa-folder breadcrumb__icon" aria-hidden="true"></i>
+            {CATEGORY_LABELS.all}
+          </span>
+        {:else}
+          <button
+            type="button"
+            class="breadcrumb__item"
+            onclick={() => {
+              navigateToCategory('all');
+            }}
+          >
+            <i class="fas fa-folder breadcrumb__icon" aria-hidden="true"></i>
+            {CATEGORY_LABELS.all}
+          </button>
+          <span class="breadcrumb__separator" aria-hidden="true">
+            <i class="fas fa-chevron-right"></i>
+          </span>
+          {#if selectedConversationId !== null && selectedChatFolderName !== null}
+            <button type="button" class="breadcrumb__item" onclick={backToFolders}>
+              {CATEGORY_LABELS[currentCategory]}
+            </button>
+            <span class="breadcrumb__separator" aria-hidden="true">
+              <i class="fas fa-chevron-right"></i>
+            </span>
+            <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
+              <i class="fas fa-comments breadcrumb__icon" aria-hidden="true"></i>
+              {selectedChatFolderName}
+            </span>
+          {:else}
+            <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
+              {CATEGORY_LABELS[currentCategory]}
+            </span>
+          {/if}
+        {/if}
+      </nav>
+
       <div class="flex h-[600px]">
         <!-- Sidebar -->
         <FolderSidebar
@@ -650,7 +803,14 @@
               </div>
             {:else if isViewingChatFolders}
               <div class:hidden={viewMode !== 'list'}>
-                <ChatFoldersList folders={chatFolders} onfolderClick={loadChatAttachments} />
+                <ChatFoldersList
+                  folders={chatFolders}
+                  showBackToAll={true}
+                  onfolderClick={loadChatAttachments}
+                  onbackToAll={() => {
+                    navigateToCategory('all');
+                  }}
+                />
               </div>
             {:else}
               <div class:hidden={viewMode !== 'list'}>

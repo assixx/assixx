@@ -34,6 +34,7 @@ interface MessageEvent {
   tenantId: number;
   message: {
     id: number;
+    uuid: string;
     conversationId: number;
     senderId: number;
     recipientIds: number[];

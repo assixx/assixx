@@ -6,6 +6,7 @@
  * NOTE: Areas are flat (non-hierarchical) since 2025-11-29
  */
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
@@ -245,11 +246,12 @@ export class AreasService {
       throw new BadRequestException('Area name is required');
     }
 
+    const areaUuid = uuidv7();
     const [rows] = await execute<{ id: number }[]>(
       `INSERT INTO areas (
         tenant_id, name, description, area_lead_id, type, capacity,
-        address, created_by, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        address, created_by, is_active, uuid, uuid_created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
       RETURNING id`,
       [
         tenantId,
@@ -261,6 +263,7 @@ export class AreasService {
         dto.address ?? null,
         userId,
         1, // is_active = 1 (active)
+        areaUuid,
       ],
     );
 

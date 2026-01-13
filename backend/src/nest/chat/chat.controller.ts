@@ -21,13 +21,19 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@webundsoehne/nest-fastify-file-upload';
+import crypto from 'crypto';
 import type { FastifyReply } from 'fastify';
 import multer from 'fastify-multer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { v7 as uuidv7 } from 'uuid';
 
 import { getUploadDirectory, sanitizeFilename, validatePath } from '../../utils/pathSecurity.js';
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { DocumentsService } from '../documents/documents.service.js';
 import { ChatService } from './chat.service.js';
 import {
   AttachmentDocumentIdParamDto,
@@ -124,7 +130,10 @@ const fileFilter = (
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly documentsService: DocumentsService,
+  ) {}
 
   // ============================================================
   // USERS
@@ -325,8 +334,13 @@ export class ChatController {
 
   // ============================================================
   // DOCUMENT-BASED ATTACHMENTS (New system)
+  // Attachments are stored in documents table with conversation_id
   // ============================================================
 
+  /**
+   * POST /chat/conversations/:id/attachments
+   * Upload attachment to a conversation (stored as document)
+   */
   @Post('conversations/:id/attachments')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -335,40 +349,118 @@ export class ChatController {
       fileFilter,
     }),
   )
-  // eslint-disable-next-line @typescript-eslint/require-await -- Stub method, will have await when implemented
   async uploadConversationAttachment(
-    @Param() _params: ConversationAttachmentsParamDto,
-    @UploadedFile() _file?: MulterFile,
-  ): Promise<never> {
-    // TODO: Implement document-based attachment upload
-    throw new BadRequestException('Document-based attachments not yet implemented in NestJS');
+    @Param() params: ConversationAttachmentsParamDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @UploadedFile() file?: MulterFile,
+  ): Promise<Record<string, unknown>> {
+    if (!file?.buffer) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const conversationId = params.id;
+    const fileUuid = uuidv7();
+    const extension = path.extname(file.originalname).toLowerCase();
+    const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const storagePath = path.join(
+      'uploads',
+      'documents',
+      tenantId.toString(),
+      'chat',
+      year.toString(),
+      month,
+      `${fileUuid}${extension}`,
+    );
+
+    return await this.documentsService.createDocument(
+      {
+        filename: file.originalname,
+        originalName: file.originalname,
+        fileSize: file.size ?? 0,
+        fileContent: file.buffer,
+        mimeType: file.mimetype,
+        category: 'chat',
+        accessScope: 'chat',
+        conversationId,
+        fileUuid,
+        fileChecksum: checksum,
+        filePath: storagePath,
+        storageType: 'filesystem',
+      },
+      user.id,
+      tenantId,
+    );
   }
 
+  /**
+   * GET /chat/conversations/:id/attachments
+   * Get all attachments for a conversation
+   */
   @Get('conversations/:id/attachments')
-  // eslint-disable-next-line @typescript-eslint/require-await -- Stub method, will have await when implemented
   async getConversationAttachments(
-    @Param() _params: ConversationAttachmentsParamDto,
-  ): Promise<never> {
-    // TODO: Implement document-based attachment listing
-    throw new BadRequestException('Document-based attachments not yet implemented in NestJS');
+    @Param() params: ConversationAttachmentsParamDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ documents: Record<string, unknown>[]; total: number }> {
+    const result = await this.documentsService.listDocuments(tenantId, user.id, {
+      conversationId: params.id,
+      isActive: 1,
+      page: 1,
+      limit: 100,
+    });
+
+    return { documents: result.documents, total: result.pagination.total };
   }
 
+  /**
+   * GET /chat/attachments/:fileUuid/download
+   * Download attachment by file UUID
+   */
   @Get('attachments/:fileUuid/download')
-  // eslint-disable-next-line @typescript-eslint/require-await -- Stub method, will have await when implemented
   async downloadAttachmentByUuid(
-    @Param() _params: AttachmentFileUuidParamDto,
-    @Query() _query: AttachmentDownloadQueryDto,
-  ): Promise<never> {
-    // TODO: Implement document-based attachment download
-    throw new BadRequestException('Document-based attachments not yet implemented in NestJS');
+    @Param() params: AttachmentFileUuidParamDto,
+    @Query() query: AttachmentDownloadQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const document = await this.documentsService.getDocumentByFileUuid(
+      params.fileUuid,
+      tenantId,
+      user.id,
+    );
+    if (!document) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    const documentId = document['id'] as number;
+    const content = await this.documentsService.getDocumentContent(documentId, user.id, tenantId);
+    const disposition = query.inline === true ? 'inline' : 'attachment';
+
+    await reply
+      .header('Content-Type', content.mimeType)
+      .header('Content-Disposition', `${disposition}; filename="${content.originalName}"`)
+      .header('Content-Length', content.fileSize.toString())
+      .header('Cache-Control', 'private, max-age=3600')
+      .send(content.content);
   }
 
+  /**
+   * DELETE /chat/attachments/:documentId
+   * Delete a chat attachment
+   */
   @Delete('attachments/:documentId')
-  // eslint-disable-next-line @typescript-eslint/require-await -- Stub method, will have await when implemented
   async deleteConversationAttachment(
-    @Param() _params: AttachmentDocumentIdParamDto,
-  ): Promise<never> {
-    // TODO: Implement document-based attachment deletion
-    throw new BadRequestException('Document-based attachments not yet implemented in NestJS');
+    @Param() params: AttachmentDocumentIdParamDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ message: string }> {
+    await this.documentsService.deleteDocument(params.documentId, tenantId, user.id);
+    return { message: 'Attachment deleted successfully' };
   }
 }

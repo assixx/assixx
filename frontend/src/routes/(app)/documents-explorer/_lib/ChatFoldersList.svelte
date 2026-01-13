@@ -5,10 +5,12 @@
 
   interface Props {
     folders: ChatFolder[];
+    showBackToAll?: boolean;
     onfolderClick: (conversationId: number) => void;
+    onbackToAll?: () => void;
   }
 
-  const { folders, onfolderClick }: Props = $props();
+  const { folders, showBackToAll = false, onfolderClick, onbackToAll }: Props = $props();
 
   const placeholderRowCount = $derived(
     Math.max(0, MIN_LIST_ROWS - folders.length - (folders.length === 0 ? 1 : 0)),
@@ -28,6 +30,29 @@
       </tr>
     </thead>
     <tbody id="list-rows">
+      {#if showBackToAll && onbackToAll !== undefined}
+        <tr
+          class="back-to-folders-row cursor-pointer"
+          onclick={() => {
+            onbackToAll();
+          }}
+        >
+          <td>
+            <div class="flex items-center gap-3">
+              <i
+                class="fas fa-level-up-alt"
+                style="font-size: 24px; color: var(--color-content-secondary);"
+              ></i>
+              <span class="font-medium text-content-secondary">..</span>
+            </div>
+          </td>
+          <td class="text-content-tertiary">Übergeordneter Ordner</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      {/if}
       {#each folders as folder (folder.conversationId)}
         {@const displayName = folder.isGroup
           ? (folder.groupName ?? 'Gruppenname')

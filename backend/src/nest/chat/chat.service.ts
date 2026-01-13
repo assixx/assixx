@@ -987,7 +987,7 @@ export class ChatService {
     await this.verifyConversationAccess(conversationId, senderId, tenantId);
 
     const content = this.resolveMessageContent(dto.message, attachment);
-    const messageId = await this.insertMessageRecord(
+    const { id: messageId, uuid: messageUuid } = await this.insertMessageRecord(
       tenantId,
       conversationId,
       senderId,
@@ -1001,6 +1001,7 @@ export class ChatService {
     const recipientIds = await this.getConversationRecipientIds(conversationId, senderId);
     eventBus.emitNewMessage(tenantId, {
       id: messageId,
+      uuid: messageUuid,
       conversationId,
       senderId,
       recipientIds,
@@ -1034,19 +1035,21 @@ export class ChatService {
     return content;
   }
 
-  /** Insert a message record and return its ID */
+  /** Insert a message record and return its ID and UUID */
   private async insertMessageRecord(
     tenantId: number,
     conversationId: number,
     senderId: number,
     content: string,
     attachment?: MessageAttachmentInput,
-  ): Promise<number> {
-    const insertResult = await this.databaseService.query<{ id: number }>(
+  ): Promise<{ id: number; uuid: string }> {
+    const messageUuid = uuidv7();
+    const insertResult = await this.databaseService.query<{ id: number; uuid: string }>(
       `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
-         attachment_path, attachment_name, attachment_type, attachment_size, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-       RETURNING id`,
+         attachment_path, attachment_name, attachment_type, attachment_size,
+         uuid, uuid_created_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+       RETURNING id, uuid`,
       [
         tenantId,
         conversationId,
@@ -1056,9 +1059,10 @@ export class ChatService {
         attachment?.filename ?? null,
         attachment?.mimeType ?? null,
         attachment?.size ?? null,
+        messageUuid,
       ],
     );
-    return insertResult[0]?.id ?? 0;
+    return { id: insertResult[0]?.id ?? 0, uuid: insertResult[0]?.uuid ?? messageUuid };
   }
 
   /** Update conversation's updated_at timestamp */
@@ -1467,10 +1471,11 @@ export class ChatService {
     senderId: number,
     content: string,
   ): Promise<void> {
+    const messageUuid = uuidv7();
     await this.databaseService.query(
-      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, created_at)
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [tenantId, conversationId, senderId, content],
+      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+      [tenantId, conversationId, senderId, content, messageUuid],
     );
 
     await this.databaseService.query(

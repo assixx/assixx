@@ -8,6 +8,7 @@
  */
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
+import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateNotificationDto } from './dto/create-notification.dto.js';
@@ -256,11 +257,12 @@ export class NotificationsService {
   ): Promise<{ notificationId: number }> {
     this.logger.log(`Creating notification: ${dto.title}`);
 
+    const notificationUuid = uuidv7();
     const rows = await this.db.query<DbIdRow>(
       `INSERT INTO notifications
        (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
-        metadata, scheduled_for, created_by, tenant_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        metadata, scheduled_for, created_by, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
        RETURNING id`,
       [
         dto.type,
@@ -275,6 +277,7 @@ export class NotificationsService {
         dto.scheduledFor ?? null,
         createdBy,
         tenantId,
+        notificationUuid,
       ],
     );
 
@@ -921,5 +924,46 @@ export class NotificationsService {
     } catch (error: unknown) {
       this.logger.error('Failed to create audit log:', error);
     }
+  }
+
+  // ============================================================
+  // UUID-BASED METHODS (P1 Migration)
+  // ============================================================
+
+  /**
+   * Resolve notification UUID to internal ID
+   */
+  private async resolveNotificationIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.db.query<{ id: number }>(
+      `SELECT id FROM notifications WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    if (result[0] === undefined) {
+      throw new NotFoundException(`Notification with UUID ${uuid} not found`);
+    }
+    return result[0].id;
+  }
+
+  /**
+   * Mark notification as read by UUID
+   */
+  async markAsReadByUuid(uuid: string, userId: number, tenantId: number): Promise<void> {
+    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
+    await this.markAsRead(notificationId, userId, tenantId);
+  }
+
+  /**
+   * Delete notification by UUID
+   */
+  async deleteNotificationByUuid(
+    uuid: string,
+    userId: number,
+    tenantId: number,
+    userRole: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
+    await this.deleteNotification(notificationId, userId, tenantId, userRole, ipAddress, userAgent);
   }
 }

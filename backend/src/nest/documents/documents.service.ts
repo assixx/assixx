@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Documents Service
  *
@@ -155,6 +156,8 @@ interface DocumentFilters {
 // ============================================
 // Constants
 // ============================================
+
+const ERROR_DOCUMENT_NOT_FOUND = 'Document not found';
 
 const ALLOWED_CATEGORIES = [
   'general',
@@ -366,7 +369,7 @@ export class DocumentsService {
 
     const document = documents[0];
     if (document === undefined) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
     // Check access
@@ -377,6 +380,38 @@ export class DocumentsService {
 
     // Mark as read
     await this.markDocumentAsRead(documentId, tenantId, userId);
+
+    return await this.enrichDocument(document, userId, tenantId);
+  }
+
+  /**
+   * Get document by file UUID
+   */
+  async getDocumentByFileUuid(
+    fileUuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<DocumentResponse | null> {
+    this.logger.log(`Getting document by fileUuid ${fileUuid}`);
+
+    const documents = await this.databaseService.query<DbDocument>(
+      `SELECT d.*, u.username as uploaded_by_name
+       FROM documents d
+       LEFT JOIN users u ON d.created_by = u.id
+       WHERE d.file_uuid = $1 AND d.tenant_id = $2`,
+      [fileUuid, tenantId],
+    );
+
+    const document = documents[0];
+    if (document === undefined) {
+      return null;
+    }
+
+    // Check access
+    const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
+    if (!hasAccess) {
+      return null;
+    }
 
     return await this.enrichDocument(document, userId, tenantId);
   }
@@ -394,7 +429,7 @@ export class DocumentsService {
 
     const document = await this.getDocumentRow(documentId, tenantId);
     if (document === null) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
     // Check permission
@@ -455,7 +490,7 @@ export class DocumentsService {
 
     const document = await this.getDocumentRow(documentId, tenantId);
     if (document === null) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
     const user = await this.getUserById(userId, tenantId);
@@ -539,7 +574,7 @@ export class DocumentsService {
 
     const document = await this.getDocumentRow(documentId, tenantId);
     if (document === null) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
     const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
@@ -579,6 +614,111 @@ export class DocumentsService {
       [documentId, userId, tenantId],
     );
     return { success: true };
+  }
+
+  // ============================================
+  // UUID-based methods (for API consistency)
+  // ============================================
+
+  /**
+   * Resolve document ID from UUID
+   * @throws NotFoundException if document not found
+   */
+  private async resolveDocumentIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM documents WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    const doc = result[0];
+    if (doc === undefined) {
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
+    }
+    return doc.id;
+  }
+
+  /**
+   * Get document by UUID
+   */
+  async getDocumentByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<DocumentResponse> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.getDocumentById(documentId, tenantId, userId);
+  }
+
+  /**
+   * Update document by UUID
+   */
+  async updateDocumentByUuid(
+    uuid: string,
+    dto: UpdateDocumentDto,
+    tenantId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.updateDocument(documentId, dto, tenantId, userId);
+  }
+
+  /**
+   * Delete document by UUID
+   */
+  async deleteDocumentByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.deleteDocument(documentId, tenantId, userId);
+  }
+
+  /**
+   * Archive document by UUID
+   */
+  async archiveDocumentByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.archiveDocument(documentId, tenantId, userId);
+  }
+
+  /**
+   * Unarchive document by UUID
+   */
+  async unarchiveDocumentByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.unarchiveDocument(documentId, tenantId, userId);
+  }
+
+  /**
+   * Get document content by UUID
+   */
+  async getDocumentContentByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<DocumentContentResponse> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.getDocumentContent(documentId, tenantId, userId);
+  }
+
+  /**
+   * Mark document as read by UUID
+   */
+  async markDocumentAsReadByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<{ success: boolean }> {
+    const documentId = await this.resolveDocumentIdByUuid(uuid, tenantId);
+    return await this.markDocumentAsRead(documentId, tenantId, userId);
   }
 
   /**
@@ -644,7 +784,7 @@ export class DocumentsService {
          c.uuid as "conversationUuid",
          COALESCE(u.first_name || ' ' || u.last_name, u.username) as "participantName",
          u.id as "participantId",
-         COUNT(d.id) OVER (PARTITION BY c.id) as "attachmentCount",
+         (COUNT(d.id) OVER (PARTITION BY c.id))::integer as "attachmentCount",
          c.is_group as "isGroup",
          c.name as "groupName"
        FROM conversations c

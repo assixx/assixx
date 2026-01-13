@@ -610,24 +610,8 @@ CREATE TABLE IF NOT EXISTS messages (
     INDEX idx_unread_messages (recipient_id, is_read, is_delivered)
 );
 
--- Message Attachments
-CREATE TABLE IF NOT EXISTS message_attachments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    message_id INT NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    original_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_size INT NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    file_type ENUM('image', 'document', 'audio', 'video', 'other') DEFAULT 'other',
-    thumbnail_path VARCHAR(500) NULL,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
-    INDEX idx_message_attachments (message_id),
-    INDEX idx_file_type (file_type)
-);
+-- NOTE: message_attachments table REMOVED in migration 007 (2026-01-13)
+-- Chat attachments now stored in documents table with conversation_id
 
 -- Chat Permissions
 CREATE TABLE IF NOT EXISTS chat_permissions (

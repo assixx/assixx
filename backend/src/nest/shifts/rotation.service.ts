@@ -14,6 +14,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 import { dbToApi } from '../../utils/fieldMapping.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -343,13 +344,14 @@ export class RotationService {
 
     // is_active is SMALLINT: 0=inactive, 1=active
     const isActiveValue = !dto.isActive ? 0 : 1;
+    const patternUuid = uuidv7();
 
     const insertQuery = `
       INSERT INTO shift_rotation_patterns (
         tenant_id, team_id, name, description, pattern_type,
         pattern_config, cycle_length_weeks, starts_at,
-        ends_at, is_active, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ends_at, is_active, created_by, uuid, uuid_created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
       RETURNING id
     `;
 
@@ -365,6 +367,7 @@ export class RotationService {
       dto.endsAt ?? null,
       isActiveValue,
       userId,
+      patternUuid,
     ]);
 
     if (result[0] === undefined) {
@@ -521,11 +524,12 @@ export class RotationService {
         );
       } else {
         // Create new assignment
+        const assignmentUuid = uuidv7();
         await this.databaseService.query(
           `INSERT INTO shift_rotation_assignments
            (tenant_id, pattern_id, user_id, team_id, shift_group,
-            rotation_order, can_override, starts_at, ends_at, is_active, assigned_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            rotation_order, can_override, starts_at, ends_at, is_active, assigned_by, uuid, uuid_created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
           [
             tenantId,
             dto.patternId,
@@ -538,6 +542,7 @@ export class RotationService {
             dto.endsAt ?? null,
             1,
             userId,
+            assignmentUuid,
           ],
         );
       }
@@ -737,12 +742,13 @@ export class RotationService {
 
         if (existing.length === 0) {
           const weekNumber = this.getWeekNumber(new Date(shift.date));
+          const historyUuid = uuidv7();
 
           await this.databaseService.query(
             `INSERT INTO shift_rotation_history (
               tenant_id, pattern_id, assignment_id, user_id, team_id,
-              shift_date, shift_type, week_number, status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated')`,
+              shift_date, shift_type, week_number, status, uuid, uuid_created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated', $9, NOW())`,
             [
               tenantId,
               patternId,
@@ -752,6 +758,7 @@ export class RotationService {
               shift.date,
               shift.shiftType,
               weekNumber,
+              historyUuid,
             ],
           );
         }
@@ -900,10 +907,11 @@ export class RotationService {
     const cycleWeeks = Math.ceil((config.shiftBlockLength + config.freeDays) / 7);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const patternName = `Custom-Rotation ${timestamp}`;
+    const patternUuid = uuidv7();
     const patternResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_rotation_patterns
-       (tenant_id, team_id, name, pattern_type, pattern_config, cycle_length_weeks, starts_at, ends_at, created_by)
-       VALUES ($1, $2, $3, 'custom', $4::jsonb, $5, $6, $7, $8) RETURNING id`,
+       (tenant_id, team_id, name, pattern_type, pattern_config, cycle_length_weeks, starts_at, ends_at, created_by, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, 'custom', $4::jsonb, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
       [
         tenantId,
         teamId ?? null,
@@ -913,6 +921,7 @@ export class RotationService {
         startDate,
         endDate,
         userId,
+        patternUuid,
       ],
     );
     return patternResult[0]?.id ?? 0;
@@ -929,10 +938,11 @@ export class RotationService {
     shiftType: 'early' | 'late' | 'night';
     weekNumber: number;
   }): Promise<void> {
+    const historyUuid = uuidv7();
     await this.databaseService.query(
       `INSERT INTO shift_rotation_history
-       (tenant_id, pattern_id, assignment_id, user_id, team_id, shift_date, shift_type, week_number, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated')
+       (tenant_id, pattern_id, assignment_id, user_id, team_id, shift_date, shift_type, week_number, status, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated', $9, NOW())
        ON CONFLICT (tenant_id, user_id, shift_date) DO UPDATE SET
        shift_type = EXCLUDED.shift_type, pattern_id = EXCLUDED.pattern_id, assignment_id = EXCLUDED.assignment_id`,
       [
@@ -944,6 +954,7 @@ export class RotationService {
         params.dateStr,
         this.mapShiftTypeToGroup(params.shiftType),
         params.weekNumber,
+        historyUuid,
       ],
     );
   }
@@ -1024,10 +1035,11 @@ export class RotationService {
     startDate: string,
     endDate: string,
   ): Promise<number> {
+    const assignmentUuid = uuidv7();
     const assignmentResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_rotation_assignments
-       (tenant_id, pattern_id, user_id, team_id, shift_group, starts_at, ends_at, assigned_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+       (tenant_id, pattern_id, user_id, team_id, shift_group, starts_at, ends_at, assigned_by, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
       [
         tenantId,
         patternId,
@@ -1037,6 +1049,7 @@ export class RotationService {
         startDate,
         endDate,
         userId,
+        assignmentUuid,
       ],
     );
     const assignmentId = assignmentResult[0]?.id ?? 0;
@@ -1333,5 +1346,56 @@ export class RotationService {
     if (deletedCount === 0) {
       throw new NotFoundException(`Rotation history entry ${historyId} not found`);
     }
+  }
+
+  // ============================================================
+  // UUID-BASED METHODS (P1 Migration)
+  // ============================================================
+
+  /**
+   * Resolve pattern UUID to internal ID
+   */
+  private async resolvePatternIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM shift_rotation_patterns WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    if (result[0] === undefined) {
+      throw new NotFoundException(`Rotation pattern with UUID ${uuid} not found`);
+    }
+    return result[0].id;
+  }
+
+  /**
+   * Get rotation pattern by UUID
+   */
+  async getRotationPatternByUuid(uuid: string, tenantId: number): Promise<RotationPatternResponse> {
+    const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
+    return await this.getRotationPattern(patternId, tenantId);
+  }
+
+  /**
+   * Update rotation pattern by UUID
+   */
+  async updateRotationPatternByUuid(
+    uuid: string,
+    dto: UpdateRotationPatternDto,
+    tenantId: number,
+    userRole: string,
+  ): Promise<RotationPatternResponse> {
+    const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
+    return await this.updateRotationPattern(patternId, dto, tenantId, userRole);
+  }
+
+  /**
+   * Delete rotation pattern by UUID
+   */
+  async deleteRotationPatternByUuid(
+    uuid: string,
+    tenantId: number,
+    userRole: string,
+  ): Promise<void> {
+    const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
+    await this.deleteRotationPattern(patternId, tenantId, userRole);
   }
 }

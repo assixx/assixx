@@ -1,5 +1,6 @@
 // IMPORTANT: Sentry MUST be imported BEFORE any other modules for auto-instrumentation!
-import './instrument.js';
+// Side-effect import runs Sentry.init(), then we get the Sentry reference for graceful shutdown
+import { Sentry } from './instrument.js';
 
 /**
  * NestJS Application Bootstrap - Fastify Adapter
@@ -298,11 +299,30 @@ function setupGlobalMiddleware(app: NestFastifyApplication): void {
 // GRACEFUL SHUTDOWN - Ensures port is released on exit (SIGTERM, SIGINT, SIGHUP)
 // =============================================================================
 let appInstance: NestFastifyApplication | null = null;
+let chatWsInstance: ChatWebSocketServer | null = null;
 
 /** Graceful shutdown handler - closes NestJS app and releases port */
 async function gracefulShutdown(signal: string): Promise<void> {
   const logger = new NestLogger('Shutdown');
   logger.log(`Received ${signal}. Starting graceful shutdown...`);
+
+  // Flush pending Sentry events before shutdown (max 2 seconds)
+  // Without this, errors that happen just before shutdown are lost
+  try {
+    await Sentry.close(2000);
+    logger.log('Sentry events flushed');
+  } catch {
+    logger.warn('Failed to flush Sentry events (timeout or error)');
+  }
+
+  // Close WebSocket server and Redis connection before NestJS shutdown
+  if (chatWsInstance !== null) {
+    try {
+      await chatWsInstance.shutdown();
+    } catch (error) {
+      logger.error('Error during WebSocket shutdown:', error);
+    }
+  }
 
   if (appInstance) {
     try {
@@ -370,6 +390,10 @@ async function bootstrap(): Promise<void> {
   // Store reference for graceful shutdown
   appInstance = app;
 
+  // Enable NestJS shutdown hooks (onModuleDestroy, beforeApplicationShutdown)
+  // CRITICAL: Without this, cleanup hooks in services won't be called!
+  app.enableShutdownHooks();
+
   app.setGlobalPrefix('api/v2');
 
   const fastify = app.getHttpAdapter().getInstance();
@@ -393,8 +417,8 @@ async function bootstrap(): Promise<void> {
 
   // Setup WebSocket server for chat (attaches to the same HTTP server)
   const httpServer = app.getHttpServer();
-  const chatWs = new ChatWebSocketServer(httpServer);
-  chatWs.startHeartbeat();
+  chatWsInstance = new ChatWebSocketServer(httpServer);
+  chatWsInstance.startHeartbeat();
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 
   bootstrapLogger.log(`NestJS+Fastify application running on port ${port}`);

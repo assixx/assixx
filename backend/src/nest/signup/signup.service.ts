@@ -10,6 +10,7 @@ import { BadRequestException, ConflictException, Injectable, Logger } from '@nes
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
+import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
 import type { SignupDto, SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
@@ -159,9 +160,10 @@ export class SignupService {
     dto: SignupDto,
     trialEndsAt: Date,
   ): Promise<number> {
+    const tenantUuid = uuidv7();
     const tenantRows = await client.query<DbTenantResult>(
-      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'trial')
+      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email, status, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'trial', $8, NOW())
        RETURNING id`,
       [
         dto.companyName,
@@ -171,6 +173,7 @@ export class SignupService {
         dto.address ?? null,
         trialEndsAt,
         dto.adminEmail,
+        tenantUuid,
       ],
     );
 
@@ -262,10 +265,11 @@ export class SignupService {
   ): Promise<number> {
     const hashedPassword = await bcrypt.hash(dto.adminPassword, 12);
     const employeeNumber = this.generateTemporaryEmployeeNumber();
+    const userUuid = uuidv7();
 
     const userRows = await client.query<DbUserResult>(
-      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access)
-       VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true)
+      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true, $9, NOW())
        RETURNING id`,
       [
         dto.adminEmail,
@@ -276,6 +280,7 @@ export class SignupService {
         tenantId,
         dto.phone,
         employeeNumber,
+        userUuid,
       ],
     );
 

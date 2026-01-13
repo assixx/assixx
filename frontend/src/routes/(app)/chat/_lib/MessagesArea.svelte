@@ -20,6 +20,11 @@
 
   import type { Message, ScheduledMessage } from './types';
 
+  interface ImageAttachment {
+    src: string;
+    alt: string;
+  }
+
   interface Props {
     messages: Message[];
     scheduledMessages: ScheduledMessage[];
@@ -28,6 +33,7 @@
     typingUsers: number[];
     isLoading: boolean;
     oncancelscheduled: (scheduled: ScheduledMessage) => void;
+    onimageclick: (image: ImageAttachment) => void;
   }
 
   /* eslint-disable prefer-const */
@@ -39,6 +45,7 @@
     typingUsers,
     isLoading,
     oncancelscheduled,
+    onimageclick,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -205,19 +212,23 @@
             {#if message.hasAttachments}
               {#each message.attachments as att (att.id)}
                 {#if att.mimeType.startsWith('image/')}
-                  <div class="attachment image-attachment">
+                  {@const imageSrc =
+                    att.downloadUrl ??
+                    `/api/v2/chat/attachments/${att.fileUuid}/download?inline=true`}
+                  <button
+                    type="button"
+                    class="attachment image-attachment"
+                    onclick={() => {
+                      onimageclick({ src: imageSrc, alt: att.fileName });
+                    }}
+                  >
                     <div class="attachment-image-wrapper">
-                      <img
-                        src={att.downloadUrl ??
-                          `/api/v2/chat/attachments/${att.fileUuid}/download?inline=true`}
-                        alt={att.fileName}
-                        loading="lazy"
-                      />
+                      <img src={imageSrc} alt={att.fileName} loading="lazy" />
                       <div class="attachment-overlay">
                         <i class="fas fa-search-plus"></i>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 {:else}
                   <a
                     class="attachment file-attachment"
@@ -369,5 +380,18 @@
       transform: scale(1);
       opacity: 1;
     }
+  }
+
+  /* Reset button styles for image attachment */
+  button.image-attachment {
+    display: block;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
   }
 </style>

@@ -23,6 +23,7 @@
   import ConfirmDialog from './_lib/ConfirmDialog.svelte';
   import { MESSAGES } from './_lib/constants';
   import * as handlers from './_lib/handlers';
+  import ImagePreviewModal from './_lib/ImagePreviewModal.svelte';
   import MessageInputArea from './_lib/MessageInputArea.svelte';
   import MessagesArea from './_lib/MessagesArea.svelte';
   import ScheduleModal from './_lib/ScheduleModal.svelte';
@@ -135,6 +136,13 @@
   let showConfirmDialog = $state(false);
   let confirmMessage = $state('');
   let confirmCallback = $state<(() => void | Promise<void>) | null>(null);
+
+  // Image preview modal
+  interface PreviewImage {
+    src: string;
+    alt: string;
+  }
+  let previewImage: PreviewImage | null = $state(null);
 
   // WebSocket
   let typingUsers: number[] = $state([]);
@@ -526,6 +534,18 @@
   }
 
   // ==========================================================================
+  // IMAGE PREVIEW
+  // ==========================================================================
+
+  function openImagePreview(image: PreviewImage): void {
+    previewImage = image;
+  }
+
+  function closeImagePreview(): void {
+    previewImage = null;
+  }
+
+  // ==========================================================================
   // UTILITIES
   // ==========================================================================
 
@@ -593,6 +613,7 @@
           {typingUsers}
           isLoading={isLoadingMessages}
           oncancelscheduled={cancelScheduled}
+          onimageclick={openImagePreview}
         />
 
         <MessageInputArea
@@ -645,6 +666,8 @@
     confirmCallback = null;
   }}
 />
+
+<ImagePreviewModal show={previewImage !== null} image={previewImage} onclose={closeImagePreview} />
 
 <style>
   .hidden {

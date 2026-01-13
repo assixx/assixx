@@ -105,6 +105,8 @@ interface UserRoleInfo {
 // Constants
 // ============================================
 
+const ERROR_EVENT_NOT_FOUND = 'Event not found';
+
 const ALLOWED_SORT_COLUMNS = new Set([
   'start_date',
   'end_date',
@@ -218,14 +220,14 @@ export class CalendarService {
 
     const event = events[0];
     if (event === undefined) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
     // Check access
     const userRole = await this.getUserRole(userId, tenantId);
     const hasAccess = await this.checkEventAccess(event, userId, userRole);
     if (!hasAccess) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
     const attendees = await this.getEventAttendees(eventId, tenantId);
@@ -371,7 +373,7 @@ export class CalendarService {
 
     const existing = events[0];
     if (existing === undefined) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
     if (existing.user_id !== userId && userRole !== 'admin' && userRole !== 'root') {
@@ -408,7 +410,7 @@ export class CalendarService {
 
     const existing = events[0];
     if (existing === undefined) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
     if (existing.user_id !== userId && userRole !== 'admin' && userRole !== 'root') {
@@ -427,6 +429,65 @@ export class CalendarService {
     );
 
     return { message: 'Event deleted successfully' };
+  }
+
+  // ============================================
+  // UUID-based methods (for API consistency)
+  // ============================================
+
+  /**
+   * Resolve event ID from UUID
+   * @throws NotFoundException if event not found
+   */
+  private async resolveEventIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM calendar_events WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    const event = result[0];
+    if (event === undefined) {
+      throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
+    }
+    return event.id;
+  }
+
+  /**
+   * Get event by UUID
+   */
+  async getEventByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<CalendarEventResponse> {
+    const eventId = await this.resolveEventIdByUuid(uuid, tenantId);
+    return await this.getEventById(eventId, tenantId, userId);
+  }
+
+  /**
+   * Update event by UUID
+   */
+  async updateEventByUuid(
+    uuid: string,
+    dto: UpdateEventDto,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<CalendarEventResponse> {
+    const eventId = await this.resolveEventIdByUuid(uuid, tenantId);
+    return await this.updateEvent(eventId, dto, tenantId, userId, userRole);
+  }
+
+  /**
+   * Delete event by UUID
+   */
+  async deleteEventByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<{ message: string }> {
+    const eventId = await this.resolveEventIdByUuid(uuid, tenantId);
+    return await this.deleteEvent(eventId, tenantId, userId, userRole);
   }
 
   /**

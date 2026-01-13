@@ -1,6 +1,7 @@
 import { IncomingMessage, Server } from 'http';
 import { Redis } from 'ioredis';
 import { URL } from 'url';
+import { v7 as uuidv7 } from 'uuid';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
@@ -76,6 +77,7 @@ export class ChatWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<number, ExtendedWebSocket>;
   private redis: Redis;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
   /** Lua script for atomic GET + DELETE (single-use ticket) */
   private readonly CONSUME_TICKET_SCRIPT = `
@@ -326,9 +328,10 @@ export class ChatWebSocketServer {
     content: string,
     tenantId: number,
   ): Promise<number> {
+    const messageUuid = uuidv7();
     const messageQuery = `
-      INSERT INTO messages (conversation_id, sender_id, content, tenant_id, created_at)
-      VALUES ($1, $2, $3, $4, NOW())
+      INSERT INTO messages (conversation_id, sender_id, content, tenant_id, uuid, uuid_created_at, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
       RETURNING id
     `;
     // PostgreSQL RETURNING clause returns rows, not MySQL-style insertId
@@ -340,6 +343,7 @@ export class ChatWebSocketServer {
       senderId,
       content,
       tenantId,
+      messageUuid,
     ]);
 
     const insertedRow = rows[0];
@@ -783,7 +787,7 @@ export class ChatWebSocketServer {
 
   // Heartbeat-System für Verbindungsüberwachung
   public startHeartbeat(): void {
-    setInterval(() => {
+    this.heartbeatInterval = setInterval(() => {
       this.wss.clients.forEach((ws: ExtendedWebSocket) => {
         if (ws.isAlive === false) {
           ws.terminate();
@@ -794,6 +798,54 @@ export class ChatWebSocketServer {
         ws.ping();
       });
     }, 30000); // Alle 30 Sekunden
+  }
+
+  /**
+   * Graceful shutdown - close all connections and cleanup resources
+   * Called from main.ts gracefulShutdown() before app.close()
+   */
+  public async shutdown(): Promise<void> {
+    logger.info('ChatWebSocketServer shutting down...');
+
+    // 1. Stop heartbeat interval
+    if (this.heartbeatInterval !== null) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+      logger.info('Heartbeat interval stopped');
+    }
+
+    // 2. Close all WebSocket connections gracefully
+    const closePromises: Promise<void>[] = [];
+    this.wss.clients.forEach((ws: ExtendedWebSocket) => {
+      closePromises.push(
+        new Promise<void>((resolve: () => void) => {
+          ws.once('close', () => {
+            resolve();
+          });
+          ws.close(1001, 'Server shutting down');
+          // Timeout fallback in case close doesn't fire
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        }),
+      );
+    });
+    await Promise.all(closePromises);
+    logger.info(`Closed ${closePromises.length} WebSocket connections`);
+
+    // 3. Close WebSocket server
+    await new Promise<void>((resolve: () => void) => {
+      this.wss.close(() => {
+        logger.info('WebSocket server closed');
+        resolve();
+      });
+    });
+
+    // 4. Close Redis connection
+    await this.redis.quit();
+    logger.info('Redis connection closed');
+
+    logger.info('ChatWebSocketServer shutdown complete');
   }
 }
 
