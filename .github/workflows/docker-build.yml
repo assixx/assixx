@@ -67,8 +67,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # TEMPORARILY DISABLED: GitHub Actions Cache service having 502/504 errors (2026-01-13)
+          # Re-enable when GitHub's cache service is stable again
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
 
   integration-test-docker-compose:
     runs-on: ubuntu-latest
