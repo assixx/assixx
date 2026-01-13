@@ -93,7 +93,7 @@ jobs:
 
       - name: Run Docker Compose tests
         run: |
-          cp docker/.env.docker.example docker/.env
+          cp docker/.env.example docker/.env
           cd docker && docker compose up -d
 
           # Wait for PostgreSQL to be HEALTHY
