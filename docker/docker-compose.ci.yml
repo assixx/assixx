@@ -2,8 +2,9 @@
 # Assixx Docker Compose - CI Override
 # =============================================================================
 # Purpose: Adapt for GitHub Actions runners
+# - Use production Dockerfile (includes source code, builds in image)
 # - Reduced resource limits (runners have only 2 CPUs)
-# - Run as root (runner user != 1000, causes permission issues with volume mounts)
+# - Minimal volume mounts (no dev live-reload needed)
 # Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 # =============================================================================
 
@@ -19,14 +20,20 @@ services:
           memory: 256M
 
   backend:
-    # Override user to root - GitHub Actions runner user is not 1000
-    user: "0:0"
-    # Remove dev volume mounts - CI uses image contents, no live reload needed
-    # This prevents node_modules from being overwritten by empty host directories
+    # Use production Dockerfile - it copies source and builds in image
+    # Dockerfile.dev only copies package.json, expects source via volumes
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: assixx-backend:ci
+    # No user override needed - prod Dockerfile uses nodejs:1001 user
+    # Minimal volumes - no dev source mounts needed
     volumes:
       - ../uploads:/app/uploads
       - ../exports:/exports
       - ../backups:/backups
+    # Override command - prod image uses tsx, but dist is already built
+    command: ["dumb-init", "node", "backend/dist/nest/main.js"]
     deploy:
       resources:
         limits:
@@ -37,8 +44,8 @@ services:
           memory: 256M
 
   deletion-worker:
-    # Same fix for deletion worker
-    user: "0:0"
+    # Use same CI image as backend
+    image: assixx-backend:ci
     # Minimal volumes for CI
     volumes:
       - ../exports:/exports
