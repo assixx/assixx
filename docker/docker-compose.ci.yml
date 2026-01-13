@@ -1,7 +1,9 @@
 # =============================================================================
 # Assixx Docker Compose - CI Override
 # =============================================================================
-# Purpose: Remove resource limits for GitHub Actions runners (2 CPU limit)
+# Purpose: Adapt for GitHub Actions runners
+# - Reduced resource limits (runners have only 2 CPUs)
+# - Run as root (runner user != 1000, causes permission issues with volume mounts)
 # Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 # =============================================================================
 
@@ -17,6 +19,14 @@ services:
           memory: 256M
 
   backend:
+    # Override user to root - GitHub Actions runner user is not 1000
+    user: "0:0"
+    # Remove dev volume mounts - CI uses image contents, no live reload needed
+    # This prevents node_modules from being overwritten by empty host directories
+    volumes:
+      - ../uploads:/app/uploads
+      - ../exports:/exports
+      - ../backups:/backups
     deploy:
       resources:
         limits:
@@ -24,6 +34,22 @@ services:
           memory: 2G
         reservations:
           cpus: "0.25"
+          memory: 256M
+
+  deletion-worker:
+    # Same fix for deletion worker
+    user: "0:0"
+    # Minimal volumes for CI
+    volumes:
+      - ../exports:/exports
+      - ../backups:/backups
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.1"
           memory: 256M
 
   redis:
