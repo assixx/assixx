@@ -97,7 +97,8 @@ jobs:
           # Create external volumes (required by docker-compose.yml)
           docker volume create assixx_postgres_data
           docker volume create assixx_redis_data
-          cd docker && docker compose up -d
+          # Use CI override to reduce resource limits (GitHub runners have only 2 CPUs)
+          cd docker && docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
           # Wait for PostgreSQL to be HEALTHY
           echo "Waiting for PostgreSQL to be HEALTHY..."
@@ -171,7 +172,7 @@ jobs:
           # Test the health endpoint
           curl -f http://localhost:3000/health || exit 1
 
-          docker compose down
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml down
 
       - name: Debug PostgreSQL on failure
         if: failure()
