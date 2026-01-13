@@ -1,0 +1,37 @@
+# =============================================================================
+# Assixx Docker Compose - CI Override
+# =============================================================================
+# Purpose: Remove resource limits for GitHub Actions runners (2 CPU limit)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+# =============================================================================
+
+services:
+  postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  backend:
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
