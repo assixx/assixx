@@ -4,12 +4,15 @@
  */
 
 import { getApiClient, ApiError } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS, MESSAGES } from './constants';
 import { isTemporaryEmployeeNumber } from './utils';
 
 import type { DashboardData, ActivityLog, UserData, LogsApiResponse } from './types';
+
+const log = createLogger('RootDashboardApi');
 
 const apiClient = getApiClient();
 
@@ -26,7 +29,7 @@ export async function loadDashboardData(): Promise<{
     const data = await apiClient.get<DashboardData>(API_ENDPOINTS.dashboard);
     return { data, error: null, unauthorized: false };
   } catch (err) {
-    console.error('Error loading dashboard:', err);
+    log.error({ err }, 'Error loading dashboard');
 
     // Handle session expired / unauthorized
     if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
@@ -50,7 +53,7 @@ export async function loadActivityLogs(): Promise<ActivityLog[]> {
     const result = await apiClient.get<LogsApiResponse>(API_ENDPOINTS.logs);
     return result.data?.logs ?? result.logs ?? [];
   } catch (err) {
-    console.error('Error loading logs:', err);
+    log.error({ err }, 'Error loading logs');
     return [];
   }
 }
@@ -77,7 +80,7 @@ export async function checkEmployeeNumber(): Promise<{
 
     return { userData, showModal };
   } catch (err) {
-    console.error('Error checking employee number:', err);
+    log.error({ err }, 'Error checking employee number');
     return { userData: null, showModal: false };
   }
 }
@@ -95,7 +98,7 @@ export async function saveEmployeeNumber(employeeNumber: string): Promise<{
     await apiClient.patch(API_ENDPOINTS.userMe, { employeeNumber });
     return { success: true, error: null };
   } catch (err) {
-    console.error('Error saving employee number:', err);
+    log.error({ err }, 'Error saving employee number');
     return {
       success: false,
       error: err instanceof Error ? err.message : MESSAGES.employeeNumberSaveError,

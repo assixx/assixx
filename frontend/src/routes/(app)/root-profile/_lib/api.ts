@@ -5,6 +5,7 @@
 
 import { getApiClient } from '$lib/utils/api-client';
 import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
@@ -15,6 +16,8 @@ import type {
   ProfileUpdatePayload,
   PasswordChangePayload,
 } from './types';
+
+const log = createLogger('RootProfileApi');
 
 const apiClient = getApiClient();
 
@@ -68,7 +71,7 @@ export async function loadProfile(): Promise<{
     const result = await fetchSharedUser();
     return { user: result.user as UserProfile | null, error: null };
   } catch (err) {
-    console.error('[RootProfile] Error loading profile:', err);
+    log.error({ err }, 'Error loading profile');
     return {
       user: null,
       error: err instanceof Error ? err.message : 'Fehler beim Laden des Profils',
@@ -106,7 +109,7 @@ export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
     const result: unknown = await apiClient.get('/root/deletion-approvals/pending');
     return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
   } catch (err) {
-    console.warn('[RootProfile] Could not load approvals:', err);
+    log.warn({ err }, 'Could not load approvals');
     return [];
   }
 }

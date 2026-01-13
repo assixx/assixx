@@ -108,10 +108,59 @@ export function createUIState() {
   const modal = createModalState();
   const dropdown = createDropdownState();
 
+  // IMPORTANT: Do NOT use spread operator here!
+  // Spread destroys getters and copies static values, breaking reactivity.
+  // Must explicitly re-export getters to preserve Svelte 5 reactivity chain.
   return {
-    ...loading,
-    ...modal,
-    ...dropdown,
+    // Loading state - explicit getters preserve reactivity
+    get isLoading() {
+      return loading.isLoading;
+    },
+    get isUpdatingStatus() {
+      return loading.isUpdatingStatus;
+    },
+    get isAddingComment() {
+      return loading.isAddingComment;
+    },
+    get isSharing() {
+      return loading.isSharing;
+    },
+    setLoading: loading.setLoading,
+    setUpdatingStatus: loading.setUpdatingStatus,
+    setAddingComment: loading.setAddingComment,
+    setSharing: loading.setSharing,
+
+    // Modal state - explicit getters preserve reactivity
+    get showShareModal() {
+      return modal.showShareModal;
+    },
+    get showRejectionModal() {
+      return modal.showRejectionModal;
+    },
+    get showPreviewModal() {
+      return modal.showPreviewModal;
+    },
+    get selectedShareLevel() {
+      return modal.selectedShareLevel;
+    },
+    get selectedOrgId() {
+      return modal.selectedOrgId;
+    },
+    get previewAttachment() {
+      return modal.previewAttachment;
+    },
+    setShowShareModal: modal.setShowShareModal,
+    setShowRejectionModal: modal.setShowRejectionModal,
+    setShowPreviewModal: modal.setShowPreviewModal,
+    setSelectedShareLevel: modal.setSelectedShareLevel,
+    setSelectedOrgId: modal.setSelectedOrgId,
+    setPreviewAttachment: modal.setPreviewAttachment,
+
+    // Dropdown state - explicit getters preserve reactivity
+    get activeDropdown() {
+      return dropdown.activeDropdown;
+    },
+    setActiveDropdown: dropdown.setActiveDropdown,
   };
 }
 

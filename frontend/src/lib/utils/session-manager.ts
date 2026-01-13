@@ -8,7 +8,10 @@
  * - TokenManager: Handles JWT token lifecycle and expiry
  */
 
+import { createLogger } from './logger';
 import { getTokenManager } from './token-manager';
+
+const log = createLogger('SessionManager');
 
 /**
  * Check if we're in browser
@@ -37,13 +40,11 @@ export class SessionManager {
 
   private constructor() {
     this.lastActivityTime = Date.now();
-    this.DEBUG_MODE = isBrowser() && window.location.hostname === 'localhost';
+    // CRITICAL: Use import.meta.env.DEV (build-time) NOT hostname (runtime)
+    this.DEBUG_MODE = import.meta.env.DEV && isBrowser();
 
     if (this.DEBUG_MODE) {
-      console.warn(
-        '[SessionManager] 🚀 Initialized - lastActivityTime set to:',
-        new Date(this.lastActivityTime).toISOString(),
-      );
+      log.debug({ lastActivityTime: new Date(this.lastActivityTime).toISOString() }, 'Initialized');
     }
 
     this.setupActivityListeners();
@@ -178,9 +179,7 @@ export class SessionManager {
 
     if (this.warningShown) {
       if (this.DEBUG_MODE) {
-        console.warn(
-          '[SessionManager] ⏸️ Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben".',
-        );
+        log.debug('Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben"');
       }
       return;
     }
@@ -201,9 +200,7 @@ export class SessionManager {
     }
 
     if (this.DEBUG_MODE) {
-      console.warn(
-        `[SessionManager] 🔄 Active interaction + token < 10min (${remaining}s) → refreshing`,
-      );
+      log.debug({ remaining }, 'Active interaction + token < 10min → refreshing');
     }
     void tokenManager.refresh();
   }
@@ -220,7 +217,7 @@ export class SessionManager {
       // Only show modal once
       if (!this.warningShown) {
         if (this.DEBUG_MODE) {
-          console.warn('[SessionManager] 🚨 Token < 5 min - showing warning modal');
+          log.warn('Token < 5 min - showing warning modal');
         }
         this.showTimeoutWarning();
         this.warningShown = true;
@@ -335,7 +332,7 @@ export class SessionManager {
     const warningThreshold = this.INACTIVITY_TIMEOUT - this.WARNING_TIME - 60000;
     if (timeSinceActivity >= warningThreshold) {
       const timeSinceActivityMinutes = Math.floor(timeSinceActivity / 60000);
-      console.warn(`[SessionManager] Inactivity: ${timeSinceActivityMinutes} min`);
+      log.warn({ inactivityMinutes: timeSinceActivityMinutes }, 'Approaching inactivity threshold');
     }
   }
 
@@ -346,7 +343,7 @@ export class SessionManager {
   private checkForTimeout(timeSinceActivity: number): boolean {
     if (timeSinceActivity >= this.INACTIVITY_TIMEOUT) {
       if (this.DEBUG_MODE) {
-        console.error('[SessionManager] ⏰ Session timeout - 30 min inactivity reached');
+        log.error('Session timeout - 30 min inactivity reached');
       }
       this.handleSessionTimeout();
       return true;
@@ -362,7 +359,7 @@ export class SessionManager {
     if (timeSinceActivity >= this.INACTIVITY_TIMEOUT - this.WARNING_TIME) {
       if (!this.warningShown) {
         if (this.DEBUG_MODE) {
-          console.warn('[SessionManager] 🚨 Triggering warning modal (25 min inactivity)');
+          log.warn('Triggering warning modal (25 min inactivity)');
         }
         this.showTimeoutWarning();
         this.warningShown = true;
@@ -435,7 +432,7 @@ export class SessionManager {
     if (!isBrowser()) return;
 
     if (this.DEBUG_MODE) {
-      console.warn('[SessionManager] 🔔 Creating warning modal...');
+      log.debug('Creating warning modal...');
     }
 
     try {
@@ -447,7 +444,7 @@ export class SessionManager {
       this.attachWarningModalHandlers(warningModal);
       this.startModalCountdown();
     } catch (error) {
-      console.error('[SessionManager] ❌ ERROR creating warning modal:', error);
+      log.error({ err: error }, 'ERROR creating warning modal');
     }
   }
 
@@ -539,7 +536,7 @@ export class SessionManager {
     if (!isBrowser()) return;
 
     if (this.DEBUG_MODE) {
-      console.warn('[SessionManager] 🕒 Starting modal countdown...');
+      log.debug('Starting modal countdown...');
     }
 
     const tokenManager = getTokenManager();
@@ -609,7 +606,7 @@ export class SessionManager {
     // Check if refresh was successful
     if (!refreshed) {
       // TOKEN REFRESH FAILED - This is CRITICAL!
-      console.error('[SessionManager] ❌ CRITICAL: Token refresh failed! Cannot extend session.');
+      log.error('CRITICAL: Token refresh failed! Cannot extend session.');
 
       // Update modal to show error (if it still exists)
       const modalMessage = document.querySelector('#session-warning-modal .confirm-modal__message');
@@ -629,7 +626,7 @@ export class SessionManager {
 
       // Wait 2 seconds to show error, then logout
       setTimeout(() => {
-        console.warn('[SessionManager] Logging out due to failed token refresh...');
+        log.warn('Logging out due to failed token refresh...');
         this.logout(false);
       }, 2000);
 
@@ -665,7 +662,7 @@ export class SessionManager {
     // ===========================================
     // AUTH TOKENS
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on /auth/logout
     localStorage.removeItem('tokenReceivedAt');
     localStorage.removeItem('token');
     localStorage.removeItem('authToken');
@@ -724,9 +721,8 @@ declare global {
 }
 
 // For browser debugging (development only)
-if (isBrowser()) {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    window.sessionManager = SessionManager.getInstance();
-  }
+// CRITICAL: Use import.meta.env.DEV (build-time check) NOT hostname (runtime check)
+// hostname check would expose sessionManager in production on localhost (Docker/Nginx)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  window.sessionManager = SessionManager.getInstance();
 }

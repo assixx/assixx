@@ -11,6 +11,10 @@
   // Page-specific CSS
   import '../../../styles/account-settings.css';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('AccountSettingsPage');
+
   // Module imports
   import { getRootUserCount, deleteTenant } from './_lib/api';
   import {
@@ -63,7 +67,7 @@
   async function handleShowDeleteModal() {
     try {
       const rootUserCount = await getRootUserCount();
-      console.warn(`[AccountSettings] Found ${rootUserCount} root users in tenant`);
+      log.warn({ rootUserCount }, 'Found root users in tenant');
 
       if (rootUserCount < MIN_ROOT_USERS) {
         showToast(MESSAGES.notEnoughRootUsers(rootUserCount), 'error');
@@ -75,7 +79,7 @@
       deleteReason = '';
       showDeleteModal = true;
     } catch (err) {
-      console.error('[AccountSettings] Error checking root users:', err);
+      log.error({ err }, 'Error checking root users');
       // Show modal anyway if check fails
       deleteConfirmation = '';
       deleteReason = '';
@@ -99,7 +103,7 @@
       showDeleteModal = false;
       await invalidateAll();
     } catch (err) {
-      console.error('[AccountSettings] Error deleting tenant:', err);
+      log.error({ err }, 'Error deleting tenant');
       const message = err instanceof Error ? err.message : MESSAGES.deletionError;
       showToast(message, 'error');
     }

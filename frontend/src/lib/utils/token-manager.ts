@@ -1,14 +1,19 @@
 /* eslint-disable max-lines */
 /**
  * Token Manager - Central JWT Token Lifecycle Management
- * 1:1 Copy from frontend/src/utils/token-manager.ts + SSR safety
  *
  * RESPONSIBILITIES:
- * - Token storage (accessToken, refreshToken)
+ * - Access token storage (localStorage for Bearer header)
  * - Token refresh logic (proactive refresh when < 10 min remaining)
  * - Token expiry detection
  * - Timer updates (1 second interval)
  * - Event emission (Observer Pattern for UI updates)
+ *
+ * SECURITY ARCHITECTURE (HttpOnly Cookie for Refresh Token):
+ * - Access Token: Stored in localStorage (short-lived, 30 min)
+ * - Refresh Token: Stored in HttpOnly cookie by backend (7 days)
+ *   → JavaScript CANNOT read HttpOnly cookies (XSS protection)
+ *   → Cookie is automatically sent with credentials: 'include'
  *
  * CRITICAL RULE:
  * - If token is expired (remaining = 0) → LOGOUT immediately, NO refresh attempt!
@@ -19,8 +24,11 @@
  */
 
 import { parseJwt } from './jwt-utils';
+import { createLogger } from './logger';
 
 import type { LogoutReason } from './auth-types';
+
+const log = createLogger('TokenManager');
 
 interface TokenCallbacks {
   onTimerUpdate: ((remainingSeconds: number) => void)[];
@@ -50,7 +58,8 @@ function isBrowser(): boolean {
 export class TokenManager {
   private static instance: TokenManager | undefined;
   private accessToken: string | null = null;
-  private refreshToken: string | null = null;
+  // NOTE: refreshToken is now stored in HttpOnly cookie (not accessible via JS)
+  // We track if user has a session via accessToken presence
   private tokenReceivedAt: number | null = null;
   private timerInterval: number | null = null;
   private currentInterval = 60000;
@@ -87,12 +96,21 @@ export class TokenManager {
 
   /**
    * Load tokens from localStorage on initialization
+   *
+   * NOTE: Only accessToken is loaded from localStorage.
+   * refreshToken is stored in HttpOnly cookie (not accessible via JS).
    */
   private loadTokensFromStorage(): void {
     if (!isBrowser()) return;
 
     this.accessToken = localStorage.getItem('accessToken');
-    this.refreshToken = localStorage.getItem('refreshToken');
+    // MIGRATION: Clean up old refreshToken from localStorage if it exists
+    // New sessions will only have HttpOnly cookie
+    const oldRefreshToken = localStorage.getItem('refreshToken');
+    if (oldRefreshToken !== null) {
+      localStorage.removeItem('refreshToken');
+      log.info('Migrated: Removed refreshToken from localStorage (now HttpOnly cookie)');
+    }
 
     const receivedAtStr = localStorage.getItem('tokenReceivedAt');
 
@@ -113,11 +131,31 @@ export class TokenManager {
     return this.accessToken;
   }
 
+  /**
+   * Get refresh token status.
+   *
+   * IMPORTANT: The actual refresh token is in an HttpOnly cookie that JS cannot read!
+   * This method returns a placeholder 'HTTPONLY_COOKIE' if the user appears to be
+   * logged in (has accessToken). This maintains backward compatibility with code
+   * that checks `if (getRefreshToken() !== null)` before attempting refresh.
+   *
+   * The actual refresh happens via the HttpOnly cookie sent automatically
+   * with credentials: 'include'.
+   */
   public getRefreshToken(): string | null {
-    return this.refreshToken;
+    // If we have an accessToken, assume we also have a refresh cookie
+    // (they're always set together by the backend)
+    return this.accessToken !== null ? 'HTTPONLY_COOKIE' : null;
   }
 
-  public setTokens(access: string, refresh: string): void {
+  /**
+   * Set tokens after login or refresh.
+   *
+   * @param access - The new access token (stored in localStorage)
+   * @param _refresh - DEPRECATED: Refresh token is now stored in HttpOnly cookie by backend.
+   *                   Parameter kept for backward compatibility but is ignored.
+   */
+  public setTokens(access: string, _refresh?: string): void {
     if (!isBrowser()) return;
 
     // SECURITY: Clear API cache from previous user before setting new tokens
@@ -127,15 +165,12 @@ export class TokenManager {
     }
 
     this.accessToken = access;
-    this.refreshToken = refresh;
+    // NOTE: refreshToken is stored in HttpOnly cookie by backend, not in JS
     this.tokenReceivedAt = Date.now();
 
     localStorage.setItem('accessToken', access);
-    localStorage.setItem('refreshToken', refresh);
+    // NOTE: refreshToken is NOT stored in localStorage anymore (HttpOnly cookie)
     localStorage.setItem('tokenReceivedAt', this.tokenReceivedAt.toString());
-
-    // Legacy cookie for backward compatibility
-    document.cookie = `token=${access}; path=/; max-age=86400; SameSite=Lax`;
 
     this.expiringSoonWarningEmitted = false;
 
@@ -155,6 +190,12 @@ export class TokenManager {
     this.restartTimer();
   }
 
+  /**
+   * Clear all tokens and redirect to login.
+   *
+   * NOTE: The HttpOnly refresh token cookie is cleared by the backend
+   * when calling /auth/logout. We only clear localStorage items here.
+   */
   public clearTokens(reason: LogoutReason = 'logout'): void {
     if (!isBrowser()) return;
 
@@ -164,11 +205,11 @@ export class TokenManager {
     }
 
     this.accessToken = null;
-    this.refreshToken = null;
+    // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on logout
     this.tokenReceivedAt = null;
 
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    // NOTE: refreshToken is not in localStorage anymore (HttpOnly cookie)
     localStorage.removeItem('tokenReceivedAt');
     localStorage.removeItem('user');
 
@@ -183,13 +224,20 @@ export class TokenManager {
     this.redirectToLogin(reason);
   }
 
+  /**
+   * Refresh tokens if needed (proactive refresh before expiry).
+   *
+   * NOTE: We check accessToken presence to determine if user has a session.
+   * The actual refresh uses the HttpOnly cookie automatically.
+   */
   public async refreshIfNeeded(): Promise<boolean> {
-    if (this.accessToken === null || this.refreshToken === null) {
+    // No access token = no session
+    if (this.accessToken === null) {
       return false;
     }
 
     if (this.isExpired()) {
-      console.warn('[TokenManager] Token expired, logging out immediately (no refresh)');
+      log.warn('Token expired, logging out immediately (no refresh)');
       this.clearTokens('token_expired');
       return false;
     }
@@ -216,7 +264,7 @@ export class TokenManager {
     });
 
     if (exp <= now) {
-      console.error('[TokenManager] ❌ CRITICAL: Server returned ALREADY EXPIRED token!');
+      log.error({ exp, now }, 'CRITICAL: Server returned ALREADY EXPIRED token!');
       return false;
     }
 
@@ -224,7 +272,10 @@ export class TokenManager {
   }
 
   /**
-   * Check if refresh can proceed
+   * Check if refresh can proceed.
+   *
+   * NOTE: We can't check if HttpOnly cookie exists from JS.
+   * We assume it exists if user has an accessToken (set together by backend).
    */
   private canRefresh(): boolean {
     if (!isBrowser()) {
@@ -233,19 +284,23 @@ export class TokenManager {
     if (this.isRefreshing) {
       return false;
     }
-    if (this.refreshToken === null) {
-      console.error('[TokenManager] No refresh token available');
+    // Can't check HttpOnly cookie directly, assume it exists if we have accessToken
+    if (this.accessToken === null) {
+      log.error('No access token available, cannot refresh');
       return false;
     }
     return true;
   }
 
   /**
-   * Process successful refresh response
+   * Process successful refresh response.
+   *
+   * NOTE: The response only contains accessToken. The new refreshToken
+   * is set as an HttpOnly cookie by the backend (not visible to JS).
    */
   private processRefreshResponse(data: {
     success?: boolean;
-    data?: { accessToken: string; refreshToken: string };
+    data?: { accessToken: string; refreshToken?: string };
   }): boolean {
     if (data.success !== true || data.data === undefined) {
       throw new Error('Invalid refresh response format');
@@ -255,10 +310,18 @@ export class TokenManager {
       throw new Error('Server returned expired token');
     }
 
-    this.setTokens(data.data.accessToken, data.data.refreshToken);
+    // Only accessToken is used, refreshToken is in HttpOnly cookie
+    this.setTokens(data.data.accessToken);
     return true;
   }
 
+  /**
+   * Refresh the access token using the HttpOnly refresh token cookie.
+   *
+   * SECURITY: The refresh token is sent automatically via HttpOnly cookie.
+   * We use credentials: 'include' to send cookies with the request.
+   * The body is empty since the token is in the cookie.
+   */
   public async refresh(): Promise<boolean> {
     if (!this.canRefresh()) {
       return false;
@@ -270,7 +333,8 @@ export class TokenManager {
       const response = await fetch(`${window.location.origin}/api/v2/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
+        credentials: 'include', // CRITICAL: Send HttpOnly cookie!
+        body: JSON.stringify({}), // Empty body, refresh token is in cookie
       });
 
       if (!response.ok) {
@@ -279,7 +343,7 @@ export class TokenManager {
 
       const data = (await response.json()) as {
         success?: boolean;
-        data?: { accessToken: string; refreshToken: string };
+        data?: { accessToken: string; refreshToken?: string };
       };
 
       this.logDebug('🔍 Refresh response received', {
@@ -287,12 +351,12 @@ export class TokenManager {
         success: data.success,
         hasData: data.data !== undefined,
         hasAccessToken: Boolean(data.data?.accessToken),
-        hasRefreshToken: Boolean(data.data?.refreshToken),
+        // refreshToken is now in HttpOnly cookie, not in response
       });
 
       return this.processRefreshResponse(data);
     } catch (error) {
-      console.error('[TokenManager] Token refresh failed:', error);
+      log.error({ err: error }, 'Token refresh failed');
       return false;
     } finally {
       this.isRefreshing = false;
@@ -442,7 +506,7 @@ export class TokenManager {
 
     if (remaining === 0) {
       this.logDebug('💀 TOKEN EXPIRED! Initiating logout...');
-      console.warn('[TokenManager] Token expired (00:00), logging out immediately');
+      log.warn('Token expired (00:00), logging out immediately');
 
       this.stopTimer();
 
@@ -490,7 +554,7 @@ export class TokenManager {
 
     const url = params.toString() !== '' ? `/login?${params.toString()}` : '/login';
 
-    console.warn(`[TokenManager] Redirecting to login (reason: ${reason})`);
+    log.warn({ reason, url }, 'Redirecting to login');
     window.location.replace(url);
   }
 
@@ -520,16 +584,15 @@ export class TokenManager {
     const isDev = import.meta.env.DEV;
     if (!this.debugMode && !isDev) return;
 
-    const timestamp = new Date().toISOString().split('T')[1]?.slice(0, 8) ?? '';
     const remaining = this.getRemainingTime();
     const minutes = Math.floor(remaining / 60);
     const seconds = remaining % 60;
     const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     if (data !== undefined) {
-      console.warn(`[TokenManager ${timestamp}] [${timeStr}] ${message}`, data);
+      log.debug({ ...data, remaining: timeStr }, message);
     } else {
-      console.warn(`[TokenManager ${timestamp}] [${timeStr}] ${message}`);
+      log.debug({ remaining: timeStr }, message);
     }
   }
 
@@ -575,9 +638,8 @@ export function getTokenManager(): TokenManager {
 export type { LogoutReason } from './auth-types';
 
 // For browser debugging (development only)
-if (isBrowser()) {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    (window as unknown as { tokenManager: TokenManager }).tokenManager = TokenManager.getInstance();
-  }
+// CRITICAL: Use import.meta.env.DEV (build-time check) NOT hostname (runtime check)
+// hostname check would expose tokenManager in production on localhost (Docker/Nginx)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as { tokenManager: TokenManager }).tokenManager = TokenManager.getInstance();
 }

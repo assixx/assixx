@@ -3,6 +3,10 @@
  * 1:1 Copy from frontend/src/utils/jwt-utils.ts
  */
 
+import { createLogger } from './logger';
+
+const log = createLogger('JWTUtils');
+
 /** JWT Payload structure */
 export interface JWTPayload {
   id: number;
@@ -33,7 +37,7 @@ export function parseJwt(token: string): JWTPayload | null {
     const jsonPayload = decodeURIComponent(percentEncoded);
     return JSON.parse(jsonPayload) as JWTPayload;
   } catch (error) {
-    console.error('Error parsing JWT:', error);
+    log.error({ err: error }, 'Error parsing JWT');
     return null;
   }
 }

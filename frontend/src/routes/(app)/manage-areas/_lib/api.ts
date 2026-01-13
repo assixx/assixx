@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -18,6 +19,8 @@ import type {
   FormIsActiveStatus,
   DeleteAreaResult,
 } from './types';
+
+const log = createLogger('ManageAreasApi');
 
 const apiClient = getApiClient();
 
@@ -112,7 +115,7 @@ export async function loadAreas(): Promise<{
       : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error loading areas:', err);
+    log.error({ err }, 'Error loading areas');
 
     if (isSessionExpiredError(err)) {
       handleSessionExpired();
@@ -150,7 +153,7 @@ export async function loadAreaLeads(): Promise<{
 
     return { users, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error loading area leads:', err);
+    log.error({ err }, 'Error loading area leads');
     return {
       users: [],
       error: err instanceof Error ? err.message : 'Fehler beim Laden der Bereichsleiter',
@@ -172,7 +175,7 @@ export async function loadDepartments(): Promise<{
       : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return {
       departments: [],
       error: err instanceof Error ? err.message : 'Fehler beim Laden der Abteilungen',
@@ -220,7 +223,7 @@ export async function saveArea(
     }
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error saving area:', err);
+    log.error({ err }, 'Error saving area');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Speichern',
@@ -236,7 +239,7 @@ export async function deleteArea(areaId: number): Promise<DeleteAreaResult> {
     await apiClient.delete(API_ENDPOINTS.area(areaId));
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error deleting area:', err);
+    log.error({ err }, 'Error deleting area');
 
     const errorInfo = parseDeleteError(err);
 
@@ -266,7 +269,7 @@ export async function forceDeleteArea(
     await apiClient.delete(API_ENDPOINTS.areaForceDelete(areaId));
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageAreas] Error force deleting area:', err);
+    log.error({ err }, 'Error force deleting area');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Löschen',

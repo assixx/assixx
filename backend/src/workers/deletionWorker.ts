@@ -21,14 +21,11 @@ class DeletionWorker {
     process.on('SIGTERM', () => void this.shutdown('SIGTERM'));
     process.on('SIGINT', () => void this.shutdown('SIGINT'));
     process.on('uncaughtException', (error: Error) => {
-      logger.error('Uncaught exception in deletion worker:', error);
+      logger.error({ err: error }, 'Uncaught exception in deletion worker');
       void this.shutdown('uncaughtException');
     });
     process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-      logger.error('Unhandled rejection in deletion worker:', {
-        reason,
-        promise,
-      });
+      logger.error({ reason, promise }, 'Unhandled rejection in deletion worker');
       void this.shutdown('unhandledRejection');
     });
   }
@@ -59,12 +56,12 @@ class DeletionWorker {
           }
           await this.sleep(this.processingInterval);
         } catch (error: unknown) {
-          logger.error('Error in worker main loop:', error);
+          logger.error({ err: error }, 'Error in worker main loop');
           await this.sleep(60000); // 1 minute wait on error
         }
       }
     } catch (error: unknown) {
-      logger.error('Failed to start deletion worker:', error);
+      logger.error({ err: error }, 'Failed to start deletion worker');
       process.exit(1);
     }
   }
@@ -76,7 +73,7 @@ class DeletionWorker {
       logger.debug('Checking deletion queue...');
       await tenantDeletionService.processQueue();
     } catch (error: unknown) {
-      logger.error('Error processing deletion queue:', error);
+      logger.error({ err: error }, 'Error processing deletion queue');
     } finally {
       this.isProcessing = false;
     }
@@ -141,7 +138,7 @@ class DeletionWorker {
       logger.info('✅ Deletion Worker shutdown complete');
       process.exit(0);
     } catch (error: unknown) {
-      logger.error('Error during shutdown:', error);
+      logger.error({ err: error }, 'Error during shutdown');
       process.exit(1);
     }
   }
@@ -150,7 +147,7 @@ class DeletionWorker {
 // Start the worker when run directly
 const worker = new DeletionWorker();
 worker.start().catch((error: unknown) => {
-  logger.error('Fatal error starting deletion worker:', error);
+  logger.error({ err: error }, 'Fatal error starting deletion worker');
   process.exit(1);
 });
 

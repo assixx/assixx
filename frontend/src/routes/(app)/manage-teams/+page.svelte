@@ -8,6 +8,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ManageTeamsPage');
 
   // Page-specific CSS
   import '../../../styles/manage-teams.css';
@@ -144,7 +147,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageTeams] Error saving team:', err);
+      log.error({ err }, 'Error saving team');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVING);
     } finally {
       submitting = false;
@@ -170,7 +173,7 @@
         showForceDeleteModal = true;
       }
     } catch (err) {
-      console.error('[ManageTeams] Error deleting team:', err);
+      log.error({ err }, 'Error deleting team');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
   }
@@ -187,7 +190,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageTeams] Error force deleting team:', err);
+      log.error({ err }, 'Error force deleting team');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
   }

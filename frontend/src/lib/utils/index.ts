@@ -7,10 +7,12 @@
  */
 
 // Auth utilities (auth.ts + auth-helpers.ts combined)
+// NOTE: getRefreshToken is NOT exported - use getTokenManager().getRefreshToken() instead
+// Refresh tokens are now stored in HttpOnly cookies (not accessible via JS)
 export {
   // Token management
   getAuthToken,
-  getRefreshToken,
+  // getRefreshToken - REMOVED: Use TokenManager for refresh token handling
   setAuthToken,
   removeAuthToken,
   getAuthHeader,

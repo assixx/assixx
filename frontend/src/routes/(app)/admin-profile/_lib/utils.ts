@@ -3,9 +3,13 @@
  * @module admin-profile/_lib/utils
  */
 
+import { createLogger } from '$lib/utils/logger';
+
 import { MESSAGES, POSITION_MAP } from './constants';
 
 import type { ToastType } from './types';
+
+const log = createLogger('AdminProfileUtils');
 
 /** Error code to message mapping for picture upload */
 const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
@@ -35,7 +39,7 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.warn(`[Toast:${type}] ${message}`);
+  log.warn({ type }, message);
 }
 
 /**

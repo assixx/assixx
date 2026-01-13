@@ -6,10 +6,13 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './constants';
 
 import type { User, Document, Department, Team, CalendarEvent, BlackboardEntry } from './types';
+
+const log = createLogger('AdminDashboardApi');
 
 /** Get auth token from localStorage */
 export function getAuthToken(): string | null {
@@ -43,7 +46,7 @@ export async function loadEmployees(): Promise<{
       count: list.length,
     };
   } catch (err) {
-    console.error('Error loading employees:', err);
+    log.error({ err }, 'Error loading employees');
     return { recent: [], count: 0 };
   }
 }
@@ -65,7 +68,7 @@ export async function loadDocuments(): Promise<{
       count: list.length,
     };
   } catch (err) {
-    console.error('Error loading documents:', err);
+    log.error({ err }, 'Error loading documents');
     return { recent: [], count: 0 };
   }
 }
@@ -86,7 +89,7 @@ export async function loadDepartments(): Promise<{
       count: list.length,
     };
   } catch (err) {
-    console.error('Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return { list: [], count: 0 };
   }
 }
@@ -107,7 +110,7 @@ export async function loadTeams(): Promise<{
       count: list.length,
     };
   } catch (err) {
-    console.error('Error loading teams:', err);
+    log.error({ err }, 'Error loading teams');
     return { list: [], count: 0 };
   }
 }
@@ -149,7 +152,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, LIST_LIMITS.upcomingEvents);
   } catch (err) {
-    console.error('Error loading events:', err);
+    log.error({ err }, 'Error loading events');
     return [];
   }
 }
@@ -165,7 +168,7 @@ export async function loadBlackboard(): Promise<BlackboardEntry[]> {
     );
     return Array.isArray(result) ? result : [];
   } catch (err) {
-    console.error('Error loading blackboard:', err);
+    log.error({ err }, 'Error loading blackboard');
     return [];
   }
 }

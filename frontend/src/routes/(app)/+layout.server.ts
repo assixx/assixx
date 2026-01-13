@@ -11,7 +11,11 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { LayoutServerLoad } from './$types';
+
+const log = createLogger('AppLayout');
 
 /** API base URL for server-side fetching */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
@@ -118,9 +122,10 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
     });
 
     if (!response.ok) {
-      console.warn('[SSR Layout] /users/me failed with status', response.status);
+      log.warn({ status: response.status }, '/users/me failed');
       cookies.delete('accessToken', { path: '/' });
-      cookies.delete('refreshToken', { path: '/' });
+      // refreshToken has path '/api/v2/auth' - must match to delete
+      cookies.delete('refreshToken', { path: '/api/v2/auth' });
       redirect(302, '/login');
     }
 
@@ -128,7 +133,7 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
     const userData = extractUserData(json);
 
     if (userData === undefined) {
-      console.error('[SSR Layout] No user data in response');
+      log.error('No user data in response');
       redirect(302, '/login');
     }
 
@@ -137,8 +142,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
       tenant: userData.tenant ?? null,
       isAuthenticated: true,
     };
-  } catch (error) {
-    console.error('[SSR Layout] Error loading user:', error);
+  } catch (err) {
+    log.error({ err }, 'Error loading user');
     redirect(302, '/login');
   }
 };

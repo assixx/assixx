@@ -61,15 +61,23 @@ function getJwtSecrets(): { access: string; refresh: string } {
     );
   }
 
-  // JWT_REFRESH_SECRET should be different from JWT_SECRET for better security
+  // JWT_REFRESH_SECRET MUST be different from JWT_SECRET for security
+  // SECURITY: No fallback - must be explicitly set
   const refreshSecret = process.env['JWT_REFRESH_SECRET'];
   if (refreshSecret === undefined || refreshSecret === '' || refreshSecret.length < 32) {
-    // If not set, use access secret but log a warning
-    console.warn(
-      'SECURITY WARNING: JWT_REFRESH_SECRET not set or too short. Using JWT_SECRET instead. ' +
-        'For production, set a separate JWT_REFRESH_SECRET.',
+    throw new Error(
+      'SECURITY ERROR: JWT_REFRESH_SECRET must be set and at least 32 characters. ' +
+        'It MUST be different from JWT_SECRET for proper token isolation. ' +
+        "Generate one with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
     );
-    return { access: accessSecret, refresh: accessSecret };
+  }
+
+  // Ensure refresh secret is different from access secret
+  if (refreshSecret === accessSecret) {
+    throw new Error(
+      'SECURITY ERROR: JWT_REFRESH_SECRET must be different from JWT_SECRET. ' +
+        'Using the same secret for both defeats the purpose of token isolation.',
+    );
   }
 
   return { access: accessSecret, refresh: refreshSecret };

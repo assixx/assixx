@@ -95,3 +95,16 @@ api-tests/
 
 # Credentials Archive (NEVER commit - contains passwords!)
 .locklock
+
+# Secret Backup Patterns (NEVER commit!)
+*.secrets
+*.secrets.*
+*secrets-backup*
+*-secrets-*
+*.env.old*
+*.env.backup*
+*.env.bak
+*credentials*
+*api-key*
+*.key
+!*.key.example

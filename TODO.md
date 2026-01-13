@@ -1,10 +1,31 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (14.09.2025)
+## 🚀 AKTUELLER STATUS (12.01.2026)
 
 **📁 Archiv:** Alte TODOs wurden verschoben → `/archive/TODO_bak_August.md` (nur zur Dokumentation)
 
-### 🎯 Aktuelle Phase: API-V2-MIGRATION
+### 🎯 Aktuelle Phase: ALERTING & MONITORING
+
+### ✅ Alerting & Monitoring Stack (ADR-002) - IN PROGRESS
+
+| Phase | Component       | Status      | Details                           |
+| ----- | --------------- | ----------- | --------------------------------- |
+| 1     | Pino Logging    | ✅ Done     | Winston → Pino migration complete |
+| 2     | Sentry Backend  | ✅ Done     | @sentry/nestjs, 5xx error capture |
+| 3     | Sentry Frontend | 🔲 TODO     | @sentry/sveltekit integration     |
+| 4     | Source Maps     | 🔲 TODO     | CI/CD upload for stack traces     |
+| 5     | PLG Stack       | 🔲 Optional | Prometheus + Loki + Grafana       |
+
+**Nächster Schritt:** Sentry DSN konfigurieren → `/docker/.env`
+
+---
+
+### 🏁 Abgeschlossene Phasen
+
+- [x] API-V2-MIGRATION (100%)
+- [x] SvelteKit Migration (100%)
+- [x] Pino Logging Migration (100%)
+- [x] Sentry Backend Integration (100%)
 
 #### 📚 Wichtige Dokumente (in dieser Reihenfolge lesen)
 

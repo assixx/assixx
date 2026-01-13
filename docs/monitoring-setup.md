@@ -373,18 +373,17 @@ const uploadSize = new Histogram({
 ## 🚀 Quick Start
 
 ```bash
-# Monitoring Stack starten
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+# PLG Stack (Prometheus + Loki + Grafana) starten
+cd docker
+docker-compose --profile observability up -d
 
 # Zugriff:
-# - Grafana: http://localhost:3001 (admin/admin)
+# - Grafana: http://localhost:3050 (admin/admin)
 # - Prometheus: http://localhost:9090
 # - Loki: http://localhost:3100
 
-# Dashboards importieren
-# 1. Login zu Grafana
-# 2. Go to Dashboards > Import
-# 3. Upload JSON files from infrastructure/monitoring/grafana/dashboards/
+# Dashboards sind automatisch provisioniert in:
+# docker/grafana/dashboards/
 ```
 
 ## 📈 Performance-Tipps

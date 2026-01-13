@@ -20,6 +20,7 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+  import { createLogger } from '$lib/utils/logger';
   import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
   import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
@@ -28,6 +29,8 @@
   import type { LayoutData } from './$types';
 
   import '../../styles/unified-navigation.css';
+
+  const log = createLogger('AppLayout');
 
   /**
    * Resolve dynamic path with base prefix.
@@ -293,7 +296,7 @@
       // Call logout API first (while we still have a valid token)
       await apiClient.post('/auth/logout');
     } catch (err) {
-      console.error('Logout API error (continuing with logout):', err);
+      log.error({ err }, 'Logout API error (continuing with logout)');
     }
 
     // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
@@ -310,7 +313,7 @@
     localStorage.removeItem('activeRole');
     localStorage.removeItem('token'); // Legacy token
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on /auth/logout
     localStorage.removeItem('tokenReceivedAt');
     localStorage.removeItem('user');
 
@@ -458,7 +461,7 @@
     // If token expires during session, redirect to login
     const tokenManager = getTokenManager();
     tokenManager.onTokenExpired(() => {
-      console.warn('[Layout] Token expired during session, redirecting to login');
+      log.warn({}, 'Token expired during session, redirecting to login');
       void goto('/login', { replaceState: true });
     });
 
@@ -469,7 +472,7 @@
     // When another tab switches role, this callback updates local state
     roleSyncManagerInstance = getRoleSyncManager();
     roleSyncManagerInstance.init((newRole: string, token?: string) => {
-      console.warn('[Layout] Role changed in another tab:', newRole);
+      log.warn({ newRole }, 'Role changed in another tab');
 
       // Update local state - the manager handles redirect/reload
       if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {

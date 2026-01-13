@@ -13,9 +13,12 @@
 
 import { browser } from '$app/environment';
 
+import { createLogger } from './logger';
 import { getTokenManager, registerCacheClearCallback } from './token-manager';
 
 import type { LogoutReason } from './auth-types';
+
+const log = createLogger('ApiClient');
 
 // =============================================================================
 // AUTH TOKEN PROVIDER INTERFACE
@@ -597,6 +600,19 @@ export class ApiClient {
   }
 
   /**
+   * Determine credentials mode for a request.
+   *
+   * Auth endpoints need 'include' to send HttpOnly refresh token cookie.
+   * Other endpoints use 'omit' to avoid unnecessary cookie transmission.
+   */
+  private getCredentialsMode(endpoint: string): RequestCredentials {
+    // Auth endpoints need cookies for HttpOnly refresh token
+    const authEndpoints = ['/auth/login', '/auth/logout', '/auth/refresh'];
+    const isAuthEndpoint = authEndpoints.some((auth) => endpoint.startsWith(auth));
+    return isAuthEndpoint ? 'include' : 'omit';
+  }
+
+  /**
    * Main request method with AbortController and timeout support
    *
    * @param endpoint - API endpoint (e.g., '/users')
@@ -622,11 +638,14 @@ export class ApiClient {
     // Proactive token refresh
     await this.proactivelyRefreshTokenIfNeeded(endpoint, headers);
 
+    // Auth endpoints need credentials: 'include' for HttpOnly cookie
+    const credentialsMode = this.getCredentialsMode(endpoint);
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: 'omit',
+        credentials: credentialsMode,
         signal: combinedSignal,
       });
 
@@ -684,7 +703,7 @@ export class ApiClient {
 
       // Don't log abort errors (expected during navigation)
       if (!this.isAbortError(error)) {
-        console.error('[API v2] Request failed:', error);
+        log.error({ err: error }, 'Request failed');
       }
     }
 
@@ -692,7 +711,7 @@ export class ApiClient {
   }
 
   private handleRateLimit(): never {
-    console.error('[API] Rate limit exceeded');
+    log.error('Rate limit exceeded');
 
     // NOTE: Do NOT clear tokens here!
     // 429 = "slow down", NOT "session invalid"

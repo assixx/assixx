@@ -7,6 +7,10 @@
   // Page-specific CSS
   import '../../../styles/tenant-deletion-status.css';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('TenantDeletionStatusPage');
+
   // Local modules
   import {
     rejectDeletion as apiRejectDeletion,
@@ -146,7 +150,7 @@
       closeConfirmModal();
       await invalidateAll();
     } catch (err) {
-      console.error('[TenantDeletion] Error in modal action:', err);
+      log.error({ err }, 'Error in modal action');
       const errorMessage = err instanceof Error ? err.message : MESSAGES.genericError;
       showToast(errorMessage, 'error');
       resetLoading();
