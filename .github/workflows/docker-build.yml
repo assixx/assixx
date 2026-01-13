@@ -94,6 +94,9 @@ jobs:
       - name: Run Docker Compose tests
         run: |
           cp docker/.env.example docker/.env
+          # Create external volumes (required by docker-compose.yml)
+          docker volume create assixx_postgres_data
+          docker volume create assixx_redis_data
           cd docker && docker compose up -d
 
           # Wait for PostgreSQL to be HEALTHY
