@@ -40,8 +40,12 @@ build/
 uploads/
 backups/
 exports/
+
+# Runtime log directories only (NOT source code!)
+# IMPORTANT: Do NOT use **/logs/ - it would exclude backend/src/nest/logs/ source code
 logs/
-**/logs/
+backend/logs/
+frontend/logs/
 
 # -----------------------------------------------------------------------------
 # Archive & Old Code (~33MB)
