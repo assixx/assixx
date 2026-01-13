@@ -25,6 +25,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
 import crypto from 'node:crypto';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -476,9 +477,10 @@ export class AuthService {
     lastName: string;
     role: string;
   }): Promise<number> {
+    const userUuid = uuidv7();
     const rows = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO users (tenant_id, username, email, password, first_name, last_name, role, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 1)
+      `INSERT INTO users (tenant_id, username, email, password, first_name, last_name, role, is_active, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, NOW())
        RETURNING id`,
       [
         data.tenantId,
@@ -488,6 +490,7 @@ export class AuthService {
         data.firstName,
         data.lastName,
         data.role,
+        userUuid,
       ],
     );
 

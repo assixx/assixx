@@ -5,6 +5,7 @@
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
@@ -247,11 +248,20 @@ export class DepartmentsService {
 
     const isActive = dto.isActive ?? 1;
 
+    const departmentUuid = uuidv7();
     const [rows] = await execute<{ id: number }[]>(
-      `INSERT INTO departments (name, description, department_lead_id, area_id, is_active, tenant_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO departments (name, description, department_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
-      [dto.name, dto.description, dto.departmentLeadId, dto.areaId, isActive, tenantId],
+      [
+        dto.name,
+        dto.description,
+        dto.departmentLeadId,
+        dto.areaId,
+        isActive,
+        tenantId,
+        departmentUuid,
+      ],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {

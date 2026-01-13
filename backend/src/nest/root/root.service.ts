@@ -15,6 +15,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
+import { v7 as uuidv7 } from 'uuid';
 
 import { tenantDeletionService } from '../../services/tenantDeletion.service.js';
 import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
@@ -400,9 +401,10 @@ export class RootService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
+      const userUuid = uuidv7();
       const rows = await this.db.query<DbIdRow>(
-        `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, tenant_id)
-         VALUES ($1, $2, $3, $4, $5, 'admin', $6, $7, $8, 1, $9)
+        `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, tenant_id, uuid, uuid_created_at)
+         VALUES ($1, $2, $3, $4, $5, 'admin', $6, $7, $8, 1, $9, $10, NOW())
          RETURNING id`,
         [
           normalizedEmail,
@@ -414,6 +416,7 @@ export class RootService {
           data.notes ?? null,
           data.employeeNumber ?? '',
           tenantId,
+          userUuid,
         ],
       );
 
@@ -621,9 +624,10 @@ export class RootService {
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
+    const userUuid = uuidv7();
     const rows = await this.db.query<DbIdRow>(
-      `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id)
-       VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, TRUE, $10)
+      `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, TRUE, $10, $11, NOW())
        RETURNING id`,
       [
         normalizedEmail,
@@ -636,6 +640,7 @@ export class RootService {
         data.employeeNumber ?? null,
         data.isActive ?? 1,
         tenantId,
+        userUuid,
       ],
     );
 

@@ -345,8 +345,8 @@ export class KvpService {
       u.last_name as submitted_by_lastname,
       admin.first_name as assigned_to_name,
       admin.last_name as assigned_to_lastname,
-      (SELECT COUNT(*) FROM kvp_attachments WHERE suggestion_id = s.id) as attachment_count,
-      (SELECT COUNT(*) FROM kvp_comments WHERE suggestion_id = s.id) as comment_count
+      (SELECT COUNT(*)::integer FROM kvp_attachments WHERE suggestion_id = s.id) as attachment_count,
+      (SELECT COUNT(*)::integer FROM kvp_comments WHERE suggestion_id = s.id) as comment_count
     FROM kvp_suggestions s
     LEFT JOIN kvp_categories c ON s.category_id = c.id
     LEFT JOIN departments d ON s.department_id = d.id

@@ -170,8 +170,8 @@ const FETCH_ENTRIES_BASE_QUERY = `
          CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
          CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
          c.confirmed_at as confirmed_at,
-         (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
-         (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
+         (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
+         (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
   FROM blackboard_entries e
   LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
   LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
@@ -567,8 +567,8 @@ export class BlackboardService {
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
              CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
              c.confirmed_at as confirmed_at,
-             (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
-             (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
+             (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
+             (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e
       LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
@@ -1187,8 +1187,8 @@ export class BlackboardService {
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
              CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
              c.confirmed_at as confirmed_at,
-             (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
-             (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
+             (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
+             (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e
       LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1

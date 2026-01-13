@@ -136,6 +136,22 @@ export class MachinesController {
     return await this.machinesService.addMaintenanceRecord(data, tenantId, user.id, ip, userAgent);
   }
 
+  /**
+   * GET /machines/uuid/:uuid
+   * Get machine by UUID (preferred)
+   */
+  @Get('uuid/:uuid')
+  async getMachineByUuid(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<MachineResponse> {
+    return await this.machinesService.getMachineByUuid(uuid, tenantId);
+  }
+
+  /**
+   * GET /machines/:id
+   * @deprecated Use GET /machines/uuid/:uuid instead
+   */
   @Get(':id')
   async getMachine(
     @Param('id', ParseIntPipe) id: number,
@@ -208,6 +224,49 @@ export class MachinesController {
     return await this.machinesService.createMachine(data, tenantId, user.id, ip, userAgent);
   }
 
+  /**
+   * PUT /machines/uuid/:uuid
+   * Update machine by UUID (preferred)
+   */
+  @Put('uuid/:uuid')
+  @Roles('admin', 'root')
+  async updateMachineByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateMachineDto,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MachineResponse> {
+    const data = stripUndefined({
+      name: dto.name,
+      model: dto.model,
+      manufacturer: dto.manufacturer,
+      serialNumber: dto.serialNumber,
+      assetNumber: dto.assetNumber,
+      departmentId: dto.departmentId,
+      areaId: dto.areaId,
+      location: dto.location,
+      machineType: dto.machineType,
+      status: dto.status,
+      purchaseDate: dto.purchaseDate,
+      installationDate: dto.installationDate,
+      warrantyUntil: dto.warrantyUntil,
+      lastMaintenance: dto.lastMaintenance,
+      nextMaintenance: dto.nextMaintenance,
+      operatingHours: dto.operatingHours,
+      productionCapacity: dto.productionCapacity,
+      energyConsumption: dto.energyConsumption,
+      manualUrl: dto.manualUrl,
+      qrCode: dto.qrCode,
+      notes: dto.notes,
+      isActive: dto.isActive,
+    }) as MachineUpdateRequest;
+    return await this.machinesService.updateMachineByUuid(uuid, data, tenantId, user.id);
+  }
+
+  /**
+   * PUT /machines/:id
+   * @deprecated Use PUT /machines/uuid/:uuid instead
+   */
   @Put(':id')
   @Roles('admin', 'root')
   async updateMachine(
@@ -245,6 +304,25 @@ export class MachinesController {
     return await this.machinesService.updateMachine(id, data, tenantId, user.id, ip, userAgent);
   }
 
+  /**
+   * DELETE /machines/uuid/:uuid
+   * Delete machine by UUID (preferred)
+   */
+  @Delete('uuid/:uuid')
+  @Roles('admin', 'root')
+  async deleteMachineByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    await this.machinesService.deleteMachineByUuid(uuid, tenantId, user.id);
+    return { message: 'Machine deleted successfully' };
+  }
+
+  /**
+   * DELETE /machines/:id
+   * @deprecated Use DELETE /machines/uuid/:uuid instead
+   */
   @Delete(':id')
   @Roles('admin', 'root')
   async deleteMachine(

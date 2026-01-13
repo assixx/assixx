@@ -140,20 +140,75 @@ export async function fetchChatFolders(): Promise<ChatFolder[]> {
 /**
  * Fetch chat attachments for a specific conversation
  */
+/** Map raw API document to frontend Document type */
+function mapApiDocument(doc: Record<string, unknown>): Document {
+  // Extract values with proper null checks before type casting
+  const fileSize = doc.fileSize as number | undefined;
+  const size = doc.size as number | undefined;
+  const createdAt = doc.createdAt as string | undefined;
+  const uploadedAt = doc.uploadedAt as string | undefined;
+  const createdBy = doc.createdBy as number | undefined;
+  const uploadedBy = doc.uploadedBy as number | undefined;
+
+  return {
+    ...doc,
+    size: fileSize ?? size ?? 0,
+    uploadedAt: createdAt ?? uploadedAt ?? new Date().toISOString(),
+    uploadedBy: createdBy ?? uploadedBy ?? 0,
+  } as Document;
+}
+
+/** Type guard: check if value is a non-null object */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Extract documents array from object with 'documents' key */
+function extractFromDocumentsKey(obj: Record<string, unknown>): Record<string, unknown>[] | null {
+  if ('documents' in obj && Array.isArray(obj.documents)) {
+    return obj.documents as Record<string, unknown>[];
+  }
+  return null;
+}
+
+/** Extract documents array from object with 'data' key */
+function extractFromDataKey(obj: Record<string, unknown>): Record<string, unknown>[] | null {
+  if (!('data' in obj)) return null;
+
+  // { data: [...] }
+  if (Array.isArray(obj.data)) {
+    return obj.data as Record<string, unknown>[];
+  }
+
+  // { data: { documents: [...] } }
+  if (isObject(obj.data)) {
+    return extractFromDocumentsKey(obj.data);
+  }
+
+  return null;
+}
+
+/**
+ * Extract documents array from various API response structures
+ * Handles: [...], { documents: [...] }, { data: { documents: [...] } }, { data: [...] }
+ */
+function extractDocumentsFromResponse(result: unknown): Record<string, unknown>[] {
+  if (Array.isArray(result)) {
+    return result as Record<string, unknown>[];
+  }
+
+  if (!isObject(result)) {
+    return [];
+  }
+
+  return extractFromDocumentsKey(result) ?? extractFromDataKey(result) ?? [];
+}
+
 export async function fetchChatAttachments(conversationId: number): Promise<Document[]> {
   try {
     const result = await apiClient.get(`/chat/conversations/${conversationId}/attachments`);
-
-    if (Array.isArray(result)) {
-      return result as Document[];
-    }
-    if (result !== null && typeof result === 'object') {
-      const obj = result as Record<string, unknown>;
-      if ('data' in obj && Array.isArray(obj.data)) {
-        return obj.data as Document[];
-      }
-    }
-    return [];
+    const rawDocs = extractDocumentsFromResponse(result);
+    return rawDocs.map(mapApiDocument);
   } catch (err) {
     log.error({ err }, 'Failed to fetch chat attachments');
     return [];

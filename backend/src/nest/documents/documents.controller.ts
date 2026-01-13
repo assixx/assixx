@@ -46,6 +46,7 @@ import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { DocumentsService } from './documents.service.js';
 import type {
   ChatFolderResponse,
+  DocumentContentResponse,
   DocumentResponse,
   DocumentStatsResponse,
   PaginatedDocumentsResult,
@@ -157,8 +158,22 @@ export class DocumentsController {
   }
 
   /**
+   * GET /documents/uuid/:uuid
+   * Get document by UUID (preferred)
+   */
+  @Get('uuid/:uuid')
+  async getDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<DocumentResponse> {
+    return await this.documentsService.getDocumentByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * GET /documents/:id
    * Get document by ID
+   * @deprecated Use GET /documents/uuid/:uuid instead
    */
   @Get(':id')
   async getDocumentById(
@@ -240,8 +255,23 @@ export class DocumentsController {
   }
 
   /**
+   * PUT /documents/uuid/:uuid
+   * Update document by UUID (preferred)
+   */
+  @Put('uuid/:uuid')
+  async updateDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateDocumentDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.documentsService.updateDocumentByUuid(uuid, dto, tenantId, user.id);
+  }
+
+  /**
    * PUT /documents/:id
    * Update document metadata
+   * @deprecated Use PUT /documents/uuid/:uuid instead
    */
   @Put(':id')
   async updateDocument(
@@ -254,8 +284,22 @@ export class DocumentsController {
   }
 
   /**
+   * DELETE /documents/uuid/:uuid
+   * Delete document by UUID (preferred)
+   */
+  @Delete('uuid/:uuid')
+  async deleteDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.documentsService.deleteDocumentByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * DELETE /documents/:id
    * Delete document (soft delete)
+   * @deprecated Use DELETE /documents/uuid/:uuid instead
    */
   @Delete(':id')
   async deleteDocument(
@@ -267,8 +311,22 @@ export class DocumentsController {
   }
 
   /**
+   * POST /documents/uuid/:uuid/archive
+   * Archive document by UUID (preferred)
+   */
+  @Post('uuid/:uuid/archive')
+  async archiveDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.documentsService.archiveDocumentByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * POST /documents/:id/archive
    * Archive a document
+   * @deprecated Use POST /documents/uuid/:uuid/archive instead
    */
   @Post(':id/archive')
   async archiveDocument(
@@ -280,8 +338,22 @@ export class DocumentsController {
   }
 
   /**
+   * POST /documents/uuid/:uuid/unarchive
+   * Unarchive document by UUID (preferred)
+   */
+  @Post('uuid/:uuid/unarchive')
+  async unarchiveDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.documentsService.unarchiveDocumentByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * POST /documents/:id/unarchive
    * Unarchive a document
+   * @deprecated Use POST /documents/uuid/:uuid/unarchive instead
    */
   @Post(':id/unarchive')
   async unarchiveDocument(
@@ -293,8 +365,34 @@ export class DocumentsController {
   }
 
   /**
+   * GET /documents/uuid/:uuid/download
+   * Download document by UUID (preferred)
+   */
+  @Get('uuid/:uuid/download')
+  async downloadDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const content: DocumentContentResponse = await this.documentsService.getDocumentContentByUuid(
+      uuid,
+      tenantId,
+      user.id,
+    );
+
+    await reply
+      .header('Content-Type', content.mimeType)
+      .header('Content-Disposition', `attachment; filename="${content.originalName}"`)
+      .header('Content-Length', content.fileSize.toString())
+      .header('Cache-Control', 'private, max-age=3600')
+      .send(content.content);
+  }
+
+  /**
    * GET /documents/:id/download
    * Download document as attachment
+   * @deprecated Use GET /documents/uuid/:uuid/download instead
    */
   @Get(':id/download')
   async downloadDocument(
@@ -314,8 +412,38 @@ export class DocumentsController {
   }
 
   /**
+   * GET /documents/uuid/:uuid/preview
+   * Preview document by UUID (preferred)
+   */
+  @Get('uuid/:uuid/preview')
+  async previewDocumentByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const content: DocumentContentResponse = await this.documentsService.getDocumentContentByUuid(
+      uuid,
+      tenantId,
+      user.id,
+    );
+
+    // Mark as read (non-blocking)
+    void this.documentsService.markDocumentAsReadByUuid(uuid, tenantId, user.id);
+
+    await reply
+      .header('Content-Type', content.mimeType)
+      .header('Content-Disposition', `inline; filename="${content.originalName}"`)
+      .header('Content-Length', content.fileSize.toString())
+      .header('Accept-Ranges', 'bytes')
+      .header('Cache-Control', 'private, max-age=3600')
+      .send(content.content);
+  }
+
+  /**
    * GET /documents/:id/preview
    * Preview document inline
+   * @deprecated Use GET /documents/uuid/:uuid/preview instead
    */
   @Get(':id/preview')
   async previewDocument(
@@ -339,8 +467,22 @@ export class DocumentsController {
   }
 
   /**
+   * POST /documents/uuid/:uuid/read
+   * Mark document as read by UUID (preferred)
+   */
+  @Post('uuid/:uuid/read')
+  async markDocumentAsReadByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<SuccessResponse> {
+    return await this.documentsService.markDocumentAsReadByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * POST /documents/:id/read
    * Mark document as read
+   * @deprecated Use POST /documents/uuid/:uuid/read instead
    */
   @Post(':id/read')
   async markDocumentAsRead(

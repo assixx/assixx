@@ -134,8 +134,22 @@ export class UsersController {
   }
 
   /**
+   * GET /users/uuid/:uuid
+   * Get user by UUID (admin only, preferred)
+   */
+  @Get('uuid/:uuid')
+  @Roles('admin', 'root')
+  async getUserByUuid(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<SafeUserResponse> {
+    return await this.usersService.getUserByUuid(uuid, tenantId);
+  }
+
+  /**
    * GET /users/:id
    * Get user by ID (admin only)
+   * @deprecated Use GET /users/uuid/:uuid instead
    */
   @Get(':id')
   @Roles('admin', 'root')
@@ -161,8 +175,23 @@ export class UsersController {
   }
 
   /**
+   * PUT /users/uuid/:uuid
+   * Update user by UUID (admin only, preferred)
+   */
+  @Put('uuid/:uuid')
+  @Roles('admin', 'root')
+  async updateUserByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateUserDto,
+    @TenantId() tenantId: number,
+  ): Promise<SafeUserResponse> {
+    return await this.usersService.updateUserByUuid(uuid, dto, tenantId);
+  }
+
+  /**
    * PUT /users/:id
    * Update user (admin only)
+   * @deprecated Use PUT /users/uuid/:uuid instead
    */
   @Put(':id')
   @Roles('admin', 'root')
@@ -204,8 +233,23 @@ export class UsersController {
   }
 
   /**
+   * DELETE /users/uuid/:uuid
+   * Delete user by UUID (soft delete, admin only, preferred)
+   */
+  @Delete('uuid/:uuid')
+  @Roles('admin', 'root')
+  async deleteUserByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.usersService.deleteUserByUuid(uuid, user.id, tenantId);
+  }
+
+  /**
    * DELETE /users/:id
    * Delete user (soft delete, admin only)
+   * @deprecated Use DELETE /users/uuid/:uuid instead
    */
   @Delete(':id')
   @Roles('admin', 'root')
@@ -218,8 +262,22 @@ export class UsersController {
   }
 
   /**
+   * POST /users/uuid/:uuid/archive
+   * Archive user by UUID (admin only, preferred)
+   */
+  @Post('uuid/:uuid/archive')
+  @Roles('admin', 'root')
+  async archiveUserByUuid(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.usersService.archiveUserByUuid(uuid, tenantId);
+  }
+
+  /**
    * POST /users/:id/archive
    * Archive user (admin only)
+   * @deprecated Use POST /users/uuid/:uuid/archive instead
    */
   @Post(':id/archive')
   @Roles('admin', 'root')
@@ -231,8 +289,22 @@ export class UsersController {
   }
 
   /**
+   * POST /users/uuid/:uuid/unarchive
+   * Unarchive user by UUID (admin only, preferred)
+   */
+  @Post('uuid/:uuid/unarchive')
+  @Roles('admin', 'root')
+  async unarchiveUserByUuid(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.usersService.unarchiveUserByUuid(uuid, tenantId);
+  }
+
+  /**
    * POST /users/:id/unarchive
    * Unarchive user (admin only)
+   * @deprecated Use POST /users/uuid/:uuid/unarchive instead
    */
   @Post(':id/unarchive')
   @Roles('admin', 'root')
@@ -244,8 +316,23 @@ export class UsersController {
   }
 
   /**
+   * PUT /users/uuid/:uuid/availability
+   * Update user availability by UUID (admin only, preferred)
+   */
+  @Put('uuid/:uuid/availability')
+  @Roles('admin', 'root')
+  async updateAvailabilityByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateAvailabilityDto,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.usersService.updateAvailabilityByUuid(uuid, dto, tenantId);
+  }
+
+  /**
    * PUT /users/:id/availability
    * Update user availability (admin only)
+   * @deprecated Use PUT /users/uuid/:uuid/availability instead
    */
   @Put(':id/availability')
   @Roles('admin', 'root')

@@ -20,6 +20,7 @@ import {
 import bcryptjs from 'bcryptjs';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { v7 as uuidv7 } from 'uuid';
 
 import { fieldMapper } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -280,14 +281,15 @@ export class UsersService {
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
     void teamIds; // Reserved for future use
 
-    // Insert user
-    const result = await this.databaseService.query<{ id: number }>(
+    // Insert user with UUIDv7
+    const userUuid = uuidv7();
+    const result = await this.databaseService.query<{ id: number; uuid: string }>(
       `INSERT INTO users (
         tenant_id, email, password, username, first_name, last_name, role,
         position, phone, address, employee_number,
-        is_active, has_full_access, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
-      RETURNING id`,
+        is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
+      RETURNING id, uuid`,
       [
         tenantId,
         userData.email,
@@ -302,6 +304,7 @@ export class UsersService {
         employeeNumber,
         1, // is_active = 1 (active)
         hasFullAccess === true ? 1 : 0,
+        userUuid,
       ],
     );
 
@@ -1027,5 +1030,84 @@ export class UsersService {
     );
 
     return { message: 'Profile picture deleted successfully' };
+  }
+
+  // ============================================
+  // UUID-based Methods (for API consistency)
+  // ============================================
+
+  /**
+   * Resolve user ID from UUID
+   * @throws NotFoundException if user not found
+   */
+  private async resolveUserIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    if (result[0] === undefined) {
+      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+    return result[0].id;
+  }
+
+  /**
+   * Get user by UUID (wrapper for UUID-based API)
+   */
+  async getUserByUuid(uuid: string, tenantId: number): Promise<SafeUserResponse> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.getUserById(userId, tenantId);
+  }
+
+  /**
+   * Update user by UUID (wrapper for UUID-based API)
+   */
+  async updateUserByUuid(
+    uuid: string,
+    dto: UpdateUserDto,
+    tenantId: number,
+  ): Promise<SafeUserResponse> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.updateUser(userId, dto, tenantId);
+  }
+
+  /**
+   * Delete user by UUID (wrapper for UUID-based API)
+   */
+  async deleteUserByUuid(
+    uuid: string,
+    currentUserId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.deleteUser(userId, currentUserId, tenantId);
+  }
+
+  /**
+   * Archive user by UUID (wrapper for UUID-based API)
+   */
+  async archiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.archiveUser(userId, tenantId);
+  }
+
+  /**
+   * Unarchive user by UUID (wrapper for UUID-based API)
+   */
+  async unarchiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.unarchiveUser(userId, tenantId);
+  }
+
+  /**
+   * Update user availability by UUID (wrapper for UUID-based API)
+   */
+  async updateAvailabilityByUuid(
+    uuid: string,
+    dto: UpdateAvailabilityDto,
+    tenantId: number,
+  ): Promise<{ message: string }> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.updateAvailability(userId, dto, tenantId);
   }
 }

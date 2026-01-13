@@ -418,8 +418,23 @@ export class NotificationsController {
   }
 
   /**
+   * PUT /notifications/uuid/:uuid/read
+   * Mark notification as read by UUID (preferred)
+   */
+  @Put('uuid/:uuid/read')
+  async markAsReadByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    await this.notificationsService.markAsReadByUuid(uuid, user.id, tenantId);
+    return { message: 'Notification marked as read' };
+  }
+
+  /**
    * PUT /notifications/:id/read
    * Mark notification as read
+   * @deprecated Use PUT /notifications/uuid/:uuid/read instead
    */
   @Put(':id/read')
   async markAsRead(
@@ -433,8 +448,32 @@ export class NotificationsController {
   }
 
   /**
+   * DELETE /notifications/uuid/:uuid
+   * Delete notification by UUID (preferred)
+   */
+  @Delete('uuid/:uuid')
+  async deleteNotificationByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ): Promise<MessageResponse> {
+    await this.notificationsService.deleteNotificationByUuid(
+      uuid,
+      user.id,
+      tenantId,
+      user.role,
+      ipAddress,
+      userAgent,
+    );
+    return { message: 'Notification deleted successfully' };
+  }
+
+  /**
    * DELETE /notifications/:id
    * Delete notification
+   * @deprecated Use DELETE /notifications/uuid/:uuid instead
    */
   @Delete(':id')
   async deleteNotification(

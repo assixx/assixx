@@ -77,8 +77,23 @@ export class RotationController {
   }
 
   /**
+   * GET /api/v2/shifts/rotation/patterns/uuid/:uuid
+   * Get single rotation pattern by UUID (preferred)
+   */
+  @Get('patterns/uuid/:uuid')
+  async getRotationPatternByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
+    this.logger.debug(`Getting rotation pattern by UUID ${uuid}`);
+    const pattern = await this.rotationService.getRotationPatternByUuid(uuid, user.tenantId);
+    return { success: true, data: { pattern } };
+  }
+
+  /**
    * GET /api/v2/shifts/rotation/patterns/:id
    * Get single rotation pattern
+   * @deprecated Use GET /patterns/uuid/:uuid instead
    */
   @Get('patterns/:id')
   async getRotationPattern(
@@ -112,8 +127,30 @@ export class RotationController {
   }
 
   /**
+   * PUT /api/v2/shifts/rotation/patterns/uuid/:uuid
+   * Update rotation pattern by UUID (admin only, preferred)
+   */
+  @Put('patterns/uuid/:uuid')
+  @Roles('admin', 'root')
+  async updateRotationPatternByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateRotationPatternDto,
+  ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
+    this.logger.debug(`Updating rotation pattern by UUID ${uuid}`);
+    const pattern = await this.rotationService.updateRotationPatternByUuid(
+      uuid,
+      dto,
+      user.tenantId,
+      user.role,
+    );
+    return { success: true, data: { pattern } };
+  }
+
+  /**
    * PUT /api/v2/shifts/rotation/patterns/:id
    * Update rotation pattern (admin only)
+   * @deprecated Use PUT /patterns/uuid/:uuid instead
    */
   @Put('patterns/:id')
   @Roles('admin', 'root')
@@ -133,8 +170,24 @@ export class RotationController {
   }
 
   /**
+   * DELETE /api/v2/shifts/rotation/patterns/uuid/:uuid
+   * Delete rotation pattern by UUID (admin only, preferred)
+   */
+  @Delete('patterns/uuid/:uuid')
+  @Roles('admin', 'root')
+  async deleteRotationPatternByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SuccessResponse<null>> {
+    this.logger.debug(`Deleting rotation pattern by UUID ${uuid}`);
+    await this.rotationService.deleteRotationPatternByUuid(uuid, user.tenantId, user.role);
+    return { success: true, data: null };
+  }
+
+  /**
    * DELETE /api/v2/shifts/rotation/patterns/:id
    * Delete rotation pattern (admin only)
+   * @deprecated Use DELETE /patterns/uuid/:uuid instead
    */
   @Delete('patterns/:id')
   @Roles('admin', 'root')

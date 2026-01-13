@@ -11,6 +11,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
@@ -334,11 +335,12 @@ export class TeamsService {
     await this.validateLeader(dto.leaderId, tenantId);
     await this.checkDuplicateName(dto.name, tenantId);
 
+    const teamUuid = uuidv7();
     const [rows] = await execute<{ id: number }[]>(
-      `INSERT INTO teams (name, description, department_id, team_lead_id, is_active, tenant_id)
-       VALUES ($1, $2, $3, $4, 1, $5)
+      `INSERT INTO teams (name, description, department_id, team_lead_id, is_active, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, 1, $5, $6, NOW())
        RETURNING id`,
-      [dto.name, dto.description, dto.departmentId, dto.leaderId, tenantId],
+      [dto.name, dto.description, dto.departmentId, dto.leaderId, tenantId, teamUuid],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {

@@ -12,6 +12,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
 
@@ -629,6 +630,7 @@ export class MachinesService {
 
     await this.validateSerialNumberUnique(data.serialNumber, tenantId);
 
+    const machineUuid = uuidv7();
     const rows = await this.db.query<{ id: number }>(
       `
       INSERT INTO machines (
@@ -637,8 +639,8 @@ export class MachinesService {
         purchase_date, installation_date, warranty_until,
         last_maintenance, next_maintenance, operating_hours,
         production_capacity, energy_consumption, manual_url,
-        qr_code, notes, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        qr_code, notes, created_by, updated_by, uuid, uuid_created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
       RETURNING id
       `,
       [
@@ -666,6 +668,7 @@ export class MachinesService {
         data.notes ?? null,
         userId,
         userId,
+        machineUuid,
       ],
     );
 
@@ -1137,5 +1140,68 @@ export class MachinesService {
     }
 
     return await this.getMachineTeams(machineId, tenantId);
+  }
+
+  // ============================================================
+  // UUID-BASED METHODS (P1 Migration)
+  // ============================================================
+
+  /**
+   * Resolve machine UUID to internal ID
+   */
+  private async resolveMachineIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.db.query<{ id: number }>(
+      `SELECT id FROM machines WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    if (result[0] === undefined) {
+      throw new NotFoundException(`Machine with UUID ${uuid} not found`);
+    }
+    return result[0].id;
+  }
+
+  /**
+   * Get machine by UUID
+   */
+  async getMachineByUuid(uuid: string, tenantId: number): Promise<MachineResponse> {
+    const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
+    return await this.getMachineById(machineId, tenantId);
+  }
+
+  /**
+   * Update machine by UUID
+   */
+  async updateMachineByUuid(
+    uuid: string,
+    data: MachineUpdateRequest,
+    tenantId: number,
+    userId: number,
+  ): Promise<MachineResponse> {
+    const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
+    return await this.updateMachine(machineId, data, tenantId, userId);
+  }
+
+  /**
+   * Delete machine by UUID
+   */
+  async deleteMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+    const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
+    await this.deleteMachine(machineId, tenantId, userId);
+  }
+
+  /**
+   * Deactivate machine by UUID
+   */
+  async deactivateMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+    const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
+    await this.deactivateMachine(machineId, tenantId, userId);
+  }
+
+  /**
+   * Activate machine by UUID
+   */
+  async activateMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+    const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
+    await this.activateMachine(machineId, tenantId, userId);
   }
 }

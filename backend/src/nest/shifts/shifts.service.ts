@@ -895,6 +895,46 @@ export class ShiftsService {
     }
   }
 
+  // ============================================================
+  // UUID RESOLUTION METHODS (for API consistency)
+  // ============================================================
+
+  /**
+   * Resolves a shift plan UUID to its internal ID
+   * @throws NotFoundException if plan not found
+   */
+  private async resolveShiftPlanIdByUuid(uuid: string, tenantId: number): Promise<number> {
+    const result = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM shift_plans WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
+    );
+    if (result[0] === undefined) {
+      throw new NotFoundException(`Shift plan with UUID ${uuid} not found`);
+    }
+    return result[0].id;
+  }
+
+  /**
+   * Update shift plan by UUID (wrapper for UUID-based API)
+   */
+  async updateShiftPlanByUuid(
+    uuid: string,
+    dto: UpdateShiftPlanDto,
+    tenantId: number,
+    userId: number,
+  ): Promise<ShiftPlanResponse> {
+    const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
+    return await this.updateShiftPlan(planId, dto, tenantId, userId);
+  }
+
+  /**
+   * Delete shift plan by UUID (wrapper for UUID-based API)
+   */
+  async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
+    const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
+    await this.deleteShiftPlan(planId, tenantId);
+  }
+
   async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
     this.logger.debug(`Deleting shift plan ${planId} for tenant ${tenantId}`);
 

@@ -143,8 +143,22 @@ export class CalendarController {
   }
 
   /**
+   * GET /calendar/events/uuid/:uuid
+   * Get event by UUID (preferred)
+   */
+  @Get('events/uuid/:uuid')
+  async getEventByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse> {
+    return await this.calendarService.getEventByUuid(uuid, tenantId, user.id);
+  }
+
+  /**
    * GET /calendar/events/:id
-   * Get event by ID
+   * Get event by ID (deprecated - use /events/uuid/:uuid)
+   * @deprecated Use GET /calendar/events/uuid/:uuid instead
    */
   @Get('events/:id')
   async getEventById(
@@ -170,8 +184,23 @@ export class CalendarController {
   }
 
   /**
+   * PUT /calendar/events/uuid/:uuid
+   * Update event by UUID (preferred)
+   */
+  @Put('events/uuid/:uuid')
+  async updateEventByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateEventDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse> {
+    return await this.calendarService.updateEventByUuid(uuid, dto, tenantId, user.id, user.role);
+  }
+
+  /**
    * PUT /calendar/events/:id
-   * Update an event
+   * Update an event (deprecated - use /events/uuid/:uuid)
+   * @deprecated Use PUT /calendar/events/uuid/:uuid instead
    */
   @Put('events/:id')
   async updateEvent(
@@ -184,8 +213,22 @@ export class CalendarController {
   }
 
   /**
+   * DELETE /calendar/events/uuid/:uuid
+   * Delete event by UUID (preferred)
+   */
+  @Delete('events/uuid/:uuid')
+  async deleteEventByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.calendarService.deleteEventByUuid(uuid, tenantId, user.id, user.role);
+  }
+
+  /**
    * DELETE /calendar/events/:id
-   * Delete an event
+   * Delete an event (deprecated - use /events/uuid/:uuid)
+   * @deprecated Use DELETE /calendar/events/uuid/:uuid instead
    */
   @Delete('events/:id')
   async deleteEvent(

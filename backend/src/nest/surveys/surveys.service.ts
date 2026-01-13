@@ -1168,10 +1168,11 @@ export class SurveysService {
 
     await this.checkDuplicateResponse(surveyId, userId, tenantId, survey.allow_multiple_responses);
 
+    const responseUuid = uuidv7();
     const responseRows = await this.db.query<{ id: number }>(
-      `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status)
-       VALUES ($1, $2, $3, NOW(), NOW(), 'completed') RETURNING id`,
-      [surveyId, userId, tenantId],
+      `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, NOW(), NOW(), 'completed', $4, NOW()) RETURNING id`,
+      [surveyId, userId, tenantId, responseUuid],
     );
     const responseId = responseRows[0]?.id ?? 0;
     const normalizedAnswers = normalizeAnswers(answers);

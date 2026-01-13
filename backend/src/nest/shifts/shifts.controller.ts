@@ -317,8 +317,29 @@ export class ShiftsController {
   }
 
   /**
+   * PUT /api/v2/shifts/plan/uuid/:uuid
+   * Update shift plan by UUID (preferred)
+   */
+  @Put('plan/uuid/:uuid')
+  async updateShiftPlanByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateShiftPlanDto,
+  ): Promise<SuccessResponse<ShiftPlanResponse>> {
+    this.logger.debug(`Updating shift plan ${uuid}`);
+    const result = await this.shiftsService.updateShiftPlanByUuid(
+      uuid,
+      dto,
+      user.tenantId,
+      user.id,
+    );
+    return { success: true, data: result, message: 'Shift plan updated successfully' };
+  }
+
+  /**
    * PUT /api/v2/shifts/plan/:id
    * Update shift plan
+   * @deprecated Use PUT /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Put('plan/:id')
   async updateShiftPlan(
@@ -332,8 +353,24 @@ export class ShiftsController {
   }
 
   /**
+   * DELETE /api/v2/shifts/plan/uuid/:uuid
+   * Delete shift plan by UUID (admin only, preferred)
+   */
+  @Delete('plan/uuid/:uuid')
+  @Roles('admin', 'root')
+  async deleteShiftPlanByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<MessageOnlyResponse> {
+    this.logger.debug(`Deleting shift plan ${uuid}`);
+    await this.shiftsService.deleteShiftPlanByUuid(uuid, user.tenantId);
+    return { success: true, message: 'Shift plan deleted successfully' };
+  }
+
+  /**
    * DELETE /api/v2/shifts/plan/:id
    * Delete shift plan (admin only)
+   * @deprecated Use DELETE /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Delete('plan/:id')
   @Roles('admin', 'root')

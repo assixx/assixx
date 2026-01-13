@@ -725,22 +725,8 @@ CREATE TABLE `absences` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 ;
 
--- --------------------------------------------
-  `id` int NOT NULL AUTO_INCREMENT,
-  `tenant_id` int NOT NULL,
-  `message_id` int NOT NULL,
-  `filename` varchar(255) NOT NULL,
-  `file_url` varchar(500) NOT NULL,
-  `file_size` int NOT NULL,
-  `mime_type` varchar(100) DEFAULT NULL,
-  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_tenant_id` (`tenant_id`),
-  KEY `idx_message_id` (`message_id`),
-  CONSTRAINT `message_attachments_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `message_attachments_ibfk_2` FOREIGN KEY (`message_id`) REFERENCES `messages_old_backup` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-;
+-- NOTE: message_attachments table REMOVED in migration 007 (2026-01-13)
+-- Chat attachments now stored in documents table with conversation_id
 
 -- --------------------------------------------
   `id` int NOT NULL AUTO_INCREMENT,
