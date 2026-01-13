@@ -8,6 +8,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import type {
@@ -25,6 +26,8 @@ import type {
   RotationHistoryEntryAPI,
   AvailabilityStatus,
 } from './types';
+
+const log = createLogger('ShiftsApi');
 
 const apiClient = getApiClient();
 
@@ -117,7 +120,7 @@ export async function fetchAreas(): Promise<Area[]> {
     const areas = await apiClient.get<Area[]>(API_ENDPOINTS.AREAS);
     return Array.isArray(areas) ? areas : [];
   } catch (err) {
-    console.error('[SHIFTS API] Error loading areas:', err);
+    log.error({ err }, 'Error loading areas');
     return [];
   }
 }
@@ -135,7 +138,7 @@ export async function fetchDepartments(areaId?: number | null): Promise<Departme
     const response = await apiClient.get<Department[] | { data: Department[] }>(url);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[SHIFTS API] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return [];
   }
 }
@@ -163,7 +166,7 @@ export async function fetchMachines(
     const response = await apiClient.get<Machine[] | { data: Machine[] }>(url);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[SHIFTS API] Error loading machines:', err);
+    log.error({ err }, 'Error loading machines');
     return [];
   }
 }
@@ -181,7 +184,7 @@ export async function fetchTeams(departmentId?: number | null): Promise<Team[]> 
     const response = await apiClient.get<Team[] | { data: Team[] }>(url);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[SHIFTS API] Error loading teams:', err);
+    log.error({ err }, 'Error loading teams');
     return [];
   }
 }
@@ -221,7 +224,7 @@ function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | 
     return status as AvailabilityStatus;
   }
   // Log unexpected values for debugging (non-breaking)
-  console.warn(`[SHIFTS API] Unknown availabilityStatus: "${status}"`);
+  log.warn({ status }, `Unknown availabilityStatus`);
   return undefined;
 }
 
@@ -250,7 +253,7 @@ export async function fetchTeamMembers(teamId: number): Promise<TeamMember[]> {
 
     return members;
   } catch (err) {
-    console.error('[SHIFTS API] Error loading team members:', err);
+    log.error({ err }, 'Error loading team members');
     return [];
   }
 }
@@ -283,7 +286,7 @@ export async function fetchEmployees(
     const response = await apiClient.get<Employee[]>(url);
     return Array.isArray(response) ? response : [];
   } catch (err) {
-    console.error('[SHIFTS API] Error loading employees:', err);
+    log.error({ err }, 'Error loading employees');
     return [];
   }
 }
@@ -325,7 +328,7 @@ export async function fetchShiftPlan(
       `${API_ENDPOINTS.SHIFTS_PLAN}?${params.toString()}`,
     );
   } catch (err) {
-    console.error('[SHIFTS API] Error loading shift plan:', err);
+    log.error({ err }, 'Error loading shift plan');
     return null;
   }
 }
@@ -390,7 +393,7 @@ export async function fetchFavorites(): Promise<ShiftFavorite[]> {
     // apiClient.get extracts response.data automatically via handleV2Response
     return await apiClient.get<ShiftFavorite[]>(API_ENDPOINTS.FAVORITES);
   } catch (err) {
-    console.error('[SHIFTS API] Error loading favorites:', err);
+    log.error({ err }, 'Error loading favorites');
     return [];
   }
 }
@@ -413,7 +416,7 @@ export async function saveFavorite(favoriteData: {
     // apiClient.post extracts response.data automatically via handleV2Response
     return await apiClient.post<ShiftFavorite>(API_ENDPOINTS.FAVORITES, favoriteData);
   } catch (err) {
-    console.error('[SHIFTS API] Error saving favorite:', err);
+    log.error({ err }, 'Error saving favorite');
     throw err;
   }
 }
@@ -446,7 +449,7 @@ export async function fetchRotationHistory(
     const response = await apiClient.get<{ history?: RotationHistoryEntryAPI[] }>(url);
     return response.history ?? [];
   } catch (err) {
-    console.error('[SHIFTS API] Error loading rotation history:', err);
+    log.error({ err }, 'Error loading rotation history');
     return [];
   }
 }
@@ -461,7 +464,7 @@ export async function fetchActiveRotationPatterns(): Promise<RotationPattern[]> 
     );
     return response.patterns ?? [];
   } catch (err) {
-    console.error('[SHIFTS API] Error loading rotation patterns:', err);
+    log.error({ err }, 'Error loading rotation patterns');
     return [];
   }
 }
@@ -477,7 +480,7 @@ export async function fetchRotationPatternById(patternId: number): Promise<Rotat
     );
     return response.pattern ?? null;
   } catch (err) {
-    console.error('[SHIFTS API] Error loading rotation pattern:', patternId, err);
+    log.error({ err, patternId }, 'Error loading rotation pattern');
     return null;
   }
 }

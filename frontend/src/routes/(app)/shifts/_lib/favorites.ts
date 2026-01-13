@@ -4,9 +4,13 @@
 // Adapted for Svelte 5 (no DOM manipulation)
 // =============================================================================
 
+import { createLogger } from '$lib/utils/logger';
+
 import { saveFavorite as apiSaveFavorite, deleteFavorite as apiDeleteFavorite } from './api';
 
 import type { ShiftFavorite, SelectedContext, Area, Department, Machine, Team } from './types';
+
+const log = createLogger('ShiftsFavorites');
 
 // =============================================================================
 // VALIDATION
@@ -197,12 +201,12 @@ export async function addToFavorites(
     }
 
     return { success: true, favorites: [...favorites, savedFavorite], favorite: savedFavorite };
-  } catch (error) {
-    console.error('[FAVORITES] Error saving favorite:', error);
+  } catch (err) {
+    log.error({ err }, 'Error saving favorite');
     return {
       success: false,
       favorites,
-      error: error instanceof Error ? error.message : 'Fehler beim Speichern des Favoriten',
+      error: err instanceof Error ? err.message : 'Fehler beim Speichern des Favoriten',
     };
   }
 }
@@ -235,12 +239,12 @@ export async function removeFavorite(
       success: true,
       favorites: updatedFavorites,
     };
-  } catch (error) {
-    console.error('[FAVORITES] Error deleting favorite:', error);
+  } catch (err) {
+    log.error({ err }, 'Error deleting favorite');
     return {
       success: false,
       favorites,
-      error: error instanceof Error ? error.message : 'Fehler beim Löschen des Favoriten',
+      error: err instanceof Error ? err.message : 'Fehler beim Löschen des Favoriten',
     };
   }
 }

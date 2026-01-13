@@ -123,7 +123,7 @@ export interface EntryFilters {
 /** Normalized filter values with defaults applied */
 interface NormalizedFilters {
   status: 'active' | 'archived';
-  filter: 'all' | 'company' | 'department' | 'team';
+  filter: 'all' | 'company' | 'department' | 'team' | 'area';
   search: string;
   page: number;
   limit: number;
@@ -465,7 +465,7 @@ export class BlackboardService {
   private normalizeEntryFilters(filters: EntryFilters): NormalizedFilters {
     return {
       status: filters.status ?? 'active',
-      filter: filters.filter === 'area' ? 'all' : (filters.filter ?? 'all'),
+      filter: filters.filter ?? 'all',
       search: filters.search ?? '',
       page: filters.page ?? 1,
       limit: filters.limit ?? 10,

@@ -1,9 +1,14 @@
+# syntax=docker/dockerfile:1
 # =============================================================================
 # Assixx SvelteKit Frontend - Production Dockerfile
 # =============================================================================
 # Multi-stage build for optimal image size
 # Uses @sveltejs/adapter-node for SSR
 # Uses pnpm deploy for proper dependency resolution in pnpm workspaces
+#
+# BuildKit Optimizations:
+# - Cache mounts for pnpm store (faster rebuilds)
+# - COPY --link for independent layer caching
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -12,7 +17,7 @@
 FROM node:24-alpine AS builder
 
 # Install pnpm
-RUN npm install -g pnpm@10.27.0
+RUN npm install -g pnpm@10.28.0
 
 WORKDIR /app
 
@@ -25,11 +30,18 @@ COPY .npmrc ./
 # Copy frontend package.json
 COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies with BuildKit cache mount for pnpm store
+# Cache persists between builds, so unchanged packages don't need re-download
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Copy frontend source code
 COPY frontend/ ./frontend/
+
+# Build arguments for environment variables needed at build time
+# PUBLIC_ prefix vars are embedded into the client bundle by SvelteKit
+ARG PUBLIC_SENTRY_DSN=""
+ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 
 # Build SvelteKit application
 WORKDIR /app/frontend
@@ -52,11 +64,13 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copy pnpm deployed package (includes properly resolved node_modules)
-COPY --from=builder --chown=sveltekit:nodejs /deploy/node_modules ./node_modules
-COPY --from=builder --chown=sveltekit:nodejs /deploy/package.json ./
+# --link: Allows layers to be built independently for better cache efficiency
+# Note: Use numeric UID:GID (1001:1001) because --link can't resolve usernames
+COPY --link --from=builder --chown=1001:1001 /deploy/node_modules ./node_modules
+COPY --link --from=builder --chown=1001:1001 /deploy/package.json ./
 
 # Copy built SvelteKit application
-COPY --from=builder --chown=sveltekit:nodejs /app/frontend/build ./build
+COPY --link --from=builder --chown=1001:1001 /app/frontend/build ./build
 
 # Switch to non-root user
 USER sveltekit

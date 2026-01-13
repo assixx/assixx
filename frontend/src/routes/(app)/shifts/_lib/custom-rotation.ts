@@ -5,9 +5,11 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import type { ShiftType } from './types';
 
+const log = createLogger('CustomRotation');
 const apiClient = getApiClient();
 
 // =============================================================================
@@ -345,11 +347,11 @@ export async function generateCustomRotation(
       request,
     );
     return { success: true, shiftsGenerated: response.shiftsGenerated };
-  } catch (error) {
-    console.error('[CUSTOM ROTATION] Error generating rotation:', error);
+  } catch (err) {
+    log.error({ err }, 'Error generating rotation');
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Fehler beim Generieren der Rotation',
+      error: err instanceof Error ? err.message : 'Fehler beim Generieren der Rotation',
     };
   }
 }

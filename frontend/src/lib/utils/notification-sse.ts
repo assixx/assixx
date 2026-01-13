@@ -6,13 +6,16 @@
  *
  * Usage:
  *   const sse = getNotificationSSE();
- *   const unsubscribe = sse.subscribe((event) => console.log(event));
+ *   const unsubscribe = sse.subscribe((event) => log.debug(event));
  *   sse.connect();
  *   // Later: sse.disconnect();
  */
 import { browser } from '$app/environment';
 
+import { createLogger } from './logger';
 import { getTokenManager } from './token-manager';
+
+const log = createLogger('SSE');
 
 // ============================================
 // Types
@@ -95,32 +98,34 @@ class NotificationSSEClient implements INotificationSSE {
 
     // Already connected or connecting
     if (this.eventSource?.readyState === EventSource.OPEN) {
-      console.warn('[SSE] Already connected');
+      log.warn('Already connected');
       return;
     }
     if (this.isConnecting) {
-      console.warn('[SSE] Connection already in progress');
+      log.warn('Connection already in progress');
       return;
     }
 
     const tokenManager = getTokenManager();
-    const token = tokenManager.getAccessToken();
 
-    if (token === null) {
-      console.warn('[SSE] No access token available, cannot connect');
+    // Check if we have a valid token (cookie will be sent automatically)
+    if (!tokenManager.hasValidToken()) {
+      log.warn('No valid token available, cannot connect to SSE');
       return;
     }
 
     this.isConnecting = true;
 
-    // SSE endpoint with token as query param (EventSource doesn't support headers)
-    const url = `/api/v2/notifications/stream?token=${encodeURIComponent(token)}`;
+    // SSE endpoint - cookie-based auth (accessToken cookie sent automatically on same-origin)
+    // No token in URL = no token in logs/history
+    const url = `/api/v2/notifications/stream`;
 
     try {
-      this.eventSource = new EventSource(url);
+      // withCredentials ensures cookies are sent with the request
+      this.eventSource = new EventSource(url, { withCredentials: true });
 
       this.eventSource.onopen = () => {
-        console.warn('[SSE] Connected to notification stream');
+        log.info('Connected to notification stream');
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
         this.isConnecting = false;
@@ -132,16 +137,17 @@ class NotificationSSEClient implements INotificationSSE {
 
       this.eventSource.onerror = () => {
         // Normal bei Page-Reload - kein echter Fehler
-        console.warn('[SSE] Connection closed (normal during page reload)');
+        log.debug('Connection closed (normal during page reload)');
         this.eventSource?.close();
         this.eventSource = null;
         this.isConnecting = false;
         this.attemptReconnect();
       };
 
-      // Subscribe to token refresh events to reconnect with new token
+      // Subscribe to token refresh events to reconnect with fresh cookie
+      // Cookie is updated by TokenManager.setTokens(), reconnect ensures new session
       this.tokenRefreshUnsubscribe = tokenManager.onTokenRefreshed(() => {
-        console.warn('[SSE] Token refreshed, reconnecting with new token');
+        log.info('Token refreshed, reconnecting SSE with fresh cookie');
         this.reconnect();
       });
 
@@ -151,7 +157,7 @@ class NotificationSSEClient implements INotificationSSE {
       };
       window.addEventListener('beforeunload', this.boundBeforeUnload);
     } catch (error) {
-      console.error('[SSE] Failed to create EventSource:', error);
+      log.error({ err: error }, 'Failed to create EventSource');
       this.isConnecting = false;
     }
   }
@@ -164,7 +170,7 @@ class NotificationSSEClient implements INotificationSSE {
       const data = JSON.parse(event.data) as NotificationEvent;
       this.notifyHandlers(data);
     } catch (error) {
-      console.error('[SSE] Failed to parse message:', error, event.data);
+      log.error({ err: error, data: event.data }, 'Failed to parse message');
     }
   }
 
@@ -173,15 +179,16 @@ class NotificationSSEClient implements INotificationSSE {
    */
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[SSE] Max reconnect attempts reached, giving up');
+      log.error('Max reconnect attempts reached, giving up');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay;
 
-    console.warn(
-      `[SSE] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+    log.warn(
+      { delay, attempt: this.reconnectAttempts, maxAttempts: this.maxReconnectAttempts },
+      'Reconnecting',
     );
 
     setTimeout(() => {
@@ -221,7 +228,7 @@ class NotificationSSEClient implements INotificationSSE {
       try {
         handler(event);
       } catch (error) {
-        console.error('[SSE] Handler error:', error);
+        log.error({ err: error }, 'Handler error');
       }
     });
   }
@@ -246,7 +253,7 @@ class NotificationSSEClient implements INotificationSSE {
     }
 
     this.isConnecting = false;
-    console.warn('[SSE] Disconnected');
+    log.info('Disconnected');
   }
 
   /**

@@ -6,8 +6,12 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { PageServerLoad } from './$types';
 import type { DeletionStatusItem } from './_lib/types';
+
+const log = createLogger('TenantDeletionStatus');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -62,7 +66,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     // 404 means no deletion found - not an error
     if (!response.ok) {
       if (response.status !== 404) {
-        console.error(`[SSR] API error ${response.status} for /root/tenant/deletion-status`);
+        log.error(
+          { status: response.status, endpoint: '/root/tenant/deletion-status' },
+          'API error',
+        );
       }
       return { statusData: [], currentUserId: userId };
     }
@@ -73,8 +80,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
       statusData: parseStatusResponse(json),
       currentUserId: userId,
     };
-  } catch (error) {
-    console.error(`[SSR] Fetch error for /root/tenant/deletion-status:`, error);
+  } catch (err) {
+    log.error({ err, endpoint: '/root/tenant/deletion-status' }, 'Fetch error');
     return { statusData: [], currentUserId: userId };
   }
 };

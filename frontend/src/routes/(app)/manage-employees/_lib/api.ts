@@ -6,11 +6,13 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient, ApiError } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
 import type { Employee, EmployeePayload, Team } from './types';
 
+const log = createLogger('ManageEmployeesApi');
 const apiClient = getApiClient();
 
 // =============================================================================
@@ -121,7 +123,7 @@ export async function loadTeams(): Promise<Team[]> {
     const result = await apiClient.get<Team[]>(API_ENDPOINTS.TEAMS);
     return extractArray<Team>(result);
   } catch (err) {
-    console.error('[ManageEmployees] Error loading teams:', err);
+    log.error({ err }, 'Error loading teams');
     return [];
   }
 }
@@ -173,7 +175,7 @@ export async function assignTeamMember(userId: number, teamId: number): Promise<
     if (err instanceof ApiError && err.status === 409) {
       return;
     }
-    console.error('[ManageEmployees] Error assigning team:', err);
+    log.error({ err }, 'Error assigning team');
   }
 }
 
@@ -190,7 +192,7 @@ export async function removeTeamMember(userId: number, teamId: number): Promise<
     if (err instanceof ApiError && err.status === 404) {
       return;
     }
-    console.error('[ManageEmployees] Error removing team member:', err);
+    log.error({ err }, 'Error removing team member');
   }
 }
 

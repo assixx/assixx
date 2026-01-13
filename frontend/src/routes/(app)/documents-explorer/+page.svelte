@@ -9,6 +9,9 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('DocumentsExplorerPage');
 
   // Page-specific CSS
   import '../../../styles/documents-explorer.css';
@@ -142,7 +145,7 @@
       allDocuments = await apiFetchDocuments();
       applyFilters();
     } catch (err) {
-      console.error('[DocumentsExplorer] Error loading documents:', err);
+      log.error({ err }, 'Error loading documents');
       if (isSessionExpiredError(err)) {
         return void goto('/login?session=expired');
       }
@@ -158,7 +161,7 @@
     try {
       chatFolders = await apiFetchChatFolders();
     } catch (err) {
-      console.error('[DocumentsExplorer] Error loading chat folders:', err);
+      log.error({ err }, 'Error loading chat folders');
     }
   }
 
@@ -169,7 +172,7 @@
       allDocuments = await apiFetchChatAttachments(conversationId);
       applyFilters();
     } catch (err) {
-      console.error('[DocumentsExplorer] Error loading chat attachments:', err);
+      log.error({ err }, 'Error loading chat attachments');
       error = MESSAGES.ERROR_LOAD_FAILED;
     } finally {
       loading = false;
@@ -188,7 +191,7 @@
       );
       applyFilters();
     } catch (err) {
-      console.error('[DocumentsExplorer] Error marking as read:', err);
+      log.error({ err }, 'Error marking as read');
     }
   }
 
@@ -258,11 +261,10 @@
   }
 
   function downloadDocument(doc: Document) {
-    const token = localStorage.getItem('accessToken');
-    const downloadUrl =
-      token !== null ? `${doc.downloadUrl}?token=${encodeURIComponent(token)}` : doc.downloadUrl;
+    // Cookie-based auth: accessToken cookie sent automatically on same-origin request
+    // No token in URL = no token in logs/history
     const link = document.createElement('a');
-    link.href = downloadUrl;
+    link.href = doc.downloadUrl;
     link.download = doc.filename;
     link.target = '_blank';
     document.body.appendChild(link);
@@ -301,7 +303,7 @@
       allDocuments = allDocuments.filter((d) => d.id !== deletingDocument?.id);
       applyFilters();
     } catch (err) {
-      console.error('[DocumentsExplorer] Delete failed:', err);
+      log.error({ err }, 'Delete failed');
       showErrorAlert(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
     } finally {
       deleteSubmitting = false;
@@ -337,7 +339,7 @@
       await invalidateAll();
       await loadDocuments();
     } catch (err) {
-      console.error('[DocumentsExplorer] Update failed:', err);
+      log.error({ err }, 'Update failed');
       showErrorAlert(err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen');
     } finally {
       editSubmitting = false;
@@ -437,7 +439,7 @@
       await invalidateAll();
       await loadDocuments();
     } catch (err) {
-      console.error('[DocumentsExplorer] Upload failed:', err);
+      log.error({ err }, 'Upload failed');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED);
     }
   }

@@ -5,6 +5,7 @@
 import { browser } from '$app/environment';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import type {
@@ -15,6 +16,8 @@ import type {
   ApiResponse,
   CurrentUser,
 } from './types';
+
+const log = createLogger('DocumentsExplorerApi');
 
 const apiClient = getApiClient();
 
@@ -128,8 +131,8 @@ export async function fetchChatFolders(): Promise<ChatFolder[]> {
       }
     }
     return [];
-  } catch (error) {
-    console.error('[API] Failed to fetch chat folders:', error);
+  } catch (err) {
+    log.error({ err }, 'Failed to fetch chat folders');
     return [];
   }
 }
@@ -151,8 +154,8 @@ export async function fetchChatAttachments(conversationId: number): Promise<Docu
       }
     }
     return [];
-  } catch (error) {
-    console.error('[API] Failed to fetch chat attachments:', error);
+  } catch (err) {
+    log.error({ err }, 'Failed to fetch chat attachments');
     return [];
   }
 }

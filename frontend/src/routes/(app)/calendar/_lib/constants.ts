@@ -71,9 +71,9 @@ export const DE_LOCALE = {
 export const FILTER_OPTIONS = [
   { value: 'all', label: 'Gesamt', icon: 'fa-globe', title: 'Alle Termine' },
   { value: 'company', label: 'Firma', icon: 'fa-building', title: 'Firmentermine' },
+  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt', title: 'Bereichstermine' },
   { value: 'department', label: 'Abteilung', icon: 'fa-sitemap', title: 'Abteilungstermine' },
   { value: 'team', label: 'Team', icon: 'fa-users', title: 'Teamtermine' },
-  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt', title: 'Bereichstermine' },
   { value: 'personal', label: 'Meine', icon: 'fa-user', title: 'Persoenliche Termine' },
 ] as const;
 

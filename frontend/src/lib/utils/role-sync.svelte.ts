@@ -11,6 +11,10 @@
  * @see archive/frontend-legacy/src/scripts/components/navigation/handlers.ts
  */
 
+import { createLogger } from './logger';
+
+const log = createLogger('RoleSyncManager');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -111,7 +115,7 @@ export class RoleSyncManager {
     this.setupBroadcastChannel();
     this.setupStorageListener();
 
-    console.warn('[RoleSyncManager] Initialized with dual-sync (BroadcastChannel + Storage Event)');
+    log.info('Initialized with dual-sync (BroadcastChannel + Storage Event)');
   }
 
   /**
@@ -127,7 +131,7 @@ export class RoleSyncManager {
       this.boundBroadcastHandler = (event: MessageEvent<RoleSwitchMessage>) => {
         if (event.data.type === 'ROLE_SWITCHED' && event.data.newRole) {
           const { newRole, token } = event.data;
-          console.warn('[RoleSyncManager] BroadcastChannel: Role switched to', newRole);
+          log.info({ newRole }, 'BroadcastChannel: Role switched');
 
           // Update localStorage from the message (in case storage event didn't fire)
           localStorage.setItem('activeRole', newRole);
@@ -143,7 +147,7 @@ export class RoleSyncManager {
       this.broadcastChannel.onmessage = this.boundBroadcastHandler;
     } catch {
       // BroadcastChannel not supported - fall back to storage events only
-      console.warn('[RoleSyncManager] BroadcastChannel not available, using storage events only');
+      log.warn('BroadcastChannel not available, using storage events only');
     }
   }
 
@@ -158,7 +162,7 @@ export class RoleSyncManager {
     this.boundStorageHandler = (event: StorageEvent) => {
       // Only react to activeRole changes
       if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
-        console.warn('[RoleSyncManager] Storage Event: activeRole changed to', event.newValue);
+        log.info({ newRole: event.newValue }, 'Storage Event: activeRole changed');
 
         // Debounce to prevent multiple rapid redirects
         if (this.redirectTimeout) {
@@ -195,18 +199,18 @@ export class RoleSyncManager {
     // Check if user has permission for the target role
     const userRole = localStorage.getItem('userRole');
     if (newRole === 'root' && userRole !== 'root') {
-      console.warn('[RoleSyncManager] User does not have root permission, ignoring');
+      log.warn({ newRole, userRole }, 'User does not have root permission, ignoring');
       return;
     }
 
     // Only redirect if we're not already on the correct dashboard
     if (targetPath && !currentPath.includes(targetPath)) {
-      console.warn('[RoleSyncManager] Redirecting to', targetPath);
+      log.info({ targetPath }, 'Redirecting to dashboard');
       this.isRedirecting = true;
       window.location.replace(targetPath);
     } else {
       // Already on correct page - just refresh to update UI
-      console.warn('[RoleSyncManager] Refreshing current page');
+      log.debug('Refreshing current page');
       window.location.reload();
     }
   }
@@ -232,9 +236,9 @@ export class RoleSyncManager {
     if (this.broadcastChannel) {
       try {
         this.broadcastChannel.postMessage(message);
-        console.warn('[RoleSyncManager] Broadcast sent via BroadcastChannel:', newRole);
+        log.debug({ newRole }, 'Broadcast sent via BroadcastChannel');
       } catch (error) {
-        console.warn('[RoleSyncManager] BroadcastChannel send failed:', error);
+        log.warn({ err: error }, 'BroadcastChannel send failed');
       }
     }
 
@@ -271,7 +275,7 @@ export class RoleSyncManager {
     this.onRoleSwitchCallback = null;
     this.isRedirecting = false;
 
-    console.warn('[RoleSyncManager] Destroyed and cleaned up');
+    log.debug('Destroyed and cleaned up');
   }
 }
 

@@ -589,6 +589,16 @@ export class CalendarService {
       case 'company':
         clause = ` AND e.org_level = 'company'`;
         break;
+      case 'area':
+        // Filter by area: get area_id from user's department(s)
+        clause = ` AND e.org_level = 'area' AND e.area_id IN (
+          SELECT d.area_id FROM departments d
+          JOIN user_departments ud ON d.id = ud.department_id
+          WHERE ud.user_id = $${index} AND d.area_id IS NOT NULL
+        )`;
+        params.push(userId);
+        index++;
+        break;
       case 'department':
         clause = ` AND e.org_level = 'department' AND e.department_id = $${index}`;
         params.push(userDepartmentId);
@@ -605,16 +615,21 @@ export class CalendarService {
         index++;
         break;
       default:
-        // 'all' - show accessible events
+        // 'all' - show accessible events including area-level
         clause = ` AND (
           e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.department_id = $${index}) OR
-          (e.org_level = 'team' AND e.team_id = $${index + 1}) OR
-          e.user_id = $${index + 2} OR
-          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${index + 3})
+          (e.org_level = 'area' AND e.area_id IN (
+            SELECT d.area_id FROM departments d
+            JOIN user_departments ud ON d.id = ud.department_id
+            WHERE ud.user_id = $${index} AND d.area_id IS NOT NULL
+          )) OR
+          (e.org_level = 'department' AND e.department_id = $${index + 1}) OR
+          (e.org_level = 'team' AND e.team_id = $${index + 2}) OR
+          e.user_id = $${index + 3} OR
+          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${index + 4})
         )`;
-        params.push(userDepartmentId, userTeamId, userId, userId);
-        index += 4;
+        params.push(userId, userDepartmentId, userTeamId, userId, userId);
+        index += 5;
     }
 
     return { clause, newParams: params, newIndex: index };

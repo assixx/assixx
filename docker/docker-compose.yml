@@ -82,6 +82,7 @@ services:
       DB_NAME: ${POSTGRES_DB}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set in .env}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -98,6 +99,16 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Sentry Error Tracking
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support
+      # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
+      LOKI_URL: ${LOKI_URL:-}
+      # LOKI_LOCAL_URL: Local Docker Loki (no auth needed)
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      # Grafana Cloud credentials (optional - for cloud logging)
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
     ports:
       - "3000:3000"
     volumes:
@@ -150,7 +161,7 @@ services:
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: assixx-redis
     restart: unless-stopped
     # SECURITY: Redis with password authentication
@@ -204,6 +215,7 @@ services:
       DB_NAME: ${POSTGRES_DB}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set in .env}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -212,6 +224,16 @@ services:
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      # Sentry Error Tracking
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support
+      # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
+      LOKI_URL: ${LOKI_URL:-}
+      # LOKI_LOCAL_URL: Local Docker Loki (no auth needed)
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      # Grafana Cloud credentials (optional - for cloud logging)
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
       # Email settings for deletion notifications
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -264,6 +286,9 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
+      args:
+        # Sentry DSN for error tracking (embedded at build time)
+        PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     image: assixx-frontend:prod
     container_name: assixx-frontend
     restart: unless-stopped
@@ -282,6 +307,13 @@ services:
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
       # API URL for SSR server-side fetches (inside Docker network)
       API_URL: http://backend:3000/api/v2
+      # Sentry DSN for server-side error tracking (SSR)
+      PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support (SSR logs)
+      LOKI_URL: ${LOKI_URL:-}
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
     ports:
       - "3001:3001" # Direct access for debugging
     depends_on:
@@ -340,22 +372,142 @@ services:
     profiles:
       - production
 
-  # Optional: Nginx als Reverse Proxy (für Production) - REPLACED by above
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: assixx-nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
-  #     - ./frontend/dist:/usr/share/nginx/html:ro
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - assixx-network
+  # ===========================================================================
+  # PLG Stack - Observability (Prometheus + Loki + Grafana)
+  # ===========================================================================
+  # Start with: docker-compose --profile observability up -d
+  # Access Grafana: http://localhost:3050 (admin/admin)
+  # ===========================================================================
+
+  # Loki - Log Aggregation
+  # Receives logs from pino-loki transport
+  loki:
+    image: grafana/loki:3.6.3
+    container_name: assixx-loki
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - assixx-network
+    # Healthcheck: Loki 3.6.3 is distroless (no wget/curl)
+    # Use /ready endpoint via external check or disable
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    profiles:
+      - observability
+      - production
+
+  # Prometheus - Metrics Collection
+  # Scrapes /api/v2/metrics from backend
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: assixx-prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/grafana_cloud_api_key:/etc/prometheus/grafana_cloud_api_key:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - observability
+      - production
+
+  # Grafana - Dashboards & Visualization
+  # Pre-configured with Loki and Prometheus datasources
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: assixx-grafana
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    ports:
+      - "3050:3000"
+    environment:
+      # Admin credentials (change in production!)
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-admin}
+      # Server settings
+      GF_SERVER_ROOT_URL: ${GF_ROOT_URL:-http://localhost:3050}
+      GF_SERVER_DOMAIN: localhost
+      # Disable analytics
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      # Enable anonymous access for development (disable in production)
+      GF_AUTH_ANONYMOUS_ENABLED: ${GF_ANONYMOUS_ENABLED:-false}
+      # Alerting
+      GF_ALERTING_ENABLED: true
+      GF_UNIFIED_ALERTING_ENABLED: true
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - observability
+      - production
 
 networks:
   assixx-network:
@@ -369,3 +521,10 @@ volumes:
     name: assixx_redis_data
     external: true
   pnpm-store:
+  # PLG Stack volumes (not external - created automatically)
+  loki_data:
+    name: assixx_loki_data
+  prometheus_data:
+    name: assixx_prometheus_data
+  grafana_data:
+    name: assixx_grafana_data

@@ -1,0 +1,74 @@
+# =============================================================================
+# Loki Configuration - Log Aggregation
+# =============================================================================
+#
+# Minimal configuration for local development.
+# Receives logs from pino-loki transport.
+#
+# @see https://grafana.com/docs/loki/latest/configure/
+# =============================================================================
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+# Important for pino-loki: Accept out-of-order writes
+# Pino logs may arrive out of order due to batching
+limits_config:
+  reject_old_samples: false
+  reject_old_samples_max_age: 168h
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  # Accept out-of-order logs (CRITICAL for pino-loki!)
+  unordered_writes: true
+  # 7 day retention
+  retention_period: 168h
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  filesystem:
+    directory: /loki/chunks
+
+# Retention: Keep logs for 7 days (development)
+# Increase for production
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
+# Query settings
+query_range:
+  align_queries_with_step: true
+  max_retries: 5
+  cache_results: true
+
+# Disable analytics
+analytics:
+  reporting_enabled: false

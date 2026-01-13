@@ -6,6 +6,8 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { PageServerLoad } from './$types';
 import type {
   Survey,
@@ -13,6 +15,8 @@ import type {
   SurveyStatistics,
   SurveyResponseWithUser,
 } from './_lib/types';
+
+const log = createLogger('SurveyResults');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -36,7 +40,7 @@ async function apiFetch<T>(
 
     if (!response.ok) {
       if (response.status === 404) return null;
-      console.error(`[SSR] API error ${response.status} for ${endpoint}`);
+      log.error({ status: response.status, endpoint }, 'API error');
       return null;
     }
 
@@ -49,7 +53,7 @@ async function apiFetch<T>(
     }
     return json as unknown as T;
   } catch (err) {
-    console.error(`[SSR] Fetch error for ${endpoint}:`, err);
+    log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
 }

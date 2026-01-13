@@ -87,7 +87,8 @@
     "test:api:full": "cd api-tests && bru run _setup auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local",
     "test:api:setup": "cd api-tests && bru run _setup --env local",
     "test:api:noclean": "cd api-tests && bru run _setup departments/list.bru departments/create.bru teams/list.bru teams/create.bru notifications/list.bru notifications/create.bru blackboard/list-entries.bru blackboard/create-entry.bru calendar/list-events.bru calendar/create-event.bru kvp/list.bru kvp/create.bru machines/list.bru machines/create.bru surveys/list.bru surveys/create.bru chat/list-conversations.bru chat/create-conversation.bru --env local",
-    "test:api:auth": "cd api-tests && bru run auth --env local"
+    "test:api:auth": "cd api-tests && bru run auth --env local",
+    "prepare": "husky"
   },
   "keywords": [
     "assixx",
@@ -125,11 +126,11 @@
     "@types/node": "~24.10.7",
     "@types/nodemailer": "^7.0.5",
     "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.52.0",
-    "@typescript-eslint/parser": "^8.52.0",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
     "@usebruno/cli": "3.0.2",
-    "@vitest/eslint-plugin": "1.6.5",
-    "@vitest/ui": "4.0.16",
+    "@vitest/eslint-plugin": "1.6.6",
+    "@vitest/ui": "4.0.17",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -148,6 +149,7 @@
     "eslint-plugin-storybook": "10.1.11",
     "eslint-plugin-tsdoc": "^0.5.0",
     "eslint-plugin-unicorn": "^62.0.0",
+    "husky": "9.1.7",
     "markdownlint-cli": "^0.47.0",
     "nodemon": "^3.1.11",
     "playwright": "^1.57.0",
@@ -166,8 +168,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.52.0",
+    "typescript-eslint": "8.53.0",
     "vite": "^7.3.1",
-    "vitest": "4.0.16"
+    "vitest": "4.0.17"
   }
 }

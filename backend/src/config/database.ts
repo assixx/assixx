@@ -33,28 +33,35 @@ if (USE_MOCK_DB) {
   } as unknown as Pool;
 } else {
   // Real PostgreSQL connection
+  // SECURITY: DB_PASSWORD is required - no default fallback
+  const dbPassword = process.env['DB_PASSWORD'];
+  if (dbPassword === undefined || dbPassword === '') {
+    throw new Error(
+      'SECURITY ERROR: DB_PASSWORD environment variable is required. ' +
+        'Set it in docker/.env or your environment.',
+    );
+  }
+
   const config = {
     host: process.env['DB_HOST'] ?? 'postgres',
     port: Number.parseInt(process.env['DB_PORT'] ?? '5432', 10),
     database: process.env['DB_NAME'] ?? 'assixx',
     user: process.env['DB_USER'] ?? 'app_user',
-    password: process.env['DB_PASSWORD'] ?? 'DevOnlyAppPass2026NotForProd',
+    password: dbPassword,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   };
 
-  logger.info('[PostgreSQL] Connecting to database', {
-    host: config.host,
-    port: config.port,
-    database: config.database,
-    user: config.user,
-  });
+  logger.info(
+    { host: config.host, port: config.port, database: config.database, user: config.user },
+    '[PostgreSQL] Connecting to database',
+  );
 
   pool = new Pool(config);
 
   pool.on('error', (err: Error) => {
-    logger.error('[PostgreSQL] Pool error:', err);
+    logger.error({ err }, '[PostgreSQL] Pool error');
   });
 
   // Test connection on startup (non-blocking)
@@ -68,7 +75,7 @@ if (USE_MOCK_DB) {
         logger.info(`[PostgreSQL] Connected: ${versionInfo}`);
         client.release();
       } catch (error: unknown) {
-        logger.error('[PostgreSQL] Connection failed:', error);
+        logger.error({ err: error }, '[PostgreSQL] Connection failed');
       }
     })();
   }

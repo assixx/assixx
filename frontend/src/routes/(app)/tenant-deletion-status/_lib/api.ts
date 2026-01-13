@@ -4,8 +4,11 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import type { DeletionStatusItem, ApiError } from './types';
+
+const log = createLogger('TenantDeletionStatusApi');
 
 const apiClient = getApiClient();
 
@@ -75,7 +78,7 @@ export async function loadDeletionStatus(): Promise<{
       return { data: [], error: null };
     }
 
-    console.error('[TenantDeletion] Error loading status:', err);
+    log.error({ err }, 'Error loading status');
     return { data: [], error: getErrorMessage(err) };
   }
 }

@@ -25,8 +25,9 @@ const EnvSchema = z.object({
   DB_PASSWORD: z.string().min(1),
 
   // JWT
+  // SECURITY: Both secrets are REQUIRED and must be at least 32 chars
   JWT_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32).optional(),
+  JWT_REFRESH_SECRET: z.string().min(32), // Required for token isolation security
   JWT_ACCESS_EXPIRY: z.string().default('30m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
@@ -152,7 +153,7 @@ export class AppConfigService {
     return this.config.JWT_REFRESH_EXPIRY;
   }
 
-  get jwtRefreshSecret(): string | undefined {
+  get jwtRefreshSecret(): string {
     return this.config.JWT_REFRESH_SECRET;
   }
 

@@ -1,0 +1,125 @@
+# =============================================================================
+# Assixx Docker Build Context - Exclusions
+# =============================================================================
+# Location: Project root (build context for docker/Dockerfile.*)
+# Purpose: Reduce build context from ~950MB to ~100MB
+#
+# IMPORTANT: Do NOT exclude:
+#   - .npmrc (needed by pnpm in both builds)
+#   - frontend/ (needed by Dockerfile.frontend AND Dockerfile.dev for workspace)
+#   - backend/ (needed by Dockerfile.dev)
+#   - package.json, pnpm-lock.yaml, pnpm-workspace.yaml (workspace config)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Node.js - BIGGEST SAVINGS (~675MB)
+# -----------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+
+# -----------------------------------------------------------------------------
+# Version Control (~90MB)
+# -----------------------------------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+
+# -----------------------------------------------------------------------------
+# Build Outputs (rebuilt in container)
+# -----------------------------------------------------------------------------
+dist/
+**/dist/
+build/
+**/build/
+.svelte-kit/
+**/.svelte-kit/
+
+# -----------------------------------------------------------------------------
+# Data Directories (mounted as volumes, not baked into image)
+# -----------------------------------------------------------------------------
+uploads/
+backups/
+exports/
+logs/
+**/logs/
+
+# -----------------------------------------------------------------------------
+# Archive & Old Code (~33MB)
+# -----------------------------------------------------------------------------
+archive/
+
+# -----------------------------------------------------------------------------
+# Development & Test
+# -----------------------------------------------------------------------------
+coverage/
+.nyc_output/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing files (not needed in production image)
+Testing/
+api-tests/
+stories/
+storybook-static/
+.storybook/
+
+# -----------------------------------------------------------------------------
+# Documentation (not needed in image)
+# -----------------------------------------------------------------------------
+*.md
+!README.md
+docs/
+
+# -----------------------------------------------------------------------------
+# IDE & Editor
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# -----------------------------------------------------------------------------
+# OS Files
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# Docker (Dockerfile itself is sent but not needed in image)
+# -----------------------------------------------------------------------------
+docker-compose*.yml
+# Note: Dockerfiles are sent but cannot be COPYed anyway
+
+# -----------------------------------------------------------------------------
+# Secrets & Certificates (SECURITY)
+# -----------------------------------------------------------------------------
+*.pem
+*.key
+*.crt
+*.p12
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+*.tmp
+*.temp
+.cache/
+*.tar.gz
+*.zip
+*.rar
+*.sql
+
+# GitHub
+.github/
+
+# Infrastructure (Terraform, etc.)
+infrastructure/
+
+# Design system docs (CSS already in frontend/)
+design-system/

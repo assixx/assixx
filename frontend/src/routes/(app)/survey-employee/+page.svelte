@@ -8,6 +8,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('SurveyEmployeePage');
 
   // Survey-specific styles (migrated from legacy)
   import '../../../styles/survey-employee.css';
@@ -86,7 +89,7 @@
 
       surveyEmployeeState.openSurveyModal(survey);
     } catch (error) {
-      console.error('[Survey Employee] Error loading survey:', error);
+      log.error({ err: error }, 'Error loading survey');
       showErrorAlert('Fehler beim Laden der Umfrage');
     } finally {
       surveyEmployeeState.setLoading(false);
@@ -112,7 +115,7 @@
 
       surveyEmployeeState.openResponseModal(survey, responseData.response);
     } catch (error) {
-      console.error('[Survey Employee] Error viewing response:', error);
+      log.error({ err: error }, 'Error viewing response');
       showErrorAlert('Fehler beim Abrufen Ihrer Antworten');
     } finally {
       surveyEmployeeState.setLoading(false);
@@ -212,7 +215,7 @@
         showErrorAlert(result.error ?? 'Fehler beim Absenden der Antworten');
       }
     } catch (error) {
-      console.error('[Survey Employee] Error submitting survey:', error);
+      log.error({ err: error }, 'Error submitting survey');
       showErrorAlert('Fehler beim Absenden der Antworten');
     } finally {
       surveyEmployeeState.setSubmitting(false);

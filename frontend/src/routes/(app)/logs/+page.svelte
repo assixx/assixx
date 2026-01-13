@@ -8,6 +8,10 @@
 
   import '../../../styles/logs.css';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('LogsPage');
+
   import { deleteLogs, fetchLogs } from './_lib/api';
   import {
     ACTION_OPTIONS,
@@ -128,7 +132,7 @@
       logs = result.logs;
       pagination = result.pagination;
     } catch (err) {
-      console.error('Error loading logs:', err);
+      log.error({ err }, 'Error loading logs');
       error = MESSAGES.ERROR_LOADING;
       logs = [];
     } finally {
@@ -153,7 +157,7 @@
       await invalidateAll();
       await loadLogs();
     } catch (err) {
-      console.error('Error deleting logs:', err);
+      log.error({ err }, 'Error deleting logs');
       error = MESSAGES.ERROR_DELETING;
     }
   }

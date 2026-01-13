@@ -148,14 +148,12 @@ export async function deleteEntry(uuid: string): Promise<boolean> {
 // ============================================================================
 
 /**
- * Build authenticated download URL from the API-provided downloadUrl
- * Uses document ID-based URL (like documents-explorer and kvp-detail)
- * NOTE: Only call this function on the client (after mount) to avoid SSR issues
+ * Build download URL from the API-provided downloadUrl
+ * Cookie-based auth: accessToken cookie sent automatically on same-origin request
+ * No token in URL = no token in logs/history
  */
 export function buildDownloadUrl(downloadUrl: string): string {
-  if (typeof localStorage === 'undefined') return downloadUrl;
-  const token = localStorage.getItem('accessToken') ?? '';
   // The API returns URLs like /api/v2/documents/:id/download
-  // We just need to append the auth token
-  return token !== '' ? `${downloadUrl}?token=${encodeURIComponent(token)}` : downloadUrl;
+  // Cookie auth is handled automatically by browser on same-origin requests
+  return downloadUrl;
 }

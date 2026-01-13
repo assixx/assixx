@@ -3,9 +3,11 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import type { Machine, Department, Area, Team, MachineTeam, MachineFormData } from './types';
 
+const log = createLogger('ManageMachinesApi');
 const apiClient = getApiClient();
 
 // =============================================================================
@@ -63,8 +65,8 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
 export async function getMachineById(machineId: number): Promise<Machine | null> {
   try {
     return await apiClient.get(`/machines/${machineId}`);
-  } catch (error) {
-    console.error(`Error loading machine ${machineId}:`, error);
+  } catch (err) {
+    log.error({ err, machineId }, 'Error loading machine');
     return null;
   }
 }
@@ -100,8 +102,8 @@ export async function getMachineTeams(machineId: number): Promise<MachineTeam[]>
   try {
     const result: unknown = await apiClient.get(`/machines/${machineId}/teams`);
     return extractArrayFromResponse<MachineTeam>(result);
-  } catch (error) {
-    console.error(`Error loading teams for machine ${machineId}:`, error);
+  } catch (err) {
+    log.error({ err, machineId }, 'Error loading teams for machine');
     return [];
   }
 }

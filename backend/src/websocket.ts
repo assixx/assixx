@@ -1,10 +1,24 @@
 import { IncomingMessage, Server } from 'http';
-import jwt from 'jsonwebtoken';
+import { Redis } from 'ioredis';
 import { URL } from 'url';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
+import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import { ResultSetHeader, RowDataPacket, execute, query } from './utils/db.js';
 import { logger } from './utils/logger.js';
+
+// ============================================================================
+// Connection Ticket Types (must match connection-ticket.service.ts)
+// ============================================================================
+
+interface ConnectionTicketData {
+  userId: number;
+  tenantId: number;
+  role: string;
+  activeRole: string;
+  purpose: 'websocket' | 'sse';
+  createdAt: number;
+}
 
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
@@ -61,6 +75,16 @@ interface MessageInfoResult extends RowDataPacket {
 export class ChatWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<number, ExtendedWebSocket>;
+  private redis: Redis;
+
+  /** Lua script for atomic GET + DELETE (single-use ticket) */
+  private readonly CONSUME_TICKET_SCRIPT = `
+    local value = redis.call('GET', KEYS[1])
+    if value then
+      redis.call('DEL', KEYS[1])
+    end
+    return value
+  `;
 
   constructor(server: Server) {
     this.wss = new WebSocketServer({
@@ -69,6 +93,31 @@ export class ChatWebSocketServer {
     });
 
     this.clients = new Map();
+
+    // Initialize Redis client for connection ticket validation
+    const redisHost = process.env['REDIS_HOST'] ?? 'redis';
+    const redisPortEnv = process.env['REDIS_PORT'];
+    const redisPort =
+      redisPortEnv !== undefined && redisPortEnv !== '' ? Number(redisPortEnv) : 6379;
+    const redisPassword = process.env['REDIS_PASSWORD'];
+
+    this.redis = new Redis({
+      host: redisHost,
+      port: redisPort,
+      ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+      lazyConnect: true,
+      maxRetriesPerRequest: 3,
+      connectTimeout: 5000,
+    });
+
+    this.redis.on('connect', () => {
+      logger.info('WebSocket: Connected to Redis for ticket validation');
+    });
+
+    this.redis.on('error', (err: Error) => {
+      logger.error({ err }, 'WebSocket: Redis connection error');
+    });
+
     this.init();
   }
 
@@ -86,35 +135,41 @@ export class ChatWebSocketServer {
     });
   }
 
-  /** Extract JWT token from request URL or Authorization header */
-  private extractTokenFromRequest(request: {
+  /** Extract connection ticket from request URL query parameter */
+  private extractTicketFromRequest(request: {
     url: string | undefined;
     headers: { host: string | undefined; authorization: string | undefined };
   }): string | null {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
-    const token =
-      url.searchParams.get('token') ?? request.headers.authorization?.replace('Bearer ', '');
-    return token !== undefined && token !== '' ? token : null;
+    const ticket = url.searchParams.get('ticket');
+    return ticket !== null && ticket !== '' ? ticket : null;
   }
 
-  /** Verify JWT and return decoded payload, or null if invalid */
-  private verifyToken(token: string): {
-    id: number;
-    tenantId: number;
-    role: string;
-    type?: 'access' | 'refresh';
-  } | null {
-    const jwtSecret = process.env['JWT_SECRET'];
-    if (jwtSecret === undefined || jwtSecret === '') return null;
-
+  /**
+   * Consume a connection ticket from Redis (atomic GET + DELETE)
+   * Returns null if ticket is invalid/expired/already used
+   */
+  private async consumeTicket(ticket: string): Promise<ConnectionTicketData | null> {
     try {
-      return jwt.verify(token, jwtSecret) as {
-        id: number;
-        tenantId: number;
-        role: string;
-        type?: 'access' | 'refresh';
-      };
-    } catch {
+      // Use shared constant to ensure consistency with ConnectionTicketService
+      const key = `${CONNECTION_TICKET_PREFIX}${ticket}`;
+      const result = await this.redis.eval(this.CONSUME_TICKET_SCRIPT, 1, key);
+
+      if (result === null || typeof result !== 'string') {
+        return null;
+      }
+
+      const data = JSON.parse(result) as ConnectionTicketData;
+
+      // Verify purpose is websocket
+      if (data.purpose !== 'websocket') {
+        logger.warn({ purpose: data.purpose }, 'WebSocket: Ticket has wrong purpose');
+        return null;
+      }
+
+      return data;
+    } catch (error: unknown) {
+      logger.error({ err: error }, 'WebSocket: Failed to consume ticket');
       return null;
     }
   }
@@ -162,43 +217,42 @@ export class ChatWebSocketServer {
     },
   ): Promise<void> {
     try {
-      const token = this.extractTokenFromRequest(request);
-      // eslint-disable-next-line security/detect-possible-timing-attacks -- Not a secret comparison, just null check
-      if (token === null) {
-        ws.close(1008, 'Token erforderlich');
+      // SECURITY: Use connection ticket instead of JWT to prevent token leakage in logs
+      // @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+      const ticket = this.extractTicketFromRequest(request);
+      if (ticket === null) {
+        ws.close(1008, 'Connection ticket required');
         return;
       }
 
-      const decoded = this.verifyToken(token);
-      if (decoded === null) {
-        ws.close(1008, 'JWT Secret nicht konfiguriert');
+      // Consume ticket (atomic GET + DELETE - single use)
+      const ticketData = await this.consumeTicket(ticket);
+      if (ticketData === null) {
+        logger.warn('WebSocket: Invalid, expired, or already used ticket');
+        ws.close(1008, 'Invalid or expired ticket');
         return;
       }
 
-      // SECURITY: Reject refresh tokens - only access tokens allowed
-      if (decoded.type !== 'access') {
-        logger.warn('WebSocket: Rejected non-access token', { type: decoded.type });
-        ws.close(1008, 'Invalid token type');
-        return;
-      }
-
-      // SECURITY: Check if user is active (is_active = 1)
-      if (!(await this.isUserActive(decoded.id, decoded.tenantId))) {
-        logger.warn('WebSocket: Rejected inactive/deleted user', { userId: decoded.id });
+      // SECURITY: Check if user is still active (is_active = 1)
+      if (!(await this.isUserActive(ticketData.userId, ticketData.tenantId))) {
+        logger.warn({ userId: ticketData.userId }, 'WebSocket: Rejected inactive/deleted user');
         ws.close(1008, 'User account inactive');
         return;
       }
 
-      this.setupWebSocketClient(ws, decoded.id, decoded.tenantId, decoded.role);
+      // Use activeRole if available, otherwise fall back to role
+      const effectiveRole = ticketData.activeRole !== '' ? ticketData.activeRole : ticketData.role;
+      this.setupWebSocketClient(ws, ticketData.userId, ticketData.tenantId, effectiveRole);
 
       this.sendMessage(ws, {
         type: 'connection_established',
-        data: { userId: decoded.id, timestamp: new Date().toISOString() },
+        data: { userId: ticketData.userId, timestamp: new Date().toISOString() },
       });
 
-      await this.broadcastUserStatus(decoded.id, decoded.tenantId, 'online');
+      await this.broadcastUserStatus(ticketData.userId, ticketData.tenantId, 'online');
+      logger.info({ userId: ticketData.userId }, 'WebSocket: Connection established via ticket');
     } catch (error: unknown) {
-      logger.error('WebSocket Authentifizierung fehlgeschlagen:', error);
+      logger.error({ err: error }, 'WebSocket Authentifizierung fehlgeschlagen');
       ws.close(1008, 'Authentifizierung fehlgeschlagen');
     }
   }
@@ -237,7 +291,7 @@ export class ChatWebSocketServer {
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
     } catch (error: unknown) {
-      logger.error('Fehler beim Verarbeiten der WebSocket Nachricht:', error);
+      logger.error({ err: error }, 'Fehler beim Verarbeiten der WebSocket Nachricht');
       this.sendMessage(ws, {
         type: 'error',
         data: { message: 'Fehler beim Verarbeiten der Nachricht' },
@@ -519,7 +573,7 @@ export class ChatWebSocketServer {
         data: { messageId, timestamp: new Date().toISOString() },
       });
     } catch (error: unknown) {
-      logger.error('Fehler beim Senden der Nachricht:', error);
+      logger.error({ err: error }, 'Fehler beim Senden der Nachricht');
       this.sendMessage(ws, {
         type: 'error',
         data: { message: 'Fehler beim Senden der Nachricht' },
@@ -568,7 +622,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error: unknown) {
-      logger.error('Fehler beim Typing-Event:', error);
+      logger.error({ err: error }, 'Fehler beim Typing-Event');
     }
   }
 
@@ -614,7 +668,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error: unknown) {
-      logger.error('Fehler beim Markieren als gelesen:', error);
+      logger.error({ err: error }, 'Fehler beim Markieren als gelesen');
     }
   }
 
@@ -661,7 +715,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error: unknown) {
-      logger.error('Fehler beim Beitreten zur Unterhaltung:', error);
+      logger.error({ err: error }, 'Fehler beim Beitreten zur Unterhaltung');
     }
   }
 
@@ -677,7 +731,7 @@ export class ChatWebSocketServer {
   }
 
   private handleError(_ws: ExtendedWebSocket, error: unknown): void {
-    logger.error('WebSocket Fehler:', error);
+    logger.error({ err: error }, 'WebSocket Fehler');
   }
 
   private async broadcastUserStatus(
@@ -717,7 +771,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error: unknown) {
-      logger.error('Fehler beim Senden des User-Status:', error);
+      logger.error({ err: error }, 'Fehler beim Senden des User-Status');
     }
   }
 

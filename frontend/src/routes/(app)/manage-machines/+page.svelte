@@ -9,6 +9,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ManageMachinesPage');
 
   // Page-specific CSS
   import '../../../styles/manage-machines.css';
@@ -130,7 +133,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageMachines] Error saving machine:', err);
+      log.error({ err }, 'Error saving machine');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED);
     } finally {
       machineState.setSubmitting(false);
@@ -147,7 +150,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageMachines] Error deleting machine:', err);
+      log.error({ err }, 'Error deleting machine');
       showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
     }
   }

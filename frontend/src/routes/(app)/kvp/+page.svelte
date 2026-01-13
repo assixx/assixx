@@ -14,6 +14,9 @@
   // KVP-specific styles (migrated from legacy)
   import '../../../styles/kvp.css';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('KvpPage');
 
   import {
     fetchSuggestions,
@@ -112,8 +115,8 @@
         kvpState.searchQuery,
       );
       kvpState.setSuggestions(suggestions);
-    } catch (error) {
-      console.error('[KVP] Error loading suggestions:', error);
+    } catch (err) {
+      log.error({ err }, 'Error loading suggestions');
     }
   }
 
