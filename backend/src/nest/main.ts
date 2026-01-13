@@ -1,17 +1,27 @@
+// IMPORTANT: Sentry MUST be imported BEFORE any other modules for auto-instrumentation!
+import './instrument.js';
+
 /**
  * NestJS Application Bootstrap - Fastify Adapter
  *
  * Entry point for the NestJS application using Fastify.
  * Configures global pipes, filters, interceptors, and middleware.
+ *
+ * Logging: Uses Pino via nestjs-pino (replaces Winston)
+ * Error Tracking: Uses Sentry (must be imported FIRST!)
+ *
+ * @see docs/PINO-LOGGING-PLAN.md
+ * @see docs/adr/ADR-002-alerting-monitoring.md
  */
 import fastifyCookie from '@fastify/cookie';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
-import { Logger } from '@nestjs/common';
+import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { createReadStream, existsSync } from 'fs';
+import { Logger } from 'nestjs-pino';
 import path from 'path';
 import 'reflect-metadata';
 
@@ -19,6 +29,7 @@ import { ChatWebSocketServer } from '../websocket.js';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
+import { REDACTED_VALUE, REDACT_PATHS } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 
 /** Frontend routes that map to HTML pages */
@@ -111,6 +122,14 @@ function setupHealthCheck(fastify: FastifyInstance): void {
     environment: process.env['NODE_ENV'] ?? 'development',
     framework: 'NestJS+Fastify',
   }));
+
+  // Debug route for testing Sentry - ONLY in development
+  // Access: GET /debug-sentry
+  if (process.env['NODE_ENV'] !== 'production') {
+    fastify.get('/debug-sentry', () => {
+      throw new Error('Test Sentry error from debug endpoint');
+    });
+  }
 }
 
 /** Register static file serving for frontend assets */
@@ -232,7 +251,13 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
         styleSrc: ["'self'", "'unsafe-inline'"], // SvelteKit needs inline styles
         imgSrc: ["'self'", 'data:', 'blob:'],
         fontSrc: ["'self'"],
-        connectSrc: ["'self'", 'wss:', 'ws:'], // WebSocket connections
+        connectSrc: [
+          "'self'",
+          'wss:',
+          'ws:',
+          'https://*.ingest.sentry.io', // Sentry telemetry (global)
+          'https://*.ingest.de.sentry.io', // Sentry telemetry (EU region)
+        ],
         objectSrc: ["'none'"], // Disable plugins/embeds
         frameAncestors: ["'self'"], // Allow same-origin iframe for PDF preview
         baseUri: ["'self'"],
@@ -276,7 +301,7 @@ let appInstance: NestFastifyApplication | null = null;
 
 /** Graceful shutdown handler - closes NestJS app and releases port */
 async function gracefulShutdown(signal: string): Promise<void> {
-  const logger = new Logger('Shutdown');
+  const logger = new NestLogger('Shutdown');
   logger.log(`Received ${signal}. Starting graceful shutdown...`);
 
   if (appInstance) {
@@ -301,18 +326,46 @@ process.on('SIGHUP', () => void gracefulShutdown('SIGHUP'));
  * Bootstrap the NestJS application with Fastify
  */
 async function bootstrap(): Promise<void> {
-  const logger = new Logger('Bootstrap');
+  const bootstrapLogger = new NestLogger('Bootstrap');
+  const isProduction = process.env['NODE_ENV'] === 'production';
 
-  // Create Fastify adapter with trust proxy for Docker
+  // Pino logger configuration for Fastify
+  // Development: pino-pretty for readable output
+  // Production: JSON to stdout (Docker logs)
+  const pinoLoggerConfig = {
+    level: process.env['LOG_LEVEL'] ?? (isProduction ? 'info' : 'debug'),
+    // Only include transport in development (pino-pretty)
+    // Production uses JSON to stdout
+    ...(isProduction ?
+      {}
+    : {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
+        },
+      }),
+    redact: {
+      paths: [...REDACT_PATHS],
+      censor: REDACTED_VALUE,
+    },
+  };
+
+  // Create Fastify adapter with Pino logger and trust proxy for Docker
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      logger: {
-        level: 'warn',
-      },
+      logger: pinoLoggerConfig,
       trustProxy: true,
     }),
+    { bufferLogs: true }, // Buffer logs until nestjs-pino is ready
   );
+
+  // Use nestjs-pino as the NestJS logger (replaces @nestjs/common Logger internally)
+  app.useLogger(app.get(Logger));
 
   // Store reference for graceful shutdown
   appInstance = app;
@@ -322,14 +375,14 @@ async function bootstrap(): Promise<void> {
   const fastify = app.getHttpAdapter().getInstance();
   const paths = getProjectPaths();
 
-  logger.log(`[Static] Project root: ${paths.projectRoot}`);
-  logger.log(`[Static] Frontend dist: ${paths.distPath}`);
+  bootstrapLogger.log(`[Static] Project root: ${paths.projectRoot}`);
+  bootstrapLogger.log(`[Static] Frontend dist: ${paths.distPath}`);
 
   // Setup in order
   setupHealthCheck(fastify);
   await setupStaticAssets(app, paths);
   setupHtmlRoutes(fastify, paths.pagesPath, paths.publicPath);
-  logger.log('✅ Static file serving configured');
+  bootstrapLogger.log('Static file serving configured');
 
   await setupSecurity(app);
   setupGlobalMiddleware(app);
@@ -342,14 +395,14 @@ async function bootstrap(): Promise<void> {
   const httpServer = app.getHttpServer();
   const chatWs = new ChatWebSocketServer(httpServer);
   chatWs.startHeartbeat();
-  logger.log('✅ WebSocket server started on /chat-ws');
+  bootstrapLogger.log('WebSocket server started on /chat-ws');
 
-  logger.log(`NestJS+Fastify application running on port ${port}`);
-  logger.log(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
+  bootstrapLogger.log(`NestJS+Fastify application running on port ${port}`);
+  bootstrapLogger.log(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
 }
 
 bootstrap().catch((error: unknown) => {
-  const logger = new Logger('Bootstrap');
-  logger.error('Failed to start application', error);
+  const errorLogger = new NestLogger('Bootstrap');
+  errorLogger.error('Failed to start application', error);
   process.exit(1);
 });

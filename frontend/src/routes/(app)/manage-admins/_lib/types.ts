@@ -49,6 +49,7 @@ export interface Admin {
   position?: string;
   notes?: string;
   employeeNumber?: string;
+  profilePicture?: string | null;
   isActive: IsActiveStatus;
   createdAt: string;
   updatedAt: string;

@@ -42,15 +42,17 @@ docker-compose logs -f
 curl http://localhost:3000/health
 ```
 
-### Mit Monitoring
+### Mit Monitoring (PLG Stack)
 
 ```bash
-# Monitoring Stack zusätzlich starten
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+# PLG Stack (Prometheus + Loki + Grafana) starten
+cd docker
+docker-compose --profile observability up -d
 
 # Zugriff:
-# - Grafana: http://localhost:3001
+# - Grafana: http://localhost:3050 (admin/admin)
 # - Prometheus: http://localhost:9090
+# - Loki: http://localhost:3100
 ```
 
 ## 🔒 Sicherheit
@@ -117,12 +119,9 @@ docker-compose up -d
 ### Production
 
 ```bash
-# Mit SSL und Monitoring
-docker-compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  -f docker-compose.monitoring.yml \
-  up -d
+# Mit Production Profile + Observability
+cd docker
+docker-compose --profile production --profile observability up -d
 ```
 
 ## 📚 Weitere Dokumentation

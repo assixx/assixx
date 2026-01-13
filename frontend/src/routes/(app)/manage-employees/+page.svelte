@@ -8,6 +8,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ManageEmployeesPage');
 
   // Page-specific CSS
   import '../../../styles/manage-employees.css';
@@ -165,7 +168,7 @@
       await invalidateAll();
       showSuccessAlert(isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
     } catch (err) {
-      console.error('[ManageEmployees] Error saving employee:', err);
+      log.error({ err }, 'Error saving employee');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVING);
     } finally {
       submitting = false;
@@ -186,7 +189,7 @@
       await invalidateAll();
       showSuccessAlert('Mitarbeiter wurde gelöscht');
     } catch (err) {
-      console.error('[ManageEmployees] Error deleting employee:', err);
+      log.error({ err }, 'Error deleting employee');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
   }

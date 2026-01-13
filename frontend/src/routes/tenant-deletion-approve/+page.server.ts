@@ -7,7 +7,11 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { PageServerLoad } from './$types';
+
+const log = createLogger('TenantDeletionApprove');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -98,7 +102,7 @@ async function fetchDeletionStatus(
   }
 
   if (!response.ok) {
-    console.error(`[SSR] API error ${response.status} for /root/tenant/deletion-status`);
+    log.error({ status: response.status, endpoint: '/root/tenant/deletion-status' }, 'API error');
     return errorResult(queueId, 'Fehler beim Laden der Löschanfrage');
   }
 
@@ -132,8 +136,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 
   try {
     return await fetchDeletionStatus(fetch, token, queueId);
-  } catch (error) {
-    console.error(`[SSR] Fetch error for /root/tenant/deletion-status:`, error);
+  } catch (err) {
+    log.error({ err, endpoint: '/root/tenant/deletion-status' }, 'Fetch error');
     return errorResult(queueId, 'Fehler beim Laden der Löschanfrage');
   }
 };

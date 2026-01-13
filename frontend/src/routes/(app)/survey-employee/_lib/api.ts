@@ -7,10 +7,13 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
 import type { Survey, ResponseCheck, SurveyResponse, Answer } from './types';
+
+const log = createLogger('SurveyEmployeeApi');
 
 const apiClient = getApiClient();
 
@@ -62,7 +65,7 @@ export async function loadSurveys(): Promise<Survey[]> {
     // Filter only active and closed surveys (not draft or archived)
     return surveys.filter((s: Survey): boolean => s.status === 'active' || s.status === 'closed');
   } catch (err) {
-    console.error('[Survey Employee] Error loading surveys:', err);
+    log.error({ err }, 'Error loading surveys');
     checkSessionExpired(err);
     return [];
   }
@@ -75,7 +78,7 @@ export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
   } catch (err) {
-    console.error('[Survey Employee] Error loading survey:', err);
+    log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
   }
@@ -97,7 +100,7 @@ export async function checkUserResponse(surveyId: number): Promise<ResponseCheck
 
     return { responded: false };
   } catch (err) {
-    console.error(`[Survey Employee] Error checking response for survey ${surveyId}:`, err);
+    log.error({ err, surveyId }, 'Error checking response for survey');
     checkSessionExpired(err);
     return { responded: false };
   }
@@ -118,7 +121,7 @@ export async function fetchUserResponse(surveyId: number): Promise<ResponseCheck
 
     return { responded: false };
   } catch (err) {
-    console.error('[Survey Employee] Error fetching user response:', err);
+    log.error({ err }, 'Error fetching user response');
     checkSessionExpired(err);
     return null;
   }
@@ -135,7 +138,7 @@ export async function submitResponse(
     await apiClient.post(API_ENDPOINTS.submitResponse(surveyId), { answers });
     return { success: true };
   } catch (err) {
-    console.error('[Survey Employee] Error submitting survey:', err);
+    log.error({ err, surveyId }, 'Error submitting survey');
     checkSessionExpired(err);
     const message = err instanceof Error ? err.message : 'Fehler beim Absenden der Antworten';
     return { success: false, error: message };

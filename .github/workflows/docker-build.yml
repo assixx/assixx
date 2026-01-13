@@ -67,8 +67,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # TEMPORARILY DISABLED: GitHub Actions Cache service having 502/504 errors (2026-01-13)
+          # Re-enable when GitHub's cache service is stable again
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
 
   integration-test-docker-compose:
     runs-on: ubuntu-latest
@@ -93,8 +95,16 @@ jobs:
 
       - name: Run Docker Compose tests
         run: |
-          cp docker/.env.docker.example docker/.env
-          cd docker && docker compose up -d
+          cp docker/.env.example docker/.env
+          # Create external volumes (required by docker-compose.yml)
+          docker volume create assixx_postgres_data
+          docker volume create assixx_redis_data
+          # Use CI override to reduce resource limits (GitHub runners have only 2 CPUs)
+          # IMPORTANT: Build images FIRST, then start. This prevents race conditions where
+          # deletion-worker tries to pull assixx-backend:ci before backend finishes building it.
+          cd docker && \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml build && \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
           # Wait for PostgreSQL to be HEALTHY
           echo "Waiting for PostgreSQL to be HEALTHY..."
@@ -168,7 +178,7 @@ jobs:
           # Test the health endpoint
           curl -f http://localhost:3000/health || exit 1
 
-          docker compose down
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml down
 
       - name: Debug PostgreSQL on failure
         if: failure()
@@ -208,11 +218,23 @@ jobs:
       - name: Wait for image to be available
         run: sleep 30
 
+      - name: Determine image tag for Trivy
+        id: trivy-tag
+        run: |
+          # For PRs: github.ref_name is "111/merge" (invalid tag), use "pr-<number>" instead
+          # For branches: github.ref_name is the branch name (valid)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           # Use lowercase repository name for Docker registry compatibility
-          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ github.ref_name }}
+          # Tag must match docker/metadata-action output (pr-<number> for PRs)
+          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"

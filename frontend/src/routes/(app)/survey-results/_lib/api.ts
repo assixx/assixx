@@ -8,10 +8,13 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
 import type { Survey, SurveyQuestion, SurveyStatistics, ResponsesData } from './types';
+
+const log = createLogger('SurveyResultsApi');
 
 const apiClient = getApiClient();
 
@@ -60,7 +63,7 @@ export async function loadSurveyDetails(surveyId: string): Promise<Survey | null
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
   } catch (err) {
-    console.error('[Survey Results] Error loading survey:', err);
+    log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
   }
@@ -73,7 +76,7 @@ export async function loadSurveyQuestions(surveyId: string): Promise<SurveyQuest
   try {
     return await apiClient.get<SurveyQuestion[]>(API_ENDPOINTS.surveyQuestions(surveyId));
   } catch (err) {
-    console.error('[Survey Results] Error loading questions:', err);
+    log.error({ err, surveyId }, 'Error loading questions');
     checkSessionExpired(err);
     return [];
   }
@@ -86,7 +89,7 @@ export async function loadSurveyStatistics(surveyId: string): Promise<SurveyStat
   try {
     return await apiClient.get<SurveyStatistics>(API_ENDPOINTS.surveyStatistics(surveyId));
   } catch (err) {
-    console.error('[Survey Results] Error loading statistics:', err);
+    log.error({ err, surveyId }, 'Error loading statistics');
     checkSessionExpired(err);
     return null;
   }
@@ -99,10 +102,7 @@ export async function loadSurveyResponses(surveyId: string): Promise<ResponsesDa
   try {
     return await apiClient.get<ResponsesData>(API_ENDPOINTS.surveyResponses(surveyId));
   } catch (err) {
-    console.warn(
-      '[Survey Results] Could not load individual responses (might not have permission):',
-      err,
-    );
+    log.warn({ err, surveyId }, 'Could not load individual responses (might not have permission)');
     return null;
   }
 }
@@ -143,7 +143,7 @@ export async function exportToExcel(surveyId: string): Promise<boolean> {
 
     return true;
   } catch (err) {
-    console.error('[Survey Results] Error exporting to Excel:', err);
+    log.error({ err, surveyId }, 'Error exporting to Excel');
     return false;
   }
 }

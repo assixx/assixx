@@ -19,7 +19,7 @@
   height: 56px;
   padding: 8px 16px;
 
-  background: rgb(255 255 255 / 2%);
+  background: rgb(0 0 0 / 0%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }
@@ -71,26 +71,64 @@
 }
 
 .hero {
+  position: relative;
   margin: 0 auto;
-  padding: calc(var(--spacing-8) * 3) 5% var(--spacing-8);
-  max-width: 800px;
+  padding: calc(var(--spacing-8) * 4) 5% calc(var(--spacing-8) * 2);
+  max-width: 100%;
   text-align: center;
+
+  /* Background Image */
+  background-image: url('/images/background_index.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* Minimum height to showcase the image */
+  min-height: 70vh;
+
+  /* Flexbox for vertical centering of content */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Dark overlay for better text readability */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 10 20 / 16%) 0%,
+    rgb(0 10 20 / 12.6%) 50%,
+    rgb(0 10 20 / 83.6%) 100%
+  );
+  z-index: 0;
+}
+
+/* Ensure content is above overlay */
+.hero > * {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
 }
 
 .hero h1 {
   margin-bottom: var(--spacing-6);
-  color: var(--primary-color);
+  color: #fff;
   font-weight: 700;
 
   font-size: 3rem;
-  text-shadow: 0 0 20px rgb(33 150 243 / 0%);
+  text-shadow: 0 2px 4px rgb(0 0 0 / 30%);
 }
 
 .hero p {
   margin-bottom: var(--spacing-6);
-  color: var(--text-secondary);
+  color: rgb(255 255 255 / 85%);
   font-size: 1.25rem;
   line-height: 1.6;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 20%);
 }
 
 /* Glassmorphismus Features Section */
@@ -647,6 +685,11 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--spacing-4);
+  }
+
+  .hero {
+    min-height: 50vh;
+    padding: calc(var(--spacing-8) * 2) 5% var(--spacing-8);
   }
 
   .hero h1 {

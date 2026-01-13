@@ -14,6 +14,8 @@
   // Global calendar styles - MUST be imported for legend-*, event-level-*, etc. classes
   import '$styles/calendar.css';
 
+  import { createLogger } from '$lib/utils/logger';
+
   import * as api from './_lib/api';
   import { FILTER_OPTIONS, DE_LOCALE } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
@@ -30,6 +32,8 @@
     EventInput,
     EventHoverInfo,
   } from './_lib/types';
+
+  const log = createLogger('CalendarPage');
 
   // Modal components
 
@@ -87,10 +91,10 @@
   function refetchCalendarEvents(): void {
     if (calendarRef !== undefined) {
       if (typeof calendarRef.refetchEvents === 'function') {
-        console.warn('[CALENDAR] Refetching events...');
+        log.debug({}, 'Refetching events');
         calendarRef.refetchEvents();
       } else {
-        console.warn('[CALENDAR] refetchEvents not available, calendar may not be ready');
+        log.debug({}, 'refetchEvents not available, calendar may not be ready');
       }
     }
   }
@@ -250,13 +254,7 @@
       renderedCount++;
     });
 
-    console.warn(
-      '[CALENDAR] Rendered shift indicators:',
-      renderedCount,
-      'of',
-      shiftsCache.size,
-      'cached',
-    );
+    log.debug({ renderedCount, cachedCount: shiftsCache.size }, 'Rendered shift indicators');
   }
 
   /**
@@ -268,7 +266,7 @@
       return;
     }
 
-    console.warn('[CALENDAR] Fetching shifts for:', startStr, '-', endStr);
+    log.debug({ startStr, endStr }, 'Fetching shifts');
     const shifts = await api.loadUserShifts(startStr, endStr);
 
     // Build cache
@@ -279,7 +277,7 @@
       shiftsCache.set(dateOnly, { type: shift.type });
     }
 
-    console.warn('[CALENDAR] Cached shifts:', shiftsCache.size);
+    log.debug({ size: shiftsCache.size }, 'Cached shifts');
 
     // Small delay to ensure DOM is rendered, then add indicators
     setTimeout(renderShiftIndicators, 100);
@@ -302,7 +300,7 @@
         calendarState.currentSearch,
       );
     } catch (err) {
-      console.error('[CALENDAR] Error loading events:', err);
+      log.error({ err }, 'Error loading events');
       return [];
     }
   }
@@ -313,9 +311,9 @@
   }
 
   function handleCalendarDateClick(info: { date: Date; allDay: boolean }) {
-    console.warn('[CALENDAR] Date clicked:', info);
+    log.debug({ info }, 'Date clicked');
     if (isFullscreen) {
-      console.warn('[CALENDAR] Date click disabled in fullscreen mode');
+      log.debug({}, 'Date click disabled in fullscreen mode');
       return;
     }
     handleDateClick(info.date, info.allDay);
@@ -353,7 +351,7 @@
   // ==========================================================================
 
   function openEventForm(startDate?: Date, endDate?: Date, allDay: boolean = false): void {
-    console.warn('[CALENDAR] Opening event form:', { startDate, endDate, allDay });
+    log.debug({ startDate, endDate, allDay }, 'Opening event form');
     const now = startDate ?? new Date();
     const later = endDate ?? new Date(now.getTime() + 60 * 60 * 1000);
 
@@ -377,9 +375,7 @@
     };
 
     calendarState.openEventModal(startDate);
-    console.warn(
-      `[CALENDAR] Modal configured for ${calendarState.isAdmin ? 'admin (all event types)' : 'employee (personal only)'}`,
-    );
+    log.debug({ isAdmin: calendarState.isAdmin }, 'Modal configured');
   }
 
   function openEditForm(event: CalendarEvent) {
@@ -417,7 +413,7 @@
       refetchCalendarEvents();
       await invalidateAll();
     } else {
-      console.error('[CALENDAR] Save failed:', result.error);
+      log.error({ error: result.error }, 'Save failed');
     }
   }
 
@@ -440,7 +436,7 @@
       refetchCalendarEvents();
       await invalidateAll();
     } else {
-      console.error('[CALENDAR] Delete failed:', result.error);
+      log.error({ error: result.error }, 'Delete failed');
     }
   }
 
@@ -454,7 +450,7 @@
       try {
         await document.documentElement.requestFullscreen();
       } catch (err) {
-        console.error('[CALENDAR] Fullscreen error:', err);
+        log.error({ err }, 'Fullscreen error');
       }
     } else {
       await document.exitFullscreen();
@@ -516,7 +512,7 @@
               data-action="toggle-shifts"
               onclick={() => {
                 showShifts = !showShifts;
-                console.warn('[CALENDAR] Shifts toggle:', showShifts);
+                log.debug({ showShifts }, 'Shifts toggle');
                 // Persist to localStorage
                 if (browser) {
                   localStorage.setItem('showShiftsInCalendar', String(showShifts));

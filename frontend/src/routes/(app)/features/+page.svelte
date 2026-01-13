@@ -8,6 +8,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('FeaturesPage');
 
   import '../../../styles/features.css';
 
@@ -123,7 +126,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[Features] Error changing plan:', err);
+      log.error({ err }, 'Error changing plan');
       showErrorAlert('Fehler beim Plan-Wechsel');
     }
   }
@@ -134,7 +137,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[Features] Error toggling feature:', err);
+      log.error({ err }, 'Error toggling feature');
       showErrorAlert('Fehler beim Ändern des Features');
     }
   }
@@ -161,7 +164,7 @@
       // Level 3: Trigger SSR refetch to sync saved values
       await invalidateAll();
     } catch (err) {
-      console.error('[Features] Error saving changes:', err);
+      log.error({ err }, 'Error saving changes');
       showErrorAlert('Fehler beim Speichern der Änderungen');
     }
   }

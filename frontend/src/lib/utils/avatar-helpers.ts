@@ -68,3 +68,25 @@ export function getInitials(
   const last = lastName?.charAt(0).toUpperCase() ?? '';
   return first + last || '?';
 }
+
+/**
+ * Get absolute URL for profile picture
+ * Ensures path starts with / to prevent relative path issues on nested routes
+ *
+ * @param path - Profile picture path from API (e.g., 'uploads/profile_pictures/...')
+ * @returns Absolute path starting with / or null if no path
+ *
+ * @example
+ * getProfilePictureUrl('uploads/profile_pictures/abc.jpg') // returns '/uploads/profile_pictures/abc.jpg'
+ * getProfilePictureUrl('/uploads/profile_pictures/abc.jpg') // returns '/uploads/profile_pictures/abc.jpg'
+ * getProfilePictureUrl(null) // returns null
+ */
+export function getProfilePictureUrl(path: string | null | undefined): string | null {
+  if (path === null || path === undefined || path === '') return null;
+  // Already absolute or external URL
+  if (path.startsWith('/') || path.startsWith('http')) {
+    return path;
+  }
+  // Add leading slash for relative paths
+  return `/${path}`;
+}

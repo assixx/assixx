@@ -14,6 +14,9 @@
     showConfirm,
     showConfirmDanger,
   } from '$lib/utils/alerts';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ShiftsPage');
 
   import {
     saveSchedule,
@@ -412,7 +415,7 @@
 
     const employee = shiftsState.getEmployeeById(employeeId);
     if (employee === undefined) {
-      console.error('[DROP] Employee not found:', employeeId);
+      log.error({ employeeId }, 'Employee not found on drop');
       return;
     }
 
@@ -744,7 +747,7 @@
       navigateToWeekContainingDate(config.startDate);
       void loadShiftPlan();
     } catch (error) {
-      console.error('[CUSTOM ROTATION] Error:', error);
+      log.error({ err: error }, 'Custom rotation error');
       showErrorAlert(error instanceof Error ? error.message : 'Fehler bei der Custom Rotation');
     }
   }

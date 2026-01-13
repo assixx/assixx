@@ -5,6 +5,7 @@
 import { goto } from '$app/navigation';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -17,6 +18,8 @@ import type {
   TeamPayload,
   ApiErrorWithDetails,
 } from './types';
+
+const log = createLogger('ManageTeamsApi');
 
 const apiClient = getApiClient();
 
@@ -109,7 +112,7 @@ export async function loadDepartments(): Promise<Department[]> {
     const result: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
     return extractArrayFromResponse<Department>(result);
   } catch (err) {
-    console.error('[ManageTeams] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return [];
   }
 }
@@ -123,7 +126,7 @@ export async function loadAdmins(): Promise<Admin[]> {
     const data = extractArrayFromResponse<Admin>(result);
     return data.filter((u) => u.role === 'admin');
   } catch (err) {
-    console.error('[ManageTeams] Error loading admins:', err);
+    log.error({ err }, 'Error loading admins');
     return [];
   }
 }
@@ -137,7 +140,7 @@ export async function loadEmployees(): Promise<TeamMember[]> {
     const data = extractArrayFromResponse<TeamMember>(result);
     return data.filter((u) => u.role === 'employee');
   } catch (err) {
-    console.error('[ManageTeams] Error loading employees:', err);
+    log.error({ err }, 'Error loading employees');
     return [];
   }
 }
@@ -150,7 +153,7 @@ export async function loadMachines(): Promise<Machine[]> {
     const result: unknown = await apiClient.get(API_ENDPOINTS.MACHINES);
     return extractArrayFromResponse<Machine>(result);
   } catch (err) {
-    console.error('[ManageTeams] Error loading machines:', err);
+    log.error({ err }, 'Error loading machines');
     return [];
   }
 }
@@ -164,7 +167,7 @@ export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]
     const result: unknown = await apiClient.get(API_ENDPOINTS.teamMembers(teamId));
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
-    console.error('[ManageTeams] Error fetching team members:', err);
+    log.error({ err }, 'Error fetching team members');
     return [];
   }
 }
@@ -178,7 +181,7 @@ export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[
     const result: unknown = await apiClient.get(API_ENDPOINTS.teamMachines(teamId));
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
-    console.error('[ManageTeams] Error fetching team machines:', err);
+    log.error({ err }, 'Error fetching team machines');
     return [];
   }
 }
@@ -203,7 +206,7 @@ export async function addTeamMember(teamId: number, userId: number): Promise<voi
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err) {
-    console.error(`[ManageTeams] Error adding member ${userId}:`, err);
+    log.error({ err, userId }, 'Error adding member');
   }
 }
 
@@ -214,7 +217,7 @@ export async function removeTeamMember(teamId: number, userId: number): Promise<
   try {
     await apiClient.delete(API_ENDPOINTS.teamMember(teamId, userId));
   } catch (err) {
-    console.error(`[ManageTeams] Error removing member ${userId}:`, err);
+    log.error({ err, userId }, 'Error removing member');
   }
 }
 
@@ -225,7 +228,7 @@ export async function addTeamMachine(teamId: number, machineId: number): Promise
   try {
     await apiClient.post(API_ENDPOINTS.teamMachines(teamId), { machineId });
   } catch (err) {
-    console.error(`[ManageTeams] Error adding machine ${machineId}:`, err);
+    log.error({ err, machineId }, 'Error adding machine');
   }
 }
 
@@ -236,7 +239,7 @@ export async function removeTeamMachine(teamId: number, machineId: number): Prom
   try {
     await apiClient.delete(API_ENDPOINTS.teamMachine(teamId, machineId));
   } catch (err) {
-    console.error(`[ManageTeams] Error removing machine ${machineId}:`, err);
+    log.error({ err, machineId }, 'Error removing machine');
   }
 }
 
@@ -302,7 +305,7 @@ export async function deleteTeam(teamId: number): Promise<DeleteTeamResult> {
     await apiClient.delete(API_ENDPOINTS.team(teamId));
     return { success: true, hasMembers: false, memberCount: 0 };
   } catch (err) {
-    console.error('[ManageTeams] Error deleting team:', err);
+    log.error({ err }, 'Error deleting team');
 
     // Check if team has members
     const errObj = err as ApiErrorWithDetails | null;

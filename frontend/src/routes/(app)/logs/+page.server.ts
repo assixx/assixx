@@ -7,10 +7,14 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import { LOGS_PER_PAGE } from './_lib/constants';
 
 import type { PageServerLoad } from './$types';
 import type { LogEntry, PaginationInfo } from './_lib/types';
+
+const log = createLogger('Logs');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -78,14 +82,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     });
 
     if (!response.ok) {
-      console.error(`[SSR] API error ${response.status} for /logs`);
+      log.error({ status: response.status, endpoint: '/logs' }, 'API error');
       return getEmptyResponse();
     }
 
     const json = (await response.json()) as LogsApiResponse;
     return parseLogsResponse(json);
-  } catch (error) {
-    console.error(`[SSR] Fetch error for /logs:`, error);
+  } catch (err) {
+    log.error({ err, endpoint: '/logs' }, 'Fetch error');
     return getEmptyResponse();
   }
 };

@@ -7,17 +7,33 @@
  */
 import { fail, type Cookies } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { Actions } from './$types';
+
+const log = createLogger('Login');
 
 /** API base URL for server-side fetching */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-/** Cookie options for auth tokens */
-const COOKIE_OPTIONS = {
+/** Cookie options for access token */
+const ACCESS_COOKIE_OPTIONS = {
   path: '/',
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
+};
+
+/**
+ * Cookie options for refresh token - STRICTER than access token
+ * sameSite: 'strict' - Better CSRF protection
+ * path: '/api/v2/auth' - Only sent to auth endpoints (minimizes exposure)
+ */
+const REFRESH_COOKIE_OPTIONS = {
+  path: '/api/v2/auth',
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
 };
 
 /** Access token expiry: 30 minutes */
@@ -50,20 +66,28 @@ interface LoginResponse {
   };
 }
 
-/** Set authentication cookies after successful login */
+/**
+ * Set authentication cookies after successful login.
+ *
+ * SECURITY: refreshToken uses stricter options (sameSite: strict, limited path)
+ * to protect the long-lived token from CSRF attacks.
+ */
 function setAuthCookies(cookies: Cookies, data: LoginResponseData): void {
+  // Access token - available everywhere for API calls
   cookies.set('accessToken', data.accessToken, {
-    ...COOKIE_OPTIONS,
+    ...ACCESS_COOKIE_OPTIONS,
     maxAge: ACCESS_TOKEN_MAX_AGE,
   });
 
+  // Refresh token - stricter settings, only for auth endpoints
   cookies.set('refreshToken', data.refreshToken, {
-    ...COOKIE_OPTIONS,
+    ...REFRESH_COOKIE_OPTIONS,
     maxAge: REFRESH_TOKEN_MAX_AGE,
   });
 
+  // User role - not httpOnly so client JS can read it
   cookies.set('userRole', data.user.role, {
-    ...COOKIE_OPTIONS,
+    ...ACCESS_COOKIE_OPTIONS,
     httpOnly: false,
     maxAge: ACCESS_TOKEN_MAX_AGE,
   });
@@ -133,8 +157,8 @@ export const actions: Actions = {
         user: result.data.user,
         redirectTo: getRedirectPath(result.data.user.role),
       };
-    } catch (error) {
-      console.error('[Login] Server error:', error);
+    } catch (err) {
+      log.error({ err }, 'Server error');
       return fail(500, { error: 'Ein Serverfehler ist aufgetreten', email });
     }
   },

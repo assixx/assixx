@@ -3,6 +3,9 @@
  *
  * Global exception filter that catches all unhandled exceptions.
  * Formats errors consistently for API responses.
+ *
+ * Integrates with Sentry for error tracking (5xx errors only).
+ * @see docs/adr/ADR-002-alerting-monitoring.md
  */
 import {
   ArgumentsHost,
@@ -12,6 +15,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+// eslint-disable-next-line @typescript-eslint/naming-convention -- Sentry SDK convention
+import * as Sentry from '@sentry/nestjs';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -61,6 +66,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `[${request.method}] ${request.url} - ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+
+      // Report 5xx errors to Sentry (server errors = bugs we need to fix)
+      // 4xx errors are client errors and not reported
+      Sentry.captureException(exception, {
+        extra: {
+          path: request.url,
+          method: request.method,
+          statusCode: status,
+          errorCode: errorResponse.error.code,
+        },
+        tags: {
+          statusCode: String(status),
+          errorCode: errorResponse.error.code,
+        },
+      });
     } else {
       this.logger.warn(
         `[${request.method}] ${request.url} - ${status}: ${errorResponse.error.message}`,

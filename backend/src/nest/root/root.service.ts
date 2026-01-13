@@ -15,7 +15,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
-import type { QueryResultRow } from 'pg';
 
 import { tenantDeletionService } from '../../services/tenantDeletion.service.js';
 import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
@@ -47,7 +46,7 @@ const STORAGE_LIMITS: Record<string, number> = {
 // DATABASE ROW TYPES
 // ============================================================================
 
-interface DbUserRow extends QueryResultRow {
+interface DbUserRow {
   id: number;
   username: string;
   email: string;
@@ -66,7 +65,7 @@ interface DbUserRow extends QueryResultRow {
   updated_at: Date;
 }
 
-interface DbTenantRow extends QueryResultRow {
+interface DbTenantRow {
   id: number;
   company_name: string;
   subdomain: string;
@@ -76,19 +75,19 @@ interface DbTenantRow extends QueryResultRow {
   updated_at: Date;
 }
 
-interface DbCountRow extends QueryResultRow {
+interface DbCountRow {
   count: number;
 }
 
-interface DbStorageTotalRow extends QueryResultRow {
+interface DbStorageTotalRow {
   total: number;
 }
 
-interface DbFeatureCodeRow extends QueryResultRow {
+interface DbFeatureCodeRow {
   code: string;
 }
 
-interface DbRootLogRow extends QueryResultRow {
+interface DbRootLogRow {
   id: number;
   user_id: number;
   action: string;
@@ -100,7 +99,7 @@ interface DbRootLogRow extends QueryResultRow {
   created_at: Date;
 }
 
-interface DbDeletionQueueRow extends QueryResultRow {
+interface DbDeletionQueueRow {
   id: number;
   tenant_id: number;
   status: string;
@@ -116,7 +115,7 @@ interface DbDeletionQueueRow extends QueryResultRow {
   requested_by_name: string;
 }
 
-interface DbDeletionRequestRow extends QueryResultRow {
+interface DbDeletionRequestRow {
   id: number;
   tenant_id: number;
   company_name: string;
@@ -129,11 +128,11 @@ interface DbDeletionRequestRow extends QueryResultRow {
   status: string;
 }
 
-interface DbIdRow extends QueryResultRow {
+interface DbIdRow {
   id: number;
 }
 
-interface DbSubdomainRow extends QueryResultRow {
+interface DbSubdomainRow {
   subdomain: string;
 }
 
@@ -150,6 +149,7 @@ export interface AdminUser {
   notes?: string;
   position?: string;
   employeeNumber?: string;
+  profilePicture?: string | null;
   isActive: number;
   tenantId: number;
   tenantName?: string;
@@ -1253,7 +1253,9 @@ export class RootService {
   /**
    * Map database user row to AdminUser
    */
-  private mapDbUserToAdminUser(admin: DbUserRow & { tenant_name?: string }): AdminUser {
+  private mapDbUserToAdminUser(
+    admin: DbUserRow & { tenant_name?: string; profile_picture?: string | null },
+  ): AdminUser {
     const result: AdminUser = {
       id: admin.id,
       username: admin.username,
@@ -1269,6 +1271,7 @@ export class RootService {
     if (admin.notes !== null) result.notes = admin.notes;
     if (admin.position !== null) result.position = admin.position;
     if (admin.employee_number !== '') result.employeeNumber = admin.employee_number;
+    if (admin.profile_picture !== undefined) result.profilePicture = admin.profile_picture;
     if (admin.tenant_name !== undefined) result.tenantName = admin.tenant_name;
     if (admin.last_login !== null && admin.last_login !== undefined)
       result.lastLogin = admin.last_login;

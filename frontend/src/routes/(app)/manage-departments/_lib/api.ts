@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS, DEPENDENCY_LABELS } from './constants';
 
@@ -18,6 +19,8 @@ import type {
   DeleteDepartmentResult,
   DependencyDetails,
 } from './types';
+
+const log = createLogger('ManageDepartmentsApi');
 
 const apiClient = getApiClient();
 
@@ -141,7 +144,7 @@ export async function loadDepartments(): Promise<{
     const departments = extractArray<Department>(data);
     return { departments, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
 
     if (isSessionExpiredError(err)) {
       handleSessionExpired();
@@ -167,7 +170,7 @@ export async function loadAreas(): Promise<{
     const areas = extractArray<Area>(data);
     return { areas, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error loading areas:', err);
+    log.error({ err }, 'Error loading areas');
     return {
       areas: [],
       error: err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
@@ -200,7 +203,7 @@ export async function loadDepartmentLeads(): Promise<{
 
     return { users, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error loading department leads:', err);
+    log.error({ err }, 'Error loading department leads');
     return {
       users: [],
       error: err instanceof Error ? err.message : 'Fehler beim Laden der Abteilungsleiter',
@@ -242,7 +245,7 @@ export async function saveDepartment(
     }
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error saving department:', err);
+    log.error({ err }, 'Error saving department');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Speichern',
@@ -258,7 +261,7 @@ export async function deleteDepartment(departmentId: number): Promise<DeleteDepa
     await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error deleting department:', err);
+    log.error({ err }, 'Error deleting department');
 
     const parsed = parseApiError(err);
 
@@ -288,7 +291,7 @@ export async function forceDeleteDepartment(
     await apiClient.delete(API_ENDPOINTS.departmentForceDelete(departmentId));
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageDepartments] Error force deleting department:', err);
+    log.error({ err }, 'Error force deleting department');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Löschen',

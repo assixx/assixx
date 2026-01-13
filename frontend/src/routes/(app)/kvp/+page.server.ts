@@ -6,6 +6,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { PageServerLoad } from './$types';
 import type {
   KvpCategory,
@@ -14,6 +16,8 @@ import type {
   KvpStats,
   SuggestionsResponse,
 } from './_lib/types';
+
+const log = createLogger('Kvp');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -36,7 +40,7 @@ async function apiFetch<T>(
     });
 
     if (!response.ok) {
-      console.error(`[SSR] API error ${response.status} for ${endpoint}`);
+      log.error({ status: response.status, endpoint }, 'API error');
       return null;
     }
 
@@ -48,8 +52,8 @@ async function apiFetch<T>(
       return json.data;
     }
     return json as unknown as T;
-  } catch (error) {
-    console.error(`[SSR] Fetch error for ${endpoint}:`, error);
+  } catch (err) {
+    log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
 }

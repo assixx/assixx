@@ -7,6 +7,9 @@
  */
 
 import { getApiClient } from './api-client';
+import { createLogger } from './logger';
+
+const log = createLogger('UserService');
 
 // =============================================================================
 // TYPES
@@ -144,7 +147,7 @@ export async function fetchCurrentUser(): Promise<{
 
       return { user, tenant };
     } catch (err) {
-      console.error('[USER SERVICE] Error fetching user:', err);
+      log.error({ err }, 'Error fetching user');
       return { user: null, tenant: null };
     } finally {
       userCache.promise = null;

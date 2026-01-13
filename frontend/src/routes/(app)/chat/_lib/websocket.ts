@@ -20,13 +20,15 @@ import type {
 // =============================================================================
 
 /**
- * Build WebSocket URL with authentication token
- * @param token - JWT access token
+ * Build WebSocket URL with connection ticket
+ * SECURITY: Uses short-lived ticket instead of JWT to prevent token leakage in logs
+ * @param ticket - Connection ticket from /api/v2/auth/connection-ticket
  * @returns WebSocket URL string
+ * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
  */
-export function buildWebSocketUrl(token: string): string {
+export function buildWebSocketUrl(ticket: string): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/chat-ws?token=${encodeURIComponent(token)}`;
+  return `${protocol}//${window.location.host}/chat-ws?ticket=${encodeURIComponent(ticket)}`;
 }
 
 // =============================================================================

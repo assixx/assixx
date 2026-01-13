@@ -70,6 +70,7 @@ interface DbComment {
   first_name?: string;
   last_name?: string;
   role?: string;
+  profile_picture?: string | null;
 }
 
 interface DbAttachment {
@@ -149,6 +150,7 @@ export interface KVPComment {
   createdBy: number;
   createdByName?: string;
   createdByLastname?: string;
+  profilePicture?: string | null;
   createdAt: string;
 }
 
@@ -738,7 +740,7 @@ export class KvpService {
     const numericId = suggestion.id;
 
     let query = `
-      SELECT c.*, u.first_name, u.last_name, u.role
+      SELECT c.*, u.first_name, u.last_name, u.role, u.profile_picture
       FROM kvp_comments c
       JOIN kvp_suggestions s ON c.suggestion_id = s.id
       LEFT JOIN users u ON c.user_id = u.id
@@ -764,6 +766,7 @@ export class KvpService {
       };
       if (row.first_name !== undefined) comment.createdByName = row.first_name;
       if (row.last_name !== undefined) comment.createdByLastname = row.last_name;
+      if (row.profile_picture !== undefined) comment.profilePicture = row.profile_picture;
       return comment;
     });
   }

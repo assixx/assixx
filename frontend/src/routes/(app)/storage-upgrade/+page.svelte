@@ -8,6 +8,9 @@
 <script lang="ts">
   import { showSuccessAlert, showErrorAlert, showConfirmWarning } from '$lib/utils/alerts';
   import { getApiClient } from '$lib/utils/api-client';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('StorageUpgradePage');
 
   import type { PageData } from './$types';
   import '../../../styles/storage-upgrade.css';
@@ -149,8 +152,8 @@
         percentage: 0,
         plan: plan.plan?.code ?? 'basic',
       };
-    } catch (error) {
-      console.error('Error loading storage info:', error);
+    } catch (err) {
+      log.error({ err }, 'Error loading storage info');
       showErrorAlert('Fehler beim Laden der Speicherinformationen');
     }
   }
@@ -185,8 +188,8 @@
 
       showSuccessAlert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
       await loadStorageInfo();
-    } catch (error) {
-      console.error('Error upgrading plan:', error);
+    } catch (err) {
+      log.error({ err }, 'Error upgrading plan');
       showErrorAlert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
     } finally {
       isLoading = false;

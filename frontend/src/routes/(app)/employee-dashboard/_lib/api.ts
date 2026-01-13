@@ -6,10 +6,13 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './constants';
 
 import type { Document, CalendarEvent, BlackboardEntry } from './types';
+
+const log = createLogger('EmployeeDashboardApi');
 
 const apiClient = getApiClient();
 
@@ -33,7 +36,7 @@ export async function loadDocuments(): Promise<Document[]> {
     }
     return [];
   } catch (err) {
-    console.error('[EmployeeDashboard] Error loading documents:', err);
+    log.error({ err }, 'Error loading documents');
     return [];
   }
 }
@@ -81,7 +84,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, LIST_LIMITS.upcomingEvents);
   } catch (err) {
-    console.error('[EmployeeDashboard] Error loading events:', err);
+    log.error({ err }, 'Error loading events');
     return [];
   }
 }
@@ -97,7 +100,7 @@ export async function loadBlackboard(): Promise<BlackboardEntry[]> {
     );
     return Array.isArray(result) ? (result as BlackboardEntry[]) : [];
   } catch (err) {
-    console.error('[EmployeeDashboard] Error loading blackboard:', err);
+    log.error({ err }, 'Error loading blackboard');
     return [];
   }
 }

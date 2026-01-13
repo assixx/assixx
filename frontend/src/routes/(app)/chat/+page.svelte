@@ -11,7 +11,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { getTokenManager } from '$lib/utils/token-manager';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ChatPage');
 
   import '../../../styles/chat.css';
 
@@ -56,8 +58,6 @@
   // ==========================================================================
   // SSR DATA (single source of truth for initial load)
   // ==========================================================================
-
-  const tokenManager = getTokenManager();
 
   // Derived from SSR data
   const ssrUser = $derived(data.currentUser);
@@ -180,14 +180,8 @@
 
     // SSR already loaded conversations and user data
     // Just need to connect WebSocket for real-time updates
-    const accessToken = tokenManager.getAccessToken();
-    if (accessToken === null || accessToken === '') {
-      // Redirect handled by SSR, but fallback for edge cases
-      window.location.href = '/login';
-      return;
-    }
-
-    connectWebSocket();
+    // Auth handled by connection ticket (fetched inside connectWebSocket)
+    void connectWebSocket();
     handlers.startPeriodicPing();
   });
 
@@ -231,11 +225,13 @@
   // WEBSOCKET
   // ==========================================================================
 
-  function connectWebSocket(): void {
-    const token = tokenManager.getAccessToken();
-    if (token === null || token === '') return;
-
-    handlers.connectWebSocket(token, {
+  /**
+   * Connect to WebSocket using connection ticket
+   * SECURITY: Uses short-lived, single-use ticket instead of JWT to prevent token leakage
+   * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+   */
+  async function connectWebSocket(): Promise<void> {
+    await handlers.connectWebSocket({
       onConnected: () => {
         conversations.forEach((conv) => {
           handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
@@ -304,7 +300,7 @@
       handlers.sendWebSocketMessage(buildJoinMessage(conversation.id));
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      log.error({ err: error }, 'Error loading messages');
       showNotification(MESSAGES.errorLoadMessages, 'error');
     } finally {
       isLoadingMessages = false;
@@ -534,7 +530,7 @@
   // ==========================================================================
 
   function showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
-    console.warn(`[${type}] ${message}`);
+    log.warn({ type }, message);
     // TODO: Integrate with toast store
   }
 </script>

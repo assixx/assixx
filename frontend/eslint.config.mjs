@@ -485,6 +485,17 @@ export default ts.config(
   },
 
   // =============================================================================
+  // LOGGER UTILITY - Allow all console methods (this IS the central logger)
+  // All other code should use this logger instead of console.* directly
+  // =============================================================================
+  {
+    files: ['src/lib/utils/logger.ts'],
+    rules: {
+      'no-console': 'off', // Logger utility intentionally uses all console methods
+    },
+  },
+
+  // =============================================================================
   // JAVASCRIPT FILES - Disable TypeScript-only rules
   // JS files can't have inline type annotations, they use JSDoc instead
   // =============================================================================

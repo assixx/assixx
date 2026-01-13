@@ -87,6 +87,7 @@ export interface Comment {
   createdBy: number;
   createdByName: string;
   createdByLastname: string;
+  profilePicture?: string | null;
   createdAt: string;
 }
 

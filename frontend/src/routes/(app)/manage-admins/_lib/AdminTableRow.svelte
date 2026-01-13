@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -27,6 +29,11 @@
   // DERIVED VALUES
   // =============================================================================
 
+  const hasProfilePicture = $derived(
+    admin.profilePicture !== null &&
+      admin.profilePicture !== undefined &&
+      admin.profilePicture !== '',
+  );
   const areasBadge = $derived(getAreasBadge(admin));
   const deptsBadge = $derived(getDepartmentsBadge(admin));
   const teamsBadge = $derived(getTeamsBadge(admin));
@@ -36,8 +43,21 @@
   <td>{admin.id}</td>
   <td>
     <div class="flex items-center gap-2">
-      <div class="avatar avatar--sm avatar--color-{getAvatarColor(admin.id)}">
-        <span>{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span>
+      <div
+        class="avatar avatar--sm {hasProfilePicture
+          ? ''
+          : `avatar--color-${getAvatarColor(admin.id)}`}"
+      >
+        {#if hasProfilePicture}
+          <img
+            src={getProfilePictureUrl(admin.profilePicture)}
+            alt="{admin.firstName} {admin.lastName}"
+            class="avatar__image"
+          />
+        {:else}
+          <span class="avatar__initials">{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span
+          >
+        {/if}
       </div>
       <span>{admin.firstName} {admin.lastName}</span>
     </div>

@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS, ORG_LEVEL_COLORS } from './constants';
@@ -21,6 +22,8 @@ import type {
   FilterLevel,
   PaginatedResponse,
 } from './types';
+
+const log = createLogger('CalendarApi');
 
 const apiClient = getApiClient();
 
@@ -83,7 +86,7 @@ export async function fetchUserData(): Promise<User> {
  */
 function formatEventForCalendar(event: CalendarEvent): EventInput | null {
   if (event.startTime === '' || event.endTime === '') {
-    console.error('[CALENDAR API] Event missing time fields:', event);
+    log.error({ event }, 'Event missing time fields');
     return null;
   }
 
@@ -156,7 +159,7 @@ export async function loadCalendarEvents(
 
     return events.map(formatEventForCalendar).filter((e): e is EventInput => e !== null);
   } catch (err) {
-    console.error('[CALENDAR API] Error loading events:', err);
+    log.error({ err }, 'Error loading events');
     checkSessionExpired(err);
     return [];
   }
@@ -174,7 +177,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
     // Handle response: api-client unwraps { success, data } → returns { events: [...] } or array directly
     return Array.isArray(response) ? response : response.events;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading upcoming events:', err);
+    log.error({ err }, 'Error loading upcoming events');
     checkSessionExpired(err);
     return [];
   }
@@ -195,7 +198,7 @@ export async function fetchEventData(eventId: number): Promise<CalendarEvent | n
     }
     return response;
   } catch (err) {
-    console.error('[CALENDAR API] Error fetching event:', err);
+    log.error({ err }, 'Error fetching event');
     checkSessionExpired(err);
     return null;
   }
@@ -243,7 +246,7 @@ export async function saveEvent(
 
     return { success: true, id: response.id ?? eventId };
   } catch (err) {
-    console.error('[CALENDAR API] Error saving event:', err);
+    log.error({ err }, 'Error saving event');
     checkSessionExpired(err);
 
     const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
@@ -259,7 +262,7 @@ export async function deleteEvent(eventId: number): Promise<{ success: boolean; 
     await apiClient.delete(API_ENDPOINTS.event(eventId));
     return { success: true };
   } catch (err) {
-    console.error('[CALENDAR API] Error deleting event:', err);
+    log.error({ err }, 'Error deleting event');
     checkSessionExpired(err);
 
     const message = err instanceof Error ? err.message : 'Fehler beim Löschen';
@@ -300,7 +303,7 @@ export async function loadUserShifts(startDate: string, endDate: string): Promis
 
     return shifts;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading user shifts:', err);
+    log.error({ err }, 'Error loading user shifts');
     return [];
   }
 }
@@ -319,7 +322,7 @@ export async function loadDepartments(): Promise<Department[]> {
     );
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return [];
   }
 }
@@ -332,7 +335,7 @@ export async function loadTeams(): Promise<Team[]> {
     const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading teams:', err);
+    log.error({ err }, 'Error loading teams');
     return [];
   }
 }
@@ -345,7 +348,7 @@ export async function loadAreas(): Promise<Area[]> {
     const response = await apiClient.get<PaginatedResponse<Area> | Area[]>(API_ENDPOINTS.AREAS);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading areas:', err);
+    log.error({ err }, 'Error loading areas');
     return [];
   }
 }
@@ -358,7 +361,7 @@ export async function loadUsers(): Promise<User[]> {
     const response = await apiClient.get<PaginatedResponse<User> | User[]>(API_ENDPOINTS.USERS);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[CALENDAR API] Error loading users:', err);
+    log.error({ err }, 'Error loading users');
     return [];
   }
 }

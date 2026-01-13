@@ -1,0 +1,74 @@
+# =============================================================================
+# Prometheus Configuration - Metrics Collection
+# =============================================================================
+#
+# Scrapes metrics from:
+# - Backend NestJS (/api/v2/metrics)
+# - Prometheus itself (self-monitoring)
+#
+# @see https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager)
+  external_labels:
+    monitor: "assixx-monitor"
+    env: "development"
+
+# =============================================================================
+# Remote Write to Grafana Cloud
+# =============================================================================
+# Sends all scraped metrics to Grafana Cloud Prometheus
+# Credentials from docker/.env (GRAFANA_CLOUD_USER, GRAFANA_CLOUD_API_KEY)
+remote_write:
+  - url: https://prometheus-prod-65-prod-eu-west-2.grafana.net/api/prom/push
+    basic_auth:
+      username: "2910443"
+      password_file: /etc/prometheus/grafana_cloud_api_key
+
+# Alertmanager configuration (optional - for future alerting)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files (optional - for alerting rules)
+# rule_files:
+#   - "alerts/*.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+    metrics_path: /metrics
+
+  # Assixx Backend NestJS
+  - job_name: "assixx-backend"
+    static_configs:
+      - targets: ["backend:3000"]
+    # NestJS exposes metrics at /api/v2/metrics
+    metrics_path: /api/v2/metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Assixx Frontend SvelteKit (optional - if metrics endpoint added)
+  # - job_name: "assixx-frontend"
+  #   static_configs:
+  #     - targets: ["frontend:3001"]
+  #   metrics_path: /metrics
+  #   scrape_interval: 30s
+
+  # Redis Exporter (optional - add redis_exporter container)
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
+
+  # PostgreSQL Exporter (optional - add postgres_exporter container)
+  # - job_name: "postgres"
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]

@@ -5,6 +5,10 @@
 
 import { writable, type Writable } from 'svelte/store';
 
+import { createLogger } from '$lib/utils/logger';
+
+const log = createLogger('Toast');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -52,7 +56,7 @@ export function showToast(toast: Omit<Toast, 'id'>): string {
   toasts.subscribe((t: Toast[]) => (currentToasts = t))();
 
   if (currentToasts.length >= MAX_TOASTS) {
-    console.warn(`[TOAST] Max ${MAX_TOASTS} toasts active, ignoring new one`);
+    log.warn({ maxToasts: MAX_TOASTS }, 'Max toasts active, ignoring new one');
     return '';
   }
 

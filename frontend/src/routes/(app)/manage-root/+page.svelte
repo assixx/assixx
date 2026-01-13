@@ -14,6 +14,9 @@
   }
 
   import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ManageRootPage');
 
   import {
     saveRootUser as apiSaveRootUser,
@@ -179,7 +182,7 @@
         showErrorAlert(result.error ?? MESSAGES.ERROR_SAVING);
       }
     } catch (err) {
-      console.error('[ManageRoot] Error saving user:', err);
+      log.error({ err }, 'Error saving user');
       showErrorAlert(MESSAGES.ERROR_SAVING);
     } finally {
       submitting = false;
@@ -201,7 +204,7 @@
         showErrorAlert(result.error ?? MESSAGES.ERROR_DELETING);
       }
     } catch (err) {
-      console.error('[ManageRoot] Error deleting user:', err);
+      log.error({ err }, 'Error deleting user');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
   }

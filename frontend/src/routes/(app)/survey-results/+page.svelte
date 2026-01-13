@@ -12,6 +12,9 @@
 
   import '../../../styles/survey-results.css';
   import { showAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('SurveyResultsPage');
 
   import { exportToExcel } from './_lib/api';
   import {
@@ -86,7 +89,7 @@
         showErrorAlert('Fehler beim Exportieren');
       }
     } catch (error) {
-      console.error('[Survey Results] Export error:', error);
+      log.error({ err: error }, 'Export error');
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       showErrorAlert(`Fehler beim Exportieren: ${message}`);
     } finally {
@@ -123,20 +126,32 @@
     return question.responses?.filter((r) => r.answerText.trim() !== '').length ?? 0;
   }
 
+  /**
+   * Safely convert a value to number (handles string values from PostgreSQL)
+   * PostgreSQL returns numeric/decimal as strings in JSON responses
+   */
+  function toSafeNumber(value: unknown): number {
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+      return value;
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
   function getStatisticsAverage(question: SurveyQuestion): number {
-    return question.statistics?.average ?? 0;
+    return toSafeNumber(question.statistics?.average);
   }
 
   function getStatisticsCount(question: SurveyQuestion): number {
-    return question.statistics?.count ?? 0;
+    return toSafeNumber(question.statistics?.count);
   }
 
   function getStatisticsMin(question: SurveyQuestion): number {
-    return question.statistics?.min ?? 0;
+    return toSafeNumber(question.statistics?.min);
   }
 
   function getStatisticsMax(question: SurveyQuestion): number {
-    return question.statistics?.max ?? 0;
+    return toSafeNumber(question.statistics?.max);
   }
 </script>
 

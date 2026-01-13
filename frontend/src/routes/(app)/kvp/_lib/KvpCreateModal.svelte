@@ -1,5 +1,8 @@
 <script lang="ts">
   import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('KvpCreateModal');
 
   import { createSuggestion, uploadPhotos } from './api';
   import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
@@ -83,8 +86,8 @@
       try {
         const dataUrl = await readFileAsDataUrl(file);
         photoPreviews = [...photoPreviews, dataUrl];
-      } catch {
-        console.error('[KVP] Error reading file for preview');
+      } catch (err) {
+        log.error({ err }, 'Error reading file for preview');
       }
     }
 
@@ -188,8 +191,8 @@
       showSuccessAlert('Vorschlag wurde erfolgreich eingereicht');
       handleClose();
       onsuccess();
-    } catch (error) {
-      console.error('[KVP] Error creating suggestion:', error);
+    } catch (err) {
+      log.error({ err }, 'Error creating suggestion');
       showErrorAlert('Fehler beim Erstellen des Vorschlags');
     } finally {
       kvpState.setSubmitting(false);

@@ -4,6 +4,9 @@
 
 import { browser } from '$app/environment';
 
+import { getConnectionTicket } from '$lib/utils/connection-ticket';
+import { createLogger } from '$lib/utils/logger';
+
 import {
   loadConversations as apiLoadConversations,
   loadMessages as apiLoadMessages,
@@ -48,6 +51,8 @@ import type {
   RawWebSocketMessage,
 } from './types';
 
+const log = createLogger('ChatHandlers');
+
 // ==========================================================================
 // Types
 // ==========================================================================
@@ -86,7 +91,7 @@ export interface ChatHandlers {
   getDefaultScheduleDateTime: () => { date: string; time: string };
 
   // WebSocket
-  createWebSocket: (token: string) => WebSocket;
+  connectWebSocket: (callbacks: WebSocketCallbacks) => Promise<WebSocket | null>;
   handleWebSocketMessage: (
     message: { type: string; data: unknown },
     callbacks: WebSocketCallbacks,
@@ -178,8 +183,8 @@ export async function uploadFiles(conversationId: number, files: File[]): Promis
     try {
       const result = await uploadAttachment(conversationId, file);
       uploadedIds.push(result.id);
-    } catch (error) {
-      console.error('Error uploading file:', error);
+    } catch (err) {
+      log.error({ err }, 'Error uploading file');
     }
   }
 
@@ -237,49 +242,68 @@ let ws: WebSocket | null = null;
 let pingIntervalId: number | null = null;
 let typingTimeoutId: number | undefined;
 
-export function connectWebSocket(token: string, callbacks: WebSocketCallbacks): WebSocket | null {
+/**
+ * Connect to WebSocket using connection ticket
+ * SECURITY: Fetches short-lived ticket instead of using JWT to prevent token leakage in logs
+ * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+ */
+export async function connectWebSocket(callbacks: WebSocketCallbacks): Promise<WebSocket | null> {
   if (!browser) return null;
 
-  if (ws) {
+  // Close existing connection before async operation
+  if (ws !== null) {
     ws.onclose = null;
     ws.close();
+    ws = null;
   }
 
-  const wsUrl = buildWebSocketUrl(token);
+  // Fetch connection ticket (30s TTL, single-use)
+  const ticket = await getConnectionTicket('websocket');
+  if (ticket === null) {
+    log.error('Failed to get connection ticket for WebSocket');
+    callbacks.onAuthError();
+    return null;
+  }
+
+  const wsUrl = buildWebSocketUrl(ticket);
 
   try {
-    ws = new WebSocket(wsUrl);
+    // Create new WebSocket in local variable first to avoid race conditions
+    const newWs = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      if (ws) callbacks.onConnected(ws);
+    newWs.onopen = () => {
+      callbacks.onConnected(newWs);
     };
 
-    ws.onmessage = (event: MessageEvent) => {
+    newWs.onmessage = (event: MessageEvent) => {
       try {
         // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
         const rawData: unknown = event.data;
         if (typeof rawData !== 'string') {
-          console.error('Unexpected WebSocket message type:', typeof rawData);
+          log.error({ rawDataType: typeof rawData }, 'Unexpected WebSocket message type');
           return;
         }
         const message = JSON.parse(rawData) as { type: string; data: unknown };
         handleWebSocketMessage(message, callbacks);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+      } catch (err) {
+        log.error({ err }, 'Error parsing WebSocket message');
       }
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    newWs.onerror = (err) => {
+      log.error({ err }, 'WebSocket error');
     };
 
-    ws.onclose = () => {
+    newWs.onclose = () => {
       // Connection closed
     };
 
+    // Assign to module-level variable after setup complete
+    // eslint-disable-next-line require-atomic-updates -- Safe: ws is set to null before async, and JS is single-threaded
+    ws = newWs;
     return ws;
-  } catch (error) {
-    console.error('Error creating WebSocket:', error);
+  } catch (err) {
+    log.error({ err }, 'Error creating WebSocket');
     return null;
   }
 }
@@ -294,7 +318,7 @@ function handleConnectionEstablished(_data: unknown, callbacks: WebSocketCallbac
 }
 
 function handleAuthError(data: unknown, callbacks: WebSocketCallbacks): void {
-  console.error('Authentication failed:', data);
+  log.error({ data }, 'Authentication failed');
   callbacks.onAuthError();
 }
 
@@ -324,7 +348,7 @@ function handleMessageRead(data: unknown, callbacks: WebSocketCallbacks): void {
 }
 
 function handleError(data: unknown, callbacks: WebSocketCallbacks): void {
-  console.error('WebSocket Error:', data);
+  log.error({ data }, 'WebSocket Error');
   callbacks.onError(MESSAGES.errorWebSocket);
 }
 
@@ -357,7 +381,7 @@ export function handleWebSocketMessage(
   // PONG and MESSAGE_SENT are acknowledged but need no action
   // Unknown types are logged in development for debugging
   if (!noopMessageTypes.has(message.type)) {
-    console.warn('[WebSocket] Unhandled message type:', message.type);
+    log.warn({ messageType: message.type }, 'Unhandled WebSocket message type');
   }
 }
 
@@ -406,20 +430,23 @@ export function getWebSocket(): WebSocket | null {
   return ws;
 }
 
+/**
+ * Attempt to reconnect WebSocket with exponential backoff
+ * SECURITY: Uses connection tickets instead of JWT
+ */
 export function attemptReconnect(
-  token: string,
   currentAttempts: number,
   callbacks: WebSocketCallbacks,
 ): { success: boolean; attempts: number } {
   if (!shouldReconnect(currentAttempts)) {
-    console.error('Max reconnection attempts reached');
+    log.error({ currentAttempts }, 'Max reconnection attempts reached');
     return { success: false, attempts: currentAttempts };
   }
 
   const attempts = currentAttempts + 1;
 
   setTimeout(() => {
-    connectWebSocket(token, callbacks);
+    void connectWebSocket(callbacks);
   }, calculateReconnectDelay(attempts));
 
   return { success: true, attempts };
