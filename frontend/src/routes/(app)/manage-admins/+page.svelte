@@ -8,6 +8,9 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ManageAdminsPage');
 
   import AdminFormModal from './_lib/AdminFormModal.svelte';
   import AdminTableRow from './_lib/AdminTableRow.svelte';
@@ -162,7 +165,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageAdmins] Error saving admin:', err);
+      log.error({ err }, 'Error saving admin');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED);
     } finally {
       submitting = false;
@@ -182,7 +185,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
-      console.error('[ManageAdmins] Error deleting admin:', err);
+      log.error({ err }, 'Error deleting admin');
       showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
     }
   }

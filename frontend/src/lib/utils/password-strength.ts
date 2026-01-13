@@ -6,7 +6,11 @@
  * Implements lazy loading to minimize bundle impact
  */
 
+import { createLogger } from './logger';
+
 import type { ZxcvbnResult } from '@zxcvbn-ts/core';
+
+const log = createLogger('PasswordStrength');
 
 // Module state - lazy loaded
 let zxcvbnInstance: ((password: string, userInputs?: string[]) => ZxcvbnResult) | null = null;
@@ -55,7 +59,7 @@ export async function initPasswordStrength(): Promise<void> {
       zxcvbnOptions.setOptions(options);
       zxcvbnInstance = zxcvbn;
     } catch (error) {
-      console.error('[PasswordStrength] Failed to load modules:', error);
+      log.error({ err: error }, 'Failed to load modules');
       throw error;
     } finally {
       isLoading = false;
@@ -108,7 +112,7 @@ export async function checkPasswordStrength(
   try {
     return zxcvbnInstance(password, context);
   } catch (error) {
-    console.error('[PasswordStrength] Error analyzing password:', error);
+    log.error({ err: error }, 'Error analyzing password');
     return null;
   }
 }

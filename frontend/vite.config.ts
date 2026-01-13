@@ -1,10 +1,20 @@
+import { sentrySvelteKit } from '@sentry/sveltekit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
+    // Sentry MUSS vor SvelteKit kommen!
+    sentrySvelteKit({
+      // Source maps upload (optional - requires auth token)
+      // sourceMapsUploadOptions: {
+      //   org: 'assixx',
+      //   project: 'javascript-sveltekit',
+      //   authToken: process.env.SENTRY_AUTH_TOKEN,
+      // },
+    }),
     // Tailwind MUSS vor SvelteKit kommen!
     tailwindcss(),
     sveltekit(),
@@ -91,4 +101,10 @@ export default defineConfig({
     // For internal SaaS app, this is fine. Public-facing would need dynamic imports.
     chunkSizeWarningLimit: 850,
   },
-});
+
+  // CRITICAL: Strip console.* and debugger in production builds
+  // This removes ALL 331+ console calls from the production bundle
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
+}));

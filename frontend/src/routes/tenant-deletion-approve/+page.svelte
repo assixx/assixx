@@ -4,6 +4,9 @@
   import { resolve } from '$app/paths';
 
   import { getApiClient } from '$lib/utils/api-client';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('TenantDeletionApprovePage');
 
   import type { PageData } from './$types';
 
@@ -91,7 +94,7 @@
         window.location.href = resolvePath('/tenant-deletion-status');
       }, 2000);
     } catch (err) {
-      console.error('[TenantDeletionApprove] Error approving:', err);
+      log.error({ err }, 'Error approving');
       errorMessage = err instanceof Error ? err.message : 'Fehler bei der Genehmigung';
       submitting = false;
     }

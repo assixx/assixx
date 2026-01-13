@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS } from './constants';
@@ -22,6 +23,8 @@ import type {
   PaginatedResponse,
   KvpFilter,
 } from './types';
+
+const log = createLogger('KvpApi');
 
 const apiClient = getApiClient();
 
@@ -72,7 +75,7 @@ export async function fetchUserData(): Promise<User | null> {
     const result = await fetchSharedUser();
     return result.user as User | null;
   } catch (err) {
-    console.error('[KVP API] Error fetching user:', err);
+    log.error({ err }, 'Error fetching user');
     checkSessionExpired(err);
     return null;
   }
@@ -89,7 +92,7 @@ export async function loadCategories(): Promise<KvpCategory[]> {
   try {
     return await apiClient.get<KvpCategory[]>(API_ENDPOINTS.KVP_CATEGORIES);
   } catch (err) {
-    console.error('[KVP API] Error loading categories:', err);
+    log.error({ err }, 'Error loading categories');
     return [];
   }
 }
@@ -108,7 +111,7 @@ export async function loadDepartments(): Promise<Department[]> {
     );
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[KVP API] Error loading departments:', err);
+    log.error({ err }, 'Error loading departments');
     return [];
   }
 }
@@ -121,7 +124,7 @@ export async function loadTeams(): Promise<Team[]> {
     const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    console.error('[KVP API] Error loading teams:', err);
+    log.error({ err }, 'Error loading teams');
     return [];
   }
 }
@@ -174,7 +177,7 @@ export async function fetchSuggestions(
 
     return response.suggestions;
   } catch (err) {
-    console.error('[KVP API] Error fetching suggestions:', err);
+    log.error({ err }, 'Error fetching suggestions');
     checkSessionExpired(err);
     throw err;
   }
@@ -190,7 +193,7 @@ export async function createSuggestion(
     const response = await apiClient.post<{ id: number }>(API_ENDPOINTS.KVP, data);
     return { success: true, id: response.id };
   } catch (err) {
-    console.error('[KVP API] Error creating suggestion:', err);
+    log.error({ err }, 'Error creating suggestion');
     checkSessionExpired(err);
 
     const message = err instanceof Error ? err.message : 'Fehler beim Erstellen des Vorschlags';
@@ -215,7 +218,7 @@ export async function uploadPhotos(
 
     return { success: true };
   } catch (err) {
-    console.error('[KVP API] Error uploading photos:', err);
+    log.error({ err }, 'Error uploading photos');
     const message = err instanceof Error ? err.message : 'Fehler beim Hochladen der Fotos';
     return { success: false, error: message };
   }
@@ -229,7 +232,7 @@ export async function shareSuggestion(id: number): Promise<{ success: boolean; e
     await apiClient.post(API_ENDPOINTS.kvpShare(id), {});
     return { success: true };
   } catch (err) {
-    console.error('[KVP API] Error sharing suggestion:', err);
+    log.error({ err }, 'Error sharing suggestion');
     checkSessionExpired(err);
 
     const message = err instanceof Error ? err.message : 'Fehler beim Teilen des Vorschlags';
@@ -245,7 +248,7 @@ export async function unshareSuggestion(id: number): Promise<{ success: boolean;
     await apiClient.post(API_ENDPOINTS.kvpUnshare(id), {});
     return { success: true };
   } catch (err) {
-    console.error('[KVP API] Error unsharing suggestion:', err);
+    log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
 
     const message = err instanceof Error ? err.message : 'Fehler beim Rueckgaengigmachen';
@@ -277,7 +280,7 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
 
     return stats;
   } catch (err) {
-    console.error('[KVP API] Error fetching statistics:', err);
+    log.error({ err }, 'Error fetching statistics');
     checkSessionExpired(err);
     return null;
   }
@@ -299,7 +302,7 @@ export async function findUserTeamAsLead(userId: number): Promise<Team | null> {
     );
     return userTeam ?? null;
   } catch (err) {
-    console.error('[KVP API] Error finding user team:', err);
+    log.error({ err }, 'Error finding user team');
     return null;
   }
 }

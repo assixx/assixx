@@ -6,8 +6,12 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { createLogger } from '$lib/utils/logger';
+
 import type { PageServerLoad } from './$types';
 import type { FullEntryResponse } from './_lib/types';
+
+const log = createLogger('BlackboardDetail');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -23,7 +27,7 @@ function handleApiError(response: Response, uuid: string): never {
   if (response.status === 404) {
     error(404, 'Eintrag nicht gefunden');
   }
-  console.error(`[SSR] API error ${response.status} for blackboard entry ${uuid}`);
+  log.error({ status: response.status, uuid }, 'API error for blackboard entry');
   error(response.status, 'Fehler beim Laden des Eintrags');
 }
 

@@ -2,8 +2,11 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // Toast notifications (1:1 like legacy alerts.ts)
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+  import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
+
+  const log = createLogger('RoleSwitch');
 
   // =============================================================================
   // SVELTE 5 RUNES - Role Switch Dropdown
@@ -104,7 +107,7 @@
     // Special case: employee → admin (needs intermediate step)
     if (transitionKey === 'employee->admin') {
       if (userRole === 'root') {
-        console.warn('[RoleSwitch] Cannot switch directly from Employee to Admin');
+        log.warn('Cannot switch directly from Employee to Admin');
         return {
           endpoint: '/api/v2/role-switch/to-original',
           description: 'Employee → Root first',
@@ -137,6 +140,10 @@
     }
     if (result.user?.activeRole !== undefined) {
       localStorage.setItem('activeRole', result.user.activeRole);
+
+      // CRITICAL: Broadcast role switch to other tabs
+      // Uses BroadcastChannel + triggers storage event for cross-tab sync
+      broadcastRoleSwitch(result.user.activeRole as 'root' | 'admin' | 'employee', result.token);
     }
     // Clear role switch banner dismissals
     for (const role of ['root', 'admin', 'employee']) {
@@ -209,7 +216,7 @@
 
     const { endpoint } = determineEndpoint(targetRole, activeRole);
     if (endpoint === '') {
-      console.warn('[RoleSwitch] No valid endpoint for role switch');
+      log.warn({ targetRole, activeRole }, 'No valid endpoint for role switch');
       isSwitching = false;
       return;
     }
@@ -219,7 +226,7 @@
       updateStorageAfterSwitch(result);
       redirectToDashboard(result.user?.activeRole ?? targetRole);
     } catch (err) {
-      console.error('[RoleSwitch] Error:', err);
+      log.error({ err }, 'Role switch error');
       showErrorAlert(getErrorMessage(err));
       isSwitching = false;
     }

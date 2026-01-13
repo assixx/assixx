@@ -20,6 +20,9 @@
   // API Client (for mutations only)
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('BlackboardPage');
 
   // Page-specific CSS
   import '../../../styles/blackboard.css';
@@ -200,7 +203,7 @@
       try {
         await uploadAttachment(entryId, file);
       } catch (uploadErr) {
-        console.error(`[Blackboard] Failed to upload ${file.name}:`, uploadErr);
+        log.error({ err: uploadErr, fileName: file.name }, 'Failed to upload');
         showErrorAlert(`Fehler beim Hochladen von ${file.name}`);
       }
     }
@@ -235,7 +238,7 @@
       closeEntryModal();
       await invalidateAll();
     } catch (err) {
-      console.error('[Blackboard] Error saving entry:', err);
+      log.error({ err }, 'Error saving entry');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.SAVE_ERROR);
     } finally {
       loading = false;
@@ -257,7 +260,7 @@
       showSuccessAlert('Eintrag gelöscht');
       await invalidateAll(); // Level 3: Server refetches data
     } catch (err) {
-      console.error('[Blackboard] Error deleting entry:', err);
+      log.error({ err }, 'Error deleting entry');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.DELETE_ERROR);
     } finally {
       loading = false;
@@ -281,7 +284,7 @@
       document.body.classList.add('fullscreen-mode');
       await document.documentElement.requestFullscreen();
     } catch (err) {
-      console.error('[Blackboard] Error entering fullscreen:', err);
+      log.error({ err }, 'Error entering fullscreen');
       document.body.classList.remove('fullscreen-mode');
     }
   }
@@ -385,7 +388,7 @@
           }
         })
         .catch((err: unknown) => {
-          console.error('[Blackboard] Error loading entry for edit:', err);
+          log.error({ err }, 'Error loading entry for edit');
           showErrorAlert('Fehler beim Laden des Eintrags');
         });
     } else if (editUuid === '' && lastEditUuid !== '') {
@@ -458,7 +461,7 @@
           <div class="form-field">
             <span class="form-field__label" id="levelFilterLabel">Organisationsebene</span>
             <div class="toggle-group mt-2" role="group" aria-labelledby="levelFilterLabel">
-              {#each [{ value: 'all', label: 'Alle', icon: 'fa-globe' }, { value: 'company', label: 'Firma', icon: 'fa-building' }, { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' }, { value: 'team', label: 'Team', icon: 'fa-users' }, { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' }] as opt (opt.value)}
+              {#each [{ value: 'all', label: 'Alle', icon: 'fa-globe' }, { value: 'company', label: 'Firma', icon: 'fa-building' }, { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' }, { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' }, { value: 'team', label: 'Team', icon: 'fa-users' }] as opt (opt.value)}
                 <button
                   type="button"
                   class="toggle-group__btn"

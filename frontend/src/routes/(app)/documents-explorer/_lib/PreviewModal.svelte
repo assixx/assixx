@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-
   import { MESSAGES } from './constants';
   import { formatFileSize, formatDateTime, getFileType } from './utils';
 
@@ -19,11 +17,11 @@
     if (e.target === e.currentTarget) onclose();
   }
 
-  const token = $derived(browser ? localStorage.getItem('accessToken') : null);
+  // Cookie-based auth: accessToken cookie sent automatically on same-origin request
+  // No token in URL = no token in logs/history
   const previewUrl = $derived.by(() => {
     if (!document) return '';
-    const url = document.previewUrl ?? document.downloadUrl;
-    return token !== null ? `${url}?token=${encodeURIComponent(token)}` : url;
+    return document.previewUrl ?? document.downloadUrl;
   });
 </script>
 

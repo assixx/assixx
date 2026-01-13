@@ -29,8 +29,9 @@ import { AuthThrottle } from '../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
-import { LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
-import type { LoginResponse, RefreshResponse } from './dto/index.js';
+import { ConnectionTicketService } from './connection-ticket.service.js';
+import { ConnectionTicketDto, LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
+import type { ConnectionTicketResponse, LoginResponse, RefreshResponse } from './dto/index.js';
 
 /**
  * Cookie configuration for SSR support
@@ -48,8 +49,20 @@ const COOKIE_OPTIONS = {
   maxAge: 30 * 60 * 1000,
 };
 
+/**
+ * Refresh token cookie configuration - STRICTER than access token
+ * sameSite: 'strict' - Only sent for same-site requests (better CSRF protection)
+ * path: '/api/v2/auth' - Only sent to auth endpoints (minimizes exposure)
+ *
+ * SECURITY: Refresh tokens are long-lived (7 days) and must be protected.
+ * By limiting the path, the cookie is NOT sent for regular API requests,
+ * reducing the attack surface for CSRF.
+ */
 const REFRESH_COOKIE_OPTIONS = {
-  ...COOKIE_OPTIONS,
+  httpOnly: true,
+  secure: process.env['NODE_ENV'] === 'production',
+  sameSite: 'strict' as const,
+  path: '/api/v2/auth',
   /** Refresh token expires in 7 days */
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
@@ -115,7 +128,10 @@ function getClientInfo(req: FastifyRequest): {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly connectionTicketService: ConnectionTicketService,
+  ) {}
 
   /**
    * POST /auth/login
@@ -187,9 +203,9 @@ export class AuthController {
   ): Promise<LogoutResponse> {
     const result = await this.authService.logout(user);
 
-    // Clear httpOnly cookies
+    // Clear httpOnly cookies (must match the path they were set with!)
     reply.clearCookie('accessToken', { path: '/' });
-    reply.clearCookie('refreshToken', { path: '/' });
+    reply.clearCookie('refreshToken', { path: '/api/v2/auth' });
 
     return {
       message: 'Logged out successfully',
@@ -266,5 +282,35 @@ export class AuthController {
       lastLogin: foundUser.last_login,
       createdAt: foundUser.created_at,
     };
+  }
+
+  /**
+   * POST /auth/connection-ticket
+   * Generate a short-lived, single-use ticket for WebSocket/SSE connections.
+   *
+   * SECURITY: This endpoint requires authentication (JWT in header/cookie).
+   * The returned ticket is:
+   * - Valid for 30 seconds
+   * - Single-use (deleted after first use)
+   * - Contains no sensitive data (just a random UUID)
+   *
+   * Use this ticket in WebSocket URL instead of JWT to prevent token leakage in logs.
+   *
+   * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+   */
+  @Post('connection-ticket')
+  @HttpCode(HttpStatus.OK)
+  async createConnectionTicket(
+    @Body() dto: ConnectionTicketDto,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<ConnectionTicketResponse> {
+    return await this.connectionTicketService.createTicket({
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      activeRole: user.activeRole,
+      purpose: dto.purpose,
+      createdAt: Date.now(),
+    });
   }
 }

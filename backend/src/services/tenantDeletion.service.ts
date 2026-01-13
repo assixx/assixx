@@ -767,9 +767,7 @@ export class TenantDeletionService {
       }
       return { table: tableName, deleted: result.affectedRows };
     } catch (error) {
-      logger.error(
-        `❌ Failed to delete from ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
-      );
+      logger.error({ err: error, tableName }, `Failed to delete from ${tableName}`);
       throw error; // Re-throw for final tables - these must succeed
     }
   }
@@ -808,7 +806,7 @@ export class TenantDeletionService {
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error) {
         // Log the ORIGINAL error before trying any recovery
-        logger.error(`DELETION FAILED for tenant ${tenantId}:`, error);
+        logger.error({ err: error, tenantId }, `DELETION FAILED for tenant ${tenantId}`);
 
         // Try to update queue status, but this may fail if transaction is aborted
         try {
@@ -818,7 +816,7 @@ export class TenantDeletionService {
           );
         } catch (updateError) {
           // Queue update failed (transaction aborted), original error already logged above
-          logger.debug('Could not update queue status:', updateError);
+          logger.debug({ err: updateError }, 'Could not update queue status');
         }
         throw error;
       }
@@ -843,7 +841,7 @@ export class TenantDeletionService {
       });
 
       this.redisClient.on('error', (err: Error) => {
-        logger.error('TenantDeletion Redis Client Error:', err);
+        logger.error({ err }, 'TenantDeletion Redis Client Error');
       });
     }
     return this.redisClient;
@@ -923,7 +921,7 @@ export class TenantDeletionService {
     }
 
     if (remainingData.length > 0) {
-      logger.error(`⚠️ INCOMPLETE DELETION - Data remains in: ${remainingData.join(', ')}`);
+      logger.error({ tenantId, remainingData }, 'INCOMPLETE DELETION - Data remains');
       throw new Error(`Deletion incomplete: ${remainingData.length} tables still contain data`);
     }
 
@@ -1076,7 +1074,7 @@ export class TenantDeletionService {
         queueItem.ip_address,
       );
     } catch (error: unknown) {
-      logger.error('Error processing deletion queue:', error);
+      logger.error({ err: error }, 'Error processing deletion queue');
     }
   }
 

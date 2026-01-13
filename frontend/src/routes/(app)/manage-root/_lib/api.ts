@@ -6,10 +6,13 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
 import type { RootUser, RootUserPayload, RootUsersApiResponse, FormIsActiveStatus } from './types';
+
+const log = createLogger('ManageRootApi');
 
 const apiClient = getApiClient();
 
@@ -94,7 +97,7 @@ export async function loadRootUsers(): Promise<{
     }
     return { users: [], error: null };
   } catch (err) {
-    console.error('[ManageRoot] Error loading users:', err);
+    log.error({ err }, 'Error loading users');
 
     if (isSessionExpiredError(err)) {
       handleSessionExpired();
@@ -162,7 +165,7 @@ export async function saveRootUser(
     }
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageRoot] Error saving user:', err);
+    log.error({ err }, 'Error saving user');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Speichern',
@@ -180,7 +183,7 @@ export async function deleteRootUser(
     await apiClient.delete(API_ENDPOINTS.user(userId));
     return { success: true, error: null };
   } catch (err) {
-    console.error('[ManageRoot] Error deleting user:', err);
+    log.error({ err }, 'Error deleting user');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Löschen',

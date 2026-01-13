@@ -1,12 +1,20 @@
 # Pino Logging Integration Plan
 
-> **Status:** PLANNED
+> **Status:** ✅ Phase 1-4 Complete + Grafana Cloud
 > **Priority:** HIGH (Security + Production Quality)
-> **Estimated Effort:** 2-3 Development Sessions
 > **Created:** 2026-01-06
-> **Updated:** 2026-01-11
-> **Branch:** `feature/pino-logging`
+> **Updated:** 2026-01-13
+> **Branch:** `Alerting-und-Monitoring-Stack`
 > **Related:** [ADR-002: Alerting & Monitoring](./adr/ADR-002-alerting-monitoring.md)
+>
+> **Progress:**
+>
+> - Phase 1 (Backend Pino): ✅ Complete
+> - Phase 2a (Frontend Security): ✅ Complete - esbuild.drop, logger.ts, hostname fixes
+> - Phase 2b (Console Migration): ✅ Complete - 334 calls → createLogger() (2026-01-13)
+> - Phase 3 (Validation): ✅ Complete (manually verified)
+> - Phase 4 (PLG Stack): ✅ Complete - Loki + Grafana + Prometheus + pino-loki + Grafana Cloud
+> - Phase 5 (Source Maps): 🔲 Future - CI/CD Pipeline (nicht blockierend für Dev)
 
 ---
 
@@ -25,20 +33,23 @@
 │  ├── Performance (5x faster)   ├── Session Replay           │
 │  └── JSON Output               └── Alerting                 │
 │           │                                                  │
-│           │ Phase 5 (optional)                              │
+│           │ Phase 4 (NEXT)                                  │
 │           ▼                                                  │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  PLG STACK (ADR-002)                                │    │
-│  │  pino-loki → Loki → Grafana                        │    │
-│  │  Prometheus → Grafana                               │    │
+│  │  PLG STACK (ADR-002 Phase 5)                        │    │
+│  │  ════════════════════════════                       │    │
+│  │  pino-loki → Loki → Grafana (Log Aggregation)      │    │
+│  │  Prometheus → Grafana       (Metrics)              │    │
+│  │  Grafana Dashboards         (Visualization)        │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 
 Reihenfolge:
-1. PINO-LOGGING-PLAN (dieser) → Winston → Pino
-2. ADR-002 Sentry              → Error Tracking
-3. ADR-002 PLG Stack           → Pino-Logs nach Loki (optional)
+1. ✅ PINO-LOGGING-PLAN Phase 1  → Winston → Pino (Backend)
+2. ✅ PINO-LOGGING-PLAN Phase 2a → Frontend Security Fixes
+3. ✅ ADR-002 Sentry             → Error Tracking
+4. ✅ PINO-LOGGING-PLAN Phase 4  → PLG Stack (Loki + Grafana + Prometheus)
 ```
 
 **Warum Pino zuerst?**
@@ -828,50 +839,222 @@ const redactPaths = [
 
 ## 8. Migration Checklist
 
-### Phase 1: Backend (Winston → Pino Migration)
+### Phase 1: Backend (Winston → Pino Migration) - ✅ COMPLETE
 
-- [ ] **REMOVE Winston:** `cd backend && pnpm remove winston`
-- [ ] Install packages: `pnpm add pino-http nestjs-pino && pnpm add -D pino-pretty pino-roll`
-- [ ] Configure Fastify logger in `src/nest/main.ts`
-- [ ] Create `src/nest/common/logger/logger.module.ts` with nestjs-pino
-- [ ] Add `LoggerModule` to `AppModule` imports
-- [ ] Replace `backend/src/utils/logger.ts`:
-  - [ ] Remove Winston imports
-  - [ ] Export Pino logger instance
-  - [ ] Convert `sanitizeForLog()` to Pino `redact` paths
-- [ ] Update Winston logger imports (only 5 files!):
-  - [ ] `src/config/database.ts`
-  - [ ] `src/config/redis.ts`
-  - [ ] `src/services/tenantDeletion.service.ts`
-  - [ ] `src/services/hierarchyPermission.service.ts`
-  - [ ] `src/workers/deletionWorker.ts`
-- [ ] Replace @nestjs/common Logger calls in 46 files (optional - nestjs-pino handles this)
-- [ ] Add redaction for sensitive fields (passwords, tokens, cookies)
-- [ ] Test request logging with pino-pretty
-- [ ] Verify file transport works in production
+- [x] **REMOVE Winston:** `cd backend && pnpm remove winston`
+- [x] Install packages: `pnpm add pino-http nestjs-pino && pnpm add -D pino-pretty pino-roll`
+- [x] Configure Fastify logger in `src/nest/main.ts`
+- [x] Create `src/nest/common/logger/logger.module.ts` with nestjs-pino
+- [x] Add `LoggerModule` to `AppModule` imports
+- [x] Replace `backend/src/utils/logger.ts`:
+  - [x] Remove Winston imports
+  - [x] Export Pino logger instance
+  - [x] Convert `sanitizeForLog()` to Pino `redact` paths
+- [x] Update Winston logger imports (only 5 files!):
+  - [x] `src/config/database.ts`
+  - [x] `src/config/redis.ts`
+  - [x] `src/services/tenantDeletion.service.ts`
+  - [x] `src/services/hierarchyPermission.service.ts`
+  - [x] `src/workers/deletionWorker.ts`
+- [x] Replace @nestjs/common Logger calls in 46 files (optional - nestjs-pino handles this)
+- [x] Add redaction for sensitive fields (passwords, tokens, cookies)
+- [x] Test request logging with pino-pretty
+- [x] Verify file transport works in production
 
-### Phase 2: Frontend
+**Note:** Pino redaction wildcards (`*.password`) only match ONE level deep. Added multi-level paths (`*.*.password`, `*.*.*.password`) for 4 levels deep coverage.
 
-- [ ] Install packages: `pino`
-- [ ] Create `src/lib/utils/logger.ts`
-- [ ] Update `vite.config.ts` with esbuild.drop
-- [ ] Fix security exposures:
-  - [ ] `token-manager.ts` - Remove window.\* exposure
-  - [ ] `session-manager.ts` - Remove window.\* exposure
-  - [ ] `api-client.ts` - Remove window.\* exposure
-- [ ] Replace console.\* in all 51 files
-- [ ] Add ESLint rule to ban console.\*
-- [ ] Test production build has no console output
-- [ ] Verify errors are transmitted to backend
+### Phase 2: Frontend - ✅ SECURITY FIXES COMPLETE (2026-01-12)
 
-### Phase 3: Validation
+**Phase 2a: Critical Security Fixes - ✅ COMPLETE**
 
-- [ ] Run production build
-- [ ] Check browser console is empty (except errors)
-- [ ] Verify window.\* objects not exposed
-- [ ] Check backend logs are structured JSON
-- [ ] Verify sensitive data is redacted
-- [ ] Performance test (logging overhead)
+- [x] Install packages: `pino@10.1.1`
+- [x] Create `src/lib/utils/logger.ts` - Central logging utility with:
+  - [x] Environment-aware logging (`import.meta.env.DEV`)
+  - [x] Pino-based for backend consistency
+  - [x] `createLogger(context)` for child loggers
+  - [x] `isDev` / `isProd` exports for SSR-safe checks
+- [x] Update `vite.config.ts` with `esbuild.drop: ['console', 'debugger']`
+  - Strips ALL 331 console.\* calls from production bundle!
+- [x] Fix security exposures (hostname check → `import.meta.env.DEV`):
+  - [x] `token-manager.ts:580` - window.tokenManager now dev-only
+  - [x] `session-manager.ts:730` - window.sessionManager now dev-only
+  - [x] `session-manager.ts:40` - DEBUG_MODE now build-time check
+  - [x] `api-client.ts` - No exposure found (already secure)
+- [x] Add ESLint exception for `logger.ts` in `eslint.config.mjs`
+  - Rule `no-console` still enforced everywhere else
+  - Logger utility is the ONE place that should use console.\*
+
+**Phase 2b: Console Migration - 🔄 HIGH PRIORITY (Best Practice)**
+
+**Status:** IN PROGRESS - 334 calls in 97 files
+
+**Why HIGH Priority?**
+
+- Best Practice: Strukturierte Logs statt lose console.\* Calls
+- Konsistenz: Gleiche Logging-API wie Backend (Pino)
+- Filterbar: Logs haben Context (Komponente/Service)
+- Zukunftssicher: Bereits für Loki-Integration vorbereitet
+
+**Files to Migrate:**
+
+```
+lib/utils/          8 files  (api-client, token-manager, session-manager, etc.)
+lib/components/     1 file   (RoleSwitch.svelte)
+lib/stores/         1 file   (toast.ts)
+hooks/              2 files  (hooks.client.ts, instrumentation.server.ts)
+routes/(app)/      ~85 files (+page.server.ts, +page.svelte, _lib/*.ts)
+routes/other/       4 files  (login, sentry-tunnel, tenant-deletion)
+```
+
+**Migration Pattern:**
+
+```typescript
+// AFTER
+import { createLogger } from '$lib/utils/logger';
+
+// BEFORE
+console.log('[MyService] Some message', data);
+console.error('[MyService] Error:', error);
+
+const log = createLogger('MyService');
+log.info({ data }, 'Some message');
+log.error({ err: error }, 'Error occurred');
+```
+
+**Tasks:**
+
+- [ ] Migrate lib/utils/\*.ts (8 files)
+- [ ] Migrate lib/components/\*.svelte (1 file)
+- [ ] Migrate lib/stores/\*.ts (1 file)
+- [ ] Migrate hooks + instrumentation (2 files)
+- [ ] Migrate routes/(app)/\*_/_.server.ts (30+ files)
+- [ ] Migrate routes/(app)/\*_/_.svelte (20+ files)
+- [ ] Migrate routes/(app)/\*_/\_lib/_.ts (25+ files)
+- [ ] Migrate remaining routes (login, sentry, etc.)
+- [ ] Run ESLint to verify no console.\* remaining
+- [ ] Update ESLint to enforce no-console rule project-wide
+
+**Files Modified (Phase 2a):**
+
+```
+frontend/
+├── vite.config.ts                    # esbuild.drop for production
+├── eslint.config.mjs                 # Exception for logger.ts
+├── package.json                      # Added pino@10.1.1
+└── src/lib/utils/
+    ├── logger.ts                     # NEW: Central logging utility
+    ├── token-manager.ts              # Fixed: import.meta.env.DEV
+    └── session-manager.ts            # Fixed: import.meta.env.DEV (2 places)
+```
+
+### Phase 3: Validation - ✅ COMPLETE (2026-01-13)
+
+- [x] Run production build and verify console stripping
+- [x] Check browser console is empty (except errors)
+- [x] Verify window.\* objects not exposed in production
+- [x] Check backend logs are structured JSON
+- [x] Verify sensitive data is redacted
+- [x] Performance test (logging overhead)
+
+**Verified by:** Manual testing (user confirmed)
+
+### Phase 4: PLG Stack (Loki + Grafana + Prometheus) - ✅ COMPLETE (2026-01-12)
+
+**Ziel:** Pino-Logs zentral in Grafana durchsuchbar + System-Metrics
+
+**Phase 4a: Docker Compose + Loki + Grafana** ✅
+
+- [x] Loki Container zu docker-compose.yml hinzufügen
+- [x] Grafana Container zu docker-compose.yml hinzufügen
+- [x] Loki als Data Source in Grafana konfigurieren
+- [x] Test: Loki empfängt Logs
+
+**Phase 4b: pino-loki Transport** ✅
+
+- [x] `pnpm add pino-loki` im Backend
+- [x] Pino Transport konfigurieren (→ Loki lokal + Grafana Cloud)
+- [x] Logs erscheinen in Grafana (lokal + Cloud)
+
+**Phase 4c: Prometheus Metrics** ✅
+
+- [x] Prometheus Container zu docker-compose.yml hinzufügen
+- [x] `@willsoto/nestjs-prometheus` im Backend
+- [x] `/api/v2/metrics` Endpoint in NestJS exponieren
+- [x] Prometheus scrapet Backend
+- [x] Prometheus als Data Source in Grafana
+- [x] remote_write zu Grafana Cloud konfiguriert
+
+**Phase 4d: Grafana Dashboards** ✅
+
+- [x] Custom Assixx Backend Overview Dashboard erstellt (assixx-overview.json)
+- [x] Custom Assixx Full Dashboard mit Logs erstellt (assixx-full-dashboard.json)
+- [x] Grafana Cloud Integration konfiguriert
+
+**Phase 4e: Grafana Cloud** ✅
+
+- [x] Grafana Cloud Account erstellt (assixxdev Stack)
+- [x] API Token mit logs:write + metrics:write Scopes
+- [x] Prometheus remote_write konfiguriert
+- [x] pino-loki sendet an Grafana Cloud Loki
+- [x] Dashboards verfügbar unter https://assixxdev.grafana.net
+
+**Container:**
+| Container | Image | Port | RAM |
+|-----------|-------|------|-----|
+| assixx-loki | grafana/loki:3.x | 3100 | 1-2 GB |
+| assixx-grafana | grafana/grafana:11.x | 3050 | 512 MB |
+| assixx-prometheus | prom/prometheus:3.x | 9090 | 1-2 GB |
+
+**Datenfluss:**
+
+```
+Pino (Backend) → pino-loki → Loki:3100 (lokal) → Grafana:3050 (lokal)
+                    ↓
+              Grafana Cloud Loki → Grafana Cloud (assixxdev.grafana.net)
+                                              ↑
+Prometheus:9090 → remote_write → Grafana Cloud Prometheus
+```
+
+### Phase 5: Sentry Source Maps - 🔲 FUTURE (CI/CD)
+
+**Status:** Nicht blockierend für Entwicklung
+
+**Was sind Source Maps?**
+Source Maps ermöglichen Sentry, minified Stack Traces zurück zum Original-Code zu mappen:
+
+```
+// OHNE Source Maps (minified)
+Error: Cannot read property 'user' of undefined
+    at e.value (app-DxK3j2Ls.js:1:45892)
+
+// MIT Source Maps (original)
+Error: Cannot read property 'user' of undefined
+    at UserService.getCurrentUser (src/lib/services/user-service.ts:47:12)
+```
+
+**Warum später?**
+
+- Erfordert CI/CD Pipeline (GitHub Actions, etc.)
+- Manueller Upload bei jedem Build unpraktisch
+- Sentry funktioniert auch ohne (nur weniger hilfreiche Stack Traces)
+
+**Implementation (wenn CI/CD bereit):**
+
+```bash
+# In CI/CD Pipeline nach dem Build:
+npx @sentry/cli sourcemaps upload \
+  --org your-org \
+  --project assixx-frontend \
+  --release $GIT_SHA \
+  ./frontend/build
+```
+
+**Tasks (Future):**
+
+- [ ] CI/CD Pipeline aufsetzen (GitHub Actions)
+- [ ] Sentry CLI konfigurieren
+- [ ] Source Maps Upload in Pipeline integrieren
+- [ ] Release Tracking aktivieren
 
 ---
 
@@ -941,6 +1124,6 @@ grep -r "console\." frontend/build/
 
 ---
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-13
 **Author:** Claude Code
-**Version:** 1.0.0
+**Version:** 2.1.0 - Phase 2b Console Migration (HIGH Priority)

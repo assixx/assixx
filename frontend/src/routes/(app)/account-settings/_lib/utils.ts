@@ -3,9 +3,13 @@
  * @module account-settings/_lib/utils
  */
 
+import { createLogger } from '$lib/utils/logger';
+
 import { STATUS_LABELS, DELETE_CONFIRMATION_TEXT, MIN_REASON_LENGTH } from './constants';
 
 import type { ToastType, DeletionStatus } from './types';
+
+const log = createLogger('AccountSettingsUtils');
 
 /**
  * Format date for display (German locale)
@@ -44,7 +48,7 @@ export function showToast(message: string, type: ToastType = 'info'): void {
     });
     window.dispatchEvent(event);
   }
-  console.warn(`[Toast:${type}] ${message}`);
+  log.warn({ type }, message);
 }
 
 /**

@@ -139,7 +139,7 @@ class HierarchyPermissionService {
           return false;
       }
     } catch (error: unknown) {
-      logger.error('[HierarchyPermission] Error in hasAccess:', error);
+      logger.error({ err: error }, '[HierarchyPermission] Error in hasAccess');
       return false;
     }
   }

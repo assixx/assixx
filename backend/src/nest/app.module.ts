@@ -9,6 +9,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
+import { SentryModule } from '@sentry/nestjs/setup';
 import type { FastifyRequest } from 'fastify';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
@@ -27,6 +28,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor.js';
+import { LoggerModule } from './common/logger/logger.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
@@ -35,6 +37,7 @@ import { FeaturesModule } from './features/features.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
 import { MachinesModule } from './machines/machines.module.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PlansModule } from './plans/plans.module.js';
 import { ReportsModule } from './reports/reports.module.js';
@@ -60,6 +63,19 @@ import { UsersModule } from './users/users.module.js';
 
     // Custom config module with typed access
     AppConfigModule,
+
+    // Pino Logger Module (replaces Winston)
+    // Must be early so other modules can use logging
+    LoggerModule,
+
+    // Prometheus Metrics Module
+    // Exposes /api/v2/metrics for Prometheus scraping
+    MetricsModule,
+
+    // Sentry Error Tracking Module
+    // Initialized in instrument.ts (must be imported first in main.ts)
+    // Only active when SENTRY_DSN is configured
+    SentryModule.forRoot(),
 
     // JWT Module
     // SECURITY: JWT_SECRET must be set in environment (no fallback allowed)

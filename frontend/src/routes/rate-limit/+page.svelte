@@ -37,7 +37,7 @@
 
     localStorage.removeItem('token');
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on /auth/logout
     localStorage.removeItem('userRole');
     sessionStorage.clear();
   }

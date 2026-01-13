@@ -1,6 +1,10 @@
 <script lang="ts">
   import { SvelteMap } from 'svelte/reactivity';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('MessagesArea');
+
   import { MESSAGES } from './constants';
   import {
     formatFileSize,
@@ -86,8 +90,9 @@
 
     const duration = performance.now() - startTime;
     if (duration > 10) {
-      console.warn(
-        `[MessagesArea] Processed ${messages.length} messages in ${duration.toFixed(2)}ms`,
+      log.warn(
+        { messageCount: messages.length, durationMs: duration.toFixed(2) },
+        'Slow message processing',
       );
     }
 
@@ -112,8 +117,9 @@
 
     const duration = performance.now() - startTime;
     if (duration > 5) {
-      console.warn(
-        `[MessagesArea] Search highlighting took ${duration.toFixed(2)}ms for ${highlights.size} matches`,
+      log.warn(
+        { matchCount: highlights.size, durationMs: duration.toFixed(2) },
+        'Slow search highlighting',
       );
     }
 

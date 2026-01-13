@@ -4,6 +4,7 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import { STORAGE_KEYS, MESSAGES } from './constants';
 
@@ -14,6 +15,8 @@ import type {
   RootUsersResponse,
   JwtPayload,
 } from './types';
+
+const log = createLogger('AccountSettingsApi');
 
 const apiClient = getApiClient();
 
@@ -113,7 +116,7 @@ export async function getRootUserCount(): Promise<number> {
 
     return 0;
   } catch (err: unknown) {
-    console.error('[AccountSettings] Error fetching root users:', err);
+    log.error({ err }, 'Error fetching root users');
     return 0;
   }
 }

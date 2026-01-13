@@ -115,9 +115,9 @@ export interface LevelFilterOption {
 export const LEVEL_FILTER_OPTIONS: LevelFilterOption[] = [
   { value: 'all', label: 'Alle', icon: 'fa-globe' },
   { value: 'company', label: 'Firma', icon: 'fa-building' },
+  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' },
   { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' },
   { value: 'team', label: 'Team', icon: 'fa-users' },
-  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' },
 ];
 
 // ============================================================================

@@ -15,6 +15,7 @@
     showErrorAlert,
     showSuccessAlert,
   } from '$lib/utils';
+  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   // Page-specific CSS (reuses kvp-detail layout)
   import '../../../../styles/kvp-detail.css';
@@ -231,6 +232,27 @@
       else if (showPreviewModal) closePreview();
     }
   }
+
+  /**
+   * Determines the avatar color class based on profile picture availability.
+   * Returns empty string if profile picture exists, otherwise returns color class.
+   */
+  function getAvatarColorClass(
+    profilePicture: string | null | undefined,
+    commentId: number,
+  ): string {
+    const hasProfilePic =
+      profilePicture !== null && profilePicture !== undefined && profilePicture !== '';
+    return hasProfilePic ? '' : `avatar--color-${getAvatarColor(commentId)}`;
+  }
+
+  /**
+   * Type-safe check for non-empty string value.
+   * Handles null, undefined, and empty string cases explicitly.
+   */
+  function hasProfilePicture(value: string | null | undefined): value is string {
+    return value !== null && value !== undefined && value !== '';
+  }
 </script>
 
 <svelte:head>
@@ -375,10 +397,15 @@
               <div class="comment-item" class:comment-internal={comment.isInternal}>
                 <div class="comment-header">
                   <div class="comment-author">
-                    <div class="avatar avatar--sm avatar--color-{getAvatarColor(comment.id)}">
-                      {#if comment.profilePicture}
+                    <div
+                      class="avatar avatar--sm {getAvatarColorClass(
+                        comment.profilePicture,
+                        comment.id,
+                      )}"
+                    >
+                      {#if hasProfilePicture(comment.profilePicture)}
                         <img
-                          src={comment.profilePicture}
+                          src={getProfilePictureUrl(comment.profilePicture)}
                           alt="{comment.firstName} {comment.lastName}"
                           class="avatar__image"
                         />

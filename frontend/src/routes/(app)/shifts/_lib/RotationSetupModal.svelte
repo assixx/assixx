@@ -5,6 +5,9 @@
    * Based on: frontend/src/scripts/shifts/rotation.ts
    */
   import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('RotationSetupModal');
 
   import { createRotationPattern, assignRotation, generateRotationShifts } from './api';
   import {
@@ -266,7 +269,7 @@
       );
       oncomplete(formValues.startDate);
     } catch (error) {
-      console.error('[ROTATION] Error:', error);
+      log.error({ err: error }, 'Rotation error');
       showErrorAlert(getErrorMessage(error, 'Fehler beim Speichern der Rotation'));
     } finally {
       resetSavingState();

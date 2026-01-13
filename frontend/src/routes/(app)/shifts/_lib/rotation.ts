@@ -5,9 +5,11 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { createLogger } from '$lib/utils/logger';
 
 import type { RotationPattern, Employee, RotationHistoryEntryAPI, ShiftType } from './types';
 
+const log = createLogger('ShiftsRotation');
 const apiClient = getApiClient();
 
 // =============================================================================
@@ -63,8 +65,8 @@ export async function checkRotationPatternExists(teamId: number | null): Promise
       `/shifts/rotation/patterns?team_id=${teamId}&active=true`,
     );
     return (response.patterns?.length ?? 0) > 0;
-  } catch (error) {
-    console.error('[ROTATION] Error checking rotation pattern:', error);
+  } catch (err) {
+    log.error({ err, teamId }, 'Error checking rotation pattern');
     return false;
   }
 }
@@ -78,8 +80,8 @@ export async function loadExistingPattern(teamId: number): Promise<RotationPatte
       `/shifts/rotation/patterns?team_id=${teamId}&active=true`,
     );
     return response.patterns?.[0] ?? null;
-  } catch (error) {
-    console.error('[ROTATION] Error loading existing pattern:', error);
+  } catch (err) {
+    log.error({ err, teamId }, 'Error loading existing pattern');
     return null;
   }
 }
@@ -93,8 +95,8 @@ export async function loadPatternById(patternId: number): Promise<RotationPatter
       `/shifts/rotation/patterns/${patternId}`,
     );
     return response.pattern ?? null;
-  } catch (error) {
-    console.error('[ROTATION] Error loading pattern by ID:', error);
+  } catch (err) {
+    log.error({ err, patternId }, 'Error loading pattern by ID');
     return null;
   }
 }
@@ -115,8 +117,8 @@ export async function loadRotationHistory(
 
     const response = await apiClient.get<{ history?: RotationHistoryEntryAPI[] }>(url);
     return response.history ?? [];
-  } catch (error) {
-    console.error('[ROTATION] Error loading rotation history:', error);
+  } catch (err) {
+    log.error({ err }, 'Error loading rotation history');
     return [];
   }
 }

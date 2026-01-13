@@ -28,7 +28,15 @@ RUN pnpm install --frozen-lockfile
 COPY backend/ ./backend/
 
 # TypeScript kompilieren (für Type-Checking, tsx führt TS direkt aus)
-RUN cd backend && pnpm run build
+# Verify build output exists - fail fast if compilation fails silently
+RUN cd backend && pnpm run build && \
+    if [ ! -f "dist/nest/main.js" ]; then \
+      echo "ERROR: TypeScript build failed - dist/nest/main.js not found!" && \
+      echo "Contents of backend/dist:" && \
+      ls -la dist/ 2>/dev/null || echo "(dist/ does not exist)" && \
+      exit 1; \
+    fi && \
+    echo "Build successful: dist/nest/main.js exists"
 
 # Stage 2: Production Runtime
 FROM node:24.12.0-alpine3.22

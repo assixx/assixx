@@ -9,10 +9,15 @@
  * - Legacy: 'token' (backward compatibility)
  */
 
+import { createLogger } from './logger';
+
+const log = createLogger('Auth');
+
 // Storage key constants - MUST match Vite frontend!
+// NOTE: REFRESH_TOKEN is now stored as HttpOnly cookie, not in localStorage
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken', // Primary (v2)
-  REFRESH_TOKEN: 'refreshToken', // For token refresh
+  // REFRESH_TOKEN: NOT used anymore - stored in HttpOnly cookie by backend
   TOKEN_LEGACY: 'token', // Legacy compatibility
   TOKEN_RECEIVED_AT: 'tokenReceivedAt', // Clock skew fix
   USER_ROLE: 'userRole',
@@ -48,20 +53,32 @@ export function getAuthToken(): string | null {
 }
 
 /**
- * Get the refresh token from localStorage
+ * Get refresh token status.
+ *
+ * INTERNAL USE ONLY - Do not import directly!
+ * Use getTokenManager().getRefreshToken() instead.
+ *
+ * IMPORTANT: The actual refresh token is now in an HttpOnly cookie (cannot be read by JS).
+ * This function returns a placeholder if user appears logged in (has accessToken).
+ * Kept for internal backward compatibility only - NOT exported from index.ts.
  */
 export function getRefreshToken(): string | null {
   if (!isBrowser()) return null;
-  return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  // Can't read HttpOnly cookie, but assume it exists if we have accessToken
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  return accessToken !== null ? 'HTTPONLY_COOKIE' : null;
 }
 
 /**
- * Set the auth token in localStorage
- * Matches Vite: setAuthToken() - stores in BOTH keys for compatibility
+ * Set the auth token in localStorage.
+ *
+ * NOTE: Only stores accessToken. The refreshToken is now stored as an HttpOnly cookie
+ * by the backend - it cannot and should not be stored via JavaScript.
+ *
  * @param token The access token to store
- * @param refreshToken Optional refresh token
+ * @param _refreshToken DEPRECATED: Ignored. Refresh token is set as HttpOnly cookie by backend.
  */
-export function setAuthToken(token: string, refreshToken?: string): void {
+export function setAuthToken(token: string, _refreshToken?: string): void {
   if (!isBrowser()) return;
   // Primary: accessToken
   localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
@@ -69,15 +86,14 @@ export function setAuthToken(token: string, refreshToken?: string): void {
   localStorage.setItem(STORAGE_KEYS.TOKEN_LEGACY, token);
   // Token received timestamp (for clock skew fix)
   localStorage.setItem(STORAGE_KEYS.TOKEN_RECEIVED_AT, Date.now().toString());
-  // Refresh token if provided
-  if (refreshToken !== undefined && refreshToken !== '') {
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-  }
+  // NOTE: refreshToken is NOT stored in localStorage anymore (HttpOnly cookie)
 }
 
 /**
  * Remove the auth token (logout)
- * Matches Vite: removeAuthToken() - clears ALL token keys
+ *
+ * NOTE: The HttpOnly refresh token cookie is cleared by the backend on /auth/logout.
+ * This function only clears localStorage items that JavaScript can access.
  */
 export function removeAuthToken(): void {
   if (!isBrowser()) return;
@@ -86,7 +102,7 @@ export function removeAuthToken(): void {
   // AUTH TOKENS (CRITICAL - must be cleared)
   // ===========================================
   localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on logout
   localStorage.removeItem(STORAGE_KEYS.TOKEN_RECEIVED_AT);
   localStorage.removeItem(STORAGE_KEYS.TOKEN_LEGACY);
   localStorage.removeItem('authToken'); // Legacy v1 token
@@ -98,10 +114,7 @@ export function removeAuthToken(): void {
   localStorage.removeItem('role'); // Legacy role
   clearUserRole(); // Clears userRole + activeRole
 
-  // ===========================================
-  // COOKIE CLEARING (legacy compatibility)
-  // ===========================================
-  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+  // NOTE: HttpOnly cookies (refreshToken) are cleared by backend on /auth/logout
 }
 
 /**
@@ -137,7 +150,7 @@ export function getUserRole(): UserRole | null {
   }
 
   // Invalid role value, log warning and return null
-  console.warn(`Invalid user role found in localStorage: ${role}`);
+  log.warn({ role }, 'Invalid user role found in localStorage');
   return null;
 }
 
@@ -172,7 +185,7 @@ export function setUserRole(role: string): boolean {
 
   // Validate role
   if (role !== 'root' && role !== 'admin' && role !== 'employee') {
-    console.error(`Attempted to set invalid user role: ${role}`);
+    log.error({ role }, 'Attempted to set invalid user role');
     return false;
   }
 
@@ -195,12 +208,12 @@ export function setActiveRole(targetRole: UserRole): boolean {
 
   // Validate that user can switch to target role
   if (targetRole === 'root' && currentRole !== 'root') {
-    console.warn('Only root users can switch to root role');
+    log.warn({ targetRole, currentRole }, 'Only root users can switch to root role');
     return false;
   }
 
   if (targetRole === 'admin' && currentRole === 'employee') {
-    console.warn('Employees cannot switch to admin role');
+    log.warn({ targetRole, currentRole }, 'Employees cannot switch to admin role');
     return false;
   }
 

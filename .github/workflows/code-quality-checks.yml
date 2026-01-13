@@ -69,4 +69,5 @@ jobs:
       - name: Test Docker Compose Config
         run: |
           cd docker
+          cp .env.example .env
           docker compose config

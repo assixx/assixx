@@ -1,16 +1,72 @@
 /**
  * SvelteKit Server Hooks
  *
- * HTML Minification for Production Builds
- * Equivalent to vite-plugin-simple-html in legacy frontend
+ * - Sentry error tracking integration
+ * - Pino request logging (to Loki)
+ * - HTML Minification for Production Builds
  *
  * @see https://kit.svelte.dev/docs/hooks#server-hooks
+ * @see https://docs.sentry.io/platforms/javascript/guides/sveltekit/
  */
+import * as Sentry from '@sentry/sveltekit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { minify } from 'html-minifier-terser';
 
 import { dev } from '$app/environment';
 
-import type { Handle } from '@sveltejs/kit';
+import { createLogger } from '$lib/utils/logger';
+
+import type { Handle, HandleServerError } from '@sveltejs/kit';
+
+/** Logger instance for request logging */
+const log = createLogger('hooks.server');
+
+/**
+ * Request logging handle
+ * Logs all SSR requests with timing for observability
+ */
+const requestLoggingHandle: Handle = async ({ event, resolve }) => {
+  const start = Date.now();
+  const { method } = event.request;
+  const pathname = event.url.pathname;
+
+  // Skip logging for static assets and internal routes
+  if (pathname.startsWith('/_app/') || pathname.startsWith('/favicon')) {
+    return await resolve(event);
+  }
+
+  try {
+    const response = await resolve(event);
+    const duration = Date.now() - start;
+
+    log.info(
+      {
+        method,
+        pathname,
+        status: response.status,
+        duration,
+        userAgent: event.request.headers.get('user-agent')?.substring(0, 100),
+      },
+      `${method} ${pathname} ${response.status} ${duration}ms`,
+    );
+
+    return response;
+  } catch (err) {
+    const duration = Date.now() - start;
+
+    log.error(
+      {
+        method,
+        pathname,
+        duration,
+        err,
+      },
+      `${method} ${pathname} ERROR ${duration}ms`,
+    );
+
+    throw err;
+  }
+};
 
 /**
  * HTML Minification Options
@@ -47,10 +103,10 @@ const minificationOptions = {
 };
 
 /**
- * Server-side handle hook
+ * HTML Minification handle hook
  * Intercepts all requests and applies HTML minification in production
  */
-export const handle: Handle = async ({ event, resolve }) => {
+const htmlMinificationHandle: Handle = async ({ event, resolve }) => {
   // Development: No minification for better debugging
   if (dev) {
     return await resolve(event);
@@ -65,7 +121,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
       if (done) {
         // Minify the complete HTML in production builds
-        // html-minifier-terser v7 returns Promise<string>
         return await minify(pageHtml, minificationOptions);
       }
 
@@ -74,3 +129,19 @@ export const handle: Handle = async ({ event, resolve }) => {
     },
   });
 };
+
+/**
+ * Combined handle hook
+ * Sentry tracing + Request logging + HTML minification
+ */
+export const handle: Handle = sequence(
+  Sentry.sentryHandle(),
+  requestLoggingHandle,
+  htmlMinificationHandle,
+);
+
+/**
+ * Server-side error handler
+ * Wraps errors with Sentry capture
+ */
+export const handleError: HandleServerError = Sentry.handleErrorWithSentry();

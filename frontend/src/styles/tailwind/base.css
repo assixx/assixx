@@ -118,6 +118,11 @@
     content: '';
   }
 
+  /* Disable gradient on landing page (has own background image) */
+  body.landing-page-active::after {
+    display: none;
+  }
+
   /* Typography */
   h1,
   h2,

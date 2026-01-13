@@ -3,6 +3,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { showConfirmDanger, showErrorAlert, showSuccessAlert } from '$lib/utils';
+import { createLogger } from '$lib/utils/logger';
 
 import { loadSurveys, loadSurveyById, createSurvey, updateSurvey, deleteSurvey } from './api';
 import { ASSIGNMENT_TYPE_OPTIONS } from './constants';
@@ -23,6 +24,8 @@ import type {
   SurveyStatus,
   QuestionType,
 } from './types';
+
+const log = createLogger('SurveyAdminHandlers');
 
 // =============================================================================
 // TYPES
@@ -488,8 +491,8 @@ async function saveSurveyCore(
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Speichern der Umfrage');
     }
-  } catch (error) {
-    console.error('[Survey Admin] Error saving survey:', error);
+  } catch (err) {
+    log.error({ err }, 'Error saving survey');
     showErrorAlert('Fehler beim Speichern der Umfrage');
   } finally {
     surveyAdminState.setSaving(false);
@@ -584,8 +587,8 @@ export async function loadSurveyForEdit(surveyId: number | string): Promise<Form
       typeof surveyId === 'number' ? surveyId : Number.parseInt(surveyId, 10),
     );
     return formState;
-  } catch (error) {
-    console.error('[Survey Admin] Error loading survey:', error);
+  } catch (err) {
+    log.error({ err, surveyId }, 'Error loading survey');
     showErrorAlert('Fehler beim Laden der Umfrage');
     return null;
   } finally {
