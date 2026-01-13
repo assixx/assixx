@@ -44,7 +44,10 @@ services:
           memory: 256M
 
   deletion-worker:
-    # Use same CI image as backend
+    # Use same CI image as backend - MUST have build context since image doesn't exist in registry
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     image: assixx-backend:ci
     # Minimal volumes for CI
     volumes:
