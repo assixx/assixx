@@ -27,8 +27,9 @@ services:
       dockerfile: docker/Dockerfile
     image: assixx-backend:ci
     # No user override needed - prod Dockerfile uses nodejs:1001 user
-    # Minimal volumes - no dev source mounts needed
-    volumes:
+    # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
+    # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
+    volumes: !reset
       - ../uploads:/app/uploads
       - ../exports:/exports
       - ../backups:/backups
@@ -49,8 +50,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     image: assixx-backend:ci
-    # Minimal volumes for CI
-    volumes:
+    # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
+    # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
+    volumes: !reset
       - ../exports:/exports
       - ../backups:/backups
     deploy:

@@ -216,11 +216,23 @@ jobs:
       - name: Wait for image to be available
         run: sleep 30
 
+      - name: Determine image tag for Trivy
+        id: trivy-tag
+        run: |
+          # For PRs: github.ref_name is "111/merge" (invalid tag), use "pr-<number>" instead
+          # For branches: github.ref_name is the branch name (valid)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           # Use lowercase repository name for Docker registry compatibility
-          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ github.ref_name }}
+          # Tag must match docker/metadata-action output (pr-<number> for PRs)
+          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
