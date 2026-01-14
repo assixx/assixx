@@ -8,7 +8,7 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/root-dashboard.css';
@@ -75,6 +75,7 @@
     const result = await saveEmployeeNumberApi(trimmed);
 
     if (result.success) {
+      showSuccessAlert(MESSAGES.employeeNumberSaved);
       // Level 3: Refresh SSR data after mutation
       await invalidateAll();
     } else if (result.error !== null) {

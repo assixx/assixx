@@ -99,7 +99,7 @@
         margin-bottom: 10px;
         pointer-events: auto;
         width: max-content;
-        max-width: 360px;
+        max-width: 500px;
       "
     >
       <!-- Icon -->
@@ -108,7 +108,7 @@
       </span>
 
       <!-- Text -->
-      <span style="flex: 1; color: {colors.textColor};">
+      <span style="flex: 1; color: {colors.textColor}; white-space: nowrap;">
         {toast.title}{toast.message !== undefined && toast.message !== ''
           ? `: ${toast.message}`
           : ''}

@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile für Assixx Backend
 # Stage 1: Build TypeScript
-FROM node:24.12.0-alpine3.22 AS builder
+FROM node:24.13.0-alpine3.22 AS builder
 
 # pnpm installieren (pinned version matching packageManager field)
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
@@ -39,7 +39,7 @@ RUN cd backend && pnpm run build && \
     echo "Build successful: dist/nest/main.js exists"
 
 # Stage 2: Production Runtime
-FROM node:24.12.0-alpine3.22
+FROM node:24.13.0-alpine3.22
 
 # pnpm installieren (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json

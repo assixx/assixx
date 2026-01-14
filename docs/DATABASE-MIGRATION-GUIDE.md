@@ -623,23 +623,23 @@ PostgreSQL Extension die alle Queries trackt und Performance-Statistiken sammelt
 
 ```yaml
 command:
-  - "postgres"
-  - "-c"
-  - "shared_preload_libraries=pg_stat_statements"
-  - "-c"
-  - "pg_stat_statements.track=all"
-  - "-c"
-  - "pg_stat_statements.max=10000"
-  - "-c"
-  - "track_io_timing=on"
+  - 'postgres'
+  - '-c'
+  - 'shared_preload_libraries=pg_stat_statements'
+  - '-c'
+  - 'pg_stat_statements.track=all'
+  - '-c'
+  - 'pg_stat_statements.max=10000'
+  - '-c'
+  - 'track_io_timing=on'
 ```
 
-| Parameter | Wert | Beschreibung |
-|-----------|------|--------------|
-| `shared_preload_libraries` | pg_stat_statements | Extension beim Start laden |
-| `pg_stat_statements.track` | all | Alle Queries tracken (inkl. Funktionen) |
-| `pg_stat_statements.max` | 10000 | Max. 10.000 unique Queries speichern |
-| `track_io_timing` | on | I/O-Zeiten pro Query messen |
+| Parameter                  | Wert               | Beschreibung                            |
+| -------------------------- | ------------------ | --------------------------------------- |
+| `shared_preload_libraries` | pg_stat_statements | Extension beim Start laden              |
+| `pg_stat_statements.track` | all                | Alle Queries tracken (inkl. Funktionen) |
+| `pg_stat_statements.max`   | 10000              | Max. 10.000 unique Queries speichern    |
+| `track_io_timing`          | on                 | I/O-Zeiten pro Query messen             |
 
 ### Extension aktivieren (einmalig nach Container-Neustart)
 

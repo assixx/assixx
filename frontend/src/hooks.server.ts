@@ -243,7 +243,11 @@ const requestLoggingHandle: Handle = async ({ event, resolve }) => {
   const { method } = event.request;
   const pathname = event.url.pathname;
 
-  if (pathname.startsWith('/_app/') || pathname.startsWith('/favicon')) {
+  if (
+    pathname.startsWith('/_app/') ||
+    pathname.startsWith('/favicon') ||
+    pathname === '/sentry-tunnel'
+  ) {
     return await resolve(event);
   }
 

@@ -375,11 +375,14 @@ async function bootstrap(): Promise<void> {
   };
 
   // Create Fastify adapter with Pino logger and trust proxy for Docker
+  // disableRequestLogging: true → Fastify's native request logging is disabled
+  // Request logging is handled by nestjs-pino (with EXCLUDED_ROUTES for /health, /metrics)
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       logger: pinoLoggerConfig,
       trustProxy: true,
+      disableRequestLogging: true,
     }),
     { bufferLogs: true }, // Buffer logs until nestjs-pino is ready
   );
