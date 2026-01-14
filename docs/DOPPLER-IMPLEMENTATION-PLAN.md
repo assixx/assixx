@@ -29,26 +29,26 @@
 
 ### Aktuelle Probleme mit .env
 
-| Problem | Risiko |
-|---------|--------|
-| Secrets in .env Dateien | Können versehentlich committed werden |
-| Keine Audit Logs | Wer hat wann was geändert? Unbekannt |
-| Kein Access Control | Jeder mit Dateizugriff sieht alles |
-| Manuelle Rotation | Secrets werden nie rotiert |
-| Environment Sync | Dev/Staging/Prod manuell synchronisieren |
+| Problem                 | Risiko                                   |
+| ----------------------- | ---------------------------------------- |
+| Secrets in .env Dateien | Können versehentlich committed werden    |
+| Keine Audit Logs        | Wer hat wann was geändert? Unbekannt     |
+| Kein Access Control     | Jeder mit Dateizugriff sieht alles       |
+| Manuelle Rotation       | Secrets werden nie rotiert               |
+| Environment Sync        | Dev/Staging/Prod manuell synchronisieren |
 
 ### Doppler Vorteile
 
-| Feature | Nutzen |
-|---------|--------|
-| Zentrales Dashboard | Alle Secrets an einem Ort |
-| Granulare Permissions | Nur du hast vollen Zugriff |
-| Audit Trail | Jede Änderung protokolliert |
-| Environment Configs | dev, staging, prod getrennt |
-| CLI Integration | `doppler run -- command` |
-| Service Tokens | Sichere Docker/CI Integration |
-| Secret Referencing | DRY - Secrets wiederverwenden |
-| Versioning & Rollback | Jede Version gespeichert |
+| Feature               | Nutzen                        |
+| --------------------- | ----------------------------- |
+| Zentrales Dashboard   | Alle Secrets an einem Ort     |
+| Granulare Permissions | Nur du hast vollen Zugriff    |
+| Audit Trail           | Jede Änderung protokolliert   |
+| Environment Configs   | dev, staging, prod getrennt   |
+| CLI Integration       | `doppler run -- command`      |
+| Service Tokens        | Sichere Docker/CI Integration |
+| Secret Referencing    | DRY - Secrets wiederverwenden |
+| Versioning & Rollback | Jede Version gespeichert      |
 
 ---
 
@@ -122,17 +122,17 @@
 
 Aus `SECRET-MANAGEMENT-PLAN.md`:
 
-| Kategorie | Secrets | Anzahl |
-|-----------|---------|--------|
-| **JWT** | JWT_SECRET, JWT_REFRESH_SECRET | 2 |
-| **Session** | SESSION_SECRET | 1 |
-| **Database** | DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME | 5 |
-| **Redis** | REDIS_HOST, REDIS_PORT, REDIS_PASSWORD | 3 |
-| **SMTP** | SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD | 4 |
-| **Sentry** | SENTRY_DSN | 1 |
-| **Grafana** | GF_SECURITY_ADMIN_PASSWORD | 1 |
-| **App** | NODE_ENV, PORT, API_PREFIX | 3 |
-| **Total** | | **~20** |
+| Kategorie    | Secrets                                         | Anzahl  |
+| ------------ | ----------------------------------------------- | ------- |
+| **JWT**      | JWT_SECRET, JWT_REFRESH_SECRET                  | 2       |
+| **Session**  | SESSION_SECRET                                  | 1       |
+| **Database** | DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME | 5       |
+| **Redis**    | REDIS_HOST, REDIS_PORT, REDIS_PASSWORD          | 3       |
+| **SMTP**     | SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD  | 4       |
+| **Sentry**   | SENTRY_DSN                                      | 1       |
+| **Grafana**  | GF_SECURITY_ADMIN_PASSWORD                      | 1       |
+| **App**      | NODE_ENV, PORT, API_PREFIX                      | 3       |
+| **Total**    |                                                 | **~20** |
 
 ---
 
@@ -172,6 +172,7 @@ doppler projects list
 ### 4.4 Environments/Configs
 
 Doppler erstellt automatisch:
+
 - `dev` (Development)
 - `stg` (Staging)
 - `prd` (Production)
@@ -455,13 +456,13 @@ docker logs assixx-backend 2>&1 | head -20
 
 ### 9.1 Wer hat Zugriff?
 
-| Rolle | Zugriff | Wie |
-|-------|---------|-----|
-| **Du (Owner)** | Alles | Doppler Account Login |
-| **Service Token dev** | Nur dev Secrets | `dp.st.dev.xxx` Token |
-| **Service Token prod** | Nur prod Secrets | `dp.st.prd.xxx` Token |
-| **Jemand mit Docker-Repo** | NICHTS | Braucht Token |
-| **GitHub Actions** | Nur was Token erlaubt | Secret in GitHub |
+| Rolle                      | Zugriff               | Wie                   |
+| -------------------------- | --------------------- | --------------------- |
+| **Du (Owner)**             | Alles                 | Doppler Account Login |
+| **Service Token dev**      | Nur dev Secrets       | `dp.st.dev.xxx` Token |
+| **Service Token prod**     | Nur prod Secrets      | `dp.st.prd.xxx` Token |
+| **Jemand mit Docker-Repo** | NICHTS                | Braucht Token         |
+| **GitHub Actions**         | Nur was Token erlaubt | Secret in GitHub      |
 
 ### 9.2 Token Security Best Practices
 
@@ -527,18 +528,21 @@ docker-compose --env-file .env.emergency up -d
 ## 11. Checkliste
 
 ### Phase 1: Setup ✅
+
 - [x] Doppler CLI installiert (v3.75.1)
 - [x] Doppler Account erstellt (SCS-Technik)
 - [x] `doppler login` erfolgreich
 - [x] Project "assixx" erstellt
 
 ### Phase 2: Migration ✅
+
 - [x] Alle Secrets aus .env dokumentiert (in .locklock)
 - [x] Secrets in Doppler/dev importiert (37 Secrets)
 - [x] Secrets in Doppler verifiziert
 - [x] PUBLIC_SENTRY_DSN (Frontend) zu .locklock hinzugefügt
 
 ### Phase 3: Docker ✅
+
 - [x] Service Token erstellt (docker-dev)
 - [x] docker-compose.yml kompatibel (nutzt ${VAR} Syntax)
 - [x] `doppler run -- docker-compose up -d` funktioniert
@@ -547,11 +551,13 @@ docker-compose --env-file .env.emergency up -d
 - [x] Database Connection verifiziert
 
 ### Phase 4: CI/CD (Optional)
+
 - [ ] GitHub Actions Token erstellt
 - [ ] Workflow angepasst
 - [ ] Deployment getestet
 
 ### Phase 5: Cleanup
+
 - [ ] Alte .env gesichert (OPTIONAL - .env bleibt als Fallback)
 - [x] .locklock aktualisiert (Service Token dokumentiert)
 - [x] Dokumentation aktualisiert
