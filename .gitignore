@@ -9,6 +9,10 @@ docker/.env
 **/.env
 !**/.env.example
 
+# Doppler (contains token references)
+HOW-TO-DOPPLER-GUIDE.md
+.locklock
+
 # Logs
 *.log
 *.pid
