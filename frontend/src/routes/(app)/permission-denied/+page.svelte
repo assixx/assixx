@@ -47,7 +47,10 @@
   Using Design System: empty-state component
   Variants: --error (red icon), --bordered (glass card), --full-height (centers vertically)
 -->
-<div class="empty-state empty-state--error empty-state--bordered empty-state--full-height" role="alert">
+<div
+  class="empty-state empty-state--error empty-state--bordered empty-state--full-height"
+  role="alert"
+>
   <!-- Icon Container - Design System handles styling -->
   <div class="empty-state__icon">
     <i class="fas fa-ban"></i>
@@ -58,15 +61,13 @@
 
   <!-- Description -->
   <p class="empty-state__description">
-    Sie haben keine Berechtigung, diese Seite aufzurufen.
-    Bitte wenden Sie sich an Ihren Administrator, wenn Sie glauben, dass dies ein Fehler ist.
+    Sie haben keine Berechtigung, diese Seite aufzurufen. Bitte wenden Sie sich an Ihren
+    Administrator, wenn Sie glauben, dass dies ein Fehler ist.
   </p>
 
   <!-- Error Code Badge - Design System badge component -->
   <div class="error-code-badge">
-    <span class="badge badge--danger badge--lg badge--uppercase">
-      403 Forbidden
-    </span>
+    <span class="badge badge--danger badge--lg badge--uppercase"> 403 Forbidden </span>
   </div>
 
   <!-- Actions - Design System button components -->
@@ -83,9 +84,7 @@
   </div>
 
   <!-- Screen reader announcement -->
-  <span class="empty-state__sr-only">
-    Fehler 403: Zugriff auf diese Seite wurde verweigert.
-  </span>
+  <span class="empty-state__sr-only"> Fehler 403: Zugriff auf diese Seite wurde verweigert. </span>
 </div>
 
 <style>
