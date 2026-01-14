@@ -4,7 +4,7 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "engines": {
-    "node": ">=24.12.0",
+    "node": ">=24.13.0",
     "pnpm": ">=10.0.0",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"

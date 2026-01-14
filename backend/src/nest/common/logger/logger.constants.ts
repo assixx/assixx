@@ -82,11 +82,24 @@ export const LOG_LEVELS = {
 /**
  * Routes to exclude from request logging
  * (health checks, metrics, etc.)
+ *
+ * Used by both:
+ * 1. nestjs-pino exclude (NestJS route matching - without global prefix)
+ * 2. pino-http autoLogging.ignore (full URL path matching)
  */
 export const EXCLUDED_ROUTES = [
-  { method: 'GET' as const, path: '/health' },
-  { method: 'GET' as const, path: '/api/v2/health' },
-  { method: 'GET' as const, path: '/api/v2/metrics' },
+  { method: 'GET' as const, path: 'health' },
+  { method: 'GET' as const, path: 'metrics' },
+] as const;
+
+/**
+ * Full URL paths to exclude from pino-http autoLogging
+ * These are matched against req.url (includes global prefix)
+ */
+export const EXCLUDED_URL_PATHS: readonly string[] = [
+  '/health',
+  '/api/v2/health',
+  '/api/v2/metrics',
 ] as const;
 
 /**

@@ -70,7 +70,7 @@ class DeletionWorker {
     this.isProcessing = true;
 
     try {
-      logger.debug('Checking deletion queue...');
+      // Silent check - only logs when there's actual work to do (inside processQueue)
       await tenantDeletionService.processQueue();
     } catch (error: unknown) {
       logger.error({ err: error }, 'Error processing deletion queue');

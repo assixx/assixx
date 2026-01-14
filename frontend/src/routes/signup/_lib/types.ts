@@ -39,31 +39,36 @@ export interface SignupFormData {
 
 /**
  * API request payload for registration
+ * Matches backend SignupSchema (backend/src/nest/signup/dto/signup.dto.ts)
  */
 export interface RegisterPayload {
-  company_name: string;
+  // Company information
+  companyName: string;
   subdomain: string;
-  email: string;
-  first_name: string;
-  last_name: string;
+  email: string; // Company contact email
   phone: string;
-  password: string;
-  plan: string;
+  address?: string;
+
+  // Admin user information
+  adminEmail: string;
+  adminPassword: string;
+  adminFirstName: string;
+  adminLastName: string;
+
+  // Subscription plan
+  plan?: 'free' | 'basic' | 'professional' | 'enterprise' | 'trial';
 }
 
 /**
  * API response structure
+ * Matches backend SignupResponseData (backend/src/nest/signup/dto/signup.dto.ts)
  */
 export interface RegisterResponse {
-  success: boolean;
-  data?: {
-    id: number;
-    message: string;
-  };
-  error?: {
-    message: string;
-    code?: string;
-  };
+  tenantId: number;
+  userId: number;
+  subdomain: string;
+  trialEndsAt: string;
+  message: string;
 }
 
 /**

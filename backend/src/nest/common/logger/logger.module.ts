@@ -20,6 +20,7 @@ import type { TransportMultiOptions, TransportSingleOptions } from 'pino';
 
 import {
   EXCLUDED_ROUTES,
+  EXCLUDED_URL_PATHS,
   LOG_LEVELS,
   LOKI_CONFIG,
   REDACTED_VALUE,
@@ -162,7 +163,36 @@ function buildTransport(): TransportSingleOptions | TransportMultiOptions | unde
 }
 
 /**
+ * Minimal request serializer - only method and URL
+ *
+ * Why no userAgent/contentType?
+ * - userAgent: "Mozilla/5.0..." is noise 99% of the time
+ * - contentType: Almost always "application/json"
+ * - These can be added at debug level if needed for specific investigations
+ */
+function minimalReqSerializer(req: { method?: string; url?: string }): Record<string, unknown> {
+  return {
+    method: req.method,
+    url: req.url,
+  };
+}
+
+/**
+ * Minimal response serializer - only status code
+ */
+function minimalResSerializer(res: { statusCode?: number }): Record<string, unknown> {
+  return {
+    statusCode: res.statusCode,
+  };
+}
+
+/**
  * Build pinoHttp options with conditional transport
+ *
+ * Key optimizations:
+ * 1. Errors (4xx/5xx) are NOT logged here - AllExceptionsFilter handles them
+ * 2. Success requests use minimal serializers (no header dump)
+ * 3. High-frequency endpoints (health, metrics) are ignored
  */
 function buildPinoHttpOptions(): Record<string, unknown> {
   const transport = buildTransport();
@@ -172,7 +202,29 @@ function buildPinoHttpOptions(): Record<string, unknown> {
       paths: [...REDACT_PATHS],
       censor: REDACTED_VALUE,
     },
-    autoLogging: true,
+
+    // Silence ALL pino-http auto-logging:
+    // - Errors (4xx/5xx): Handled by AllExceptionsFilter with full context
+    // - Success (2xx/3xx): Handled by services with business context
+    // This prevents duplicate "request completed" logs
+    customLogLevel: (): string => 'silent',
+
+    // Minimal serializers - no verbose header dumps
+    serializers: {
+      req: minimalReqSerializer,
+      res: minimalResSerializer,
+    },
+
+    // Auto-logging with ignore function for high-frequency endpoints
+    // (health checks, metrics scraping, etc.)
+    autoLogging: {
+      ignore: (req: { url?: string }): boolean => {
+        const url = req.url ?? '';
+        return EXCLUDED_URL_PATHS.some(
+          (path: string) => url === path || url.startsWith(`${path}?`),
+        );
+      },
+    },
   };
 
   // Only include transport if defined

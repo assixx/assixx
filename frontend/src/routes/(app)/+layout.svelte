@@ -109,6 +109,14 @@
   // activeRole reflects the current view, which may differ from original userRole
   const currentRole = $derived(activeRole);
 
+  // Sync SSR user data to local state on invalidateAll() / navigation
+  // This ensures UI updates immediately after PATCH /users/me
+  $effect(() => {
+    if (ssrUser !== null) {
+      user = ssrUser;
+    }
+  });
+
   // =============================================================================
   // NAVIGATION MENU CONFIG
   // =============================================================================

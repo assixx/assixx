@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build
 # -----------------------------------------------------------------------------
-FROM node:24-alpine AS builder
+FROM node:24.13.0-alpine3.22 AS builder
 
 # Install pnpm
 RUN npm install -g pnpm@10.28.0
@@ -55,7 +55,7 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # -----------------------------------------------------------------------------
 # Stage 2: Production
 # -----------------------------------------------------------------------------
-FROM node:24-alpine AS production
+FROM node:24.13.0-alpine3.22 AS production
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \

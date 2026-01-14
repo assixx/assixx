@@ -168,14 +168,14 @@ export const MESSAGES = {
 } as const;
 
 /**
- * API Endpoints
+ * API Endpoints (relative to /api/v2 base)
  */
 export const API_ENDPOINTS = {
-  EMPLOYEES: '/api/v2/users?role=employee',
-  TEAMS: '/api/v2/teams',
-  user: (id: number) => `/api/v2/users/${id}`,
-  USERS: '/api/v2/users',
-  teamMembers: (teamId: number) => `/api/v2/teams/${teamId}/members`,
+  EMPLOYEES: '/users?role=employee',
+  TEAMS: '/teams',
+  user: (id: number) => `/users/${id}`,
+  USERS: '/users',
+  teamMembers: (teamId: number) => `/teams/${teamId}/members`,
 } as const;
 
 /**
