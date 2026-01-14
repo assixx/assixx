@@ -1,8 +1,8 @@
 # ASSIXX OPTIMAL SETUP 2025
 
 > **Production-Ready Enterprise SaaS Configuration**
-> Last Updated: 13. January 2026
-> Status: TARGET STATE (Phase 0-4 ✅ COMPLETE, Phase 5 Optional)
+> Last Updated: 14. January 2026
+> Status: TARGET STATE (Phase 0-4 ✅ COMPLETE, Doppler ✅ COMPLETE, Phase 5 Optional)
 
 ---
 
@@ -46,7 +46,13 @@
 │     ✅ Grafana Dashboards (grafana:12.3.1)                       │
 │     ✅ Graceful Shutdown (Sentry.close + enableShutdownHooks + WebSocket)
 │                                                                 │
+│  ✅ PHASE 4.5: DOPPLER SECRETS: COMPLETE                        │
+│     ✅ Doppler + .env + .locklock (3-Pillar System)             │
+│     ✅ Team Tokens für Developer Access                          │
+│     ✅ Docker Integration mit doppler run                        │
+│                                                                 │
 │  NÄCHSTE SCHRITTE (Phase 5 - Optional):                         │
+│     - SOC2/ISO27001 (NUR bei Production + Umsatz!)              │
 │     - Unit Tests, E2E Tests, CI/CD, Production Deployment      │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1605,19 +1611,31 @@ services:
 
 ---
 
-### 9.4 Secrets Management (Vault/Doppler)
+### 9.4 ~~Secrets Management (Vault/Doppler)~~ → ✅ DOPPLER IMPLEMENTIERT
 
-| Phase                 | Empfehlung            |
-| --------------------- | --------------------- |
-| **Launch**            | Docker Secrets + .env |
-| **Enterprise-Kunden** | Vault oder Doppler    |
-| **SOC2/ISO27001**     | Vault Pflicht         |
+| Aspekt     | Details                                               |
+| ---------- | ----------------------------------------------------- |
+| **Status** | ✅ COMPLETE (14. Januar 2026)                         |
+| **System** | Doppler + .env + .locklock (3-Pillar Approach)        |
+| **Guide**  | [HOW-TO-DOPPLER-GUIDE.md](../HOW-TO-DOPPLER-GUIDE.md) |
 
-**Für Launch reicht:**
+**Implementiertes 3-Säulen-System:**
 
-- `.env` für Development
-- Docker Secrets für Production
-- Environment Variables in CI/CD
+- **Doppler:** Cloud-basiertes Secrets Management (Team Tokens)
+- **.env:** Lokale Development-Overrides
+- **.locklock:** Lokales Backup für Notfälle
+
+**Docker mit Doppler:**
+
+```bash
+# Development
+doppler run -- docker-compose up -d
+
+# Production
+doppler run --config prd -- docker-compose --profile production up -d
+```
+
+> **SOC2/ISO27001:** Erst wenn in Production UND echten Umsatz generierend!
 
 ---
 
@@ -1684,8 +1702,8 @@ services:
 │  ═══════════════════════════════════════════════                │
 │  ├── PLG Stack (Prometheus + Loki + Grafana)                   │
 │  │      └── pino-loki Transport für Log Aggregation            │
-│  ├── Doppler/Infisical Secrets                                 │
-│  └── SOC2 Compliance                                           │
+│  ├── ✅ Doppler Secrets (COMPLETE - 14.01.2026)                │
+│  └── SOC2/ISO27001 (NUR wenn in Production + Umsatz!)          │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1700,7 +1718,8 @@ services:
 | 2     | Vitest Migration                    | Phase 1      | ✅ **COMPLETE** (2025-12-18) |
 | 3     | SvelteKit Migration                 | Phase 1.5    | ✅ **COMPLETE** (2026-01-11) |
 | 4     | Alerting & Monitoring               | Phase 3      | ✅ **COMPLETE** (2026-01-13) |
-| 5     | Observability & Enterprise          | Phase 4      | ⏳ Pending (Optional)        |
+| 4.5   | Doppler Secrets Management          | Phase 4      | ✅ **COMPLETE** (2026-01-14) |
+| 5     | SOC2/ISO27001 Compliance            | Phase 4.5    | ⏳ NUR bei Production+Umsatz |
 
 > **Keine Zeitschätzungen.** Wir arbeiten bis es fertig ist.
 > Qualität > Geschwindigkeit. KISS > Deadlines.
@@ -1710,6 +1729,8 @@ services:
 > 📄 **Phase 2 Details:** Vitest 4.0.16, Jest komplett entfernt
 > 📄 **Phase 3 Details:** [docs/SVELTEKIT-MIGRATION-PLAN.md](./SVELTEKIT-MIGRATION-PLAN.md) - 34/34 Seiten
 > 📄 **Phase 4 Details:** [docs/adr/ADR-002-alerting-monitoring.md](./adr/ADR-002-alerting-monitoring.md) - Pino, Sentry, Loki, Grafana
+> 📄 **Phase 4.5 Details:** [HOW-TO-DOPPLER-GUIDE.md](../HOW-TO-DOPPLER-GUIDE.md) - Doppler 3-Pillar Secrets
+> ⚠️ **Phase 5 (SOC2):** NUR wenn in Production + echter Umsatz generiert wird!
 
 ### 10.3 WAS SICH NICHT ÄNDERT
 
@@ -1732,15 +1753,16 @@ services:
 ### 10.4 NICHT MACHEN (Over-Engineering)
 
 ```
-┌─────────────────────────────────────────────┐
-│           SPÄTER ODER NIE                    │
-├─────────────────────────────────────────────┤
-│ ❌ Kubernetes (Docker Compose reicht)       │
-│ ❌ Microservices (NestJS Monolith ist richtig) │
-│ ❌ Event Sourcing (YAGNI)                   │
-│ ❌ CQRS (YAGNI)                             │
-│ ❌ Sentry Self-Hosted (32GB RAM = Overkill) │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│           SPÄTER ODER NIE                                    │
+├─────────────────────────────────────────────────────────────┤
+│ ❌ Kubernetes (Docker Compose reicht)                       │
+│ ❌ Microservices (NestJS Monolith ist richtig)              │
+│ ❌ Event Sourcing (YAGNI)                                   │
+│ ❌ CQRS (YAGNI)                                             │
+│ ❌ Sentry Self-Hosted (32GB RAM = Overkill)                 │
+│ ⏳ SOC2/ISO27001 (NUR wenn Production + echter Umsatz!)     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### 10.5 ROLLBACK-STRATEGIE
@@ -1798,13 +1820,20 @@ services:
 
 ### A.2 Geschäftliche Anforderungen (was Entwickler oft vergessen!)
 
-| Was                     | Warum kritisch                          | Wann                       |
-| ----------------------- | --------------------------------------- | -------------------------- |
-| **DSGVO-Dokumentation** | Pflicht in DE                           | Vor Launch                 |
-| **AV-Verträge**         | Enterprise-Kunden fordern das           | Vor erstem Enterprise-Deal |
-| **SLA definieren**      | "99.9% Uptime" = max 8.7h Downtime/Jahr | Vor Enterprise             |
-| **Support-Prozess**     | Wer antwortet wann?                     | Vor Launch                 |
-| **ISO 27001**           | Manche Enterprise-Kunden fordern es     | Bei >500k € ARR            |
+| Was                     | Warum kritisch                          | Wann                                        |
+| ----------------------- | --------------------------------------- | ------------------------------------------- |
+| **DSGVO-Dokumentation** | Pflicht in DE                           | Vor Launch                                  |
+| **AV-Verträge**         | Enterprise-Kunden fordern das           | Vor erstem Enterprise-Deal                  |
+| **SLA definieren**      | "99.9% Uptime" = max 8.7h Downtime/Jahr | Vor Enterprise                              |
+| **Support-Prozess**     | Wer antwortet wann?                     | Vor Launch                                  |
+| **SOC2/ISO 27001**      | Manche Enterprise-Kunden fordern es     | **NUR wenn in Production + echter Umsatz!** |
+
+> ⚠️ **WICHTIG zu SOC2/ISO27001:**
+>
+> - Erst angehen wenn App in Production läuft UND echten Umsatz generiert
+> - Kostet Zeit und Geld - nicht vorher investieren
+> - Bei >500k € ARR oder Enterprise-Kunde der es fordert
+> - Doppler ist bereits implementiert (gute Vorbereitung)
 
 ---
 

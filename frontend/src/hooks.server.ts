@@ -62,7 +62,7 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
 };
 
 /** Public routes - no authentication required */
-const PUBLIC_ROUTES = ['/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
 
 /** Routes to skip RBAC check (internal, assets, API proxy) */
 const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];

@@ -1,6 +1,6 @@
 # Database Migration Guide - PostgreSQL
 
-> **Last Update:** 2026-01-05
+> **Last Update:** 2026-01-14
 > **Database:** PostgreSQL 17 with Row Level Security (RLS)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
 
@@ -8,15 +8,40 @@
 
 ## Quick Reference
 
-| Setting        | Value                                |
-| -------------- | ------------------------------------ |
-| **Container**  | `assixx-postgres`                    |
-| **Port**       | `5432`                               |
-| **Database**   | `assixx`                             |
-| **App User**   | `app_user` (RLS enforced)            |
-| **Admin User** | `assixx_user` (superuser, BYPASSRLS) |
-| **Tables**     | 119 total (95 with RLS, 24 global)   |
-| **GUI Tool**   | DBeaver (Windows)                    |
+| Setting          | Value                                |
+| ---------------- | ------------------------------------ |
+| **Container**    | `assixx-postgres`                    |
+| **Port**         | `5432`                               |
+| **Database**     | `assixx`                             |
+| **App User**     | `app_user` (RLS enforced)            |
+| **Admin User**   | `assixx_user` (superuser, BYPASSRLS) |
+| **Tables**       | 109 total (84 mit RLS, 25 global)    |
+| **RLS Policies** | 89                                   |
+| **GUI Tool**     | DBeaver (Windows)                    |
+
+---
+
+## Architektur: Zwei Orte für Migrations
+
+```
+/database/migrations/           ← Inkrementelle Historie (Git)
+├── 001_baseline_complete_schema.sql   (aktueller Snapshot)
+├── 002_seed_data.sql                  (aktueller Snapshot)
+├── 003-xxx.sql                        (zukünftige Änderungen)
+└── backup_old/                        (historische Migrations)
+
+/customer/fresh-install/        ← Kunden-Deployment (in .gitignore)
+├── 001_schema.sql                     (= 001_baseline)
+├── 002_seed_data.sql                  (= 002_seed_data)
+├── install.sh                         (Automatisches Script)
+└── README.md
+```
+
+**Wichtig:**
+
+- `database/migrations/` = Source of Truth, im Git
+- `customer/fresh-install/` = Kopie für Kunden, in .gitignore
+- Beide müssen IMMER identisch sein!
 
 ---
 
@@ -33,19 +58,27 @@ Für Migrationen immer `assixx_user` verwenden.
 
 ---
 
-## Quick Migration (2-3 Minuten)
+## Quick Migration (5 Minuten)
 
 ```bash
-# 1. Backup erstellen (30 Sekunden)
-docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(date +%Y%m%d_%H%M%S).sql
+# 1. GLOBAL BACKUP erstellen (PFLICHT!)
+cd /home/scs/projects/Assixx
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
+    --format=custom --compress=9 \
+    > database/backups/full_backup_${TIMESTAMP}.dump
 
-# 2. Migration ausführen (1 Minute)
-MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
+# 2. Migration ausführen
+MIGRATION_FILE="database/migrations/003-your-migration.sql"
 docker cp $MIGRATION_FILE assixx-postgres:/tmp/
 docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/$(basename $MIGRATION_FILE)
 
-# 3. Verifizieren (30 Sekunden)
-docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
+# 3. Customer Fresh-Install aktualisieren (PFLICHT!)
+./scripts/sync-customer-migrations.sh
+# Oder manuell - siehe "Nach jeder Migration" Sektion
+
+# 4. Verifizieren
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt" | head -20
 ```
 
 ---
@@ -54,15 +87,17 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
 
 ### System-Tabellen (Seed-Daten)
 
-Diese Tabellen enthalten globale Konfiguration und unterliegen NICHT der RLS:
+Diese 5 Tabellen enthalten globale Konfiguration und unterliegen NICHT der RLS:
 
-| Tabelle         | Beschreibung                                         | RLS  |
-| --------------- | ---------------------------------------------------- | ---- |
-| `plans`         | Subscription-Pläne (Basic, Professional, Enterprise) | Nein |
-| `features`      | Verfügbare Features                                  | Nein |
-| `plan_features` | Zuordnung Plan zu Features                           | Nein |
+| Tabelle              | Rows | Beschreibung                                         | RLS  |
+| -------------------- | ---- | ---------------------------------------------------- | ---- |
+| `plans`              | 3    | Subscription-Pläne (Basic, Professional, Enterprise) | Nein |
+| `features`           | 12   | Verfügbare Features                                  | Nein |
+| `plan_features`      | 36   | Zuordnung Plan zu Features                           | Nein |
+| `kvp_categories`     | 6    | KVP Vorschlagskategorien                             | Nein |
+| `machine_categories` | 11   | Maschinenkategorien                                  | Nein |
 
-Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security.
+Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security (84 Tabellen).
 
 ### Migrations-Dateien
 
@@ -70,30 +105,83 @@ Pfad: `/database/migrations/`
 
 | Datei                              | Inhalt                                               |
 | ---------------------------------- | ---------------------------------------------------- |
-| `001_baseline_complete_schema.sql` | Komplettes Schema (Tabellen, Indexes, RLS, Triggers) |
-| `002_seed_data.sql`                | System-Tabellen Daten                                |
-| `003_xxx.sql`                      | Inkrementelle Änderungen                             |
+| `001_baseline_complete_schema.sql` | Komplettes Schema (109 Tabellen, 89 RLS, 260 FK)     |
+| `002_seed_data.sql`                | Seed-Daten (5 Tabellen, UTF-8 korrekt)               |
+| `003-xxx.sql`                      | Zukünftige inkrementelle Änderungen                  |
+| `backup_old/`                      | Historische Migrations (003-008 vor Baseline-Update) |
 
 ### Workflow: Schema oder Seed ändern
 
 ```bash
-# 1. Backup erstellen (PFLICHT)
-cd /home/scs/projects/Assixx/docker
+# ═══════════════════════════════════════════════════════════════
+# SCHRITT 1: GLOBAL BACKUP (PFLICHT vor jeder Migration!)
+# ═══════════════════════════════════════════════════════════════
+cd /home/scs/projects/Assixx
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-docker exec assixx-postgres pg_dump -U assixx_user -d assixx --schema-only > ../database/backups/schema_${TIMESTAMP}.sql
-docker exec assixx-postgres pg_dump -U assixx_user -d assixx --data-only --inserts -t plans -t features -t plan_features > ../database/backups/seed_${TIMESTAMP}.sql
 
-# 2. Migration erstellen und ausführen
-docker cp ../database/migrations/003_name.sql assixx-postgres:/tmp/
-docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/003_name.sql
+# Global Backup (komprimiert, vollständig)
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
+    --format=custom --compress=9 \
+    > database/backups/full_backup_${TIMESTAMP}.dump
 
-# 3. Backend neustarten
-docker-compose restart backend
+echo "Backup erstellt: database/backups/full_backup_${TIMESTAMP}.dump"
+
+# ═══════════════════════════════════════════════════════════════
+# SCHRITT 2: MIGRATION ERSTELLEN UND AUSFÜHREN
+# ═══════════════════════════════════════════════════════════════
+# Migration-Datei erstellen (z.B. 003-add-new-feature.sql)
+# Dann ausführen:
+docker cp database/migrations/003-add-new-feature.sql assixx-postgres:/tmp/
+docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/003-add-new-feature.sql
+
+# ═══════════════════════════════════════════════════════════════
+# SCHRITT 3: BASELINE + CUSTOMER AKTUALISIEREN (PFLICHT!)
+# ═══════════════════════════════════════════════════════════════
+# Schema neu dumpen
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
+    --schema-only --no-owner --no-privileges --quote-all-identifiers \
+    -f /tmp/schema.sql
+docker cp assixx-postgres:/tmp/schema.sql database/migrations/001_baseline_complete_schema.sql
+
+# Seed-Data neu dumpen (nur die 5 Seed-Tabellen)
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
+    --data-only --inserts --no-owner --no-privileges \
+    -t plans -t features -t plan_features -t kvp_categories -t machine_categories \
+    -f /tmp/seed.sql
+docker cp assixx-postgres:/tmp/seed.sql database/migrations/002_seed_data.sql
+
+# Customer aktualisieren
+cp database/migrations/001_baseline_complete_schema.sql customer/fresh-install/001_schema.sql
+cp database/migrations/002_seed_data.sql customer/fresh-install/002_seed_data.sql
+
+echo "✅ Baseline und Customer synchronisiert!"
+
+# ═══════════════════════════════════════════════════════════════
+# SCHRITT 4: VERIFIZIEREN
+# ═══════════════════════════════════════════════════════════════
+# Prüfe dass alle 3 identisch sind
+diff database/migrations/001_baseline_complete_schema.sql customer/fresh-install/001_schema.sql && echo "001: ✅"
+diff database/migrations/002_seed_data.sql customer/fresh-install/002_seed_data.sql && echo "002: ✅"
+
+# Backend neustarten
+cd docker && docker-compose restart backend deletion-worker
 ```
 
 ### Backup-Verzeichnis
 
-Pfad: `/database/backups/` - Schema und Seed Backups vor Änderungen.
+Pfad: `/database/backups/`
+
+| Typ           | Format                   | Verwendung                    |
+| ------------- | ------------------------ | ----------------------------- |
+| Global Backup | `.dump` (pg_dump custom) | Vor jeder Migration (PFLICHT) |
+| Schema Backup | `.sql`                   | Optional für Vergleiche       |
+| Seed Backup   | `.sql`                   | Optional für Vergleiche       |
+
+**Restore aus Global Backup:**
+
+```bash
+docker exec -i assixx-postgres pg_restore -U assixx_user -d assixx < database/backups/full_backup_XXXXXX.dump
+```
 
 ---
 
@@ -509,6 +597,119 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT COUNT(*) FR
 echo "=== Connection Pool Status ==="
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT count(*) FROM pg_stat_activity WHERE datname = 'assixx';"
 ```
+
+---
+
+## pg_stat_statements - Query Performance Monitoring
+
+### Was ist pg_stat_statements?
+
+PostgreSQL Extension die alle Queries trackt und Performance-Statistiken sammelt.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Jede Query wird normalisiert und getrackt:                 │
+│                                                             │
+│  SELECT * FROM users WHERE id = 123                         │
+│  SELECT * FROM users WHERE id = 456                         │
+│                 ↓                                           │
+│  Normalisiert: SELECT * FROM users WHERE id = $1            │
+│                                                             │
+│  Statistiken: calls, total_time, mean_time, rows, etc.      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Konfiguration (automatisch in docker-compose.yml)
+
+```yaml
+command:
+  - "postgres"
+  - "-c"
+  - "shared_preload_libraries=pg_stat_statements"
+  - "-c"
+  - "pg_stat_statements.track=all"
+  - "-c"
+  - "pg_stat_statements.max=10000"
+  - "-c"
+  - "track_io_timing=on"
+```
+
+| Parameter | Wert | Beschreibung |
+|-----------|------|--------------|
+| `shared_preload_libraries` | pg_stat_statements | Extension beim Start laden |
+| `pg_stat_statements.track` | all | Alle Queries tracken (inkl. Funktionen) |
+| `pg_stat_statements.max` | 10000 | Max. 10.000 unique Queries speichern |
+| `track_io_timing` | on | I/O-Zeiten pro Query messen |
+
+### Extension aktivieren (einmalig nach Container-Neustart)
+
+```bash
+# Extension erstellen (falls nicht vorhanden)
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+
+# Pruefen ob aktiviert
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_extension WHERE extname = 'pg_stat_statements';"
+```
+
+### Nuetzliche Queries
+
+```sql
+-- Top 10 langsamste Queries (nach Gesamtzeit)
+SELECT
+    left(query, 80) as query_preview,
+    calls,
+    round(total_exec_time::numeric, 2) as total_ms,
+    round(mean_exec_time::numeric, 2) as avg_ms,
+    rows
+FROM pg_stat_statements
+WHERE query NOT LIKE '%pg_stat%'
+ORDER BY total_exec_time DESC
+LIMIT 10;
+
+-- Haeufigste Queries (potentielle N+1 Probleme)
+SELECT
+    left(query, 80) as query_preview,
+    calls,
+    rows,
+    round(mean_exec_time::numeric, 4) as avg_ms
+FROM pg_stat_statements
+WHERE query NOT LIKE '%pg_stat%'
+ORDER BY calls DESC
+LIMIT 10;
+
+-- Queries mit hohem I/O
+SELECT
+    left(query, 80) as query_preview,
+    calls,
+    round(blk_read_time::numeric, 2) as read_ms,
+    round(blk_write_time::numeric, 2) as write_ms
+FROM pg_stat_statements
+WHERE blk_read_time > 0 OR blk_write_time > 0
+ORDER BY (blk_read_time + blk_write_time) DESC
+LIMIT 10;
+
+-- Statistiken zuruecksetzen (nur wenn noetig)
+SELECT pg_stat_statements_reset();
+```
+
+### Bash-Alias fuer schnellen Zugriff
+
+```bash
+# Top 10 langsame Queries
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "
+SELECT left(query, 60), calls, round(total_exec_time::numeric, 2) as total_ms
+FROM pg_stat_statements
+WHERE query NOT LIKE '%pg_stat%'
+ORDER BY total_exec_time DESC LIMIT 10;"
+```
+
+### Best Practices
+
+1. **Regelmaessig pruefen:** Woechentlich Top-10 Queries analysieren
+2. **Nach Deployments:** Neue langsame Queries identifizieren
+3. **N+1 Detection:** Queries mit >1000 calls untersuchen
+4. **Index-Optimierung:** Langsame Queries mit EXPLAIN ANALYZE pruefen
+5. **Reset nach Optimierung:** Statistiken zuruecksetzen um Verbesserung zu messen
 
 ---
 
