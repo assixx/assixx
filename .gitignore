@@ -112,3 +112,6 @@ api-tests/
 *api-key*
 *.key
 !*.key.example
+
+# Customer Deployment (contains customer-specific scripts, NOT for public repo)
+customer/
