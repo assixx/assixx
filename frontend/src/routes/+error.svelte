@@ -37,7 +37,11 @@
 
   // Variant class for empty-state
   const variantClass = $derived(
-    isNotFound ? 'empty-state--warning' : isServerError ? 'empty-state--error' : 'empty-state--info',
+    isNotFound
+      ? 'empty-state--warning'
+      : isServerError
+        ? 'empty-state--error'
+        : 'empty-state--info',
   );
 
   // Icon based on error type
@@ -69,9 +73,7 @@
   );
 
   // Status text
-  const statusText = $derived(
-    isNotFound ? 'Not Found' : isServerError ? 'Server Error' : 'Error',
-  );
+  const statusText = $derived(isNotFound ? 'Not Found' : isServerError ? 'Server Error' : 'Error');
 </script>
 
 <svelte:head>
@@ -94,7 +96,8 @@
     <!-- Error Code Badge -->
     <div class="error-badge">
       <span class="badge badge--lg badge--uppercase {badgeClass}">
-        {status} {statusText}
+        {status}
+        {statusText}
       </span>
     </div>
 
