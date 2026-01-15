@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import { DatabaseService } from '../database/database.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSurveyDto } from './dto/create-survey.dto.js';
 import type { UpdateSurveyDto } from './dto/update-survey.dto.js';
 
@@ -261,7 +262,10 @@ function normalizeAnswers(answers: SurveyAnswer[]): NormalizedAnswer[] {
 @Injectable()
 export class SurveysService {
   private readonly logger = new Logger(SurveysService.name);
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async listSurveys(
     tenantId: number,
@@ -745,6 +749,20 @@ export class SurveysService {
       title: dto.title,
       ...(dto.endDate !== undefined && dto.endDate !== null ? { deadline: dto.endDate } : {}),
     });
+
+    // Create persistent notification for badge counts (ADR-004)
+    void this.notificationsService.createFeatureNotification(
+      'survey',
+      surveyId,
+      `Neue Umfrage: ${dto.title}`,
+      dto.endDate !== undefined && dto.endDate !== null ?
+        `Eine neue Umfrage ist verfügbar. Deadline: ${dto.endDate}`
+      : 'Eine neue Umfrage ist verfügbar.',
+      'all',
+      null,
+      tenantId,
+      userId,
+    );
 
     return createdSurvey;
   }

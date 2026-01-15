@@ -36,12 +36,6 @@
   transition: all 0.2s;
 }
 */
-
-/* Hover state - EXACT match to .card-stat:hover */
-.card--blackboard:hover {
-  border-color: var(--color-icon-primary);
-}
-
 /* After content loads */
 .card--blackboard.loaded {
   opacity: 100%;

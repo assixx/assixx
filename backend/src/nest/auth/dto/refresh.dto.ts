@@ -8,9 +8,13 @@ import { z } from 'zod';
 
 /**
  * Refresh token request body schema
+ *
+ * NOTE: refreshToken is optional because SSR clients use HttpOnly cookies.
+ * The controller falls back to req.cookies['refreshToken'] if body is empty.
+ * SPA clients can still send token in body for backwards compatibility.
  */
 export const RefreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().default(''),
 });
 
 /**

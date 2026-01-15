@@ -90,20 +90,103 @@ function setCountsMut(state: NotificationState, counts: Partial<NotificationCoun
   state.lastUpdate = new Date();
 }
 
-async function fetchInitialCounts(state: NotificationState): Promise<void> {
+/** API response types */
+interface ChatUnreadResponse {
+  success: boolean;
+  data: { totalUnread: number };
+}
+
+interface NotificationStatsResponse {
+  success: boolean;
+  data: {
+    total: number;
+    unread: number;
+    byType: Record<string, number>;
+  };
+}
+
+export type FeatureType = 'survey' | 'document' | 'kvp';
+
+/** Map feature type to store count key */
+const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
+  survey: 'surveys',
+  document: 'documents',
+  kvp: 'kvp',
+};
+
+/** Rollback count after failed API call */
+function rollbackCount(state: NotificationState, countKey: CountType, previousCount: number): void {
+  state.counts[countKey] = previousCount;
+  state.counts.total += previousCount;
+}
+
+/**
+ * Mark all notifications of a feature type as read via API (ADR-004)
+ * Resets local count and persists to backend
+ */
+async function markFeatureTypeAsRead(
+  state: NotificationState,
+  featureType: FeatureType,
+): Promise<void> {
+  const countKey = FEATURE_TO_COUNT_KEY[featureType];
+  const previousCount = state.counts[countKey];
+
+  // Optimistically reset local count
+  resetCountMut(state, countKey);
+
   try {
-    const response = await fetch('/api/v2/chat/unread-count', {
+    const response = await fetch(`/api/v2/notifications/mark-read/${featureType}`, {
+      method: 'POST',
       credentials: 'include',
     });
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      rollbackCount(state, countKey, previousCount);
+    }
+  } catch {
+    rollbackCount(state, countKey, previousCount);
+  }
+}
 
-    // API returns { success: true, data: { totalUnread: number } }
-    const json = (await response.json()) as { data: { totalUnread: number } };
-    const unreadCount = json.data.totalUnread;
-    state.counts.chat = unreadCount;
-    state.counts.total =
-      state.counts.surveys + state.counts.documents + state.counts.kvp + unreadCount;
+/** Parse chat unread count from response */
+async function parseChatCount(response: Response): Promise<number> {
+  if (!response.ok) return 0;
+  const json = (await response.json()) as ChatUnreadResponse;
+  return json.data.totalUnread;
+}
+
+/** Parse notification stats from response */
+async function parseNotificationStats(
+  response: Response,
+): Promise<{ survey: number; document: number; kvp: number }> {
+  if (!response.ok) return { survey: 0, document: 0, kvp: 0 };
+  const json = (await response.json()) as NotificationStatsResponse;
+  const byType: Partial<Record<string, number>> = json.data.byType;
+  return {
+    survey: byType.survey ?? 0,
+    document: byType.document ?? 0,
+    kvp: byType.kvp ?? 0,
+  };
+}
+
+/**
+ * Fetch initial counts from both APIs in parallel (ADR-004)
+ */
+async function fetchInitialCounts(state: NotificationState): Promise<void> {
+  try {
+    const [chatResponse, notificationsResponse] = await Promise.all([
+      fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
+      fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
+    ]);
+
+    const chatCount = await parseChatCount(chatResponse);
+    const stats = await parseNotificationStats(notificationsResponse);
+
+    state.counts.chat = chatCount;
+    state.counts.surveys = stats.survey;
+    state.counts.documents = stats.document;
+    state.counts.kvp = stats.kvp;
+    state.counts.total = chatCount + stats.survey + stats.document + stats.kvp;
     state.lastUpdate = new Date();
   } catch {
     // Silently fail - SSE will update counts when connected
@@ -114,6 +197,37 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
 // Store Implementation
 // ============================================
 
+/** Connect to SSE and subscribe to events */
+function connectSSE(
+  state: NotificationState,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+): void {
+  if (!browser) return;
+  state.connectionState = 'connecting';
+  const sse = getNotificationSSE();
+  setUnsubscribe(
+    sse.subscribe((event) => {
+      handleSSEEvent(state, event);
+    }),
+  );
+  sse.connect();
+}
+
+/** Disconnect from SSE */
+function disconnectSSE(
+  state: NotificationState,
+  unsubscribe: (() => void) | null,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+): void {
+  if (unsubscribe !== null) {
+    unsubscribe();
+    setUnsubscribe(null);
+  }
+  getNotificationSSE().disconnect();
+  state.isConnected = false;
+  state.connectionState = 'disconnected';
+}
+
 function createNotificationStore() {
   const state = $state<NotificationState>({
     counts: createInitialCounts(),
@@ -121,8 +235,10 @@ function createNotificationStore() {
     lastUpdate: null,
     connectionState: 'disconnected',
   });
-
   let unsubscribeSSE: (() => void) | null = null;
+  const setUnsubscribe = (fn: (() => void) | null): void => {
+    unsubscribeSSE = fn;
+  };
 
   return {
     get counts() {
@@ -140,23 +256,11 @@ function createNotificationStore() {
     get totalUnread() {
       return state.counts.total;
     },
-    connect(): void {
-      if (!browser) return;
-      state.connectionState = 'connecting';
-      const sse = getNotificationSSE();
-      unsubscribeSSE = sse.subscribe((event) => {
-        handleSSEEvent(state, event);
-      });
-      sse.connect();
+    connect: () => {
+      connectSSE(state, setUnsubscribe);
     },
-    disconnect(): void {
-      if (unsubscribeSSE !== null) {
-        unsubscribeSSE();
-        unsubscribeSSE = null;
-      }
-      getNotificationSSE().disconnect();
-      state.isConnected = false;
-      state.connectionState = 'disconnected';
+    disconnect: () => {
+      disconnectSSE(state, unsubscribeSSE, setUnsubscribe);
     },
     decrementCount: (type: CountType) => {
       decrementCountMut(state, type);
@@ -170,10 +274,11 @@ function createNotificationStore() {
     setCounts: (counts: Partial<NotificationCounts>) => {
       setCountsMut(state, counts);
     },
-    /** Load initial unread counts from API */
-    async loadInitialCounts(): Promise<void> {
-      if (!browser) return;
-      await fetchInitialCounts(state);
+    loadInitialCounts: async () => {
+      if (browser) await fetchInitialCounts(state);
+    },
+    markTypeAsRead: async (featureType: FeatureType) => {
+      if (browser) await markFeatureTypeAsRead(state, featureType);
     },
   };
 }

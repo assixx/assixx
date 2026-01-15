@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xWAaDyPNe6yEsxoHBmpTbnT6XxI7bCZXxN83j5KHBJFWHFFloqfJc0iRrmLViVJ
+\restrict mcPAGoRghVqnrpJ8k4nv2TImrWkzpndDa27Y2sbtDuApgUhAMzWomkmLLCzWzyQ
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -4067,10 +4067,18 @@ CREATE TABLE "public"."notifications" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "uuid" character(36) NOT NULL,
-    "uuid_created_at" timestamp with time zone NOT NULL
+    "uuid_created_at" timestamp with time zone NOT NULL,
+    "feature_id" integer
 );
 
 ALTER TABLE ONLY "public"."notifications" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: COLUMN "notifications"."feature_id"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN "public"."notifications"."feature_id" IS 'ID of the source feature (survey_id, document_id, or kvp_id). Used with type column to identify the original entity.';
 
 
 --
@@ -11699,6 +11707,27 @@ CREATE INDEX "idx_messages_uuid_created_at" ON "public"."messages" USING "btree"
 
 
 --
+-- Name: idx_notifications_feature_types; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_notifications_feature_types" ON "public"."notifications" USING "btree" ("tenant_id", "recipient_type", "recipient_id", "type") WHERE (("type")::"text" = ANY ((ARRAY['survey'::character varying, 'document'::character varying, 'kvp'::character varying])::"text"[]));
+
+
+--
+-- Name: idx_notifications_type_feature; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_notifications_type_feature" ON "public"."notifications" USING "btree" ("tenant_id", "type", "feature_id") WHERE ("feature_id" IS NOT NULL);
+
+
+--
+-- Name: idx_notifications_unique_feature; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "idx_notifications_unique_feature" ON "public"."notifications" USING "btree" ("tenant_id", "type", "feature_id", "recipient_type", COALESCE("recipient_id", 0)) WHERE ("feature_id" IS NOT NULL);
+
+
+--
 -- Name: idx_notifications_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15522,5 +15551,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xWAaDyPNe6yEsxoHBmpTbnT6XxI7bCZXxN83j5KHBJFWHFFloqfJc0iRrmLViVJ
+\unrestrict mcPAGoRghVqnrpJ8k4nv2TImrWkzpndDa27Y2sbtDuApgUhAMzWomkmLLCzWzyQ
 

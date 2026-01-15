@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -51,6 +52,19 @@
       initialized = true;
       surveyEmployeeState.setSurveys(allSurveys);
       surveyEmployeeState.setLoading(false);
+    }
+  });
+
+  // =============================================================================
+  // MARK NOTIFICATIONS AS READ (ADR-004)
+  // =============================================================================
+
+  // Mark survey notifications as read when page is visited
+  let surveysReadMarked = $state(false);
+  $effect(() => {
+    if (!surveysReadMarked) {
+      surveysReadMarked = true;
+      void notificationStore.markTypeAsRead('survey');
     }
   });
 

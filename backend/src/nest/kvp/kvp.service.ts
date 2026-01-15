@@ -10,6 +10,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import { DatabaseService } from '../database/database.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { ShareSuggestionDto } from './dto/share-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
@@ -213,7 +214,10 @@ function isUuid(value: string | number): boolean {
 export class KvpService {
   private readonly logger = new Logger(KvpService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ==========================================================================
   // HELPER METHODS
@@ -579,7 +583,43 @@ export class KvpService {
       submitted_by: String(userId),
     });
 
+    // Create persistent notification for ADR-004
+    const recipientMapping = this.mapOrgLevelToRecipient(dto);
+    void this.notificationsService.createFeatureNotification(
+      'kvp',
+      rows[0].id,
+      `Neuer Verbesserungsvorschlag: ${dto.title}`,
+      dto.description.substring(0, 100) + (dto.description.length > 100 ? '...' : ''),
+      recipientMapping.type,
+      recipientMapping.id,
+      tenantId,
+      userId,
+    );
+
     return createdSuggestion;
+  }
+
+  /**
+   * Map organization level to notification recipient
+   */
+  private mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
+    type: 'user' | 'department' | 'team' | 'all';
+    id: number | null;
+  } {
+    switch (dto.orgLevel) {
+      case 'team':
+        return { type: 'team', id: dto.orgId };
+      case 'department':
+        return { type: 'department', id: dto.departmentId ?? dto.orgId };
+      case 'area':
+        // Area-level suggestions go to department if specified, otherwise company-wide
+        return dto.departmentId !== undefined && dto.departmentId !== null ?
+            { type: 'department', id: dto.departmentId }
+          : { type: 'all', id: null };
+      case 'company':
+      default:
+        return { type: 'all', id: null };
+    }
   }
 
   /** Build suggestion update clause from DTO */

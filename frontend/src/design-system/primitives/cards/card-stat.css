@@ -23,7 +23,8 @@
 }
 
 .card-stat:hover {
-  border-color: var(--color-icon-primary);
+  /* border-color: var(--color-icon-primary); */
+  border-color: #a9d9ff91;
 }
 
 /* Stat Value (Big Number) */

@@ -13,6 +13,7 @@
 
   // KVP-specific styles (migrated from legacy)
   import '../../../styles/kvp.css';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -81,6 +82,19 @@
       }
       kvpState.setLoading(false);
     });
+  });
+
+  // =============================================================================
+  // MARK NOTIFICATIONS AS READ (ADR-004)
+  // =============================================================================
+
+  // Mark KVP notifications as read when page is visited
+  let kvpReadMarked = $state(false);
+  $effect(() => {
+    if (!kvpReadMarked) {
+      kvpReadMarked = true;
+      void notificationStore.markTypeAsRead('kvp');
+    }
   });
 
   // =============================================================================

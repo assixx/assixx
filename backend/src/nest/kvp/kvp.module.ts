@@ -6,10 +6,12 @@
  */
 import { Module } from '@nestjs/common';
 
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [KvpController],
   providers: [KvpService],
   exports: [KvpService],
