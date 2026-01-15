@@ -17,6 +17,7 @@ import path from 'path';
 
 import { eventBus } from '../../utils/eventBus.js';
 import { DatabaseService } from '../database/database.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 
@@ -191,7 +192,10 @@ const ALLOWED_MIME_TYPES = [
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ============================================
   // Public Methods
@@ -825,7 +829,46 @@ export class DocumentsService {
       category: data.category,
     });
 
+    // Create persistent notification for ADR-004
+    const recipientMapping = this.mapAccessScopeToRecipient(data);
+    if (recipientMapping !== null) {
+      void this.notificationsService.createFeatureNotification(
+        'document',
+        documentId,
+        `Neues Dokument: ${data.originalName}`,
+        `Kategorie: ${data.category}`,
+        recipientMapping.type,
+        recipientMapping.id,
+        tenantId,
+        userId,
+      );
+    }
+
     return createdDocument;
+  }
+
+  /**
+   * Map document access scope to notification recipient
+   * Returns null for scopes that don't need notifications (payroll, blackboard, chat)
+   */
+  private mapAccessScopeToRecipient(
+    data: DocumentCreateInput,
+  ): { type: 'user' | 'department' | 'team' | 'all'; id: number | null } | null {
+    switch (data.accessScope) {
+      case 'personal':
+        return data.ownerUserId !== undefined ? { type: 'user', id: data.ownerUserId } : null;
+      case 'team':
+        return data.targetTeamId !== undefined ? { type: 'team', id: data.targetTeamId } : null;
+      case 'department':
+        return data.targetDepartmentId !== undefined ?
+            { type: 'department', id: data.targetDepartmentId }
+          : null;
+      case 'company':
+        return { type: 'all', id: null };
+      default:
+        // payroll, blackboard, chat have their own notification mechanisms
+        return null;
+    }
   }
 
   /** Validate document input data */

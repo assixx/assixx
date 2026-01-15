@@ -14,10 +14,14 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build
 # -----------------------------------------------------------------------------
-FROM node:24.13.0-alpine3.22 AS builder
+# Node version is configurable via docker-compose.yml build args
+# Default: LTS version for stability
+ARG NODE_VERSION=24.13.0-alpine3.22
+FROM node:${NODE_VERSION} AS builder
 
-# Install pnpm
-RUN npm install -g pnpm@10.28.0
+# pnpm version is configurable for consistency across environments
+ARG PNPM_VERSION=10.28.0
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /app
 
@@ -55,7 +59,9 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # -----------------------------------------------------------------------------
 # Stage 2: Production
 # -----------------------------------------------------------------------------
-FROM node:24.13.0-alpine3.22 AS production
+# Re-declare ARG for this stage (ARG scope is per-stage)
+ARG NODE_VERSION=24.13.0-alpine3.22
+FROM node:${NODE_VERSION} AS production
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \

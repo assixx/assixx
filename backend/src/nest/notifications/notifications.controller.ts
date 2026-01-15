@@ -19,6 +19,7 @@
  * - GET    /notifications/stream/stats       - SSE stats
  */
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -332,6 +333,35 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<unknown> {
     return await this.notificationsService.getPersonalStats(user.id, tenantId);
+  }
+
+  /**
+   * POST /notifications/mark-read/:type
+   * Mark all notifications of a feature type as read (ADR-004)
+   *
+   * @param type - 'survey' | 'document' | 'kvp'
+   */
+  @Post('mark-read/:type')
+  async markFeatureTypeAsRead(
+    @Param('type') type: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ marked: number; message: string }> {
+    // Validate type
+    const validTypes = ['survey', 'document', 'kvp'];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException(
+        `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
+      );
+    }
+
+    const marked = await this.notificationsService.markFeatureTypeAsRead(
+      type as 'survey' | 'document' | 'kvp',
+      user.id,
+      tenantId,
+    );
+
+    return { marked, message: `${marked} ${type} notifications marked as read` };
   }
 
   /**

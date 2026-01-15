@@ -9,6 +9,7 @@
 
   import { goto, invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -111,6 +112,20 @@
       userRole = ssrUser.role;
     }
   });
+
+  // ==========================================================================
+  // MARK NOTIFICATIONS AS READ (ADR-004)
+  // ==========================================================================
+
+  // Mark document notifications as read when page is visited
+  let documentsReadMarked = $state(false);
+  $effect(() => {
+    if (!documentsReadMarked) {
+      documentsReadMarked = true;
+      void notificationStore.markTypeAsRead('document');
+    }
+  });
+
   let currentCategory = $state<DocumentCategory>('all');
   let searchQuery = $state('');
   let sortOption = $state<SortOption>('newest');
