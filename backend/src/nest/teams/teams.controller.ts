@@ -99,9 +99,10 @@ export class TeamsController {
   @HttpCode(HttpStatus.CREATED)
   async createTeam(
     @Body() dto: CreateTeamDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TeamResponse> {
-    return await this.teamsService.createTeam(dto, tenantId);
+    return await this.teamsService.createTeam(dto, user.id, tenantId);
   }
 
   /**
@@ -113,9 +114,10 @@ export class TeamsController {
   async updateTeam(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTeamDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TeamResponse> {
-    return await this.teamsService.updateTeam(id, dto, tenantId);
+    return await this.teamsService.updateTeam(id, dto, user.id, tenantId);
   }
 
   /**
@@ -128,9 +130,10 @@ export class TeamsController {
   async deleteTeam(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteTeamQueryDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.deleteTeam(id, tenantId, query.force ?? false);
+    return await this.teamsService.deleteTeam(id, user.id, tenantId, query.force ?? false);
   }
 
   /**

@@ -47,6 +47,8 @@ const MS_HOUR = 3_600_000;
             { name: 'admin', ttl: 15 * MS_MINUTE, limit: 2000 },
             // Upload: 20 requests per hour
             { name: 'upload', ttl: MS_HOUR, limit: 20 },
+            // Export: 1 request per minute (audit log export)
+            { name: 'export', ttl: MS_MINUTE, limit: 1 },
           ],
           storage: new ThrottlerStorageRedisService(redisClient),
           // Custom error message with retry info (v6.5.0+)

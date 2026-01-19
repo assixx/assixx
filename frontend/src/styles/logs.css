@@ -40,35 +40,6 @@
    Base .table-responsive from Design System table.base.css
    ============================================ */
 
-/* User info cell layout
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-} */
-
-.user-name {
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-/* Action label styles */
-.action-label {
-  display: inline-block;
-
-  padding: 4px 12px;
-  border-radius: 12px;
-
-  font-size: 12px;
-  font-weight: 500;
-}
-
-/* Entity display */
-.entity-type {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
 .entity-id {
   font-family: monospace;
   font-size: 13px;
@@ -142,4 +113,30 @@
   font-style: italic;
   color: var(--color-text-secondary);
   opacity: 60%;
+}
+
+/* ============================================
+   USER INFO IN TABLES
+   Ensures badges align vertically across rows
+   ============================================ */
+
+#activity-logs-table .user-info,
+.data-table .user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+#activity-logs-table .user-name,
+.data-table .user-info .user-name {
+  display: inline-block;
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#activity-logs-table .user-info .badge,
+.data-table .user-info .badge {
+  flex-shrink: 0;
 }

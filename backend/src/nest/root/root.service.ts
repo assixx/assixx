@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { tenantDeletionService } from '../../services/tenantDeletion.service.js';
 import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 
 // ============================================================================
@@ -76,12 +77,20 @@ interface DbTenantRow {
   updated_at: Date;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg driver serializes as STRING!
+ * ALWAYS use Number() when using this value in arithmetic operations.
+ */
 interface DbCountRow {
-  count: number;
+  count: string | number; // pg returns string for bigint, but might be number in tests
 }
 
+/**
+ * PostgreSQL SUM() returns numeric which pg driver may serialize as STRING.
+ * ALWAYS use Number() when using this value in arithmetic operations.
+ */
 interface DbStorageTotalRow {
-  total: number;
+  total: string | number;
 }
 
 interface DbFeatureCodeRow {
@@ -327,7 +336,10 @@ export interface UpdateRootUserRequest {
 export class RootService {
   private readonly logger = new Logger(RootService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ==========================================================================
   // ADMIN MANAGEMENT
@@ -389,7 +401,11 @@ export class RootService {
   /**
    * Create new admin user
    */
-  async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
+  async createAdmin(
+    data: CreateAdminRequest,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<number> {
     this.logger.log(`Creating admin for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -424,6 +440,21 @@ export class RootService {
       if (userId === undefined) {
         throw new BadRequestException('Failed to create admin');
       }
+
+      // Log activity
+      await this.activityLogger.logCreate(
+        tenantId,
+        actingUserId,
+        'user',
+        userId,
+        `Admin erstellt: ${normalizedEmail} (Rolle: admin)`,
+        {
+          email: normalizedEmail,
+          role: 'admin',
+          firstName: data.firstName ?? '',
+          lastName: data.lastName ?? '',
+        },
+      );
 
       return userId;
     } catch (error: unknown) {
@@ -472,7 +503,7 @@ export class RootService {
   /**
    * Delete admin user
    */
-  async deleteAdmin(id: number, tenantId: number): Promise<void> {
+  async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
     this.logger.log(`Deleting admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
@@ -480,6 +511,21 @@ export class RootService {
     if (admin === null) {
       throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Admin not found' });
     }
+
+    // Log activity BEFORE deleting
+    await this.activityLogger.logDelete(
+      tenantId,
+      actingUserId,
+      'user',
+      id,
+      `Admin gelöscht: ${admin.email}`,
+      {
+        email: admin.email,
+        role: 'admin',
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+      },
+    );
 
     await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
@@ -547,6 +593,7 @@ export class RootService {
           ),
         ]);
 
+        // PostgreSQL COUNT/SUM returns bigint/numeric as string - must convert
         return {
           id: tenant.id,
           companyName: tenant.company_name,
@@ -555,9 +602,9 @@ export class RootService {
           status: tenant.status as Tenant['status'],
           createdAt: tenant.created_at,
           updatedAt: tenant.updated_at,
-          adminCount: adminCount[0]?.count ?? 0,
-          employeeCount: employeeCount[0]?.count ?? 0,
-          storageUsed: storageUsed[0]?.total ?? 0,
+          adminCount: Number(adminCount[0]?.count ?? 0),
+          employeeCount: Number(employeeCount[0]?.count ?? 0),
+          storageUsed: Number(storageUsed[0]?.total ?? 0),
         };
       }),
     );
@@ -610,7 +657,11 @@ export class RootService {
   /**
    * Create root user
    */
-  async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
+  async createRootUser(
+    data: CreateRootUserRequest,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<number> {
     this.logger.log(`Creating root user for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -652,6 +703,22 @@ export class RootService {
     // Generate and update employee_id
     const employeeId = generateEmployeeId(subdomain, 'root', userId);
     await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
+
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Root-User erstellt: ${normalizedEmail} (Rolle: root)`,
+      {
+        email: normalizedEmail,
+        role: 'root',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        hasFullAccess: true,
+      },
+    );
 
     return userId;
   }
@@ -714,12 +781,27 @@ export class RootService {
       [tenantId, id],
     );
 
-    if ((rootCount[0]?.count ?? 0) < 1) {
+    if (Number(rootCount[0]?.count ?? 0) < 1) {
       throw new BadRequestException({
         code: ERROR_CODES.LAST_ROOT_USER,
         message: 'At least one root user must remain',
       });
     }
+
+    // Log activity BEFORE deleting
+    await this.activityLogger.logDelete(
+      tenantId,
+      currentUserId,
+      'user',
+      id,
+      `Root-User gelöscht: ${user.email}`,
+      {
+        email: user.email,
+        role: 'root',
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    );
 
     // Delete related data first (foreign key constraints)
     await this.db.query('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
@@ -750,7 +832,7 @@ export class RootService {
     this.logger.log(`Getting dashboard stats for tenant ${tenantId}`);
 
     // Get counts in parallel
-    const [adminCount, employeeCount, tenantCount, features] = await Promise.all([
+    const [adminCount, employeeCount, totalUserCount, tenantCount, features] = await Promise.all([
       this.db.query<DbCountRow>(
         "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
         [tenantId],
@@ -759,6 +841,9 @@ export class RootService {
         "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
         [tenantId],
       ),
+      this.db.query<DbCountRow>('SELECT COUNT(*) as count FROM users WHERE tenant_id = $1', [
+        tenantId,
+      ]),
       this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
       this.db.query<DbFeatureCodeRow>(
         `SELECT f.code FROM tenant_features tf
@@ -768,11 +853,18 @@ export class RootService {
       ),
     ]);
 
+    // IMPORTANT: PostgreSQL COUNT(*) returns bigint, which pg serializes as STRING
+    // Must convert to Number to avoid string concatenation bugs (e.g., "2" + "0" + 1 = "201")
+    const adminCountNum = Number(adminCount[0]?.count ?? 0);
+    const employeeCountNum = Number(employeeCount[0]?.count ?? 0);
+    const totalUserCountNum = Number(totalUserCount[0]?.count ?? 0);
+    const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
+
     return {
-      adminCount: adminCount[0]?.count ?? 0,
-      employeeCount: employeeCount[0]?.count ?? 0,
-      totalUsers: (adminCount[0]?.count ?? 0) + (employeeCount[0]?.count ?? 0) + 1,
-      tenantCount: tenantCount[0]?.count ?? 0,
+      adminCount: adminCountNum,
+      employeeCount: employeeCountNum,
+      totalUsers: totalUserCountNum, // All users in tenant (root + admin + employee)
+      tenantCount: tenantCountNum,
       activeFeatures: features.map((f: DbFeatureCodeRow) => f.code),
       systemHealth: {
         database: 'healthy',
@@ -824,9 +916,10 @@ export class RootService {
       ),
     ]);
 
-    const documents = documentsSize[0]?.total ?? 0;
-    const attachments = attachmentsSize[0]?.total ?? 0;
-    const logs = logsSize[0]?.total ?? 0;
+    // PostgreSQL SUM() returns bigint/numeric as string - must convert
+    const documents = Number(documentsSize[0]?.total ?? 0);
+    const attachments = Number(attachmentsSize[0]?.total ?? 0);
+    const logs = Number(logsSize[0]?.total ?? 0);
     const usedStorage = documents + attachments + logs;
     const percentage = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
@@ -865,7 +958,7 @@ export class RootService {
       [tenantId],
     );
 
-    if ((rootCount[0]?.count ?? 0) < 2) {
+    if (Number(rootCount[0]?.count ?? 0) < 2) {
       throw new BadRequestException({
         code: ERROR_CODES.INSUFFICIENT_ROOT_USERS,
         message: 'At least 2 root users required before tenant deletion',

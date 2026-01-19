@@ -18,6 +18,8 @@ export interface NotificationCounts {
   documents: number;
   kvp: number;
   chat: number;
+  blackboard: number;
+  calendar: number;
 }
 
 interface NotificationState {
@@ -34,7 +36,7 @@ type CountType = keyof Omit<NotificationCounts, 'total'>;
 // ============================================
 
 function createInitialCounts(): NotificationCounts {
-  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0 };
+  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0, blackboard: 0, calendar: 0 };
 }
 
 function incrementCount(state: NotificationState, type: CountType): void {
@@ -86,6 +88,8 @@ function setCountsMut(state: NotificationState, counts: Partial<NotificationCoun
     documents: counts.documents ?? 0,
     kvp: counts.kvp ?? 0,
     chat: counts.chat ?? 0,
+    blackboard: counts.blackboard ?? 0,
+    calendar: counts.calendar ?? 0,
   };
   state.lastUpdate = new Date();
 }
@@ -169,24 +173,46 @@ async function parseNotificationStats(
   };
 }
 
+/** Parse count from { success: true, data: { count: number } } response */
+async function parseSimpleCount(response: Response): Promise<number> {
+  if (!response.ok) return 0;
+  const json = (await response.json()) as {
+    success?: boolean;
+    data?: { count?: number | string };
+    count?: number | string;
+  };
+  // Handle both wrapped { data: { count } } and direct { count } responses
+  // Ensure numeric return (API may return string)
+  const rawCount = json.data?.count ?? json.count ?? 0;
+  return Number(rawCount);
+}
+
 /**
- * Fetch initial counts from both APIs in parallel (ADR-004)
+ * Fetch initial counts from all APIs in parallel (ADR-004)
  */
 async function fetchInitialCounts(state: NotificationState): Promise<void> {
   try {
-    const [chatResponse, notificationsResponse] = await Promise.all([
-      fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
-      fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
-    ]);
+    const [chatResponse, notificationsResponse, blackboardResponse, calendarResponse] =
+      await Promise.all([
+        fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
+        fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
+        fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
+        fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
+      ]);
 
     const chatCount = await parseChatCount(chatResponse);
     const stats = await parseNotificationStats(notificationsResponse);
+    const blackboardCount = await parseSimpleCount(blackboardResponse);
+    const calendarCount = await parseSimpleCount(calendarResponse);
 
     state.counts.chat = chatCount;
     state.counts.surveys = stats.survey;
     state.counts.documents = stats.document;
     state.counts.kvp = stats.kvp;
-    state.counts.total = chatCount + stats.survey + stats.document + stats.kvp;
+    state.counts.blackboard = blackboardCount;
+    state.counts.calendar = calendarCount;
+    state.counts.total =
+      chatCount + stats.survey + stats.document + stats.kvp + blackboardCount + calendarCount;
     state.lastUpdate = new Date();
   } catch {
     // Silently fail - SSE will update counts when connected
@@ -264,6 +290,9 @@ function createNotificationStore() {
     },
     decrementCount: (type: CountType) => {
       decrementCountMut(state, type);
+    },
+    incrementCount: (type: CountType) => {
+      incrementCount(state, type);
     },
     resetCount: (type: CountType) => {
       resetCountMut(state, type);

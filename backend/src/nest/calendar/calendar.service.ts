@@ -875,4 +875,54 @@ export class CalendarService {
       .replace(/[-:]/g, '')
       .replace(/\.\d{3}/, '');
   }
+
+  // ==========================================================================
+  // NOTIFICATION COUNT METHODS
+  // ==========================================================================
+
+  /**
+   * Get count of upcoming events for notification badge
+   * Counts events starting today or within the next 7 days
+   */
+  async getUpcomingCount(
+    tenantId: number,
+    userId: number,
+    userDepartmentId: number | null,
+    userTeamId: number | null,
+  ): Promise<{ count: number }> {
+    this.logger.log(`Getting upcoming event count for user ${userId}`);
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfWeek = new Date(startOfDay);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+    // Count events visible to user starting within the next 7 days
+    const query = `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM calendar_events e
+      WHERE e.tenant_id = $1
+        AND e.start_date >= $2
+        AND e.start_date < $3
+        AND e.status != 'cancelled'
+        AND (
+          e.is_private = false
+          OR e.user_id = $4
+          OR e.department_id = $5
+          OR e.team_id = $6
+        )
+    `;
+
+    const result = await this.databaseService.query<{ count: string }>(query, [
+      tenantId,
+      startOfDay,
+      endOfWeek,
+      userId,
+      userDepartmentId ?? 0,
+      userTeamId ?? 0,
+    ]);
+
+    const count = Number.parseInt(result[0]?.count ?? '0', 10);
+    return { count };
+  }
 }

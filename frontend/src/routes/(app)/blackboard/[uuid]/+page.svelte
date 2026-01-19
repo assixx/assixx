@@ -9,6 +9,7 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import {
     sanitizeWithLineBreaks,
     showConfirm,
@@ -124,6 +125,7 @@
     confirming = true;
     const success = await confirmApi(uuid);
     if (success) {
+      notificationStore.decrementCount('blackboard');
       showSuccessAlert('Eintrag als gelesen markiert');
       await invalidateAll();
     } else {
@@ -136,6 +138,7 @@
     confirming = true;
     const success = await unconfirmApi(uuid);
     if (success) {
+      notificationStore.incrementCount('blackboard');
       showSuccessAlert('Lesebestätigung zurückgenommen');
       await invalidateAll();
     } else {
@@ -175,12 +178,12 @@
 
   async function handleDeleteEntry(): Promise<void> {
     deleting = true;
-    const success = await deleteApi(uuid);
-    if (success) {
+    const result = await deleteApi(uuid);
+    if (result.success) {
       showSuccessAlert('Eintrag wurde gelöscht');
       await goto(resolvePath('/blackboard'));
     } else {
-      showErrorAlert('Fehler beim Löschen');
+      showErrorAlert(result.error);
     }
     deleting = false;
     showDeleteModal = false;

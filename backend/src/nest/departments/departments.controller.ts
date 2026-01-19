@@ -24,8 +24,10 @@ import {
   Query,
 } from '@nestjs/common';
 
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type {
   DepartmentMember,
   DepartmentResponse,
@@ -105,9 +107,10 @@ export class DepartmentsController {
   @HttpCode(HttpStatus.CREATED)
   async createDepartment(
     @Body() dto: CreateDepartmentDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.createDepartment(dto, tenantId);
+    return await this.departmentsService.createDepartment(dto, user.id, tenantId);
   }
 
   /**
@@ -119,9 +122,10 @@ export class DepartmentsController {
   async updateDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDepartmentDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.updateDepartment(id, dto, tenantId);
+    return await this.departmentsService.updateDepartment(id, dto, user.id, tenantId);
   }
 
   /**
@@ -134,8 +138,14 @@ export class DepartmentsController {
   async deleteDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteDepartmentQueryDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.departmentsService.deleteDepartment(id, tenantId, query.force ?? false);
+    return await this.departmentsService.deleteDepartment(
+      id,
+      user.id,
+      tenantId,
+      query.force ?? false,
+    );
   }
 }

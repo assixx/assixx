@@ -18,6 +18,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSurveyDto } from './dto/create-survey.dto.js';
@@ -265,6 +266,7 @@ export class SurveysService {
   constructor(
     private readonly db: DatabaseService,
     private readonly notificationsService: NotificationsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   async listSurveys(
@@ -764,6 +766,22 @@ export class SurveysService {
       userId,
     );
 
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'survey',
+      surveyId,
+      `Umfrage erstellt: ${dto.title}`,
+      {
+        title: dto.title,
+        status: dto.status ?? 'draft',
+        isAnonymous: dto.isAnonymous ?? false,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+      },
+    );
+
     return createdSurvey;
   }
 
@@ -825,6 +843,25 @@ export class SurveysService {
       ...(deadline !== undefined ? { deadline } : {}),
     });
 
+    // Log activity
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'survey',
+      id,
+      `Umfrage aktualisiert: ${existingSurvey['title'] as string}`,
+      {
+        title: existingSurvey['title'],
+        status: existingSurvey['status'],
+        isAnonymous: existingSurvey['isAnonymous'],
+      },
+      {
+        title: dto.title ?? existingSurvey['title'],
+        status: dto.status ?? existingSurvey['status'],
+        isAnonymous: dto.isAnonymous ?? existingSurvey['isAnonymous'],
+      },
+    );
+
     return updatedSurvey;
   }
 
@@ -860,6 +897,21 @@ export class SurveysService {
       throw new ConflictException('Cannot delete survey with existing responses');
     }
     await this.db.query('DELETE FROM surveys WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'survey',
+      id,
+      `Umfrage gelöscht: ${existingSurvey['title'] as string}`,
+      {
+        title: existingSurvey['title'],
+        status: existingSurvey['status'],
+        isAnonymous: existingSurvey['isAnonymous'],
+      },
+    );
+
     return { message: 'Survey deleted successfully' };
   }
 

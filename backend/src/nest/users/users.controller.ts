@@ -169,9 +169,10 @@ export class UsersController {
   @HttpCode(HttpStatus.CREATED)
   async createUser(
     @Body() dto: CreateUserDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.createUser(dto, tenantId);
+    return await this.usersService.createUser(dto, user.id, tenantId);
   }
 
   /**
@@ -183,9 +184,10 @@ export class UsersController {
   async updateUserByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateUserDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateUserByUuid(uuid, dto, tenantId);
+    return await this.usersService.updateUserByUuid(uuid, dto, user.id, tenantId);
   }
 
   /**
@@ -198,9 +200,10 @@ export class UsersController {
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateUser(id, dto, tenantId);
+    return await this.usersService.updateUser(id, dto, user.id, tenantId);
   }
 
   /**

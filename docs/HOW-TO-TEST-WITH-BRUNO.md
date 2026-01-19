@@ -19,13 +19,7 @@ Tests laufen in einem **isolierten Tenant** namens `brunotest`:
 - Reproduzierbare Tests
 - Einfaches Cleanup (nur Test-Tenant betroffen)
 
----
-
-## Quick Start
-
-```bash
-# WICHTIG: Zuerst _setup ausführen (erstellt/initialisiert brunotest)
-cd api-tests && npx bru run _setup --env local
+-+
 
 # Alle API Tests ausführen (inkl. _setup)
 cd api-tests && npx bru run _setup auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local
@@ -295,28 +289,64 @@ docker logs assixx-backend -f
 
 ---
 
-## Bruno Desktop App (Optional)
+## Häufiges Problem: 401 nach 409 (Tenant existiert, User fehlt)
 
-Die `.bru` Dateien können auch mit der **Bruno Desktop App** getestet werden:
+**Symptom:**
+```
+_setup/02-create-tenant (409 Conflict)  ← OK, Tenant existiert
+_setup/03-login-brunotest (401 Unauthorized)  ← FAIL!
+```
 
-1. Download: https://www.usebruno.com/
-2. `File > Open Collection > api-tests/`
-3. Environment: `local` auswählen
-4. Tests manuell klicken
+**Ursache:** Der Tenant existiert in der DB, aber der Admin-User wurde gelöscht (z.B. durch vorherigen Test-Cleanup oder manuell).
 
-**Vorteil:** Bessere Visualisierung von Request/Response
+**Lösung: Brunotest-Tenant komplett löschen**
+
+```bash
+# Tenant-ID ermitteln
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "SELECT id FROM tenants WHERE subdomain = 'brunotest';"
+
+# Alle abhängigen Daten + Tenant löschen (ID anpassen!)
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "
+DELETE FROM admin_area_permissions WHERE tenant_id = <ID>;
+DELETE FROM admin_department_permissions WHERE tenant_id = <ID>;
+DELETE FROM machine_teams WHERE team_id IN (SELECT id FROM teams WHERE tenant_id = <ID>);
+DELETE FROM machines WHERE tenant_id = <ID>;
+DELETE FROM areas WHERE tenant_id = <ID>;
+DELETE FROM teams WHERE tenant_id = <ID>;
+DELETE FROM departments WHERE tenant_id = <ID>;
+DELETE FROM users WHERE tenant_id = <ID>;
+DELETE FROM tenant_features WHERE tenant_id = <ID>;
+DELETE FROM tenant_settings WHERE tenant_id = <ID>;
+DELETE FROM tenants WHERE id = <ID>;
+"
+
+# Dann _setup erneut ausführen
+cd api-tests && npx bru run _setup --env local
+```
+
+**Oder Quick-Fix (wenn keine wichtigen Daten):**
+
+```bash
+# Rate Limit zurücksetzen + Tests neu starten
+cd /home/scs/projects/Assixx/docker
+docker-compose restart && sleep 25
+
+# Vollständigen Test mit _setup ausführen
+pnpm run test:api:full
+```
 
 ---
 
 ## Test-Ergebnisse interpretieren
 
 ```
-📊 Execution Summary
-┌───────────────┬───────────────────────────┐
-│ Requests      │ 87 (67 Passed, 20 Failed) │
-│ Tests         │          118/144          │
-│ Assertions    │          152/181          │
-└───────────────┴───────────────────────────┘
+📊 Execution Summary (Stand: 2026-01-19)
+┌───────────────┬────────────────┐
+│ Requests      │ 96 (96 Passed) │
+│ Tests         │    169/169     │
+│ Assertions    │    195/195     │
+└───────────────┴────────────────┘
 ```
 
 - **Requests**: HTTP Calls (Passed = 2xx Status)

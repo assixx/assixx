@@ -81,10 +81,8 @@ export async function fetchEntries(
  */
 export async function fetchEntryByUuid(uuid: string): Promise<BlackboardEntry | null> {
   try {
-    const result = await apiClient.get<{ success: boolean; data: BlackboardEntry }>(
-      `/blackboard/entries/${encodeURIComponent(uuid)}`,
-    );
-    return result.data;
+    // Backend returns entry directly (no wrapper)
+    return await apiClient.get<BlackboardEntry>(`/blackboard/entries/${encodeURIComponent(uuid)}`);
   } catch (err) {
     // Return null for 404
     if (err !== null && typeof err === 'object' && 'status' in err && err.status === 404) {

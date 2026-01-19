@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { hierarchyPermissionService } from '../../services/hierarchyPermission.service.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import type { CreateEntryDto } from './dto/create-entry.dto.js';
@@ -189,6 +190,7 @@ export class BlackboardService {
   constructor(
     private readonly db: DatabaseService,
     private readonly documentsService: DocumentsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ==========================================================================
@@ -730,7 +732,24 @@ export class BlackboardService {
       await this.syncEntryOrganizations(insertedId, dto.departmentIds, dto.teamIds, dto.areaIds);
     }
 
-    return await this.getEntryById(insertedId, tenantId, userId);
+    const createdEntry = await this.getEntryById(insertedId, tenantId, userId);
+
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'blackboard',
+      insertedId,
+      `Blackboard-Eintrag erstellt: ${dto.title}`,
+      {
+        title: dto.title,
+        orgLevel,
+        priority: dto.priority ?? 'medium',
+        expiresAt: dto.expiresAt,
+      },
+    );
+
+    return createdEntry;
   }
 
   /** Check if DTO targets multiple organizations */
@@ -842,7 +861,10 @@ export class BlackboardService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    await this.getEntryById(id, tenantId, userId);
+    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
+      string,
+      unknown
+    >;
 
     const hasMultiOrg =
       dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
@@ -871,7 +893,32 @@ export class BlackboardService {
       );
     }
 
-    return await this.getEntryById(numericId, tenantId, userId);
+    const updatedEntry = await this.getEntryById(numericId, tenantId, userId);
+
+    // Log activity (handles both regular updates and archive/unarchive)
+    const action =
+      dto.status === 'archived' ? 'archiviert'
+      : dto.status === 'active' ? 'reaktiviert'
+      : 'aktualisiert';
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag ${action}: ${existingEntry['title'] as string}`,
+      {
+        title: existingEntry['title'],
+        status: existingEntry['status'],
+        priority: existingEntry['priority'],
+      },
+      {
+        title: dto.title ?? existingEntry['title'],
+        status: dto.status ?? existingEntry['status'],
+        priority: dto.priority ?? existingEntry['priority'],
+      },
+    );
+
+    return updatedEntry;
   }
 
   /** Build UPDATE query with field and org updates */
@@ -980,6 +1027,11 @@ export class BlackboardService {
 
   /**
    * Delete a blackboard entry
+   *
+   * Allowed to delete:
+   * - Root users (any entry)
+   * - Users with has_full_access = true (any entry in their tenant)
+   * - Author of the entry
    */
   async deleteEntry(
     id: number | string,
@@ -991,17 +1043,38 @@ export class BlackboardService {
 
     const entry = await this.getEntryById(id, tenantId, userId);
 
-    // Only root or author can delete
+    // Check delete permissions: root, has_full_access, or author
     const isRoot = userRole === 'root';
     const isAuthor = (entry as Record<string, unknown>)['authorId'] === userId;
-    if (!isRoot && !isAuthor) {
-      throw new ForbiddenException('Only the author or root can delete this entry');
+    const { hasFullAccess } = await this.getUserDepartmentAndTeam(userId);
+
+    if (!isRoot && !hasFullAccess && !isAuthor) {
+      throw new ForbiddenException(
+        'Only the author, root, or users with full access can delete this entry',
+      );
     }
 
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
+    const numericId = (entry as Record<string, unknown>)['id'] as number;
+
     await this.db.query(
       `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag gelöscht: ${(entry as Record<string, unknown>)['title'] as string}`,
+      {
+        title: (entry as Record<string, unknown>)['title'],
+        status: (entry as Record<string, unknown>)['status'],
+        priority: (entry as Record<string, unknown>)['priority'],
+        orgLevel: (entry as Record<string, unknown>)['orgLevel'],
+      },
     );
 
     return { message: 'Entry deleted successfully' };
@@ -1457,5 +1530,64 @@ export class BlackboardService {
     this.logger.log(`Deleting attachment ${attachmentId}`);
     await this.documentsService.deleteDocument(attachmentId, userId, tenantId);
     return { message: 'Attachment deleted successfully' };
+  }
+
+  // ==========================================================================
+  // NOTIFICATION COUNT METHODS
+  // ==========================================================================
+
+  /**
+   * Get count of unconfirmed entries for a user
+   * Used for notification badge in sidebar
+   */
+  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    this.logger.log(`Getting unconfirmed count for user ${userId}`);
+
+    // Get user info for visibility filtering
+    const users = await this.db.query<{
+      role: string;
+      department_id: number | null;
+      team_id: number | null;
+    }>(
+      `SELECT u.role, ud.department_id, ut.team_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+       WHERE u.id = $1 AND u.tenant_id = $2`,
+      [userId, tenantId],
+    );
+
+    if (users[0] === undefined) {
+      return { count: 0 };
+    }
+
+    const { role, department_id: departmentId, team_id: teamId } = users[0];
+
+    // Count active entries visible to user that they haven't confirmed
+    let query = `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM blackboard_entries e
+      LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+      WHERE e.tenant_id = $2
+        AND e.status = 'active'
+        AND c.id IS NULL
+    `;
+    const params: unknown[] = [userId, tenantId];
+
+    // Apply visibility filter based on role
+    if (role !== 'root' && role !== 'admin') {
+      // Employees can only see entries targeting them
+      query += ` AND (
+        e.org_level = 'company'
+        OR (e.org_level = 'department' AND e.org_id = $3)
+        OR (e.org_level = 'team' AND e.org_id = $4)
+      )`;
+      params.push(departmentId ?? 0, teamId ?? 0);
+    }
+
+    const result = await this.db.query<{ count: string }>(query, params);
+    const count = Number.parseInt(result[0]?.count ?? '0', 10);
+
+    return { count };
   }
 }

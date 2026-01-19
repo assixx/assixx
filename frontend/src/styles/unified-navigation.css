@@ -604,17 +604,6 @@ body:has(.sidebar.collapsed) .header .logo {
   white-space: nowrap;
 }
 
-.user-name {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-weight: 500;
-
-  font-size: 15px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .user-full-name {
   overflow: hidden;
   color: rgb(255 255 255 / 60%);
@@ -811,7 +800,9 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .submenu-link {
-  display: inline flow-root list-item;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   position: relative;
 
   /* transform: translateX(6px); */

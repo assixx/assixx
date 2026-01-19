@@ -8,6 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import '../../../styles/survey-admin.css';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert } from '$lib/utils';
 
   // Extracted Components
@@ -46,6 +47,19 @@
   // Derived computed values
   const activeSurveys = $derived(surveys.filter((s) => s.status === 'active'));
   const draftSurveys = $derived(surveys.filter((s) => s.status === 'draft'));
+
+  // =============================================================================
+  // MARK NOTIFICATIONS AS READ (ADR-004)
+  // =============================================================================
+
+  // Mark Survey notifications as read when page is visited
+  let surveyReadMarked = $state(false);
+  $effect(() => {
+    if (!surveyReadMarked) {
+      surveyReadMarked = true;
+      void notificationStore.markTypeAsRead('survey');
+    }
+  });
 
   // =============================================================================
   // UI STATE - Form and Modal state (client-side only)

@@ -199,9 +199,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(
     @CurrentUser() user: NestAuthUser,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<LogoutResponse> {
-    const result = await this.authService.logout(user);
+    const { ipAddress, userAgent } = getClientInfo(req);
+    const result = await this.authService.logout(user, ipAddress, userAgent);
 
     // Clear httpOnly cookies (must match the path they were set with!)
     reply.clearCookie('accessToken', { path: '/' });

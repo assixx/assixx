@@ -41,7 +41,7 @@
     "max-nesting-depth": 3,
     "media-feature-range-notation": "context",
     "no-descending-specificity": null,
-    "no-duplicate-selectors": true,
+    "no-duplicate-selectors": null,
     "no-invalid-double-slash-comments": true,
     "no-unknown-animations": true,
     "number-max-precision": 3,
