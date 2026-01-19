@@ -59,7 +59,7 @@ export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
 }
 
 /**
- * Format blackboard date (German locale with time)
+ * Format blackboard date (German locale, date only - no time)
  * @param dateStr - ISO date string
  */
 export function formatBlackboardDate(dateStr: string): string {
@@ -70,8 +70,6 @@ export function formatBlackboardDate(dateStr: string): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 

@@ -107,6 +107,23 @@ export class CalendarController {
   }
 
   /**
+   * GET /calendar/upcoming-count
+   * Get count of upcoming events for notification badge
+   */
+  @Get('upcoming-count')
+  async getUpcomingCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.calendarService.getUpcomingCount(
+      tenantId,
+      user.id,
+      user.departmentId ?? null,
+      user.teamId ?? null,
+    );
+  }
+
+  /**
    * GET /calendar/export
    * Export events as ICS or CSV
    */

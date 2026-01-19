@@ -9,6 +9,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { CreateDepartmentDto } from './dto/create-department.dto.js';
 import type { UpdateDepartmentDto } from './dto/update-department.dto.js';
 
@@ -98,6 +99,8 @@ interface DepartmentDependencies {
 @Injectable()
 export class DepartmentsService {
   private readonly logger = new Logger(DepartmentsService.name);
+
+  constructor(private readonly activityLogger: ActivityLoggerService) {}
 
   /**
    * SQL query for fetching departments with employee/team counts via user_departments N:M
@@ -239,7 +242,11 @@ export class DepartmentsService {
   /**
    * Create a new department
    */
-  async createDepartment(dto: CreateDepartmentDto, tenantId: number): Promise<DepartmentResponse> {
+  async createDepartment(
+    dto: CreateDepartmentDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<DepartmentResponse> {
     this.logger.log(`Creating department: ${dto.name}`);
 
     if (dto.name.trim() === '') {
@@ -274,7 +281,49 @@ export class DepartmentsService {
       await this.ensureLeaderInDepartment(dto.departmentLeadId, departmentId, tenantId);
     }
 
-    return await this.getDepartmentById(departmentId, tenantId);
+    const result = await this.getDepartmentById(departmentId, tenantId);
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'department',
+      departmentId,
+      `Abteilung erstellt: ${dto.name}`,
+      {
+        name: dto.name,
+        description: dto.description,
+        departmentLeadId: dto.departmentLeadId,
+        areaId: dto.areaId,
+      },
+    );
+
+    return result;
+  }
+
+  /**
+   * Build update fields from DTO
+   */
+  private buildUpdateFields(dto: UpdateDepartmentDto): { fields: string[]; values: unknown[] } {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    const fieldMap: [keyof UpdateDepartmentDto, string][] = [
+      ['name', 'name'],
+      ['description', 'description'],
+      ['departmentLeadId', 'department_lead_id'],
+      ['areaId', 'area_id'],
+      ['isActive', 'is_active'],
+    ];
+
+    for (const [dtoKey, dbCol] of fieldMap) {
+      const value = dto[dtoKey];
+      if (value !== undefined) {
+        fields.push(`${dbCol} = $${values.length + 1}`);
+        values.push(value);
+      }
+    }
+
+    return { fields, values };
   }
 
   /**
@@ -283,6 +332,7 @@ export class DepartmentsService {
   async updateDepartment(
     id: number,
     dto: UpdateDepartmentDto,
+    actingUserId: number,
     tenantId: number,
   ): Promise<DepartmentResponse> {
     this.logger.log(`Updating department ${id}`);
@@ -296,30 +346,16 @@ export class DepartmentsService {
       throw new NotFoundException('Department not found');
     }
 
-    const fields: string[] = [];
-    const values: unknown[] = [];
+    const existingDept = existing[0];
+    const oldValues = {
+      name: existingDept?.name,
+      description: existingDept?.description,
+      departmentLeadId: existingDept?.department_lead_id,
+      areaId: existingDept?.area_id,
+      isActive: existingDept?.is_active,
+    };
 
-    if (dto.name !== undefined) {
-      fields.push(`name = $${values.length + 1}`);
-      values.push(dto.name);
-    }
-    if (dto.description !== undefined) {
-      fields.push(`description = $${values.length + 1}`);
-      values.push(dto.description);
-    }
-    if (dto.departmentLeadId !== undefined) {
-      fields.push(`department_lead_id = $${values.length + 1}`);
-      values.push(dto.departmentLeadId);
-    }
-    if (dto.areaId !== undefined) {
-      fields.push(`area_id = $${values.length + 1}`);
-      values.push(dto.areaId);
-    }
-    if (dto.isActive !== undefined) {
-      fields.push(`is_active = $${values.length + 1}`);
-      values.push(dto.isActive);
-    }
-
+    const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       values.push(id);
       await execute(
@@ -332,7 +368,26 @@ export class DepartmentsService {
       await this.ensureLeaderInDepartment(dto.departmentLeadId, id, tenantId);
     }
 
-    return await this.getDepartmentById(id, tenantId);
+    const result = await this.getDepartmentById(id, tenantId);
+    const newValues = {
+      name: dto.name,
+      description: dto.description,
+      departmentLeadId: dto.departmentLeadId,
+      areaId: dto.areaId,
+      isActive: dto.isActive,
+    };
+
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'department',
+      id,
+      `Abteilung aktualisiert: ${existingDept?.name ?? 'Unknown'}`,
+      oldValues,
+      newValues,
+    );
+
+    return result;
   }
 
   /**
@@ -454,6 +509,7 @@ export class DepartmentsService {
    */
   async deleteDepartment(
     id: number,
+    actingUserId: number,
     tenantId: number,
     force: boolean = false,
   ): Promise<{ message: string }> {
@@ -467,6 +523,8 @@ export class DepartmentsService {
     if (existing.length === 0) {
       throw new NotFoundException('Department not found');
     }
+
+    const existingDept = existing[0];
 
     const deps = await this.checkDepartmentDependencies(id, tenantId);
 
@@ -489,6 +547,21 @@ export class DepartmentsService {
     }
 
     await execute('DELETE FROM departments WHERE id = $1', [id]);
+
+    await this.activityLogger.logDelete(
+      tenantId,
+      actingUserId,
+      'department',
+      id,
+      `Abteilung gelöscht: ${existingDept?.name ?? 'Unknown'}`,
+      {
+        name: existingDept?.name,
+        description: existingDept?.description,
+        departmentLeadId: existingDept?.department_lead_id,
+        areaId: existingDept?.area_id,
+        force,
+      },
+    );
 
     return { message: 'Department deleted successfully' };
   }

@@ -27,7 +27,7 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
-import type { JwtPayload } from '../common/interfaces/auth.interface.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { AreaResponse, AreaStatsResponse } from './areas.service.js';
 import { AreasService } from './areas.service.js';
 import {
@@ -91,8 +91,8 @@ export class AreasController {
   @HttpCode(HttpStatus.CREATED)
   async createArea(
     @Body() dto: CreateAreaDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-    @CurrentUser() user: JwtPayload,
   ): Promise<AreaResponse> {
     return await this.areasService.createArea(dto, tenantId, user.id);
   }
@@ -106,9 +106,10 @@ export class AreasController {
   async updateArea(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAreaDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<AreaResponse> {
-    return await this.areasService.updateArea(id, dto, tenantId);
+    return await this.areasService.updateArea(id, dto, user.id, tenantId);
   }
 
   /**
@@ -121,9 +122,10 @@ export class AreasController {
   async deleteArea(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteAreaQueryDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.areasService.deleteArea(id, tenantId, query.force);
+    return await this.areasService.deleteArea(id, user.id, tenantId, query.force);
   }
 
   /**

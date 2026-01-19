@@ -133,13 +133,17 @@ export async function archiveEntry(uuid: string): Promise<boolean> {
 /**
  * Delete entry
  * Allowed for: root, admin with hasFullAccess, or creator
+ * Returns { success: true } or { success: false, error: string }
  */
-export async function deleteEntry(uuid: string): Promise<boolean> {
+export async function deleteEntry(
+  uuid: string,
+): Promise<{ success: true } | { success: false; error: string }> {
   try {
     await apiClient.delete(`/blackboard/entries/${uuid}`);
-    return true;
-  } catch {
-    return false;
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
+    return { success: false, error: errorMessage };
   }
 }
 

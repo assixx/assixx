@@ -59,15 +59,21 @@ interface StatsRow {
   unique_tenants?: number;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg serializes as STRING.
+ */
 interface TopActionResult {
   action: string | null;
-  count: number | null;
+  count: string | number | null;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg serializes as STRING.
+ */
 interface TopUserResult {
   user_id: number | null;
   user_name: string | null;
-  count: number | null;
+  count: string | number | null;
 }
 
 interface DbUserRow {
@@ -490,11 +496,12 @@ export class LogsService {
       todayLogs: stats.today_logs ?? 0,
       uniqueUsers: stats.unique_users ?? 0,
       uniqueTenants: stats.unique_tenants ?? 0,
-      topActions: topActions.map((r: TopActionResult) => ({ action: r.action ?? 'unknown', count: r.count ?? 0 })),
+      // PostgreSQL COUNT returns string - must convert
+      topActions: topActions.map((r: TopActionResult) => ({ action: r.action ?? 'unknown', count: Number(r.count ?? 0) })),
       topUsers: topUsers.map((r: TopUserResult) => ({
         userId: r.user_id ?? 0,
         userName: r.user_name ?? 'Unknown',
-        count: r.count ?? 0,
+        count: Number(r.count ?? 0),
       })),
     };
   }

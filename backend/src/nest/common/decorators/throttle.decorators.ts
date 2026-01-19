@@ -57,6 +57,14 @@ export const UploadThrottle = (): ThrottleDecorator =>
   Throttle({ upload: { limit: 20, ttl: MS_HOUR } });
 
 /**
+ * Export endpoints: 1 request per minute
+ * Use for: audit log export, bulk data export
+ * Prevents DoS via large export operations
+ */
+export const ExportThrottle = (): ThrottleDecorator =>
+  Throttle({ export: { limit: 1, ttl: MS_MINUTE } });
+
+/**
  * Skip rate limiting entirely
  * Use sparingly! Only for health checks, internal endpoints
  */

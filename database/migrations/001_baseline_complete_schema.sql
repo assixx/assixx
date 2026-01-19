@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict mcPAGoRghVqnrpJ8k4nv2TImrWkzpndDa27Y2sbtDuApgUhAMzWomkmLLCzWzyQ
+\restrict VDgzs7wrC3s5fpwQeZhGmFdK0jeEd8Lq5OijuW8Vao8aEneRecvuAZUbmx3ThVR
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -2003,10 +2003,884 @@ CREATE TABLE "public"."audit_trail" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+)
+PARTITION BY RANGE ("created_at");
+
+ALTER TABLE ONLY "public"."audit_trail" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_trail_partitioned_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE "public"."audit_trail_partitioned_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: audit_trail_partitioned_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE "public"."audit_trail_partitioned_id_seq" OWNED BY "public"."audit_trail"."id";
+
+
+--
+-- Name: audit_trail_2025_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_01" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_02" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_03" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_04" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_05" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_06" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_07" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_08" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_09" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_10" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_11" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2025_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2025_12" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_01" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_02" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_03" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_04" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_05" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_06" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_07" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_08" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_09" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_10" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_11" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2026_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2026_12" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_01" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_02" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_03" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_04" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_05" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_06" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_07" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_08" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_09" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_10" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_11" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_2027_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_2027_12" (
+    "id" integer DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: audit_trail_old; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."audit_trail_old" (
+    "id" integer NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "user_name" character varying(100),
+    "user_role" character varying(50),
+    "action" character varying(50) NOT NULL,
+    "resource_type" character varying(50) NOT NULL,
+    "resource_id" integer,
+    "resource_name" character varying(255),
+    "changes" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
+    "error_message" "text",
     "created_at" timestamp with time zone DEFAULT "now"()
 );
 
-ALTER TABLE ONLY "public"."audit_trail" FORCE ROW LEVEL SECURITY;
+ALTER TABLE ONLY "public"."audit_trail_old" FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -2026,7 +2900,7 @@ CREATE SEQUENCE "public"."audit_trail_id_seq"
 -- Name: audit_trail_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE "public"."audit_trail_id_seq" OWNED BY "public"."audit_trail"."id";
+ALTER SEQUENCE "public"."audit_trail_id_seq" OWNED BY "public"."audit_trail_old"."id";
 
 
 --
@@ -4486,25 +5360,862 @@ CREATE TABLE "public"."root_logs" (
     "ip_address" character varying(45),
     "user_agent" "text",
     "was_role_switched" boolean DEFAULT false,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "is_active" smallint
-);
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+)
+PARTITION BY RANGE ("created_at");
 
 ALTER TABLE ONLY "public"."root_logs" FORCE ROW LEVEL SECURITY;
 
 
 --
--- Name: TABLE "root_logs"; Type: COMMENT; Schema: public; Owner: -
+-- Name: root_logs_partitioned_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE "public"."root_logs" IS 'Logs all administrative actions performed by users';
+CREATE SEQUENCE "public"."root_logs_partitioned_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
--- Name: COLUMN "root_logs"."was_role_switched"; Type: COMMENT; Schema: public; Owner: -
+-- Name: root_logs_partitioned_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN "public"."root_logs"."was_role_switched" IS 'Indicates if the action was performed while user had switched roles';
+ALTER SEQUENCE "public"."root_logs_partitioned_id_seq" OWNED BY "public"."root_logs"."id";
+
+
+--
+-- Name: root_logs_2025_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_01" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_02" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_03" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_04" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_05" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_06" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_07" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_08" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_09" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_10" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_11" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2025_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2025_12" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_01" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_02" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_03" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_04" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_05" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_06" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_07" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_08" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_09" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_10" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_11" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2026_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2026_12" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_01; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_01" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_02; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_02" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_03; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_03" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_04; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_04" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_05; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_05" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_06; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_06" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_07" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_08" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_09" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_10" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_11; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_11" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_2027_12; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_2027_12" (
+    "id" integer DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass") NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "is_active" smallint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+--
+-- Name: root_logs_old; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."root_logs_old" (
+    "id" integer NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "action" character varying(100) NOT NULL,
+    "entity_type" character varying(50),
+    "entity_id" integer,
+    "details" "text",
+    "old_values" "jsonb",
+    "new_values" "jsonb",
+    "ip_address" character varying(45),
+    "user_agent" "text",
+    "was_role_switched" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "is_active" smallint
+);
+
+ALTER TABLE ONLY "public"."root_logs_old" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: TABLE "root_logs_old"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE "public"."root_logs_old" IS 'Logs all administrative actions performed by users';
+
+
+--
+-- Name: COLUMN "root_logs_old"."was_role_switched"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN "public"."root_logs_old"."was_role_switched" IS 'Indicates if the action was performed while user had switched roles';
 
 
 --
@@ -4524,7 +6235,7 @@ CREATE SEQUENCE "public"."root_logs_id_seq"
 -- Name: root_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE "public"."root_logs_id_seq" OWNED BY "public"."root_logs"."id";
+ALTER SEQUENCE "public"."root_logs_id_seq" OWNED BY "public"."root_logs_old"."id";
 
 
 --
@@ -6390,6 +8101,510 @@ ALTER SEQUENCE "public"."users_id_seq" OWNED BY "public"."users"."id";
 
 
 --
+-- Name: audit_trail_2025_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_01" FOR VALUES FROM ('2025-01-01 00:00:00+01') TO ('2025-02-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2025_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_02" FOR VALUES FROM ('2025-02-01 00:00:00+01') TO ('2025-03-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2025_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_03" FOR VALUES FROM ('2025-03-01 00:00:00+01') TO ('2025-04-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_04" FOR VALUES FROM ('2025-04-01 00:00:00+02') TO ('2025-05-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_05" FOR VALUES FROM ('2025-05-01 00:00:00+02') TO ('2025-06-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_06" FOR VALUES FROM ('2025-06-01 00:00:00+02') TO ('2025-07-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_07" FOR VALUES FROM ('2025-07-01 00:00:00+02') TO ('2025-08-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_08" FOR VALUES FROM ('2025-08-01 00:00:00+02') TO ('2025-09-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_09" FOR VALUES FROM ('2025-09-01 00:00:00+02') TO ('2025-10-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2025_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_10" FOR VALUES FROM ('2025-10-01 00:00:00+02') TO ('2025-11-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2025_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_11" FOR VALUES FROM ('2025-11-01 00:00:00+01') TO ('2025-12-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2025_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2025_12" FOR VALUES FROM ('2025-12-01 00:00:00+01') TO ('2026-01-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2026_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_01" FOR VALUES FROM ('2026-01-01 00:00:00+01') TO ('2026-02-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2026_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_02" FOR VALUES FROM ('2026-02-01 00:00:00+01') TO ('2026-03-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2026_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_03" FOR VALUES FROM ('2026-03-01 00:00:00+01') TO ('2026-04-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_04" FOR VALUES FROM ('2026-04-01 00:00:00+02') TO ('2026-05-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_05" FOR VALUES FROM ('2026-05-01 00:00:00+02') TO ('2026-06-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_06" FOR VALUES FROM ('2026-06-01 00:00:00+02') TO ('2026-07-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_07" FOR VALUES FROM ('2026-07-01 00:00:00+02') TO ('2026-08-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_08" FOR VALUES FROM ('2026-08-01 00:00:00+02') TO ('2026-09-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_09" FOR VALUES FROM ('2026-09-01 00:00:00+02') TO ('2026-10-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2026_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_10" FOR VALUES FROM ('2026-10-01 00:00:00+02') TO ('2026-11-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2026_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_11" FOR VALUES FROM ('2026-11-01 00:00:00+01') TO ('2026-12-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2026_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2026_12" FOR VALUES FROM ('2026-12-01 00:00:00+01') TO ('2027-01-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2027_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_01" FOR VALUES FROM ('2027-01-01 00:00:00+01') TO ('2027-02-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2027_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_02" FOR VALUES FROM ('2027-02-01 00:00:00+01') TO ('2027-03-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2027_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_03" FOR VALUES FROM ('2027-03-01 00:00:00+01') TO ('2027-04-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_04" FOR VALUES FROM ('2027-04-01 00:00:00+02') TO ('2027-05-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_05" FOR VALUES FROM ('2027-05-01 00:00:00+02') TO ('2027-06-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_06" FOR VALUES FROM ('2027-06-01 00:00:00+02') TO ('2027-07-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_07" FOR VALUES FROM ('2027-07-01 00:00:00+02') TO ('2027-08-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_08" FOR VALUES FROM ('2027-08-01 00:00:00+02') TO ('2027-09-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_09" FOR VALUES FROM ('2027-09-01 00:00:00+02') TO ('2027-10-01 00:00:00+02');
+
+
+--
+-- Name: audit_trail_2027_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_10" FOR VALUES FROM ('2027-10-01 00:00:00+02') TO ('2027-11-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2027_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_11" FOR VALUES FROM ('2027-11-01 00:00:00+01') TO ('2027-12-01 00:00:00+01');
+
+
+--
+-- Name: audit_trail_2027_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail" ATTACH PARTITION "public"."audit_trail_2027_12" FOR VALUES FROM ('2027-12-01 00:00:00+01') TO ('2028-01-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2025_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_01" FOR VALUES FROM ('2025-01-01 00:00:00+01') TO ('2025-02-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2025_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_02" FOR VALUES FROM ('2025-02-01 00:00:00+01') TO ('2025-03-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2025_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_03" FOR VALUES FROM ('2025-03-01 00:00:00+01') TO ('2025-04-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_04" FOR VALUES FROM ('2025-04-01 00:00:00+02') TO ('2025-05-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_05" FOR VALUES FROM ('2025-05-01 00:00:00+02') TO ('2025-06-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_06" FOR VALUES FROM ('2025-06-01 00:00:00+02') TO ('2025-07-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_07" FOR VALUES FROM ('2025-07-01 00:00:00+02') TO ('2025-08-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_08" FOR VALUES FROM ('2025-08-01 00:00:00+02') TO ('2025-09-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_09" FOR VALUES FROM ('2025-09-01 00:00:00+02') TO ('2025-10-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2025_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_10" FOR VALUES FROM ('2025-10-01 00:00:00+02') TO ('2025-11-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2025_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_11" FOR VALUES FROM ('2025-11-01 00:00:00+01') TO ('2025-12-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2025_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2025_12" FOR VALUES FROM ('2025-12-01 00:00:00+01') TO ('2026-01-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2026_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_01" FOR VALUES FROM ('2026-01-01 00:00:00+01') TO ('2026-02-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2026_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_02" FOR VALUES FROM ('2026-02-01 00:00:00+01') TO ('2026-03-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2026_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_03" FOR VALUES FROM ('2026-03-01 00:00:00+01') TO ('2026-04-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_04" FOR VALUES FROM ('2026-04-01 00:00:00+02') TO ('2026-05-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_05" FOR VALUES FROM ('2026-05-01 00:00:00+02') TO ('2026-06-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_06" FOR VALUES FROM ('2026-06-01 00:00:00+02') TO ('2026-07-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_07" FOR VALUES FROM ('2026-07-01 00:00:00+02') TO ('2026-08-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_08" FOR VALUES FROM ('2026-08-01 00:00:00+02') TO ('2026-09-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_09" FOR VALUES FROM ('2026-09-01 00:00:00+02') TO ('2026-10-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2026_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_10" FOR VALUES FROM ('2026-10-01 00:00:00+02') TO ('2026-11-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2026_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_11" FOR VALUES FROM ('2026-11-01 00:00:00+01') TO ('2026-12-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2026_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2026_12" FOR VALUES FROM ('2026-12-01 00:00:00+01') TO ('2027-01-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2027_01; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_01" FOR VALUES FROM ('2027-01-01 00:00:00+01') TO ('2027-02-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2027_02; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_02" FOR VALUES FROM ('2027-02-01 00:00:00+01') TO ('2027-03-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2027_03; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_03" FOR VALUES FROM ('2027-03-01 00:00:00+01') TO ('2027-04-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_04; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_04" FOR VALUES FROM ('2027-04-01 00:00:00+02') TO ('2027-05-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_05; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_05" FOR VALUES FROM ('2027-05-01 00:00:00+02') TO ('2027-06-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_06; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_06" FOR VALUES FROM ('2027-06-01 00:00:00+02') TO ('2027-07-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_07" FOR VALUES FROM ('2027-07-01 00:00:00+02') TO ('2027-08-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_08" FOR VALUES FROM ('2027-08-01 00:00:00+02') TO ('2027-09-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_09" FOR VALUES FROM ('2027-09-01 00:00:00+02') TO ('2027-10-01 00:00:00+02');
+
+
+--
+-- Name: root_logs_2027_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_10" FOR VALUES FROM ('2027-10-01 00:00:00+02') TO ('2027-11-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2027_11; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_11" FOR VALUES FROM ('2027-11-01 00:00:00+01') TO ('2027-12-01 00:00:00+01');
+
+
+--
+-- Name: root_logs_2027_12; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs" ATTACH PARTITION "public"."root_logs_2027_12" FOR VALUES FROM ('2027-12-01 00:00:00+01') TO ('2028-01-01 00:00:00+01');
+
+
+--
 -- Name: absences id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6463,7 +8678,14 @@ ALTER TABLE ONLY "public"."areas" ALTER COLUMN "id" SET DEFAULT "nextval"('"publ
 -- Name: audit_trail id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."audit_trail" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."audit_trail_id_seq"'::"regclass");
+ALTER TABLE ONLY "public"."audit_trail" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass");
+
+
+--
+-- Name: audit_trail_old id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_old" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."audit_trail_id_seq"'::"regclass");
 
 
 --
@@ -6848,7 +9070,14 @@ ALTER TABLE ONLY "public"."released_subdomains" ALTER COLUMN "id" SET DEFAULT "n
 -- Name: root_logs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."root_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_id_seq"'::"regclass");
+ALTER TABLE ONLY "public"."root_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass");
+
+
+--
+-- Name: root_logs_old id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_old" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_id_seq"'::"regclass");
 
 
 --
@@ -7146,6 +9375,302 @@ ALTER TABLE ONLY "public"."users" ALTER COLUMN "id" SET DEFAULT "nextval"('"publ
 
 
 --
+-- Name: audit_trail audit_trail_partitioned_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail"
+    ADD CONSTRAINT "audit_trail_partitioned_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_01 audit_trail_2025_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_01"
+    ADD CONSTRAINT "audit_trail_2025_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_02 audit_trail_2025_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_02"
+    ADD CONSTRAINT "audit_trail_2025_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_03 audit_trail_2025_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_03"
+    ADD CONSTRAINT "audit_trail_2025_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_04 audit_trail_2025_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_04"
+    ADD CONSTRAINT "audit_trail_2025_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_05 audit_trail_2025_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_05"
+    ADD CONSTRAINT "audit_trail_2025_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_06 audit_trail_2025_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_06"
+    ADD CONSTRAINT "audit_trail_2025_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_07 audit_trail_2025_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_07"
+    ADD CONSTRAINT "audit_trail_2025_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_08 audit_trail_2025_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_08"
+    ADD CONSTRAINT "audit_trail_2025_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_09 audit_trail_2025_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_09"
+    ADD CONSTRAINT "audit_trail_2025_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_10 audit_trail_2025_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_10"
+    ADD CONSTRAINT "audit_trail_2025_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_11 audit_trail_2025_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_11"
+    ADD CONSTRAINT "audit_trail_2025_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2025_12 audit_trail_2025_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2025_12"
+    ADD CONSTRAINT "audit_trail_2025_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_01 audit_trail_2026_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_01"
+    ADD CONSTRAINT "audit_trail_2026_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_02 audit_trail_2026_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_02"
+    ADD CONSTRAINT "audit_trail_2026_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_03 audit_trail_2026_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_03"
+    ADD CONSTRAINT "audit_trail_2026_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_04 audit_trail_2026_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_04"
+    ADD CONSTRAINT "audit_trail_2026_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_05 audit_trail_2026_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_05"
+    ADD CONSTRAINT "audit_trail_2026_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_06 audit_trail_2026_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_06"
+    ADD CONSTRAINT "audit_trail_2026_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_07 audit_trail_2026_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_07"
+    ADD CONSTRAINT "audit_trail_2026_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_08 audit_trail_2026_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_08"
+    ADD CONSTRAINT "audit_trail_2026_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_09 audit_trail_2026_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_09"
+    ADD CONSTRAINT "audit_trail_2026_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_10 audit_trail_2026_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_10"
+    ADD CONSTRAINT "audit_trail_2026_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_11 audit_trail_2026_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_11"
+    ADD CONSTRAINT "audit_trail_2026_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2026_12 audit_trail_2026_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2026_12"
+    ADD CONSTRAINT "audit_trail_2026_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_01 audit_trail_2027_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_01"
+    ADD CONSTRAINT "audit_trail_2027_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_02 audit_trail_2027_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_02"
+    ADD CONSTRAINT "audit_trail_2027_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_03 audit_trail_2027_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_03"
+    ADD CONSTRAINT "audit_trail_2027_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_04 audit_trail_2027_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_04"
+    ADD CONSTRAINT "audit_trail_2027_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_05 audit_trail_2027_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_05"
+    ADD CONSTRAINT "audit_trail_2027_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_06 audit_trail_2027_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_06"
+    ADD CONSTRAINT "audit_trail_2027_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_07 audit_trail_2027_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_07"
+    ADD CONSTRAINT "audit_trail_2027_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_08 audit_trail_2027_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_08"
+    ADD CONSTRAINT "audit_trail_2027_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_09 audit_trail_2027_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_09"
+    ADD CONSTRAINT "audit_trail_2027_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_10 audit_trail_2027_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_10"
+    ADD CONSTRAINT "audit_trail_2027_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_11 audit_trail_2027_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_11"
+    ADD CONSTRAINT "audit_trail_2027_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: audit_trail_2027_12 audit_trail_2027_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."audit_trail_2027_12"
+    ADD CONSTRAINT "audit_trail_2027_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
 -- Name: absences idx_18930_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7226,10 +9751,10 @@ ALTER TABLE ONLY "public"."areas"
 
 
 --
--- Name: audit_trail idx_19007_primary; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: audit_trail_old idx_19007_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."audit_trail"
+ALTER TABLE ONLY "public"."audit_trail_old"
     ADD CONSTRAINT "idx_19007_primary" PRIMARY KEY ("id");
 
 
@@ -7650,10 +10175,10 @@ ALTER TABLE ONLY "public"."released_subdomains"
 
 
 --
--- Name: root_logs idx_19466_primary; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: root_logs_old idx_19466_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."root_logs"
+ALTER TABLE ONLY "public"."root_logs_old"
     ADD CONSTRAINT "idx_19466_primary" PRIMARY KEY ("id");
 
 
@@ -8010,11 +10535,1602 @@ ALTER TABLE ONLY "public"."machine_categories"
 
 
 --
+-- Name: root_logs root_logs_partitioned_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs"
+    ADD CONSTRAINT "root_logs_partitioned_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_01 root_logs_2025_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_01"
+    ADD CONSTRAINT "root_logs_2025_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_02 root_logs_2025_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_02"
+    ADD CONSTRAINT "root_logs_2025_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_03 root_logs_2025_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_03"
+    ADD CONSTRAINT "root_logs_2025_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_04 root_logs_2025_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_04"
+    ADD CONSTRAINT "root_logs_2025_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_05 root_logs_2025_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_05"
+    ADD CONSTRAINT "root_logs_2025_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_06 root_logs_2025_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_06"
+    ADD CONSTRAINT "root_logs_2025_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_07 root_logs_2025_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_07"
+    ADD CONSTRAINT "root_logs_2025_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_08 root_logs_2025_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_08"
+    ADD CONSTRAINT "root_logs_2025_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_09 root_logs_2025_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_09"
+    ADD CONSTRAINT "root_logs_2025_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_10 root_logs_2025_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_10"
+    ADD CONSTRAINT "root_logs_2025_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_11 root_logs_2025_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_11"
+    ADD CONSTRAINT "root_logs_2025_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2025_12 root_logs_2025_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2025_12"
+    ADD CONSTRAINT "root_logs_2025_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_01 root_logs_2026_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_01"
+    ADD CONSTRAINT "root_logs_2026_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_02 root_logs_2026_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_02"
+    ADD CONSTRAINT "root_logs_2026_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_03 root_logs_2026_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_03"
+    ADD CONSTRAINT "root_logs_2026_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_04 root_logs_2026_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_04"
+    ADD CONSTRAINT "root_logs_2026_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_05 root_logs_2026_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_05"
+    ADD CONSTRAINT "root_logs_2026_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_06 root_logs_2026_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_06"
+    ADD CONSTRAINT "root_logs_2026_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_07 root_logs_2026_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_07"
+    ADD CONSTRAINT "root_logs_2026_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_08 root_logs_2026_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_08"
+    ADD CONSTRAINT "root_logs_2026_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_09 root_logs_2026_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_09"
+    ADD CONSTRAINT "root_logs_2026_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_10 root_logs_2026_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_10"
+    ADD CONSTRAINT "root_logs_2026_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_11 root_logs_2026_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_11"
+    ADD CONSTRAINT "root_logs_2026_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2026_12 root_logs_2026_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2026_12"
+    ADD CONSTRAINT "root_logs_2026_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_01 root_logs_2027_01_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_01"
+    ADD CONSTRAINT "root_logs_2027_01_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_02 root_logs_2027_02_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_02"
+    ADD CONSTRAINT "root_logs_2027_02_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_03 root_logs_2027_03_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_03"
+    ADD CONSTRAINT "root_logs_2027_03_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_04 root_logs_2027_04_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_04"
+    ADD CONSTRAINT "root_logs_2027_04_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_05 root_logs_2027_05_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_05"
+    ADD CONSTRAINT "root_logs_2027_05_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_06 root_logs_2027_06_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_06"
+    ADD CONSTRAINT "root_logs_2027_06_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_07 root_logs_2027_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_07"
+    ADD CONSTRAINT "root_logs_2027_07_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_08 root_logs_2027_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_08"
+    ADD CONSTRAINT "root_logs_2027_08_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_09 root_logs_2027_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_09"
+    ADD CONSTRAINT "root_logs_2027_09_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_10 root_logs_2027_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_10"
+    ADD CONSTRAINT "root_logs_2027_10_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_11 root_logs_2027_11_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_11"
+    ADD CONSTRAINT "root_logs_2027_11_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
+-- Name: root_logs_2027_12 root_logs_2027_12_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."root_logs_2027_12"
+    ADD CONSTRAINT "root_logs_2027_12_pkey" PRIMARY KEY ("id", "created_at");
+
+
+--
 -- Name: scheduled_messages scheduled_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "public"."scheduled_messages"
     ADD CONSTRAINT "scheduled_messages_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: idx_audit_trail_part_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_part_action" ON ONLY "public"."audit_trail" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_action_idx" ON "public"."audit_trail_2025_01" USING "btree" ("action");
+
+
+--
+-- Name: idx_audit_trail_part_resource; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_part_resource" ON ONLY "public"."audit_trail" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_01_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_resource_type_resource_id_idx" ON "public"."audit_trail_2025_01" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: idx_audit_trail_part_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_part_status" ON ONLY "public"."audit_trail" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_01_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_status_idx" ON "public"."audit_trail_2025_01" USING "btree" ("status");
+
+
+--
+-- Name: idx_audit_trail_part_tenant_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_part_tenant_date" ON ONLY "public"."audit_trail" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_tenant_id_created_at_idx" ON "public"."audit_trail_2025_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: idx_audit_trail_part_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_part_user" ON ONLY "public"."audit_trail" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_user_id_idx" ON "public"."audit_trail_2025_01" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_action_idx" ON "public"."audit_trail_2025_02" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_resource_type_resource_id_idx" ON "public"."audit_trail_2025_02" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_02_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_status_idx" ON "public"."audit_trail_2025_02" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_tenant_id_created_at_idx" ON "public"."audit_trail_2025_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_user_id_idx" ON "public"."audit_trail_2025_02" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_action_idx" ON "public"."audit_trail_2025_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_03_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_resource_type_resource_id_idx" ON "public"."audit_trail_2025_03" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_03_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_status_idx" ON "public"."audit_trail_2025_03" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_tenant_id_created_at_idx" ON "public"."audit_trail_2025_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_user_id_idx" ON "public"."audit_trail_2025_03" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_action_idx" ON "public"."audit_trail_2025_04" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_resource_type_resource_id_idx" ON "public"."audit_trail_2025_04" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_04_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_status_idx" ON "public"."audit_trail_2025_04" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_tenant_id_created_at_idx" ON "public"."audit_trail_2025_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_user_id_idx" ON "public"."audit_trail_2025_04" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_action_idx" ON "public"."audit_trail_2025_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_05_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_resource_type_resource_id_idx" ON "public"."audit_trail_2025_05" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_05_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_status_idx" ON "public"."audit_trail_2025_05" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_tenant_id_created_at_idx" ON "public"."audit_trail_2025_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_user_id_idx" ON "public"."audit_trail_2025_05" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_action_idx" ON "public"."audit_trail_2025_06" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_resource_type_resource_id_idx" ON "public"."audit_trail_2025_06" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_06_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_status_idx" ON "public"."audit_trail_2025_06" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_tenant_id_created_at_idx" ON "public"."audit_trail_2025_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_user_id_idx" ON "public"."audit_trail_2025_06" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_action_idx" ON "public"."audit_trail_2025_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_07_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_resource_type_resource_id_idx" ON "public"."audit_trail_2025_07" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_07_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_status_idx" ON "public"."audit_trail_2025_07" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_tenant_id_created_at_idx" ON "public"."audit_trail_2025_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_user_id_idx" ON "public"."audit_trail_2025_07" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_action_idx" ON "public"."audit_trail_2025_08" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_resource_type_resource_id_idx" ON "public"."audit_trail_2025_08" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_08_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_status_idx" ON "public"."audit_trail_2025_08" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_tenant_id_created_at_idx" ON "public"."audit_trail_2025_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_user_id_idx" ON "public"."audit_trail_2025_08" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_action_idx" ON "public"."audit_trail_2025_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_09_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_resource_type_resource_id_idx" ON "public"."audit_trail_2025_09" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_09_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_status_idx" ON "public"."audit_trail_2025_09" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_tenant_id_created_at_idx" ON "public"."audit_trail_2025_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_user_id_idx" ON "public"."audit_trail_2025_09" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_action_idx" ON "public"."audit_trail_2025_10" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_resource_type_resource_id_idx" ON "public"."audit_trail_2025_10" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_10_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_status_idx" ON "public"."audit_trail_2025_10" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_tenant_id_created_at_idx" ON "public"."audit_trail_2025_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_user_id_idx" ON "public"."audit_trail_2025_10" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_action_idx" ON "public"."audit_trail_2025_11" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_11_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_resource_type_resource_id_idx" ON "public"."audit_trail_2025_11" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_11_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_status_idx" ON "public"."audit_trail_2025_11" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_tenant_id_created_at_idx" ON "public"."audit_trail_2025_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_user_id_idx" ON "public"."audit_trail_2025_11" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_action_idx" ON "public"."audit_trail_2025_12" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_12_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_resource_type_resource_id_idx" ON "public"."audit_trail_2025_12" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2025_12_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_status_idx" ON "public"."audit_trail_2025_12" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2025_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_tenant_id_created_at_idx" ON "public"."audit_trail_2025_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2025_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_user_id_idx" ON "public"."audit_trail_2025_12" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_action_idx" ON "public"."audit_trail_2026_01" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_01_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_resource_type_resource_id_idx" ON "public"."audit_trail_2026_01" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_01_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_status_idx" ON "public"."audit_trail_2026_01" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_tenant_id_created_at_idx" ON "public"."audit_trail_2026_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_user_id_idx" ON "public"."audit_trail_2026_01" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_action_idx" ON "public"."audit_trail_2026_02" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_resource_type_resource_id_idx" ON "public"."audit_trail_2026_02" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_02_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_status_idx" ON "public"."audit_trail_2026_02" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_tenant_id_created_at_idx" ON "public"."audit_trail_2026_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_user_id_idx" ON "public"."audit_trail_2026_02" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_action_idx" ON "public"."audit_trail_2026_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_03_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_resource_type_resource_id_idx" ON "public"."audit_trail_2026_03" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_03_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_status_idx" ON "public"."audit_trail_2026_03" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_tenant_id_created_at_idx" ON "public"."audit_trail_2026_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_user_id_idx" ON "public"."audit_trail_2026_03" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_action_idx" ON "public"."audit_trail_2026_04" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_resource_type_resource_id_idx" ON "public"."audit_trail_2026_04" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_04_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_status_idx" ON "public"."audit_trail_2026_04" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_tenant_id_created_at_idx" ON "public"."audit_trail_2026_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_user_id_idx" ON "public"."audit_trail_2026_04" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_action_idx" ON "public"."audit_trail_2026_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_05_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_resource_type_resource_id_idx" ON "public"."audit_trail_2026_05" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_05_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_status_idx" ON "public"."audit_trail_2026_05" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_tenant_id_created_at_idx" ON "public"."audit_trail_2026_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_user_id_idx" ON "public"."audit_trail_2026_05" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_action_idx" ON "public"."audit_trail_2026_06" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_resource_type_resource_id_idx" ON "public"."audit_trail_2026_06" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_06_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_status_idx" ON "public"."audit_trail_2026_06" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_tenant_id_created_at_idx" ON "public"."audit_trail_2026_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_user_id_idx" ON "public"."audit_trail_2026_06" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_action_idx" ON "public"."audit_trail_2026_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_07_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_resource_type_resource_id_idx" ON "public"."audit_trail_2026_07" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_07_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_status_idx" ON "public"."audit_trail_2026_07" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_tenant_id_created_at_idx" ON "public"."audit_trail_2026_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_user_id_idx" ON "public"."audit_trail_2026_07" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_action_idx" ON "public"."audit_trail_2026_08" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_resource_type_resource_id_idx" ON "public"."audit_trail_2026_08" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_08_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_status_idx" ON "public"."audit_trail_2026_08" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_tenant_id_created_at_idx" ON "public"."audit_trail_2026_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_user_id_idx" ON "public"."audit_trail_2026_08" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_action_idx" ON "public"."audit_trail_2026_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_09_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_resource_type_resource_id_idx" ON "public"."audit_trail_2026_09" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_09_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_status_idx" ON "public"."audit_trail_2026_09" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_tenant_id_created_at_idx" ON "public"."audit_trail_2026_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_user_id_idx" ON "public"."audit_trail_2026_09" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_action_idx" ON "public"."audit_trail_2026_10" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_resource_type_resource_id_idx" ON "public"."audit_trail_2026_10" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_10_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_status_idx" ON "public"."audit_trail_2026_10" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_tenant_id_created_at_idx" ON "public"."audit_trail_2026_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_user_id_idx" ON "public"."audit_trail_2026_10" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_action_idx" ON "public"."audit_trail_2026_11" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_11_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_resource_type_resource_id_idx" ON "public"."audit_trail_2026_11" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_11_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_status_idx" ON "public"."audit_trail_2026_11" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_tenant_id_created_at_idx" ON "public"."audit_trail_2026_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_user_id_idx" ON "public"."audit_trail_2026_11" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2026_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_action_idx" ON "public"."audit_trail_2026_12" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_12_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_resource_type_resource_id_idx" ON "public"."audit_trail_2026_12" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2026_12_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_status_idx" ON "public"."audit_trail_2026_12" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2026_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_tenant_id_created_at_idx" ON "public"."audit_trail_2026_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2026_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_user_id_idx" ON "public"."audit_trail_2026_12" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_action_idx" ON "public"."audit_trail_2027_01" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_01_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_resource_type_resource_id_idx" ON "public"."audit_trail_2027_01" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_01_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_status_idx" ON "public"."audit_trail_2027_01" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_tenant_id_created_at_idx" ON "public"."audit_trail_2027_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_user_id_idx" ON "public"."audit_trail_2027_01" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_action_idx" ON "public"."audit_trail_2027_02" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_resource_type_resource_id_idx" ON "public"."audit_trail_2027_02" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_02_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_status_idx" ON "public"."audit_trail_2027_02" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_tenant_id_created_at_idx" ON "public"."audit_trail_2027_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_user_id_idx" ON "public"."audit_trail_2027_02" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_action_idx" ON "public"."audit_trail_2027_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_03_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_resource_type_resource_id_idx" ON "public"."audit_trail_2027_03" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_03_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_status_idx" ON "public"."audit_trail_2027_03" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_tenant_id_created_at_idx" ON "public"."audit_trail_2027_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_user_id_idx" ON "public"."audit_trail_2027_03" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_action_idx" ON "public"."audit_trail_2027_04" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_resource_type_resource_id_idx" ON "public"."audit_trail_2027_04" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_04_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_status_idx" ON "public"."audit_trail_2027_04" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_tenant_id_created_at_idx" ON "public"."audit_trail_2027_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_user_id_idx" ON "public"."audit_trail_2027_04" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_action_idx" ON "public"."audit_trail_2027_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_05_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_resource_type_resource_id_idx" ON "public"."audit_trail_2027_05" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_05_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_status_idx" ON "public"."audit_trail_2027_05" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_tenant_id_created_at_idx" ON "public"."audit_trail_2027_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_user_id_idx" ON "public"."audit_trail_2027_05" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_action_idx" ON "public"."audit_trail_2027_06" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_resource_type_resource_id_idx" ON "public"."audit_trail_2027_06" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_06_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_status_idx" ON "public"."audit_trail_2027_06" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_tenant_id_created_at_idx" ON "public"."audit_trail_2027_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_user_id_idx" ON "public"."audit_trail_2027_06" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_action_idx" ON "public"."audit_trail_2027_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_07_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_resource_type_resource_id_idx" ON "public"."audit_trail_2027_07" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_07_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_status_idx" ON "public"."audit_trail_2027_07" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_tenant_id_created_at_idx" ON "public"."audit_trail_2027_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_user_id_idx" ON "public"."audit_trail_2027_07" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_action_idx" ON "public"."audit_trail_2027_08" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_resource_type_resource_id_idx" ON "public"."audit_trail_2027_08" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_08_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_status_idx" ON "public"."audit_trail_2027_08" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_tenant_id_created_at_idx" ON "public"."audit_trail_2027_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_user_id_idx" ON "public"."audit_trail_2027_08" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_action_idx" ON "public"."audit_trail_2027_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_09_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_resource_type_resource_id_idx" ON "public"."audit_trail_2027_09" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_09_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_status_idx" ON "public"."audit_trail_2027_09" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_tenant_id_created_at_idx" ON "public"."audit_trail_2027_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_user_id_idx" ON "public"."audit_trail_2027_09" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_action_idx" ON "public"."audit_trail_2027_10" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_resource_type_resource_id_idx" ON "public"."audit_trail_2027_10" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_10_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_status_idx" ON "public"."audit_trail_2027_10" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_tenant_id_created_at_idx" ON "public"."audit_trail_2027_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_user_id_idx" ON "public"."audit_trail_2027_10" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_action_idx" ON "public"."audit_trail_2027_11" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_11_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_resource_type_resource_id_idx" ON "public"."audit_trail_2027_11" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_11_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_status_idx" ON "public"."audit_trail_2027_11" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_tenant_id_created_at_idx" ON "public"."audit_trail_2027_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_user_id_idx" ON "public"."audit_trail_2027_11" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2027_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_action_idx" ON "public"."audit_trail_2027_12" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_12_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_resource_type_resource_id_idx" ON "public"."audit_trail_2027_12" USING "btree" ("resource_type", "resource_id");
+
+
+--
+-- Name: audit_trail_2027_12_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_status_idx" ON "public"."audit_trail_2027_12" USING "btree" ("status");
+
+
+--
+-- Name: audit_trail_2027_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_tenant_id_created_at_idx" ON "public"."audit_trail_2027_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: audit_trail_2027_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_user_id_idx" ON "public"."audit_trail_2027_12" USING "btree" ("user_id");
 
 
 --
@@ -8322,42 +12438,42 @@ CREATE INDEX "idx_18997_idx_areas_type" ON "public"."areas" USING "btree" ("type
 -- Name: idx_19007_audit_trail_user_fk; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_audit_trail_user_fk" ON "public"."audit_trail" USING "btree" ("user_id");
+CREATE INDEX "idx_19007_audit_trail_user_fk" ON "public"."audit_trail_old" USING "btree" ("user_id");
 
 
 --
 -- Name: idx_19007_idx_action; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_idx_action" ON "public"."audit_trail" USING "btree" ("action");
+CREATE INDEX "idx_19007_idx_action" ON "public"."audit_trail_old" USING "btree" ("action");
 
 
 --
 -- Name: idx_19007_idx_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_idx_created_at" ON "public"."audit_trail" USING "btree" ("created_at");
+CREATE INDEX "idx_19007_idx_created_at" ON "public"."audit_trail_old" USING "btree" ("created_at");
 
 
 --
 -- Name: idx_19007_idx_resource; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_idx_resource" ON "public"."audit_trail" USING "btree" ("resource_type", "resource_id");
+CREATE INDEX "idx_19007_idx_resource" ON "public"."audit_trail_old" USING "btree" ("resource_type", "resource_id");
 
 
 --
 -- Name: idx_19007_idx_status; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_idx_status" ON "public"."audit_trail" USING "btree" ("status");
+CREATE INDEX "idx_19007_idx_status" ON "public"."audit_trail_old" USING "btree" ("status");
 
 
 --
 -- Name: idx_19007_idx_tenant_user; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19007_idx_tenant_user" ON "public"."audit_trail" USING "btree" ("tenant_id", "user_id");
+CREATE INDEX "idx_19007_idx_tenant_user" ON "public"."audit_trail_old" USING "btree" ("tenant_id", "user_id");
 
 
 --
@@ -10051,42 +14167,42 @@ CREATE INDEX "idx_19460_idx_subdomain" ON "public"."released_subdomains" USING "
 -- Name: idx_19466_idx_action; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_action" ON "public"."root_logs" USING "btree" ("action");
+CREATE INDEX "idx_19466_idx_action" ON "public"."root_logs_old" USING "btree" ("action");
 
 
 --
 -- Name: idx_19466_idx_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_created_at" ON "public"."root_logs" USING "btree" ("created_at");
+CREATE INDEX "idx_19466_idx_created_at" ON "public"."root_logs_old" USING "btree" ("created_at");
 
 
 --
 -- Name: idx_19466_idx_entity_type; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_entity_type" ON "public"."root_logs" USING "btree" ("entity_type");
+CREATE INDEX "idx_19466_idx_entity_type" ON "public"."root_logs_old" USING "btree" ("entity_type");
 
 
 --
 -- Name: idx_19466_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_tenant_id" ON "public"."root_logs" USING "btree" ("tenant_id");
+CREATE INDEX "idx_19466_idx_tenant_id" ON "public"."root_logs_old" USING "btree" ("tenant_id");
 
 
 --
 -- Name: idx_19466_idx_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_user_id" ON "public"."root_logs" USING "btree" ("user_id");
+CREATE INDEX "idx_19466_idx_user_id" ON "public"."root_logs_old" USING "btree" ("user_id");
 
 
 --
 -- Name: idx_19466_idx_was_role_switched; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_19466_idx_was_role_switched" ON "public"."root_logs" USING "btree" ("was_role_switched");
+CREATE INDEX "idx_19466_idx_was_role_switched" ON "public"."root_logs_old" USING "btree" ("was_role_switched");
 
 
 --
@@ -11745,7 +15861,42 @@ CREATE INDEX "idx_notifications_uuid_created_at" ON "public"."notifications" USI
 -- Name: idx_root_logs_is_active; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_root_logs_is_active" ON "public"."root_logs" USING "btree" ("is_active");
+CREATE INDEX "idx_root_logs_is_active" ON "public"."root_logs_old" USING "btree" ("is_active");
+
+
+--
+-- Name: idx_root_logs_part_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_root_logs_part_action" ON ONLY "public"."root_logs" USING "btree" ("action");
+
+
+--
+-- Name: idx_root_logs_part_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_root_logs_part_active" ON ONLY "public"."root_logs" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: idx_root_logs_part_entity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_root_logs_part_entity" ON ONLY "public"."root_logs" USING "btree" ("entity_type");
+
+
+--
+-- Name: idx_root_logs_part_tenant_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_root_logs_part_tenant_date" ON ONLY "public"."root_logs" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: idx_root_logs_part_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_root_logs_part_user" ON ONLY "public"."root_logs" USING "btree" ("user_id");
 
 
 --
@@ -11858,6 +16009,4290 @@ CREATE UNIQUE INDEX "idx_users_uuid" ON "public"."users" USING "btree" ("uuid");
 --
 
 CREATE INDEX "idx_users_uuid_created_at" ON "public"."users" USING "btree" ("uuid_created_at");
+
+
+--
+-- Name: root_logs_2025_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_01_action_idx" ON "public"."root_logs_2025_01" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_01_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_01_entity_type_idx" ON "public"."root_logs_2025_01" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_01_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_01_is_active_idx" ON "public"."root_logs_2025_01" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_01_tenant_id_created_at_idx" ON "public"."root_logs_2025_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_01_user_id_idx" ON "public"."root_logs_2025_01" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_02_action_idx" ON "public"."root_logs_2025_02" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_02_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_02_entity_type_idx" ON "public"."root_logs_2025_02" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_02_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_02_is_active_idx" ON "public"."root_logs_2025_02" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_02_tenant_id_created_at_idx" ON "public"."root_logs_2025_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_02_user_id_idx" ON "public"."root_logs_2025_02" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_03_action_idx" ON "public"."root_logs_2025_03" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_03_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_03_entity_type_idx" ON "public"."root_logs_2025_03" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_03_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_03_is_active_idx" ON "public"."root_logs_2025_03" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_03_tenant_id_created_at_idx" ON "public"."root_logs_2025_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_03_user_id_idx" ON "public"."root_logs_2025_03" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_04_action_idx" ON "public"."root_logs_2025_04" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_04_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_04_entity_type_idx" ON "public"."root_logs_2025_04" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_04_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_04_is_active_idx" ON "public"."root_logs_2025_04" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_04_tenant_id_created_at_idx" ON "public"."root_logs_2025_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_04_user_id_idx" ON "public"."root_logs_2025_04" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_05_action_idx" ON "public"."root_logs_2025_05" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_05_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_05_entity_type_idx" ON "public"."root_logs_2025_05" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_05_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_05_is_active_idx" ON "public"."root_logs_2025_05" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_05_tenant_id_created_at_idx" ON "public"."root_logs_2025_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_05_user_id_idx" ON "public"."root_logs_2025_05" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_06_action_idx" ON "public"."root_logs_2025_06" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_06_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_06_entity_type_idx" ON "public"."root_logs_2025_06" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_06_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_06_is_active_idx" ON "public"."root_logs_2025_06" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_06_tenant_id_created_at_idx" ON "public"."root_logs_2025_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_06_user_id_idx" ON "public"."root_logs_2025_06" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_07_action_idx" ON "public"."root_logs_2025_07" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_07_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_07_entity_type_idx" ON "public"."root_logs_2025_07" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_07_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_07_is_active_idx" ON "public"."root_logs_2025_07" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_07_tenant_id_created_at_idx" ON "public"."root_logs_2025_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_07_user_id_idx" ON "public"."root_logs_2025_07" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_08_action_idx" ON "public"."root_logs_2025_08" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_08_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_08_entity_type_idx" ON "public"."root_logs_2025_08" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_08_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_08_is_active_idx" ON "public"."root_logs_2025_08" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_08_tenant_id_created_at_idx" ON "public"."root_logs_2025_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_08_user_id_idx" ON "public"."root_logs_2025_08" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_09_action_idx" ON "public"."root_logs_2025_09" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_09_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_09_entity_type_idx" ON "public"."root_logs_2025_09" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_09_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_09_is_active_idx" ON "public"."root_logs_2025_09" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_09_tenant_id_created_at_idx" ON "public"."root_logs_2025_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_09_user_id_idx" ON "public"."root_logs_2025_09" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_10_action_idx" ON "public"."root_logs_2025_10" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_10_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_10_entity_type_idx" ON "public"."root_logs_2025_10" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_10_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_10_is_active_idx" ON "public"."root_logs_2025_10" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_10_tenant_id_created_at_idx" ON "public"."root_logs_2025_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_10_user_id_idx" ON "public"."root_logs_2025_10" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_11_action_idx" ON "public"."root_logs_2025_11" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_11_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_11_entity_type_idx" ON "public"."root_logs_2025_11" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_11_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_11_is_active_idx" ON "public"."root_logs_2025_11" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_11_tenant_id_created_at_idx" ON "public"."root_logs_2025_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_11_user_id_idx" ON "public"."root_logs_2025_11" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2025_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_12_action_idx" ON "public"."root_logs_2025_12" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2025_12_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_12_entity_type_idx" ON "public"."root_logs_2025_12" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2025_12_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_12_is_active_idx" ON "public"."root_logs_2025_12" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2025_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_12_tenant_id_created_at_idx" ON "public"."root_logs_2025_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2025_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2025_12_user_id_idx" ON "public"."root_logs_2025_12" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_01_action_idx" ON "public"."root_logs_2026_01" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_01_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_01_entity_type_idx" ON "public"."root_logs_2026_01" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_01_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_01_is_active_idx" ON "public"."root_logs_2026_01" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_01_tenant_id_created_at_idx" ON "public"."root_logs_2026_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_01_user_id_idx" ON "public"."root_logs_2026_01" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_02_action_idx" ON "public"."root_logs_2026_02" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_02_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_02_entity_type_idx" ON "public"."root_logs_2026_02" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_02_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_02_is_active_idx" ON "public"."root_logs_2026_02" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_02_tenant_id_created_at_idx" ON "public"."root_logs_2026_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_02_user_id_idx" ON "public"."root_logs_2026_02" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_03_action_idx" ON "public"."root_logs_2026_03" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_03_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_03_entity_type_idx" ON "public"."root_logs_2026_03" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_03_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_03_is_active_idx" ON "public"."root_logs_2026_03" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_03_tenant_id_created_at_idx" ON "public"."root_logs_2026_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_03_user_id_idx" ON "public"."root_logs_2026_03" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_04_action_idx" ON "public"."root_logs_2026_04" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_04_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_04_entity_type_idx" ON "public"."root_logs_2026_04" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_04_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_04_is_active_idx" ON "public"."root_logs_2026_04" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_04_tenant_id_created_at_idx" ON "public"."root_logs_2026_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_04_user_id_idx" ON "public"."root_logs_2026_04" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_05_action_idx" ON "public"."root_logs_2026_05" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_05_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_05_entity_type_idx" ON "public"."root_logs_2026_05" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_05_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_05_is_active_idx" ON "public"."root_logs_2026_05" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_05_tenant_id_created_at_idx" ON "public"."root_logs_2026_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_05_user_id_idx" ON "public"."root_logs_2026_05" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_06_action_idx" ON "public"."root_logs_2026_06" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_06_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_06_entity_type_idx" ON "public"."root_logs_2026_06" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_06_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_06_is_active_idx" ON "public"."root_logs_2026_06" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_06_tenant_id_created_at_idx" ON "public"."root_logs_2026_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_06_user_id_idx" ON "public"."root_logs_2026_06" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_07_action_idx" ON "public"."root_logs_2026_07" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_07_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_07_entity_type_idx" ON "public"."root_logs_2026_07" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_07_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_07_is_active_idx" ON "public"."root_logs_2026_07" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_07_tenant_id_created_at_idx" ON "public"."root_logs_2026_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_07_user_id_idx" ON "public"."root_logs_2026_07" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_08_action_idx" ON "public"."root_logs_2026_08" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_08_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_08_entity_type_idx" ON "public"."root_logs_2026_08" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_08_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_08_is_active_idx" ON "public"."root_logs_2026_08" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_08_tenant_id_created_at_idx" ON "public"."root_logs_2026_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_08_user_id_idx" ON "public"."root_logs_2026_08" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_09_action_idx" ON "public"."root_logs_2026_09" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_09_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_09_entity_type_idx" ON "public"."root_logs_2026_09" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_09_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_09_is_active_idx" ON "public"."root_logs_2026_09" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_09_tenant_id_created_at_idx" ON "public"."root_logs_2026_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_09_user_id_idx" ON "public"."root_logs_2026_09" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_10_action_idx" ON "public"."root_logs_2026_10" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_10_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_10_entity_type_idx" ON "public"."root_logs_2026_10" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_10_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_10_is_active_idx" ON "public"."root_logs_2026_10" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_10_tenant_id_created_at_idx" ON "public"."root_logs_2026_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_10_user_id_idx" ON "public"."root_logs_2026_10" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_11_action_idx" ON "public"."root_logs_2026_11" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_11_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_11_entity_type_idx" ON "public"."root_logs_2026_11" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_11_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_11_is_active_idx" ON "public"."root_logs_2026_11" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_11_tenant_id_created_at_idx" ON "public"."root_logs_2026_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_11_user_id_idx" ON "public"."root_logs_2026_11" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2026_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_12_action_idx" ON "public"."root_logs_2026_12" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2026_12_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_12_entity_type_idx" ON "public"."root_logs_2026_12" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2026_12_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_12_is_active_idx" ON "public"."root_logs_2026_12" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2026_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_12_tenant_id_created_at_idx" ON "public"."root_logs_2026_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2026_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2026_12_user_id_idx" ON "public"."root_logs_2026_12" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_01_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_01_action_idx" ON "public"."root_logs_2027_01" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_01_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_01_entity_type_idx" ON "public"."root_logs_2027_01" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_01_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_01_is_active_idx" ON "public"."root_logs_2027_01" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_01_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_01_tenant_id_created_at_idx" ON "public"."root_logs_2027_01" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_01_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_01_user_id_idx" ON "public"."root_logs_2027_01" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_02_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_02_action_idx" ON "public"."root_logs_2027_02" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_02_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_02_entity_type_idx" ON "public"."root_logs_2027_02" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_02_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_02_is_active_idx" ON "public"."root_logs_2027_02" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_02_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_02_tenant_id_created_at_idx" ON "public"."root_logs_2027_02" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_02_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_02_user_id_idx" ON "public"."root_logs_2027_02" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_03_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_03_action_idx" ON "public"."root_logs_2027_03" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_03_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_03_entity_type_idx" ON "public"."root_logs_2027_03" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_03_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_03_is_active_idx" ON "public"."root_logs_2027_03" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_03_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_03_tenant_id_created_at_idx" ON "public"."root_logs_2027_03" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_03_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_03_user_id_idx" ON "public"."root_logs_2027_03" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_04_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_04_action_idx" ON "public"."root_logs_2027_04" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_04_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_04_entity_type_idx" ON "public"."root_logs_2027_04" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_04_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_04_is_active_idx" ON "public"."root_logs_2027_04" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_04_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_04_tenant_id_created_at_idx" ON "public"."root_logs_2027_04" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_04_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_04_user_id_idx" ON "public"."root_logs_2027_04" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_05_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_05_action_idx" ON "public"."root_logs_2027_05" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_05_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_05_entity_type_idx" ON "public"."root_logs_2027_05" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_05_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_05_is_active_idx" ON "public"."root_logs_2027_05" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_05_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_05_tenant_id_created_at_idx" ON "public"."root_logs_2027_05" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_05_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_05_user_id_idx" ON "public"."root_logs_2027_05" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_06_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_06_action_idx" ON "public"."root_logs_2027_06" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_06_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_06_entity_type_idx" ON "public"."root_logs_2027_06" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_06_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_06_is_active_idx" ON "public"."root_logs_2027_06" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_06_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_06_tenant_id_created_at_idx" ON "public"."root_logs_2027_06" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_06_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_06_user_id_idx" ON "public"."root_logs_2027_06" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_07_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_07_action_idx" ON "public"."root_logs_2027_07" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_07_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_07_entity_type_idx" ON "public"."root_logs_2027_07" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_07_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_07_is_active_idx" ON "public"."root_logs_2027_07" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_07_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_07_tenant_id_created_at_idx" ON "public"."root_logs_2027_07" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_07_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_07_user_id_idx" ON "public"."root_logs_2027_07" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_08_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_08_action_idx" ON "public"."root_logs_2027_08" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_08_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_08_entity_type_idx" ON "public"."root_logs_2027_08" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_08_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_08_is_active_idx" ON "public"."root_logs_2027_08" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_08_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_08_tenant_id_created_at_idx" ON "public"."root_logs_2027_08" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_08_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_08_user_id_idx" ON "public"."root_logs_2027_08" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_09_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_09_action_idx" ON "public"."root_logs_2027_09" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_09_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_09_entity_type_idx" ON "public"."root_logs_2027_09" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_09_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_09_is_active_idx" ON "public"."root_logs_2027_09" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_09_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_09_tenant_id_created_at_idx" ON "public"."root_logs_2027_09" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_09_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_09_user_id_idx" ON "public"."root_logs_2027_09" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_10_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_10_action_idx" ON "public"."root_logs_2027_10" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_10_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_10_entity_type_idx" ON "public"."root_logs_2027_10" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_10_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_10_is_active_idx" ON "public"."root_logs_2027_10" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_10_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_10_tenant_id_created_at_idx" ON "public"."root_logs_2027_10" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_10_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_10_user_id_idx" ON "public"."root_logs_2027_10" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_11_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_11_action_idx" ON "public"."root_logs_2027_11" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_11_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_11_entity_type_idx" ON "public"."root_logs_2027_11" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_11_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_11_is_active_idx" ON "public"."root_logs_2027_11" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_11_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_11_tenant_id_created_at_idx" ON "public"."root_logs_2027_11" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_11_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_11_user_id_idx" ON "public"."root_logs_2027_11" USING "btree" ("user_id");
+
+
+--
+-- Name: root_logs_2027_12_action_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_12_action_idx" ON "public"."root_logs_2027_12" USING "btree" ("action");
+
+
+--
+-- Name: root_logs_2027_12_entity_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_12_entity_type_idx" ON "public"."root_logs_2027_12" USING "btree" ("entity_type");
+
+
+--
+-- Name: root_logs_2027_12_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_12_is_active_idx" ON "public"."root_logs_2027_12" USING "btree" ("is_active") WHERE (("is_active" IS NULL) OR ("is_active" <> 4));
+
+
+--
+-- Name: root_logs_2027_12_tenant_id_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_12_tenant_id_created_at_idx" ON "public"."root_logs_2027_12" USING "btree" ("tenant_id", "created_at" DESC);
+
+
+--
+-- Name: root_logs_2027_12_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "root_logs_2027_12_user_id_idx" ON "public"."root_logs_2027_12" USING "btree" ("user_id");
+
+
+--
+-- Name: audit_trail_2025_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_01_action_idx";
+
+
+--
+-- Name: audit_trail_2025_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_01_pkey";
+
+
+--
+-- Name: audit_trail_2025_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_01_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_01_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_01_status_idx";
+
+
+--
+-- Name: audit_trail_2025_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_01_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_02_action_idx";
+
+
+--
+-- Name: audit_trail_2025_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_02_pkey";
+
+
+--
+-- Name: audit_trail_2025_02_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_02_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_02_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_02_status_idx";
+
+
+--
+-- Name: audit_trail_2025_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_02_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_03_action_idx";
+
+
+--
+-- Name: audit_trail_2025_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_03_pkey";
+
+
+--
+-- Name: audit_trail_2025_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_03_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_03_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_03_status_idx";
+
+
+--
+-- Name: audit_trail_2025_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_03_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_04_action_idx";
+
+
+--
+-- Name: audit_trail_2025_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_04_pkey";
+
+
+--
+-- Name: audit_trail_2025_04_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_04_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_04_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_04_status_idx";
+
+
+--
+-- Name: audit_trail_2025_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_04_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_05_action_idx";
+
+
+--
+-- Name: audit_trail_2025_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_05_pkey";
+
+
+--
+-- Name: audit_trail_2025_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_05_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_05_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_05_status_idx";
+
+
+--
+-- Name: audit_trail_2025_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_05_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_06_action_idx";
+
+
+--
+-- Name: audit_trail_2025_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_06_pkey";
+
+
+--
+-- Name: audit_trail_2025_06_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_06_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_06_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_06_status_idx";
+
+
+--
+-- Name: audit_trail_2025_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_06_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_07_action_idx";
+
+
+--
+-- Name: audit_trail_2025_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_07_pkey";
+
+
+--
+-- Name: audit_trail_2025_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_07_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_07_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_07_status_idx";
+
+
+--
+-- Name: audit_trail_2025_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_07_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_08_action_idx";
+
+
+--
+-- Name: audit_trail_2025_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_08_pkey";
+
+
+--
+-- Name: audit_trail_2025_08_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_08_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_08_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_08_status_idx";
+
+
+--
+-- Name: audit_trail_2025_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_08_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_09_action_idx";
+
+
+--
+-- Name: audit_trail_2025_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_09_pkey";
+
+
+--
+-- Name: audit_trail_2025_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_09_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_09_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_09_status_idx";
+
+
+--
+-- Name: audit_trail_2025_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_09_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_10_action_idx";
+
+
+--
+-- Name: audit_trail_2025_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_10_pkey";
+
+
+--
+-- Name: audit_trail_2025_10_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_10_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_10_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_10_status_idx";
+
+
+--
+-- Name: audit_trail_2025_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_10_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_11_action_idx";
+
+
+--
+-- Name: audit_trail_2025_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_11_pkey";
+
+
+--
+-- Name: audit_trail_2025_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_11_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_11_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_11_status_idx";
+
+
+--
+-- Name: audit_trail_2025_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_11_user_id_idx";
+
+
+--
+-- Name: audit_trail_2025_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2025_12_action_idx";
+
+
+--
+-- Name: audit_trail_2025_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_12_pkey";
+
+
+--
+-- Name: audit_trail_2025_12_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2025_12_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2025_12_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2025_12_status_idx";
+
+
+--
+-- Name: audit_trail_2025_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2025_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2025_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2025_12_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_01_action_idx";
+
+
+--
+-- Name: audit_trail_2026_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_01_pkey";
+
+
+--
+-- Name: audit_trail_2026_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_01_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_01_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_01_status_idx";
+
+
+--
+-- Name: audit_trail_2026_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_01_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_02_action_idx";
+
+
+--
+-- Name: audit_trail_2026_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_02_pkey";
+
+
+--
+-- Name: audit_trail_2026_02_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_02_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_02_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_02_status_idx";
+
+
+--
+-- Name: audit_trail_2026_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_02_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_03_action_idx";
+
+
+--
+-- Name: audit_trail_2026_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_03_pkey";
+
+
+--
+-- Name: audit_trail_2026_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_03_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_03_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_03_status_idx";
+
+
+--
+-- Name: audit_trail_2026_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_03_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_04_action_idx";
+
+
+--
+-- Name: audit_trail_2026_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_04_pkey";
+
+
+--
+-- Name: audit_trail_2026_04_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_04_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_04_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_04_status_idx";
+
+
+--
+-- Name: audit_trail_2026_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_04_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_05_action_idx";
+
+
+--
+-- Name: audit_trail_2026_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_05_pkey";
+
+
+--
+-- Name: audit_trail_2026_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_05_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_05_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_05_status_idx";
+
+
+--
+-- Name: audit_trail_2026_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_05_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_06_action_idx";
+
+
+--
+-- Name: audit_trail_2026_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_06_pkey";
+
+
+--
+-- Name: audit_trail_2026_06_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_06_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_06_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_06_status_idx";
+
+
+--
+-- Name: audit_trail_2026_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_06_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_07_action_idx";
+
+
+--
+-- Name: audit_trail_2026_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_07_pkey";
+
+
+--
+-- Name: audit_trail_2026_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_07_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_07_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_07_status_idx";
+
+
+--
+-- Name: audit_trail_2026_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_07_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_08_action_idx";
+
+
+--
+-- Name: audit_trail_2026_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_08_pkey";
+
+
+--
+-- Name: audit_trail_2026_08_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_08_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_08_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_08_status_idx";
+
+
+--
+-- Name: audit_trail_2026_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_08_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_09_action_idx";
+
+
+--
+-- Name: audit_trail_2026_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_09_pkey";
+
+
+--
+-- Name: audit_trail_2026_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_09_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_09_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_09_status_idx";
+
+
+--
+-- Name: audit_trail_2026_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_09_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_10_action_idx";
+
+
+--
+-- Name: audit_trail_2026_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_10_pkey";
+
+
+--
+-- Name: audit_trail_2026_10_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_10_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_10_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_10_status_idx";
+
+
+--
+-- Name: audit_trail_2026_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_10_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_11_action_idx";
+
+
+--
+-- Name: audit_trail_2026_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_11_pkey";
+
+
+--
+-- Name: audit_trail_2026_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_11_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_11_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_11_status_idx";
+
+
+--
+-- Name: audit_trail_2026_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_11_user_id_idx";
+
+
+--
+-- Name: audit_trail_2026_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2026_12_action_idx";
+
+
+--
+-- Name: audit_trail_2026_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_12_pkey";
+
+
+--
+-- Name: audit_trail_2026_12_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2026_12_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2026_12_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2026_12_status_idx";
+
+
+--
+-- Name: audit_trail_2026_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2026_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2026_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2026_12_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_01_action_idx";
+
+
+--
+-- Name: audit_trail_2027_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_01_pkey";
+
+
+--
+-- Name: audit_trail_2027_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_01_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_01_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_01_status_idx";
+
+
+--
+-- Name: audit_trail_2027_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_01_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_02_action_idx";
+
+
+--
+-- Name: audit_trail_2027_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_02_pkey";
+
+
+--
+-- Name: audit_trail_2027_02_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_02_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_02_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_02_status_idx";
+
+
+--
+-- Name: audit_trail_2027_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_02_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_03_action_idx";
+
+
+--
+-- Name: audit_trail_2027_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_03_pkey";
+
+
+--
+-- Name: audit_trail_2027_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_03_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_03_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_03_status_idx";
+
+
+--
+-- Name: audit_trail_2027_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_03_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_04_action_idx";
+
+
+--
+-- Name: audit_trail_2027_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_04_pkey";
+
+
+--
+-- Name: audit_trail_2027_04_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_04_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_04_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_04_status_idx";
+
+
+--
+-- Name: audit_trail_2027_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_04_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_05_action_idx";
+
+
+--
+-- Name: audit_trail_2027_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_05_pkey";
+
+
+--
+-- Name: audit_trail_2027_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_05_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_05_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_05_status_idx";
+
+
+--
+-- Name: audit_trail_2027_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_05_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_06_action_idx";
+
+
+--
+-- Name: audit_trail_2027_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_06_pkey";
+
+
+--
+-- Name: audit_trail_2027_06_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_06_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_06_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_06_status_idx";
+
+
+--
+-- Name: audit_trail_2027_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_06_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_07_action_idx";
+
+
+--
+-- Name: audit_trail_2027_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_07_pkey";
+
+
+--
+-- Name: audit_trail_2027_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_07_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_07_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_07_status_idx";
+
+
+--
+-- Name: audit_trail_2027_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_07_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_08_action_idx";
+
+
+--
+-- Name: audit_trail_2027_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_08_pkey";
+
+
+--
+-- Name: audit_trail_2027_08_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_08_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_08_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_08_status_idx";
+
+
+--
+-- Name: audit_trail_2027_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_08_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_09_action_idx";
+
+
+--
+-- Name: audit_trail_2027_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_09_pkey";
+
+
+--
+-- Name: audit_trail_2027_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_09_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_09_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_09_status_idx";
+
+
+--
+-- Name: audit_trail_2027_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_09_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_10_action_idx";
+
+
+--
+-- Name: audit_trail_2027_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_10_pkey";
+
+
+--
+-- Name: audit_trail_2027_10_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_10_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_10_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_10_status_idx";
+
+
+--
+-- Name: audit_trail_2027_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_10_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_11_action_idx";
+
+
+--
+-- Name: audit_trail_2027_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_11_pkey";
+
+
+--
+-- Name: audit_trail_2027_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_11_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_11_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_11_status_idx";
+
+
+--
+-- Name: audit_trail_2027_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_11_user_id_idx";
+
+
+--
+-- Name: audit_trail_2027_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."audit_trail_2027_12_action_idx";
+
+
+--
+-- Name: audit_trail_2027_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_12_pkey";
+
+
+--
+-- Name: audit_trail_2027_12_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_resource" ATTACH PARTITION "public"."audit_trail_2027_12_resource_type_resource_id_idx";
+
+
+--
+-- Name: audit_trail_2027_12_status_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_status" ATTACH PARTITION "public"."audit_trail_2027_12_status_idx";
+
+
+--
+-- Name: audit_trail_2027_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_tenant_date" ATTACH PARTITION "public"."audit_trail_2027_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: audit_trail_2027_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_part_user" ATTACH PARTITION "public"."audit_trail_2027_12_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_01_action_idx";
+
+
+--
+-- Name: root_logs_2025_01_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_01_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_01_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_01_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_01_pkey";
+
+
+--
+-- Name: root_logs_2025_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_01_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_02_action_idx";
+
+
+--
+-- Name: root_logs_2025_02_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_02_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_02_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_02_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_02_pkey";
+
+
+--
+-- Name: root_logs_2025_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_02_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_03_action_idx";
+
+
+--
+-- Name: root_logs_2025_03_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_03_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_03_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_03_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_03_pkey";
+
+
+--
+-- Name: root_logs_2025_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_03_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_04_action_idx";
+
+
+--
+-- Name: root_logs_2025_04_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_04_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_04_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_04_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_04_pkey";
+
+
+--
+-- Name: root_logs_2025_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_04_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_05_action_idx";
+
+
+--
+-- Name: root_logs_2025_05_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_05_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_05_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_05_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_05_pkey";
+
+
+--
+-- Name: root_logs_2025_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_05_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_06_action_idx";
+
+
+--
+-- Name: root_logs_2025_06_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_06_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_06_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_06_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_06_pkey";
+
+
+--
+-- Name: root_logs_2025_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_06_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_07_action_idx";
+
+
+--
+-- Name: root_logs_2025_07_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_07_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_07_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_07_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_07_pkey";
+
+
+--
+-- Name: root_logs_2025_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_07_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_08_action_idx";
+
+
+--
+-- Name: root_logs_2025_08_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_08_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_08_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_08_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_08_pkey";
+
+
+--
+-- Name: root_logs_2025_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_08_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_09_action_idx";
+
+
+--
+-- Name: root_logs_2025_09_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_09_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_09_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_09_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_09_pkey";
+
+
+--
+-- Name: root_logs_2025_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_09_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_10_action_idx";
+
+
+--
+-- Name: root_logs_2025_10_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_10_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_10_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_10_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_10_pkey";
+
+
+--
+-- Name: root_logs_2025_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_10_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_11_action_idx";
+
+
+--
+-- Name: root_logs_2025_11_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_11_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_11_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_11_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_11_pkey";
+
+
+--
+-- Name: root_logs_2025_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_11_user_id_idx";
+
+
+--
+-- Name: root_logs_2025_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2025_12_action_idx";
+
+
+--
+-- Name: root_logs_2025_12_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2025_12_entity_type_idx";
+
+
+--
+-- Name: root_logs_2025_12_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2025_12_is_active_idx";
+
+
+--
+-- Name: root_logs_2025_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2025_12_pkey";
+
+
+--
+-- Name: root_logs_2025_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2025_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2025_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2025_12_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_01_action_idx";
+
+
+--
+-- Name: root_logs_2026_01_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_01_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_01_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_01_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_01_pkey";
+
+
+--
+-- Name: root_logs_2026_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_01_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_02_action_idx";
+
+
+--
+-- Name: root_logs_2026_02_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_02_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_02_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_02_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_02_pkey";
+
+
+--
+-- Name: root_logs_2026_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_02_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_03_action_idx";
+
+
+--
+-- Name: root_logs_2026_03_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_03_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_03_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_03_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_03_pkey";
+
+
+--
+-- Name: root_logs_2026_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_03_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_04_action_idx";
+
+
+--
+-- Name: root_logs_2026_04_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_04_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_04_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_04_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_04_pkey";
+
+
+--
+-- Name: root_logs_2026_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_04_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_05_action_idx";
+
+
+--
+-- Name: root_logs_2026_05_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_05_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_05_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_05_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_05_pkey";
+
+
+--
+-- Name: root_logs_2026_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_05_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_06_action_idx";
+
+
+--
+-- Name: root_logs_2026_06_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_06_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_06_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_06_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_06_pkey";
+
+
+--
+-- Name: root_logs_2026_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_06_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_07_action_idx";
+
+
+--
+-- Name: root_logs_2026_07_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_07_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_07_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_07_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_07_pkey";
+
+
+--
+-- Name: root_logs_2026_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_07_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_08_action_idx";
+
+
+--
+-- Name: root_logs_2026_08_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_08_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_08_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_08_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_08_pkey";
+
+
+--
+-- Name: root_logs_2026_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_08_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_09_action_idx";
+
+
+--
+-- Name: root_logs_2026_09_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_09_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_09_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_09_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_09_pkey";
+
+
+--
+-- Name: root_logs_2026_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_09_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_10_action_idx";
+
+
+--
+-- Name: root_logs_2026_10_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_10_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_10_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_10_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_10_pkey";
+
+
+--
+-- Name: root_logs_2026_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_10_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_11_action_idx";
+
+
+--
+-- Name: root_logs_2026_11_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_11_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_11_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_11_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_11_pkey";
+
+
+--
+-- Name: root_logs_2026_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_11_user_id_idx";
+
+
+--
+-- Name: root_logs_2026_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2026_12_action_idx";
+
+
+--
+-- Name: root_logs_2026_12_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2026_12_entity_type_idx";
+
+
+--
+-- Name: root_logs_2026_12_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2026_12_is_active_idx";
+
+
+--
+-- Name: root_logs_2026_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2026_12_pkey";
+
+
+--
+-- Name: root_logs_2026_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2026_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2026_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2026_12_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_01_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_01_action_idx";
+
+
+--
+-- Name: root_logs_2027_01_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_01_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_01_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_01_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_01_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_01_pkey";
+
+
+--
+-- Name: root_logs_2027_01_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_01_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_01_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_01_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_02_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_02_action_idx";
+
+
+--
+-- Name: root_logs_2027_02_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_02_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_02_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_02_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_02_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_02_pkey";
+
+
+--
+-- Name: root_logs_2027_02_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_02_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_02_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_02_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_03_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_03_action_idx";
+
+
+--
+-- Name: root_logs_2027_03_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_03_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_03_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_03_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_03_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_03_pkey";
+
+
+--
+-- Name: root_logs_2027_03_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_03_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_03_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_03_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_04_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_04_action_idx";
+
+
+--
+-- Name: root_logs_2027_04_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_04_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_04_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_04_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_04_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_04_pkey";
+
+
+--
+-- Name: root_logs_2027_04_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_04_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_04_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_04_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_05_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_05_action_idx";
+
+
+--
+-- Name: root_logs_2027_05_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_05_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_05_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_05_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_05_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_05_pkey";
+
+
+--
+-- Name: root_logs_2027_05_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_05_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_05_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_05_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_06_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_06_action_idx";
+
+
+--
+-- Name: root_logs_2027_06_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_06_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_06_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_06_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_06_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_06_pkey";
+
+
+--
+-- Name: root_logs_2027_06_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_06_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_06_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_06_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_07_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_07_action_idx";
+
+
+--
+-- Name: root_logs_2027_07_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_07_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_07_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_07_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_07_pkey";
+
+
+--
+-- Name: root_logs_2027_07_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_07_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_07_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_07_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_08_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_08_action_idx";
+
+
+--
+-- Name: root_logs_2027_08_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_08_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_08_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_08_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_08_pkey";
+
+
+--
+-- Name: root_logs_2027_08_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_08_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_08_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_08_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_09_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_09_action_idx";
+
+
+--
+-- Name: root_logs_2027_09_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_09_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_09_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_09_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_09_pkey";
+
+
+--
+-- Name: root_logs_2027_09_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_09_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_09_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_09_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_10_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_10_action_idx";
+
+
+--
+-- Name: root_logs_2027_10_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_10_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_10_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_10_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_10_pkey";
+
+
+--
+-- Name: root_logs_2027_10_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_10_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_10_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_10_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_11_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_11_action_idx";
+
+
+--
+-- Name: root_logs_2027_11_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_11_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_11_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_11_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_11_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_11_pkey";
+
+
+--
+-- Name: root_logs_2027_11_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_11_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_11_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_11_user_id_idx";
+
+
+--
+-- Name: root_logs_2027_12_action_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_action" ATTACH PARTITION "public"."root_logs_2027_12_action_idx";
+
+
+--
+-- Name: root_logs_2027_12_entity_type_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_entity" ATTACH PARTITION "public"."root_logs_2027_12_entity_type_idx";
+
+
+--
+-- Name: root_logs_2027_12_is_active_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_active" ATTACH PARTITION "public"."root_logs_2027_12_is_active_idx";
+
+
+--
+-- Name: root_logs_2027_12_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."root_logs_partitioned_pkey" ATTACH PARTITION "public"."root_logs_2027_12_pkey";
+
+
+--
+-- Name: root_logs_2027_12_tenant_id_created_at_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_tenant_date" ATTACH PARTITION "public"."root_logs_2027_12_tenant_id_created_at_idx";
+
+
+--
+-- Name: root_logs_2027_12_user_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_root_logs_part_user" ATTACH PARTITION "public"."root_logs_2027_12_user_id_idx";
 
 
 --
@@ -12409,14 +20844,6 @@ ALTER TABLE ONLY "public"."admin_logs"
 
 
 --
--- Name: root_logs admin_logs_user_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."root_logs"
-    ADD CONSTRAINT "admin_logs_user_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
---
 -- Name: admin_permission_logs admin_permission_logs_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12462,22 +20889,6 @@ ALTER TABLE ONLY "public"."api_keys"
 
 ALTER TABLE ONLY "public"."api_logs"
     ADD CONSTRAINT "api_logs_ibfk_2" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE SET NULL;
-
-
---
--- Name: audit_trail audit_trail_tenant_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."audit_trail"
-    ADD CONSTRAINT "audit_trail_tenant_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
---
--- Name: audit_trail audit_trail_user_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."audit_trail"
-    ADD CONSTRAINT "audit_trail_user_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
 
 
 --
@@ -13857,14 +22268,6 @@ ALTER TABLE ONLY "public"."recurring_jobs"
 
 
 --
--- Name: root_logs root_logs_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."root_logs"
-    ADD CONSTRAINT "root_logs_ibfk_1" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
---
 -- Name: scheduled_messages scheduled_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14477,6 +22880,12 @@ ALTER TABLE "public"."areas" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."audit_trail" ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: audit_trail_old; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE "public"."audit_trail_old" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: backup_retention_policy; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -14745,6 +23154,12 @@ ALTER TABLE "public"."refresh_tokens" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."root_logs" ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: root_logs_old; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE "public"."root_logs_old" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: scheduled_messages; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -14974,6 +23389,13 @@ CREATE POLICY "tenant_isolation" ON "public"."areas" USING (((NULLIF("current_se
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."audit_trail" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
+
+
+--
+-- Name: audit_trail_old tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "tenant_isolation" ON "public"."audit_trail_old" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -15226,6 +23648,13 @@ CREATE POLICY "tenant_isolation" ON "public"."refresh_tokens" USING (((NULLIF("c
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."root_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
+
+
+--
+-- Name: root_logs_old tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "tenant_isolation" ON "public"."root_logs_old" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -15551,5 +23980,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mcPAGoRghVqnrpJ8k4nv2TImrWkzpndDa27Y2sbtDuApgUhAMzWomkmLLCzWzyQ
+\unrestrict VDgzs7wrC3s5fpwQeZhGmFdK0jeEd8Lq5OijuW8Vao8aEneRecvuAZUbmx3ThVR
 

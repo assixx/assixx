@@ -154,6 +154,18 @@ export class BlackboardController {
   }
 
   /**
+   * GET /blackboard/unconfirmed-count
+   * Get count of unconfirmed entries for notification badge
+   */
+  @Get('unconfirmed-count')
+  async getUnconfirmedCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.blackboardService.getUnconfirmedCount(user.id, tenantId);
+  }
+
+  /**
    * GET /blackboard/entries/:id
    * Get entry by ID (numeric or UUID)
    */

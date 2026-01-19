@@ -106,7 +106,7 @@ export class RoleSwitchService {
   }
 
   /**
-   * Log role switch action for audit
+   * Log role switch action to root_logs for audit trail
    */
   private async logRoleSwitch(
     tenantId: number,
@@ -117,7 +117,7 @@ export class RoleSwitchService {
   ): Promise<void> {
     try {
       await execute(
-        `INSERT INTO logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
+        `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
         [
           tenantId,
@@ -125,12 +125,12 @@ export class RoleSwitchService {
           action,
           'user',
           userId,
-          JSON.stringify({ from_role: fromRole, to_role: toRole, timestamp: new Date() }),
+          JSON.stringify({ from_role: fromRole, to_role: toRole }),
           true,
         ],
       );
     } catch (error: unknown) {
-      // Log error but don't fail the operation
+      // Don't fail the operation if audit logging fails
       this.logger.warn(`Failed to log role switch: ${(error as Error).message}`);
     }
   }

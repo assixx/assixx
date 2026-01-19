@@ -16,6 +16,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { eventBus } from '../../utils/eventBus.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
@@ -195,6 +196,7 @@ export class DocumentsService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly notificationsService: NotificationsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ============================================
@@ -447,36 +449,31 @@ export class DocumentsService {
       throw new ForbiddenException("You don't have permission to update this document");
     }
 
-    // Build update
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (dto.filename !== undefined) {
-      updates.push(`filename = $${paramIndex}`);
-      params.push(dto.filename);
-      paramIndex++;
-    }
-    if (dto.category !== undefined) {
-      updates.push(`category = $${paramIndex}`);
-      params.push(dto.category);
-      paramIndex++;
-    }
-    if (dto.description !== undefined) {
-      updates.push(`description = $${paramIndex}`);
-      params.push(dto.description);
-      paramIndex++;
-    }
-    if (dto.tags !== undefined) {
-      updates.push(`tags = $${paramIndex}`);
-      params.push(JSON.stringify(dto.tags));
-      paramIndex++;
-    }
-
+    // Build and execute update
+    const { updates, params, paramIndex } = this.buildDocumentUpdateClause(dto);
     params.push(documentId, tenantId);
     await this.databaseService.query(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
       params,
+    );
+
+    // Log activity
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument aktualisiert: ${document.original_name ?? document.filename}`,
+      {
+        filename: document.filename,
+        category: document.category,
+        description: document.description,
+      },
+      {
+        filename: dto.filename ?? document.filename,
+        category: dto.category ?? document.category,
+        description: dto.description ?? document.description,
+      },
     );
 
     return { message: 'Document updated successfully' };
@@ -509,6 +506,22 @@ export class DocumentsService {
     await this.databaseService.query(
       `UPDATE documents SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument gelöscht: ${document.original_name ?? document.filename}`,
+      {
+        filename: document.filename,
+        originalName: document.original_name,
+        category: document.category,
+        accessScope: document.access_scope,
+        fileSize: document.file_size,
+      },
     );
 
     return { message: 'Document deleted successfully' };
@@ -934,6 +947,36 @@ export class DocumentsService {
   // ============================================
   // Private Helper Methods
   // ============================================
+
+  /** Build document update clause from DTO */
+  private buildDocumentUpdateClause(dto: UpdateDocumentDto): {
+    updates: string[];
+    params: unknown[];
+    paramIndex: number;
+  } {
+    const updates: string[] = ['updated_at = NOW()'];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (dto.filename !== undefined) {
+      updates.push(`filename = $${paramIndex++}`);
+      params.push(dto.filename);
+    }
+    if (dto.category !== undefined) {
+      updates.push(`category = $${paramIndex++}`);
+      params.push(dto.category);
+    }
+    if (dto.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      params.push(dto.description);
+    }
+    if (dto.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      params.push(JSON.stringify(dto.tags));
+    }
+
+    return { updates, params, paramIndex };
+  }
 
   /**
    * Get user by ID

@@ -15,6 +15,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
 import type { UpdateTeamDto } from './dto/update-team.dto.js';
 
@@ -119,6 +120,8 @@ const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id =
 @Injectable()
 export class TeamsService {
   private readonly logger = new Logger(TeamsService.name);
+
+  constructor(private readonly activityLogger: ActivityLoggerService) {}
 
   /**
    * SQL query for fetching teams with extended info
@@ -328,7 +331,11 @@ export class TeamsService {
   /**
    * Create a new team
    */
-  async createTeam(dto: CreateTeamDto, tenantId: number): Promise<TeamResponse> {
+  async createTeam(
+    dto: CreateTeamDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<TeamResponse> {
     this.logger.log(`Creating team: ${dto.name}`);
 
     await this.validateDepartment(dto.departmentId, tenantId);
@@ -353,7 +360,23 @@ export class TeamsService {
       await this.ensureLeaderInTeam(dto.leaderId, teamId, tenantId);
     }
 
-    return await this.getTeamById(teamId, tenantId);
+    const result = await this.getTeamById(teamId, tenantId);
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'team',
+      teamId,
+      `Team erstellt: ${dto.name}`,
+      {
+        name: dto.name,
+        description: dto.description,
+        departmentId: dto.departmentId,
+        leaderId: dto.leaderId,
+      },
+    );
+
+    return result;
   }
 
   /**
@@ -405,7 +428,12 @@ export class TeamsService {
   /**
    * Update a team
    */
-  async updateTeam(id: number, dto: UpdateTeamDto, tenantId: number): Promise<TeamResponse> {
+  async updateTeam(
+    id: number,
+    dto: UpdateTeamDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<TeamResponse> {
     this.logger.log(`Updating team ${id}`);
 
     const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
@@ -414,6 +442,13 @@ export class TeamsService {
     }
 
     const currentTeam = existing[0] as TeamRow;
+    const oldValues = {
+      name: currentTeam.name,
+      description: currentTeam.description,
+      departmentId: currentTeam.department_id,
+      leaderId: currentTeam.team_lead_id,
+      isActive: currentTeam.is_active,
+    };
 
     await this.validateDepartment(dto.departmentId, tenantId);
     await this.validateLeader(dto.leaderId, tenantId);
@@ -426,7 +461,27 @@ export class TeamsService {
     }
 
     await this.handleLeaderChange(dto, currentTeam.team_lead_id, id, tenantId);
-    return await this.getTeamById(id, tenantId);
+    const result = await this.getTeamById(id, tenantId);
+
+    const newValues = {
+      name: dto.name,
+      description: dto.description,
+      departmentId: dto.departmentId,
+      leaderId: dto.leaderId,
+      isActive: dto.isActive,
+    };
+
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'team',
+      id,
+      `Team aktualisiert: ${currentTeam.name}`,
+      oldValues,
+      newValues,
+    );
+
+    return result;
   }
 
   /**
@@ -434,6 +489,7 @@ export class TeamsService {
    */
   async deleteTeam(
     id: number,
+    actingUserId: number,
     tenantId: number,
     force: boolean = false,
   ): Promise<{ message: string }> {
@@ -444,6 +500,8 @@ export class TeamsService {
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
+
+    const existingTeam = existing[0] as TeamRow;
 
     const [members] = await execute<RowDataPacket[]>(
       'SELECT user_id FROM user_teams WHERE team_id = $1',
@@ -462,6 +520,21 @@ export class TeamsService {
     }
 
     await execute('DELETE FROM teams WHERE id = $1', [id]);
+
+    await this.activityLogger.logDelete(
+      tenantId,
+      actingUserId,
+      'team',
+      id,
+      `Team gelöscht: ${existingTeam.name}`,
+      {
+        name: existingTeam.name,
+        description: existingTeam.description,
+        departmentId: existingTeam.department_id,
+        leaderId: existingTeam.team_lead_id,
+        force,
+      },
+    );
 
     return { message: 'Team deleted successfully' };
   }

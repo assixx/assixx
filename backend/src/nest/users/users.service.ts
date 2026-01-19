@@ -8,7 +8,12 @@
  * - Password changes
  * - Availability tracking
  * - Profile pictures
+ *
+ * NOTE: Core user service - exceeds line limit due to comprehensive user
+ * management features. Splitting would reduce code cohesion. TODO: Consider
+ * extracting profile-picture methods to separate service in future refactor.
  */
+/* eslint-disable max-lines */
 import {
   BadRequestException,
   ConflictException,
@@ -23,6 +28,7 @@ import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { fieldMapper } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
@@ -163,7 +169,10 @@ const VALID_SORT_FIELDS = new Set(['firstName', 'lastName', 'email', 'createdAt'
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================
   // Public Methods
@@ -264,37 +273,81 @@ export class UsersService {
   /**
    * Create new user
    */
-  async createUser(dto: CreateUserDto, tenantId: number): Promise<SafeUserResponse> {
-    // Check if email already exists
+  async createUser(
+    dto: CreateUserDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<SafeUserResponse> {
     const existingUser = await this.findUserByEmail(dto.email, tenantId);
     if (existingUser !== null) {
       throw new ConflictException('Email already exists');
     }
 
-    // Generate employee number if not provided
-    const employeeNumber = dto.employeeNumber ?? `EMP${String(Date.now())}`;
-
-    // Hash password
-    const hashedPassword = await bcryptjs.hash(dto.password, 12);
-
-    // Extract department/team arrays
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
-    void teamIds; // Reserved for future use
+    void teamIds;
 
-    // Insert user with UUIDv7
+    const userId = await this.insertUserRecord(userData, hasFullAccess, tenantId);
+    if (Array.isArray(departmentIds) && departmentIds.length > 0) {
+      await this.assignUserDepartments(userId, departmentIds, tenantId);
+    }
+
+    const response = await this.fetchUserWithDepartments(userId, tenantId);
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Benutzer erstellt: ${dto.email} (Rolle: ${dto.role})`,
+      {
+        email: dto.email,
+        role: dto.role,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        hasFullAccess: hasFullAccess ?? false,
+      },
+    );
+
+    // Log full access grant separately for audit trail
+    if (hasFullAccess === true) {
+      await this.activityLogger.log({
+        tenantId,
+        userId: actingUserId,
+        action: 'assign',
+        entityType: 'user',
+        entityId: userId,
+        details: `Vollzugriff gewährt für: ${dto.email}`,
+        newValues: { hasFullAccess: true },
+      });
+    }
+
+    return response;
+  }
+
+  /**
+   * Insert user record into database
+   */
+  private async insertUserRecord(
+    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess'>,
+    hasFullAccess: boolean | undefined,
+    tenantId: number,
+  ): Promise<number> {
+    const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
+    const hashedPassword = await bcryptjs.hash(userData.password, 12);
     const userUuid = uuidv7();
-    const result = await this.databaseService.query<{ id: number; uuid: string }>(
+
+    const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO users (
         tenant_id, email, password, username, first_name, last_name, role,
         position, phone, address, employee_number,
         is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
-      RETURNING id, uuid`,
+      RETURNING id`,
       [
         tenantId,
         userData.email,
         hashedPassword,
-        userData.email, // username = email
+        userData.email,
         userData.firstName,
         userData.lastName,
         userData.role,
@@ -302,7 +355,7 @@ export class UsersService {
         userData.phone ?? null,
         userData.address ?? null,
         employeeNumber,
-        1, // is_active = 1 (active)
+        1,
         hasFullAccess === true ? 1 : 0,
         userUuid,
       ],
@@ -312,23 +365,7 @@ export class UsersService {
     if (userId === undefined) {
       throw new InternalServerErrorException('Failed to create user');
     }
-
-    // Assign departments if provided
-    if (Array.isArray(departmentIds) && departmentIds.length > 0) {
-      await this.assignUserDepartments(userId, departmentIds, tenantId);
-    }
-
-    // Fetch and return created user
-    const createdUser = await this.findUserById(userId, tenantId);
-    if (createdUser === null) {
-      throw new InternalServerErrorException('Failed to retrieve created user');
-    }
-
-    const departments = await this.getUserDepartments(userId, tenantId);
-    const response = this.toSafeUserResponse(createdUser);
-    this.addDepartmentInfo(response, departments);
-
-    return response;
+    return userId;
   }
 
   /**
@@ -337,12 +374,21 @@ export class UsersService {
   async updateUser(
     userId: number,
     dto: UpdateUserDto,
+    actingUserId: number,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const existingUser = await this.findUserById(userId, tenantId);
     if (existingUser === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
+
+    // Store old values for logging
+    const oldValues = {
+      email: existingUser.email,
+      role: existingUser.role,
+      firstName: existingUser.first_name,
+      lastName: existingUser.last_name,
+    };
 
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
@@ -352,7 +398,25 @@ export class UsersService {
     await this.executeUserUpdate(userId, tenantId, updateData, hasFullAccess, password);
     await this.updateDepartmentAssignments(userId, tenantId, departmentIds);
 
-    return await this.fetchUserWithDepartments(userId, tenantId);
+    const result = await this.fetchUserWithDepartments(userId, tenantId);
+
+    // Log activity
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Benutzer aktualisiert: ${existingUser.email}`,
+      oldValues,
+      {
+        email: dto.email ?? existingUser.email,
+        role: dto.role ?? existingUser.role,
+        firstName: dto.firstName ?? existingUser.first_name,
+        lastName: dto.lastName ?? existingUser.last_name,
+      },
+    );
+
+    return result;
   }
 
   /**
@@ -600,6 +664,21 @@ export class UsersService {
     await this.databaseService.query(
       `UPDATE users SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      currentUserId,
+      'user',
+      userId,
+      `Benutzer gelöscht: ${user.email}`,
+      {
+        email: user.email,
+        role: user.role,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
     );
 
     return { message: 'User deleted successfully' };
@@ -1065,10 +1144,11 @@ export class UsersService {
   async updateUserByUuid(
     uuid: string,
     dto: UpdateUserDto,
+    actingUserId: number,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
-    return await this.updateUser(userId, dto, tenantId);
+    return await this.updateUser(userId, dto, actingUserId, tenantId);
   }
 
   /**

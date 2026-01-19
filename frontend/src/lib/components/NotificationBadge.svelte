@@ -11,9 +11,17 @@
     max?: number;
     size?: 'sm' | 'md' | 'lg';
     variant?: 'danger' | 'primary' | 'success' | 'warning';
+    /** Position mode: 'absolute' for icon overlay, 'inline' for submenu items */
+    position?: 'absolute' | 'inline';
   }
 
-  const { count, max = 99, size = 'md', variant = 'danger' }: Props = $props();
+  const {
+    count,
+    max = 99,
+    size = 'md',
+    variant = 'danger',
+    position = 'absolute',
+  }: Props = $props();
 
   const displayCount = $derived(count > max ? `${max}+` : count.toString());
   const show = $derived(count > 0);
@@ -34,7 +42,9 @@
 
 {#if show}
   <span
-    class="notification-badge {sizeClasses[size]} {variantClasses[variant]}"
+    class="notification-badge notification-badge--{position} {sizeClasses[size]} {variantClasses[
+      variant
+    ]}"
     aria-label="{count} ungelesene Benachrichtigungen"
   >
     {displayCount}
@@ -43,9 +53,6 @@
 
 <style>
   .notification-badge {
-    position: absolute;
-    top: -7px;
-    right: -10px;
     font-weight: 600;
     line-height: 1;
     display: flex;
@@ -58,6 +65,21 @@
     z-index: 10;
   }
 
+  /* Absolute positioning for icon overlays */
+  .notification-badge--absolute {
+    position: absolute;
+    top: -7px;
+    right: -13px;
+  }
+
+  /* Absolute positioning for submenu items - right aligned within parent */
+  .notification-badge--inline {
+    position: absolute;
+    top: 50%;
+    right: 60px;
+    transform: translateY(-50%);
+  }
+
   @keyframes badge-pop {
     0% {
       transform: scale(0);
@@ -68,13 +90,6 @@
     100% {
       transform: scale(1);
     }
-  }
-
-  /* Pulse animation for attention */
-  .notification-badge:not(:empty) {
-    animation:
-      badge-pop 0.2s ease-out,
-      badge-pulse 2s ease-in-out infinite;
   }
 
   @keyframes badge-pulse {

@@ -177,9 +177,6 @@
   onMount(() => {
     if (!browser) return;
 
-    // Reset chat notification count when visiting the chat page
-    notificationStore.resetCount('chat');
-
     // Initialize local state from SSR data (one-time, browser-only)
     // Best practice: Do state initialization in onMount, not $effect
     if (ssrConversations.length > 0) {
@@ -303,7 +300,14 @@
       scheduledMessages = result.scheduled;
 
       const conv = conversations.find((c) => c.id === conversation.id);
-      if (conv) conv.unreadCount = 0;
+      if (conv) {
+        // Decrement notification badge by number of unread messages in this conversation
+        const unreadToDecrement = conv.unreadCount ?? 0;
+        for (let i = 0; i < unreadToDecrement; i++) {
+          notificationStore.decrementCount('chat');
+        }
+        conv.unreadCount = 0;
+      }
 
       handlers.sendWebSocketMessage(buildJoinMessage(conversation.id));
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);

@@ -9,192 +9,37 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { ShareSuggestionDto } from './dto/share-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
+import type {
+  Category,
+  DashboardStats,
+  DbAttachment,
+  DbCategory,
+  DbComment,
+  DbDashboardStats,
+  DbSuggestion,
+  KVPAttachment,
+  KVPComment,
+  KVPSuggestionResponse,
+  PaginatedSuggestionsResult,
+  SuggestionFilters,
+  UserOrgInfo,
+} from './kvp.types.js';
 
-// ============================================================================
-// DATABASE TYPES
-// ============================================================================
-
-interface DbCategory {
-  id: number;
-  tenant_id: number;
-  name: string;
-  description?: string;
-  color?: string;
-  icon?: string;
-}
-
-interface DbSuggestion {
-  id: number;
-  uuid: string;
-  tenant_id: number;
-  title: string;
-  description: string;
-  category_id: number;
-  org_level: 'company' | 'department' | 'area' | 'team';
-  org_id: number;
-  is_shared: boolean;
-  submitted_by: number;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  expected_benefit?: string;
-  estimated_cost?: string;
-  status: string;
-  assigned_to?: number;
-  actual_savings?: number;
-  rejection_reason?: string;
-  created_at: Date;
-  updated_at: Date;
-  category_name?: string;
-  category_color?: string;
-  category_icon?: string;
-  department_name?: string;
-  team_name?: string;
-  submitted_by_name?: string;
-  submitted_by_lastname?: string;
-  assigned_to_name?: string;
-  assigned_to_lastname?: string;
-  attachment_count?: number;
-  comment_count?: number;
-}
-
-interface DbComment {
-  id: number;
-  suggestion_id: number;
-  user_id: number;
-  comment: string;
-  is_internal: boolean;
-  created_at: Date;
-  first_name?: string;
-  last_name?: string;
-  role?: string;
-  profile_picture?: string | null;
-}
-
-interface DbAttachment {
-  id: number;
-  file_uuid: string;
-  suggestion_id: number;
-  file_name: string;
-  file_path: string;
-  file_type: string;
-  file_size: number;
-  uploaded_by: number;
-  uploaded_at: Date | null; // Can be NULL in database
-}
-
-interface DbDashboardStats {
-  total_suggestions: number;
-  new_suggestions: number;
-  in_progress_count: number;
-  implemented: number;
-  rejected: number;
-  avg_savings: number | null;
-}
-
-interface UserOrgInfo {
-  team_id: number | null;
-  department_id: number | null;
-  area_id: number | null;
-}
-
-// ============================================================================
-// API TYPES
-// ============================================================================
-
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  color?: string;
-  icon?: string;
-}
-
-export interface KVPSuggestionResponse {
-  id: number;
-  uuid: string;
-  title: string;
-  description: string;
-  categoryId: number;
-  orgLevel: string;
-  orgId: number;
-  isShared: boolean;
-  submittedBy: number;
-  status: string;
-  priority: string;
-  expectedBenefit?: string;
-  estimatedCost?: string;
-  actualSavings?: number;
-  rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
-  category?: {
-    id: number;
-    name: string;
-    color?: string;
-    icon?: string;
-  };
-  submitter?: {
-    firstName: string;
-    lastName: string;
-  };
-}
-
-export interface KVPComment {
-  id: number;
-  suggestionId: number;
-  comment: string;
-  isInternal: boolean;
-  createdBy: number;
-  createdByName?: string;
-  createdByLastname?: string;
-  profilePicture?: string | null;
-  createdAt: string;
-}
-
-export interface KVPAttachment {
-  id: number;
-  suggestionId: number;
-  fileName: string;
-  filePath: string;
-  fileType: string;
-  fileSize: number;
-  uploadedBy: number;
-  fileUuid: string;
-  createdAt: string;
-}
-
-export interface DashboardStats {
-  totalSuggestions: number;
-  newSuggestions: number;
-  inReviewSuggestions: number;
-  approvedSuggestions: number;
-  implementedSuggestions: number;
-  rejectedSuggestions: number;
-}
-
-export interface PaginatedSuggestionsResult {
-  suggestions: KVPSuggestionResponse[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    pageSize: number;
-    totalItems: number;
-  };
-}
-
-export interface SuggestionFilters {
-  status: string | undefined;
-  categoryId: number | undefined;
-  priority: string | undefined;
-  orgLevel: string | undefined;
-  search: string | undefined;
-  page: number | undefined;
-  limit: number | undefined;
-}
+// Re-export API types for controller
+export type {
+  Category,
+  DashboardStats,
+  KVPAttachment,
+  KVPComment,
+  KVPSuggestionResponse,
+  PaginatedSuggestionsResult,
+} from './kvp.types.js';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -217,6 +62,7 @@ export class KvpService {
   constructor(
     private readonly db: DatabaseService,
     private readonly notificationsService: NotificationsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ==========================================================================
@@ -576,25 +422,8 @@ export class KvpService {
 
     const createdSuggestion = await this.getSuggestionById(rows[0].id, tenantId, userId, 'admin');
 
-    // Emit SSE event for real-time notifications
-    eventBus.emitKvpSubmitted(tenantId, {
-      id: rows[0].id,
-      title: dto.title,
-      submitted_by: String(userId),
-    });
-
-    // Create persistent notification for ADR-004
-    const recipientMapping = this.mapOrgLevelToRecipient(dto);
-    void this.notificationsService.createFeatureNotification(
-      'kvp',
-      rows[0].id,
-      `Neuer Verbesserungsvorschlag: ${dto.title}`,
-      dto.description.substring(0, 100) + (dto.description.length > 100 ? '...' : ''),
-      recipientMapping.type,
-      recipientMapping.id,
-      tenantId,
-      userId,
-    );
+    // Log and notify (fire-and-forget)
+    void this.logAndNotifyKvpCreated(rows[0].id, dto, tenantId, userId);
 
     return createdSuggestion;
   }
@@ -620,6 +449,52 @@ export class KvpService {
       default:
         return { type: 'all', id: null };
     }
+  }
+
+  /** Log activity and emit notifications for newly created KVP suggestion */
+  private async logAndNotifyKvpCreated(
+    suggestionId: number,
+    dto: CreateSuggestionDto,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'kvp',
+      suggestionId,
+      `KVP-Vorschlag erstellt: ${dto.title}`,
+      {
+        title: dto.title,
+        categoryId: dto.categoryId,
+        orgLevel: dto.orgLevel,
+        orgId: dto.orgId,
+        priority: dto.priority ?? 'normal',
+      },
+    );
+
+    // Emit SSE event for real-time notifications
+    eventBus.emitKvpSubmitted(tenantId, {
+      id: suggestionId,
+      title: dto.title,
+      submitted_by: String(userId),
+    });
+
+    // Create persistent notification for ADR-004
+    const recipient = this.mapOrgLevelToRecipient(dto);
+    const description =
+      dto.description.substring(0, 100) + (dto.description.length > 100 ? '...' : '');
+    void this.notificationsService.createFeatureNotification(
+      'kvp',
+      suggestionId,
+      `Neuer Verbesserungsvorschlag: ${dto.title}`,
+      description,
+      recipient.type,
+      recipient.id,
+      tenantId,
+      userId,
+    );
   }
 
   /** Build suggestion update clause from DTO */
@@ -674,6 +549,15 @@ export class KvpService {
       throw new ForbiddenException('Only admins can update status');
     }
 
+    // Capture oldValues for logging
+    const oldValues = {
+      title: existing.title,
+      description: existing.description,
+      categoryId: existing.categoryId,
+      status: existing.status,
+      priority: existing.priority,
+    };
+
     const idColumn = isUuid(id) ? 'uuid' : 'id';
     const { updates, params } = this.buildSuggestionUpdateClause(dto, userId);
 
@@ -681,7 +565,27 @@ export class KvpService {
     const query = `UPDATE kvp_suggestions SET ${updates.join(', ')} WHERE ${idColumn} = $${params.length - 1} AND tenant_id = $${params.length}`;
     await this.db.query(query, params);
 
-    return await this.getSuggestionById(id, tenantId, userId, userRole);
+    const updated = await this.getSuggestionById(id, tenantId, userId, userRole);
+
+    // Log activity
+    const newValues = {
+      title: dto.title ?? existing.title,
+      description: dto.description ?? existing.description,
+      categoryId: dto.categoryId ?? existing.categoryId,
+      status: dto.status ?? existing.status,
+      priority: dto.priority ?? existing.priority,
+    };
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'kvp',
+      existing.id,
+      `KVP-Vorschlag aktualisiert: ${existing.title}`,
+      oldValues,
+      newValues,
+    );
+
+    return updated;
   }
 
   /**
@@ -706,6 +610,22 @@ export class KvpService {
       id,
       tenantId,
     ]);
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'kvp',
+      suggestion.id,
+      `KVP-Vorschlag gelöscht: ${suggestion.title}`,
+      {
+        title: suggestion.title,
+        description: suggestion.description,
+        categoryId: suggestion.categoryId,
+        status: suggestion.status,
+        priority: suggestion.priority,
+      },
+    );
 
     return { message: 'Suggestion deleted successfully' };
   }

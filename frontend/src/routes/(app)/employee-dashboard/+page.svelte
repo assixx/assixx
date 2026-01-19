@@ -228,6 +228,7 @@
                       {entry.authorFullName ?? entry.authorName ?? MESSAGES.unknownAuthor}
                     </span>
                     <span class="sticky-note__date">
+                      <i class="fas fa-calendar"></i>
                       {formatBlackboardDate(entry.createdAt)}
                     </span>
                   </div>

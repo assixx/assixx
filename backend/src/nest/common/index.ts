@@ -21,3 +21,6 @@ export * from './pipes/index.js';
 
 // Interfaces
 export * from './interfaces/index.js';
+
+// Services
+export * from './services/index.js';

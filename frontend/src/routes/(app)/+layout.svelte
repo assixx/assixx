@@ -130,7 +130,7 @@
     hasSubmenu?: boolean;
     submenu?: NavItem[];
     /** Badge type for real-time notification count */
-    badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat';
+    badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat' | 'blackboard' | 'calendar';
   }
 
   const ICONS: Record<string, string> = {
@@ -159,7 +159,13 @@
 
   const rootMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Root Dashboard', url: '/root-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
+    {
+      id: 'blackboard',
+      icon: ICONS.pin,
+      label: 'Schwarzes Brett',
+      url: '/blackboard',
+      badgeType: 'blackboard',
+    },
     { id: 'root-users', icon: ICONS['user-shield'], label: 'Root User', url: '/manage-root' },
     { id: 'admins', icon: ICONS.admin, label: 'Administratoren', url: '/manage-admins' },
     { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
@@ -179,7 +185,13 @@
 
   const adminMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Übersicht', url: '/admin-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
+    {
+      id: 'blackboard',
+      icon: ICONS.pin,
+      label: 'Schwarzes Brett',
+      url: '/blackboard',
+      badgeType: 'blackboard',
+    },
     { id: 'employees', icon: ICONS.users, label: 'Mitarbeiter', url: '/manage-employees' },
     { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
     { id: 'machines', icon: ICONS.generator, label: 'Maschinen', url: '/manage-machines' },
@@ -188,17 +200,30 @@
       icon: ICONS.document,
       label: 'Dokumente',
       hasSubmenu: true,
-      submenu: [{ id: 'documents-explorer', label: 'Datei Explorer', url: '/documents-explorer' }],
+      submenu: [
+        {
+          id: 'documents-explorer',
+          label: 'Datei Explorer',
+          url: '/documents-explorer',
+          badgeType: 'documents',
+        },
+      ],
     },
-    { id: 'calendar', icon: ICONS.calendar, label: 'Kalender', url: '/calendar' },
+    {
+      id: 'calendar',
+      icon: ICONS.calendar,
+      label: 'Kalender',
+      url: '/calendar',
+      badgeType: 'calendar',
+    },
     {
       id: 'lean-management',
       icon: ICONS.lean,
       label: 'LEAN-Management',
       hasSubmenu: true,
       submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-admin' },
+        { id: 'kvp', label: 'KVP System', url: '/kvp', badgeType: 'kvp' },
+        { id: 'surveys', label: 'Umfragen', url: '/survey-admin', badgeType: 'surveys' },
       ],
     },
     { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
@@ -209,23 +234,42 @@
 
   const employeeMenuItems = $derived<NavItem[]>([
     { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
+    {
+      id: 'blackboard',
+      icon: ICONS.pin,
+      label: 'Schwarzes Brett',
+      url: '/blackboard',
+      badgeType: 'blackboard',
+    },
     {
       id: 'documents',
       icon: ICONS.document,
       label: 'Dokumente',
       hasSubmenu: true,
-      submenu: [{ id: 'documents-explorer', label: 'Datei Explorer', url: '/documents-explorer' }],
+      submenu: [
+        {
+          id: 'documents-explorer',
+          label: 'Datei Explorer',
+          url: '/documents-explorer',
+          badgeType: 'documents',
+        },
+      ],
     },
-    { id: 'calendar', icon: ICONS.calendar, label: 'Kalender', url: '/calendar' },
+    {
+      id: 'calendar',
+      icon: ICONS.calendar,
+      label: 'Kalender',
+      url: '/calendar',
+      badgeType: 'calendar',
+    },
     {
       id: 'lean-management',
       icon: ICONS.lean,
       label: 'LEAN-Management',
       hasSubmenu: true,
       submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-employee' },
+        { id: 'kvp', label: 'KVP System', url: '/kvp', badgeType: 'kvp' },
+        { id: 'surveys', label: 'Umfragen', url: '/survey-employee', badgeType: 'surveys' },
       ],
     },
     { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
@@ -387,11 +431,28 @@
   function toggleSidebar(): void {
     sidebarCollapsed = !sidebarCollapsed;
     localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
+    // Close all submenus when collapsing sidebar
+    if (sidebarCollapsed) {
+      openSubmenu = null;
+    }
   }
 
   /** Toggle submenu */
   function toggleSubmenu(itemId: string): void {
+    // Don't open submenus when sidebar is collapsed
+    if (sidebarCollapsed) return;
     openSubmenu = openSubmenu === itemId ? null : itemId;
+  }
+
+  /** Calculate aggregated badge count for all submenu items */
+  function getSubmenuBadgeCount(submenu: NavItem[] | undefined): number {
+    if (!submenu) return 0;
+    return submenu.reduce((total, item) => {
+      if (item.badgeType) {
+        return total + notificationStore.counts[item.badgeType];
+      }
+      return total;
+    }, 0);
   }
 
   /** Handle logout button click */
@@ -611,8 +672,13 @@
                     toggleSubmenu(item.id);
                   }}
                 >
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                  <span class="icon" style="position: relative;">{@html item.icon}</span>
+                  <span class="icon" style="position: relative;">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded ICONS object, safe -->
+                    {@html item.icon}
+                    {#if openSubmenu !== item.id}
+                      <NotificationBadge count={getSubmenuBadgeCount(item.submenu)} size="sm" />
+                    {/if}
+                  </span>
                   <span class="label">{item.label}</span>
                   <span class="submenu-arrow">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
@@ -623,9 +689,16 @@
                 <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
                   {#each item.submenu as subItem (subItem.id)}
                     <li class="submenu-item">
-                      <a href={resolveDynamicPath(subItem.url ?? '')} class="submenu-link"
-                        >{subItem.label}</a
-                      >
+                      <a href={resolveDynamicPath(subItem.url ?? '')} class="submenu-link">
+                        <span>{subItem.label}</span>
+                        {#if subItem.badgeType && openSubmenu === item.id}
+                          <NotificationBadge
+                            count={notificationStore.counts[subItem.badgeType]}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                      </a>
                     </li>
                   {/each}
                 </ul>

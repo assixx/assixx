@@ -621,7 +621,8 @@
                 </div>
                 <div class="sticky-note__footer-row">
                   <span class="sticky-note__author"
-                    ><i class="fas fa-user"></i> {entry.authorName ?? 'Unbekannt'}</span
+                    ><i class="fas fa-user"></i>
+                    {entry.authorFullName ?? entry.authorName ?? 'Unbekannt'}</span
                   >
                   <span class="sticky-note__date"
                     ><i class="fas fa-calendar"></i> {formatDateShort(entry.createdAt)}</span
