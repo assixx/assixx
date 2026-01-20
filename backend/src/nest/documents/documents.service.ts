@@ -795,19 +795,39 @@ export class DocumentsService {
 
   /**
    * Get count of unread documents for notification badge
+   * Applies the same access_scope filter as listDocuments to ensure consistency
    */
-  async getUnreadCount(tenantId: number, userId: number): Promise<UnreadCountResponse> {
-    this.logger.log(`Getting unread document count for user ${userId}`);
+  async getUnreadCount(
+    tenantId: number,
+    userId: number,
+    userRole: 'root' | 'admin' | 'employee',
+  ): Promise<UnreadCountResponse> {
+    this.logger.log(`Getting unread document count for user ${userId} (role: ${userRole})`);
 
-    const result = await this.databaseService.query<{ count: string }>(
-      `SELECT COUNT(*) as count FROM documents d
-       WHERE d.tenant_id = $1 AND d.is_active = 1
-       AND NOT EXISTS (
-         SELECT 1 FROM document_read_status rs
-         WHERE rs.document_id = d.id AND rs.user_id = $2
-       )`,
-      [tenantId, userId],
-    );
+    const isAdmin = userRole === 'admin' || userRole === 'root';
+
+    // Build query with same access scope filter as listDocuments
+    let query = `
+      SELECT COUNT(*) as count FROM documents d
+      WHERE d.tenant_id = $1 AND d.is_active = 1
+      AND NOT EXISTS (
+        SELECT 1 FROM document_read_status rs
+        WHERE rs.document_id = d.id AND rs.user_id = $2
+      )
+    `;
+    const params: unknown[] = [tenantId, userId];
+
+    // Apply access scope filter for non-admin users (same logic as buildDocumentsBaseQuery)
+    if (!isAdmin) {
+      query += ` AND (
+        d.access_scope = 'company' OR
+        (d.access_scope = 'personal' AND d.owner_user_id = $3) OR
+        (d.access_scope = 'payroll' AND d.owner_user_id = $3)
+      )`;
+      params.push(userId);
+    }
+
+    const result = await this.databaseService.query<{ count: string }>(query, params);
     const count = Number.parseInt(result[0]?.count ?? '0', 10);
 
     return { count };

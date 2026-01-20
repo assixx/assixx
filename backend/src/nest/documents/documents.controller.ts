@@ -155,7 +155,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<UnreadCountResponse> {
-    return await this.documentsService.getUnreadCount(tenantId, user.id);
+    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
   }
 
   /**
