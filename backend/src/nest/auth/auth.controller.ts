@@ -146,7 +146,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @UseGuards(CustomThrottlerGuard)
-  @AuthThrottle() // 5 requests per 15 minutes - brute force protection
+  @AuthThrottle() // 10 requests per 5 minutes - brute force protection
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
@@ -228,7 +228,7 @@ export class AuthController {
   @Post('refresh')
   @Public()
   @UseGuards(CustomThrottlerGuard)
-  @AuthThrottle() // 5 requests per 15 minutes - prevent token refresh abuse
+  @AuthThrottle() // 10 requests per 5 minutes - prevent token refresh abuse
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() dto: RefreshDto,

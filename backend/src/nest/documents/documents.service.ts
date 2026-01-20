@@ -98,6 +98,13 @@ export interface DocumentStatsResponse {
 }
 
 /**
+ * Unread count response for notification badge
+ */
+export interface UnreadCountResponse {
+  count: number;
+}
+
+/**
  * Chat folder response
  */
 export interface ChatFolderResponse {
@@ -784,6 +791,26 @@ export class DocumentsService {
     }
 
     return { unreadCount, storageUsed, categoryCounts };
+  }
+
+  /**
+   * Get count of unread documents for notification badge
+   */
+  async getUnreadCount(tenantId: number, userId: number): Promise<UnreadCountResponse> {
+    this.logger.log(`Getting unread document count for user ${userId}`);
+
+    const result = await this.databaseService.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM documents d
+       WHERE d.tenant_id = $1 AND d.is_active = 1
+       AND NOT EXISTS (
+         SELECT 1 FROM document_read_status rs
+         WHERE rs.document_id = d.id AND rs.user_id = $2
+       )`,
+      [tenantId, userId],
+    );
+    const count = Number.parseInt(result[0]?.count ?? '0', 10);
+
+    return { count };
   }
 
   /**

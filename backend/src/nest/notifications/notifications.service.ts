@@ -65,30 +65,31 @@ interface DbIdRow extends QueryResultRow {
   id: number;
 }
 
+// NOTE: PostgreSQL returns COUNT(*) as bigint, which pg driver converts to string
 interface DbCountRow extends QueryResultRow {
-  total?: number;
-  count?: number;
-  unread_count?: number;
+  total?: string;
+  count?: string;
+  unread_count?: string;
 }
 
 interface DbTypeCountRow extends QueryResultRow {
   type: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 interface DbPriorityCountRow extends QueryResultRow {
   priority: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 interface DbReadRateRow extends QueryResultRow {
-  total_notifications: number;
-  read_notifications: number;
+  total_notifications: string; // PostgreSQL bigint → string
+  read_notifications: string; // PostgreSQL bigint → string
 }
 
 interface DbDateCountRow extends QueryResultRow {
   date: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 // ============================================================================
@@ -587,12 +588,12 @@ export class NotificationsService {
   async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
     this.logger.log(`Getting statistics for tenant ${tenantId}`);
 
-    // Total count
+    // Total count (PostgreSQL returns bigint as string)
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = $1`,
       [tenantId],
     );
-    const total = totalRows[0]?.total ?? 0;
+    const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // By type
     const byTypeRows = await this.db.query<DbTypeCountRow>(
@@ -618,10 +619,9 @@ export class NotificationsService {
       [tenantId],
     );
     const readRateData = readRateRows[0];
-    const readRate =
-      readRateData !== undefined && readRateData.total_notifications > 0 ?
-        readRateData.read_notifications / readRateData.total_notifications
-      : 0;
+    const totalNotifications = Number.parseInt(readRateData?.total_notifications ?? '0', 10);
+    const readNotifications = Number.parseInt(readRateData?.read_notifications ?? '0', 10);
+    const readRate = totalNotifications > 0 ? readNotifications / totalNotifications : 0;
 
     // Trends (last 30 days)
     const trendsRows = await this.db.query<DbDateCountRow>(
@@ -638,7 +638,10 @@ export class NotificationsService {
       byType,
       byPriority,
       readRate,
-      trends: trendsRows.map((row: DbDateCountRow) => ({ date: row.date, count: row.count })),
+      trends: trendsRows.map((row: DbDateCountRow) => ({
+        date: row.date,
+        count: Number.parseInt(row.count, 10),
+      })),
     };
   }
 
@@ -660,7 +663,7 @@ export class NotificationsService {
             OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))`,
       [tenantId, userId],
     );
-    const total = totalRows[0]?.total ?? 0;
+    const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // Unread count
     const unreadRows = await this.db.query<DbCountRow>(
@@ -676,7 +679,7 @@ export class NotificationsService {
        AND nrs.id IS NULL`,
       [tenantId, userId],
     );
-    const unread = unreadRows[0]?.unread_count ?? 0;
+    const unread = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     // By type (UNREAD only - for badge counts)
     const byTypeRows = await this.db.query<DbTypeCountRow>(
@@ -912,7 +915,7 @@ export class NotificationsService {
       ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
     `;
     const countRows = await this.db.query<DbCountRow>(countQuery, [...params, userId]);
-    const total = countRows[0]?.total ?? 0;
+    const total = Number.parseInt(countRows[0]?.total ?? '0', 10);
 
     // Unread count
     const unreadQuery = `
@@ -922,7 +925,7 @@ export class NotificationsService {
       WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
     `;
     const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [...params, userId]);
-    const unreadCount = unreadRows[0]?.unread_count ?? 0;
+    const unreadCount = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     return { total, unreadCount };
   }
@@ -984,14 +987,15 @@ export class NotificationsService {
 
   /**
    * Convert database rows to record map
+   * NOTE: PostgreSQL COUNT() returns bigint as string, so we parse it
    */
-  private rowsToRecord<T extends { count: number }>(
+  private rowsToRecord<T extends { count: string }>(
     rows: T[],
     keyFn: (row: T) => string,
   ): Record<string, number> {
     const result: Record<string, number> = {};
     for (const row of rows) {
-      result[keyFn(row)] = row.count;
+      result[keyFn(row)] = Number.parseInt(row.count, 10);
     }
     return result;
   }

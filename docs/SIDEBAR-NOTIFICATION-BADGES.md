@@ -13,7 +13,7 @@ The sidebar notification badge system displays real-time unread/pending counts f
 | ---------- | ----------------------------- | -------------------------------------- |
 | Chat       | Unread messages               | `/api/v2/chat/unread-count`            |
 | Surveys    | New/unread surveys            | `/api/v2/notifications/stats/me`       |
-| Documents  | New/unread documents          | `/api/v2/notifications/stats/me`       |
+| Documents  | Unread documents              | `/api/v2/documents/unread-count`       |
 | KVP        | New/unread KVP entries        | `/api/v2/notifications/stats/me`       |
 | Blackboard | Unconfirmed entries           | `/api/v2/blackboard/unconfirmed-count` |
 | Calendar   | Upcoming events (next 7 days) | `/api/v2/calendar/upcoming-count`      |
@@ -46,7 +46,10 @@ The sidebar notification badge system displays real-time unread/pending counts f
 │  └── GET /calendar/upcoming-count                               │
 │                                                                  │
 │  NotificationsController                                         │
-│  └── GET /notifications/stats/me (surveys, documents, kvp)      │
+│  └── GET /notifications/stats/me (surveys, kvp)                 │
+│                                                                  │
+│  DocumentsController                                             │
+│  └── GET /documents/unread-count                                │
 │                                                                  │
 │  ChatController                                                  │
 │  └── GET /chat/unread-count                                     │
@@ -75,12 +78,14 @@ The store fetches all counts in parallel on initialization:
 
 ```typescript
 async function fetchInitialCounts(state: NotificationState): Promise<void> {
-  const [chatResponse, notificationsResponse, blackboardResponse, calendarResponse] = await Promise.all([
-    fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
-    fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
-    fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
-    fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
-  ]);
+  const [chatResponse, notificationsResponse, blackboardResponse, calendarResponse, documentsResponse] =
+    await Promise.all([
+      fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
+      fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
+      fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
+      fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
+      fetch('/api/v2/documents/unread-count', { credentials: 'include' }),
+    ]);
   // ... parse and set counts
 }
 ```
@@ -249,9 +254,18 @@ $effect(() => {
 
 Used when user actions mark individual items as read/unread.
 
-**Applicable to:** Blackboard (confirm/unconfirm), Chat (open conversation)
+**Applicable to:** Documents (click to preview), Blackboard (confirm/unconfirm), Chat (open conversation)
 
 ```typescript
+// Example 0: Documents - mark as read when previewing
+import { notificationStore } from '$lib/stores/notification.store.svelte';
+
+async function markAsRead(documentId: number) {
+  await apiMarkAsRead(documentId);
+  notificationStore.decrementCount('documents'); // Update sidebar badge immediately
+  // Update local document state...
+}
+
 // Example 1: Blackboard - single item confirm/unconfirm
 import { notificationStore } from '$lib/stores/notification.store.svelte';
 

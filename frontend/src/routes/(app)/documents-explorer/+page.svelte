@@ -113,18 +113,8 @@
     }
   });
 
-  // ==========================================================================
-  // MARK NOTIFICATIONS AS READ (ADR-004)
-  // ==========================================================================
-
-  // Mark document notifications as read when page is visited
-  let documentsReadMarked = $state(false);
-  $effect(() => {
-    if (!documentsReadMarked) {
-      documentsReadMarked = true;
-      void notificationStore.markTypeAsRead('document');
-    }
-  });
+  // NOTE: Document read status is tracked individually via document_read_status table
+  // Badge decrements when user clicks on a document (markAsRead function)
 
   let currentCategory = $state<DocumentCategory>('all');
   let searchQuery = $state('');
@@ -243,6 +233,7 @@
   async function markAsRead(documentId: number) {
     try {
       await apiMarkAsRead(documentId);
+      notificationStore.decrementCount('documents'); // Update sidebar badge
       allDocuments = allDocuments.map((doc) =>
         doc.id === documentId ? { ...doc, isRead: true } : doc,
       );

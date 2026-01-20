@@ -50,7 +50,7 @@ Wir implementieren Rate Limiting mit:
 
 | Tier     | Limit | Window | Use Case            |
 | -------- | ----- | ------ | ------------------- |
-| `auth`   | 5     | 15 min | Brute-Force-Schutz  |
+| `auth`   | 10    | 5 min  | Brute-Force-Schutz  |
 | `public` | 100   | 15 min | Public Endpoints    |
 | `user`   | 1000  | 15 min | Authenticated Users |
 | `admin`  | 2000  | 15 min | Admin Endpoints     |
@@ -118,7 +118,7 @@ Wir implementieren Rate Limiting mit:
 
 ### Positive
 
-1. **Brute-Force-Schutz**: Login mit 5 Attempts pro 15 Min
+1. **Brute-Force-Schutz**: Login mit 10 Attempts pro 5 Min
 2. **Skalierbarkeit**: Redis-backed = Multi-Instance ready
 3. **User-Tracking**: Verhindert IP-Rotation-Umgehung
 4. **DX**: Einfache `@AuthThrottle()` Decorator-Nutzung
@@ -169,13 +169,40 @@ REDIS_PORT: 6379
 
 ---
 
+## Critical: SkipThrottle für Named Throttlers
+
+**Problem (2026-01-19):** Login wurde nach 1-2 Requests geblockt, obwohl `auth` Tier 10/5min erlaubt.
+
+**Root Cause:** `@nestjs/throttler` wendet ALLE definierten Throttler an, nicht nur den im Decorator genannten. Der `export` Throttler (1/min) blockte sofort.
+
+**Lösung:** Jeder Decorator muss explizit die anderen Throttler skippen:
+
+```typescript
+// FALSCH - alle 6 Throttler werden angewendet!
+export const AuthThrottle = () =>
+  Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } });
+
+// RICHTIG - nur auth Throttler aktiv
+export const AuthThrottle = () =>
+  applyDecorators(
+    Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } }),
+    SkipThrottle({ public: true, user: true, admin: true, upload: true, export: true }),
+  );
+```
+
+**Wichtig aus NestJS Docs:**
+
+> "Simply using `@SkipThrottle()` without an object will not skip any named throttlers."
+
+---
+
 ## Verification
 
 ### Tested Scenarios
 
 | Scenario           | Expected     | Actual       | Status |
 | ------------------ | ------------ | ------------ | ------ |
-| 5 Login Attempts   | 429 on 6th   | 429 on 6th   | ✅     |
+| 10 Login Attempts  | 429 on 11th  | 429 on 11th  | ✅     |
 | Redis Keys Created | throttle:\*  | throttle:\*  | ✅     |
 | Error Message      | Custom text  | Custom text  | ✅     |
 | Manual Reset       | Keys deleted | Keys deleted | ✅     |
