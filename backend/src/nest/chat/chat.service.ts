@@ -340,10 +340,6 @@ export class ChatService {
     return userId;
   }
 
-  private getUserRole(): string {
-    return this.cls.get<string | undefined>('userRole') ?? 'employee';
-  }
-
   // ============================================
   // Users
   // ============================================
@@ -500,19 +496,33 @@ export class ChatService {
     return { data, pagination: this.buildPaginationMeta(page, limit, totalItems) };
   }
 
-  /** Get total count of conversations for a user */
+  /**
+   * Get total count of conversations for a user
+   * WhatsApp-style: Show conversation if not deleted OR if new messages exist after deletion
+   */
   private async getConversationCount(tenantId: number, userId: number): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(DISTINCT c.id) as count
        FROM conversations c
        INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1`,
+       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1
+         AND (
+           cp.deleted_at IS NULL
+           OR EXISTS (
+             SELECT 1 FROM messages m
+             WHERE m.conversation_id = c.id AND m.created_at > cp.deleted_at
+           )
+         )`,
       [tenantId, userId],
     );
     return Number.parseInt(countResult[0]?.count ?? '0', 10);
   }
 
-  /** Fetch paginated conversations for a user */
+  /**
+   * Fetch paginated conversations for a user
+   * WhatsApp-style: Show conversation if not deleted OR if new messages exist after deletion
+   * Also filters last_message to only show messages after deleted_at
+   */
   private async fetchConversationsPage(
     tenantId: number,
     userId: number,
@@ -521,11 +531,24 @@ export class ChatService {
   ): Promise<ConversationRow[]> {
     return await this.databaseService.query<ConversationRow>(
       `SELECT DISTINCT c.id, c.uuid, c.name, c.is_group, c.created_at, c.updated_at,
-        (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_content,
-        (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time
+        (SELECT m.content FROM messages m
+         WHERE m.conversation_id = c.id
+           AND (cp.deleted_at IS NULL OR m.created_at > cp.deleted_at)
+         ORDER BY m.created_at DESC LIMIT 1) as last_message_content,
+        (SELECT m.created_at FROM messages m
+         WHERE m.conversation_id = c.id
+           AND (cp.deleted_at IS NULL OR m.created_at > cp.deleted_at)
+         ORDER BY m.created_at DESC LIMIT 1) as last_message_time
        FROM conversations c
        INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
        WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1
+         AND (
+           cp.deleted_at IS NULL
+           OR EXISTS (
+             SELECT 1 FROM messages m
+             WHERE m.conversation_id = c.id AND m.created_at > cp.deleted_at
+           )
+         )
        ORDER BY c.updated_at DESC
        LIMIT $3 OFFSET $4`,
       [tenantId, userId, limit, offset],
@@ -811,32 +834,39 @@ export class ChatService {
   }
 
   /**
-   * Delete a conversation (soft delete)
+   * Delete conversation for current user only (per-user soft delete)
+   *
+   * This implements WhatsApp-style "delete for me" behavior:
+   * - Only hides the conversation for the user who deletes it
+   * - Other participants still see the conversation
+   * - Any participant can delete for themselves (no admin required)
    */
   async deleteConversation(conversationId: number): Promise<{ message: string }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    const userRole = this.getUserRole();
 
-    // Check if user is participant
-    const participant = await this.databaseService.query<{ is_admin: boolean }>(
-      `SELECT is_admin FROM conversation_participants
+    // Check if user is participant and not already deleted
+    const participant = await this.databaseService.query<{ id: number; deleted_at: Date | null }>(
+      `SELECT id, deleted_at FROM conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
     );
 
-    if (participant.length === 0) {
+    const participantRecord = participant[0];
+    if (participantRecord === undefined) {
       throw new ForbiddenException('You are not a participant of this conversation');
     }
 
-    if (userRole !== 'root' && userRole !== 'admin') {
-      throw new ForbiddenException('Only administrators can delete conversations');
+    if (participantRecord.deleted_at !== null) {
+      throw new BadRequestException('Conversation already deleted');
     }
 
+    // Per-user soft delete: only mark THIS user's participant record as deleted
+    // Other participants still see the conversation
     await this.databaseService.query(
-      `UPDATE conversations SET is_active = 4, updated_at = NOW()
-       WHERE id = $1 AND tenant_id = $2`,
-      [conversationId, tenantId],
+      `UPDATE conversation_participants SET deleted_at = NOW()
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+      [conversationId, userId, tenantId],
     );
 
     return { message: 'Conversation deleted successfully' };
@@ -848,6 +878,7 @@ export class ChatService {
 
   /**
    * Get messages from a conversation
+   * WhatsApp-style: Only shows messages after user's deleted_at timestamp
    */
   async getMessages(
     conversationId: number,
@@ -861,10 +892,19 @@ export class ChatService {
     const limit = Math.min(100, Math.max(1, query.limit ?? 50));
     const offset = (page - 1) * limit;
 
+    // Get user's deleted_at timestamp for this conversation
+    const participantInfo = await this.databaseService.query<{ deleted_at: Date | null }>(
+      `SELECT deleted_at FROM conversation_participants
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+      [conversationId, userId, tenantId],
+    );
+    const deletedAt = participantInfo[0]?.deleted_at ?? null;
+
     const { whereClause, params, paramIndex } = this.buildMessagesWhereClause(
       conversationId,
       tenantId,
       query,
+      deletedAt,
     );
 
     const totalItems = await this.getMessagesCount(whereClause, params);
@@ -882,15 +922,26 @@ export class ChatService {
     return { data, pagination: this.buildPaginationMeta(page, limit, totalItems) };
   }
 
-  /** Build WHERE clause for messages query based on filters */
+  /**
+   * Build WHERE clause for messages query based on filters
+   * WhatsApp-style: Filters messages to only show those after deletedAt timestamp
+   */
   private buildMessagesWhereClause(
     conversationId: number,
     tenantId: number,
     query: GetMessagesQuery,
+    deletedAt: Date | null,
   ): { whereClause: string; params: unknown[]; paramIndex: number } {
     let whereClause = 'WHERE m.conversation_id = $1 AND m.tenant_id = $2';
     const params: unknown[] = [conversationId, tenantId];
     let paramIndex = 3;
+
+    // WhatsApp-style: Only show messages after user's deleted_at timestamp
+    if (deletedAt !== null) {
+      whereClause += ` AND m.created_at > $${paramIndex}`;
+      params.push(deletedAt);
+      paramIndex++;
+    }
 
     if (query.search !== undefined && query.search !== '') {
       whereClause += ` AND m.content LIKE $${paramIndex}`;
@@ -1503,6 +1554,7 @@ export class ChatService {
       unread_count: string | number;
     }
 
+    // WhatsApp-style: Only count unread messages AFTER user's deleted_at timestamp
     const rows = await this.databaseService.query<UnreadCountRow>(
       `SELECT
         m.conversation_id,
@@ -1514,6 +1566,7 @@ export class ChatService {
        WHERE m.conversation_id IN (${convPlaceholders})
          AND m.sender_id != $${userIdIndex2}
          AND m.id > COALESCE(cp.last_read_message_id, 0)
+         AND (cp.deleted_at IS NULL OR m.created_at > cp.deleted_at)
        GROUP BY m.conversation_id`,
       [...conversationIds, userId, userId],
     );
@@ -1538,7 +1591,7 @@ export class ChatService {
       attachment:
         msg.attachment_path !== null ?
           {
-            url: msg.attachment_path,
+            url: `/api/v2/chat/attachments/${msg.attachment_path}/download`,
             filename: msg.attachment_name ?? 'attachment',
             mimeType: msg.attachment_type ?? 'application/octet-stream',
             size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,

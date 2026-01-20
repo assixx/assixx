@@ -19,8 +19,9 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
-  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
   import { createLogger } from '$lib/utils/logger';
+  import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
   import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
   import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
@@ -91,7 +92,7 @@
   let tokenTimeLeft = $state('--:--');
   let tokenWarning = $state(false);
   let tokenExpired = $state(false);
-  let tokenTimerInterval = $state<ReturnType<typeof setInterval> | null>(null);
+  let tokenTimerUnsubscribe = $state<(() => void) | null>(null);
 
   // Logout Modal State
   let showLogoutModal = $state(false);
@@ -405,45 +406,23 @@
   // TOKEN TIMER
   // =============================================================================
 
-  /** Parse JWT and get expiration timestamp (ms) */
-  function getTokenExpiration(token: string): number | null {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
-      return payload.exp !== undefined ? payload.exp * 1000 : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Update token timer display */
-  function updateTokenTimer(): void {
-    const token = localStorage.getItem('accessToken');
-    if (token === null) {
-      tokenTimeLeft = '--:--';
-      return;
-    }
-
-    const exp = getTokenExpiration(token);
-    if (exp === null) {
-      tokenTimeLeft = '--:--';
-      return;
-    }
-
-    const now = Date.now();
-    const diff = exp - now;
-
-    if (diff <= 0) {
+  /**
+   * Handle token timer update from TokenManager.
+   * Uses TokenManager's relative time calculation (no clock skew!)
+   */
+  function handleTokenTimerUpdate(remainingSeconds: number): void {
+    if (remainingSeconds <= 0) {
       tokenTimeLeft = '00:00';
       tokenExpired = true;
       tokenWarning = false;
       return;
     }
 
-    const minutes = Math.floor(diff / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
     tokenTimeLeft = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-    tokenWarning = diff <= 120000; // 2 minutes warning
+    tokenWarning = remainingSeconds <= 120; // 2 minutes warning
     tokenExpired = false;
   }
 
@@ -543,49 +522,82 @@
   }
 
   onMount(() => {
+    const endLayoutMount = perf.start('layout:mount:total');
+
     // Initialize state from SSR data
-    initializeFromSSR();
+    perf.timeSync('layout:initializeFromSSR', () => {
+      initializeFromSSR();
+    });
 
-    // Start token timer (reads from localStorage accessToken set by login)
-    updateTokenTimer();
-    tokenTimerInterval = setInterval(updateTokenTimer, 1000);
+    // Subscribe to TokenManager timer updates (uses relative time - no clock skew!)
+    // Also handles token expiration events
+    perf.timeSync('layout:tokenManager:init', () => {
+      const tokenManager = getTokenManager();
 
-    // Subscribe to token expiration events
-    // If token expires during session, redirect to login
-    const tokenManager = getTokenManager();
-    tokenManager.onTokenExpired(() => {
-      log.warn({}, 'Token expired during session, redirecting to login');
-      void goto('/login', { replaceState: true });
+      // Subscribe to timer updates (fires every second with remaining seconds)
+      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(handleTokenTimerUpdate);
+
+      // Subscribe to token expiration events
+      tokenManager.onTokenExpired(() => {
+        log.warn({}, 'Token expired during session, redirecting to login');
+        void goto('/login', { replaceState: true });
+      });
     });
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)
-    sessionManagerInstance = getSessionManager();
+    perf.timeSync('layout:sessionManager:init', () => {
+      sessionManagerInstance = getSessionManager();
+    });
 
     // Initialize Role Sync Manager (handles cross-tab role synchronization)
     // When another tab switches role, this callback updates local state
-    roleSyncManagerInstance = getRoleSyncManager();
-    roleSyncManagerInstance.init((newRole: string, token?: string) => {
-      log.warn({ newRole }, 'Role changed in another tab');
+    perf.timeSync('layout:roleSyncManager:init', () => {
+      roleSyncManagerInstance = getRoleSyncManager();
+      roleSyncManagerInstance.init((newRole: string, token?: string) => {
+        log.warn({ newRole }, 'Role changed in another tab');
 
-      // Update local state - the manager handles redirect/reload
-      if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
-        activeRole = newRole;
-      }
+        // Update local state - the manager handles redirect/reload
+        if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
+          activeRole = newRole;
+        }
 
-      // Update token if provided
-      if (token !== undefined && token !== '') {
-        localStorage.setItem('accessToken', token);
+        // Update token if provided
+        if (token !== undefined && token !== '') {
+          localStorage.setItem('accessToken', token);
+        }
+      });
+    });
+
+    // Initialize notification counts from SSR data (0ms!) or fetch client-side (fallback)
+    perf.timeSync('layout:notifications:init', () => {
+      if (data.dashboardCounts !== null) {
+        // SSR path: counts already fetched server-side, just sync to store
+        notificationStore.initFromSSR(data.dashboardCounts);
+      } else {
+        // Fallback: fetch client-side if SSR didn't provide counts
+        void notificationStore.loadInitialCounts();
       }
     });
 
-    // Load initial counts and connect to SSE for real-time notifications
-    void notificationStore.loadInitialCounts();
-    notificationStore.connect();
+    perf.timeSync('layout:sse:connect', () => {
+      notificationStore.connect();
+    });
+
+    endLayoutMount();
+
+    // Log page load timing after everything is mounted
+    // Use setTimeout to ensure all resources are loaded
+    setTimeout(() => {
+      logPageLoadTiming();
+      logResourceTiming('/api/');
+      perf.logSummary();
+    }, 100);
   });
 
   onDestroy(() => {
-    if (tokenTimerInterval) {
-      clearInterval(tokenTimerInterval);
+    // Unsubscribe from TokenManager timer updates
+    if (tokenTimerUnsubscribe !== null) {
+      tokenTimerUnsubscribe();
     }
     // Cleanup SessionManager
     if (sessionManagerInstance !== null) {
@@ -655,7 +667,7 @@
               />
             </div>
           {:else}
-            <div class="avatar avatar--md avatar--color-5">
+            <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
               <span class="avatar__initials">{getInitials()}</span>
             </div>
           {/if}
@@ -778,7 +790,7 @@
             />
           </div>
         {:else}
-          <div class="avatar avatar--md avatar--color-0">
+          <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
             <span class="avatar__initials">{getInitials()}</span>
           </div>
         {/if}

@@ -22,6 +22,8 @@ export const WEBSOCKET_CONFIG = {
 export const SCHEDULE_CONSTRAINTS = {
   /** Minimum time in future (ms) - 5 minutes */
   minFutureTime: 5 * 60 * 1000,
+  /** Default time in future for modal (ms) - 6 minutes (buffer for user) */
+  defaultFutureTime: 6 * 60 * 1000,
   /** Maximum time in future (ms) - 30 days */
   maxFutureTime: 30 * 24 * 60 * 60 * 1000,
 } as const;

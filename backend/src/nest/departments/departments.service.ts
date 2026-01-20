@@ -96,6 +96,9 @@ interface DepartmentDependencies {
   total: number;
 }
 
+/** Error message constants */
+const ERROR_DEPARTMENT_NOT_FOUND = 'Department not found';
+
 @Injectable()
 export class DepartmentsService {
   private readonly logger = new Logger(DepartmentsService.name);
@@ -104,6 +107,7 @@ export class DepartmentsService {
 
   /**
    * SQL query for fetching departments with employee/team counts via user_departments N:M
+   * Returns all non-deleted departments (is_active IN 0, 1, 3) for client-side filtering
    */
   private readonly FIND_ALL_DEPARTMENTS_QUERY = `
     WITH employee_counts AS (
@@ -128,7 +132,7 @@ export class DepartmentsService {
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
-    WHERE d.tenant_id = $2 AND d.is_active = 1
+    WHERE d.tenant_id = $2 AND d.is_active IN (0, 1, 3)
     ORDER BY d.name`;
 
   /**
@@ -185,7 +189,7 @@ export class DepartmentsService {
       this.logger.warn(`Extended query failed, using simple query: ${(error as Error).message}`);
 
       const [rows] = await execute<DepartmentRow[]>(
-        'SELECT * FROM departments WHERE tenant_id = $1 AND is_active = 1 ORDER BY name',
+        'SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (0, 1, 3) ORDER BY name',
         [tenantId],
       );
 
@@ -194,19 +198,69 @@ export class DepartmentsService {
   }
 
   /**
+   * SQL query for fetching a single department by ID (includes all statuses)
+   */
+  private readonly FIND_DEPARTMENT_BY_ID_QUERY = `
+    WITH employee_counts AS (
+      SELECT ud.department_id, COUNT(*) as count,
+        STRING_AGG(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, u.username)),
+          E'\\n' ORDER BY u.last_name, u.first_name) as names
+      FROM user_departments ud
+      JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
+      WHERE ud.tenant_id = $1 AND u.is_active IN (0, 1)
+      GROUP BY ud.department_id
+    ),
+    team_counts AS (
+      SELECT department_id, COUNT(*) as count,
+        STRING_AGG(name, E'\\n' ORDER BY name) as names
+      FROM teams GROUP BY department_id
+    )
+    SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
+      COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
+      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+    FROM departments d
+    LEFT JOIN users u ON d.department_lead_id = u.id
+    LEFT JOIN areas a ON d.area_id = a.id
+    LEFT JOIN employee_counts ec ON ec.department_id = d.id
+    LEFT JOIN team_counts tc ON tc.department_id = d.id
+    WHERE d.id = $2 AND d.tenant_id = $3`;
+
+  /**
    * Get a single department by ID
+   * Note: Does NOT filter by is_active to allow fetching inactive/archived departments
    */
   async getDepartmentById(id: number, tenantId: number): Promise<DepartmentResponse> {
     this.logger.log(`Fetching department ${id} for tenant ${tenantId}`);
 
-    const departments = await this.listDepartments(tenantId, true);
-    const department = departments.find((d: DepartmentResponse) => d.id === id);
+    try {
+      const [rows] = await execute<DepartmentRow[]>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
+        tenantId,
+        id,
+        tenantId,
+      ]);
 
-    if (department === undefined) {
-      throw new NotFoundException('Department not found');
+      if (rows.length === 0 || rows[0] === undefined) {
+        throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
+      }
+
+      return this.mapToResponse(rows[0], true);
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.warn(`Extended query failed, using simple query: ${(error as Error).message}`);
+
+      const [rows] = await execute<DepartmentRow[]>(
+        'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId],
+      );
+
+      if (rows.length === 0 || rows[0] === undefined) {
+        throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
+      }
+
+      return this.mapToResponse(rows[0], false);
     }
-
-    return department;
   }
 
   /**
@@ -343,7 +397,7 @@ export class DepartmentsService {
     );
 
     if (existing.length === 0) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
     }
 
     const existingDept = existing[0];
@@ -521,7 +575,7 @@ export class DepartmentsService {
     );
 
     if (existing.length === 0) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
     }
 
     const existingDept = existing[0];
@@ -578,7 +632,7 @@ export class DepartmentsService {
     );
 
     if (existing.length === 0) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
     }
 
     interface UserRow extends RowDataPacket {

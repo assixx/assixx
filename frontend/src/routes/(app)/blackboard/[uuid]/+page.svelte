@@ -255,14 +255,12 @@
   /**
    * Determines the avatar color class based on profile picture availability.
    * Returns empty string if profile picture exists, otherwise returns color class.
+   * Uses userId for consistent color per user (same user = same color everywhere).
    */
-  function getAvatarColorClass(
-    profilePicture: string | null | undefined,
-    commentId: number,
-  ): string {
+  function getAvatarColorClass(profilePicture: string | null | undefined, userId: number): string {
     const hasProfilePic =
       profilePicture !== null && profilePicture !== undefined && profilePicture !== '';
-    return hasProfilePic ? '' : `avatar--color-${getAvatarColor(commentId)}`;
+    return hasProfilePic ? '' : `avatar--color-${getAvatarColor(userId)}`;
   }
 
   /**
@@ -425,7 +423,7 @@
                     <div
                       class="avatar avatar--sm {getAvatarColorClass(
                         comment.profilePicture,
-                        comment.id,
+                        comment.userId,
                       )}"
                     >
                       {#if hasProfilePicture(comment.profilePicture)}

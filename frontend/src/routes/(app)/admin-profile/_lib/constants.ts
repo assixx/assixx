@@ -32,7 +32,7 @@ export const PICTURE_CONSTRAINTS = {
 /** LocalStorage keys */
 export const STORAGE_KEYS = {
   accessToken: 'accessToken',
-  profilePictureCache: 'profilePictureCache',
+  // profilePictureCache removed - caused bug where all users shared same picture
 } as const;
 
 /** UI Messages (German) */

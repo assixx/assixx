@@ -14,6 +14,7 @@
 import { browser } from '$app/environment';
 
 import { createLogger } from './logger';
+import { perf } from './perf-logger';
 import { getTokenManager, registerCacheClearCallback } from './token-manager';
 
 import type { LogoutReason } from './auth-types';
@@ -624,6 +625,10 @@ export class ApiClient {
     options: RequestInit = {},
     config: ApiConfig = {},
   ): Promise<T> {
+    const method = (options.method ?? 'GET').toUpperCase();
+    const perfName = `api:${method}:${endpoint}`;
+    const endPerf = perf.start(perfName, { method, endpoint });
+
     const baseApiPath = '/api/v2';
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
     const headers = this.buildHeaders(options, config);
@@ -659,12 +664,16 @@ export class ApiClient {
           combinedSignal,
         );
         if (retryResult !== null) {
+          endPerf();
           return retryResult;
         }
       }
 
-      return await this.handleResponse<T>(response);
+      const result = await this.handleResponse<T>(response);
+      endPerf();
+      return result;
     } catch (error) {
+      endPerf();
       this.handleRequestError(error, timeoutMs);
     } finally {
       // Always clean up timeout to prevent memory leaks
@@ -876,12 +885,14 @@ export class ApiClient {
     if (useCache) {
       const cached = this.getCached(endpoint);
       if (cached !== null) {
+        log.debug({ endpoint, source: 'cache' }, `⚡ Cache HIT: ${endpoint}`);
         return cached as T;
       }
 
       // PERFORMANCE: Deduplicate concurrent requests for same endpoint
       const pending = this.pendingRequests.get(endpoint);
       if (pending !== undefined) {
+        log.debug({ endpoint, source: 'dedup' }, `⚡ Request DEDUP: ${endpoint}`);
         return await (pending as Promise<T>);
       }
     }

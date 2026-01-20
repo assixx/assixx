@@ -147,23 +147,36 @@ export async function loadScheduledMessages(conversationId: number): Promise<Sch
 }
 
 /**
+ * Attachment info for scheduled message
+ */
+interface ScheduledAttachmentInfo {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Create a scheduled message
  * @param conversationId - ID of the conversation
  * @param content - Message content
  * @param scheduledFor - ISO date string for when to send
- * @param attachments - Optional attachment IDs
+ * @param attachment - Optional attachment info (first upload only for now)
  */
 export async function createScheduledMessage(
   conversationId: number,
   content: string,
   scheduledFor: string,
-  attachments: number[] = [],
+  attachment?: ScheduledAttachmentInfo,
 ): Promise<void> {
   await apiClient.post(API_ENDPOINTS.createScheduled, {
     conversationId,
     content,
     scheduledFor,
-    attachments,
+    attachmentPath: attachment?.path,
+    attachmentName: attachment?.name,
+    attachmentType: attachment?.type,
+    attachmentSize: attachment?.size,
   });
 }
 

@@ -485,13 +485,13 @@ export default ts.config(
   },
 
   // =============================================================================
-  // LOGGER UTILITY - Allow all console methods (this IS the central logger)
-  // All other code should use this logger instead of console.* directly
+  // LOGGER UTILITIES - Allow all console methods (these ARE the central loggers)
+  // All other code should use these loggers instead of console.* directly
   // =============================================================================
   {
-    files: ['src/lib/utils/logger.ts'],
+    files: ['src/lib/utils/logger.ts', 'src/lib/utils/perf-logger.ts'],
     rules: {
-      'no-console': 'off', // Logger utility intentionally uses all console methods
+      'no-console': 'off', // Logger utilities intentionally use all console methods
     },
   },
 

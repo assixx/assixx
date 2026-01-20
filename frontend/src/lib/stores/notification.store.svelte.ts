@@ -6,7 +6,11 @@
  */
 import { browser } from '$app/environment';
 
+import { createLogger } from '$lib/utils/logger';
 import { type NotificationEvent, getNotificationSSE } from '$lib/utils/notification-sse';
+import { perf } from '$lib/utils/perf-logger';
+
+const log = createLogger('NotificationStore');
 
 // ============================================
 // Types
@@ -94,21 +98,6 @@ function setCountsMut(state: NotificationState, counts: Partial<NotificationCoun
   state.lastUpdate = new Date();
 }
 
-/** API response types */
-interface ChatUnreadResponse {
-  success: boolean;
-  data: { totalUnread: number };
-}
-
-interface NotificationStatsResponse {
-  success: boolean;
-  data: {
-    total: number;
-    unread: number;
-    byType: Record<string, number>;
-  };
-}
-
 export type FeatureType = 'survey' | 'document' | 'kvp';
 
 /** Map feature type to store count key */
@@ -152,77 +141,68 @@ async function markFeatureTypeAsRead(
   }
 }
 
-/** Parse chat unread count from response */
-async function parseChatCount(response: Response): Promise<number> {
-  if (!response.ok) return 0;
-  const json = (await response.json()) as ChatUnreadResponse;
-  return json.data.totalUnread;
-}
-
-/** Parse notification stats from response */
-async function parseNotificationStats(
-  response: Response,
-): Promise<{ survey: number; document: number; kvp: number }> {
-  if (!response.ok) return { survey: 0, document: 0, kvp: 0 };
-  const json = (await response.json()) as NotificationStatsResponse;
-  const byType: Partial<Record<string, number>> = json.data.byType;
-  return {
-    survey: byType.survey ?? 0,
-    document: byType.document ?? 0,
-    kvp: byType.kvp ?? 0,
+/**
+ * Dashboard counts response from /api/v2/dashboard/counts
+ * Single endpoint that combines all notification counts
+ */
+interface DashboardCountsResponse {
+  success: boolean;
+  data: {
+    chat: { totalUnread: number };
+    notifications: { total: number; unread: number; byType: Record<string, number> };
+    blackboard: { count: number };
+    calendar: { count: number };
+    documents: { count: number };
+    fetchedAt: string;
   };
-}
-
-/** Parse count from { success: true, data: { count: number } } response */
-async function parseSimpleCount(response: Response): Promise<number> {
-  if (!response.ok) return 0;
-  const json = (await response.json()) as {
-    success?: boolean;
-    data?: { count?: number | string };
-    count?: number | string;
-  };
-  // Handle both wrapped { data: { count } } and direct { count } responses
-  // Ensure numeric return (API may return string)
-  const rawCount = json.data?.count ?? json.count ?? 0;
-  return Number(rawCount);
 }
 
 /**
- * Fetch initial counts from all APIs in parallel (ADR-004)
+ * Fetch initial counts from combined dashboard endpoint (optimized)
+ * Single HTTP request instead of 5 parallel requests
  */
 async function fetchInitialCounts(state: NotificationState): Promise<void> {
+  const endTotal = perf.start('notifications:fetchInitialCounts:total');
+
   try {
-    const [
-      chatResponse,
-      notificationsResponse,
-      blackboardResponse,
-      calendarResponse,
-      documentsResponse,
-    ] = await Promise.all([
-      fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
-      fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
-      fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
-      fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
-      fetch('/api/v2/documents/unread-count', { credentials: 'include' }),
-    ]);
+    log.debug({}, '📡 Fetching dashboard counts (single optimized request)...');
 
-    const chatCount = await parseChatCount(chatResponse);
-    const stats = await parseNotificationStats(notificationsResponse);
-    const blackboardCount = await parseSimpleCount(blackboardResponse);
-    const calendarCount = await parseSimpleCount(calendarResponse);
-    const documentsCount = await parseSimpleCount(documentsResponse);
+    const response = await perf.time('notifications:fetch:dashboard-counts', () =>
+      fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
+    );
 
+    if (!response.ok) {
+      throw new Error(`Dashboard counts failed: ${response.status}`);
+    }
+
+    const json = (await response.json()) as DashboardCountsResponse;
+    const { data } = json;
+
+    // Extract counts from combined response
+    const chatCount = data.chat.totalUnread;
+    const byType = data.notifications.byType as Partial<Record<string, number>>;
+    const surveyCount = byType.survey ?? 0;
+    const kvpCount = byType.kvp ?? 0;
+    const blackboardCount = data.blackboard.count;
+    const calendarCount = data.calendar.count;
+    const documentsCount = data.documents.count;
+
+    // Update state
     state.counts.chat = chatCount;
-    state.counts.surveys = stats.survey;
-    state.counts.documents = documentsCount; // From document_read_status table
-    state.counts.kvp = stats.kvp;
+    state.counts.surveys = surveyCount;
+    state.counts.documents = documentsCount;
+    state.counts.kvp = kvpCount;
     state.counts.blackboard = blackboardCount;
     state.counts.calendar = calendarCount;
     state.counts.total =
-      chatCount + stats.survey + documentsCount + stats.kvp + blackboardCount + calendarCount;
+      chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
     state.lastUpdate = new Date();
-  } catch {
-    // Silently fail - SSE will update counts when connected
+
+    log.debug({ counts: state.counts }, `✅ Initial counts loaded: total=${state.counts.total}`);
+  } catch (err) {
+    log.warn({ err }, 'Failed to fetch dashboard counts - SSE will update when connected');
+  } finally {
+    endTotal();
   }
 }
 
@@ -244,6 +224,38 @@ function connectSSE(
     }),
   );
   sse.connect();
+}
+
+/** SSR counts input type */
+interface SSRCounts {
+  chat: { totalUnread: number };
+  notifications: { byType: Record<string, number> };
+  blackboard: { count: number };
+  calendar: { count: number };
+  documents: { count: number };
+}
+
+/** Initialize counts from SSR data (no HTTP request needed) */
+function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
+  const chatCount = counts.chat.totalUnread;
+  const byType = counts.notifications.byType as Partial<Record<string, number>>;
+  const surveyCount = byType.survey ?? 0;
+  const kvpCount = byType.kvp ?? 0;
+  const blackboardCount = counts.blackboard.count;
+  const calendarCount = counts.calendar.count;
+  const documentsCount = counts.documents.count;
+
+  state.counts.chat = chatCount;
+  state.counts.surveys = surveyCount;
+  state.counts.documents = documentsCount;
+  state.counts.kvp = kvpCount;
+  state.counts.blackboard = blackboardCount;
+  state.counts.calendar = calendarCount;
+  state.counts.total =
+    chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
+  state.lastUpdate = new Date();
+
+  log.debug({ counts: state.counts }, '✅ Counts initialized from SSR (0ms fetch!)');
 }
 
 /** Disconnect from SSE */
@@ -312,6 +324,10 @@ function createNotificationStore() {
     },
     loadInitialCounts: async () => {
       if (browser) await fetchInitialCounts(state);
+    },
+    /** Initialize counts from SSR data (no HTTP request needed) */
+    initFromSSR: (counts: SSRCounts) => {
+      initFromSSRData(state, counts);
     },
     markTypeAsRead: async (featureType: FeatureType) => {
       if (browser) await markFeatureTypeAsRead(state, featureType);
