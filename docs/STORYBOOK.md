@@ -126,7 +126,7 @@ http://localhost:6006 ✅
 
 - **Framework:** Using @storybook/web-components-vite (best HTML support)
 - **CSS Warnings:** Tailwind @import order warnings can be ignored (funktioniert trotzdem!)
-- **Stories Location:** All stories in `/stories/` directory
+- **Stories Location:** All stories in `design-system/stories/` directory
 - **Design System Migration:** Button components already migrated from Bootstrap
 
 ## Real Life Production Preview
