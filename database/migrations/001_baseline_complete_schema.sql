@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict VDgzs7wrC3s5fpwQeZhGmFdK0jeEd8Lq5OijuW8Vao8aEneRecvuAZUbmx3ThVR
+\restrict jDBqo5xBzgVdtHj9QceaNSlXOmpLM1B33TRCs1DLQIqPs02C2VksxSa19g90UFe
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -122,16 +122,6 @@ CREATE TYPE "public"."blackboard_entries_priority" AS ENUM (
     'medium',
     'high',
     'urgent'
-);
-
-
---
--- Name: blackboard_entries_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE "public"."blackboard_entries_status" AS ENUM (
-    'active',
-    'archived'
 );
 
 
@@ -3035,8 +3025,7 @@ CREATE TABLE "public"."blackboard_entries" (
     "expires_at" timestamp with time zone,
     "is_pinned" boolean DEFAULT false,
     "views" integer DEFAULT 0,
-    "is_active" smallint DEFAULT 1,
-    "status" "public"."blackboard_entries_status" DEFAULT 'active'::"public"."blackboard_entries_status",
+    "is_active" smallint DEFAULT 1 NOT NULL,
     "requires_confirmation" boolean DEFAULT false,
     "attachment_count" integer DEFAULT 0,
     "attachment_path" character varying(500),
@@ -12628,13 +12617,6 @@ CREATE INDEX "idx_19037_idx_org_level" ON "public"."blackboard_entries" USING "b
 --
 
 CREATE INDEX "idx_19037_idx_priority" ON "public"."blackboard_entries" USING "btree" ("priority");
-
-
---
--- Name: idx_19037_idx_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19037_idx_status" ON "public"."blackboard_entries" USING "btree" ("status");
 
 
 --
@@ -23980,5 +23962,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict VDgzs7wrC3s5fpwQeZhGmFdK0jeEd8Lq5OijuW8Vao8aEneRecvuAZUbmx3ThVR
+\unrestrict jDBqo5xBzgVdtHj9QceaNSlXOmpLM1B33TRCs1DLQIqPs02C2VksxSa19g90UFe
 

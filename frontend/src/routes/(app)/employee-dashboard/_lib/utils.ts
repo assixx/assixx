@@ -188,13 +188,26 @@ export function truncateContent(content: string, maxLength = 150): string {
  * Format blackboard date for display
  * @param dateStr - ISO date string
  */
-export function formatBlackboardDate(dateStr: string): string {
+export function formatBlackboardDate(dateStr: string | null | undefined): string {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+/**
+ * Check if a date is expired (in the past)
+ * @param dateStr - ISO date string
+ */
+export function isExpired(dateStr: string | null | undefined): boolean {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return false;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getTime() < Date.now();
 }
 
 /**

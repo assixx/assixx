@@ -72,6 +72,10 @@
   justify-content: center; /* Same as mini-notes-container */
   gap: 1rem; /* Same as mini-notes-container */
   z-index: 2;
+
+  /* Zoom: --zoom-level wird per inline style gesetzt (default 1 = 100%) */
+  transform: scale(var(--zoom-level, 1));
+  transform-origin: top center;
 }
 
 /* Base Pinboard Item (wrapper for sticky-note) */

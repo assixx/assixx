@@ -62,8 +62,8 @@ export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
  * Format blackboard date (German locale, date only - no time)
  * @param dateStr - ISO date string
  */
-export function formatBlackboardDate(dateStr: string): string {
-  if (!dateStr) return '';
+export function formatBlackboardDate(dateStr: string | null | undefined): string {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('de-DE', {
@@ -71,6 +71,17 @@ export function formatBlackboardDate(dateStr: string): string {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+/**
+ * Check if a date is expired (in the past)
+ * @param dateStr - ISO date string
+ */
+export function isExpired(dateStr: string | null | undefined): boolean {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return false;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getTime() < Date.now();
 }
 
 /** Buffer-like object structure from API responses */

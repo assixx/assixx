@@ -40,6 +40,16 @@ export function formatDateTime(dateStr: string | null | undefined): string {
   });
 }
 
+/**
+ * Check if a date is expired (in the past)
+ */
+export function isExpired(dateStr: string | null | undefined): boolean {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return false;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getTime() < Date.now();
+}
+
 // ============================================================================
 // Priority Helpers
 // ============================================================================

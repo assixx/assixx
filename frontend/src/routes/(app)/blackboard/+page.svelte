@@ -33,6 +33,7 @@
   import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
   import {
     formatDateShort,
+    isExpired,
     truncateText,
     getPriorityLabel,
     getPriorityClass,
@@ -181,6 +182,26 @@
   // MUTATIONS (Level 3: invalidateAll() after success)
   // =============================================================================
 
+  /**
+   * Convert YYYY-MM-DD to ISO 8601 format (end of day UTC)
+   * Backend requires: YYYY-MM-DDTHH:mm:ss format
+   */
+  function toIso8601EndOfDay(dateStr: string): string | null {
+    if (dateStr === '' || dateStr.length === 0) return null;
+    // Append end-of-day time to make it "expires at end of selected day"
+    return `${dateStr}T23:59:59.000Z`;
+  }
+
+  /**
+   * Convert ISO 8601 date to YYYY-MM-DD for HTML date input
+   * Server returns: 2026-01-20T23:59:59.000Z → Input needs: 2026-01-20
+   */
+  function fromIso8601ToDateInput(isoDate: string | null | undefined): string {
+    if (isoDate === null || isoDate === undefined || isoDate === '') return '';
+    // Extract YYYY-MM-DD from ISO string
+    return isoDate.substring(0, 10);
+  }
+
   function buildEntryPayload(): Record<string, unknown> {
     const orgIds = formCompanyWide
       ? { departmentIds: [], teamIds: [], areaIds: [] }
@@ -191,7 +212,7 @@
       content: formContent,
       priority: formPriority,
       color: formColor,
-      expiresAt: formExpiresAt || null,
+      expiresAt: toIso8601EndOfDay(formExpiresAt),
       ...orgIds,
     };
   }
@@ -333,7 +354,7 @@
     formContent = entry.content;
     formPriority = entry.priority;
     formColor = entry.color;
-    formExpiresAt = entry.expiresAt ?? '';
+    formExpiresAt = fromIso8601ToDateInput(entry.expiresAt);
     formCompanyWide = entry.orgLevel === 'company';
     formDepartmentIds = entry.departmentIds ?? [];
     formTeamIds = entry.teamIds ?? [];
@@ -579,7 +600,6 @@
             onclick={() => {
               goToDetail(entry.uuid);
             }}
-            style="transform: scale(var(--zoom-level, 1));"
             role="button"
             tabindex="0"
             onkeydown={(e) => {
@@ -588,7 +608,19 @@
           >
             <div class="sticky-note sticky-note--{entry.color} sticky-note--large">
               <div class="sticky-note__pin"></div>
-              <div class="sticky-note__title">{entry.title}</div>
+              <div class="sticky-note__header">
+                <div class="sticky-note__title">{entry.title}</div>
+                {#if entry.expiresAt}
+                  <span
+                    class="sticky-note__expires"
+                    class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
+                    title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                  >
+                    <i class="fas fa-clock"></i>
+                    {formatDateShort(entry.expiresAt)}
+                  </span>
+                {/if}
+              </div>
               <div class="sticky-note__content">{truncateText(entry.content)}</div>
               <div class="sticky-note__indicators">
                 {#if (entry.commentCount ?? 0) > 0}

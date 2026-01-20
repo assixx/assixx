@@ -10,11 +10,15 @@ import { z } from 'zod';
 import { DateSchema } from '../../../schemas/common.schema.js';
 
 /**
- * Entry status enum
+ * is_active status (consistent with rest of app)
+ * 0 = inactive, 1 = active, 3 = archive, 4 = deleted (soft delete)
  */
-const EntryStatusSchema = z.enum(['active', 'archived'], {
-  message: "Status must be 'active' or 'archived'",
-});
+const IsActiveSchema = z
+  .number()
+  .int()
+  .refine((val: number) => [0, 1, 3, 4].includes(val), {
+    message: 'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
+  });
 
 /**
  * Organization level enum
@@ -56,7 +60,7 @@ export const UpdateEntrySchema = z.object({
   expiresAt: DateSchema.nullable().optional(),
   priority: PrioritySchema.optional(),
   color: z.string().trim().max(50, 'Color cannot exceed 50 characters').optional(),
-  status: EntryStatusSchema.optional(),
+  isActive: IsActiveSchema.optional(),
 });
 
 /**
