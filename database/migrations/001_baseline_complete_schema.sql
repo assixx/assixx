@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict jDBqo5xBzgVdtHj9QceaNSlXOmpLM1B33TRCs1DLQIqPs02C2VksxSa19g90UFe
+\restrict W8udKkVag2oJ3E9YvubKH5f5dygUWzuQvBh5X6VvwM5Q7hTwuRWKPY134mcJx0Q
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -2846,51 +2846,6 @@ CREATE TABLE "public"."audit_trail_2027_12" (
     "error_message" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
-
-
---
--- Name: audit_trail_old; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."audit_trail_old" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "user_id" integer NOT NULL,
-    "user_name" character varying(100),
-    "user_role" character varying(50),
-    "action" character varying(50) NOT NULL,
-    "resource_type" character varying(50) NOT NULL,
-    "resource_id" integer,
-    "resource_name" character varying(255),
-    "changes" "jsonb",
-    "ip_address" character varying(45),
-    "user_agent" "text",
-    "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
-    "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."audit_trail_old" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: audit_trail_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."audit_trail_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: audit_trail_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."audit_trail_id_seq" OWNED BY "public"."audit_trail_old"."id";
 
 
 --
@@ -6170,64 +6125,6 @@ CREATE TABLE "public"."root_logs_2027_12" (
 
 
 --
--- Name: root_logs_old; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."root_logs_old" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "user_id" integer NOT NULL,
-    "action" character varying(100) NOT NULL,
-    "entity_type" character varying(50),
-    "entity_id" integer,
-    "details" "text",
-    "old_values" "jsonb",
-    "new_values" "jsonb",
-    "ip_address" character varying(45),
-    "user_agent" "text",
-    "was_role_switched" boolean DEFAULT false,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "is_active" smallint
-);
-
-ALTER TABLE ONLY "public"."root_logs_old" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: TABLE "root_logs_old"; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE "public"."root_logs_old" IS 'Logs all administrative actions performed by users';
-
-
---
--- Name: COLUMN "root_logs_old"."was_role_switched"; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN "public"."root_logs_old"."was_role_switched" IS 'Indicates if the action was performed while user had switched roles';
-
-
---
--- Name: root_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."root_logs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: root_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."root_logs_id_seq" OWNED BY "public"."root_logs_old"."id";
-
-
---
 -- Name: scheduled_messages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8671,13 +8568,6 @@ ALTER TABLE ONLY "public"."audit_trail" ALTER COLUMN "id" SET DEFAULT "nextval"(
 
 
 --
--- Name: audit_trail_old id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."audit_trail_old" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."audit_trail_id_seq"'::"regclass");
-
-
---
 -- Name: backup_retention_policy id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -9060,13 +8950,6 @@ ALTER TABLE ONLY "public"."released_subdomains" ALTER COLUMN "id" SET DEFAULT "n
 --
 
 ALTER TABLE ONLY "public"."root_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass");
-
-
---
--- Name: root_logs_old id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."root_logs_old" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_id_seq"'::"regclass");
 
 
 --
@@ -9740,14 +9623,6 @@ ALTER TABLE ONLY "public"."areas"
 
 
 --
--- Name: audit_trail_old idx_19007_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."audit_trail_old"
-    ADD CONSTRAINT "idx_19007_primary" PRIMARY KEY ("id");
-
-
---
 -- Name: backup_retention_policy idx_19015_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10161,14 +10036,6 @@ ALTER TABLE ONLY "public"."refresh_tokens"
 
 ALTER TABLE ONLY "public"."released_subdomains"
     ADD CONSTRAINT "idx_19460_primary" PRIMARY KEY ("id");
-
-
---
--- Name: root_logs_old idx_19466_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."root_logs_old"
-    ADD CONSTRAINT "idx_19466_primary" PRIMARY KEY ("id");
 
 
 --
@@ -12424,48 +12291,6 @@ CREATE INDEX "idx_18997_idx_areas_type" ON "public"."areas" USING "btree" ("type
 
 
 --
--- Name: idx_19007_audit_trail_user_fk; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_audit_trail_user_fk" ON "public"."audit_trail_old" USING "btree" ("user_id");
-
-
---
--- Name: idx_19007_idx_action; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_idx_action" ON "public"."audit_trail_old" USING "btree" ("action");
-
-
---
--- Name: idx_19007_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_idx_created_at" ON "public"."audit_trail_old" USING "btree" ("created_at");
-
-
---
--- Name: idx_19007_idx_resource; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_idx_resource" ON "public"."audit_trail_old" USING "btree" ("resource_type", "resource_id");
-
-
---
--- Name: idx_19007_idx_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_idx_status" ON "public"."audit_trail_old" USING "btree" ("status");
-
-
---
--- Name: idx_19007_idx_tenant_user; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19007_idx_tenant_user" ON "public"."audit_trail_old" USING "btree" ("tenant_id", "user_id");
-
-
---
 -- Name: idx_19015_idx_backup_type; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14146,48 +13971,6 @@ CREATE INDEX "idx_19460_idx_subdomain" ON "public"."released_subdomains" USING "
 
 
 --
--- Name: idx_19466_idx_action; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_action" ON "public"."root_logs_old" USING "btree" ("action");
-
-
---
--- Name: idx_19466_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_created_at" ON "public"."root_logs_old" USING "btree" ("created_at");
-
-
---
--- Name: idx_19466_idx_entity_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_entity_type" ON "public"."root_logs_old" USING "btree" ("entity_type");
-
-
---
--- Name: idx_19466_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_tenant_id" ON "public"."root_logs_old" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19466_idx_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_user_id" ON "public"."root_logs_old" USING "btree" ("user_id");
-
-
---
--- Name: idx_19466_idx_was_role_switched; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19466_idx_was_role_switched" ON "public"."root_logs_old" USING "btree" ("was_role_switched");
-
-
---
 -- Name: idx_19474_idx_executed; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15837,13 +15620,6 @@ CREATE UNIQUE INDEX "idx_notifications_uuid" ON "public"."notifications" USING "
 --
 
 CREATE INDEX "idx_notifications_uuid_created_at" ON "public"."notifications" USING "btree" ("uuid_created_at");
-
-
---
--- Name: idx_root_logs_is_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_root_logs_is_active" ON "public"."root_logs_old" USING "btree" ("is_active");
 
 
 --
@@ -22862,12 +22638,6 @@ ALTER TABLE "public"."areas" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."audit_trail" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: audit_trail_old; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."audit_trail_old" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: backup_retention_policy; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -23136,12 +22906,6 @@ ALTER TABLE "public"."refresh_tokens" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."root_logs" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: root_logs_old; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."root_logs_old" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: scheduled_messages; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -23371,13 +23135,6 @@ CREATE POLICY "tenant_isolation" ON "public"."areas" USING (((NULLIF("current_se
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."audit_trail" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: audit_trail_old tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."audit_trail_old" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -23630,13 +23387,6 @@ CREATE POLICY "tenant_isolation" ON "public"."refresh_tokens" USING (((NULLIF("c
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."root_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: root_logs_old tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."root_logs_old" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -23962,5 +23712,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jDBqo5xBzgVdtHj9QceaNSlXOmpLM1B33TRCs1DLQIqPs02C2VksxSa19g90UFe
+\unrestrict W8udKkVag2oJ3E9YvubKH5f5dygUWzuQvBh5X6VvwM5Q7hTwuRWKPY134mcJx0Q
 

@@ -358,16 +358,36 @@ export class SecurityLogsService {
 
 ### Using the `changes` JSONB Field
 
-The `changes` column stores flexible metadata. Current structure:
+The `changes` column stores structured audit data. Updated structure (2026-01-20):
 
 ```typescript
-interface AuditChangesMetadata {
-  endpoint: string; // Full API path: /api/v2/users/123
-  http_method: string; // GET, POST, PUT, DELETE
-  http_status?: number; // 200, 404, 500, etc.
-  duration_ms: number; // Request duration
+interface AuditChanges {
+  created?: Record<string, unknown>; // For CREATE - the new data (sanitized)
+  updated?: Record<string, unknown>; // For UPDATE - the changed data (sanitized)
+  deleted?: Record<string, unknown>; // For DELETE - pre-fetched data before deletion
+  query?: Record<string, unknown>; // For LIST - query parameters
+  resource_id?: number | string; // For VIEW - the viewed resource ID
+  _http: {
+    // Always included - HTTP metadata
+    method: string;
+    endpoint: string;
+    status: number;
+    duration_ms: number;
+  };
 }
 ```
+
+**Key improvements (2026-01-20):**
+
+1. **Action-specific data:** Each action type stores relevant data (created/updated/deleted)
+2. **DELETE pre-fetch:** Resource data is fetched BEFORE deletion for audit compliance
+3. **Sensitive field sanitization:** Passwords, tokens, API keys are never logged
+4. **HTTP metadata in `_http`:** Separated from actual data changes
+
+**Sensitive fields automatically removed:**
+
+- `password`, `passwordHash`, `token`, `accessToken`, `refreshToken`
+- `secret`, `apiKey`, `privateKey`, `ssn`, `creditCard`, `cvv`, `pin`
 
 **To add new metadata:**
 
@@ -394,12 +414,42 @@ const SKIPPED_GET_SUFFIXES: readonly string[] = [
   // Add new suffixes here
 ];
 
-// Throttled endpoints (log once per interval)
-const CURRENT_USER_ENDPOINTS: readonly string[] = [
-  '/users/me',
-  // Add new endpoints here
+// Reference data endpoints - dropdowns/filters loaded on every page
+const REFERENCE_DATA_ENDPOINTS: readonly string[] = [
+  '/api/v2/departments',
+  '/api/v2/areas',
+  '/api/v2/teams',
+  '/api/v2/roles',
+  '/api/v2/users', // User list for dropdowns/mentions
+];
+
+// Page initialization endpoints - called on EVERY page load
+const PAGE_INIT_ENDPOINTS: readonly string[] = [
+  '/api/v2/users/me', // Auth/profile check
+  '/api/v2/notifications/stats/me', // Notification badge
+  '/api/v2/features/my-features', // Feature flags
+  '/api/v2/plans/current', // Subscription plan
 ];
 ```
+
+### Noise Reduction Strategy (2026-01-20)
+
+**Problem:** Visiting one page (e.g., Blackboard) logged 6-7 entries instead of 1.
+The audit trail logged API calls, not USER ACTIONS.
+
+**Solution:** Multi-layer noise reduction:
+
+| Layer                        | What              | Example                              |
+| ---------------------------- | ----------------- | ------------------------------------ |
+| `EXCLUDED_PATHS`             | Never log         | `/health`, `/metrics`                |
+| `SKIPPED_GET_SUFFIXES`       | Skip stats/counts | `/stats`, `/count`, `-count`         |
+| `REFERENCE_DATA_ENDPOINTS`   | Skip dropdowns    | `/departments`, `/teams`, `/users`   |
+| `PAGE_INIT_ENDPOINTS`        | Skip page init    | `/users/me`, `/features/my-features` |
+| `shouldThrottleListAction()` | Throttle 30s      | Same user + endpoint = 1 log         |
+
+**Result:** "User visited Blackboard" = 1 log entry (not 6-7).
+
+**Philosophy:** Audit trail should reflect what the USER actually did, not what API calls the frontend made.
 
 ### Adding New Action Types
 
@@ -437,4 +487,4 @@ Then update `determineAction()` method with logic for new actions.
 
 ---
 
-_Last Updated: 2026-01-19 (v4 - Added Extension Guidelines)_
+_Last Updated: 2026-01-20 (v5 - Noise Reduction + Changes Field Restructure)_
