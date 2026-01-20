@@ -59,6 +59,18 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/shifts': ['admin', 'root'],
   '/storage-upgrade': ['admin', 'root'],
   '/tenant-deletion-status': ['admin', 'root'],
+
+  // ALL AUTHENTICATED USERS - enables FAST PATH optimization
+  // (RBAC fetches user once, layout reuses it - saves ~50-80ms)
+  '/employee-dashboard': ['employee', 'admin', 'root'],
+  '/employee-profile': ['employee', 'admin', 'root'],
+  '/chat': ['employee', 'admin', 'root'],
+  '/blackboard': ['employee', 'admin', 'root'],
+  '/calendar': ['employee', 'admin', 'root'],
+  '/documents-explorer': ['employee', 'admin', 'root'],
+  '/kvp': ['employee', 'admin', 'root'],
+  '/survey-employee': ['employee', 'admin', 'root'],
+  '/account-settings': ['employee', 'admin', 'root'],
 };
 
 /** Public routes - no authentication required */

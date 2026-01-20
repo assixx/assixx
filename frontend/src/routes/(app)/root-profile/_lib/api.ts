@@ -8,7 +8,7 @@ import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
-import { STORAGE_KEYS, PICTURE_CONSTRAINTS } from './constants';
+import { PICTURE_CONSTRAINTS } from './constants';
 
 import type {
   UserProfile,
@@ -80,20 +80,15 @@ export async function loadProfile(): Promise<{
 }
 
 /**
- * Load profile picture from cache or user data
+ * Load profile picture from user data (SSR source of truth)
  * @param userPicture - Profile picture URL from user data
  * @returns Absolute URL path or null
  */
 export function loadProfilePicture(userPicture?: string): string | null {
-  // Check localStorage cache first
-  const cached = localStorage.getItem(STORAGE_KEYS.profilePictureCache);
-  if (cached !== null && cached !== 'null' && cached !== '') {
-    return getProfilePictureUrl(cached);
-  }
-
-  // Use user's profile picture if available
+  // Use user's profile picture directly from SSR data - no caching
+  // Caching was removed because it caused profile pictures to be shared
+  // across different users (all profiles used same localStorage key)
   if (userPicture !== undefined && userPicture !== '') {
-    localStorage.setItem(STORAGE_KEYS.profilePictureCache, userPicture);
     return getProfilePictureUrl(userPicture);
   }
 
@@ -156,10 +151,6 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
     }
   }
 
-  if (newUrl !== null) {
-    localStorage.setItem(STORAGE_KEYS.profilePictureCache, newUrl);
-  }
-
   return newUrl;
 }
 
@@ -168,7 +159,6 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
  */
 export async function removeProfilePicture(): Promise<void> {
   await apiClient.delete('/users/me/profile-picture');
-  localStorage.removeItem(STORAGE_KEYS.profilePictureCache);
 }
 
 /**

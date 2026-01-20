@@ -183,13 +183,19 @@
   // =============================================================================
 
   /**
-   * Convert YYYY-MM-DD to ISO 8601 format (end of day UTC)
+   * Convert YYYY-MM-DD to ISO 8601 format (end of day in LOCAL timezone)
    * Backend requires: YYYY-MM-DDTHH:mm:ss format
+   *
+   * IMPORTANT: Creates date at 23:59:59 LOCAL time, then converts to UTC.
+   * This ensures "Gültig bis 21.01" expires at 23:59:59 German time,
+   * not 23:59:59 UTC (which would be 00:59:59 German time next day).
    */
   function toIso8601EndOfDay(dateStr: string): string | null {
     if (dateStr === '' || dateStr.length === 0) return null;
-    // Append end-of-day time to make it "expires at end of selected day"
-    return `${dateStr}T23:59:59.000Z`;
+    // Create date at 23:59:59 LOCAL time (no 'Z' = local timezone)
+    // toISOString() then converts to correct UTC equivalent
+    const localEndOfDay = new Date(`${dateStr}T23:59:59`);
+    return localEndOfDay.toISOString();
   }
 
   /**

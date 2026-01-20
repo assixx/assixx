@@ -32,6 +32,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
 import { AppConfigModule } from './config/config.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
@@ -134,6 +135,7 @@ import { UsersModule } from './users/users.module.js';
     AuditTrailModule,
     AuthModule,
     UsersModule,
+    DashboardModule,
     DepartmentsModule,
     TeamsModule,
     CalendarModule,

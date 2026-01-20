@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict W8udKkVag2oJ3E9YvubKH5f5dygUWzuQvBh5X6VvwM5Q7hTwuRWKPY134mcJx0Q
+\restrict 81N43cjQC0fTXGjKElzstT2ggu1cJFH6GWX029BtjM5Wcig1Vgrii2RpiHc9JNj
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -3269,10 +3269,18 @@ CREATE TABLE "public"."conversation_participants" (
     "joined_at" timestamp with time zone,
     "is_admin" boolean DEFAULT false,
     "last_read_message_id" integer,
-    "last_read_at" timestamp with time zone
+    "last_read_at" timestamp with time zone,
+    "deleted_at" timestamp with time zone
 );
 
 ALTER TABLE ONLY "public"."conversation_participants" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: COLUMN "conversation_participants"."deleted_at"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN "public"."conversation_participants"."deleted_at" IS 'Per-user soft delete timestamp. When set, conversation is hidden only for this user (WhatsApp "delete for me" pattern).';
 
 
 --
@@ -15511,6 +15519,13 @@ CREATE UNIQUE INDEX "idx_conversations_uuid" ON "public"."conversations" USING "
 
 
 --
+-- Name: idx_cp_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_cp_deleted_at" ON "public"."conversation_participants" USING "btree" ("conversation_id", "user_id") WHERE ("deleted_at" IS NULL);
+
+
+--
 -- Name: idx_departments_is_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -23712,5 +23727,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict W8udKkVag2oJ3E9YvubKH5f5dygUWzuQvBh5X6VvwM5Q7hTwuRWKPY134mcJx0Q
+\unrestrict 81N43cjQC0fTXGjKElzstT2ggu1cJFH6GWX029BtjM5Wcig1Vgrii2RpiHc9JNj
 
