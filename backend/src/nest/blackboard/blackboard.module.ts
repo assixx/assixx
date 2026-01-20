@@ -8,13 +8,14 @@
 import { Module } from '@nestjs/common';
 
 import { DocumentsModule } from '../documents/documents.module.js';
+import { BlackboardArchiveService } from './blackboard-archive.service.js';
 import { BlackboardController } from './blackboard.controller.js';
 import { BlackboardService } from './blackboard.service.js';
 
 @Module({
   imports: [DocumentsModule],
   controllers: [BlackboardController],
-  providers: [BlackboardService],
+  providers: [BlackboardService, BlackboardArchiveService],
   exports: [BlackboardService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern

@@ -28,6 +28,7 @@
     buildDownloadUrl,
     confirmEntry as confirmApi,
     deleteEntry as deleteApi,
+    unarchiveEntry as unarchiveApi,
     unconfirmEntry as unconfirmApi,
   } from './_lib/api';
   import {
@@ -43,6 +44,7 @@
     getPriorityBadgeClass,
     getPriorityText,
     getVisibilityBadgeClass,
+    isExpired,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -92,6 +94,8 @@
     () => currentUser !== null && (currentUser.role === 'admin' || currentUser.role === 'root'),
   );
   const isConfirmed = $derived(entry.isConfirmed === true);
+  /** Entry is archived (is_active = 3) - hide edit/delete/archive actions */
+  const isArchived = $derived(entry.isActive === 3);
   const photos = $derived(filterPhotos(attachments));
   const otherFiles = $derived(filterOtherFiles(attachments));
 
@@ -173,6 +177,18 @@
       await goto(resolvePath('/blackboard'));
     } else {
       showErrorAlert('Fehler beim Archivieren');
+    }
+  }
+
+  async function restoreEntry(): Promise<void> {
+    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wiederherstellen?');
+    if (!confirmed) return;
+    const success = await unarchiveApi(uuid);
+    if (success) {
+      showSuccessAlert('Eintrag wurde wiederhergestellt');
+      await invalidateAll();
+    } else {
+      showErrorAlert('Fehler beim Wiederherstellen');
     }
   }
 
@@ -285,6 +301,16 @@
               {entry.authorFullName ?? entry.authorName ?? 'Unbekannt'}</span
             >
             <span><i class="fas fa-calendar"></i> {formatDate(entry.createdAt)}</span>
+            {#if entry.expiresAt}
+              <span
+                class="detail-meta__expires"
+                class:detail-meta__expires--expired={isExpired(entry.expiresAt)}
+                title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+              >
+                <i class="fas fa-clock"></i>
+                {formatDate(entry.expiresAt)}
+              </span>
+            {/if}
           </div>
         </div>
         <div class="status-priority">
@@ -304,12 +330,6 @@
               >{getOrgLevelText(entry.orgLevel, entry)}</span
             >
           </div>
-          {#if entry.expiresAt}
-            <div class="data-list__item">
-              <span class="data-list__label">Gültig bis</span>
-              <span class="data-list__value">{formatDate(entry.expiresAt)}</span>
-            </div>
-          {/if}
           {#if entry.tags && entry.tags.length > 0}
             <div class="data-list__item">
               <span class="data-list__label">Tags</span>
@@ -371,25 +391,27 @@
           <span class="badge badge--count ml-2">{comments.length}</span>
         </h3>
 
-        <!-- Comment Form -->
-        <form class="flex gap-4 mb-6" onsubmit={handleAddComment}>
-          <div class="form-field flex-1">
-            <textarea
-              class="form-field__control"
-              placeholder="Kommentar hinzufügen..."
-              rows="3"
-              required
-              bind:value={newComment}
-            ></textarea>
-          </div>
-          <div class="flex items-start">
-            <button type="submit" class="btn btn-primary" disabled={submittingComment}>
-              {#if submittingComment}<span class="spinner-ring spinner-ring--sm mr-2"
-                ></span>{:else}<i class="fas fa-paper-plane mr-2"></i>{/if}
-              Senden
-            </button>
-          </div>
-        </form>
+        <!-- Comment Form - Hidden for archived entries -->
+        {#if !isArchived}
+          <form class="flex gap-4 mb-6" onsubmit={handleAddComment}>
+            <div class="form-field flex-1">
+              <textarea
+                class="form-field__control"
+                placeholder="Kommentar hinzufügen..."
+                rows="3"
+                required
+                bind:value={newComment}
+              ></textarea>
+            </div>
+            <div class="flex items-start">
+              <button type="submit" class="btn btn-primary" disabled={submittingComment}>
+                {#if submittingComment}<span class="spinner-ring spinner-ring--sm mr-2"
+                  ></span>{:else}<i class="fas fa-paper-plane mr-2"></i>{/if}
+                Senden
+              </button>
+            </div>
+          </form>
+        {/if}
 
         <!-- Comment List -->
         <div class="comment-list">
@@ -437,42 +459,44 @@
 
     <!-- Sidebar -->
     <div class="detail-sidebar">
-      <!-- Confirmation Status -->
-      <div class="sidebar-card">
-        <h3 class="section-title"><i class="fas fa-check-circle"></i> Lesebestätigung</h3>
-        {#if isConfirmed}
-          <div class="confirmation-done mb-4">
-            <i class="fas fa-check-circle text-success"></i>
-            <span>Bereits als gelesen markiert</span>
-            {#if entry.confirmedAt}<span class="text-muted text-sm"
-                >{formatDateTime(entry.confirmedAt)}</span
-              >{/if}
-          </div>
-          <button
-            type="button"
-            class="btn btn-light w-full text-sm"
-            onclick={unconfirmEntry}
-            disabled={confirming}
-          >
-            {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
-                class="fas fa-undo mr-2"
-              ></i>{/if}
-            Als ungelesen markieren
-          </button>
-        {:else}
-          <button
-            type="button"
-            class="btn btn-upload w-full"
-            onclick={confirmEntry}
-            disabled={confirming}
-          >
-            {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
-                class="fas fa-check mr-2"
-              ></i>{/if}
-            Als gelesen markieren
-          </button>
-        {/if}
-      </div>
+      <!-- Confirmation Status - Hidden for archived entries -->
+      {#if !isArchived}
+        <div class="sidebar-card">
+          <h3 class="section-title"><i class="fas fa-check-circle"></i> Lesebestätigung</h3>
+          {#if isConfirmed}
+            <div class="confirmation-done mb-4">
+              <i class="fas fa-check-circle text-success"></i>
+              <span>Bereits als gelesen markiert</span>
+              {#if entry.confirmedAt}<span class="text-muted text-sm"
+                  >{formatDateTime(entry.confirmedAt)}</span
+                >{/if}
+            </div>
+            <button
+              type="button"
+              class="btn btn-light w-full text-sm"
+              onclick={unconfirmEntry}
+              disabled={confirming}
+            >
+              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
+                  class="fas fa-undo mr-2"
+                ></i>{/if}
+              Als ungelesen markieren
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="btn btn-upload w-full"
+              onclick={confirmEntry}
+              disabled={confirming}
+            >
+              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
+                  class="fas fa-check mr-2"
+                ></i>{/if}
+              Als gelesen markieren
+            </button>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Attachments (non-photo files) -->
       {#if otherFiles.length > 0}
@@ -504,8 +528,8 @@
         </div>
       {/if}
 
-      <!-- Actions -->
-      {#if canEditOrDelete || isAdmin}
+      <!-- Actions - Hidden for archived entries -->
+      {#if !isArchived && (canEditOrDelete || isAdmin)}
         <div class="sidebar-card">
           <h3 class="section-title"><i class="fas fa-cog"></i> Aktionen</h3>
           <div class="action-buttons">
@@ -527,6 +551,16 @@
                 ><i class="fas fa-archive mr-2"></i>Archivieren</button
               >
             {/if}
+          </div>
+        </div>
+      {:else if isArchived}
+        <div class="sidebar-card">
+          <div class="text-center p-4">
+            <i class="fas fa-archive text-3xl text-[var(--color-warning)] mb-2"></i>
+            <p class="text-[var(--color-text-secondary)] mb-4">Dieser Eintrag ist archiviert</p>
+            <button type="button" class="btn btn-light w-full" onclick={restoreEntry}>
+              <i class="fas fa-undo mr-2"></i>Wiederherstellen
+            </button>
           </div>
         </div>
       {/if}

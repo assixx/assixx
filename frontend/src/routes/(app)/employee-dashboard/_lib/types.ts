@@ -64,6 +64,7 @@ export interface BlackboardEntry {
   color: 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
   orgLevel: 'company' | 'department' | 'team' | 'area';
   createdAt: string;
+  expiresAt?: string | null;
   authorFullName?: string;
   authorName?: string;
   commentCount?: number;

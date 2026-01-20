@@ -129,7 +129,7 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedEntriesResult> {
     return await this.blackboardService.listEntries(tenantId, user.id, {
-      status: query.status,
+      isActive: query.isActive,
       filter: query.filter,
       search: query.search,
       page: query.page,

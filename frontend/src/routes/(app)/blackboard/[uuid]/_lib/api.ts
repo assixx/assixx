@@ -120,10 +120,24 @@ export async function addComment(uuid: string, comment: string): Promise<boolean
 
 /**
  * Archive entry (admin only)
+ * Sets is_active = 3 in database
  */
 export async function archiveEntry(uuid: string): Promise<boolean> {
   try {
-    await apiClient.patch(`/blackboard/entries/${uuid}/archive`, {});
+    await apiClient.post(`/blackboard/entries/${uuid}/archive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Unarchive/restore entry (admin only)
+ * Sets is_active = 1 in database
+ */
+export async function unarchiveEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/unarchive`, {});
     return true;
   } catch {
     return false;

@@ -41,7 +41,7 @@ interface DbBlackboardEntry {
   expires_at: Date | null;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   color: string;
-  status: 'active' | 'archived';
+  is_active: number; // 0=inactive, 1=active, 3=archive, 4=deleted
   created_at: Date;
   updated_at: Date;
   uuid_created_at?: Date;
@@ -111,7 +111,7 @@ export interface PaginatedEntriesResult {
 }
 
 export interface EntryFilters {
-  status: 'active' | 'archived' | undefined;
+  isActive: number | undefined; // 0=inactive, 1=active, 3=archive, 4=deleted
   filter: 'all' | 'company' | 'department' | 'team' | 'area' | undefined;
   search: string | undefined;
   page: number | undefined;
@@ -123,7 +123,7 @@ export interface EntryFilters {
 
 /** Normalized filter values with defaults applied */
 interface NormalizedFilters {
-  status: 'active' | 'archived';
+  isActive: number; // 0=inactive, 1=active, 3=archive, 4=deleted
   filter: 'all' | 'company' | 'department' | 'team' | 'area';
   search: string;
   page: number;
@@ -156,14 +156,14 @@ const ALLOWED_SORT_COLUMNS = new Set([
   'title',
   'priority',
   'expires_at',
-  'status',
+  'is_active',
 ]);
 
 const ERROR_ENTRY_NOT_FOUND = 'Entry not found';
 
 const FETCH_ENTRIES_BASE_QUERY = `
   SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-         e.expires_at, e.priority, e.color, e.status,
+         e.expires_at, e.priority, e.color, e.is_active,
          e.created_at, e.updated_at, e.uuid_created_at,
          u.username as author_name,
          u.first_name as author_first_name,
@@ -176,7 +176,7 @@ const FETCH_ENTRIES_BASE_QUERY = `
   FROM blackboard_entries e
   LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
   LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-  WHERE e.tenant_id = $2 AND e.status = $3
+  WHERE e.tenant_id = $2 AND e.is_active = $3
 `;
 
 // ============================================================================
@@ -466,7 +466,7 @@ export class BlackboardService {
   /** Normalize filter values with defaults */
   private normalizeEntryFilters(filters: EntryFilters): NormalizedFilters {
     return {
-      status: filters.status ?? 'active',
+      isActive: filters.isActive ?? 1, // Default to active (1)
       filter: filters.filter ?? 'all',
       search: filters.search ?? '',
       page: filters.page ?? 1,
@@ -490,7 +490,7 @@ export class BlackboardService {
     },
   ): { query: string; params: unknown[] } {
     let query = FETCH_ENTRIES_BASE_QUERY;
-    const params: unknown[] = [userId, tenantId, filters.status];
+    const params: unknown[] = [userId, tenantId, filters.isActive];
 
     if (filters.filter !== 'all') {
       query += ` AND e.org_level = $${params.length + 1}`;
@@ -561,7 +561,7 @@ export class BlackboardService {
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
     const query = `
       SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-             e.expires_at, e.priority, e.color, e.status,
+             e.expires_at, e.priority, e.color, e.is_active,
              e.created_at, e.updated_at, e.uuid_created_at,
              u.username as author_name,
              u.first_name as author_first_name,
@@ -896,9 +896,10 @@ export class BlackboardService {
     const updatedEntry = await this.getEntryById(numericId, tenantId, userId);
 
     // Log activity (handles both regular updates and archive/unarchive)
+    // is_active: 0=inactive, 1=active, 3=archive, 4=deleted
     const action =
-      dto.status === 'archived' ? 'archiviert'
-      : dto.status === 'active' ? 'reaktiviert'
+      dto.isActive === 3 ? 'archiviert'
+      : dto.isActive === 1 ? 'reaktiviert'
       : 'aktualisiert';
     await this.activityLogger.logUpdate(
       tenantId,
@@ -908,12 +909,12 @@ export class BlackboardService {
       `Blackboard-Eintrag ${action}: ${existingEntry['title'] as string}`,
       {
         title: existingEntry['title'],
-        status: existingEntry['status'],
+        isActive: existingEntry['isActive'],
         priority: existingEntry['priority'],
       },
       {
         title: dto.title ?? existingEntry['title'],
-        status: dto.status ?? existingEntry['status'],
+        isActive: dto.isActive ?? existingEntry['isActive'],
         priority: dto.priority ?? existingEntry['priority'],
       },
     );
@@ -963,7 +964,7 @@ export class BlackboardService {
       { key: 'content', column: 'content' },
       { key: 'priority', column: 'priority' },
       { key: 'color', column: 'color' },
-      { key: 'status', column: 'status' },
+      { key: 'isActive', column: 'is_active' },
       {
         key: 'expiresAt',
         column: 'expires_at',
@@ -1071,7 +1072,7 @@ export class BlackboardService {
       `Blackboard-Eintrag gelöscht: ${(entry as Record<string, unknown>)['title'] as string}`,
       {
         title: (entry as Record<string, unknown>)['title'],
-        status: (entry as Record<string, unknown>)['status'],
+        isActive: (entry as Record<string, unknown>)['isActive'],
         priority: (entry as Record<string, unknown>)['priority'],
         orgLevel: (entry as Record<string, unknown>)['orgLevel'],
       },
@@ -1081,7 +1082,7 @@ export class BlackboardService {
   }
 
   /**
-   * Archive a blackboard entry
+   * Archive a blackboard entry (set is_active = 3)
    */
   async archiveEntry(
     id: number | string,
@@ -1089,11 +1090,11 @@ export class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Archiving entry ${String(id)}`);
-    return await this.updateEntry(id, { status: 'archived' }, tenantId, userId);
+    return await this.updateEntry(id, { isActive: 3 }, tenantId, userId);
   }
 
   /**
-   * Unarchive a blackboard entry
+   * Unarchive a blackboard entry (set is_active = 1)
    */
   async unarchiveEntry(
     id: number | string,
@@ -1101,7 +1102,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Unarchiving entry ${String(id)}`);
-    return await this.updateEntry(id, { status: 'active' }, tenantId, userId);
+    return await this.updateEntry(id, { isActive: 1 }, tenantId, userId);
   }
 
   // ==========================================================================
@@ -1252,7 +1253,7 @@ export class BlackboardService {
 
     let query = `
       SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-             e.expires_at, e.priority, e.color, e.status,
+             e.expires_at, e.priority, e.color, e.is_active,
              e.created_at, e.updated_at, e.uuid_created_at,
              u.username as author_name,
              u.first_name as author_first_name,
@@ -1265,7 +1266,7 @@ export class BlackboardService {
       FROM blackboard_entries e
       LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-      WHERE e.tenant_id = $2 AND e.status = 'active'
+      WHERE e.tenant_id = $2 AND e.is_active = 1
     `;
     const params: unknown[] = [userId, tenantId];
 
@@ -1564,12 +1565,13 @@ export class BlackboardService {
     const { role, department_id: departmentId, team_id: teamId } = users[0];
 
     // Count active entries visible to user that they haven't confirmed
+    // is_active = 1 means active
     let query = `
       SELECT COUNT(DISTINCT e.id) as count
       FROM blackboard_entries e
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
       WHERE e.tenant_id = $2
-        AND e.status = 'active'
+        AND e.is_active = 1
         AND c.id IS NULL
     `;
     const params: unknown[] = [userId, tenantId];

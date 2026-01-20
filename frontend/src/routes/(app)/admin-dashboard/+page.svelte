@@ -13,6 +13,7 @@
     getPriorityLabel,
     getBlackboardOrgLabel,
     formatBlackboardDate,
+    isExpired,
     parseContent,
     truncateContent,
     formatEventDate,
@@ -131,7 +132,19 @@
                   tabindex="0"
                 >
                   <div class="sticky-note__pin"></div>
-                  <div class="sticky-note__title">{entry.title}</div>
+                  <div class="sticky-note__header">
+                    <div class="sticky-note__title">{entry.title}</div>
+                    {#if entry.expiresAt}
+                      <span
+                        class="sticky-note__expires"
+                        class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
+                        title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                      >
+                        <i class="fas fa-clock"></i>
+                        {formatBlackboardDate(entry.expiresAt)}
+                      </span>
+                    {/if}
+                  </div>
                   <div class="sticky-note__content">{truncateContent(contentText)}</div>
                   <div class="sticky-note__indicators">
                     {#if (entry.attachmentCount ?? 0) > 0}

@@ -103,6 +103,24 @@
   color: var(--primary-color);
 }
 
+/* Expiration date indicator in detail-meta */
+.detail-meta__expires {
+  font-style: italic;
+  color: rgb(255 255 255 / 50%);
+}
+
+.detail-meta__expires i {
+  color: rgb(255 255 255 / 50%);
+}
+
+.detail-meta__expires--expired {
+  color: var(--color-red-400, #f87171);
+}
+
+.detail-meta__expires--expired i {
+  color: var(--color-red-400, #f87171);
+}
+
 /* Category Tag */
 .category-tag {
   display: inline-flex;
