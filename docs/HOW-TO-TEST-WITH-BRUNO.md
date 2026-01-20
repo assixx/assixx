@@ -21,16 +21,20 @@ Tests laufen in einem **isolierten Tenant** namens `brunotest`:
 
 -+
 
-# Alle API Tests ausführen (inkl. _setup)
-cd api-tests && npx bru run _setup auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local
+# Alle API Tests ausführen (inkl. \_setup)
 
-# Oder: Standard test:api (ohne _setup - nur für bestehenden Tenant)
+cd api-tests && npx bru run \_setup auth users departments teams notifications blackboard calendar kvp machines surveys areas settings roles features chat documents shifts --env local
+
+# Oder: Standard test:api (ohne \_setup - nur für bestehenden Tenant)
+
 pnpm run test:api
 
-# Einzelnes Modul testen (nach _setup)
-cd api-tests && npx bru run _setup auth --env local
-cd api-tests && npx bru run _setup calendar --env local
-```
+# Einzelnes Modul testen (nach \_setup)
+
+cd api-tests && npx bru run \_setup auth --env local
+cd api-tests && npx bru run \_setup calendar --env local
+
+````
 
 ---
 
@@ -43,7 +47,7 @@ cd /home/scs/projects/Assixx/docker
 docker-compose ps
 
 # Erwartete Ausgabe: alle Container "healthy"
-```
+````
 
 ### 2. Backend erreichbar
 
@@ -292,6 +296,7 @@ docker logs assixx-backend -f
 ## Häufiges Problem: 401 nach 409 (Tenant existiert, User fehlt)
 
 **Symptom:**
+
 ```
 _setup/02-create-tenant (409 Conflict)  ← OK, Tenant existiert
 _setup/03-login-brunotest (401 Unauthorized)  ← FAIL!

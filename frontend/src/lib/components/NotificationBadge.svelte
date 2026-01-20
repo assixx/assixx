@@ -61,7 +61,6 @@
     color: white;
     border-radius: 9999px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    animation: badge-pop 0.2s ease-out;
     z-index: 10;
   }
 

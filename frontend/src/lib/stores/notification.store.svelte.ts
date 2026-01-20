@@ -192,27 +192,34 @@ async function parseSimpleCount(response: Response): Promise<number> {
  */
 async function fetchInitialCounts(state: NotificationState): Promise<void> {
   try {
-    const [chatResponse, notificationsResponse, blackboardResponse, calendarResponse] =
-      await Promise.all([
-        fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
-        fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
-        fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
-        fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
-      ]);
+    const [
+      chatResponse,
+      notificationsResponse,
+      blackboardResponse,
+      calendarResponse,
+      documentsResponse,
+    ] = await Promise.all([
+      fetch('/api/v2/chat/unread-count', { credentials: 'include' }),
+      fetch('/api/v2/notifications/stats/me', { credentials: 'include' }),
+      fetch('/api/v2/blackboard/unconfirmed-count', { credentials: 'include' }),
+      fetch('/api/v2/calendar/upcoming-count', { credentials: 'include' }),
+      fetch('/api/v2/documents/unread-count', { credentials: 'include' }),
+    ]);
 
     const chatCount = await parseChatCount(chatResponse);
     const stats = await parseNotificationStats(notificationsResponse);
     const blackboardCount = await parseSimpleCount(blackboardResponse);
     const calendarCount = await parseSimpleCount(calendarResponse);
+    const documentsCount = await parseSimpleCount(documentsResponse);
 
     state.counts.chat = chatCount;
     state.counts.surveys = stats.survey;
-    state.counts.documents = stats.document;
+    state.counts.documents = documentsCount; // From document_read_status table
     state.counts.kvp = stats.kvp;
     state.counts.blackboard = blackboardCount;
     state.counts.calendar = calendarCount;
     state.counts.total =
-      chatCount + stats.survey + stats.document + stats.kvp + blackboardCount + calendarCount;
+      chatCount + stats.survey + documentsCount + stats.kvp + blackboardCount + calendarCount;
     state.lastUpdate = new Date();
   } catch {
     // Silently fail - SSE will update counts when connected
