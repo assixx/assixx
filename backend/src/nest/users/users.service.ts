@@ -159,6 +159,7 @@ export interface SafeUserResponse {
 const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
   EMAIL_EXISTS: 'Email already exists',
+  EMPLOYEE_NUMBER_EXISTS: 'Personalnummer bereits vergeben',
   INVALID_PASSWORD: 'Invalid current password',
 } as const;
 
@@ -336,36 +337,47 @@ export class UsersService {
     const hashedPassword = await bcryptjs.hash(userData.password, 12);
     const userUuid = uuidv7();
 
-    const result = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO users (
-        tenant_id, email, password, username, first_name, last_name, role,
-        position, phone, address, employee_number,
-        is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
-      RETURNING id`,
-      [
-        tenantId,
-        userData.email,
-        hashedPassword,
-        userData.email,
-        userData.firstName,
-        userData.lastName,
-        userData.role,
-        userData.position ?? null,
-        userData.phone ?? null,
-        userData.address ?? null,
-        employeeNumber,
-        1,
-        hasFullAccess === true ? 1 : 0,
-        userUuid,
-      ],
-    );
+    try {
+      const result = await this.databaseService.query<{ id: number }>(
+        `INSERT INTO users (
+          tenant_id, email, password, username, first_name, last_name, role,
+          position, phone, address, employee_number,
+          is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
+        RETURNING id`,
+        [
+          tenantId,
+          userData.email,
+          hashedPassword,
+          userData.email,
+          userData.firstName,
+          userData.lastName,
+          userData.role,
+          userData.position ?? null,
+          userData.phone ?? null,
+          userData.address ?? null,
+          employeeNumber,
+          1,
+          hasFullAccess === true ? 1 : 0,
+          userUuid,
+        ],
+      );
 
-    const userId = result[0]?.id;
-    if (userId === undefined) {
-      throw new InternalServerErrorException('Failed to create user');
+      const userId = result[0]?.id;
+      if (userId === undefined) {
+        throw new InternalServerErrorException('Failed to create user');
+      }
+      return userId;
+    } catch (error: unknown) {
+      // Handle PostgreSQL unique constraint violations (code 23505)
+      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+        throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
+      }
+      if (this.isUniqueConstraintViolation(error, 'email')) {
+        throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
+      }
+      throw error;
     }
-    return userId;
   }
 
   /**
@@ -458,10 +470,33 @@ export class UsersService {
     if (params.length === 0) return;
 
     params.push(userId, tenantId);
-    await this.databaseService.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
-      params,
-    );
+    try {
+      await this.databaseService.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
+        params,
+      );
+    } catch (error: unknown) {
+      // Handle PostgreSQL unique constraint violations (code 23505)
+      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+        throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
+      }
+      if (this.isUniqueConstraintViolation(error, 'email')) {
+        throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check if error is a PostgreSQL unique constraint violation for a specific field
+   */
+  private isUniqueConstraintViolation(error: unknown, fieldName: string): boolean {
+    if (typeof error !== 'object' || error === null) return false;
+    const pgError = error as { code?: string; constraint?: string };
+    // PostgreSQL unique violation code is 23505
+    if (pgError.code !== '23505') return false;
+    // Check if constraint name contains the field name
+    return pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ?? false;
   }
 
   /**

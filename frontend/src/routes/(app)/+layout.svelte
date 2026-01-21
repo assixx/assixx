@@ -68,7 +68,10 @@
   const ssrUser = $derived(data.user ?? null);
   const ssrTenant = $derived(data.tenant ?? null);
 
-  // User State - initialize from SSR data
+  // User State - initialize from SSR data to prevent hydration FOUC
+  // INTENTIONAL: We capture initial data.user to match SSR render.
+  // Future updates are handled by $effect (line ~118) that syncs ssrUser → user.
+  // svelte-ignore state_referenced_locally
   let user = $state<{
     id?: number;
     firstName?: string;
@@ -78,11 +81,15 @@
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;
-  } | null>(null);
+  } | null>(data.user ?? null);
 
   // Role Switch State (original role vs active role after switching)
-  let userRole = $state<'root' | 'admin' | 'employee'>('employee');
-  let activeRole = $state<'root' | 'admin' | 'employee'>('employee');
+  // INTENTIONAL: Capture initial SSR value to prevent hydration FOUC.
+  // localStorage override for role-switching persistence happens in initializeFromSSR().
+  // svelte-ignore state_referenced_locally
+  let userRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
+  // svelte-ignore state_referenced_locally
+  let activeRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
 
   // Sidebar State
   let sidebarCollapsed = $state(false);
@@ -97,8 +104,10 @@
   // Logout Modal State
   let showLogoutModal = $state(false);
 
-  // Tenant Info - from SSR
-  let tenant = $state<{ id?: number; companyName?: string } | null>(null);
+  // Tenant Info - initialize from SSR data to prevent hydration FOUC
+  // INTENTIONAL: Capture initial SSR value. Updates via ssrTenant → effect sync.
+  // svelte-ignore state_referenced_locally
+  let tenant = $state<{ id?: number; companyName?: string } | null>(data.tenant ?? null);
 
   // Session Manager instance (for cleanup on destroy)
   let sessionManagerInstance = $state<SessionManager | null>(null);
@@ -759,24 +768,6 @@
           {/each}
         </ul>
 
-        <!-- Storage Widget (Root only) -->
-        {#if currentRole === 'root'}
-          <div class="storage-widget">
-            <div class="storage-header">
-              <i class="fas fa-database"></i>
-              <span>Speicherplatz</span>
-            </div>
-            <div class="storage-info">
-              <div class="storage-usage-text">
-                <span>-- GB</span> von <span>-- GB</span>
-              </div>
-              <div class="storage-progress">
-                <div class="storage-progress-bar" style="width: 0%"></div>
-              </div>
-              <div class="storage-percentage">0% belegt</div>
-            </div>
-          </div>
-        {/if}
       </nav>
 
       <!-- User Info Card -->
@@ -811,6 +802,25 @@
           <span class="badge badge--sm {getRoleBadgeClass()}">{getRoleBadgeText()}</span>
         </div>
       </div>
+
+      <!-- Storage Widget (Root only) -->
+      {#if currentRole === 'root'}
+        <div class="storage-widget">
+          <div class="storage-header">
+            <i class="fas fa-database"></i>
+            <span>Speicherplatz</span>
+          </div>
+          <div class="storage-info">
+            <div class="storage-usage-text">
+              <span>-- GB</span> von <span>-- GB</span>
+            </div>
+            <div class="storage-progress">
+              <div class="storage-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="storage-percentage">0% belegt</div>
+          </div>
+        </div>
+      {/if}
     </aside>
 
     <!-- Main Content (Child Routes) -->
