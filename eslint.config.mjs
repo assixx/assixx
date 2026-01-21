@@ -57,6 +57,7 @@ export default [
       'backups/**',
       '.storybook/**',
       'stories/**',
+      'design-system/stories/**',
       'design-system/build/**',
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
