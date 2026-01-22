@@ -21,16 +21,17 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 
 ## Index
 
-| ADR                                                    | Titel                          | Status   | Datum      |
-| ------------------------------------------------------ | ------------------------------ | -------- | ---------- |
-| [ADR-001](./ADR-001-rate-limiting.md)                  | Rate Limiting Implementation   | Accepted | 2026-01-06 |
-| [ADR-002](./ADR-002-alerting-monitoring.md)            | Alerting & Monitoring          | Accepted | 2026-01-07 |
-| [ADR-003](./ADR-003-notification-system.md)            | Real-Time Notification System  | Accepted | 2026-01-11 |
-| [ADR-004](./ADR-004-persistent-notification-counts.md) | Persistent Notification Counts | Proposed | 2026-01-14 |
-| [ADR-005](./ADR-005-authentication-strategy.md)        | Authentication Strategy        | Accepted | 2026-01-14 |
-| [ADR-006](./ADR-006-multi-tenant-context-isolation.md) | Multi-Tenant Context Isolation | Accepted | 2026-01-14 |
-| [ADR-007](./ADR-007-api-response-standardization.md)   | API Response Standardization   | Accepted | 2026-01-14 |
-| [ADR-008](./ADR-008-dependency-version-management.md)  | Dependency Version Management  | Accepted | 2026-01-15 |
+| ADR                                                      | Titel                              | Status   | Datum      |
+| -------------------------------------------------------- | ---------------------------------- | -------- | ---------- |
+| [ADR-001](./ADR-001-rate-limiting.md)                    | Rate Limiting Implementation       | Accepted | 2026-01-06 |
+| [ADR-002](./ADR-002-alerting-monitoring.md)              | Alerting & Monitoring              | Accepted | 2026-01-07 |
+| [ADR-003](./ADR-003-notification-system.md)              | Real-Time Notification System      | Accepted | 2026-01-11 |
+| [ADR-004](./ADR-004-persistent-notification-counts.md)   | Persistent Notification Counts     | Proposed | 2026-01-14 |
+| [ADR-005](./ADR-005-authentication-strategy.md)          | Authentication Strategy            | Accepted | 2026-01-14 |
+| [ADR-006](./ADR-006-multi-tenant-context-isolation.md)   | Multi-Tenant Context Isolation     | Accepted | 2026-01-14 |
+| [ADR-007](./ADR-007-api-response-standardization.md)     | API Response Standardization       | Accepted | 2026-01-14 |
+| [ADR-008](./ADR-008-dependency-version-management.md)    | Dependency Version Management      | Accepted | 2026-01-15 |
+| [ADR-009](./ADR-009-user-role-assignment-permissions.md) | User Role Assignment & Permissions | Accepted | 2026-01-22 |
 
 ## Template
 

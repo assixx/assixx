@@ -81,6 +81,34 @@ export async function fetchUserData(): Promise<User> {
 // CALENDAR EVENTS
 // =============================================================================
 
+/** Check if value is a valid ID (not null/undefined) */
+function hasValidId(id: number | null | undefined): boolean {
+  return id !== null && id !== undefined;
+}
+
+/** Multi-org assignment class lookup (A=area, D=department, T=team) */
+const MULTI_ORG_CLASSES: Record<string, string> = {
+  ADT: 'ec-event-area-department-team',
+  AD: 'ec-event-area-department',
+  AT: 'ec-event-area-team',
+  DT: 'ec-event-department-team',
+};
+
+/**
+ * Determine event class based on multi-assignment
+ * Returns gradient class for combinations, single class for single assignment
+ */
+function getEventClassName(event: CalendarEvent): string {
+  // Build assignment key: A=area, D=department, T=team
+  const key =
+    (hasValidId(event.areaId) ? 'A' : '') +
+    (hasValidId(event.departmentId) ? 'D' : '') +
+    (hasValidId(event.teamId) ? 'T' : '');
+
+  // Multi-assignment → gradient class, single → orgLevel class
+  return MULTI_ORG_CLASSES[key] ?? `ec-event-${event.orgLevel}`;
+}
+
 /**
  * Format event for EventCalendar display
  */
@@ -91,6 +119,7 @@ function formatEventForCalendar(event: CalendarEvent): EventInput | null {
   }
 
   const color = ORG_LEVEL_COLORS[event.orgLevel];
+  const eventClassName = getEventClassName(event);
 
   return {
     id: event.id.toString(),
@@ -101,16 +130,18 @@ function formatEventForCalendar(event: CalendarEvent): EventInput | null {
     backgroundColor: color,
     borderColor: color,
     textColor: '#ffffff',
-    classNames: [`ec-event-${event.orgLevel}`],
+    classNames: [eventClassName],
     extendedProps: {
       description: event.description,
       location: event.location,
       orgLevel: event.orgLevel,
       orgId: event.orgId,
-      createdBy: event.createdBy,
+      userId: event.userId,
       creatorName: event.creatorName,
-      reminderMinutes: event.reminderMinutes,
       userResponse: event.userResponse,
+      areaId: event.areaId,
+      departmentId: event.departmentId,
+      teamId: event.teamId,
     },
   };
 }
@@ -224,6 +255,20 @@ export async function saveEvent(
   eventId?: number,
 ): Promise<{ success: boolean; id?: number; error?: string }> {
   try {
+    // Arrays are already in correct format from multi-select bindings
+    // Filter out null/undefined values (can happen from multi-select edge cases)
+    // and only include non-empty arrays
+    const filterValidIds = (ids: number[]): number[] | undefined => {
+      // Cast to handle edge cases where null values slip into the array
+      const valid = (ids as (number | null | undefined)[]).filter(
+        (id): id is number => typeof id === 'number',
+      );
+      return valid.length > 0 ? valid : undefined;
+    };
+    const departmentIds = filterValidIds(formData.departmentIds);
+    const teamIds = filterValidIds(formData.teamIds);
+    const areaIds = filterValidIds(formData.areaIds);
+
     const payload = {
       title: formData.title,
       description: formData.description || undefined,
@@ -232,11 +277,15 @@ export async function saveEvent(
       allDay: formData.allDay,
       location: formData.location || undefined,
       orgLevel: formData.orgLevel,
-      departmentId: formData.departmentId,
-      teamId: formData.teamId,
-      areaId: formData.areaId,
-      reminderMinutes: formData.reminderMinutes,
+      departmentIds,
+      teamIds,
+      areaIds,
       attendeeIds: formData.attendeeIds,
+      // Recurrence fields
+      recurrence: formData.recurrence,
+      recurrenceEndType: formData.recurrenceEndType,
+      recurrenceCount: formData.recurrenceCount,
+      recurrenceUntil: formData.recurrenceUntil,
     };
 
     const isUpdate = eventId !== undefined;
@@ -383,4 +432,22 @@ export async function loadOrganizationData(): Promise<{
   ]);
 
   return { departments, teams, areas, users };
+}
+
+// =============================================================================
+// FEATURE VISITS - BADGE RESET
+// =============================================================================
+
+/**
+ * Mark calendar as visited - resets the notification badge
+ * Called on page mount to update last_visited_at timestamp
+ */
+export async function markCalendarVisited(): Promise<void> {
+  try {
+    await apiClient.post('/feature-visits/mark', { feature: 'calendar' });
+    log.debug('Calendar marked as visited');
+  } catch (err) {
+    // Non-critical error - don't break the page
+    log.warn({ err }, 'Failed to mark calendar as visited');
+  }
 }

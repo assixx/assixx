@@ -73,9 +73,18 @@ export const REDACTED_VALUE = '[REDACTED]';
 /**
  * Log levels by environment
  */
+/**
+ * Default log levels by environment.
+ * INFO is the standard for both production AND development.
+ * DEBUG is only enabled via explicit LOG_LEVEL=debug env var when troubleshooting.
+ *
+ * Best Practice:
+ * - INFO: Significant events (login, create, delete, errors)
+ * - DEBUG: Only for active troubleshooting, not default
+ */
 export const LOG_LEVELS = {
   production: 'info',
-  development: 'debug',
+  development: 'info', // Changed from 'debug' - DEBUG via LOG_LEVEL=debug only
   test: 'silent',
 } as const;
 

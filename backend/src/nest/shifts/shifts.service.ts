@@ -16,6 +16,7 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 
 import { apiToDb, dbToApi } from '../../utils/fieldMapping.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateShiftDto } from './dto/create-shift.dto.js';
 import type { CreateSwapRequestDto } from './dto/create-swap-request.dto.js';
@@ -249,7 +250,10 @@ interface DbShiftPlanRow {
 export class ShiftsService {
   private readonly logger = new Logger(ShiftsService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================================
   // Helper Methods
@@ -504,6 +508,21 @@ export class ShiftsService {
     );
 
     const shiftId = result[0]?.id ?? 0;
+
+    // Log activity to root_logs
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'shift',
+      shiftId,
+      `Schicht erstellt: ${dto.date}`,
+      {
+        date: dto.date,
+        userId: dto.userId,
+        type: dto.type,
+      },
+    );
+
     return await this.getShiftById(shiftId, tenantId);
   }
 
@@ -511,7 +530,7 @@ export class ShiftsService {
     id: number,
     dto: UpdateShiftDto,
     tenantId: number,
-    _userId: number,
+    userId: number,
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<ShiftResponse> {
@@ -553,23 +572,52 @@ export class ShiftsService {
       params,
     );
 
+    // Log activity to root_logs
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'shift',
+      id,
+      `Schicht aktualisiert: ${existingShift.date}`,
+      { date: existingShift.date, type: existingShift.type, status: existingShift.status },
+      {
+        date: dto.date ?? existingShift.date,
+        type: dto.type ?? existingShift.type,
+        status: dto.status ?? existingShift.status,
+      },
+    );
+
     return await this.getShiftById(id, tenantId);
   }
 
   async deleteShift(
     id: number,
     tenantId: number,
-    _userId: number,
+    userId: number,
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift ${id} for tenant ${tenantId}`);
 
-    await this.getShiftById(id, tenantId);
+    const existingShift = await this.getShiftById(id, tenantId);
     await this.databaseService.query(`DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`, [
       id,
       tenantId,
     ]);
+
+    // Log activity to root_logs
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'shift',
+      id,
+      `Schicht gelöscht: ${existingShift.date}`,
+      {
+        date: existingShift.date,
+        type: existingShift.type,
+        userId: existingShift.userId,
+      },
+    );
 
     return { message: 'Shift deleted successfully' };
   }

@@ -540,7 +540,7 @@ export class ReportsService {
    * Get company overview report with all KPIs aggregated
    */
   async getOverviewReport(tenantId: number, dateFrom?: string, dateTo?: string): Promise<unknown> {
-    this.logger.log(`Getting overview report for tenant ${tenantId}`);
+    this.logger.debug(`Getting overview report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -578,7 +578,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting employee report for tenant ${tenantId}`);
+    this.logger.debug(`Getting employee report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -632,7 +632,7 @@ export class ReportsService {
     dateFrom?: string,
     dateTo?: string,
   ): Promise<unknown> {
-    this.logger.log(`Getting department report for tenant ${tenantId}`);
+    this.logger.debug(`Getting department report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -730,7 +730,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting shift report for tenant ${tenantId}`);
+    this.logger.debug(`Getting shift report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -860,7 +860,7 @@ export class ReportsService {
     dateTo?: string,
     categoryId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting KVP report for tenant ${tenantId}`);
+    this.logger.debug(`Getting KVP report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -996,7 +996,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): unknown {
-    this.logger.log(`Getting attendance report for tenant ${tenantId}`);
+    this.logger.debug(`Getting attendance report for tenant ${tenantId}`);
 
     const avgAttendanceRate = 0.92;
     const totalAbsences = Math.floor(Math.random() * 50) + 10;
@@ -1051,7 +1051,7 @@ export class ReportsService {
     dateTo: string,
     departmentId?: number,
   ): unknown {
-    this.logger.log(`Getting compliance report for tenant ${tenantId}`);
+    this.logger.debug(`Getting compliance report for tenant ${tenantId}`);
 
     const violations = {
       total: Math.floor(Math.random() * 20) + 5,

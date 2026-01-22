@@ -52,6 +52,9 @@ export interface CalendarEvent {
   allDay: boolean | number;
   location?: string;
   orgLevel?: string;
+  areaId?: number | null;
+  departmentId?: number | null;
+  teamId?: number | null;
 }
 
 /** Blackboard entry entity */

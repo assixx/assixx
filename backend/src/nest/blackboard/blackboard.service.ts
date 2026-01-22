@@ -438,7 +438,7 @@ export class BlackboardService {
     userId: number,
     filters: EntryFilters,
   ): Promise<PaginatedEntriesResult> {
-    this.logger.log(`Listing entries for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Listing entries for tenant ${tenantId}, user ${userId}`);
 
     const userAccess = await this.getUserDepartmentAndTeam(userId);
     const normalized = this.normalizeEntryFilters(filters);
@@ -553,7 +553,7 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<BlackboardEntryResponse> {
-    this.logger.log(`Getting entry ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting entry ${String(id)} for tenant ${tenantId}`);
 
     const { role, departmentId, teamId, hasFullAccess } =
       await this.getUserDepartmentAndTeam(userId);
@@ -694,7 +694,7 @@ export class BlackboardService {
     comments: BlackboardComment[];
     attachments: Record<string, unknown>[];
   }> {
-    this.logger.log(`Getting full entry ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
 
     const entry = await this.getEntryById(id, tenantId, userId);
     const comments = await this.getComments(id, tenantId);
@@ -1196,7 +1196,7 @@ export class BlackboardService {
     id: number | string,
     tenantId: number,
   ): Promise<Record<string, unknown>[]> {
-    this.logger.log(`Getting confirmation status for entry ${String(id)}`);
+    this.logger.debug(`Getting confirmation status for entry ${String(id)}`);
 
     // Get entry info
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
@@ -1246,7 +1246,7 @@ export class BlackboardService {
     userId: number,
     limit: number = 3,
   ): Promise<BlackboardEntryResponse[]> {
-    this.logger.log(`Getting dashboard entries for tenant ${tenantId}`);
+    this.logger.debug(`Getting dashboard entries for tenant ${tenantId}`);
 
     const { role, departmentId, teamId, hasFullAccess } =
       await this.getUserDepartmentAndTeam(userId);
@@ -1307,7 +1307,7 @@ export class BlackboardService {
    * Get comments for an entry
    */
   async getComments(id: number | string, tenantId: number): Promise<BlackboardComment[]> {
-    this.logger.log(`Getting comments for entry ${String(id)}`);
+    this.logger.debug(`Getting comments for entry ${String(id)}`);
 
     // Get numeric ID
     let numericId: number;
@@ -1458,7 +1458,7 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<Record<string, unknown>[]> {
-    this.logger.log(`Getting attachments for entry ${String(entryId)}`);
+    this.logger.debug(`Getting attachments for entry ${String(entryId)}`);
 
     const entry = await this.getEntryById(entryId, tenantId, userId);
     const numericId = (entry as Record<string, unknown>)['id'] as number;
@@ -1542,8 +1542,6 @@ export class BlackboardService {
    * Used for notification badge in sidebar
    */
   async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    this.logger.log(`Getting unconfirmed count for user ${userId}`);
-
     // Get user info for visibility filtering
     const users = await this.db.query<{
       role: string;

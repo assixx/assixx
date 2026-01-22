@@ -487,4 +487,97 @@ Then update `determineAction()` method with logic for new actions.
 
 ---
 
-_Last Updated: 2026-01-20 (v5 - Noise Reduction + Changes Field Restructure)_
+## Improvement Plan (2026-01-22)
+
+Based on analysis, the following improvements are planned:
+
+### Implemented Features
+
+| Feature                     | Status  | Description                   |
+| --------------------------- | ------- | ----------------------------- |
+| Partitioned Tables          | ✅ Done | 36 monthly partitions         |
+| RLS Tenant Isolation        | ✅ Done | Policy enforced               |
+| DELETE Pre-Fetch            | ✅ Done | Data captured before deletion |
+| Noise Reduction             | ✅ Done | Throttling + smart filtering  |
+| Sensitive Data Sanitization | ✅ Done | OWASP/GDPR compliant          |
+
+### Implemented Improvements (2026-01-22)
+
+| Priority | Feature               | Status  | Description                                  |
+| -------- | --------------------- | ------- | -------------------------------------------- |
+| 1        | Request Correlation   | ✅ Done | `request_id` UUID to correlate audit entries |
+| 2        | Old Values for UPDATE | ✅ Done | Capture `previous` state before update       |
+| 3        | Export Action Logging | ✅ Done | Track data exports for security              |
+| 5        | root_logs Strategy    | ✅ Done | Keep both tables, clear separation           |
+
+### Request Correlation (Priority 1)
+
+**Problem:** Multiple audit entries from the same request cannot be correlated.
+
+**Solution:**
+
+- Add `request_id UUID` column to `audit_trail`
+- Middleware generates UUID per request (or uses `X-Request-ID` header)
+- All audit entries from same request share the same ID
+
+```sql
+ALTER TABLE audit_trail ADD COLUMN IF NOT EXISTS request_id UUID;
+CREATE INDEX CONCURRENTLY idx_audit_trail_request_id ON audit_trail (request_id);
+```
+
+### Old Values for UPDATE (Priority 2)
+
+**Problem:** UPDATE only logs new values, not what was changed from.
+
+**Solution:** Extend the pre-fetch pattern (already used for DELETE) to UPDATE:
+
+```typescript
+interface AuditChanges {
+  previous?: Record<string, unknown>; // NEW: State before update
+  updated?: Record<string, unknown>; // State after update
+  // ... rest unchanged
+}
+```
+
+**Example audit entry:**
+
+```json
+{
+  "action": "update",
+  "resource_type": "calendar",
+  "changes": {
+    "previous": { "title": "Old Title", "location": null },
+    "updated": { "title": "New Title", "location": "Room 101" },
+    "_http": { "method": "PUT", "status": 200 }
+  }
+}
+```
+
+### Export Action Logging (Priority 3)
+
+**Problem:** Data exports are skipped (in `SKIPPED_GET_SUFFIXES`), making data exfiltration untrackable.
+
+**Solution:**
+
+- Add `'export'` to `AuditAction` type
+- Remove `/export` from skip list
+- Log export requests with query parameters
+
+### root_logs Consolidation (Priority 5)
+
+**Decision:** Keep both tables with clear separation:
+
+| Table         | Purpose                         | Writer                | Consumer           |
+| ------------- | ------------------------------- | --------------------- | ------------------ |
+| `audit_trail` | Technical audit (HTTP requests) | AuditTrailInterceptor | Export, Compliance |
+| `root_logs`   | Business audit (manual events)  | ActivityLoggerService | Root Dashboard     |
+
+**Rationale:** Different retention policies may be needed. `root_logs` captures business context that interceptor cannot (e.g., workflow decisions, approvals).
+
+### Implementation Plan
+
+See: `docs/plans/IMPROVE-AUDIT-TRAIL-LOGGING.md`
+
+---
+
+_Last Updated: 2026-01-22 (v7 - All Improvements Implemented)_

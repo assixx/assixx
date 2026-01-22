@@ -846,19 +846,7 @@ body:has(.sidebar.collapsed) .header .logo {
   min-height: calc(100vh - 60px);
 }
 
-.role-switch-banner:not([style*='display: none']) ~ .layout-container {
-  margin-top: 40px !important;
-  min-height: calc(100vh - 120px) !important;
-
-  /* Banner ist ~40px */
-}
-
-/* Sidebar anpassen wenn Role-Switch-Banner sichtbar (80px header + 40px banner) */
-.role-switch-banner:not([style*='display: none']) ~ .layout-container .sidebar {
-  top: 120px !important; /* 80px Header + 40px Banner */
-  height: calc(100vh - 120px) !important;
-  max-height: calc(100vh - 120px) !important;
-}
+/* Role-switch-banner is position:fixed - no layout impact needed */
 
 /* .main-content - REMOVED: Migrated to Tailwind utilities in HTML files */
 

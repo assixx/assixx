@@ -26,7 +26,7 @@ export const ORG_LEVEL_COLORS: Record<OrgLevel, string> = {
   company: '#3498db',
   department: '#e67e22',
   team: '#2ecc71',
-  area: '#1abc9c', // Teal - matches legacy calendar.css
+  area: '#e53935', // Red
   personal: '#9b59b6',
 } as const;
 
@@ -38,7 +38,7 @@ export const EVENT_LEVEL_INFO: Record<OrgLevel, EventLevelInfo> = {
   company: { class: 'event-level-company', text: 'Firma', color: '#3498db' },
   department: { class: 'event-level-department', text: 'Abteilung', color: '#e67e22' },
   team: { class: 'event-level-team', text: 'Team', color: '#2ecc71' },
-  area: { class: 'event-level-area', text: 'Bereich', color: '#1abc9c' }, // Teal - matches legacy
+  area: { class: 'event-level-area', text: 'Bereich', color: '#e53935' }, // Red
   personal: { class: 'event-level-personal', text: 'Persoenlich', color: '#9b59b6' },
 } as const;
 
@@ -78,18 +78,6 @@ export const FILTER_OPTIONS = [
 ] as const;
 
 /**
- * Reminder options (minutes)
- */
-export const REMINDER_OPTIONS = [
-  { value: 0, label: 'Keine Erinnerung' },
-  { value: 5, label: '5 Minuten vorher' },
-  { value: 15, label: '15 Minuten vorher' },
-  { value: 30, label: '30 Minuten vorher' },
-  { value: 60, label: '1 Stunde vorher' },
-  { value: 1440, label: '1 Tag vorher' },
-] as const;
-
-/**
  * Org level options for form
  */
 export const ORG_LEVEL_OPTIONS = [
@@ -105,10 +93,10 @@ export const ORG_LEVEL_OPTIONS = [
  */
 export const RECURRENCE_OPTIONS = [
   { value: undefined, label: 'Keine Wiederholung' },
-  { value: 'daily', label: 'Taeglich' },
-  { value: 'weekly', label: 'Woechentlich' },
+  { value: 'daily', label: 'Täglich' },
+  { value: 'weekly', label: 'Wöchentlich' },
   { value: 'monthly', label: 'Monatlich' },
-  { value: 'yearly', label: 'Jaehrlich' },
+  { value: 'yearly', label: 'Jährlich' },
 ] as const;
 
 /**
@@ -118,15 +106,4 @@ export const RECURRENCE_END_OPTIONS = [
   { value: 'never', label: 'Nie' },
   { value: 'after', label: 'Nach Anzahl' },
   { value: 'until', label: 'An Datum' },
-] as const;
-
-/**
- * Reminder dropdown options (for event form)
- */
-export const REMINDER_DROPDOWN_OPTIONS = [
-  { value: undefined, label: 'Keine Erinnerung' },
-  { value: 15, label: '15 Minuten vorher' },
-  { value: 30, label: '30 Minuten vorher' },
-  { value: 60, label: '1 Stunde vorher' },
-  { value: 1440, label: '1 Tag vorher' },
 ] as const;

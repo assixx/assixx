@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Audit Trail Interceptor
  *
@@ -32,6 +33,7 @@ import {
   type NestInterceptor,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { ClsService } from 'nestjs-cls';
 import type { QueryResultRow } from 'pg';
 import { Observable, catchError, from, mergeMap, tap, throwError } from 'rxjs';
 
@@ -41,7 +43,17 @@ import type { NestAuthUser } from '../interfaces/auth.interface.js';
 /**
  * Audit action types - more specific than just HTTP methods
  */
-type AuditAction = 'login' | 'logout' | 'create' | 'update' | 'delete' | 'view' | 'list';
+type AuditAction =
+  | 'login'
+  | 'logout'
+  | 'refresh'
+  | 'switch'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'view'
+  | 'list'
+  | 'export';
 
 /**
  * Sensitive fields that should NEVER be logged (OWASP, GDPR compliance).
@@ -98,9 +110,12 @@ const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: string }> =
   notification: { table: 'notifications', nameField: 'title' },
   shift: { table: 'shift_entries', nameField: 'id' },
   feature: { table: 'tenant_features', nameField: 'feature_key' },
-  plan: { table: 'subscription_plans', nameField: 'name' },
+  plan: { table: 'plans', nameField: 'name' },
   setting: { table: 'tenant_settings', nameField: 'setting_key' },
   role: { table: 'roles', nameField: 'name' },
+  // Admin management resources
+  'admin-permission': { table: 'admin_permissions', nameField: 'id' },
+  tenant: { table: 'tenants', nameField: 'company_name' },
 };
 
 /**
@@ -143,7 +158,7 @@ const SKIPPED_GET_SUFFIXES: readonly string[] = [
   '/stats',
   '/count',
   '/counts',
-  '/export',
+  // NOTE: /export is NOT skipped - we log export actions for security tracking
   '/search',
   '/suggestions',
   '/options',
@@ -239,7 +254,9 @@ interface HttpMetadata {
 interface AuditChanges {
   // For CREATE: the created data (sanitized)
   created?: Record<string, unknown>;
-  // For UPDATE: the updated fields (sanitized)
+  // For UPDATE: the previous state (before change) - compliance: "what was changed from"
+  previous?: Record<string, unknown>;
+  // For UPDATE: the updated fields (sanitized request body)
   updated?: Record<string, unknown>;
   // For DELETE: the deleted resource data (fetched before deletion)
   deleted?: Record<string, unknown>;
@@ -268,6 +285,7 @@ interface AuditLogParams {
   userAgent: string | null;
   status: AuditStatus;
   errorMessage: string | null;
+  requestId: string | null;
 }
 
 /**
@@ -286,7 +304,10 @@ export class AuditTrailInterceptor implements NestInterceptor {
    */
   private readonly recentLogs = new Map<string, number>();
 
-  constructor(private readonly db: DatabaseService) {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly cls: ClsService,
+  ) {
     // Clean up old entries every 5 minutes to prevent memory leak
     setInterval(
       () => {
@@ -350,17 +371,19 @@ export class AuditTrailInterceptor implements NestInterceptor {
     action: AuditAction,
     request: FastifyRequest,
     httpMeta: HttpMetadata,
-    preDeleteData?: Record<string, unknown> | null,
+    preMutationData?: Record<string, unknown> | null,
   ): AuditChanges {
     const changes: AuditChanges = {
       _http: httpMeta,
     };
 
     // Delegate to action-specific handlers to reduce complexity
-    if (action === 'create' || action === 'update') {
+    if (action === 'create') {
       this.addMutationChanges(changes, action, request);
+    } else if (action === 'update') {
+      this.addUpdateChanges(changes, request, preMutationData);
     } else if (action === 'delete') {
-      this.addDeleteChanges(changes, preDeleteData);
+      this.addDeleteChanges(changes, preMutationData);
     } else if (action === 'list') {
       this.addListChanges(changes, request);
     } else if (action === 'view') {
@@ -371,30 +394,47 @@ export class AuditTrailInterceptor implements NestInterceptor {
     return changes;
   }
 
-  /** Add changes for create/update mutations (sanitized request body) */
+  /** Add changes for CREATE action (sanitized request body) */
   private addMutationChanges(
     changes: AuditChanges,
-    action: 'create' | 'update',
+    _action: 'create',
     request: FastifyRequest,
   ): void {
     const sanitized = this.sanitizeData(request.body);
-    if (sanitized === null) {
-      return;
-    }
-    if (action === 'create') {
+    if (sanitized !== null) {
       changes.created = sanitized;
-    } else {
+    }
+  }
+
+  /**
+   * Add changes for UPDATE action.
+   * Includes both "previous" (pre-mutation state) and "updated" (new values from request).
+   * This enables compliance tracking: "what was changed FROM X TO Y"
+   */
+  private addUpdateChanges(
+    changes: AuditChanges,
+    request: FastifyRequest,
+    preMutationData: Record<string, unknown> | null | undefined,
+  ): void {
+    // Add previous state (what the resource looked like before the update)
+    if (preMutationData !== null && preMutationData !== undefined) {
+      changes.previous = preMutationData;
+    }
+
+    // Add updated values (sanitized request body)
+    const sanitized = this.sanitizeData(request.body);
+    if (sanitized !== null) {
       changes.updated = sanitized;
     }
   }
 
-  /** Add changes for delete action (pre-fetched data before deletion) */
+  /** Add changes for DELETE action (pre-fetched data before deletion) */
   private addDeleteChanges(
     changes: AuditChanges,
-    preDeleteData: Record<string, unknown> | null | undefined,
+    preMutationData: Record<string, unknown> | null | undefined,
   ): void {
-    if (preDeleteData !== null && preDeleteData !== undefined) {
-      changes.deleted = preDeleteData;
+    if (preMutationData !== null && preMutationData !== undefined) {
+      changes.deleted = preMutationData;
     }
   }
 
@@ -418,10 +458,10 @@ export class AuditTrailInterceptor implements NestInterceptor {
   }
 
   /**
-   * Fetch resource data BEFORE deletion for audit trail.
+   * Fetch resource data BEFORE mutation (DELETE or UPDATE) for audit trail.
    * Returns null if resource type is unknown or fetch fails (fire-and-forget).
    */
-  private async fetchResourceBeforeDelete(
+  private async fetchResourceBeforeMutation(
     resourceType: string,
     resourceId: number | null,
     tenantId: number,
@@ -528,18 +568,16 @@ export class AuditTrailInterceptor implements NestInterceptor {
     const metadata = this.extractRequestMetadata(request, action);
 
     // Throttle list/view actions - ensures "User visited Blackboard" logs once, not 6 times
-    const isListOrView = action === 'list' || action === 'view';
-    if (
-      isListOrView &&
-      user !== undefined &&
-      this.shouldThrottleListAction(user.id, metadata.endpoint)
-    ) {
+    if (this.shouldThrottleListOrView(action, user, metadata.endpoint)) {
       return next.handle();
     }
 
-    // For DELETE: fetch resource data BEFORE deletion (async pipeline)
-    if (action === 'delete' && user !== undefined) {
-      return this.handleDeleteWithPreFetch(user, metadata, startTime, request, response, next);
+    // For DELETE and UPDATE: fetch resource data BEFORE mutation (async pipeline)
+    // This allows logging "previous" state for compliance ("what was changed FROM")
+    const needsPreFetch =
+      (action === 'delete' || action === 'update') && metadata.resourceId !== null;
+    if (needsPreFetch && user !== undefined) {
+      return this.handleMutationWithPreFetch(user, metadata, startTime, request, response, next);
     }
 
     // For all other actions: standard logging
@@ -554,10 +592,11 @@ export class AuditTrailInterceptor implements NestInterceptor {
   }
 
   /**
-   * Handle DELETE requests with pre-fetch for audit compliance.
+   * Handle DELETE and UPDATE requests with pre-fetch for audit compliance.
+   * Fetches resource data BEFORE mutation to capture "previous" state.
    * Extracted to reduce cognitive complexity in intercept().
    */
-  private handleDeleteWithPreFetch(
+  private handleMutationWithPreFetch(
     user: NestAuthUser,
     metadata: ReturnType<typeof this.extractRequestMetadata>,
     startTime: number,
@@ -566,15 +605,15 @@ export class AuditTrailInterceptor implements NestInterceptor {
     next: CallHandler,
   ): Observable<unknown> {
     return from(
-      this.fetchResourceBeforeDelete(metadata.resourceType, metadata.resourceId, user.tenantId),
+      this.fetchResourceBeforeMutation(metadata.resourceType, metadata.resourceId, user.tenantId),
     ).pipe(
-      mergeMap((preDeleteData: Record<string, unknown> | null) =>
+      mergeMap((preMutationData: Record<string, unknown> | null) =>
         next.handle().pipe(
           tap(() => {
-            this.logSuccess(user, metadata, startTime, request, response, preDeleteData);
+            this.logSuccess(user, metadata, startTime, request, response, preMutationData);
           }),
           catchError((error: unknown) =>
-            this.logFailure(user, metadata, startTime, request, response, error, preDeleteData),
+            this.logFailure(user, metadata, startTime, request, response, error, preMutationData),
           ),
         ),
       ),
@@ -596,12 +635,10 @@ export class AuditTrailInterceptor implements NestInterceptor {
    * Determine the audit action based on method and path.
    */
   private determineAction(method: string, path: string, request: FastifyRequest): AuditAction {
-    // Special handling for auth endpoints
-    if (path.includes('/auth/login')) {
-      return 'login';
-    }
-    if (path.includes('/auth/logout')) {
-      return 'logout';
+    // Check for special path-based actions first
+    const pathAction = this.getPathBasedAction(path);
+    if (pathAction !== null) {
+      return pathAction;
     }
 
     // Map HTTP methods to actions
@@ -614,18 +651,49 @@ export class AuditTrailInterceptor implements NestInterceptor {
       case 'DELETE':
         return 'delete';
       case 'GET':
-      case 'HEAD': {
-        // "Current user" endpoints are always 'view' (viewing own profile)
-        if (this.isCurrentUserEndpoint(path)) {
-          return 'view';
-        }
-        // GET with ID = viewing specific item, GET without ID = listing/page visit
-        const resourceId = this.extractResourceId(path, request.params as Record<string, string>);
-        return resourceId !== null ? 'view' : 'list';
-      }
+      case 'HEAD':
+        return this.determineGetAction(path, request);
       default:
         return 'view';
     }
+  }
+
+  /**
+   * Get action based on special path patterns (auth, role-switch).
+   * Returns null if no special path pattern matches.
+   */
+  private getPathBasedAction(path: string): AuditAction | null {
+    if (path.includes('/auth/login')) {
+      return 'login';
+    }
+    if (path.includes('/auth/logout')) {
+      return 'logout';
+    }
+    if (path.includes('/auth/refresh')) {
+      return 'refresh';
+    }
+    if (path.includes('/role-switch')) {
+      return 'switch';
+    }
+    return null;
+  }
+
+  /**
+   * Determine action for GET/HEAD requests.
+   * Extracted to reduce cognitive complexity in determineAction().
+   */
+  private determineGetAction(path: string, request: FastifyRequest): AuditAction {
+    // Export endpoints - security-critical, always track data exports
+    if (path.includes('/export')) {
+      return 'export';
+    }
+    // "Current user" endpoints are always 'view' (viewing own profile)
+    if (this.isCurrentUserEndpoint(path)) {
+      return 'view';
+    }
+    // GET with ID = viewing specific item, GET without ID = listing/page visit
+    const resourceId = this.extractResourceId(path, request.params as Record<string, string>);
+    return resourceId !== null ? 'view' : 'list';
   }
 
   /**
@@ -657,12 +725,28 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
   /**
    * Check if a list/view action should be throttled.
+   * Extracted to reduce cognitive complexity in intercept().
+   */
+  private shouldThrottleListOrView(
+    action: AuditAction,
+    user: NestAuthUser | undefined,
+    endpoint: string,
+  ): boolean {
+    const isListOrView = action === 'list' || action === 'view';
+    if (!isListOrView || user === undefined) {
+      return false;
+    }
+    return this.shouldThrottleByEndpoint(user.id, endpoint);
+  }
+
+  /**
+   * Check if endpoint should be throttled for this user.
    * Returns true if we should SKIP logging (already logged recently).
    *
    * PURPOSE: Ensure "User visited Blackboard" logs ONCE, not 6 times.
    * Multiple API calls from same page load within 30s = single log entry.
    */
-  private shouldThrottleListAction(userId: number, endpoint: string): boolean {
+  private shouldThrottleByEndpoint(userId: number, endpoint: string): boolean {
     // Normalize endpoint: remove query params and trailing IDs for grouping
     // e.g., /blackboard/entries?page=1 and /blackboard/entries?page=2 → same key
     const normalizedEndpoint = endpoint.split('?')[0] ?? endpoint;
@@ -710,8 +794,13 @@ export class AuditTrailInterceptor implements NestInterceptor {
     httpMethod: string;
     ipAddress: string;
     userAgent: string | null;
+    requestId: string | null;
   } {
     const path = request.url.split('?')[0] ?? request.url;
+
+    // Get requestId from CLS context (set by ClsModule middleware in app.module.ts)
+    const requestId = this.cls.get<string | undefined>('requestId') ?? null;
+
     return {
       action,
       resourceType: this.extractResourceType(request.url),
@@ -720,6 +809,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
       httpMethod: request.method.toUpperCase(),
       ipAddress: this.extractIpAddress(request),
       userAgent: request.headers['user-agent'] ?? null,
+      requestId,
     };
   }
 
@@ -733,7 +823,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
     startTime: number,
     request: FastifyRequest,
     response: FastifyReply,
-    preDeleteData: Record<string, unknown> | null,
+    preMutationData: Record<string, unknown> | null,
   ): void {
     const duration = Date.now() - startTime;
 
@@ -744,12 +834,12 @@ export class AuditTrailInterceptor implements NestInterceptor {
       duration_ms: duration,
     };
 
-    const changes = this.buildAuditChanges(metadata.action, request, httpMeta, preDeleteData);
+    const changes = this.buildAuditChanges(metadata.action, request, httpMeta, preMutationData);
 
     // For DELETE, try to extract resource_name from pre-fetched data
     let resourceName = this.extractResourceName(request);
-    if (metadata.action === 'delete' && preDeleteData !== null && resourceName === null) {
-      resourceName = this.extractNameFromData(preDeleteData, metadata.resourceType);
+    if (metadata.action === 'delete' && preMutationData !== null && resourceName === null) {
+      resourceName = this.extractNameFromData(preMutationData, metadata.resourceType);
     }
 
     void this.logToAuditTrail({
@@ -766,6 +856,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
       userAgent: metadata.userAgent,
       status: 'success',
       errorMessage: null,
+      requestId: metadata.requestId,
     });
   }
 
@@ -780,9 +871,9 @@ export class AuditTrailInterceptor implements NestInterceptor {
     request: FastifyRequest,
     response: FastifyReply,
     error: unknown,
-    preDeleteData: Record<string, unknown> | null,
+    preMutationData: Record<string, unknown> | null,
   ): Observable<never> {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = this.extractDetailedErrorMessage(error);
     const statusCode = response.statusCode >= 400 ? response.statusCode : 500;
     const duration = Date.now() - startTime;
 
@@ -793,12 +884,12 @@ export class AuditTrailInterceptor implements NestInterceptor {
       duration_ms: duration,
     };
 
-    const changes = this.buildAuditChanges(metadata.action, request, httpMeta, preDeleteData);
+    const changes = this.buildAuditChanges(metadata.action, request, httpMeta, preMutationData);
 
     // For DELETE, try to extract resource_name from pre-fetched data
     let resourceName = this.extractResourceName(request);
-    if (metadata.action === 'delete' && preDeleteData !== null && resourceName === null) {
-      resourceName = this.extractNameFromData(preDeleteData, metadata.resourceType);
+    if (metadata.action === 'delete' && preMutationData !== null && resourceName === null) {
+      resourceName = this.extractNameFromData(preMutationData, metadata.resourceType);
     }
 
     void this.logToAuditTrail({
@@ -815,6 +906,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
       userAgent: metadata.userAgent,
       status: 'failure',
       errorMessage: `[${statusCode}] ${errorMessage}`,
+      requestId: metadata.requestId,
     });
 
     return throwError(() => error);
@@ -870,8 +962,8 @@ export class AuditTrailInterceptor implements NestInterceptor {
       await this.db.query(
         `INSERT INTO audit_trail
          (tenant_id, user_id, user_name, user_role, action, resource_type,
-          resource_id, resource_name, changes, ip_address, user_agent, status, error_message, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
+          resource_id, resource_name, changes, ip_address, user_agent, status, error_message, request_id, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())`,
         [
           params.tenantId,
           params.userId,
@@ -886,12 +978,12 @@ export class AuditTrailInterceptor implements NestInterceptor {
           params.userAgent,
           params.status,
           params.errorMessage,
+          params.requestId,
         ],
       );
 
-      this.logger.debug(
-        `Audit logged: ${params.action} ${params.resourceType} by user ${params.userId} [${params.status}]`,
-      );
+      // Note: No console log for success - the DB insert IS the audit trail.
+      // Use LOG_LEVEL=debug + add temporary logging only when troubleshooting.
     } catch (error: unknown) {
       // NEVER throw - logging failures should not break main operations
       this.logger.warn(
@@ -1052,6 +1144,100 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
     // Fall back to direct IP (always available in Fastify)
     return request.ip;
+  }
+
+  /**
+   * Extract detailed error message from various error types.
+   * Handles NestJS HttpExceptions, Zod validation errors, and plain errors.
+   *
+   * @example
+   * // Zod error → "email: Invalid email; password: String must contain at least 12 character(s)"
+   * // HttpException → "User not found"
+   * // Generic → "Something went wrong"
+   */
+  private extractDetailedErrorMessage(error: unknown): string {
+    // Handle null/undefined
+    if (error === null || error === undefined) {
+      return 'Unknown error';
+    }
+
+    // Standard Error object
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    // String error
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    // Check for NestJS HttpException with response details (includes Zod errors)
+    if (typeof error === 'object' && 'getResponse' in error) {
+      return this.extractHttpExceptionMessage(error as { getResponse: () => unknown });
+    }
+
+    // Last resort - safely stringify
+    return 'Unknown error';
+  }
+
+  /**
+   * Extract message from NestJS HttpException.
+   * Handles Zod validation errors and standard error responses.
+   */
+  private extractHttpExceptionMessage(httpError: { getResponse: () => unknown }): string {
+    const response = httpError.getResponse();
+
+    if (typeof response !== 'object' || response === null) {
+      return 'Request failed';
+    }
+
+    const responseObj = response as Record<string, unknown>;
+
+    // Zod validation errors from our custom ZodValidationPipe
+    // Format: { message: 'Validation failed', code: 'VALIDATION_ERROR', details: [...] }
+    if (responseObj['code'] === 'VALIDATION_ERROR' && Array.isArray(responseObj['details'])) {
+      return this.formatZodValidationErrors(responseObj['details']);
+    }
+
+    // Standard NestJS error response { message: '...', error: '...' }
+    if (typeof responseObj['message'] === 'string') {
+      return responseObj['message'];
+    }
+
+    // Array of messages (class-validator style)
+    if (Array.isArray(responseObj['message'])) {
+      const messages = responseObj['message'] as unknown[];
+      return messages
+        .slice(0, 5)
+        .map((m: unknown) => String(m))
+        .join('; ');
+    }
+
+    return 'Request failed';
+  }
+
+  /**
+   * Format Zod validation error details into a readable string.
+   */
+  private formatZodValidationErrors(details: unknown[]): string {
+    interface ZodErrorDetail {
+      field?: string;
+      message?: string;
+    }
+
+    const fieldErrors = details
+      .slice(0, 5) // Limit to first 5 errors to avoid huge messages
+      .map((detail: unknown) => {
+        const d = detail as ZodErrorDetail;
+        if (d.field !== undefined && d.message !== undefined) {
+          return `${d.field}: ${d.message}`;
+        }
+        return d.message ?? null;
+      })
+      .filter((msg: string | null): msg is string => msg !== null)
+      .join('; ');
+
+    return fieldErrors.length > 0 ? fieldErrors : 'Validation failed';
   }
 
   /**

@@ -147,6 +147,11 @@ export const MESSAGES = {
   // Loading
   LOADING_ADMINS: 'Administratoren werden geladen...',
 
+  // Success messages
+  SUCCESS_CREATED: 'Administrator erfolgreich erstellt',
+  SUCCESS_UPDATED: 'Administrator erfolgreich aktualisiert',
+  SUCCESS_DELETED: 'Administrator erfolgreich gelöscht',
+
   // Validation errors
   ERROR_EMAIL_MISMATCH: 'E-Mail-Adressen stimmen nicht überein',
   ERROR_PASSWORD_MISMATCH: 'Passwörter stimmen nicht überein',

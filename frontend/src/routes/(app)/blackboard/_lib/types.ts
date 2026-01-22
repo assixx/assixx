@@ -26,6 +26,7 @@ export interface OrgItem {
 
 export interface Department extends OrgItem {
   areaId?: number;
+  areaName?: string;
 }
 
 export interface Team extends OrgItem {
@@ -35,6 +36,7 @@ export interface Team extends OrgItem {
 export interface Area extends OrgItem {
   type?: string;
   description?: string;
+  departmentCount?: number;
 }
 
 // ============================================================================

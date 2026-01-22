@@ -11,6 +11,7 @@
 
   import '../../../styles/logs.css';
 
+  import { showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('LogsPage');
@@ -196,6 +197,9 @@
         filterEntity,
         filterTimerange,
       });
+
+      // Show success message
+      showSuccessAlert(MESSAGES.DELETE_SUCCESS);
 
       // Reset and reload
       closeDeleteModal();

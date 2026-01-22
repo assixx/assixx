@@ -349,7 +349,7 @@ export class RootService {
    * Get all admin users for a tenant
    */
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
-    this.logger.log(`Getting admins for tenant ${tenantId}`);
+    this.logger.debug(`Getting admins for tenant ${tenantId}`);
 
     const admins = await this.db.query<DbUserRow>(
       `SELECT u.*, t.company_name as tenant_name
@@ -367,7 +367,7 @@ export class RootService {
    * Get single admin by ID
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
-    this.logger.log(`Getting admin ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Getting admin ${id} for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbUserRow & { tenant_name?: string }>(
       `SELECT u.*, t.company_name as tenant_name
@@ -534,7 +534,7 @@ export class RootService {
    * Get admin logs
    */
   async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
-    this.logger.log(`Getting logs for admin ${adminId}`);
+    this.logger.debug(`Getting logs for admin ${adminId}`);
 
     // Verify admin exists
     const admin = await this.getAdminById(adminId, tenantId);
@@ -564,7 +564,7 @@ export class RootService {
    * Get tenants - ONLY the root user's own tenant for security
    */
   async getTenants(tenantId: number): Promise<Tenant[]> {
-    this.logger.log(`Getting tenants for tenant ${tenantId}`);
+    this.logger.debug(`Getting tenants for tenant ${tenantId}`);
 
     // Only return user's own tenant (multi-tenant isolation)
     const tenants = await this.db.query<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
@@ -618,7 +618,7 @@ export class RootService {
    * Get all root users for a tenant
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
-    this.logger.log(`Getting root users for tenant ${tenantId}`);
+    this.logger.debug(`Getting root users for tenant ${tenantId}`);
 
     const users = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
@@ -636,7 +636,7 @@ export class RootService {
    * Get single root user
    */
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
-    this.logger.log(`Getting root user ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
@@ -829,7 +829,7 @@ export class RootService {
    * Get dashboard statistics
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
-    this.logger.log(`Getting dashboard stats for tenant ${tenantId}`);
+    this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     // Get counts in parallel
     const [adminCount, employeeCount, totalUserCount, tenantCount, features] = await Promise.all([
@@ -878,7 +878,7 @@ export class RootService {
    * Get storage information
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
-    this.logger.log(`Getting storage info for tenant ${tenantId}`);
+    this.logger.debug(`Getting storage info for tenant ${tenantId}`);
 
     // Get tenant plan
     const tenant = await this.db.query<DbTenantRow>(
@@ -992,7 +992,7 @@ export class RootService {
     tenantId: number,
     currentUserId?: number,
   ): Promise<TenantDeletionStatus | null> {
-    this.logger.log(`Getting deletion status for tenant ${tenantId}`);
+    this.logger.debug(`Getting deletion status for tenant ${tenantId}`);
 
     const deletions = await this.db.query<DbDeletionQueueRow>(
       `SELECT dq.*, t.company_name, u.username as requested_by_name
@@ -1085,7 +1085,7 @@ export class RootService {
    * Get all deletion requests
    */
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
-    this.logger.log('Getting all deletion requests');
+    this.logger.debug('Getting all deletion requests');
 
     const deletions = await this.db.query<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email
@@ -1113,7 +1113,7 @@ export class RootService {
    * Get pending approvals
    */
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
-    this.logger.log(`Getting pending approvals for user ${currentUserId}`);
+    this.logger.debug(`Getting pending approvals for user ${currentUserId}`);
 
     const approvals = await this.db.query<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email

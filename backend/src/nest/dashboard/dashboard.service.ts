@@ -9,7 +9,6 @@
  * network latency from ~150ms (5 parallel requests) to ~50ms (1 request).
  */
 import { Injectable, Logger } from '@nestjs/common';
-import { performance } from 'perf_hooks';
 
 import { BlackboardService } from '../blackboard/blackboard.service.js';
 import { CalendarService } from '../calendar/calendar.service.js';
@@ -56,9 +55,6 @@ export class DashboardService {
    * @returns Combined counts from all services
    */
   async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCountsResponse> {
-    const startTime = performance.now();
-    this.logger.debug(`Fetching dashboard counts for user ${user.id} in tenant ${tenantId}`);
-
     // Execute all count queries in parallel
     const [chatResult, notificationsResult, blackboardResult, calendarResult, documentsResult] =
       await Promise.all([
@@ -83,9 +79,6 @@ export class DashboardService {
           return EMPTY_COUNT;
         }),
       ]);
-
-    const duration = performance.now() - startTime;
-    this.logger.debug(`Dashboard counts fetched in ${duration.toFixed(2)}ms`);
 
     const data: DashboardCounts = {
       chat: chatResult,

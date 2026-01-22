@@ -123,7 +123,7 @@ export class KvpService {
    * Get KVP categories
    */
   async getCategories(_tenantId: number): Promise<Category[]> {
-    this.logger.log('Getting categories');
+    this.logger.debug('Getting categories');
 
     const rows = await this.db.query<DbCategory>('SELECT * FROM kvp_categories ORDER BY name ASC');
 
@@ -140,7 +140,7 @@ export class KvpService {
    * Get dashboard statistics
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
-    this.logger.log(`Getting dashboard stats for tenant ${tenantId}`);
+    this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     const query = `
       SELECT
@@ -276,7 +276,7 @@ export class KvpService {
     userRole: string,
     filters: SuggestionFilters,
   ): Promise<PaginatedSuggestionsResult> {
-    this.logger.log(`Listing suggestions for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Listing suggestions for tenant ${tenantId}, user ${userId}`);
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
@@ -355,7 +355,7 @@ export class KvpService {
     userId: number,
     userRole: string,
   ): Promise<KVPSuggestionResponse> {
-    this.logger.log(`Getting suggestion ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting suggestion ${String(id)} for tenant ${tenantId}`);
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
     let query = `${this.SUGGESTION_DETAIL_BASE_QUERY} WHERE s.${idColumn} = $1 AND s.tenant_id = $2`;
@@ -693,7 +693,7 @@ export class KvpService {
     _userId: number,
     userRole: string,
   ): Promise<KVPComment[]> {
-    this.logger.log(`Getting comments for suggestion ${String(id)}`);
+    this.logger.debug(`Getting comments for suggestion ${String(id)}`);
 
     // Get numeric ID
     const suggestion = await this.getSuggestionById(id, tenantId, _userId, userRole);
@@ -785,7 +785,7 @@ export class KvpService {
     userId: number,
     userRole: string,
   ): Promise<KVPAttachment[]> {
-    this.logger.log(`Getting attachments for suggestion ${String(id)}`);
+    this.logger.debug(`Getting attachments for suggestion ${String(id)}`);
 
     // Get numeric ID
     const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
@@ -890,7 +890,7 @@ export class KvpService {
     userId: number,
     userRole: string,
   ): Promise<{ filePath: string; fileName: string }> {
-    this.logger.log(`Getting attachment by UUID ${fileUuid}`);
+    this.logger.debug(`Getting attachment by UUID ${fileUuid}`);
 
     const rows = await this.db.query<
       DbAttachment & { submitted_by: number; status: string; org_level: string; org_id: number }

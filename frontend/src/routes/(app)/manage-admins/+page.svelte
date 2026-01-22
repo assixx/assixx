@@ -7,7 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageAdminsPage');
@@ -161,6 +161,9 @@
 
       await saveAdminWithPermissions(formData, currentEditId);
 
+      // Show success message based on mode
+      showSuccessAlert(isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED);
+
       closeAdminModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
@@ -182,6 +185,7 @@
 
     try {
       await apiDeleteAdmin(adminId);
+      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {

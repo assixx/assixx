@@ -250,6 +250,7 @@ export default ts.config(
           pathGroups: [
             { pattern: '$app/**', group: 'internal', position: 'before' },
             { pattern: '$lib/**', group: 'internal', position: 'before' },
+            { pattern: '$design-system/**', group: 'internal' },
           ],
           pathGroupsExcludedImportTypes: ['type'],
         },

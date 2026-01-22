@@ -82,7 +82,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     timeZone: 'Europe/Berlin',
   })
   async processAtMinute(): Promise<void> {
-    this.logger.debug('[Cron] Checking for due scheduled messages...');
+    // No log here - only log when there's actual work to do
     await this.processScheduledMessages();
   }
 
@@ -111,7 +111,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
       );
 
       if (dueMessages.length === 0) {
-        this.logger.debug('No due scheduled messages found');
+        // No log for empty result - reduces noise
         return;
       }
 

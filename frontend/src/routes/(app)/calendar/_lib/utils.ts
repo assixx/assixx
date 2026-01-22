@@ -2,7 +2,7 @@
 // CALENDAR - UTILITY FUNCTIONS
 // =============================================================================
 
-import { EVENT_LEVEL_INFO, REMINDER_OPTIONS } from './constants';
+import { EVENT_LEVEL_INFO } from './constants';
 
 import type { CalendarEvent, OrgLevel, User, EventLevelInfo } from './types';
 
@@ -117,15 +117,6 @@ export function formatDatetimeLocal(date: Date): string {
 }
 
 /**
- * Get reminder text from minutes
- */
-export function getReminderText(minutes: number | undefined): string {
-  if (minutes === undefined || minutes === 0) return 'Keine Erinnerung';
-  const option = REMINDER_OPTIONS.find((o) => o.value === minutes);
-  return option?.label ?? `${minutes} Minuten vorher`;
-}
-
-/**
  * Get response status text in German
  */
 export function getResponseText(response: string): string {
@@ -170,4 +161,26 @@ export function isAllDayEvent(event: CalendarEvent): boolean {
 export function getUpcomingEventTimeStr(event: CalendarEvent): string {
   if (isAllDayEvent(event)) return 'Ganztaegig';
   return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`;
+}
+
+/**
+ * Format relative time (e.g., "vor 2 Stunden", "vor 3 Tagen")
+ */
+export function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'Gerade eben';
+  if (diffMins < 60) return `vor ${diffMins} Min.`;
+  if (diffHours < 24) return `vor ${diffHours} Std.`;
+  if (diffDays === 1) return 'Gestern';
+  if (diffDays < 7) return `vor ${diffDays} Tagen`;
+  if (diffDays < 30) return `vor ${Math.floor(diffDays / 7)} Wochen`;
+
+  // Fallback to date
+  return formatDate(dateStr, { day: 'numeric', month: 'short' });
 }

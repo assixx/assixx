@@ -218,8 +218,6 @@ export class DocumentsService {
     userId: number,
     query: ListDocumentsQueryDto,
   ): Promise<PaginatedDocumentsResult> {
-    this.logger.log(`Listing documents for tenant ${tenantId}, user ${userId}`);
-
     const page = query.page;
     const limit = query.limit;
     const offset = (page - 1) * limit;
@@ -370,7 +368,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentResponse> {
-    this.logger.log(`Getting document ${documentId} for tenant ${tenantId}`);
+    this.logger.debug(`Getting document ${documentId} for tenant ${tenantId}`);
 
     const documents = await this.databaseService.query<DbDocument>(
       `SELECT d.*, u.username as uploaded_by_name
@@ -405,7 +403,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentResponse | null> {
-    this.logger.log(`Getting document by fileUuid ${fileUuid}`);
+    this.logger.debug(`Getting document by fileUuid ${fileUuid}`);
 
     const documents = await this.databaseService.query<DbDocument>(
       `SELECT d.*, u.username as uploaded_by_name
@@ -594,7 +592,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentContentResponse> {
-    this.logger.log(`Getting document content ${documentId}`);
+    this.logger.debug(`Getting document content ${documentId}`);
 
     const document = await this.getDocumentRow(documentId, tenantId);
     if (document === null) {
@@ -749,7 +747,7 @@ export class DocumentsService {
    * Get document statistics
    */
   async getDocumentStats(tenantId: number, userId: number): Promise<DocumentStatsResponse> {
-    this.logger.log(`Getting document stats for tenant ${tenantId}`);
+    this.logger.debug(`Getting document stats for tenant ${tenantId}`);
 
     const user = await this.getUserById(userId, tenantId);
     if (user === null) {
@@ -802,8 +800,6 @@ export class DocumentsService {
     userId: number,
     userRole: 'root' | 'admin' | 'employee',
   ): Promise<UnreadCountResponse> {
-    this.logger.log(`Getting unread document count for user ${userId} (role: ${userRole})`);
-
     const isAdmin = userRole === 'admin' || userRole === 'root';
 
     // Build query with same access scope filter as listDocuments
@@ -840,7 +836,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<{ folders: ChatFolderResponse[]; total: number }> {
-    this.logger.log(`Getting chat folders for user ${userId}`);
+    this.logger.debug(`Getting chat folders for user ${userId}`);
 
     const folders = await this.databaseService.query<ChatFolderResponse>(
       `SELECT DISTINCT ON (c.id)
@@ -903,6 +899,20 @@ export class DocumentsService {
         userId,
       );
     }
+
+    // Log activity to root_logs
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument hochgeladen: ${data.originalName}`,
+      {
+        filename: data.originalName,
+        category: data.category,
+        accessScope: data.accessScope,
+      },
+    );
 
     return createdDocument;
   }

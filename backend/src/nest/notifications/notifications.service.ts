@@ -200,7 +200,7 @@ export class NotificationsService {
     tenantId: number,
     filters: NotificationFilters,
   ): Promise<PaginatedNotificationsResult> {
-    this.logger.log(`Listing notifications for user ${userId} in tenant ${tenantId}`);
+    this.logger.debug(`Listing notifications for user ${userId} in tenant ${tenantId}`);
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
@@ -450,7 +450,7 @@ export class NotificationsService {
    * Get notification preferences
    */
   async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
-    this.logger.log(`Getting preferences for user ${userId}`);
+    this.logger.debug(`Getting preferences for user ${userId}`);
 
     const rows = await this.db.query<DbNotificationPreferencesRow>(
       `SELECT * FROM notification_preferences
@@ -586,7 +586,7 @@ export class NotificationsService {
    * Get notification statistics (admin only)
    */
   async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
-    this.logger.log(`Getting statistics for tenant ${tenantId}`);
+    this.logger.debug(`Getting statistics for tenant ${tenantId}`);
 
     // Total count (PostgreSQL returns bigint as string)
     const totalRows = await this.db.query<DbCountRow>(
@@ -649,8 +649,6 @@ export class NotificationsService {
    * Get personal notification statistics
    */
   async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
-    this.logger.log(`Getting personal stats for user ${userId}`);
-
     // Total notifications for user
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications n
