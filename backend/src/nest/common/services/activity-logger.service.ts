@@ -42,7 +42,9 @@ export type ActivityEntityType =
   | 'notification'
   | 'auth'
   | 'tenant'
-  | 'settings';
+  | 'settings'
+  | 'calendar'
+  | 'shift';
 
 /**
  * Parameters for logging an activity

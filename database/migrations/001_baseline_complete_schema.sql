@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 81N43cjQC0fTXGjKElzstT2ggu1cJFH6GWX029BtjM5Wcig1Vgrii2RpiHc9JNj
+\restrict Rd1pkkdHOZlnw7z4YDcnQuq9SFe0gXVpxOOLoyeQ7YDKMiq3WHV8oAKY0cEkftu
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -1527,6 +1527,20 @@ $$;
 
 
 --
+-- Name: update_feature_visits_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION "public"."update_feature_visits_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1583,46 +1597,6 @@ CREATE SEQUENCE "public"."absences_id_seq"
 --
 
 ALTER SEQUENCE "public"."absences_id_seq" OWNED BY "public"."absences"."id";
-
-
---
--- Name: activity_logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."activity_logs" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "user_id" integer NOT NULL,
-    "action" character varying(100) NOT NULL,
-    "entity_type" character varying(50),
-    "entity_id" integer,
-    "details" "text",
-    "ip_address" character varying(45),
-    "user_agent" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."activity_logs" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: activity_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."activity_logs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."activity_logs_id_seq" OWNED BY "public"."activity_logs"."id";
 
 
 --
@@ -1824,47 +1798,6 @@ ALTER SEQUENCE "public"."api_keys_id_seq" OWNED BY "public"."api_keys"."id";
 
 
 --
--- Name: api_logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."api_logs" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "user_id" integer,
-    "method" character varying(10) NOT NULL,
-    "endpoint" character varying(255) NOT NULL,
-    "status_code" integer,
-    "request_body" "text",
-    "response_time_ms" integer,
-    "ip_address" character varying(45),
-    "user_agent" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."api_logs" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: api_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."api_logs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: api_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."api_logs_id_seq" OWNED BY "public"."api_logs"."id";
-
-
---
 -- Name: archived_tenant_invoices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1993,7 +1926,8 @@ CREATE TABLE "public"."audit_trail" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 )
 PARTITION BY RANGE ("created_at");
 
@@ -2039,7 +1973,8 @@ CREATE TABLE "public"."audit_trail_2025_01" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2062,7 +1997,8 @@ CREATE TABLE "public"."audit_trail_2025_02" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2085,7 +2021,8 @@ CREATE TABLE "public"."audit_trail_2025_03" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2108,7 +2045,8 @@ CREATE TABLE "public"."audit_trail_2025_04" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2131,7 +2069,8 @@ CREATE TABLE "public"."audit_trail_2025_05" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2154,7 +2093,8 @@ CREATE TABLE "public"."audit_trail_2025_06" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2177,7 +2117,8 @@ CREATE TABLE "public"."audit_trail_2025_07" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2200,7 +2141,8 @@ CREATE TABLE "public"."audit_trail_2025_08" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2223,7 +2165,8 @@ CREATE TABLE "public"."audit_trail_2025_09" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2246,7 +2189,8 @@ CREATE TABLE "public"."audit_trail_2025_10" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2269,7 +2213,8 @@ CREATE TABLE "public"."audit_trail_2025_11" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2292,7 +2237,8 @@ CREATE TABLE "public"."audit_trail_2025_12" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2315,7 +2261,8 @@ CREATE TABLE "public"."audit_trail_2026_01" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2338,7 +2285,8 @@ CREATE TABLE "public"."audit_trail_2026_02" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2361,7 +2309,8 @@ CREATE TABLE "public"."audit_trail_2026_03" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2384,7 +2333,8 @@ CREATE TABLE "public"."audit_trail_2026_04" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2407,7 +2357,8 @@ CREATE TABLE "public"."audit_trail_2026_05" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2430,7 +2381,8 @@ CREATE TABLE "public"."audit_trail_2026_06" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2453,7 +2405,8 @@ CREATE TABLE "public"."audit_trail_2026_07" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2476,7 +2429,8 @@ CREATE TABLE "public"."audit_trail_2026_08" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2499,7 +2453,8 @@ CREATE TABLE "public"."audit_trail_2026_09" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2522,7 +2477,8 @@ CREATE TABLE "public"."audit_trail_2026_10" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2545,7 +2501,8 @@ CREATE TABLE "public"."audit_trail_2026_11" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2568,7 +2525,8 @@ CREATE TABLE "public"."audit_trail_2026_12" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2591,7 +2549,8 @@ CREATE TABLE "public"."audit_trail_2027_01" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2614,7 +2573,8 @@ CREATE TABLE "public"."audit_trail_2027_02" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2637,7 +2597,8 @@ CREATE TABLE "public"."audit_trail_2027_03" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2660,7 +2621,8 @@ CREATE TABLE "public"."audit_trail_2027_04" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2683,7 +2645,8 @@ CREATE TABLE "public"."audit_trail_2027_05" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2706,7 +2669,8 @@ CREATE TABLE "public"."audit_trail_2027_06" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2729,7 +2693,8 @@ CREATE TABLE "public"."audit_trail_2027_07" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2752,7 +2717,8 @@ CREATE TABLE "public"."audit_trail_2027_08" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2775,7 +2741,8 @@ CREATE TABLE "public"."audit_trail_2027_09" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2798,7 +2765,8 @@ CREATE TABLE "public"."audit_trail_2027_10" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2821,7 +2789,8 @@ CREATE TABLE "public"."audit_trail_2027_11" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
 
 
@@ -2844,46 +2813,9 @@ CREATE TABLE "public"."audit_trail_2027_12" (
     "user_agent" "text",
     "status" "public"."audit_trail_status" DEFAULT 'success'::"public"."audit_trail_status" NOT NULL,
     "error_message" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid"
 );
-
-
---
--- Name: backup_retention_policy; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."backup_retention_policy" (
-    "id" integer NOT NULL,
-    "tenant_id" integer,
-    "backup_type" "public"."backup_retention_policy_backup_type" DEFAULT 'deletion'::"public"."backup_retention_policy_backup_type",
-    "backup_file" character varying(500),
-    "backup_size" bigint,
-    "retention_days" integer DEFAULT 90,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "expires_at" timestamp with time zone
-);
-
-ALTER TABLE ONLY "public"."backup_retention_policy" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: backup_retention_policy_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."backup_retention_policy_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: backup_retention_policy_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."backup_retention_policy_id_seq" OWNED BY "public"."backup_retention_policy"."id";
 
 
 --
@@ -3823,85 +3755,6 @@ ALTER SEQUENCE "public"."documents_id_seq" OWNED BY "public"."documents"."id";
 
 
 --
--- Name: email_queue; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."email_queue" (
-    "id" integer NOT NULL,
-    "tenant_id" integer,
-    "to_email" character varying(255) NOT NULL,
-    "subject" character varying(500),
-    "status" "public"."email_queue_status" DEFAULT 'pending'::"public"."email_queue_status",
-    "attempts" integer DEFAULT 0,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "sent_at" timestamp with time zone
-);
-
-ALTER TABLE ONLY "public"."email_queue" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: email_queue_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."email_queue_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: email_queue_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."email_queue_id_seq" OWNED BY "public"."email_queue"."id";
-
-
---
--- Name: email_templates; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."email_templates" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "template_key" character varying(100) NOT NULL,
-    "subject" character varying(255) NOT NULL,
-    "body_html" "text" NOT NULL,
-    "body_text" "text",
-    "variables" "jsonb",
-    "is_system" boolean DEFAULT false,
-    "is_active" smallint DEFAULT 1,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."email_templates" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: email_templates_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."email_templates_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: email_templates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."email_templates_id_seq" OWNED BY "public"."email_templates"."id";
-
-
---
 -- Name: employee_availability; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4012,6 +3865,43 @@ CREATE SEQUENCE "public"."feature_usage_logs_id_seq"
 --
 
 ALTER SEQUENCE "public"."feature_usage_logs_id_seq" OWNED BY "public"."feature_usage_logs"."id";
+
+
+--
+-- Name: feature_visits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."feature_visits" (
+    "id" integer NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "feature" character varying(50) NOT NULL,
+    "last_visited_at" timestamp with time zone DEFAULT "now"(),
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+ALTER TABLE ONLY "public"."feature_visits" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: feature_visits_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE "public"."feature_visits_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: feature_visits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE "public"."feature_visits_id_seq" OWNED BY "public"."feature_visits"."id";
 
 
 --
@@ -4406,39 +4296,6 @@ ALTER SEQUENCE "public"."legal_holds_id_seq" OWNED BY "public"."legal_holds"."id
 
 
 --
--- Name: login_attempts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."login_attempts" (
-    "id" integer NOT NULL,
-    "username" character varying(255) NOT NULL,
-    "ip_address" character varying(45),
-    "success" boolean DEFAULT false,
-    "attempted_at" timestamp with time zone
-);
-
-
---
--- Name: login_attempts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."login_attempts_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: login_attempts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."login_attempts_id_seq" OWNED BY "public"."login_attempts"."id";
-
-
---
 -- Name: machine_categories; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4757,38 +4614,6 @@ CREATE SEQUENCE "public"."messages_id_seq"
 --
 
 ALTER SEQUENCE "public"."messages_id_seq" OWNED BY "public"."messages"."id";
-
-
---
--- Name: migration_log; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."migration_log" (
-    "id" integer NOT NULL,
-    "migration_name" character varying(255),
-    "executed_at" timestamp with time zone,
-    "status" character varying(50)
-);
-
-
---
--- Name: migration_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."migration_log_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: migration_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."migration_log_id_seq" OWNED BY "public"."migration_log"."id";
 
 
 --
@@ -5131,44 +4956,6 @@ ALTER SEQUENCE "public"."plans_id_seq" OWNED BY "public"."plans"."id";
 
 
 --
--- Name: recurring_jobs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."recurring_jobs" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "job_name" character varying(100) NOT NULL,
-    "cron_expression" character varying(100) NOT NULL,
-    "active" boolean DEFAULT true,
-    "last_run" timestamp with time zone,
-    "next_run" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."recurring_jobs" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: recurring_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."recurring_jobs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: recurring_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."recurring_jobs_id_seq" OWNED BY "public"."recurring_jobs"."id";
-
-
---
 -- Name: refresh_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5257,42 +5044,6 @@ CREATE SEQUENCE "public"."refresh_tokens_id_seq"
 --
 
 ALTER SEQUENCE "public"."refresh_tokens_id_seq" OWNED BY "public"."refresh_tokens"."id";
-
-
---
--- Name: released_subdomains; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."released_subdomains" (
-    "id" integer NOT NULL,
-    "subdomain" character varying(50) NOT NULL,
-    "original_tenant_id" integer,
-    "original_company_name" character varying(255),
-    "released_at" timestamp with time zone,
-    "reused" boolean DEFAULT false,
-    "reused_at" timestamp with time zone,
-    "new_tenant_id" integer
-);
-
-
---
--- Name: released_subdomains_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."released_subdomains_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: released_subdomains_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."released_subdomains_id_seq" OWNED BY "public"."released_subdomains"."id";
 
 
 --
@@ -6178,82 +5929,6 @@ COMMENT ON COLUMN "public"."scheduled_messages"."is_active" IS '0=cancelled, 1=p
 
 
 --
--- Name: scheduled_tasks; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."scheduled_tasks" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "task_type" character varying(50) NOT NULL,
-    "task_data" "jsonb",
-    "scheduled_at" timestamp with time zone,
-    "executed" boolean DEFAULT false,
-    "executed_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."scheduled_tasks" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: scheduled_tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."scheduled_tasks_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: scheduled_tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."scheduled_tasks_id_seq" OWNED BY "public"."scheduled_tasks"."id";
-
-
---
--- Name: security_logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."security_logs" (
-    "id" integer NOT NULL,
-    "tenant_id" integer NOT NULL,
-    "user_id" integer,
-    "action" "public"."security_logs_action" NOT NULL,
-    "ip_address" character varying(45),
-    "user_agent" "text",
-    "details" "jsonb",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-ALTER TABLE ONLY "public"."security_logs" FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: security_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."security_logs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: security_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."security_logs_id_seq" OWNED BY "public"."security_logs"."id";
-
-
---
 -- Name: shift_assignments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6631,46 +6306,6 @@ CREATE SEQUENCE "public"."shifts_id_seq"
 --
 
 ALTER SEQUENCE "public"."shifts_id_seq" OWNED BY "public"."shifts"."id";
-
-
---
--- Name: subscription_plans; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."subscription_plans" (
-    "id" integer NOT NULL,
-    "name" character varying(100) NOT NULL,
-    "code" character varying(50) NOT NULL,
-    "description" "text",
-    "price_monthly" numeric(10,2) NOT NULL,
-    "price_yearly" numeric(10,2),
-    "max_users" integer,
-    "max_storage_gb" integer,
-    "features" "jsonb",
-    "is_active" smallint DEFAULT 1,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
-);
-
-
---
--- Name: subscription_plans_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."subscription_plans_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: subscription_plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."subscription_plans_id_seq" OWNED BY "public"."subscription_plans"."id";
 
 
 --
@@ -7087,41 +6722,6 @@ CREATE SEQUENCE "public"."surveys_id_seq"
 --
 
 ALTER SEQUENCE "public"."surveys_id_seq" OWNED BY "public"."surveys"."id";
-
-
---
--- Name: system_logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."system_logs" (
-    "id" integer NOT NULL,
-    "level" "public"."system_logs_level" NOT NULL,
-    "category" character varying(50) NOT NULL,
-    "message" "text" NOT NULL,
-    "context" "jsonb",
-    "stack_trace" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
---
--- Name: system_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."system_logs_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: system_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."system_logs_id_seq" OWNED BY "public"."system_logs"."id";
 
 
 --
@@ -7672,73 +7272,6 @@ CREATE SEQUENCE "public"."usage_quotas_id_seq"
 --
 
 ALTER SEQUENCE "public"."usage_quotas_id_seq" OWNED BY "public"."usage_quotas"."id";
-
-
---
--- Name: user_2fa_backup_codes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."user_2fa_backup_codes" (
-    "id" integer NOT NULL,
-    "user_id" integer NOT NULL,
-    "code_hash" character varying(64) NOT NULL,
-    "used" boolean DEFAULT false,
-    "used_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
---
--- Name: user_2fa_backup_codes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."user_2fa_backup_codes_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: user_2fa_backup_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."user_2fa_backup_codes_id_seq" OWNED BY "public"."user_2fa_backup_codes"."id";
-
-
---
--- Name: user_2fa_secrets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE "public"."user_2fa_secrets" (
-    "id" integer NOT NULL,
-    "user_id" integer NOT NULL,
-    "secret" character varying(100) NOT NULL,
-    "enabled" boolean DEFAULT false,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
---
--- Name: user_2fa_secrets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE "public"."user_2fa_secrets_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: user_2fa_secrets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE "public"."user_2fa_secrets_id_seq" OWNED BY "public"."user_2fa_secrets"."id";
 
 
 --
@@ -8506,13 +8039,6 @@ ALTER TABLE ONLY "public"."absences" ALTER COLUMN "id" SET DEFAULT "nextval"('"p
 
 
 --
--- Name: activity_logs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."activity_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."activity_logs_id_seq"'::"regclass");
-
-
---
 -- Name: admin_area_permissions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -8548,13 +8074,6 @@ ALTER TABLE ONLY "public"."api_keys" ALTER COLUMN "id" SET DEFAULT "nextval"('"p
 
 
 --
--- Name: api_logs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."api_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."api_logs_id_seq"'::"regclass");
-
-
---
 -- Name: archived_tenant_invoices id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -8573,13 +8092,6 @@ ALTER TABLE ONLY "public"."areas" ALTER COLUMN "id" SET DEFAULT "nextval"('"publ
 --
 
 ALTER TABLE ONLY "public"."audit_trail" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."audit_trail_partitioned_id_seq"'::"regclass");
-
-
---
--- Name: backup_retention_policy id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."backup_retention_policy" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."backup_retention_policy_id_seq"'::"regclass");
 
 
 --
@@ -8716,20 +8228,6 @@ ALTER TABLE ONLY "public"."documents" ALTER COLUMN "id" SET DEFAULT "nextval"('"
 
 
 --
--- Name: email_queue id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."email_queue" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."email_queue_id_seq"'::"regclass");
-
-
---
--- Name: email_templates id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."email_templates" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."email_templates_id_seq"'::"regclass");
-
-
---
 -- Name: employee_availability id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -8748,6 +8246,13 @@ ALTER TABLE ONLY "public"."failed_file_deletions" ALTER COLUMN "id" SET DEFAULT 
 --
 
 ALTER TABLE ONLY "public"."feature_usage_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."feature_usage_logs_id_seq"'::"regclass");
+
+
+--
+-- Name: feature_visits id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."feature_visits" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."feature_visits_id_seq"'::"regclass");
 
 
 --
@@ -8814,13 +8319,6 @@ ALTER TABLE ONLY "public"."legal_holds" ALTER COLUMN "id" SET DEFAULT "nextval"(
 
 
 --
--- Name: login_attempts id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."login_attempts" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."login_attempts_id_seq"'::"regclass");
-
-
---
 -- Name: machine_categories id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -8867,13 +8365,6 @@ ALTER TABLE ONLY "public"."machines" ALTER COLUMN "id" SET DEFAULT "nextval"('"p
 --
 
 ALTER TABLE ONLY "public"."messages" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."messages_id_seq"'::"regclass");
-
-
---
--- Name: migration_log id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."migration_log" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."migration_log_id_seq"'::"regclass");
 
 
 --
@@ -8933,13 +8424,6 @@ ALTER TABLE ONLY "public"."plans" ALTER COLUMN "id" SET DEFAULT "nextval"('"publ
 
 
 --
--- Name: recurring_jobs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."recurring_jobs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."recurring_jobs_id_seq"'::"regclass");
-
-
---
 -- Name: refresh_tokens id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -8947,31 +8431,10 @@ ALTER TABLE ONLY "public"."refresh_tokens" ALTER COLUMN "id" SET DEFAULT "nextva
 
 
 --
--- Name: released_subdomains id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."released_subdomains" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."released_subdomains_id_seq"'::"regclass");
-
-
---
 -- Name: root_logs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "public"."root_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."root_logs_partitioned_id_seq"'::"regclass");
-
-
---
--- Name: scheduled_tasks id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."scheduled_tasks" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."scheduled_tasks_id_seq"'::"regclass");
-
-
---
--- Name: security_logs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."security_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."security_logs_id_seq"'::"regclass");
 
 
 --
@@ -9028,13 +8491,6 @@ ALTER TABLE ONLY "public"."shift_swap_requests" ALTER COLUMN "id" SET DEFAULT "n
 --
 
 ALTER TABLE ONLY "public"."shifts" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."shifts_id_seq"'::"regclass");
-
-
---
--- Name: subscription_plans id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."subscription_plans" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."subscription_plans_id_seq"'::"regclass");
 
 
 --
@@ -9105,13 +8561,6 @@ ALTER TABLE ONLY "public"."survey_templates" ALTER COLUMN "id" SET DEFAULT "next
 --
 
 ALTER TABLE ONLY "public"."surveys" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."surveys_id_seq"'::"regclass");
-
-
---
--- Name: system_logs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."system_logs" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."system_logs_id_seq"'::"regclass");
 
 
 --
@@ -9203,20 +8652,6 @@ ALTER TABLE ONLY "public"."tenants" ALTER COLUMN "id" SET DEFAULT "nextval"('"pu
 --
 
 ALTER TABLE ONLY "public"."usage_quotas" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."usage_quotas_id_seq"'::"regclass");
-
-
---
--- Name: user_2fa_backup_codes id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_backup_codes" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."user_2fa_backup_codes_id_seq"'::"regclass");
-
-
---
--- Name: user_2fa_secrets id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_secrets" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."user_2fa_secrets_id_seq"'::"regclass");
 
 
 --
@@ -9551,19 +8986,19 @@ ALTER TABLE ONLY "public"."audit_trail_2027_12"
 
 
 --
+-- Name: feature_visits feature_visits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."feature_visits"
+    ADD CONSTRAINT "feature_visits_pkey" PRIMARY KEY ("id");
+
+
+--
 -- Name: absences idx_18930_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "public"."absences"
     ADD CONSTRAINT "idx_18930_primary" PRIMARY KEY ("id");
-
-
---
--- Name: activity_logs idx_18938_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."activity_logs"
-    ADD CONSTRAINT "idx_18938_primary" PRIMARY KEY ("id");
 
 
 --
@@ -9607,14 +9042,6 @@ ALTER TABLE ONLY "public"."api_keys"
 
 
 --
--- Name: api_logs idx_18983_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."api_logs"
-    ADD CONSTRAINT "idx_18983_primary" PRIMARY KEY ("id");
-
-
---
 -- Name: archived_tenant_invoices idx_18990_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9628,14 +9055,6 @@ ALTER TABLE ONLY "public"."archived_tenant_invoices"
 
 ALTER TABLE ONLY "public"."areas"
     ADD CONSTRAINT "idx_18997_primary" PRIMARY KEY ("id");
-
-
---
--- Name: backup_retention_policy idx_19015_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."backup_retention_policy"
-    ADD CONSTRAINT "idx_19015_primary" PRIMARY KEY ("id");
 
 
 --
@@ -9791,22 +9210,6 @@ ALTER TABLE ONLY "public"."document_shares"
 
 
 --
--- Name: email_queue idx_19209_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."email_queue"
-    ADD CONSTRAINT "idx_19209_primary" PRIMARY KEY ("id");
-
-
---
--- Name: email_templates idx_19218_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."email_templates"
-    ADD CONSTRAINT "idx_19218_primary" PRIMARY KEY ("id");
-
-
---
 -- Name: employee_availability idx_19227_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9895,14 +9298,6 @@ ALTER TABLE ONLY "public"."legal_holds"
 
 
 --
--- Name: login_attempts idx_19320_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."login_attempts"
-    ADD CONSTRAINT "idx_19320_primary" PRIMARY KEY ("id");
-
-
---
 -- Name: machines idx_19326_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9948,14 +9343,6 @@ ALTER TABLE ONLY "public"."machine_teams"
 
 ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "idx_19366_primary" PRIMARY KEY ("id");
-
-
---
--- Name: migration_log idx_19374_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."migration_log"
-    ADD CONSTRAINT "idx_19374_primary" PRIMARY KEY ("id");
 
 
 --
@@ -10023,43 +9410,11 @@ ALTER TABLE ONLY "public"."plan_features"
 
 
 --
--- Name: recurring_jobs idx_19446_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."recurring_jobs"
-    ADD CONSTRAINT "idx_19446_primary" PRIMARY KEY ("id");
-
-
---
 -- Name: refresh_tokens idx_19452_primary; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "public"."refresh_tokens"
     ADD CONSTRAINT "idx_19452_primary" PRIMARY KEY ("id");
-
-
---
--- Name: released_subdomains idx_19460_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."released_subdomains"
-    ADD CONSTRAINT "idx_19460_primary" PRIMARY KEY ("id");
-
-
---
--- Name: scheduled_tasks idx_19474_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."scheduled_tasks"
-    ADD CONSTRAINT "idx_19474_primary" PRIMARY KEY ("id");
-
-
---
--- Name: security_logs idx_19482_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."security_logs"
-    ADD CONSTRAINT "idx_19482_primary" PRIMARY KEY ("id");
 
 
 --
@@ -10124,14 +9479,6 @@ ALTER TABLE ONLY "public"."shift_rotation_patterns"
 
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "idx_19553_primary" PRIMARY KEY ("id");
-
-
---
--- Name: subscription_plans idx_19570_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."subscription_plans"
-    ADD CONSTRAINT "idx_19570_primary" PRIMARY KEY ("id");
 
 
 --
@@ -10212,14 +9559,6 @@ ALTER TABLE ONLY "public"."survey_responses"
 
 ALTER TABLE ONLY "public"."survey_templates"
     ADD CONSTRAINT "idx_19651_primary" PRIMARY KEY ("id");
-
-
---
--- Name: system_logs idx_19659_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."system_logs"
-    ADD CONSTRAINT "idx_19659_primary" PRIMARY KEY ("id");
 
 
 --
@@ -10332,22 +9671,6 @@ ALTER TABLE ONLY "public"."usage_quotas"
 
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "idx_19802_primary" PRIMARY KEY ("id");
-
-
---
--- Name: user_2fa_backup_codes idx_19815_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_backup_codes"
-    ADD CONSTRAINT "idx_19815_primary" PRIMARY KEY ("id");
-
-
---
--- Name: user_2fa_secrets idx_19821_primary; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_secrets"
-    ADD CONSTRAINT "idx_19821_primary" PRIMARY KEY ("id");
 
 
 --
@@ -10703,6 +10026,14 @@ ALTER TABLE ONLY "public"."scheduled_messages"
 
 
 --
+-- Name: feature_visits unique_user_feature_tenant; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."feature_visits"
+    ADD CONSTRAINT "unique_user_feature_tenant" UNIQUE ("user_id", "feature", "tenant_id");
+
+
+--
 -- Name: idx_audit_trail_part_action; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10714,6 +10045,20 @@ CREATE INDEX "idx_audit_trail_part_action" ON ONLY "public"."audit_trail" USING 
 --
 
 CREATE INDEX "audit_trail_2025_01_action_idx" ON "public"."audit_trail_2025_01" USING "btree" ("action");
+
+
+--
+-- Name: idx_audit_trail_request_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_audit_trail_request_id" ON ONLY "public"."audit_trail" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
+-- Name: audit_trail_2025_01_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_01_request_id_idx" ON "public"."audit_trail_2025_01" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -10780,6 +10125,13 @@ CREATE INDEX "audit_trail_2025_02_action_idx" ON "public"."audit_trail_2025_02" 
 
 
 --
+-- Name: audit_trail_2025_02_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_02_request_id_idx" ON "public"."audit_trail_2025_02" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10812,6 +10164,13 @@ CREATE INDEX "audit_trail_2025_02_user_id_idx" ON "public"."audit_trail_2025_02"
 --
 
 CREATE INDEX "audit_trail_2025_03_action_idx" ON "public"."audit_trail_2025_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_03_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_03_request_id_idx" ON "public"."audit_trail_2025_03" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -10850,6 +10209,13 @@ CREATE INDEX "audit_trail_2025_04_action_idx" ON "public"."audit_trail_2025_04" 
 
 
 --
+-- Name: audit_trail_2025_04_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_04_request_id_idx" ON "public"."audit_trail_2025_04" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10882,6 +10248,13 @@ CREATE INDEX "audit_trail_2025_04_user_id_idx" ON "public"."audit_trail_2025_04"
 --
 
 CREATE INDEX "audit_trail_2025_05_action_idx" ON "public"."audit_trail_2025_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_05_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_05_request_id_idx" ON "public"."audit_trail_2025_05" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -10920,6 +10293,13 @@ CREATE INDEX "audit_trail_2025_06_action_idx" ON "public"."audit_trail_2025_06" 
 
 
 --
+-- Name: audit_trail_2025_06_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_06_request_id_idx" ON "public"."audit_trail_2025_06" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10952,6 +10332,13 @@ CREATE INDEX "audit_trail_2025_06_user_id_idx" ON "public"."audit_trail_2025_06"
 --
 
 CREATE INDEX "audit_trail_2025_07_action_idx" ON "public"."audit_trail_2025_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_07_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_07_request_id_idx" ON "public"."audit_trail_2025_07" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -10990,6 +10377,13 @@ CREATE INDEX "audit_trail_2025_08_action_idx" ON "public"."audit_trail_2025_08" 
 
 
 --
+-- Name: audit_trail_2025_08_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_08_request_id_idx" ON "public"."audit_trail_2025_08" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11022,6 +10416,13 @@ CREATE INDEX "audit_trail_2025_08_user_id_idx" ON "public"."audit_trail_2025_08"
 --
 
 CREATE INDEX "audit_trail_2025_09_action_idx" ON "public"."audit_trail_2025_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_09_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_09_request_id_idx" ON "public"."audit_trail_2025_09" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11060,6 +10461,13 @@ CREATE INDEX "audit_trail_2025_10_action_idx" ON "public"."audit_trail_2025_10" 
 
 
 --
+-- Name: audit_trail_2025_10_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_10_request_id_idx" ON "public"."audit_trail_2025_10" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11092,6 +10500,13 @@ CREATE INDEX "audit_trail_2025_10_user_id_idx" ON "public"."audit_trail_2025_10"
 --
 
 CREATE INDEX "audit_trail_2025_11_action_idx" ON "public"."audit_trail_2025_11" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2025_11_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_11_request_id_idx" ON "public"."audit_trail_2025_11" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11130,6 +10545,13 @@ CREATE INDEX "audit_trail_2025_12_action_idx" ON "public"."audit_trail_2025_12" 
 
 
 --
+-- Name: audit_trail_2025_12_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2025_12_request_id_idx" ON "public"."audit_trail_2025_12" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2025_12_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11162,6 +10584,13 @@ CREATE INDEX "audit_trail_2025_12_user_id_idx" ON "public"."audit_trail_2025_12"
 --
 
 CREATE INDEX "audit_trail_2026_01_action_idx" ON "public"."audit_trail_2026_01" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_01_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_01_request_id_idx" ON "public"."audit_trail_2026_01" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11200,6 +10629,13 @@ CREATE INDEX "audit_trail_2026_02_action_idx" ON "public"."audit_trail_2026_02" 
 
 
 --
+-- Name: audit_trail_2026_02_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_02_request_id_idx" ON "public"."audit_trail_2026_02" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11232,6 +10668,13 @@ CREATE INDEX "audit_trail_2026_02_user_id_idx" ON "public"."audit_trail_2026_02"
 --
 
 CREATE INDEX "audit_trail_2026_03_action_idx" ON "public"."audit_trail_2026_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_03_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_03_request_id_idx" ON "public"."audit_trail_2026_03" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11270,6 +10713,13 @@ CREATE INDEX "audit_trail_2026_04_action_idx" ON "public"."audit_trail_2026_04" 
 
 
 --
+-- Name: audit_trail_2026_04_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_04_request_id_idx" ON "public"."audit_trail_2026_04" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11302,6 +10752,13 @@ CREATE INDEX "audit_trail_2026_04_user_id_idx" ON "public"."audit_trail_2026_04"
 --
 
 CREATE INDEX "audit_trail_2026_05_action_idx" ON "public"."audit_trail_2026_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_05_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_05_request_id_idx" ON "public"."audit_trail_2026_05" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11340,6 +10797,13 @@ CREATE INDEX "audit_trail_2026_06_action_idx" ON "public"."audit_trail_2026_06" 
 
 
 --
+-- Name: audit_trail_2026_06_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_06_request_id_idx" ON "public"."audit_trail_2026_06" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11372,6 +10836,13 @@ CREATE INDEX "audit_trail_2026_06_user_id_idx" ON "public"."audit_trail_2026_06"
 --
 
 CREATE INDEX "audit_trail_2026_07_action_idx" ON "public"."audit_trail_2026_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_07_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_07_request_id_idx" ON "public"."audit_trail_2026_07" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11410,6 +10881,13 @@ CREATE INDEX "audit_trail_2026_08_action_idx" ON "public"."audit_trail_2026_08" 
 
 
 --
+-- Name: audit_trail_2026_08_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_08_request_id_idx" ON "public"."audit_trail_2026_08" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11442,6 +10920,13 @@ CREATE INDEX "audit_trail_2026_08_user_id_idx" ON "public"."audit_trail_2026_08"
 --
 
 CREATE INDEX "audit_trail_2026_09_action_idx" ON "public"."audit_trail_2026_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_09_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_09_request_id_idx" ON "public"."audit_trail_2026_09" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11480,6 +10965,13 @@ CREATE INDEX "audit_trail_2026_10_action_idx" ON "public"."audit_trail_2026_10" 
 
 
 --
+-- Name: audit_trail_2026_10_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_10_request_id_idx" ON "public"."audit_trail_2026_10" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11512,6 +11004,13 @@ CREATE INDEX "audit_trail_2026_10_user_id_idx" ON "public"."audit_trail_2026_10"
 --
 
 CREATE INDEX "audit_trail_2026_11_action_idx" ON "public"."audit_trail_2026_11" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2026_11_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_11_request_id_idx" ON "public"."audit_trail_2026_11" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11550,6 +11049,13 @@ CREATE INDEX "audit_trail_2026_12_action_idx" ON "public"."audit_trail_2026_12" 
 
 
 --
+-- Name: audit_trail_2026_12_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2026_12_request_id_idx" ON "public"."audit_trail_2026_12" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2026_12_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11582,6 +11088,13 @@ CREATE INDEX "audit_trail_2026_12_user_id_idx" ON "public"."audit_trail_2026_12"
 --
 
 CREATE INDEX "audit_trail_2027_01_action_idx" ON "public"."audit_trail_2027_01" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_01_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_01_request_id_idx" ON "public"."audit_trail_2027_01" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11620,6 +11133,13 @@ CREATE INDEX "audit_trail_2027_02_action_idx" ON "public"."audit_trail_2027_02" 
 
 
 --
+-- Name: audit_trail_2027_02_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_02_request_id_idx" ON "public"."audit_trail_2027_02" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_02_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11652,6 +11172,13 @@ CREATE INDEX "audit_trail_2027_02_user_id_idx" ON "public"."audit_trail_2027_02"
 --
 
 CREATE INDEX "audit_trail_2027_03_action_idx" ON "public"."audit_trail_2027_03" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_03_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_03_request_id_idx" ON "public"."audit_trail_2027_03" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11690,6 +11217,13 @@ CREATE INDEX "audit_trail_2027_04_action_idx" ON "public"."audit_trail_2027_04" 
 
 
 --
+-- Name: audit_trail_2027_04_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_04_request_id_idx" ON "public"."audit_trail_2027_04" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_04_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11722,6 +11256,13 @@ CREATE INDEX "audit_trail_2027_04_user_id_idx" ON "public"."audit_trail_2027_04"
 --
 
 CREATE INDEX "audit_trail_2027_05_action_idx" ON "public"."audit_trail_2027_05" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_05_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_05_request_id_idx" ON "public"."audit_trail_2027_05" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11760,6 +11301,13 @@ CREATE INDEX "audit_trail_2027_06_action_idx" ON "public"."audit_trail_2027_06" 
 
 
 --
+-- Name: audit_trail_2027_06_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_06_request_id_idx" ON "public"."audit_trail_2027_06" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_06_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11792,6 +11340,13 @@ CREATE INDEX "audit_trail_2027_06_user_id_idx" ON "public"."audit_trail_2027_06"
 --
 
 CREATE INDEX "audit_trail_2027_07_action_idx" ON "public"."audit_trail_2027_07" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_07_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_07_request_id_idx" ON "public"."audit_trail_2027_07" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11830,6 +11385,13 @@ CREATE INDEX "audit_trail_2027_08_action_idx" ON "public"."audit_trail_2027_08" 
 
 
 --
+-- Name: audit_trail_2027_08_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_08_request_id_idx" ON "public"."audit_trail_2027_08" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_08_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11862,6 +11424,13 @@ CREATE INDEX "audit_trail_2027_08_user_id_idx" ON "public"."audit_trail_2027_08"
 --
 
 CREATE INDEX "audit_trail_2027_09_action_idx" ON "public"."audit_trail_2027_09" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_09_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_09_request_id_idx" ON "public"."audit_trail_2027_09" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -11900,6 +11469,13 @@ CREATE INDEX "audit_trail_2027_10_action_idx" ON "public"."audit_trail_2027_10" 
 
 
 --
+-- Name: audit_trail_2027_10_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_10_request_id_idx" ON "public"."audit_trail_2027_10" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_10_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11935,6 +11511,13 @@ CREATE INDEX "audit_trail_2027_11_action_idx" ON "public"."audit_trail_2027_11" 
 
 
 --
+-- Name: audit_trail_2027_11_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_11_request_id_idx" ON "public"."audit_trail_2027_11" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
+
+
+--
 -- Name: audit_trail_2027_11_resource_type_resource_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11967,6 +11550,13 @@ CREATE INDEX "audit_trail_2027_11_user_id_idx" ON "public"."audit_trail_2027_11"
 --
 
 CREATE INDEX "audit_trail_2027_12_action_idx" ON "public"."audit_trail_2027_12" USING "btree" ("action");
+
+
+--
+-- Name: audit_trail_2027_12_request_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "audit_trail_2027_12_request_id_idx" ON "public"."audit_trail_2027_12" USING "btree" ("request_id") WHERE ("request_id" IS NOT NULL);
 
 
 --
@@ -12037,41 +11627,6 @@ CREATE INDEX "idx_18930_idx_type" ON "public"."absences" USING "btree" ("type");
 --
 
 CREATE INDEX "idx_18930_idx_user_id" ON "public"."absences" USING "btree" ("user_id");
-
-
---
--- Name: idx_18938_idx_action; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18938_idx_action" ON "public"."activity_logs" USING "btree" ("action");
-
-
---
--- Name: idx_18938_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18938_idx_created_at" ON "public"."activity_logs" USING "btree" ("created_at");
-
-
---
--- Name: idx_18938_idx_entity; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18938_idx_entity" ON "public"."activity_logs" USING "btree" ("entity_type", "entity_id");
-
-
---
--- Name: idx_18938_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18938_idx_tenant_id" ON "public"."activity_logs" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_18938_idx_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18938_idx_user_id" ON "public"."activity_logs" USING "btree" ("user_id");
 
 
 --
@@ -12208,41 +11763,6 @@ CREATE UNIQUE INDEX "idx_18975_unique_key_hash" ON "public"."api_keys" USING "bt
 
 
 --
--- Name: idx_18983_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18983_idx_created_at" ON "public"."api_logs" USING "btree" ("created_at");
-
-
---
--- Name: idx_18983_idx_endpoint; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18983_idx_endpoint" ON "public"."api_logs" USING "btree" ("endpoint");
-
-
---
--- Name: idx_18983_idx_status_code; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18983_idx_status_code" ON "public"."api_logs" USING "btree" ("status_code");
-
-
---
--- Name: idx_18983_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18983_idx_tenant_id" ON "public"."api_logs" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_18983_idx_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_18983_idx_user_id" ON "public"."api_logs" USING "btree" ("user_id");
-
-
---
 -- Name: idx_18990_idx_delete_after; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -12296,27 +11816,6 @@ CREATE INDEX "idx_18997_idx_areas_tenant" ON "public"."areas" USING "btree" ("te
 --
 
 CREATE INDEX "idx_18997_idx_areas_type" ON "public"."areas" USING "btree" ("type");
-
-
---
--- Name: idx_19015_idx_backup_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19015_idx_backup_type" ON "public"."backup_retention_policy" USING "btree" ("backup_type");
-
-
---
--- Name: idx_19015_idx_expires_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19015_idx_expires_at" ON "public"."backup_retention_policy" USING "btree" ("expires_at");
-
-
---
--- Name: idx_19015_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19015_idx_tenant_id" ON "public"."backup_retention_policy" USING "btree" ("tenant_id");
 
 
 --
@@ -13006,55 +12505,6 @@ CREATE INDEX "idx_19202_idx_shared_tenant" ON "public"."document_shares" USING "
 
 
 --
--- Name: idx_19209_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19209_idx_created_at" ON "public"."email_queue" USING "btree" ("created_at");
-
-
---
--- Name: idx_19209_idx_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19209_idx_status" ON "public"."email_queue" USING "btree" ("status");
-
-
---
--- Name: idx_19209_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19209_idx_tenant_id" ON "public"."email_queue" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19218_idx_is_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19218_idx_is_active" ON "public"."email_templates" USING "btree" ("is_active");
-
-
---
--- Name: idx_19218_idx_template_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19218_idx_template_key" ON "public"."email_templates" USING "btree" ("template_key");
-
-
---
--- Name: idx_19218_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19218_idx_tenant_id" ON "public"."email_templates" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19218_unique_template; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "idx_19218_unique_template" ON "public"."email_templates" USING "btree" ("tenant_id", "template_key");
-
-
---
 -- Name: idx_19227_fk_availability_created_by; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13405,13 +12855,6 @@ CREATE INDEX "idx_19312_released_by" ON "public"."legal_holds" USING "btree" ("r
 
 
 --
--- Name: idx_19320_idx_username_attempts; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19320_idx_username_attempts" ON "public"."login_attempts" USING "btree" ("username", "attempted_at");
-
-
---
 -- Name: idx_19326_created_by; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13657,13 +13100,6 @@ CREATE INDEX "idx_19366_tenant_id" ON "public"."messages" USING "btree" ("tenant
 
 
 --
--- Name: idx_19374_migration_name; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "idx_19374_migration_name" ON "public"."migration_log" USING "btree" ("migration_name");
-
-
---
 -- Name: idx_19379_idx_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13895,27 +13331,6 @@ CREATE UNIQUE INDEX "idx_19440_unique_plan_feature" ON "public"."plan_features" 
 
 
 --
--- Name: idx_19446_idx_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19446_idx_active" ON "public"."recurring_jobs" USING "btree" ("active");
-
-
---
--- Name: idx_19446_idx_next_run; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19446_idx_next_run" ON "public"."recurring_jobs" USING "btree" ("next_run");
-
-
---
--- Name: idx_19446_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19446_idx_tenant_id" ON "public"."recurring_jobs" USING "btree" ("tenant_id");
-
-
---
 -- Name: idx_19452_fk_refresh_tokens_tenant; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13955,83 +13370,6 @@ CREATE INDEX "idx_19452_idx_refresh_tokens_revoked" ON "public"."refresh_tokens"
 --
 
 CREATE INDEX "idx_19452_idx_refresh_tokens_user_tenant" ON "public"."refresh_tokens" USING "btree" ("user_id", "tenant_id");
-
-
---
--- Name: idx_19460_idx_released_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19460_idx_released_at" ON "public"."released_subdomains" USING "btree" ("released_at");
-
-
---
--- Name: idx_19460_idx_reused; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19460_idx_reused" ON "public"."released_subdomains" USING "btree" ("reused");
-
-
---
--- Name: idx_19460_idx_subdomain; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19460_idx_subdomain" ON "public"."released_subdomains" USING "btree" ("subdomain");
-
-
---
--- Name: idx_19474_idx_executed; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19474_idx_executed" ON "public"."scheduled_tasks" USING "btree" ("executed");
-
-
---
--- Name: idx_19474_idx_scheduled_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19474_idx_scheduled_at" ON "public"."scheduled_tasks" USING "btree" ("scheduled_at");
-
-
---
--- Name: idx_19474_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19474_idx_tenant_id" ON "public"."scheduled_tasks" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19482_idx_action; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19482_idx_action" ON "public"."security_logs" USING "btree" ("action");
-
-
---
--- Name: idx_19482_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19482_idx_created_at" ON "public"."security_logs" USING "btree" ("created_at");
-
-
---
--- Name: idx_19482_idx_ip_address; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19482_idx_ip_address" ON "public"."security_logs" USING "btree" ("ip_address");
-
-
---
--- Name: idx_19482_idx_tenant_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19482_idx_tenant_id" ON "public"."security_logs" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19482_idx_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19482_idx_user_id" ON "public"."security_logs" USING "btree" ("user_id");
 
 
 --
@@ -14469,27 +13807,6 @@ CREATE INDEX "idx_19553_tenant_id" ON "public"."shift_swap_requests" USING "btre
 
 
 --
--- Name: idx_19570_code; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "idx_19570_code" ON "public"."subscription_plans" USING "btree" ("code");
-
-
---
--- Name: idx_19570_idx_code; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19570_idx_code" ON "public"."subscription_plans" USING "btree" ("code");
-
-
---
--- Name: idx_19570_idx_is_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19570_idx_is_active" ON "public"."subscription_plans" USING "btree" ("is_active");
-
-
---
 -- Name: idx_19578_idx_created_by; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14858,27 +14175,6 @@ CREATE INDEX "idx_19651_idx_is_public" ON "public"."survey_templates" USING "btr
 --
 
 CREATE INDEX "idx_19651_idx_tenant_id" ON "public"."survey_templates" USING "btree" ("tenant_id");
-
-
---
--- Name: idx_19659_idx_category; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19659_idx_category" ON "public"."system_logs" USING "btree" ("category");
-
-
---
--- Name: idx_19659_idx_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19659_idx_created_at" ON "public"."system_logs" USING "btree" ("created_at");
-
-
---
--- Name: idx_19659_idx_level; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19659_idx_level" ON "public"."system_logs" USING "btree" ("level");
 
 
 --
@@ -15323,27 +14619,6 @@ CREATE UNIQUE INDEX "idx_19802_username" ON "public"."users" USING "btree" ("use
 
 
 --
--- Name: idx_19815_idx_used; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19815_idx_used" ON "public"."user_2fa_backup_codes" USING "btree" ("used");
-
-
---
--- Name: idx_19815_idx_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19815_idx_user_id" ON "public"."user_2fa_backup_codes" USING "btree" ("user_id");
-
-
---
--- Name: idx_19821_unique_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "idx_19821_unique_user_id" ON "public"."user_2fa_secrets" USING "btree" ("user_id");
-
-
---
 -- Name: idx_19827_fk_ud_assigned_by; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15572,6 +14847,34 @@ CREATE INDEX "idx_documents_is_active" ON "public"."documents" USING "btree" ("i
 --
 
 CREATE INDEX "idx_documents_message_id" ON "public"."documents" USING "btree" ("message_id") WHERE ("message_id" IS NOT NULL);
+
+
+--
+-- Name: idx_feature_visits_feature; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_feature_visits_feature" ON "public"."feature_visits" USING "btree" ("feature");
+
+
+--
+-- Name: idx_feature_visits_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_feature_visits_lookup" ON "public"."feature_visits" USING "btree" ("tenant_id", "user_id", "feature");
+
+
+--
+-- Name: idx_feature_visits_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_feature_visits_tenant" ON "public"."feature_visits" USING "btree" ("tenant_id");
+
+
+--
+-- Name: idx_feature_visits_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_feature_visits_user" ON "public"."feature_visits" USING "btree" ("user_id");
 
 
 --
@@ -17059,6 +16362,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_01_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_01_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17098,6 +16408,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_02_pkey";
+
+
+--
+-- Name: audit_trail_2025_02_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_02_request_id_idx";
 
 
 --
@@ -17143,6 +16460,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_03_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_03_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17182,6 +16506,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_04_pkey";
+
+
+--
+-- Name: audit_trail_2025_04_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_04_request_id_idx";
 
 
 --
@@ -17227,6 +16558,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_05_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_05_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17266,6 +16604,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_06_pkey";
+
+
+--
+-- Name: audit_trail_2025_06_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_06_request_id_idx";
 
 
 --
@@ -17311,6 +16656,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_07_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_07_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17350,6 +16702,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_08_pkey";
+
+
+--
+-- Name: audit_trail_2025_08_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_08_request_id_idx";
 
 
 --
@@ -17395,6 +16754,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_09_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_09_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17434,6 +16800,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_10_pkey";
+
+
+--
+-- Name: audit_trail_2025_10_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_10_request_id_idx";
 
 
 --
@@ -17479,6 +16852,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2025_11_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_11_request_id_idx";
+
+
+--
 -- Name: audit_trail_2025_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17518,6 +16898,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2025_12_pkey";
+
+
+--
+-- Name: audit_trail_2025_12_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2025_12_request_id_idx";
 
 
 --
@@ -17563,6 +16950,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_01_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_01_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17602,6 +16996,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_02_pkey";
+
+
+--
+-- Name: audit_trail_2026_02_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_02_request_id_idx";
 
 
 --
@@ -17647,6 +17048,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_03_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_03_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17686,6 +17094,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_04_pkey";
+
+
+--
+-- Name: audit_trail_2026_04_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_04_request_id_idx";
 
 
 --
@@ -17731,6 +17146,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_05_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_05_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17770,6 +17192,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_06_pkey";
+
+
+--
+-- Name: audit_trail_2026_06_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_06_request_id_idx";
 
 
 --
@@ -17815,6 +17244,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_07_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_07_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17854,6 +17290,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_08_pkey";
+
+
+--
+-- Name: audit_trail_2026_08_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_08_request_id_idx";
 
 
 --
@@ -17899,6 +17342,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_09_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_09_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -17938,6 +17388,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_10_pkey";
+
+
+--
+-- Name: audit_trail_2026_10_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_10_request_id_idx";
 
 
 --
@@ -17983,6 +17440,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2026_11_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_11_request_id_idx";
+
+
+--
 -- Name: audit_trail_2026_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18022,6 +17486,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2026_12_pkey";
+
+
+--
+-- Name: audit_trail_2026_12_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2026_12_request_id_idx";
 
 
 --
@@ -18067,6 +17538,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_01_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_01_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_01_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18106,6 +17584,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_02_pkey";
+
+
+--
+-- Name: audit_trail_2027_02_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_02_request_id_idx";
 
 
 --
@@ -18151,6 +17636,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_03_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_03_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_03_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18190,6 +17682,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_04_pkey";
+
+
+--
+-- Name: audit_trail_2027_04_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_04_request_id_idx";
 
 
 --
@@ -18235,6 +17734,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_05_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_05_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_05_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18274,6 +17780,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_06_pkey";
+
+
+--
+-- Name: audit_trail_2027_06_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_06_request_id_idx";
 
 
 --
@@ -18319,6 +17832,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_07_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_07_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_07_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18358,6 +17878,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_08_pkey";
+
+
+--
+-- Name: audit_trail_2027_08_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_08_request_id_idx";
 
 
 --
@@ -18403,6 +17930,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_09_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_09_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_09_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18442,6 +17976,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_10_pkey";
+
+
+--
+-- Name: audit_trail_2027_10_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_10_request_id_idx";
 
 
 --
@@ -18487,6 +18028,13 @@ ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."a
 
 
 --
+-- Name: audit_trail_2027_11_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_11_request_id_idx";
+
+
+--
 -- Name: audit_trail_2027_11_resource_type_resource_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -18526,6 +18074,13 @@ ALTER INDEX "public"."idx_audit_trail_part_action" ATTACH PARTITION "public"."au
 --
 
 ALTER INDEX "public"."audit_trail_partitioned_pkey" ATTACH PARTITION "public"."audit_trail_2027_12_pkey";
+
+
+--
+-- Name: audit_trail_2027_12_request_id_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX "public"."idx_audit_trail_request_id" ATTACH PARTITION "public"."audit_trail_2027_12_request_id_idx";
 
 
 --
@@ -20111,13 +19666,6 @@ CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."departme
 
 
 --
--- Name: email_templates on_update_current_timestamp; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."email_templates" FOR EACH ROW EXECUTE FUNCTION "public"."on_update_current_timestamp_email_templates"();
-
-
---
 -- Name: employee_availability on_update_current_timestamp; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20174,13 +19722,6 @@ CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."plans" F
 
 
 --
--- Name: scheduled_tasks on_update_current_timestamp; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."scheduled_tasks" FOR EACH ROW EXECUTE FUNCTION "public"."on_update_current_timestamp_scheduled_tasks"();
-
-
---
 -- Name: shift_assignments on_update_current_timestamp; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20220,13 +19761,6 @@ CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."shift_sw
 --
 
 CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."shifts" FOR EACH ROW EXECUTE FUNCTION "public"."on_update_current_timestamp_shifts"();
-
-
---
--- Name: subscription_plans on_update_current_timestamp; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER "on_update_current_timestamp" BEFORE UPDATE ON "public"."subscription_plans" FOR EACH ROW EXECUTE FUNCTION "public"."on_update_current_timestamp_subscription_plans"();
 
 
 --
@@ -20328,6 +19862,13 @@ CREATE TRIGGER "prevent_plans_delete" BEFORE DELETE ON "public"."plans" FOR EACH
 
 
 --
+-- Name: feature_visits trigger_feature_visits_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER "trigger_feature_visits_updated_at" BEFORE UPDATE ON "public"."feature_visits" FOR EACH ROW EXECUTE FUNCTION "public"."update_feature_visits_updated_at"();
+
+
+--
 -- Name: areas update_areas_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20367,13 +19908,6 @@ CREATE TRIGGER "update_conversations_updated_at" BEFORE UPDATE ON "public"."conv
 --
 
 CREATE TRIGGER "update_departments_updated_at" BEFORE UPDATE ON "public"."departments" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
---
--- Name: email_templates update_email_templates_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER "update_email_templates_updated_at" BEFORE UPDATE ON "public"."email_templates" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 --
@@ -20465,13 +19999,6 @@ CREATE TRIGGER "update_shift_swap_requests_updated_at" BEFORE UPDATE ON "public"
 --
 
 CREATE TRIGGER "update_shifts_updated_at" BEFORE UPDATE ON "public"."shifts" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
---
--- Name: subscription_plans update_subscription_plans_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER "update_subscription_plans_updated_at" BEFORE UPDATE ON "public"."subscription_plans" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 --
@@ -20569,14 +20096,6 @@ ALTER TABLE ONLY "public"."absences"
 
 
 --
--- Name: activity_logs activity_logs_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."activity_logs"
-    ADD CONSTRAINT "activity_logs_ibfk_1" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
---
 -- Name: admin_department_permissions admin_department_permissions_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -20654,14 +20173,6 @@ ALTER TABLE ONLY "public"."api_keys"
 
 ALTER TABLE ONLY "public"."api_keys"
     ADD CONSTRAINT "api_keys_ibfk_2" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: api_logs api_logs_ibfk_2; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."api_logs"
-    ADD CONSTRAINT "api_logs_ibfk_2" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE SET NULL;
 
 
 --
@@ -20961,19 +20472,19 @@ ALTER TABLE ONLY "public"."feature_usage_logs"
 
 
 --
--- Name: activity_logs fk_activity_logs_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: feature_visits feature_visits_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."activity_logs"
-    ADD CONSTRAINT "fk_activity_logs_tenant" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE RESTRICT ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."feature_visits"
+    ADD CONSTRAINT "feature_visits_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE CASCADE;
 
 
 --
--- Name: api_logs fk_api_logs_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: feature_visits feature_visits_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "public"."api_logs"
-    ADD CONSTRAINT "fk_api_logs_tenant" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."feature_visits"
+    ADD CONSTRAINT "feature_visits_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
 
 
 --
@@ -21201,14 +20712,6 @@ ALTER TABLE ONLY "public"."documents"
 
 
 --
--- Name: email_templates fk_email_templates_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."email_templates"
-    ADD CONSTRAINT "fk_email_templates_tenant" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: tenant_deletion_queue fk_emergency_stopped_by; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -21430,14 +20933,6 @@ ALTER TABLE ONLY "public"."shift_rotation_patterns"
 
 ALTER TABLE ONLY "public"."tenant_deletion_queue"
     ADD CONSTRAINT "fk_second_approver" FOREIGN KEY ("second_approver_id") REFERENCES "public"."users"("id") ON DELETE SET NULL;
-
-
---
--- Name: security_logs fk_security_logs_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."security_logs"
-    ADD CONSTRAINT "fk_security_logs_tenant" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -22033,14 +21528,6 @@ ALTER TABLE ONLY "public"."plan_features"
 
 
 --
--- Name: recurring_jobs recurring_jobs_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."recurring_jobs"
-    ADD CONSTRAINT "recurring_jobs_ibfk_1" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
 -- Name: scheduled_messages scheduled_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -22062,22 +21549,6 @@ ALTER TABLE ONLY "public"."scheduled_messages"
 
 ALTER TABLE ONLY "public"."scheduled_messages"
     ADD CONSTRAINT "scheduled_messages_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE CASCADE;
-
-
---
--- Name: scheduled_tasks scheduled_tasks_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."scheduled_tasks"
-    ADD CONSTRAINT "scheduled_tasks_ibfk_1" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: security_logs security_logs_ibfk_2; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."security_logs"
-    ADD CONSTRAINT "security_logs_ibfk_2" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE SET NULL;
 
 
 --
@@ -22521,22 +21992,6 @@ ALTER TABLE ONLY "public"."usage_quotas"
 
 
 --
--- Name: user_2fa_backup_codes user_2fa_backup_codes_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_backup_codes"
-    ADD CONSTRAINT "user_2fa_backup_codes_ibfk_1" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: user_2fa_secrets user_2fa_secrets_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY "public"."user_2fa_secrets"
-    ADD CONSTRAINT "user_2fa_secrets_ibfk_1" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
 -- Name: user_sessions user_sessions_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -22599,12 +22054,6 @@ ALTER TABLE ONLY "public"."user_teams"
 ALTER TABLE "public"."absences" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: activity_logs; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."activity_logs" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: admin_area_permissions; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22635,12 +22084,6 @@ ALTER TABLE "public"."admin_permission_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."api_keys" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: api_logs; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."api_logs" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: areas; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22651,12 +22094,6 @@ ALTER TABLE "public"."areas" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "public"."audit_trail" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: backup_retention_policy; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."backup_retention_policy" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: blackboard_comments; Type: ROW SECURITY; Schema: public; Owner: -
@@ -22780,18 +22217,6 @@ ALTER TABLE "public"."document_read_status" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."documents" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: email_queue; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."email_queue" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: email_templates; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."email_templates" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: employee_availability; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22802,6 +22227,12 @@ ALTER TABLE "public"."employee_availability" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "public"."feature_usage_logs" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: feature_visits; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE "public"."feature_visits" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: kvp_comments; Type: ROW SECURITY; Schema: public; Owner: -
@@ -22903,12 +22334,6 @@ CREATE POLICY "participant_isolation" ON "public"."messages" AS RESTRICTIVE USIN
 ALTER TABLE "public"."payment_history" ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: recurring_jobs; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."recurring_jobs" ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: refresh_tokens; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22925,18 +22350,6 @@ ALTER TABLE "public"."root_logs" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "public"."scheduled_messages" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: scheduled_tasks; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."scheduled_tasks" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: security_logs; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE "public"."security_logs" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: shift_assignments; Type: ROW SECURITY; Schema: public; Owner: -
@@ -23090,13 +22503,6 @@ CREATE POLICY "tenant_isolation" ON "public"."absences" USING (((NULLIF("current
 
 
 --
--- Name: activity_logs tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."activity_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
 -- Name: admin_area_permissions tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -23132,13 +22538,6 @@ CREATE POLICY "tenant_isolation" ON "public"."api_keys" USING (((NULLIF("current
 
 
 --
--- Name: api_logs tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."api_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
 -- Name: areas tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -23150,13 +22549,6 @@ CREATE POLICY "tenant_isolation" ON "public"."areas" USING (((NULLIF("current_se
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."audit_trail" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: backup_retention_policy tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."backup_retention_policy" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -23251,20 +22643,6 @@ CREATE POLICY "tenant_isolation" ON "public"."documents" USING (((NULLIF("curren
 
 
 --
--- Name: email_queue tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."email_queue" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: email_templates tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."email_templates" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
 -- Name: employee_availability tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -23276,6 +22654,13 @@ CREATE POLICY "tenant_isolation" ON "public"."employee_availability" USING (((NU
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."feature_usage_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
+
+
+--
+-- Name: feature_visits tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "tenant_isolation" ON "public"."feature_visits" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -23384,13 +22769,6 @@ CREATE POLICY "tenant_isolation" ON "public"."payment_history" USING (((NULLIF("
 
 
 --
--- Name: recurring_jobs tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."recurring_jobs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
 -- Name: refresh_tokens tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -23409,20 +22787,6 @@ CREATE POLICY "tenant_isolation" ON "public"."root_logs" USING (((NULLIF("curren
 --
 
 CREATE POLICY "tenant_isolation" ON "public"."scheduled_messages" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: scheduled_tasks tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."scheduled_tasks" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
-
-
---
--- Name: security_logs tenant_isolation; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "tenant_isolation" ON "public"."security_logs" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
 
 
 --
@@ -23727,5 +23091,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 81N43cjQC0fTXGjKElzstT2ggu1cJFH6GWX029BtjM5Wcig1Vgrii2RpiHc9JNj
+\unrestrict Rd1pkkdHOZlnw7z4YDcnQuq9SFe0gXVpxOOLoyeQ7YDKMiq3WHV8oAKY0cEkftu
 

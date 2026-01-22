@@ -245,6 +245,15 @@ export interface FormState {
 }
 
 /**
+ * Convert operatingHours to integer (runtime defense for string inputs)
+ */
+function parseOperatingHours(value: number | null): number | null {
+  if (value === null) return null;
+  const hours = typeof value === 'string' ? Number(value) : value;
+  return Number.isNaN(hours) ? null : Math.round(hours);
+}
+
+/**
  * Build MachineFormData from form state
  */
 export function buildMachineFormData(form: FormState): MachineFormData {
@@ -260,7 +269,9 @@ export function buildMachineFormData(form: FormState): MachineFormData {
   if (form.departmentId !== null) data.departmentId = form.departmentId;
   if (form.areaId !== null) data.areaId = form.areaId;
   if (form.machineType) data.machineType = form.machineType;
-  if (form.operatingHours !== null) data.operatingHours = form.operatingHours;
+
+  const hours = parseOperatingHours(form.operatingHours);
+  if (hours !== null) data.operatingHours = hours;
 
   // Convert date to ISO format if provided
   if (form.nextMaintenance) {
@@ -283,7 +294,7 @@ export function populateFormFromMachine(machine: Machine): FormState {
     areaId: machine.areaId ?? null,
     machineType: machine.machineType ?? '',
     status: machine.status,
-    operatingHours: machine.operatingHours ?? null,
+    operatingHours: parseOperatingHours(machine.operatingHours ?? null),
     nextMaintenance: formatDateForInput(machine.nextMaintenance),
   };
 }

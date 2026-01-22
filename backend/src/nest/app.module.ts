@@ -36,6 +36,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
+import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
@@ -141,6 +142,7 @@ import { UsersModule } from './users/users.module.js';
     CalendarModule,
     DocumentsModule,
     BlackboardModule,
+    FeatureVisitsModule,
     FeaturesModule,
     KvpModule,
     LogsModule,

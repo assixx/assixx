@@ -350,7 +350,7 @@ export class ChatService {
   async getChatUsers(query: GetUsersQuery): Promise<{ users: ChatUser[]; total: number }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.log(`Getting chat users for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Getting chat users for tenant ${tenantId}, user ${userId}`);
 
     const currentUser = await this.getCurrentUserPermissions(tenantId, userId);
     const users = await this.fetchChatUsersByPermissions(tenantId, userId, currentUser);
@@ -472,7 +472,7 @@ export class ChatService {
   ): Promise<{ data: Conversation[]; pagination: PaginationMeta }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.log(`Getting conversations for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Getting conversations for tenant ${tenantId}, user ${userId}`);
 
     const page = query.page ?? 1;
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));

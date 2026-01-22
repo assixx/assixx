@@ -705,7 +705,7 @@ ORDER BY total_exec_time DESC LIMIT 10;"
 
 ### Best Practices
 
-1. **Regelmaessig pruefen:** Woechentlich Top-10 Queries analysieren
+1. **Regelmaessig pruefen:** Wöchentlich Top-10 Queries analysieren
 2. **Nach Deployments:** Neue langsame Queries identifizieren
 3. **N+1 Detection:** Queries mit >1000 calls untersuchen
 4. **Index-Optimierung:** Langsame Queries mit EXPLAIN ANALYZE pruefen

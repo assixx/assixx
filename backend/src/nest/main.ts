@@ -353,7 +353,9 @@ async function bootstrap(): Promise<void> {
   // Development: pino-pretty for readable output
   // Production: JSON to stdout (Docker logs)
   const pinoLoggerConfig = {
-    level: process.env['LOG_LEVEL'] ?? (isProduction ? 'info' : 'debug'),
+    // Default to 'info' - DEBUG only via explicit LOG_LEVEL=debug
+    // Best practice: INFO shows significant events, DEBUG for active troubleshooting
+    level: process.env['LOG_LEVEL'] ?? 'info',
     // Only include transport in development (pino-pretty)
     // Production uses JSON to stdout
     ...(isProduction ?

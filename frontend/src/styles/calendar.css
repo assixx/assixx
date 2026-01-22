@@ -188,13 +188,42 @@
 }
 
 .ec-event-area {
-  border-color: #1abc9c !important;
-  background-color: #1abc9c !important;
+  border-color: #e53935 !important;
+  background-color: #e53935 !important;
 }
 
 .ec-event-personal {
   border-color: #9b59b6 !important;
   background-color: #9b59b6 !important;
+}
+
+/* ============================================================================
+   MULTI-ASSIGNMENT GRADIENT COLORS
+   Combinations of area (#e53935), department (#e67e22), team (#2ecc71)
+   ============================================================================ */
+
+/* Area + Department */
+.ec-event-area-department {
+  border-color: #e53935 !important;
+  background: linear-gradient(135deg, #e53935 0%, #e67e22 100%) !important;
+}
+
+/* Area + Team */
+.ec-event-area-team {
+  border-color: #e53935 !important;
+  background: linear-gradient(135deg, #e53935 0%, #2ecc71 100%) !important;
+}
+
+/* Department + Team */
+.ec-event-department-team {
+  border-color: #e67e22 !important;
+  background: linear-gradient(135deg, #e67e22 0%, #2ecc71 100%) !important;
+}
+
+/* Area + Department + Team */
+.ec-event-area-department-team {
+  border-color: #e53935 !important;
+  background: linear-gradient(135deg, #e53935 0%, #e67e22 50%, #2ecc71 100%) !important;
 }
 
 /* ============================================================================
@@ -287,6 +316,18 @@
   color: var(--text-secondary);
 }
 
+.event-time--created {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.event-time--created i {
+  font-size: 0.75rem;
+}
+
 .event-details {
   flex: 1;
 }
@@ -311,6 +352,7 @@
 
 .event-level {
   display: inline-block;
+  width: fit-content; /* Prevents expansion during CSR - Tailwind @layer base fix */
 
   margin-top: 5px;
   padding: 2px 8px;
@@ -333,11 +375,23 @@
 }
 
 .event-level-area {
-  background-color: #1abc9c;
+  background-color: #e53935;
 }
 
 .event-level-personal {
   background-color: #9b59b6;
+}
+
+/* Event badges container for multiple assignments */
+.event-badges {
+  display: grid;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.event-badges .event-level {
+  margin-top: 0; /* Remove margin since container handles spacing */
 }
 
 /* ============================================================================
@@ -377,7 +431,7 @@
 }
 
 .legend-area {
-  background-color: #1abc9c;
+  background-color: #e53935;
 }
 
 .legend-personal {
@@ -401,8 +455,8 @@
 #eventDetailContent p {
   margin-bottom: 20px;
   padding: 15px;
-  border-left: 3px solid var(--primary-color);
   border-radius: var(--radius-xl);
+  border: 1px solid rgb(255 255 255 / 8%);
 
   font-size: 1rem;
   line-height: 1.6;

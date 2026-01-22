@@ -36,9 +36,12 @@ export interface CalendarEvent {
   location?: string;
   orgLevel: OrgLevel;
   orgId?: number;
+  departmentId?: number | null;
+  teamId?: number | null;
+  areaId?: number | null;
   color?: string;
   reminderMinutes?: number;
-  createdBy: number;
+  userId: number; // Creator ID (backend sends userId, not createdBy)
   createdAt: string;
   updatedAt: string;
   creatorName?: string;
@@ -70,6 +73,8 @@ export interface EventAttendee {
 export interface Department {
   id: number;
   name: string;
+  areaId?: number;
+  areaName?: string;
 }
 
 /**
@@ -87,6 +92,7 @@ export interface Team {
 export interface Area {
   id: number;
   name: string;
+  departmentCount?: number;
 }
 
 /**
@@ -141,10 +147,9 @@ export interface EventFormData {
   allDay: boolean;
   location: string;
   orgLevel: OrgLevel;
-  departmentId?: number;
-  teamId?: number;
-  areaId?: number;
-  reminderMinutes?: number;
+  departmentIds: number[];
+  teamIds: number[];
+  areaIds: number[];
   attendeeIds?: number[];
   recurrence?: RecurrenceType;
   recurrenceEndType?: RecurrenceEndType;

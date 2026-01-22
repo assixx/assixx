@@ -161,7 +161,7 @@ export class AreasService {
    * List all areas for a tenant
    */
   async listAreas(tenantId: number, query: ListAreasQueryDto): Promise<AreaResponse[]> {
-    this.logger.log(`Fetching areas for tenant ${tenantId}`);
+    this.logger.debug(`Fetching areas for tenant ${tenantId}`);
 
     const { whereClause, params } = this.buildFilteredQuery(query);
     const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause} GROUP BY a.id ORDER BY a.name`;
@@ -175,7 +175,7 @@ export class AreasService {
    * Get a single area by ID
    */
   async getAreaById(id: number, tenantId: number): Promise<AreaResponse> {
-    this.logger.log(`Fetching area ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Fetching area ${id} for tenant ${tenantId}`);
 
     const query = `${this.FIND_ALL_AREAS_QUERY} AND a.id = $2 GROUP BY a.id`;
     const [rows] = await execute<AreaRow[]>(query, [tenantId, id]);
@@ -191,7 +191,7 @@ export class AreasService {
    * Get area statistics
    */
   async getAreaStats(tenantId: number): Promise<AreaStatsResponse> {
-    this.logger.log(`Fetching area stats for tenant ${tenantId}`);
+    this.logger.debug(`Fetching area stats for tenant ${tenantId}`);
 
     interface StatsRow extends RowDataPacket {
       total_areas: string;

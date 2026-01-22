@@ -143,7 +143,7 @@ export class AdminPermissionsService {
    * Get permissions for a specific admin/user
    */
   async getAdminPermissions(userId: number, tenantId: number): Promise<AdminPermissionsResponse> {
-    this.logger.log(`Getting permissions for user ${userId}, tenant ${tenantId}`);
+    this.logger.debug(`Getting permissions for user ${userId}, tenant ${tenantId}`);
 
     const { hasFullAccess } = await this.getUserRoleInfo(userId, tenantId);
     const areas = await this.getAreaPermissions(userId, tenantId);
@@ -378,6 +378,7 @@ export class AdminPermissionsService {
 
   /**
    * Set area permissions for a user
+   * Also cleans up user_departments and user_teams entries that are outside the allowed areas
    */
   async setAreaPermissions(
     userId: number,
@@ -424,11 +425,76 @@ export class AdminPermissionsService {
       );
     }
 
+    // Clean up user_departments outside allowed areas
+    await this.cleanupEmployeeMemberships(userId, areaIds, tenantId);
+
     await this.createAuditLog(
       'update_admin_area_permissions',
       modifiedBy,
       tenantId,
       `Updated area permissions for user ${userId}: ${areaIds.length} areas`,
+    );
+  }
+
+  /**
+   * Clean up user_departments and user_teams entries that are outside the allowed areas
+   * This ensures admin permissions and employee memberships stay in sync
+   */
+  private async cleanupEmployeeMemberships(
+    userId: number,
+    allowedAreaIds: number[],
+    tenantId: number,
+  ): Promise<void> {
+    if (allowedAreaIds.length === 0) {
+      // No area permissions = remove ALL employee memberships
+      this.logger.log(`Removing all employee memberships for user ${userId} (no area permissions)`);
+
+      await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
+        userId,
+        tenantId,
+      ]);
+      await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
+        userId,
+        tenantId,
+      ]);
+      return;
+    }
+
+    // Remove user_teams for teams in departments outside allowed areas
+    const teamsDeleted = await this.db.query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM user_teams ut
+        WHERE ut.user_id = $1
+          AND ut.tenant_id = $2
+          AND ut.team_id IN (
+            SELECT t.id FROM teams t
+            JOIN departments d ON t.department_id = d.id
+            WHERE d.area_id IS NULL OR d.area_id NOT IN (SELECT unnest($3::int[]))
+          )
+        RETURNING 1
+      ) SELECT COUNT(*)::text as count FROM deleted`,
+      [userId, tenantId, allowedAreaIds],
+    );
+    this.logger.debug(
+      `Removed ${teamsDeleted[0]?.count ?? 0} team memberships outside allowed areas`,
+    );
+
+    // Remove user_departments for departments outside allowed areas
+    const deptsDeleted = await this.db.query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM user_departments ud
+        WHERE ud.user_id = $1
+          AND ud.tenant_id = $2
+          AND ud.department_id IN (
+            SELECT d.id FROM departments d
+            WHERE d.area_id IS NULL OR d.area_id NOT IN (SELECT unnest($3::int[]))
+          )
+        RETURNING 1
+      ) SELECT COUNT(*)::text as count FROM deleted`,
+      [userId, tenantId, allowedAreaIds],
+    );
+    this.logger.debug(
+      `Removed ${deptsDeleted[0]?.count ?? 0} department memberships outside allowed areas`,
     );
   }
 

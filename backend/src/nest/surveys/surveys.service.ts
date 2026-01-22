@@ -279,7 +279,7 @@ export class SurveysService {
       limit?: number | undefined;
     },
   ): Promise<unknown[]> {
-    this.logger.log(`Listing surveys for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Listing surveys for tenant ${tenantId}, user ${userId}`);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
@@ -504,7 +504,7 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<unknown> {
-    this.logger.log(`Getting survey ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting survey ${String(id)} for tenant ${tenantId}`);
     let survey: DbSurvey | null;
     if (typeof id === 'string') {
       survey = await this.getSurveyByUUID(id, tenantId);
@@ -916,7 +916,7 @@ export class SurveysService {
   }
 
   async getTemplates(tenantId: number): Promise<unknown[]> {
-    this.logger.log(`Getting templates for tenant ${tenantId}`);
+    this.logger.debug(`Getting templates for tenant ${tenantId}`);
     const templateRows = await this.db.query<DbSurveyTemplate>(
       `SELECT * FROM survey_templates WHERE tenant_id = $1 OR is_public = true ORDER BY name`,
       [tenantId],
@@ -1006,7 +1006,7 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<SurveyStatisticsResponse> {
-    this.logger.log(`Getting statistics for survey ${String(surveyIdOrUuid)}`);
+    this.logger.debug(`Getting statistics for survey ${String(surveyIdOrUuid)}`);
 
     const { survey, surveyId } = await this.resolveSurveyOrThrow(surveyIdOrUuid, tenantId);
 
@@ -1262,7 +1262,7 @@ export class SurveysService {
     _userId: number,
     options: { page: number; limit: number },
   ): Promise<PaginatedResponsesResult> {
-    this.logger.log(`Getting all responses for survey ${surveyId}`);
+    this.logger.debug(`Getting all responses for survey ${surveyId}`);
     if (userRole !== 'root' && userRole !== 'admin') {
       throw new ForbiddenException('No permission');
     }
@@ -1339,7 +1339,7 @@ export class SurveysService {
     userId: number,
     tenantId: number,
   ): Promise<SurveyResponse | null> {
-    this.logger.log(`Getting user ${userId} response to survey ${surveyId}`);
+    this.logger.debug(`Getting user ${userId} response to survey ${surveyId}`);
     const responseRows = await this.db.query<DbSurveyResponse>(
       `SELECT sr.* FROM survey_responses sr WHERE sr.survey_id = $1 AND sr.user_id = $2 AND sr.tenant_id = $3
        ORDER BY sr.started_at DESC LIMIT 1`,
@@ -1362,7 +1362,7 @@ export class SurveysService {
     userRole: string,
     userId: number,
   ): Promise<SurveyResponse> {
-    this.logger.log(`Getting response ${responseId} for survey ${surveyId}`);
+    this.logger.debug(`Getting response ${responseId} for survey ${surveyId}`);
     const responseRows = await this.db.query<DbSurveyResponse>(
       `SELECT sr.*, u.first_name, u.last_name, u.username FROM survey_responses sr
        LEFT JOIN users u ON sr.user_id = u.id WHERE sr.id = $1 AND sr.survey_id = $2 AND sr.tenant_id = $3`,
@@ -1417,6 +1417,20 @@ export class SurveysService {
       `UPDATE survey_responses SET completed_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [responseId, tenantId],
     );
+
+    // Log activity to root_logs
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'survey',
+      responseId,
+      `Umfrage-Antwort aktualisiert: Survey #${surveyId}`,
+      {
+        surveyId,
+        responseId,
+      },
+    );
+
     return { message: 'Response updated successfully' };
   }
 

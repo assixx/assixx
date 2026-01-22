@@ -147,7 +147,7 @@ export class TeamsService {
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
-    WHERE t.tenant_id = $1 AND t.is_active = 1
+    WHERE t.tenant_id = $1 AND t.is_active != 4
     ORDER BY t.name`;
 
   /**
@@ -179,7 +179,7 @@ export class TeamsService {
    * List all teams for a tenant
    */
   async listTeams(tenantId: number, filters?: TeamFilters): Promise<TeamResponse[]> {
-    this.logger.log(`Fetching teams for tenant ${tenantId}`);
+    this.logger.debug(`Fetching teams for tenant ${tenantId}`);
 
     const [rows] = await execute<TeamRow[]>(this.FIND_ALL_TEAMS_QUERY, [tenantId]);
 
@@ -205,7 +205,7 @@ export class TeamsService {
    * Get a single team by ID
    */
   async getTeamById(id: number, tenantId: number): Promise<TeamResponse> {
-    this.logger.log(`Fetching team ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Fetching team ${id} for tenant ${tenantId}`);
 
     const [rows] = await execute<TeamRow[]>(
       `SELECT t.*,
@@ -543,7 +543,7 @@ export class TeamsService {
    * Get team members
    */
   async getTeamMembers(id: number, tenantId: number): Promise<TeamMember[]> {
-    this.logger.log(`Fetching members for team ${id}`);
+    this.logger.debug(`Fetching members for team ${id}`);
 
     const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
 
@@ -668,7 +668,7 @@ export class TeamsService {
    * Get team machines
    */
   async getTeamMachines(teamId: number, tenantId: number): Promise<TeamMachine[]> {
-    this.logger.log(`Fetching machines for team ${teamId}`);
+    this.logger.debug(`Fetching machines for team ${teamId}`);
 
     interface MachineRow extends RowDataPacket {
       id: number;

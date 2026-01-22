@@ -113,6 +113,9 @@ function buildTransport(): TransportSingleOptions | TransportMultiOptions | unde
   const hasLokiTargets = lokiTargets.length > 0;
 
   // Development mode
+  // Use LOG_LEVEL env var or default from LOG_LEVELS constant (info)
+  const level = process.env['LOG_LEVEL'] ?? getLogLevel();
+
   if (!isProduction) {
     if (hasLokiTargets) {
       return {
@@ -125,9 +128,9 @@ function buildTransport(): TransportSingleOptions | TransportMultiOptions | unde
               ignore: 'pid,hostname',
               singleLine: false,
             },
-            level: 'debug',
+            level, // Use computed level, not hardcoded 'debug'
           },
-          ...buildLokiTransportTargets('debug'),
+          ...buildLokiTransportTargets(level),
         ],
       };
     }

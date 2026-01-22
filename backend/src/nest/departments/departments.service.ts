@@ -176,7 +176,7 @@ export class DepartmentsService {
     tenantId: number,
     includeExtended: boolean = true,
   ): Promise<DepartmentResponse[]> {
-    this.logger.log(`Fetching departments for tenant ${tenantId}`);
+    this.logger.debug(`Fetching departments for tenant ${tenantId}`);
 
     try {
       const [rows] = await execute<DepartmentRow[]>(this.FIND_ALL_DEPARTMENTS_QUERY, [
@@ -230,7 +230,7 @@ export class DepartmentsService {
    * Note: Does NOT filter by is_active to allow fetching inactive/archived departments
    */
   async getDepartmentById(id: number, tenantId: number): Promise<DepartmentResponse> {
-    this.logger.log(`Fetching department ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Fetching department ${id} for tenant ${tenantId}`);
 
     try {
       const [rows] = await execute<DepartmentRow[]>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
@@ -624,7 +624,7 @@ export class DepartmentsService {
    * Get department members
    */
   async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
-    this.logger.log(`Fetching members for department ${id}`);
+    this.logger.debug(`Fetching members for department ${id}`);
 
     const [existing] = await execute<DepartmentRow[]>(
       'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
@@ -672,7 +672,7 @@ export class DepartmentsService {
    * Get department statistics
    */
   async getDepartmentStats(tenantId: number): Promise<DepartmentStats> {
-    this.logger.log(`Fetching department stats for tenant ${tenantId}`);
+    this.logger.debug(`Fetching department stats for tenant ${tenantId}`);
 
     interface CountResult extends RowDataPacket {
       count: string;

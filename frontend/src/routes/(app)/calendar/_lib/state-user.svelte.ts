@@ -1,6 +1,12 @@
 // =============================================================================
 // CALENDAR STATE - USER MODULE
 // User state, role management, and permissions
+//
+// ADR-010: Permission checks respect has_full_access flag
+// - Root: always full access
+// - Admin with has_full_access=true: full access
+// - Admin without full access: only own events (area permissions checked by backend)
+// - Employee: only own events
 // =============================================================================
 
 import type { CalendarEvent } from './types';
@@ -8,26 +14,45 @@ import type { CalendarEvent } from './types';
 function createUserState() {
   let currentUserId = $state<number | null>(null);
   let isAdmin = $state(false);
+  let isRoot = $state(false);
+  let hasFullAccess = $state(false);
   let userRole = $state<string | null>(null);
 
-  function setUser(user: { id: number; role?: string }) {
+  function setUser(user: { id: number; role?: string; hasFullAccess?: boolean }) {
     currentUserId = user.id;
     userRole = user.role ?? null;
+    isRoot = user.role === 'root';
     isAdmin = user.role === 'admin' || user.role === 'root';
+    hasFullAccess = user.hasFullAccess ?? false;
   }
 
+  /**
+   * Check if user has management access to event (ADR-010 compliant)
+   * - Root: always
+   * - Admin with has_full_access: always
+   * - Others: only their own events
+   */
+  function hasEventManagementAccess(event: CalendarEvent): boolean {
+    if (isRoot) return true;
+    if (isAdmin && hasFullAccess) return true;
+    return event.userId === currentUserId;
+  }
+
+  /** Check if user can edit event */
   function canEditEvent(event: CalendarEvent): boolean {
-    if (isAdmin) return true;
-    return event.createdBy === currentUserId;
+    return hasEventManagementAccess(event);
   }
 
-  function canDeleteEvent(_event: CalendarEvent): boolean {
-    return isAdmin;
+  /** Check if user can delete event */
+  function canDeleteEvent(event: CalendarEvent): boolean {
+    return hasEventManagementAccess(event);
   }
 
   function reset() {
     currentUserId = null;
     isAdmin = false;
+    isRoot = false;
+    hasFullAccess = false;
     userRole = null;
   }
 

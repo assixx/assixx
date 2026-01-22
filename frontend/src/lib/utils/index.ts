@@ -101,3 +101,13 @@ export {
   showConfirmWarning,
   showInfoModal,
 } from './alerts';
+
+// Organization filter utilities (Area/Department inheritance)
+export {
+  filterAvailableDepartments,
+  filterDepartmentIdsByAreas,
+  filterAvailableTeams,
+  filterTeamIdsByDepartments,
+  type FilterableDepartment,
+  type FilterableTeam,
+} from './org-filter';

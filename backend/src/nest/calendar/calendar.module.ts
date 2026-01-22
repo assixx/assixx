@@ -6,10 +6,12 @@
  */
 import { Module } from '@nestjs/common';
 
+import { FeatureVisitsModule } from '../feature-visits/feature-visits.module.js';
 import { CalendarController } from './calendar.controller.js';
 import { CalendarService } from './calendar.service.js';
 
 @Module({
+  imports: [FeatureVisitsModule],
   controllers: [CalendarController],
   providers: [CalendarService],
   exports: [CalendarService],

@@ -27,6 +27,8 @@
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
+  import { getMenuItemsForRole, type NavItem } from './_lib/navigation-config';
+
   import type { LayoutData } from './$types';
 
   import '../../styles/unified-navigation.css';
@@ -83,17 +85,27 @@
     position?: string;
   } | null>(data.user ?? null);
 
-  // Role Switch State (original role vs active role after switching)
-  // INTENTIONAL: Capture initial SSR value to prevent hydration FOUC.
-  // localStorage override for role-switching persistence happens in initializeFromSSR().
+  // Immediate client-side init (hydration) - ensures role switch banner shows instantly
+  const getStorageValue = (key: string): string | null =>
+    typeof window === 'undefined' ? null : localStorage.getItem(key);
+
+  const getInitialActiveRole = (): 'root' | 'admin' | 'employee' => {
+    const stored = getStorageValue('activeRole');
+    return stored === 'root' || stored === 'admin' || stored === 'employee'
+      ? stored
+      : (data.user?.role ?? 'employee');
+  };
+
+  const isBannerDismissed = (role: string): boolean =>
+    getStorageValue(`roleSwitchBannerDismissed_${role}`) === 'true';
+
+  // Role Switch State - activeRole read from localStorage IMMEDIATELY during hydration
   // svelte-ignore state_referenced_locally
   let userRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
-  // svelte-ignore state_referenced_locally
-  let activeRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
-
-  // Sidebar State
+  let activeRole = $state<'root' | 'admin' | 'employee'>(getInitialActiveRole());
   let sidebarCollapsed = $state(false);
   let openSubmenu = $state<string | null>(null);
+  let roleSwitchBannerDismissed = $state(isBannerDismissed(getInitialActiveRole()));
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
@@ -119,6 +131,17 @@
   // activeRole reflects the current view, which may differ from original userRole
   const currentRole = $derived(activeRole);
 
+  // Role Switch Banner: Show when user is viewing as different role
+  const isRoleSwitched = $derived(userRole !== activeRole);
+  const showRoleSwitchBanner = $derived(isRoleSwitched && !roleSwitchBannerDismissed);
+
+  // Role display names for banner
+  const roleDisplayNames: Record<'root' | 'admin' | 'employee', string> = {
+    root: 'Root',
+    admin: 'Administrator',
+    employee: 'Mitarbeiter',
+  };
+
   // Sync SSR user data to local state on invalidateAll() / navigation
   // This ensures UI updates immediately after PATCH /users/me
   $effect(() => {
@@ -127,197 +150,8 @@
     }
   });
 
-  // =============================================================================
-  // NAVIGATION MENU CONFIG
-  // =============================================================================
-
-  /** Navigation item type */
-  interface NavItem {
-    id: string;
-    icon?: string;
-    label: string;
-    url?: string;
-    hasSubmenu?: boolean;
-    submenu?: NavItem[];
-    /** Badge type for real-time notification count */
-    badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat' | 'blackboard' | 'calendar';
-  }
-
-  const ICONS: Record<string, string> = {
-    home: '<i class="fas fa-home"></i>',
-    pin: '<i class="fas fa-thumbtack"></i>',
-    users: '<i class="fas fa-users"></i>',
-    team: '<i class="fas fa-user-friends"></i>',
-    generator: '<i class="fas fa-cogs"></i>',
-    document: '<i class="fas fa-file-alt"></i>',
-    calendar: '<i class="fas fa-calendar-alt"></i>',
-    lean: '<i class="fas fa-chart-line"></i>',
-    clock: '<i class="fas fa-clock"></i>',
-    chat: '<i class="fas fa-comments"></i>',
-    settings: '<i class="fas fa-cog"></i>',
-    user: '<i class="fas fa-user"></i>',
-    'user-shield': '<i class="fas fa-user-shield"></i>',
-    admin: '<i class="fas fa-user-tie"></i>',
-    sitemap: '<i class="fas fa-sitemap"></i>',
-    building: '<i class="fas fa-building"></i>',
-    feature: '<i class="fas fa-puzzle-piece"></i>',
-    logs: '<i class="fas fa-list-alt"></i>',
-    folder: '<i class="fas fa-folder"></i>',
-    lightbulb: '<i class="fas fa-lightbulb"></i>',
-    poll: '<i class="fas fa-poll"></i>',
-  };
-
-  const rootMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Root Dashboard', url: '/root-dashboard' },
-    {
-      id: 'blackboard',
-      icon: ICONS.pin,
-      label: 'Schwarzes Brett',
-      hasSubmenu: true,
-      submenu: [
-        {
-          id: 'blackboard-main',
-          label: 'Schwarzes Brett',
-          url: '/blackboard',
-          badgeType: 'blackboard',
-        },
-        {
-          id: 'blackboard-archive',
-          label: 'Archiv',
-          url: '/blackboard/archived',
-        },
-      ],
-    },
-    { id: 'root-users', icon: ICONS['user-shield'], label: 'Root User', url: '/manage-root' },
-    { id: 'admins', icon: ICONS.admin, label: 'Administratoren', url: '/manage-admins' },
-    { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
-    { id: 'departments', icon: ICONS.building, label: 'Abteilungen', url: '/manage-departments' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
-    { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/root-profile' },
-    {
-      id: 'system',
-      icon: ICONS.settings,
-      label: 'System',
-      hasSubmenu: true,
-      submenu: [{ id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' }],
-    },
-  ]);
-
-  const adminMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Übersicht', url: '/admin-dashboard' },
-    {
-      id: 'blackboard',
-      icon: ICONS.pin,
-      label: 'Schwarzes Brett',
-      hasSubmenu: true,
-      submenu: [
-        {
-          id: 'blackboard-main',
-          label: 'Schwarzes Brett',
-          url: '/blackboard',
-          badgeType: 'blackboard',
-        },
-        {
-          id: 'blackboard-archive',
-          label: 'Archiv',
-          url: '/blackboard/archived',
-        },
-      ],
-    },
-    { id: 'employees', icon: ICONS.users, label: 'Mitarbeiter', url: '/manage-employees' },
-    { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
-    { id: 'machines', icon: ICONS.generator, label: 'Maschinen', url: '/manage-machines' },
-    {
-      id: 'documents',
-      icon: ICONS.document,
-      label: 'Dokumente',
-      hasSubmenu: true,
-      submenu: [
-        {
-          id: 'documents-explorer',
-          label: 'Datei Explorer',
-          url: '/documents-explorer',
-          badgeType: 'documents',
-        },
-      ],
-    },
-    {
-      id: 'calendar',
-      icon: ICONS.calendar,
-      label: 'Kalender',
-      url: '/calendar',
-      badgeType: 'calendar',
-    },
-    {
-      id: 'lean-management',
-      icon: ICONS.lean,
-      label: 'LEAN-Management',
-      hasSubmenu: true,
-      submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp', badgeType: 'kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-admin', badgeType: 'surveys' },
-      ],
-    },
-    { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'settings', icon: ICONS.settings, label: 'Einstellungen', url: '#settings' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/admin-profile' },
-  ]);
-
-  const employeeMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
-    {
-      id: 'blackboard',
-      icon: ICONS.pin,
-      label: 'Schwarzes Brett',
-      url: '/blackboard',
-      badgeType: 'blackboard',
-    },
-    {
-      id: 'documents',
-      icon: ICONS.document,
-      label: 'Dokumente',
-      hasSubmenu: true,
-      submenu: [
-        {
-          id: 'documents-explorer',
-          label: 'Datei Explorer',
-          url: '/documents-explorer',
-          badgeType: 'documents',
-        },
-      ],
-    },
-    {
-      id: 'calendar',
-      icon: ICONS.calendar,
-      label: 'Kalender',
-      url: '/calendar',
-      badgeType: 'calendar',
-    },
-    {
-      id: 'lean-management',
-      icon: ICONS.lean,
-      label: 'LEAN-Management',
-      hasSubmenu: true,
-      submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp', badgeType: 'kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-employee', badgeType: 'surveys' },
-      ],
-    },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/employee-profile' },
-  ]);
-
-  const menuItems = $derived<NavItem[]>(
-    currentRole === 'root'
-      ? rootMenuItems
-      : currentRole === 'admin'
-        ? adminMenuItems
-        : employeeMenuItems,
-  );
+  // Navigation menu items - imported from navigation-config.ts
+  const menuItems = $derived<NavItem[]>(getMenuItemsForRole(currentRole));
 
   // =============================================================================
   // HELPER FUNCTIONS
@@ -483,6 +317,12 @@
     showLogoutModal = false;
   }
 
+  /** Dismiss role switch banner */
+  function dismissRoleSwitchBanner(): void {
+    roleSwitchBannerDismissed = true;
+    localStorage.setItem(`roleSwitchBannerDismissed_${activeRole}`, 'true');
+  }
+
   // =============================================================================
   // LIFECYCLE
   // =============================================================================
@@ -491,8 +331,12 @@
    * Initialize client-side state from SSR data
    * SSR provides user/tenant data - we only need to:
    * 1. Sync SSR data to local state
-   * 2. Load UI preferences from localStorage (sidebar, role switch)
-   * 3. Start client-side services (token timer, session manager)
+   * 2. Load UI preferences from localStorage (sidebar)
+   * 3. Persist role to localStorage
+   *
+   * NOTE: activeRole and roleSwitchBannerDismissed are already initialized
+   * IMMEDIATELY during hydration (see getInitialActiveRole / isBannerDismissedForRole)
+   * to ensure the role switch banner shows instantly, not after page load.
    */
   function initializeFromSSR(): void {
     // 1. Sync SSR user/tenant data to local state
@@ -500,25 +344,13 @@
       user = ssrUser;
       tenant = ssrTenant;
 
-      // Set role from SSR user data
+      // Set userRole from SSR (original role never changes)
       const role = ssrUser.role;
       userRole = role;
 
-      // Check if activeRole was stored (for role switching persistence)
-      const storedActiveRole = localStorage.getItem('activeRole');
-      if (
-        storedActiveRole === 'root' ||
-        storedActiveRole === 'admin' ||
-        storedActiveRole === 'employee'
-      ) {
-        activeRole = storedActiveRole;
-      } else {
-        activeRole = role;
-      }
-
       // Persist role to localStorage for role switching component
       localStorage.setItem('userRole', role);
-      if (storedActiveRole === null) {
+      if (localStorage.getItem('activeRole') === null) {
         localStorage.setItem('activeRole', role);
       }
     }
@@ -697,6 +529,35 @@
     </div>
   </header>
 
+  <!-- Role Switch Warning Banner -->
+  {#if showRoleSwitchBanner}
+    <div class="role-switch-banner" id="role-switch-warning-banner">
+      <div class="role-switch-banner-content">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+          />
+        </svg>
+        <span>
+          Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>. Ihre
+          ursprüngliche Rolle ist <strong>{roleDisplayNames[userRole]}</strong>.
+        </span>
+        <button
+          type="button"
+          class="role-switch-banner-close"
+          onclick={dismissRoleSwitchBanner}
+          title="Banner schließen"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  {/if}
+
   <!-- Main Layout -->
   <div class="layout-container">
     <!-- Sidebar -->
@@ -767,7 +628,6 @@
             {/if}
           {/each}
         </ul>
-
       </nav>
 
       <!-- User Info Card -->

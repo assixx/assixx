@@ -318,6 +318,9 @@
             {:else}
               {#each upcomingEvents as event (event.id)}
                 {@const dateInfo = formatEventDate(event)}
+                {@const hasArea = event.areaId !== null && event.areaId !== undefined}
+                {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
+                {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
                 <div
                   class="event-item"
                   onclick={goToCalendar}
@@ -344,9 +347,22 @@
                         {event.location}
                       </div>
                     {/if}
-                    <span class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}">
-                      {getOrgLevelText(event.orgLevel ?? 'personal')}
-                    </span>
+                    <div class="event-badges">
+                      {#if hasArea}
+                        <span class="event-level event-level-area">Bereich</span>
+                      {/if}
+                      {#if hasDept}
+                        <span class="event-level event-level-department">Abteilung</span>
+                      {/if}
+                      {#if hasTeam}
+                        <span class="event-level event-level-team">Team</span>
+                      {/if}
+                      {#if !hasArea && !hasDept && !hasTeam}
+                        <span class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}">
+                          {getOrgLevelText(event.orgLevel ?? 'personal')}
+                        </span>
+                      {/if}
+                    </div>
                   </div>
                 </div>
               {/each}

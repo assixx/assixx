@@ -6,22 +6,40 @@
     getResponseIconClass,
   } from './utils';
 
-  import type { CalendarEvent } from './types';
+  import type { CalendarEvent, Area, Department, Team } from './types';
 
   interface Props {
     event: CalendarEvent;
     canEdit: boolean;
     canDelete: boolean;
+    areas?: Area[];
+    departments?: Department[];
+    teams?: Team[];
     onclose: () => void;
     onedit: (event: CalendarEvent) => void;
     ondelete: (eventId: number) => void;
   }
 
   /* eslint-disable prefer-const */
-  let { event, canEdit, canDelete, onclose, onedit, ondelete }: Props = $props();
+  let {
+    event,
+    canEdit,
+    canDelete,
+    areas = [],
+    departments = [],
+    teams = [],
+    onclose,
+    onedit,
+    ondelete,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const levelText = $derived(getEventLevelText(event));
+
+  // Lookup names for assignments
+  const areaName = $derived(areas.find((a) => a.id === event.areaId)?.name);
+  const departmentName = $derived(departments.find((d) => d.id === event.departmentId)?.name);
+  const teamName = $derived(teams.find((t) => t.id === event.teamId)?.name);
 </script>
 
 <div class="modal-overlay modal-overlay--active" role="presentation" onclick={onclose}>
@@ -71,6 +89,27 @@
             <i class="fas fa-layer-group"></i>
             <span><strong>Ebene:</strong> {levelText}</span>
           </div>
+
+          <!-- Assignment details -->
+          {#if areaName}
+            <div class="detail-item">
+              <i class="fas fa-map-marked-alt"></i>
+              <span><strong>Bereich:</strong> {areaName}</span>
+            </div>
+          {/if}
+          {#if departmentName}
+            <div class="detail-item">
+              <i class="fas fa-sitemap"></i>
+              <span><strong>Abteilung:</strong> {departmentName}</span>
+            </div>
+          {/if}
+          {#if teamName}
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span><strong>Team:</strong> {teamName}</span>
+            </div>
+          {/if}
+
           <div class="detail-item">
             <i class="fas fa-user"></i>
             <span><strong>Erstellt von:</strong> {event.creatorName ?? 'Unbekannt'}</span>
@@ -136,32 +175,6 @@
     border: 1px solid rgb(255 255 255 / 8%);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 2%);
-  }
-
-  .detail-item {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
-  }
-
-  .detail-item:last-child {
-    border-bottom: none;
-  }
-
-  .detail-item i {
-    flex-shrink: 0;
-    width: 20px;
-    font-size: 1rem;
-    color: var(--primary-color);
-    text-align: center;
-  }
-
-  .detail-item span {
-    flex: 1;
-    font-size: 0.95rem;
-    color: var(--text-primary);
   }
 
   /* Attendee list */
