@@ -804,23 +804,18 @@ body:has(.sidebar.collapsed) .header .logo {
   align-items: center;
   gap: 0.5rem;
   position: relative;
-
-  /* transform: translateX(6px); */
+  transform: translateX(10px);
   margin-left: 0.375rem;
-
-  /* 3px 20px in rem */
+  margin-right: 10px; /* Kompensiert translateX für Hover-Breite */
   border-radius: var(--glass-card-radius);
-
-  /* 6px in rem */
   padding: 0.4rem;
   color: var(--text-secondary);
-
   font-size: 0.85rem;
   text-decoration: none;
 }
 
 .submenu-link:hover {
-  background: rgb(33 150 243 / 8%);
+  background: #a9d9ff47;
 }
 
 .submenu-link.active,

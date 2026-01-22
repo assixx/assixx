@@ -56,7 +56,7 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/features': ['admin', 'root'],
   '/survey-admin': ['admin', 'root'],
   '/survey-results': ['admin', 'root'],
-  '/shifts': ['admin', 'root'],
+  '/shifts': ['employee', 'admin', 'root'],
   '/storage-upgrade': ['admin', 'root'],
   '/tenant-deletion-status': ['admin', 'root'],
 

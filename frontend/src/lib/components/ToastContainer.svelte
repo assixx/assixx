@@ -108,7 +108,7 @@
       </span>
 
       <!-- Text -->
-      <span style="flex: 1; color: {colors.textColor}; white-space: nowrap;">
+      <span style="flex: 1; color: {colors.textColor};">
         {toast.title}{toast.message !== undefined && toast.message !== ''
           ? `: ${toast.message}`
           : ''}

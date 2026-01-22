@@ -211,8 +211,9 @@ export class KvpService {
   private buildEmployeeVisibility(
     orgInfo: UserOrgInfo,
     startIdx: number,
+    userId: number,
   ): { clause: string; params: unknown[] } {
-    const params: unknown[] = [];
+    const params: unknown[] = [userId]; // userId goes first for submitted_by check
     let idx = startIdx;
 
     let clause = ` AND (
@@ -288,8 +289,7 @@ export class KvpService {
     // Apply visibility restrictions for employees
     if (userRole === 'employee') {
       const orgInfo = await this.getUserOrgInfo(userId, tenantId);
-      params.push(userId);
-      const visibility = this.buildEmployeeVisibility(orgInfo, params.length + 1);
+      const visibility = this.buildEmployeeVisibility(orgInfo, params.length + 1, userId);
       query += visibility.clause;
       params.push(...visibility.params);
     }
@@ -364,8 +364,7 @@ export class KvpService {
     // Apply visibility restrictions for employees
     if (userRole === 'employee') {
       const orgInfo = await this.getUserOrgInfo(userId, tenantId);
-      params.push(userId);
-      const visibility = this.buildEmployeeVisibility(orgInfo, params.length + 1);
+      const visibility = this.buildEmployeeVisibility(orgInfo, params.length + 1, userId);
       query += visibility.clause;
       params.push(...visibility.params);
     }
