@@ -17,13 +17,13 @@
 .kvp-card {
   position: relative;
   cursor: pointer;
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
 }
 
 .kvp-card:hover {
   transform: translateY(-4px);
-  box-shadow:
-    0 12px 40px rgb(0 0 0 / 50%),
-    inset 0 1px 0 rgb(255 255 255 / 15%);
   border-color: rgb(0 142 255 / 50%);
 }
 
@@ -276,11 +276,36 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  padding-top: 10px;
 }
 
 .share-info > i {
   color: #666;
   font-size: 0.875rem;
+}
+
+/* Allow dropdowns to overflow outside card boundaries */
+.card:has(.dropdown) {
+  overflow: visible !important;
+}
+
+.card__header:has(.dropdown) {
+  overflow: visible !important;
+}
+
+/* ========================================
+   KVP Filter Layout
+   ======================================== */
+
+.kvp-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  align-items: flex-end;
+}
+
+.kvp-search-field {
+  width: 220px;
 }
 
 /* ========================================

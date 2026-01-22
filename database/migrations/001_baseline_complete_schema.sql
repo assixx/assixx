@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Rd1pkkdHOZlnw7z4YDcnQuq9SFe0gXVpxOOLoyeQ7YDKMiq3WHV8oAKY0cEkftu
+\restrict Dvar5o4UcGzii6WszMRjfLhGXIHZeXBuKf9Qfhy0f7iR3DJ4txxI71kRZRAQLQO
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -1005,6 +1005,88 @@ CREATE TYPE "public"."users_role" AS ENUM (
     'admin',
     'employee'
 );
+
+
+--
+-- Name: check_kvp_comment_permission(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION "public"."check_kvp_comment_permission"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    user_role VARCHAR(50);
+BEGIN
+    -- Get the role of the user trying to insert
+    SELECT role INTO user_role
+    FROM users
+    WHERE id = NEW.user_id;
+
+    -- Only allow admin and root to add comments
+    IF user_role IS NULL THEN
+        RAISE EXCEPTION 'User not found: %', NEW.user_id;
+    END IF;
+
+    IF user_role NOT IN ('admin', 'root') THEN
+        RAISE EXCEPTION 'Permission denied: Only admin and root users can add KVP comments. User role: %', user_role;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION "check_kvp_comment_permission"(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION "public"."check_kvp_comment_permission"() IS 'Validates that only admin/root users can insert KVP comments';
+
+
+--
+-- Name: check_kvp_daily_limit(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION "public"."check_kvp_daily_limit"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    user_role VARCHAR(50);
+    today_count INTEGER;
+BEGIN
+    -- Get the role of the user trying to insert
+    SELECT role INTO user_role
+    FROM users
+    WHERE id = NEW.submitted_by;
+
+    -- Admin and root have no limit
+    IF user_role IN ('admin', 'root') THEN
+        RETURN NEW;
+    END IF;
+
+    -- Count how many suggestions this user created today
+    SELECT COUNT(*) INTO today_count
+    FROM kvp_suggestions
+    WHERE tenant_id = NEW.tenant_id
+      AND submitted_by = NEW.submitted_by
+      AND created_at >= CURRENT_DATE
+      AND created_at < CURRENT_DATE + INTERVAL '1 day';
+
+    -- Employees can only create 1 per day
+    IF today_count >= 1 THEN
+        RAISE EXCEPTION 'Tageslimit erreicht: Mitarbeiter können nur 1 KVP-Vorschlag pro Tag einreichen.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION "check_kvp_daily_limit"(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION "public"."check_kvp_daily_limit"() IS 'Validates that employees do not exceed 1 KVP suggestion per day';
 
 
 --
@@ -19862,6 +19944,34 @@ CREATE TRIGGER "prevent_plans_delete" BEFORE DELETE ON "public"."plans" FOR EACH
 
 
 --
+-- Name: kvp_comments trg_kvp_comments_admin_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER "trg_kvp_comments_admin_only" BEFORE INSERT ON "public"."kvp_comments" FOR EACH ROW EXECUTE FUNCTION "public"."check_kvp_comment_permission"();
+
+
+--
+-- Name: TRIGGER "trg_kvp_comments_admin_only" ON "kvp_comments"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TRIGGER "trg_kvp_comments_admin_only" ON "public"."kvp_comments" IS 'Security: Only admin/root users can add comments to KVP suggestions';
+
+
+--
+-- Name: kvp_suggestions trg_kvp_daily_limit; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER "trg_kvp_daily_limit" BEFORE INSERT ON "public"."kvp_suggestions" FOR EACH ROW EXECUTE FUNCTION "public"."check_kvp_daily_limit"();
+
+
+--
+-- Name: TRIGGER "trg_kvp_daily_limit" ON "kvp_suggestions"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TRIGGER "trg_kvp_daily_limit" ON "public"."kvp_suggestions" IS 'Rate Limit: Employees can only create 1 KVP suggestion per day';
+
+
+--
 -- Name: feature_visits trigger_feature_visits_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -23091,5 +23201,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Rd1pkkdHOZlnw7z4YDcnQuq9SFe0gXVpxOOLoyeQ7YDKMiq3WHV8oAKY0cEkftu
+\unrestrict Dvar5o4UcGzii6WszMRjfLhGXIHZeXBuKf9Qfhy0f7iR3DJ4txxI71kRZRAQLQO
 

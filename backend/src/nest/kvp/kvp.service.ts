@@ -299,6 +299,12 @@ export class KvpService {
     query += filterResult.clause;
     params.push(...filterResult.params);
 
+    // Apply "mine only" filter
+    if (filters.mineOnly === true) {
+      query += ` AND s.submitted_by = $${params.length + 1}`;
+      params.push(userId);
+    }
+
     // Get total count
     const countQuery = query.replace(
       /SELECT\s+s\.\*[\s\S]*?FROM kvp_suggestions s/i,
@@ -381,13 +387,36 @@ export class KvpService {
 
   /**
    * Create a new suggestion
+   * Rate limit: 1 suggestion per user per day (employees only, admins/root unlimited)
    */
   async createSuggestion(
     dto: CreateSuggestionDto,
     tenantId: number,
     userId: number,
+    userRole: string = 'employee',
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
+
+    // Rate limit: Employees can only create 1 KVP suggestion per day
+    // Admins and root are unlimited
+    if (userRole === 'employee') {
+      const todayCount = await this.db.query<{ count: string }>(
+        `SELECT COUNT(*) as count
+         FROM kvp_suggestions
+         WHERE tenant_id = $1
+           AND submitted_by = $2
+           AND created_at >= CURRENT_DATE
+           AND created_at < CURRENT_DATE + INTERVAL '1 day'`,
+        [tenantId, userId],
+      );
+
+      const count = Number.parseInt(todayCount[0]?.count ?? '0', 10);
+      if (count >= 1) {
+        throw new ForbiddenException(
+          'Tageslimit erreicht: Sie können nur 1 KVP-Vorschlag pro Tag einreichen. Versuchen Sie es morgen erneut.',
+        );
+      }
+    }
 
     const uuid = uuidv7();
     const teamId = dto.orgLevel === 'team' ? dto.orgId : null;
@@ -732,6 +761,7 @@ export class KvpService {
 
   /**
    * Add a comment
+   * Only admin and root users can add comments (Defense in Depth)
    */
   async addComment(
     id: number | string,
@@ -743,12 +773,17 @@ export class KvpService {
   ): Promise<KVPComment> {
     this.logger.log(`Adding comment to suggestion ${String(id)}`);
 
+    // Security: Only admin/root can add comments (Defense in Depth - also enforced at controller level)
+    if (userRole !== 'admin' && userRole !== 'root') {
+      throw new ForbiddenException('Only admins can add comments to KVP suggestions');
+    }
+
     // Get numeric ID
     const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
     const numericId = suggestion.id;
 
-    // Only admins can add internal comments
-    const actualIsInternal = isInternal && (userRole === 'admin' || userRole === 'root');
+    // isInternal is allowed since we already verified user is admin/root above
+    const actualIsInternal = isInternal;
 
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO kvp_comments (tenant_id, suggestion_id, user_id, comment, is_internal)

@@ -10,7 +10,6 @@
 /* Accent Card (formerly compact-card) */
 .card-accent {
   position: relative;
-  backdrop-filter: blur(20px) saturate(180%);
 
   transition: all 0.2s ease;
   cursor: pointer;

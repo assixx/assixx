@@ -41,6 +41,10 @@ export const ListSuggestionsQuerySchema = PaginationSchema.extend({
   priority: PrioritySchema.optional(),
   orgLevel: OrgLevelSchema.optional(),
   search: z.string().trim().max(100, 'Search query too long').optional(),
+  mineOnly: z
+    .string()
+    .transform((val: string) => val === 'true')
+    .optional(),
 });
 
 /**

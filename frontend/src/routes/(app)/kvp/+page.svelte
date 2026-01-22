@@ -348,151 +348,172 @@
     </div>
 
     <div class="card-body">
-      <!-- Filter Toggle Group + Search -->
-      <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
-        <div class="toggle-group">
-          {#each FILTER_OPTIONS as option (option.value)}
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={kvpState.currentFilter === option.value}
-              title={option.title}
-              onclick={() => {
-                handleFilterChange(option.value);
-              }}
-            >
-              <i class="fas {option.icon}"></i>
-              {option.label}
-              {#if option.showBadge}
-                <span class="badge">{kvpState.badgeCounts[option.value]}</span>
-              {/if}
-            </button>
-          {/each}
-        </div>
+      <!-- Filter Card (wie Calendar) -->
+      <div class="card mb-6">
+        <div class="card__header">
+          <h3 class="card__title">
+            <i class="fas fa-filter mr-2"></i>
+            Filter & Anzeige
+          </h3>
+          <!-- Alle Filter in einer Zeile -->
+          <div class="kvp-filter-row mt-6">
+            <!-- Ansichts-Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Ansicht</span>
+              <div class="toggle-group mt-2" id="kvpFilter">
+                {#each FILTER_OPTIONS as option (option.value)}
+                  <button
+                    type="button"
+                    class="toggle-group__btn"
+                    class:active={kvpState.currentFilter === option.value}
+                    data-value={option.value}
+                    onclick={() => {
+                      handleFilterChange(option.value);
+                    }}
+                    title={option.title}
+                  >
+                    <i class="fas {option.icon}"></i>
+                    {option.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
 
-        <div class="search-input max-w-80">
-          <i class="search-input__icon fas fa-search"></i>
-          <input
-            type="search"
-            class="search-input__field"
-            placeholder="Vorschläge durchsuchen..."
-            value={kvpState.searchQuery}
-            oninput={handleSearchInput}
-          />
-        </div>
-      </div>
+            <!-- Status Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Status</span>
+              <div class="dropdown mt-2" data-dropdown="status">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'status'}
+                  onclick={() => {
+                    toggleDropdown('status');
+                  }}
+                >
+                  <span>{statusDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'status'}>
+                  {#each STATUS_FILTER_OPTIONS as option (option.value)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-status"
+                      data-value={option.value}
+                      onclick={() => {
+                        handleStatusSelect(option.value, option.label);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-      <!-- Secondary Filters - Design System Dropdowns -->
-      <div class="flex flex-nowrap gap-4 items-center mb-6">
-        <!-- Status Filter Dropdown -->
-        <div class="dropdown" data-dropdown="status">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'status'}
-            onclick={() => {
-              toggleDropdown('status');
-            }}
-          >
-            <span>{statusDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'status'}>
-            {#each STATUS_FILTER_OPTIONS as option (option.value)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-status"
-                data-value={option.value}
-                onclick={() => {
-                  handleStatusSelect(option.value, option.label);
-                }}
-              >
-                {option.label}
-              </button>
-            {/each}
-          </div>
-        </div>
+            <!-- Category Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Kategorie</span>
+              <div class="dropdown mt-2" data-dropdown="category">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'category'}
+                  onclick={() => {
+                    toggleDropdown('category');
+                  }}
+                >
+                  <span>{categoryDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'category'}>
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-category"
+                    data-value=""
+                    onclick={() => {
+                      handleCategorySelect('', 'Alle Kategorien');
+                    }}
+                  >
+                    Alle Kategorien
+                  </button>
+                  {#each kvpState.categories as category (category.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-category"
+                      data-value={category.id.toString()}
+                      onclick={() => {
+                        handleCategorySelect(category.id.toString(), category.name);
+                      }}
+                    >
+                      {category.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-        <!-- Category Filter Dropdown -->
-        <div class="dropdown" data-dropdown="category">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'category'}
-            onclick={() => {
-              toggleDropdown('category');
-            }}
-          >
-            <span>{categoryDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'category'}>
-            <button
-              type="button"
-              class="dropdown__option"
-              data-action="select-category"
-              data-value=""
-              onclick={() => {
-                handleCategorySelect('', 'Alle Kategorien');
-              }}
-            >
-              Alle Kategorien
-            </button>
-            {#each kvpState.categories as category (category.id)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-category"
-                data-value={category.id.toString()}
-                onclick={() => {
-                  handleCategorySelect(category.id.toString(), category.name);
-                }}
-              >
-                {category.name}
-              </button>
-            {/each}
-          </div>
-        </div>
+            <!-- Department Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Abteilung</span>
+              <div class="dropdown mt-2" data-dropdown="department">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'department'}
+                  onclick={() => {
+                    toggleDropdown('department');
+                  }}
+                >
+                  <span>{departmentDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'department'}>
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-department"
+                    data-value=""
+                    onclick={() => {
+                      handleDepartmentSelect('', 'Alle Abteilungen');
+                    }}
+                  >
+                    Alle Abteilungen
+                  </button>
+                  {#each kvpState.departments as dept (dept.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-department"
+                      data-value={dept.id.toString()}
+                      onclick={() => {
+                        handleDepartmentSelect(dept.id.toString(), dept.name);
+                      }}
+                    >
+                      {dept.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-        <!-- Department Filter Dropdown -->
-        <div class="dropdown" data-dropdown="department">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'department'}
-            onclick={() => {
-              toggleDropdown('department');
-            }}
-          >
-            <span>{departmentDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'department'}>
-            <button
-              type="button"
-              class="dropdown__option"
-              data-action="select-department"
-              data-value=""
-              onclick={() => {
-                handleDepartmentSelect('', 'Alle Abteilungen');
-              }}
-            >
-              Alle Abteilungen
-            </button>
-            {#each kvpState.departments as dept (dept.id)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-department"
-                data-value={dept.id.toString()}
-                onclick={() => {
-                  handleDepartmentSelect(dept.id.toString(), dept.name);
-                }}
-              >
-                {dept.name}
-              </button>
-            {/each}
+            <!-- Suche -->
+            <div class="form-field kvp-search-field">
+              <span class="form-field__label">Suche</span>
+              <div class="search-input mt-2">
+                <i class="search-input__icon fas fa-search"></i>
+                <input
+                  type="search"
+                  class="search-input__field"
+                  placeholder="Vorschläge durchsuchen..."
+                  value={kvpState.searchQuery}
+                  oninput={handleSearchInput}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
