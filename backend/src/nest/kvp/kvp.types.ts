@@ -183,4 +183,5 @@ export interface SuggestionFilters {
   search: string | undefined;
   page: number | undefined;
   limit: number | undefined;
+  mineOnly: boolean | undefined;
 }

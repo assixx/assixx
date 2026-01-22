@@ -1,6 +1,6 @@
 # Database Migration Guide - PostgreSQL
 
-> **Last Update:** 2026-01-14
+> **Last Update:** 2026-01-22
 > **Database:** PostgreSQL 17 with Row Level Security (RLS)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
 
@@ -25,9 +25,10 @@
 
 ```
 /database/migrations/           ← Inkrementelle Historie (Git)
-├── 001_baseline_complete_schema.sql   (aktueller Snapshot)
+├── 001_baseline_complete_schema.sql   (aktueller Snapshot + Trigger)
 ├── 002_seed_data.sql                  (aktueller Snapshot)
-├── 003-xxx.sql                        (zukünftige Änderungen)
+├── 008-kvp-comments-admin-only-trigger.sql
+├── 009-kvp-daily-limit-trigger.sql
 └── backup_old/                        (historische Migrations)
 
 /customer/fresh-install/        ← Kunden-Deployment (in .gitignore)
@@ -103,12 +104,15 @@ Alle anderen Tabellen mit `tenant_id` unterliegen der Row Level Security (84 Tab
 
 Pfad: `/database/migrations/`
 
-| Datei                              | Inhalt                                               |
-| ---------------------------------- | ---------------------------------------------------- |
-| `001_baseline_complete_schema.sql` | Komplettes Schema (109 Tabellen, 89 RLS, 260 FK)     |
-| `002_seed_data.sql`                | Seed-Daten (5 Tabellen, UTF-8 korrekt)               |
-| `003-xxx.sql`                      | Zukünftige inkrementelle Änderungen                  |
-| `backup_old/`                      | Historische Migrations (003-008 vor Baseline-Update) |
+| Datei                                     | Inhalt                                               |
+| ----------------------------------------- | ---------------------------------------------------- |
+| `001_baseline_complete_schema.sql`        | Komplettes Schema (109 Tabellen, 89 RLS, 70 Trigger) |
+| `002_seed_data.sql`                       | Seed-Daten (5 Tabellen, UTF-8 korrekt)               |
+| `008-kvp-comments-admin-only-trigger.sql` | KVP: Nur Admin/Root dürfen kommentieren              |
+| `009-kvp-daily-limit-trigger.sql`         | KVP: Employees max 1 Vorschlag/Tag                   |
+| `backup_old/`                             | Historische Migrations (003-007 vor Baseline-Update) |
+
+> **Hinweis:** Nach jeder Migration `./scripts/sync-customer-migrations.sh` ausführen!
 
 ### Workflow: Schema oder Seed ändern
 

@@ -945,19 +945,10 @@
 
 /* Allow dropdown to overflow the filter card bounds */
 .card:has(#sort-dropdown) {
-  position: relative; /* Create stacking context */
-  z-index: 100; /* Above sibling elements (controls/buttons) */
-  overflow: visible !important;
-}
-
-.card:has(#sort-dropdown) .card__body {
   overflow: visible !important;
 }
 
 /* Ensure dropdown is above other elements within the card */
-#sort-dropdown .dropdown__menu {
-  z-index: 9999 !important;
-}
 
 /* Only hide filter content when collapsed, not the sidebar! */
 #filterContent.collapsed,

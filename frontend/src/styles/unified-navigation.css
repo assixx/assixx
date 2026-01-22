@@ -820,8 +820,6 @@ body:has(.sidebar.collapsed) .header .logo {
 
 .submenu-link.active,
 .submenu-item.active .submenu-link {
-  transform: translateX(1.25rem);
-
   /* 20px in rem */
 
   margin-right: 2rem;

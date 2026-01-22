@@ -126,6 +126,7 @@ export class KvpController {
       search: query.search,
       page: query.page,
       limit: query.limit,
+      mineOnly: query.mineOnly,
     });
   }
 
@@ -146,6 +147,7 @@ export class KvpController {
   /**
    * POST /kvp
    * Create a new suggestion
+   * Rate limit: Employees can create max 1 KVP per day
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -154,7 +156,7 @@ export class KvpController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
-    return await this.kvpService.createSuggestion(dto, tenantId, user.id);
+    return await this.kvpService.createSuggestion(dto, tenantId, user.id, user.role);
   }
 
   /**
@@ -236,8 +238,11 @@ export class KvpController {
   /**
    * POST /kvp/:id/comments
    * Add a comment to a suggestion
+   * Only admin and root users can add comments
    */
   @Post(':id/comments')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id') id: string,
