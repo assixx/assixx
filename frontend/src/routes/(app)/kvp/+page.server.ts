@@ -67,19 +67,68 @@ type SuggestionsApiResponse = KvpSuggestion[] | { data: KvpSuggestion[] } | Sugg
  * Parses suggestions from various API response formats
  */
 function parseSuggestionsResponse(data: SuggestionsApiResponse | null): KvpSuggestion[] {
-  if (data === null) {
-    return [];
-  }
-  if (Array.isArray(data)) {
-    return data;
-  }
-  if ('data' in data && Array.isArray(data.data)) {
-    return data.data;
-  }
-  if ('suggestions' in data && Array.isArray(data.suggestions)) {
-    return data.suggestions;
-  }
+  if (data === null) return [];
+  if (Array.isArray(data)) return data;
+  if ('data' in data && Array.isArray(data.data)) return data.data;
+  if ('suggestions' in data && Array.isArray(data.suggestions)) return data.suggestions;
   return [];
+}
+
+/**
+ * Parent user type from layout
+ */
+interface ParentUser {
+  id: number;
+  role: 'root' | 'admin' | 'employee';
+  tenantId: number;
+  teamIds?: number[];
+  teamDepartmentId?: number | null;
+}
+
+/**
+ * Maps parent layout user to KVP CurrentUser format
+ * Parent layout returns teamIds[] array, KVP expects teamId (first team)
+ */
+function mapParentUserToCurrentUser(parentUser: ParentUser | null) {
+  if (parentUser === null) return null;
+  return {
+    id: parentUser.id,
+    role: parentUser.role,
+    tenantId: parentUser.tenantId,
+    departmentId: parentUser.teamDepartmentId ?? null,
+    teamId: parentUser.teamIds?.[0],
+  };
+}
+
+/**
+ * Fetches all KVP data in parallel
+ */
+async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boolean) {
+  const fetchPromises: Promise<
+    KvpCategory[] | Department[] | SuggestionsApiResponse | KvpStats | null
+  >[] = [
+    apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
+    apiFetch<Department[]>('/departments', token, fetchFn),
+    apiFetch<SuggestionsApiResponse>('/kvp', token, fetchFn),
+  ];
+
+  if (isAdmin) {
+    fetchPromises.push(apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn));
+  }
+
+  const results = await Promise.all(fetchPromises);
+
+  const categoriesData = results[0] as KvpCategory[] | null;
+  const departmentsData = results[1] as Department[] | null;
+  const suggestionsData = results[2] as SuggestionsApiResponse | null;
+  const statsData = isAdmin ? (results[3] as KvpStats | null) : null;
+
+  return {
+    categories: Array.isArray(categoriesData) ? categoriesData : [],
+    departments: Array.isArray(departmentsData) ? departmentsData : [],
+    suggestions: parseSuggestionsResponse(suggestionsData),
+    statistics: statsData,
+  };
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
@@ -88,45 +137,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout
   const parentData = await parent();
   const isAdmin = parentData.user?.role === 'admin' || parentData.user?.role === 'root';
 
-  // Parallel fetch: categories + departments + suggestions + stats (if admin)
-  // Type explicitly to allow mixed Promise types
-  const fetchPromises: Promise<
-    KvpCategory[] | Department[] | SuggestionsApiResponse | KvpStats | null
-  >[] = [
-    apiFetch<KvpCategory[]>('/kvp/categories', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<SuggestionsApiResponse>('/kvp', token, fetch),
-  ];
-
-  // Only fetch stats for admins
-  if (isAdmin) {
-    fetchPromises.push(apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetch));
-  }
-
-  const results = await Promise.all(fetchPromises);
-
-  // Extract results
-  const categoriesData = results[0] as KvpCategory[] | null;
-  const departmentsData = results[1] as Department[] | null;
-  const suggestionsData = results[2] as SuggestionsApiResponse | null;
-  const statsData = isAdmin ? (results[3] as KvpStats | null) : null;
-
-  // Safe fallbacks
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
-
-  // Parse suggestions from various response formats
-  const suggestions = parseSuggestionsResponse(suggestionsData);
+  const kvpData = await fetchKvpData(token, fetch, isAdmin);
 
   return {
-    categories,
-    departments,
-    suggestions,
-    statistics: statsData,
-    currentUser: parentData.user,
+    ...kvpData,
+    currentUser: mapParentUserToCurrentUser(parentData.user as ParentUser | null),
   };
 };

@@ -773,22 +773,22 @@
         </div>
       {/if}
 
-      <!-- Employee Team Info Bar (for employee view) - Design System Badges -->
+      <!-- Employee Team Info Bar -->
       {#if shiftsState.employeeTeamInfo !== null}
         <div
           class="flex flex-wrap items-center gap-3 mt-4 p-4 rounded-xl border
-            border-[rgba(255,152,0,0.3)] bg-[rgba(255,152,0,0.1)]"
+            border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)]"
           role="status"
         >
-          <i class="fas fa-users text-[var(--color-warning)]"></i>
-          <span class="font-medium text-[var(--color-warning)]">Dein Team:</span>
-          <span class="badge badge--primary">{shiftsState.employeeTeamInfo.teamName}</span>
-          <span class="text-[var(--color-text-secondary)]">|</span>
-          <span class="font-medium text-[var(--color-warning)]">Abteilung:</span>
-          <span class="badge badge--info">{shiftsState.employeeTeamInfo.departmentName}</span>
-          <span class="text-[var(--color-text-secondary)]">|</span>
-          <span class="font-medium text-[var(--color-warning)]">Bereich:</span>
-          <span class="badge badge--info">{shiftsState.employeeTeamInfo.areaName}</span>
+          <i class="fas fa-users text-[var(--color-text-secondary)]"></i>
+          <span class="font-medium text-[var(--color-text-secondary)]">Dein Team:</span>
+          <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.teamName}</span>
+          <span class="font-medium text-[var(--color-text-secondary)]">Abteilung:</span>
+          <span class="font-semibold text-blue-400"
+            >{shiftsState.employeeTeamInfo.departmentName}</span
+          >
+          <span class="font-medium text-[var(--color-text-secondary)]">Bereich:</span>
+          <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.areaName}</span>
         </div>
       {/if}
 

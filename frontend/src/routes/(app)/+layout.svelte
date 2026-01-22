@@ -203,6 +203,13 @@
     return false;
   }
 
+  /** Check if submenu child item is active */
+  function isSubmenuItemActive(subItem: NavItem): boolean {
+    const currentPath = $page.url.pathname;
+    if (subItem.url === undefined || subItem.url === '') return false;
+    return currentPath === subItem.url || currentPath.startsWith(subItem.url + '/');
+  }
+
   // =============================================================================
   // API FUNCTIONS
   // =============================================================================
@@ -594,8 +601,12 @@
                 </button>
                 <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
                   {#each item.submenu as subItem (subItem.id)}
-                    <li class="submenu-item">
-                      <a href={resolveDynamicPath(subItem.url ?? '')} class="submenu-link">
+                    <li class="submenu-item" class:active={isSubmenuItemActive(subItem)}>
+                      <a
+                        href={resolveDynamicPath(subItem.url ?? '')}
+                        class="submenu-link"
+                        class:active={isSubmenuItemActive(subItem)}
+                      >
                         <span>{subItem.label}</span>
                         {#if subItem.badgeType && openSubmenu === item.id}
                           <NotificationBadge
