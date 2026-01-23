@@ -68,7 +68,7 @@
   .notification-badge--absolute {
     position: absolute;
     top: -7px;
-    right: -13px;
+    right: -14px;
   }
 
   /* Absolute positioning for submenu items - right aligned within parent */

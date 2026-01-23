@@ -53,7 +53,7 @@ export interface KvpSuggestion {
   priority: KvpPriority;
   orgLevel: OrgLevel;
   orgId: number;
-  isShared: number;
+  isShared: boolean;
   departmentId: number;
   departmentName: string;
   areaId?: number;

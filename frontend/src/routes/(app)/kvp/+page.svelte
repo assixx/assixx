@@ -14,19 +14,14 @@
   // KVP-specific styles (migrated from legacy)
   import '../../../styles/kvp.css';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { showErrorAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpPage');
   const apiClient = getApiClient();
 
-  import {
-    fetchSuggestions,
-    shareSuggestion,
-    unshareSuggestion,
-    findUserTeamAsLead,
-  } from './_lib/api';
+  import { fetchSuggestions, findUserTeamAsLead } from './_lib/api';
   import { FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from './_lib/constants';
   import KvpCreateModal from './_lib/KvpCreateModal.svelte';
   import { kvpState } from './_lib/state.svelte';
@@ -38,8 +33,6 @@
     getVisibilityBadgeClass,
     getVisibilityInfo,
     formatDate,
-    canShareSuggestion,
-    canUnshareSuggestion,
     getSharedByInfo,
     getAttachmentText,
     debounce,
@@ -192,38 +185,6 @@
       });
     }
     void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
-  }
-
-  async function handleShare(id: number): Promise<void> {
-    const confirmed = await showConfirm(
-      'Moechten Sie diesen Vorschlag wirklich firmenweit teilen?',
-    );
-    if (!confirmed) return;
-
-    const result = await shareSuggestion(id);
-    if (result.success) {
-      showSuccessAlert('Vorschlag wurde firmenweit geteilt');
-      // Level 3: Trigger SSR refetch
-      await invalidateAll();
-    } else {
-      showErrorAlert(result.error ?? 'Fehler beim Teilen');
-    }
-  }
-
-  async function handleUnshare(id: number): Promise<void> {
-    const confirmed = await showConfirm(
-      'Moechten Sie das Teilen wirklich rueckgaengig machen? Der Vorschlag wird wieder nur für das urspruengliche Team sichtbar sein.',
-    );
-    if (!confirmed) return;
-
-    const result = await unshareSuggestion(id);
-    if (result.success) {
-      showSuccessAlert('Teilen wurde rueckgaengig gemacht');
-      // Level 3: Trigger SSR refetch
-      await invalidateAll();
-    } else {
-      showErrorAlert(result.error ?? 'Fehler beim Rueckgaengigmachen');
-    }
   }
 
   // ==========================================================================
@@ -612,34 +573,6 @@
                     {suggestion.categoryIcon}
                     {suggestion.categoryName}
                   </div>
-                </div>
-
-                <div class="flex gap-2">
-                  {#if canShareSuggestion(suggestion, kvpState.effectiveRole)}
-                    <button
-                      type="button"
-                      class="action-btn share"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        void handleShare(suggestion.id);
-                      }}
-                    >
-                      <i class="fas fa-share-alt"></i> Teilen
-                    </button>
-                  {/if}
-
-                  {#if canUnshareSuggestion(suggestion, kvpState.effectiveRole, kvpState.currentUser?.id)}
-                    <button
-                      type="button"
-                      class="action-btn"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        void handleUnshare(suggestion.id);
-                      }}
-                    >
-                      <i class="fas fa-undo"></i> Rueckgaengig
-                    </button>
-                  {/if}
                 </div>
               </div>
             </div>

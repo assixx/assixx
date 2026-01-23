@@ -413,11 +413,11 @@
 /* Narrower status dropdown - override width: 100% from component */
 [data-dropdown='status'] .dropdown__trigger {
   width: auto;
-  min-width: 130px;
+  min-width: 180px;
 }
 
 [data-dropdown='status'] .dropdown__menu {
-  min-width: 130px;
+  min-width: 180px;
   left: auto;
   right: auto;
 }
@@ -446,6 +446,22 @@
 .share-info > i.fa-share-alt {
   font-size: 0.875rem;
   color: #666 !important;
+}
+
+/* ========================================
+   SHARE MODAL DROPDOWNS
+   ======================================== */
+
+[data-dropdown='shareDept'] .dropdown__trigger,
+[data-dropdown='shareArea'] .dropdown__trigger {
+  min-width: 220px;
+  width: 50%;
+}
+
+[data-dropdown='shareDept'] .dropdown__menu,
+[data-dropdown='shareArea'] .dropdown__menu {
+  min-width: 220px;
+  width: 50%;
 }
 
 /* ========================================

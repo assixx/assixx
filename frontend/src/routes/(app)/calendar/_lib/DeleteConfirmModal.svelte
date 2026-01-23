@@ -22,7 +22,7 @@
     </div>
     <h3 class="confirm-modal__title">Termin Löschen</h3>
     <p class="confirm-modal__message">
-      Moechten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht rueckgaengig gemacht
+      Moechten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht rückgängig gemacht
       werden.
     </p>
     <div class="confirm-modal__actions">
