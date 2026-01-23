@@ -107,7 +107,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "nodemailer": "^7.0.12",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
