@@ -111,12 +111,29 @@ export async function archiveSuggestion(
   idOrUuid: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.delete(API_ENDPOINTS.kvpById(idOrUuid));
+    await apiClient.post(API_ENDPOINTS.kvpArchive(idOrUuid), {});
     return { success: true };
   } catch (err) {
     log.error({ err }, 'Error archiving suggestion');
     checkSessionExpired(err);
     const message = err instanceof Error ? err.message : 'Fehler beim Archivieren';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Unarchive (restore) a suggestion
+ */
+export async function unarchiveSuggestion(
+  idOrUuid: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiClient.post(API_ENDPOINTS.kvpUnarchive(idOrUuid), {});
+    return { success: true };
+  } catch (err) {
+    log.error({ err }, 'Error unarchiving suggestion');
+    checkSessionExpired(err);
+    const message = err instanceof Error ? err.message : 'Fehler beim Wiederherstellen';
     return { success: false, error: message };
   }
 }
@@ -210,6 +227,44 @@ export function downloadAttachment(fileUuid: string): void {
 export function getAttachmentPreviewUrl(fileUuid: string): string {
   // Cookie-based auth: accessToken cookie sent automatically on same-origin request
   return `/api/v2${API_ENDPOINTS.attachmentDownload(fileUuid)}`;
+}
+
+// =============================================================================
+// READ CONFIRMATION (Pattern 2: Individual Decrement/Increment)
+// =============================================================================
+
+/**
+ * Mark a suggestion as read (confirmed) by current user
+ */
+export async function confirmSuggestion(
+  uuid: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiClient.post(API_ENDPOINTS.kvpConfirm(uuid), {});
+    return { success: true };
+  } catch (err) {
+    log.error({ err }, 'Error confirming suggestion');
+    checkSessionExpired(err);
+    const message = err instanceof Error ? err.message : 'Fehler beim Markieren als gelesen';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Mark a suggestion as unread (remove confirmation) by current user
+ */
+export async function unconfirmSuggestion(
+  uuid: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiClient.delete(API_ENDPOINTS.kvpConfirm(uuid));
+    return { success: true };
+  } catch (err) {
+    log.error({ err }, 'Error unconfirming suggestion');
+    checkSessionExpired(err);
+    const message = err instanceof Error ? err.message : 'Fehler beim Markieren als ungelesen';
+    return { success: false, error: message };
+  }
 }
 
 // =============================================================================

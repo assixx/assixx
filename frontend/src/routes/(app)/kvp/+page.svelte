@@ -15,9 +15,11 @@
   import '../../../styles/kvp.css';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpPage');
+  const apiClient = getApiClient();
 
   import {
     fetchSuggestions,
@@ -31,6 +33,8 @@
   import {
     getStatusBadgeClass,
     getStatusText,
+    getPriorityBadgeClass,
+    getPriorityText,
     getVisibilityBadgeClass,
     getVisibilityInfo,
     formatDate,
@@ -82,19 +86,6 @@
       }
       kvpState.setLoading(false);
     });
-  });
-
-  // =============================================================================
-  // MARK NOTIFICATIONS AS READ (ADR-004)
-  // =============================================================================
-
-  // Mark KVP notifications as read when page is visited
-  let kvpReadMarked = $state(false);
-  $effect(() => {
-    if (!kvpReadMarked) {
-      kvpReadMarked = true;
-      void notificationStore.markTypeAsRead('kvp');
-    }
   });
 
   // =============================================================================
@@ -190,7 +181,16 @@
   // SUGGESTION ACTIONS
   // ==========================================================================
 
-  function viewSuggestion(uuid: string) {
+  /**
+   * View suggestion detail and auto-confirm if not yet read
+   */
+  function viewSuggestion(uuid: string, isConfirmed: boolean) {
+    // Auto-confirm if not yet read (non-blocking)
+    if (!isConfirmed) {
+      void apiClient.post(`/kvp/${uuid}/confirm`, {}).then(() => {
+        notificationStore.decrementCount('kvp');
+      });
+    }
     void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
   }
 
@@ -212,7 +212,7 @@
 
   async function handleUnshare(id: number): Promise<void> {
     const confirmed = await showConfirm(
-      'Moechten Sie das Teilen wirklich rueckgaengig machen? Der Vorschlag wird wieder nur fuer das urspruengliche Team sichtbar sein.',
+      'Moechten Sie das Teilen wirklich rueckgaengig machen? Der Vorschlag wird wieder nur für das urspruengliche Team sichtbar sein.',
     );
     if (!confirmed) return;
 
@@ -533,20 +533,40 @@
         <div class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6">
           {#each kvpState.suggestions as suggestion (suggestion.id)}
             {@const visibilityInfo = getVisibilityInfo(suggestion)}
+            {@const isRead = suggestion.isConfirmed === true}
+            {@const isNew = suggestion.firstSeenAt === null || suggestion.firstSeenAt === undefined}
             <div
               class="glass-card kvp-card text-left w-full cursor-pointer"
               role="button"
               tabindex="0"
               onclick={() => {
-                viewSuggestion(suggestion.uuid);
+                viewSuggestion(suggestion.uuid, isRead);
               }}
               onkeydown={(e) => {
-                if (e.key === 'Enter') viewSuggestion(suggestion.uuid);
+                if (e.key === 'Enter') viewSuggestion(suggestion.uuid, isRead);
               }}
             >
-              <span class="badge {getStatusBadgeClass(suggestion.status)} status-badge">
-                {getStatusText(suggestion.status)}
-              </span>
+              <!-- Status container: Eye icon (left) + Badges (right) -->
+              <div class="kvp-status-container">
+                <!-- Read confirmation status (Pattern 2: Individual tracking) -->
+                <span
+                  class="kvp-read-status"
+                  class:kvp-read-status--read={isRead}
+                  class:kvp-read-status--unread={!isRead}
+                  title={isRead ? 'Gelesen' : 'Ungelesen'}
+                >
+                  <i class="fas {isRead ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </span>
+
+                <div class="flex items-center gap-2">
+                  {#if isNew}
+                    <span class="badge badge--sm badge--success">Neu</span>
+                  {/if}
+                  <span class="badge {getStatusBadgeClass(suggestion.status)}">
+                    {getStatusText(suggestion.status)}
+                  </span>
+                </div>
+              </div>
 
               <div class="mb-4">
                 <h3 class="suggestion-title">{suggestion.title}</h3>
@@ -579,28 +599,22 @@
               <div class="suggestion-description">{suggestion.description}</div>
 
               <div class="suggestion-footer">
-                <div
-                  class="category-tag"
-                  style:background="{suggestion.categoryColor}20"
-                  style:color={suggestion.categoryColor}
-                  style:border="1px solid {suggestion.categoryColor}"
-                >
-                  {suggestion.categoryIcon}
-                  {suggestion.categoryName}
+                <div class="flex gap-2 flex-wrap">
+                  <span class="badge {getPriorityBadgeClass(suggestion.priority)}">
+                    {getPriorityText(suggestion.priority)}
+                  </span>
+                  <div
+                    class="category-tag"
+                    style:background="{suggestion.categoryColor}20"
+                    style:color={suggestion.categoryColor}
+                    style:border="1px solid {suggestion.categoryColor}"
+                  >
+                    {suggestion.categoryIcon}
+                    {suggestion.categoryName}
+                  </div>
                 </div>
 
                 <div class="flex gap-2">
-                  <button
-                    type="button"
-                    class="action-btn"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      viewSuggestion(suggestion.uuid);
-                    }}
-                  >
-                    <i class="fas fa-eye"></i> Ansehen
-                  </button>
-
                   {#if canShareSuggestion(suggestion, kvpState.effectiveRole)}
                     <button
                       type="button"

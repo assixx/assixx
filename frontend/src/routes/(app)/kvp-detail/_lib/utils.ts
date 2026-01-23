@@ -82,6 +82,21 @@ export function formatDate(dateString: string): string {
 }
 
 /**
+ * Format date with time for display (German locale)
+ */
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
  * Format currency for display (German locale)
  */
 export function formatCurrency(amount: number): string {
@@ -205,10 +220,17 @@ export function canUnshareSuggestion(
 }
 
 /**
- * Check if user can archive suggestion
+ * Check if user can archive suggestion (must be admin/root AND not already archived)
  */
-export function canArchiveSuggestion(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canArchiveSuggestion(userRole: string, status: string): boolean {
+  return (userRole === 'admin' || userRole === 'root') && status !== 'archived';
+}
+
+/**
+ * Check if user can unarchive (restore) suggestion (must be admin/root AND archived)
+ */
+export function canUnarchiveSuggestion(userRole: string, status: string): boolean {
+  return (userRole === 'admin' || userRole === 'root') && status === 'archived';
 }
 
 /**

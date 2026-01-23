@@ -219,7 +219,7 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
           </span>
         </div>
         <div class="form-field">
@@ -246,7 +246,7 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
             sind.
           </span>
         </div>

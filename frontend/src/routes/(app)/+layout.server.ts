@@ -62,6 +62,8 @@ interface DashboardCounts {
   blackboard: { count: number };
   calendar: { count: number };
   documents: { count: number };
+  /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+  kvp: { count: number };
   fetchedAt: string;
 }
 

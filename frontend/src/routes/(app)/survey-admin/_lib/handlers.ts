@@ -376,7 +376,7 @@ export function validateSurveyForm(
   formEndTime: string,
 ): boolean {
   if (formTitle.trim() === '') {
-    showErrorAlert('Bitte geben Sie einen Titel fuer die Umfrage ein');
+    showErrorAlert('Bitte geben Sie einen Titel für die Umfrage ein');
     return false;
   }
   if (formQuestions.length === 0) {

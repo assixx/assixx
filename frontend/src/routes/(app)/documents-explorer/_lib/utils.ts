@@ -162,13 +162,13 @@ export function getFileTypeDisplayInfo(mimeType: string, extension: string): Fil
 
 /**
  * Check if document should show "Neu" badge
- * Badge shows when: (uploaded in last 7 days) AND (user has NOT read it yet)
+ * Badge shows when: (uploaded in last 61 days) AND (user has NOT read it yet)
  */
 export function isDocumentNew(doc: Document): boolean {
   const uploadDate = new Date(doc.uploadedAt);
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const isRecent = uploadDate >= sevenDaysAgo;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 61);
+  const isRecent = uploadDate >= cutoffDate;
 
   return isRecent && !doc.isRead;
 }

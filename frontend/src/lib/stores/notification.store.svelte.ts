@@ -153,6 +153,8 @@ interface DashboardCountsResponse {
     blackboard: { count: number };
     calendar: { count: number };
     documents: { count: number };
+    /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+    kvp: { count: number };
     fetchedAt: string;
   };
 }
@@ -182,7 +184,8 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
     const chatCount = data.chat.totalUnread;
     const byType = data.notifications.byType as Partial<Record<string, number>>;
     const surveyCount = byType.survey ?? 0;
-    const kvpCount = byType.kvp ?? 0;
+    // KVP uses Pattern 2 (Individual read tracking) - separate count field
+    const kvpCount = data.kvp.count;
     const blackboardCount = data.blackboard.count;
     const calendarCount = data.calendar.count;
     const documentsCount = data.documents.count;
@@ -233,6 +236,8 @@ interface SSRCounts {
   blackboard: { count: number };
   calendar: { count: number };
   documents: { count: number };
+  /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+  kvp: { count: number };
 }
 
 /** Initialize counts from SSR data (no HTTP request needed) */
@@ -240,7 +245,8 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const chatCount = counts.chat.totalUnread;
   const byType = counts.notifications.byType as Partial<Record<string, number>>;
   const surveyCount = byType.survey ?? 0;
-  const kvpCount = byType.kvp ?? 0;
+  // KVP uses Pattern 2 (Individual read tracking) - separate count field
+  const kvpCount = counts.kvp.count;
   const blackboardCount = counts.blackboard.count;
   const calendarCount = counts.calendar.count;
   const documentsCount = counts.documents.count;

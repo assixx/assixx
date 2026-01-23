@@ -3,9 +3,11 @@
   import {
     getFileIconClass,
     formatFileSize,
+    formatDateTime,
     canShareSuggestion,
     canUnshareSuggestion,
     canArchiveSuggestion,
+    canUnarchiveSuggestion,
   } from './utils';
 
   import type { KvpSuggestion } from './types';
@@ -15,12 +17,82 @@
     onopensharemodal: () => void;
     onunshare: () => void;
     onarchive: () => void;
+    onunarchive: () => void;
+    onconfirm: () => Promise<void>;
+    onunconfirm: () => Promise<void>;
   }
 
-  const { suggestion, onopensharemodal, onunshare, onarchive }: Props = $props();
+  const {
+    suggestion,
+    onopensharemodal,
+    onunshare,
+    onarchive,
+    onunarchive,
+    onconfirm,
+    onunconfirm,
+  }: Props = $props();
+
+  // Loading state for confirm/unconfirm
+  let confirming = $state(false);
+
+  async function handleConfirm() {
+    confirming = true;
+    await onconfirm();
+    confirming = false;
+  }
+
+  async function handleUnconfirm() {
+    confirming = true;
+    await onunconfirm();
+    confirming = false;
+  }
 </script>
 
 <div class="detail-sidebar">
+  <!-- Read Confirmation (ALL Users - Pattern 2: Individual tracking) -->
+  <div class="sidebar-card">
+    <h3 class="section-title">
+      <i class="fas fa-check-circle"></i>
+      Lesebestätigung
+    </h3>
+    {#if suggestion.isConfirmed === true}
+      <div class="confirmation-done mb-4">
+        <i class="fas fa-check-circle text-success"></i>
+        <span>Bereits als gelesen markiert</span>
+        {#if suggestion.confirmedAt}
+          <span class="text-muted text-sm">{formatDateTime(suggestion.confirmedAt)}</span>
+        {/if}
+      </div>
+      <button
+        type="button"
+        class="btn btn-light w-full text-sm"
+        onclick={handleUnconfirm}
+        disabled={confirming}
+      >
+        {#if confirming}
+          <span class="spinner-ring spinner-ring--sm mr-2"></span>
+        {:else}
+          <i class="fas fa-undo mr-2"></i>
+        {/if}
+        Als ungelesen markieren
+      </button>
+    {:else}
+      <button
+        type="button"
+        class="btn btn-upload w-full"
+        onclick={handleConfirm}
+        disabled={confirming}
+      >
+        {#if confirming}
+          <span class="spinner-ring spinner-ring--sm mr-2"></span>
+        {:else}
+          <i class="fas fa-check mr-2"></i>
+        {/if}
+        Als gelesen markieren
+      </button>
+    {/if}
+  </div>
+
   <!-- Other Attachments -->
   {#if kvpDetailState.otherAttachments.length > 0}
     <div class="sidebar-card">
@@ -72,10 +144,16 @@
             Teilen rueckgaengig
           </button>
         {/if}
-        {#if canArchiveSuggestion(kvpDetailState.effectiveRole)}
+        {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
           <button type="button" class="btn btn-light" onclick={onarchive}>
             <i class="fas fa-archive"></i>
             Archivieren
+          </button>
+        {/if}
+        {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
+          <button type="button" class="btn btn-success" onclick={onunarchive}>
+            <i class="fas fa-undo-alt"></i>
+            Wiederherstellen
           </button>
         {/if}
       </div>

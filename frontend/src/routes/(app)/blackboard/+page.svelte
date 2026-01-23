@@ -18,6 +18,7 @@
   }
 
   // API Client (for mutations only)
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
@@ -28,7 +29,7 @@
   import '../../../styles/blackboard.css';
 
   // _lib/ imports
-  import { fetchEntryByUuid, uploadAttachment } from './_lib/api';
+  import { fetchEntryByUuid, uploadAttachment, confirmEntry } from './_lib/api';
   import BlackboardEntryModal from './_lib/BlackboardEntryModal.svelte';
   import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
   import {
@@ -379,7 +380,18 @@
     void saveEntry();
   }
 
-  function goToDetail(uuid: string): void {
+  /**
+   * Navigate to entry detail and auto-confirm if not yet read
+   */
+  function goToDetail(uuid: string, isConfirmed: boolean): void {
+    // Auto-confirm if not yet read (non-blocking)
+    if (!isConfirmed) {
+      void confirmEntry(uuid).then((success) => {
+        if (success) {
+          notificationStore.decrementCount('blackboard');
+        }
+      });
+    }
     void goto(resolvePath(`/blackboard/${uuid}`));
   }
 
@@ -601,21 +613,26 @@
     {:else}
       <div class="pinboard-grid" style="--zoom-level: {zoomLevel / 100};">
         {#each entries as entry (entry.id)}
+          {@const isRead = entry.isConfirmed === true}
+          {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
           <div
             class="pinboard-item"
             onclick={() => {
-              goToDetail(entry.uuid);
+              goToDetail(entry.uuid, isRead);
             }}
             role="button"
             tabindex="0"
             onkeydown={(e) => {
-              if (e.key === 'Enter') goToDetail(entry.uuid);
+              if (e.key === 'Enter') goToDetail(entry.uuid, isRead);
             }}
           >
             <div class="sticky-note sticky-note--{entry.color} sticky-note--large">
               <div class="sticky-note__pin"></div>
               <div class="sticky-note__header">
-                <div class="sticky-note__title">{entry.title}</div>
+                <div class="sticky-note__title">
+                  {entry.title}
+                  {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
+                </div>
                 {#if entry.expiresAt}
                   <span
                     class="sticky-note__expires"

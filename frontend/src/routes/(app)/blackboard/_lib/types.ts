@@ -64,6 +64,8 @@ export interface BlackboardEntry {
   authorLastName?: string;
   authorFullName?: string;
   isConfirmed?: boolean;
+  firstSeenAt?: string | null;
+  confirmedAt?: string | null;
   attachmentCount?: number;
   commentCount?: number;
   attachments?: BlackboardAttachment[];

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Dvar5o4UcGzii6WszMRjfLhGXIHZeXBuKf9Qfhy0f7iR3DJ4txxI71kRZRAQLQO
+\restrict scmb01XRhcn0cgBZEcM90STy43ksImjwrxNy6KVCrih3homYc5hNqYWoPf5sX7s
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -4147,6 +4147,55 @@ CREATE SEQUENCE "public"."kvp_comments_id_seq"
 --
 
 ALTER SEQUENCE "public"."kvp_comments_id_seq" OWNED BY "public"."kvp_comments"."id";
+
+
+--
+-- Name: kvp_confirmations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "public"."kvp_confirmations" (
+    "id" integer NOT NULL,
+    "tenant_id" integer NOT NULL,
+    "suggestion_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "confirmed_at" timestamp with time zone DEFAULT "now"()
+);
+
+ALTER TABLE ONLY "public"."kvp_confirmations" FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: TABLE "kvp_confirmations"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE "public"."kvp_confirmations" IS 'Tracks which users have marked KVP suggestions as read (Pattern 2: Individual read tracking like blackboard)';
+
+
+--
+-- Name: COLUMN "kvp_confirmations"."confirmed_at"; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN "public"."kvp_confirmations"."confirmed_at" IS 'Timestamp when user marked the suggestion as read';
+
+
+--
+-- Name: kvp_confirmations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE "public"."kvp_confirmations_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: kvp_confirmations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE "public"."kvp_confirmations_id_seq" OWNED BY "public"."kvp_confirmations"."id";
 
 
 --
@@ -8366,6 +8415,13 @@ ALTER TABLE ONLY "public"."kvp_comments" ALTER COLUMN "id" SET DEFAULT "nextval"
 
 
 --
+-- Name: kvp_confirmations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."kvp_confirmations_id_seq"'::"regclass");
+
+
+--
 -- Name: kvp_ratings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -9804,6 +9860,14 @@ ALTER TABLE ONLY "public"."machine_categories"
 
 
 --
+-- Name: kvp_confirmations kvp_confirmations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations"
+    ADD CONSTRAINT "kvp_confirmations_pkey" PRIMARY KEY ("id");
+
+
+--
 -- Name: root_logs root_logs_partitioned_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10105,6 +10169,14 @@ ALTER TABLE ONLY "public"."root_logs_2027_12"
 
 ALTER TABLE ONLY "public"."scheduled_messages"
     ADD CONSTRAINT "scheduled_messages_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: kvp_confirmations unique_kvp_confirmation; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations"
+    ADD CONSTRAINT "unique_kvp_confirmation" UNIQUE ("tenant_id", "suggestion_id", "user_id");
 
 
 --
@@ -14957,6 +15029,34 @@ CREATE INDEX "idx_feature_visits_tenant" ON "public"."feature_visits" USING "btr
 --
 
 CREATE INDEX "idx_feature_visits_user" ON "public"."feature_visits" USING "btree" ("user_id");
+
+
+--
+-- Name: idx_kvp_confirmations_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_kvp_confirmations_lookup" ON "public"."kvp_confirmations" USING "btree" ("tenant_id", "suggestion_id", "user_id");
+
+
+--
+-- Name: idx_kvp_confirmations_suggestion; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_kvp_confirmations_suggestion" ON "public"."kvp_confirmations" USING "btree" ("suggestion_id");
+
+
+--
+-- Name: idx_kvp_confirmations_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_kvp_confirmations_tenant" ON "public"."kvp_confirmations" USING "btree" ("tenant_id");
+
+
+--
+-- Name: idx_kvp_confirmations_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_kvp_confirmations_user" ON "public"."kvp_confirmations" USING "btree" ("user_id");
 
 
 --
@@ -21294,6 +21394,30 @@ ALTER TABLE ONLY "public"."kvp_comments"
 
 
 --
+-- Name: kvp_confirmations kvp_confirmations_suggestion_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations"
+    ADD CONSTRAINT "kvp_confirmations_suggestion_id_fkey" FOREIGN KEY ("suggestion_id") REFERENCES "public"."kvp_suggestions"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: kvp_confirmations kvp_confirmations_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations"
+    ADD CONSTRAINT "kvp_confirmations_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: kvp_confirmations kvp_confirmations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."kvp_confirmations"
+    ADD CONSTRAINT "kvp_confirmations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
+
+
+--
 -- Name: kvp_ratings kvp_ratings_ibfk_1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -22351,6 +22475,12 @@ ALTER TABLE "public"."feature_visits" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."kvp_comments" ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: kvp_confirmations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE "public"."kvp_confirmations" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: kvp_suggestions; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22781,6 +22911,13 @@ CREATE POLICY "tenant_isolation" ON "public"."kvp_comments" USING (((NULLIF("cur
 
 
 --
+-- Name: kvp_confirmations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "tenant_isolation" ON "public"."kvp_confirmations" USING (((NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text") IS NULL) OR ("tenant_id" = (NULLIF("current_setting"('app.tenant_id'::"text", true), ''::"text"))::integer)));
+
+
+--
 -- Name: kvp_suggestions tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -23201,5 +23338,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Dvar5o4UcGzii6WszMRjfLhGXIHZeXBuKf9Qfhy0f7iR3DJ4txxI71kRZRAQLQO
+\unrestrict scmb01XRhcn0cgBZEcM90STy43ksImjwrxNy6KVCrih3homYc5hNqYWoPf5sX7s
 

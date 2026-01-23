@@ -11,7 +11,14 @@ export type UserRole = 'root' | 'admin' | 'employee';
 /**
  * KVP Suggestion status
  */
-export type KvpStatus = 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
+export type KvpStatus =
+  | 'new'
+  | 'in_review'
+  | 'approved'
+  | 'implemented'
+  | 'rejected'
+  | 'archived'
+  | 'restored';
 
 /**
  * KVP Suggestion priority
@@ -79,6 +86,10 @@ export interface KvpSuggestion {
   actualSavings?: number;
   attachmentCount?: number;
   roi?: number;
+  /** Read confirmation status (Pattern 2: Individual tracking) */
+  isConfirmed?: boolean;
+  /** When user FIRST saw this suggestion (null = never seen, for "Neu" badge) */
+  firstSeenAt?: string | null;
 }
 
 /**
@@ -134,6 +145,7 @@ export interface StatusCounts {
   implemented?: number;
   rejected?: number;
   archived?: number;
+  restored?: number;
 }
 
 /**
