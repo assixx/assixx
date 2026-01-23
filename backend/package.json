@@ -63,7 +63,7 @@
     "nodemailer": "^7.0.12",
     "pg": "^8.17.2",
     "pg-cursor": "^2.16.2",
-    "pino": "^10.2.1",
+    "pino": "^10.3.0",
     "pino-http": "11.0.0",
     "pino-loki": "3.0.0",
     "pino-roll": "4.0.0",
@@ -72,7 +72,7 @@
     "rxjs": "^7.8.2",
     "uuid": "^13.0.0",
     "ws": "^8.19.0",
-    "zod": "4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
