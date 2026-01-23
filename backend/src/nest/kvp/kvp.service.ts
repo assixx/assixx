@@ -398,6 +398,7 @@ export class KvpService {
       c.icon as category_icon,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
+      a.name as area_name,
       u.first_name as submitted_by_name,
       u.last_name as submitted_by_lastname,
       admin.first_name as assigned_to_name,
@@ -412,6 +413,7 @@ export class KvpService {
     LEFT JOIN departments d ON s.department_id = d.id
     LEFT JOIN teams t ON s.team_id = t.id
     LEFT JOIN departments td ON t.department_id = td.id
+    LEFT JOIN areas a ON s.org_level = 'area' AND s.org_id = a.id
     LEFT JOIN users u ON s.submitted_by = u.id
     LEFT JOIN users admin ON s.assigned_to = admin.id
     LEFT JOIN kvp_confirmations kc ON s.id = kc.suggestion_id AND kc.user_id = ${userIdPlaceholder} AND kc.tenant_id = s.tenant_id
@@ -561,6 +563,7 @@ export class KvpService {
       c.icon as category_icon,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
+      a.name as area_name,
       u.first_name as submitted_by_name,
       u.last_name as submitted_by_lastname,
       admin.first_name as assigned_to_name,
@@ -573,6 +576,7 @@ export class KvpService {
     LEFT JOIN departments d ON s.department_id = d.id
     LEFT JOIN teams t ON s.team_id = t.id
     LEFT JOIN departments td ON t.department_id = td.id
+    LEFT JOIN areas a ON s.org_level = 'area' AND s.org_id = a.id
     LEFT JOIN users u ON s.submitted_by = u.id
     LEFT JOIN users admin ON s.assigned_to = admin.id
     LEFT JOIN kvp_confirmations kc ON s.id = kc.suggestion_id AND kc.user_id = ${userIdPlaceholder} AND kc.tenant_id = s.tenant_id

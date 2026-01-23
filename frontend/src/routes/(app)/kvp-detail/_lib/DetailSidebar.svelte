@@ -141,7 +141,7 @@
         {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id)}
           <button type="button" class="btn btn-secondary" onclick={onunshare}>
             <i class="fas fa-undo"></i>
-            Teilen rueckgaengig
+            Teilen rückgängig
           </button>
         {/if}
         {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}

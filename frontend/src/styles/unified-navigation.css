@@ -39,8 +39,8 @@
 
 .header .logo {
   margin-left: -13px;
-  width: 120px;
-  height: 50px;
+  width: 150px;
+  margin-bottom: 3px;
 }
 
 .header .header-actions {
@@ -329,10 +329,9 @@
 
 /* Logo size adjustment when sidebar is collapsed */
 body:has(.sidebar.collapsed) .header .logo {
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   margin-left: -4px;
-  width: auto;
-  height: 24px;
+  width: 57px;
 }
 
 .sidebar.collapsed .sidebar-title {

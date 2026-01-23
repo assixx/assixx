@@ -302,15 +302,15 @@
   }
 
   async function handleUnshare() {
-    const confirmed = await showConfirm('Moechten Sie das Teilen wirklich rueckgaengig machen?');
+    const confirmed = await showConfirm('Moechten Sie das Teilen wirklich rückgängig machen?');
     if (!confirmed) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
     if (result.success) {
-      showSuccessAlert('Teilen wurde rueckgaengig gemacht');
+      showSuccessAlert('Teilen wurde rückgängig gemacht');
       await invalidateAll();
     } else {
-      showErrorAlert(result.error ?? 'Fehler beim Rueckgaengigmachen');
+      showErrorAlert(result.error ?? 'Fehler beim rückgängigmachen');
     }
   }
 

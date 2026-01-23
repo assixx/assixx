@@ -69,6 +69,7 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/calendar': ['employee', 'admin', 'root'],
   '/documents-explorer': ['employee', 'admin', 'root'],
   '/kvp': ['employee', 'admin', 'root'],
+  '/kvp-detail': ['employee', 'admin', 'root'],
   '/survey-employee': ['employee', 'admin', 'root'],
   '/account-settings': ['employee', 'admin', 'root'],
 };

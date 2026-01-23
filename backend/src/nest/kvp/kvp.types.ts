@@ -42,6 +42,7 @@ export interface DbSuggestion {
   category_icon?: string;
   department_name?: string;
   team_name?: string;
+  area_name?: string;
   submitted_by_name?: string;
   submitted_by_lastname?: string;
   assigned_to_name?: string;

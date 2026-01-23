@@ -167,7 +167,7 @@ export async function unshareSuggestion(
   } catch (err) {
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
-    const message = err instanceof Error ? err.message : 'Fehler beim Rueckgaengigmachen';
+    const message = err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
     return { success: false, error: message };
   }
 }
