@@ -15,12 +15,20 @@ import { BlackboardModule } from '../blackboard/blackboard.module.js';
 import { CalendarModule } from '../calendar/calendar.module.js';
 import { ChatModule } from '../chat/chat.module.js';
 import { DocumentsModule } from '../documents/documents.module.js';
+import { KvpModule } from '../kvp/kvp.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { DashboardController } from './dashboard.controller.js';
 import { DashboardService } from './dashboard.service.js';
 
 @Module({
-  imports: [ChatModule, NotificationsModule, BlackboardModule, CalendarModule, DocumentsModule],
+  imports: [
+    ChatModule,
+    NotificationsModule,
+    BlackboardModule,
+    CalendarModule,
+    DocumentsModule,
+    KvpModule,
+  ],
   controllers: [DashboardController],
   providers: [DashboardService],
   exports: [DashboardService],

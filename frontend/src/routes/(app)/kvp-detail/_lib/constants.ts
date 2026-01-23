@@ -13,6 +13,9 @@ export const API_ENDPOINTS = {
   kvpAttachments: (id: string) => `/kvp/${id}/attachments`,
   kvpShare: (id: string) => `/kvp/${id}/share`,
   kvpUnshare: (id: string) => `/kvp/${id}/unshare`,
+  kvpArchive: (id: string) => `/kvp/${id}/archive`,
+  kvpUnarchive: (id: string) => `/kvp/${id}/unarchive`,
+  kvpConfirm: (uuid: string) => `/kvp/${uuid}/confirm`,
   attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
   departments: '/departments',
   teams: '/teams',
@@ -30,18 +33,20 @@ export const STATUS_BADGE_CLASSES: Record<KvpStatus, string> = {
   implemented: 'badge--kvp-implemented',
   rejected: 'badge--kvp-rejected',
   archived: 'badge--kvp-archived',
+  restored: 'badge--kvp-restored',
 } as const;
 
 /**
  * Status display text (German)
  */
 export const STATUS_TEXT: Record<KvpStatus, string> = {
-  new: 'Neu',
+  new: 'Offen',
   in_review: 'In Prüfung',
   approved: 'Genehmigt',
   implemented: 'Umgesetzt',
   rejected: 'Abgelehnt',
   archived: 'Archiviert',
+  restored: 'Wiederhergestellt',
 } as const;
 
 /**
@@ -98,7 +103,7 @@ export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = {
  * Status options for admin dropdown
  */
 export const STATUS_OPTIONS: { value: KvpStatus; label: string }[] = [
-  { value: 'new', label: 'Neu' },
+  { value: 'new', label: 'Offen' },
   { value: 'in_review', label: 'In Prüfung' },
   { value: 'approved', label: 'Genehmigt' },
   { value: 'implemented', label: 'Umgesetzt' },

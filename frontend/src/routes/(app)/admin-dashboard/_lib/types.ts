@@ -77,6 +77,7 @@ export interface BlackboardEntry {
   commentCount?: number;
   attachmentCount?: number;
   isConfirmed?: boolean;
+  firstSeenAt?: string | null;
 }
 
 /** Formatted event date */

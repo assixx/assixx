@@ -44,7 +44,7 @@
             />
             <span class="choice-card__text">
               Team
-              <span class="choice-card__description">Fuer alle Team-Mitglieder sichtbar</span>
+              <span class="choice-card__description">Für alle Team-Mitglieder sichtbar</span>
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'team'}
@@ -110,7 +110,7 @@
             />
             <span class="choice-card__text">
               Abteilung
-              <span class="choice-card__description">Fuer Ihre gesamte Abteilung sichtbar</span>
+              <span class="choice-card__description">Für Ihre gesamte Abteilung sichtbar</span>
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'department'}
@@ -177,7 +177,7 @@
             />
             <span class="choice-card__text">
               Bereich
-              <span class="choice-card__description">Fuer alle im gleichen Bereich sichtbar</span>
+              <span class="choice-card__description">Für alle im gleichen Bereich sichtbar</span>
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'area'}
@@ -243,7 +243,7 @@
             />
             <span class="choice-card__text">
               Firma
-              <span class="choice-card__description">Fuer die gesamte Firma sichtbar</span>
+              <span class="choice-card__description">Für die gesamte Firma sichtbar</span>
             </span>
           </label>
         </div>

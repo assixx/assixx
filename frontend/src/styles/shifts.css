@@ -1128,6 +1128,20 @@
   cursor: not-allowed;
 }
 
+/* Filter Dropdowns - Prevent text wrapping and ensure proper width */
+#admin-filter-controls .dropdown {
+  min-width: 200px;
+  width: 100%;
+}
+
+#admin-filter-controls .dropdown__trigger {
+  min-width: 200px;
+}
+
+#admin-filter-controls .dropdown__option {
+  white-space: nowrap;
+}
+
 .remove-favorite:hover {
   transform: scale(1.2);
   border-color: rgb(244 67 54);

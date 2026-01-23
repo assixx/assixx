@@ -262,9 +262,19 @@
   font-size: 0.75rem; /* 12px */
 }
 
-/* Large choice card (more padding) */
+/* Large choice card (more padding, text expands for consistent dropdown placement) */
 .choice-card--lg {
   padding: var(--spacing-4) var(--spacing-5); /* 16px 20px */
+}
+
+.choice-card--lg .choice-card__text {
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* Allow description to wrap within nowrap parent */
+.choice-card--lg .choice-card__description {
+  white-space: normal;
 }
 
 /* ========================================

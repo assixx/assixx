@@ -46,8 +46,9 @@ interface DbBlackboardEntry {
   updated_at: Date;
   uuid_created_at?: Date;
   author_name?: string;
-  is_confirmed?: number;
+  is_confirmed?: boolean | number;
   confirmed_at?: Date;
+  first_seen_at?: Date;
   author_first_name?: string;
   author_last_name?: string;
   author_full_name?: string;
@@ -169,8 +170,9 @@ const FETCH_ENTRIES_BASE_QUERY = `
          u.first_name as author_first_name,
          u.last_name as author_last_name,
          CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-         CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+         COALESCE(c.is_confirmed, false) as is_confirmed,
          c.confirmed_at as confirmed_at,
+         c.first_seen_at as first_seen_at,
          (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
          (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
   FROM blackboard_entries e
@@ -278,6 +280,7 @@ export class BlackboardService {
 
     transformed['isConfirmed'] = Boolean(entry.is_confirmed);
     transformed['confirmedAt'] = entry.confirmed_at?.toISOString() ?? null;
+    transformed['firstSeenAt'] = entry.first_seen_at?.toISOString() ?? null;
 
     if (entry.author_full_name !== undefined && entry.author_full_name !== '') {
       transformed['authorFullName'] = entry.author_full_name;
@@ -291,6 +294,7 @@ export class BlackboardService {
 
     delete transformed['is_confirmed'];
     delete transformed['confirmed_at'];
+    delete transformed['first_seen_at'];
 
     return transformed as BlackboardEntryResponse;
   }
@@ -567,8 +571,9 @@ export class BlackboardService {
              u.first_name as author_first_name,
              u.last_name as author_last_name,
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-             CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+             COALESCE(c.is_confirmed, false) as is_confirmed,
              c.confirmed_at as confirmed_at,
+             c.first_seen_at as first_seen_at,
              (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
              (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e
@@ -1111,6 +1116,7 @@ export class BlackboardService {
 
   /**
    * Confirm reading a blackboard entry
+   * Uses UPSERT: first_seen_at is set only on first confirmation (never reset)
    */
   async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
@@ -1136,18 +1142,14 @@ export class BlackboardService {
     }
     const numericId = entries[0].id;
 
-    // Check if already confirmed
-    const confirmations = await this.db.query(
-      'SELECT * FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
-      [numericId, userId],
-    );
-    if (confirmations.length > 0) {
-      return { message: 'Entry already confirmed' };
-    }
-
-    // Add confirmation
+    // UPSERT: Insert if not exists, otherwise update is_confirmed
+    // first_seen_at is only set on INSERT (never reset on re-confirm)
     await this.db.query(
-      'INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES ($1, $2, $3)',
+      `INSERT INTO blackboard_confirmations
+         (tenant_id, entry_id, user_id, confirmed_at, first_seen_at, is_confirmed)
+       VALUES ($1, $2, $3, NOW(), NOW(), true)
+       ON CONFLICT (entry_id, user_id, tenant_id)
+       DO UPDATE SET is_confirmed = true, confirmed_at = NOW()`,
       [tenantId, numericId, userId],
     );
 
@@ -1156,6 +1158,7 @@ export class BlackboardService {
 
   /**
    * Remove confirmation (mark as unread)
+   * Sets is_confirmed = false instead of deleting to preserve first_seen_at
    */
   async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
@@ -1181,8 +1184,11 @@ export class BlackboardService {
     }
     const numericId = entries[0].id;
 
+    // Set is_confirmed = false (preserve first_seen_at for "Neu" badge logic)
     await this.db.query(
-      'DELETE FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
+      `UPDATE blackboard_confirmations
+       SET is_confirmed = false, confirmed_at = NULL
+       WHERE entry_id = $1 AND user_id = $2`,
       [numericId, userId],
     );
 
@@ -1259,8 +1265,9 @@ export class BlackboardService {
              u.first_name as author_first_name,
              u.last_name as author_last_name,
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-             CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+             COALESCE(c.is_confirmed, false) as is_confirmed,
              c.confirmed_at as confirmed_at,
+             c.first_seen_at as first_seen_at,
              (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
              (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e

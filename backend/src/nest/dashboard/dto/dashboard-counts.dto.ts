@@ -47,6 +47,8 @@ export const DashboardCountsSchema = z.object({
   blackboard: CountItemSchema,
   calendar: CountItemSchema,
   documents: CountItemSchema,
+  /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+  kvp: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });

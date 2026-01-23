@@ -696,7 +696,7 @@ LIMIT 10;
 SELECT pg_stat_statements_reset();
 ```
 
-### Bash-Alias fuer schnellen Zugriff
+### Bash-Alias für schnellen Zugriff
 
 ```bash
 # Top 10 langsame Queries

@@ -23,7 +23,7 @@
         </button>
       </div>
       <div class="ds-modal__body">
-        <p class="mb-4">Bitte geben Sie einen Grund fuer die Ablehnung an:</p>
+        <p class="mb-4">Bitte geben Sie einen Grund für die Ablehnung an:</p>
         <div class="form-field">
           <label class="form-field__label" for="rejectionReasonInput">Ablehnungsgrund</label>
           <textarea

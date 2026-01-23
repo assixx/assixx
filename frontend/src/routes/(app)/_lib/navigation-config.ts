@@ -81,6 +81,16 @@ export const rootMenuItems: NavItem[] = [
     url: '/calendar',
     badgeType: 'calendar',
   },
+  {
+    id: 'lean-management',
+    icon: ICONS.lean,
+    label: 'LEAN-Management',
+    hasSubmenu: true,
+    submenu: [
+      { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
+      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-employee', badgeType: 'surveys' },
+    ],
+  },
   { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
   { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },

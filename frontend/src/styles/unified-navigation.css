@@ -822,8 +822,6 @@ body:has(.sidebar.collapsed) .header .logo {
 .submenu-item.active .submenu-link {
   /* 20px in rem */
 
-  margin-right: 2rem;
-
   /* 80px in rem */
   border-radius: var(--glass-card-radius);
 
@@ -1174,5 +1172,5 @@ body:has(.sidebar.collapsed) .header .logo {
 
 /* Logout Button - Custom padding override */
 #logout-btn {
-  padding: 12px 22px;
+  padding: 10px 15px;
 }

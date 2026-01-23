@@ -5,12 +5,14 @@
 import {
   STATUS_BADGE_CLASSES,
   STATUS_TEXT,
+  PRIORITY_BADGE_CLASSES,
+  PRIORITY_TEXT,
   VISIBILITY_BADGE_CLASSES,
   VISIBILITY_INFO,
   UPLOAD_CONFIG,
 } from './constants';
 
-import type { KvpSuggestion, KvpStatus, OrgLevel } from './types';
+import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel } from './types';
 
 /**
  * Get status badge CSS class
@@ -24,6 +26,20 @@ export function getStatusBadgeClass(status: KvpStatus): string {
  */
 export function getStatusText(status: KvpStatus): string {
   return STATUS_TEXT[status];
+}
+
+/**
+ * Get priority badge CSS class
+ */
+export function getPriorityBadgeClass(priority: KvpPriority): string {
+  return PRIORITY_BADGE_CLASSES[priority];
+}
+
+/**
+ * Get priority display text
+ */
+export function getPriorityText(priority: KvpPriority): string {
+  return PRIORITY_TEXT[priority];
 }
 
 /**

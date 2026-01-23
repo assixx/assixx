@@ -48,6 +48,12 @@ export interface DbSuggestion {
   assigned_to_lastname?: string;
   attachment_count?: number;
   comment_count?: number;
+  /** Read confirmation status (COALESCE returns boolean, never null) */
+  is_confirmed?: boolean;
+  /** When the user confirmed (read) this suggestion (null from LEFT JOIN) */
+  confirmed_at?: Date | string | null;
+  /** When the user FIRST saw this suggestion (null = never seen) */
+  first_seen_at?: Date | string | null;
 }
 
 export interface DbComment {
@@ -84,10 +90,49 @@ export interface DbDashboardStats {
   avg_savings: number | null;
 }
 
+/**
+ * Basic user org info (legacy - kept for backwards compatibility)
+ */
 export interface UserOrgInfo {
   team_id: number | null;
   department_id: number | null;
   area_id: number | null;
+}
+
+/**
+ * Extended user org info for KVP visibility checks
+ *
+ * Contains all memberships, lead positions, and inheritance chains
+ * needed to determine what KVP suggestions a user can see.
+ *
+ * @see /docs/kvp-share-doc.md for full visibility logic
+ */
+export interface ExtendedUserOrgInfo {
+  // Direct memberships (user is member/assigned)
+  /** Team IDs where user is a member (from user_teams) */
+  teamIds: number[];
+  /** Department IDs where user is assigned (from user_departments) */
+  departmentIds: number[];
+  /** Area IDs derived from user's departments */
+  areaIds: number[];
+
+  // Lead positions (user is the lead)
+  /** Team IDs where user is team_lead_id */
+  teamLeadOf: number[];
+  /** Department IDs where user is department_lead_id */
+  departmentLeadOf: number[];
+  /** Area IDs where user is area_lead_id */
+  areaLeadOf: number[];
+
+  // Inheritance chains (for visibility propagation)
+  /** Department IDs of user's teams (Team → Department inheritance) */
+  teamsDepartmentIds: number[];
+  /** Area IDs of user's departments (Department → Area inheritance) */
+  departmentsAreaIds: number[];
+
+  // Special access flag
+  /** If true, user sees ALL KVPs in tenant (bypasses visibility) */
+  hasFullAccess: boolean;
 }
 
 // ============================================================================
@@ -120,6 +165,12 @@ export interface KVPSuggestionResponse {
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  /** Whether current user has marked this suggestion as read */
+  isConfirmed?: boolean;
+  /** When the user confirmed (read) this suggestion */
+  confirmedAt?: string;
+  /** When the user FIRST saw this suggestion (never reset, for "Neu" badge) */
+  firstSeenAt?: string;
   category?: {
     id: number;
     name: string;

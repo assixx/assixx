@@ -15,6 +15,7 @@ import { CalendarService } from '../calendar/calendar.service.js';
 import { ChatService } from '../chat/chat.service.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { DocumentsService } from '../documents/documents.service.js';
+import { KvpService } from '../kvp/kvp.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type {
   ChatCounts,
@@ -42,6 +43,7 @@ export class DashboardService {
     private readonly blackboardService: BlackboardService,
     private readonly calendarService: CalendarService,
     private readonly documentsService: DocumentsService,
+    private readonly kvpService: KvpService,
   ) {}
 
   /**
@@ -56,29 +58,39 @@ export class DashboardService {
    */
   async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCountsResponse> {
     // Execute all count queries in parallel
-    const [chatResult, notificationsResult, blackboardResult, calendarResult, documentsResult] =
-      await Promise.all([
-        this.fetchChatCounts().catch((err: unknown) => {
-          this.logger.warn(`Chat counts failed: ${String(err)}`);
-          return EMPTY_CHAT;
-        }),
-        this.fetchNotificationStats(user.id, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Notification stats failed: ${String(err)}`);
-          return EMPTY_NOTIFICATIONS;
-        }),
-        this.fetchBlackboardCount(user.id, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Blackboard count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        }),
-        this.fetchCalendarCount(user, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Calendar count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        }),
-        this.fetchDocumentsCount(user, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Documents count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        }),
-      ]);
+    const [
+      chatResult,
+      notificationsResult,
+      blackboardResult,
+      calendarResult,
+      documentsResult,
+      kvpResult,
+    ] = await Promise.all([
+      this.fetchChatCounts().catch((err: unknown) => {
+        this.logger.warn(`Chat counts failed: ${String(err)}`);
+        return EMPTY_CHAT;
+      }),
+      this.fetchNotificationStats(user.id, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Notification stats failed: ${String(err)}`);
+        return EMPTY_NOTIFICATIONS;
+      }),
+      this.fetchBlackboardCount(user.id, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Blackboard count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
+      this.fetchCalendarCount(user, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Calendar count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
+      this.fetchDocumentsCount(user, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Documents count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
+      this.fetchKvpCount(user.id, tenantId).catch((err: unknown) => {
+        this.logger.warn(`KVP count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
+    ]);
 
     const data: DashboardCounts = {
       chat: chatResult,
@@ -86,6 +98,7 @@ export class DashboardService {
       blackboard: blackboardResult,
       calendar: calendarResult,
       documents: documentsResult,
+      kvp: kvpResult,
       fetchedAt: new Date().toISOString(),
     };
 
@@ -156,5 +169,12 @@ export class DashboardService {
     tenantId: number,
   ): Promise<{ count: number }> {
     return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
+  }
+
+  /**
+   * Fetch KVP unconfirmed count (Pattern 2: Individual read tracking)
+   */
+  private async fetchKvpCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    return await this.kvpService.getUnconfirmedCount(userId, tenantId);
   }
 }

@@ -115,9 +115,15 @@ export async function deleteEntry(id: number): Promise<void> {
 
 /**
  * Confirm entry (mark as read/confirmed)
+ * Uses UUID for consistent API pattern
  */
-export async function confirmEntry(entryId: number): Promise<void> {
-  await apiClient.post(`/blackboard/${entryId}/confirm`, {});
+export async function confirmEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/confirm`, {});
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================

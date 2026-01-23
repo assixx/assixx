@@ -11,7 +11,14 @@ export type UserRole = 'root' | 'admin' | 'employee';
 /**
  * KVP Suggestion status
  */
-export type KvpStatus = 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
+export type KvpStatus =
+  | 'new'
+  | 'in_review'
+  | 'approved'
+  | 'implemented'
+  | 'rejected'
+  | 'archived'
+  | 'restored';
 
 /**
  * KVP Suggestion priority
@@ -73,6 +80,10 @@ export interface KvpSuggestion {
   createdAt: string;
   updatedAt?: string;
   attachmentCount?: number;
+  /** Read confirmation status (Pattern 2: Individual tracking) */
+  isConfirmed?: boolean;
+  /** When the user confirmed (read) this suggestion */
+  confirmedAt?: string;
 }
 
 /**
