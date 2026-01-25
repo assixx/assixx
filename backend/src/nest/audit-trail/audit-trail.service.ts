@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 import type { QueryResultRow } from 'pg';
 
 import type { NestAuthUser } from '../common/index.js';
-import { DatabaseService } from '../database/index.js';
+import { DatabaseService, UserRepository } from '../database/index.js';
 import type {
   AuditEntryResponse,
   AuditPaginationResponse,
@@ -127,7 +127,10 @@ interface DbUserInfo extends QueryResultRow {
 export class AuditTrailService {
   private readonly logger = new Logger(AuditTrailService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly userRepository: UserRepository,
+  ) {}
 
   // ==========================================================================
   // PUBLIC METHODS
@@ -651,7 +654,7 @@ export class AuditTrailService {
     try {
       // Get user details
       const userRows = await this.db.query<DbUserInfo>(
-        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2`,
+        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
         [userId, tenantId],
       );
 
@@ -753,23 +756,19 @@ export class AuditTrailService {
 
   /**
    * Verify password for destructive operations
+   * SECURITY: Only allows ACTIVE users (is_active = 1) to perform destructive operations
    */
   private async verifyPassword(currentUser: NestAuthUser, password: string): Promise<void> {
-    const rows = await this.db.query<DbUserInfo>(
-      'SELECT password FROM users WHERE id = $1 AND tenant_id = $2',
-      [currentUser.id, currentUser.tenantId],
+    const passwordHash = await this.userRepository.getPasswordHash(
+      currentUser.id,
+      currentUser.tenantId,
     );
 
-    if (rows.length === 0) {
-      throw new NotFoundException('User not found');
+    if (passwordHash === null) {
+      throw new NotFoundException('User not found or inactive');
     }
 
-    const user = rows[0];
-    if (user?.password === undefined) {
-      throw new NotFoundException('User not found');
-    }
-
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(password, passwordHash);
     if (!isValid) {
       throw new ForbiddenException('Invalid password');
     }

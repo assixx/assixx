@@ -5,7 +5,12 @@
 -->
 <script lang="ts">
   import { AVAILABILITY_ICONS, AVAILABILITY_LABELS, AVAILABILITY_COLORS } from './constants';
-  import { getEmployeeDisplayName, getEffectiveAvailabilityForWeek } from './utils';
+  import {
+    getEmployeeDisplayName,
+    getEffectiveAvailabilityForWeek,
+    getOverlappingUnavailability,
+    formatAvailabilityPeriod,
+  } from './utils';
 
   import type { Employee } from './types';
 
@@ -55,10 +60,12 @@
   <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
   <div class="employee-list">
     {#each employees as employee (employee.id)}
-      {@const availabilityStatus = getEffectiveAvailabilityForWeek(employee, weekDates)}
+      {@const isFullyUnavailable =
+        getEffectiveAvailabilityForWeek(employee, weekDates) !== 'available'}
+      {@const overlappingStatus = getOverlappingUnavailability(employee, weekDates)}
       <div
         class="employee-item"
-        class:unavailable={availabilityStatus !== 'available'}
+        class:unavailable={isFullyUnavailable}
         class:locked={isLocked()}
         data-employee-id={employee.id}
         data-employee-name={getEmployeeDisplayName(employee)}
@@ -71,11 +78,18 @@
       >
         <div class="employee-info">
           <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
-          {#if availabilityStatus !== 'available'}
-            <span class="availability-badge {AVAILABILITY_COLORS[availabilityStatus]}">
-              <i class="fas {AVAILABILITY_ICONS[availabilityStatus]}"></i>
-              {AVAILABILITY_LABELS[availabilityStatus]}
+          {#if overlappingStatus !== 'available'}
+            {@const period = formatAvailabilityPeriod(
+              employee.availabilityStart,
+              employee.availabilityEnd,
+            )}
+            <span class="availability-badge {AVAILABILITY_COLORS[overlappingStatus]}">
+              <i class="fas {AVAILABILITY_ICONS[overlappingStatus]}"></i>
+              {AVAILABILITY_LABELS[overlappingStatus]}
             </span>
+            {#if period}
+              <span class="availability-period">{period}</span>
+            {/if}
           {/if}
         </div>
       </div>

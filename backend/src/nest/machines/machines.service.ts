@@ -506,6 +506,7 @@ export class MachinesService {
 
   /**
    * List all machines with filters
+   * Excludes soft-deleted machines (is_active = 4) by default
    */
   async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
     this.logger.debug(`Listing machines for tenant ${tenantId}`);
@@ -528,7 +529,7 @@ export class MachinesService {
       LEFT JOIN areas a ON m.area_id = a.id AND a.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
-      WHERE m.tenant_id = $1
+      WHERE m.tenant_id = $1 AND m.is_active != 4
     `;
     const params: unknown[] = [tenantId];
     let paramIndex = 2;

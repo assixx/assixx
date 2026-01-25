@@ -1,13 +1,8 @@
 <script lang="ts">
-  import { POSITION_OPTIONS, AVAILABILITY_OPTIONS, MESSAGES } from './constants';
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    getAvailabilityLabel,
-    calculatePasswordStrength,
-  } from './utils';
+  import { POSITION_OPTIONS, MESSAGES } from './constants';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
-  import type { Team, FormIsActiveStatus, AvailabilityStatus } from './types';
+  import type { Team, FormIsActiveStatus } from './types';
 
   // =============================================================================
   // PROPS
@@ -32,10 +27,6 @@
     formDateOfBirth: string;
     formIsActive: FormIsActiveStatus;
     formTeamIds: number[];
-    formAvailabilityStatus: AvailabilityStatus;
-    formAvailabilityStart: string;
-    formAvailabilityEnd: string;
-    formAvailabilityNotes: string;
     emailError: boolean;
     passwordError: boolean;
     // Callbacks
@@ -47,7 +38,7 @@
 
   /* eslint-disable */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), formAvailabilityStatus = $bindable(), formAvailabilityStart = $bindable(), formAvailabilityEnd = $bindable(), formAvailabilityNotes = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords }: Props = $props();
   /* eslint-enable */
 
   // =============================================================================
@@ -57,7 +48,6 @@
   // Dropdown States
   let positionDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
-  let availabilityDropdownOpen = $state(false);
 
   // Password Visibility
   let showPassword = $state(false);
@@ -75,7 +65,6 @@
   function togglePositionDropdown(e: MouseEvent): void {
     e.stopPropagation();
     statusDropdownOpen = false;
-    availabilityDropdownOpen = false;
     positionDropdownOpen = !positionDropdownOpen;
   }
 
@@ -87,25 +76,12 @@
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
     positionDropdownOpen = false;
-    availabilityDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
   function selectStatus(status: FormIsActiveStatus): void {
     formIsActive = status;
     statusDropdownOpen = false;
-  }
-
-  function toggleAvailabilityDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    positionDropdownOpen = false;
-    statusDropdownOpen = false;
-    availabilityDropdownOpen = !availabilityDropdownOpen;
-  }
-
-  function selectAvailability(status: AvailabilityStatus): void {
-    formAvailabilityStatus = status;
-    availabilityDropdownOpen = false;
   }
 
   // =============================================================================
@@ -149,7 +125,7 @@
   }
 
   $effect(() => {
-    if (positionDropdownOpen || statusDropdownOpen || availabilityDropdownOpen) {
+    if (positionDropdownOpen || statusDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
@@ -158,9 +134,6 @@
         }
         if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
           statusDropdownOpen = false;
-        }
-        if (availabilityDropdownOpen && isClickOutsideDropdown(target, 'availability-dropdown')) {
-          availabilityDropdownOpen = false;
         }
       };
 
@@ -470,81 +443,6 @@
               <i class="fas fa-info-circle mr-1"></i>
               {MESSAGES.TEAM_MULTISELECT_HINT}
             </span>
-          </div>
-        </div>
-
-        <!-- Availability Section -->
-        <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
-          <h4 class="text-[var(--color-text-primary)] font-medium mb-4">Verfügbarkeit</h4>
-
-          <div class="form-field">
-            <label class="form-field__label" for="availability-status">Verfügbarkeitsstatus</label>
-            <div class="dropdown" id="availability-dropdown">
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="dropdown__trigger"
-                class:active={availabilityDropdownOpen}
-                onclick={toggleAvailabilityDropdown}
-              >
-                <span>{getAvailabilityLabel(formAvailabilityStatus)}</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <div class="dropdown__menu" class:active={availabilityDropdownOpen}>
-                {#each AVAILABILITY_OPTIONS as option (option.value)}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    class="dropdown__option"
-                    onclick={() => {
-                      selectAvailability(option.value);
-                    }}
-                  >
-                    {option.label}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="form-field__label" for="availability-start-date">Von Datum</label>
-            <div class="date-picker">
-              <i class="date-picker__icon fas fa-calendar"></i>
-              <input
-                type="date"
-                id="availability-start-date"
-                name="availabilityStart"
-                class="date-picker__input"
-                bind:value={formAvailabilityStart}
-              />
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="form-field__label" for="availability-end-date">Bis Datum</label>
-            <div class="date-picker">
-              <i class="date-picker__icon fas fa-calendar"></i>
-              <input
-                type="date"
-                id="availability-end-date"
-                name="availabilityEnd"
-                class="date-picker__input"
-                bind:value={formAvailabilityEnd}
-              />
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="form-field__label" for="availability-notes">Notiz (optional)</label>
-            <textarea
-              id="availability-notes"
-              name="availabilityNotes"
-              class="form-field__control"
-              rows="3"
-              placeholder="z.B. Familienurlaub, Krankmeldung bis..."
-              bind:value={formAvailabilityNotes}
-            ></textarea>
           </div>
         </div>
 

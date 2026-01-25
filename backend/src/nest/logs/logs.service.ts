@@ -14,6 +14,7 @@ import {
 import bcrypt from 'bcryptjs';
 
 import { DatabaseService } from '../database/database.service.js';
+import { UserRepository } from '../database/repositories/user.repository.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type {
   DeleteLogsBodyDto,
@@ -76,10 +77,7 @@ interface TopUserResult {
   count: string | number | null;
 }
 
-interface DbUserRow {
-  id: number;
-  password: string;
-}
+// DbUserRow removed - now using UserRepository.getPasswordHash() instead
 
 // ============================================================
 // RESPONSE TYPES
@@ -143,7 +141,10 @@ interface LogsFilterParams {
 export class LogsService {
   private readonly logger = new Logger(LogsService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly userRepository: UserRepository,
+  ) {}
 
   // ============================================================
   // ACCESS CONTROL
@@ -163,21 +164,22 @@ export class LogsService {
 
   /**
    * Verify user password for destructive operations
+   * SECURITY: Only allows ACTIVE users (is_active = 1) to perform destructive operations
    */
   private async verifyPassword(currentUser: NestAuthUser, password: string): Promise<void> {
-    const users = await this.databaseService.query<DbUserRow>(
-      'SELECT id, password FROM users WHERE id = $1 AND tenant_id = $2',
-      [currentUser.id, currentUser.tenantId],
+    const passwordHash = await this.userRepository.getPasswordHash(
+      currentUser.id,
+      currentUser.tenantId,
     );
 
-    if (users.length === 0 || users[0] === undefined) {
+    if (passwordHash === null) {
       throw new UnauthorizedException({
         code: 'UNAUTHORIZED',
-        message: 'User not found',
+        message: 'User not found or inactive',
       });
     }
 
-    const isValidPassword = await bcrypt.compare(password, users[0].password);
+    const isValidPassword = await bcrypt.compare(password, passwordHash);
     if (!isValidPassword) {
       throw new UnauthorizedException({
         code: 'UNAUTHORIZED',

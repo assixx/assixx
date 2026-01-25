@@ -113,9 +113,53 @@ export interface TeamFilters {
 }
 
 /**
+ * Database row type for team member queries
+ */
+interface TeamMemberRow extends RowDataPacket {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  position: string | null;
+  employee_id: string | null;
+  role: string | null;
+  user_role: string | null;
+  availability_status: string | null;
+  availability_start: Date | null;
+  availability_end: Date | null;
+}
+
+/**
  * SQL query for finding a team by ID
  */
 const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id = $2';
+
+/**
+ * SQL query for team members with date range availability
+ */
+const TEAM_MEMBERS_DATE_RANGE_QUERY = `
+  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+         ut.role, u.role as user_role,
+         ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
+  FROM users u
+  JOIN user_teams ut ON u.id = ut.user_id
+  LEFT JOIN employee_availability ea ON u.id = ea.employee_id
+         AND ea.start_date <= $2::date AND ea.end_date >= $3::date
+  WHERE ut.team_id = $1`;
+
+/**
+ * SQL query for team members with current date availability
+ */
+const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
+  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+         ut.role, u.role as user_role,
+         ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
+  FROM users u
+  JOIN user_teams ut ON u.id = ut.user_id
+  LEFT JOIN employee_availability ea ON u.id = ea.employee_id
+         AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
+  WHERE ut.team_id = $1`;
 
 @Injectable()
 export class TeamsService {
@@ -279,13 +323,14 @@ export class TeamsService {
       role: string;
     }
 
+    // SECURITY: Only allow ACTIVE users (is_active = 1) as team leaders
     const [rows] = await execute<UserRow[]>(
-      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [leaderId, tenantId],
     );
 
     if (rows.length === 0) {
-      throw new BadRequestException('Invalid leader ID');
+      throw new BadRequestException('Invalid leader ID or user inactive');
     }
 
     const user = rows[0];
@@ -540,42 +585,31 @@ export class TeamsService {
   }
 
   /**
-   * Get team members
+   * Get team members with optional date range for availability filtering.
+   * If dates provided, returns entries overlapping the range. Otherwise uses CURRENT_DATE.
    */
-  async getTeamMembers(id: number, tenantId: number): Promise<TeamMember[]> {
-    this.logger.debug(`Fetching members for team ${id}`);
+  async getTeamMembers(
+    id: number,
+    tenantId: number,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<TeamMember[]> {
+    const dateRangeStr = startDate !== undefined ? `${startDate} - ${endDate ?? 'none'}` : 'none';
+    this.logger.debug(`Fetching members for team ${id}, dateRange: ${dateRangeStr}`);
 
     const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
-
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
-    interface MemberRow extends RowDataPacket {
-      id: number;
-      username: string;
-      email: string;
-      first_name: string | null;
-      last_name: string | null;
-      position: string | null;
-      employee_id: string | null;
-      role: string | null;
-      user_role: string | null;
-      availability_status: string | null;
-      availability_start: string | null;
-      availability_end: string | null;
-    }
+    const hasDateRange =
+      startDate !== undefined && startDate !== '' && endDate !== undefined && endDate !== '';
+    const query = hasDateRange ? TEAM_MEMBERS_DATE_RANGE_QUERY : TEAM_MEMBERS_CURRENT_DATE_QUERY;
+    const params = hasDateRange ? [id, endDate, startDate] : [id];
 
-    const [members] = await execute<MemberRow[]>(
-      `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
-              ut.role, u.role as user_role, u.availability_status, u.availability_start, u.availability_end
-       FROM users u
-       JOIN user_teams ut ON u.id = ut.user_id
-       WHERE ut.team_id = $1`,
-      [id],
-    );
+    const [members] = await execute<TeamMemberRow[]>(query, params);
 
-    return members.map((member: MemberRow) => ({
+    return members.map((member: TeamMemberRow) => ({
       id: member.id,
       username: member.username,
       email: member.email,
@@ -586,8 +620,8 @@ export class TeamsService {
       role: member.role ?? undefined,
       userRole: member.user_role ?? undefined,
       availabilityStatus: member.availability_status ?? undefined,
-      availabilityStart: member.availability_start ?? undefined,
-      availabilityEnd: member.availability_end ?? undefined,
+      availabilityStart: member.availability_start?.toISOString() ?? undefined,
+      availabilityEnd: member.availability_end?.toISOString() ?? undefined,
     }));
   }
 
@@ -608,7 +642,7 @@ export class TeamsService {
     }
 
     const [userRows] = await execute<RowDataPacket[]>(
-      'SELECT id FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 

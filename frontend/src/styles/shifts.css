@@ -269,7 +269,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: var(--spacing-3);
+  padding: var(--spacing-1);
 
   height: 100%;
 
@@ -1285,6 +1285,13 @@
 .availability-badge.badge--dark {
   background: rgb(149 165 166 / 20%);
   color: #95a5a6;
+}
+
+.availability-period {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  margin-left: 0.25rem;
 }
 
 /* Responsive */

@@ -149,9 +149,7 @@
   const sourceDisplayText = $derived(
     getDropdownDisplayText(EXPORT_SOURCE_OPTIONS, exportSource, 'Alle Quellen'),
   );
-  const isRateLimited = $derived(
-    rateLimitedUntil !== null && rateLimitedUntil > new Date(),
-  );
+  const isRateLimited = $derived(rateLimitedUntil !== null && rateLimitedUntil > new Date());
   const rateLimitRemaining = $derived(() => {
     if (rateLimitedUntil === null) return 0;
     const remaining = Math.ceil((rateLimitedUntil.getTime() - Date.now()) / 1000);
@@ -572,11 +570,7 @@
             Gefilterte Logs löschen
           </button>
           <!-- Export Toggle Button -->
-          <button
-            type="button"
-            class="btn btn-success"
-            onclick={toggleExportSection}
-          >
+          <button type="button" class="btn btn-success" onclick={toggleExportSection}>
             <i class="fas fa-download mr-2"></i>
             {showExportSection ? 'Export schließen' : 'Logs exportieren'}
           </button>
@@ -584,7 +578,9 @@
 
         <!-- Export Section (collapsible) -->
         {#if showExportSection}
-          <div class="export-section mt-6 p-4 rounded-lg bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)]">
+          <div
+            class="export-section mt-6 p-4 rounded-lg bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)]"
+          >
             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
               <i class="fas fa-file-export text-[var(--color-success)]"></i>
               Audit-Logs exportieren

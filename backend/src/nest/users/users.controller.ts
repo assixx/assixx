@@ -14,6 +14,9 @@
  * - POST /users/:id/archive - Archive user (admin only)
  * - POST /users/:id/unarchive - Unarchive user (admin only)
  * - PUT  /users/:id/availability - Update availability (admin only)
+ * - GET  /users/uuid/:uuid/availability/history - Get availability history (admin only)
+ * - PUT  /users/availability/:id - Update availability entry (admin only)
+ * - DELETE /users/availability/:id - Delete availability entry (admin only)
  *
  * Profile picture endpoints:
  * - GET    /users/me/profile-picture - Get profile picture
@@ -50,13 +53,17 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
+  AvailabilityHistoryQueryDto,
+  type AvailabilityHistoryResponse,
   ChangePasswordDto,
   CreateUserDto,
   ListUsersQueryDto,
   UpdateAvailabilityDto,
+  UpdateAvailabilityEntryDto,
   UpdateProfileDto,
   UpdateUserDto,
 } from './dto/index.js';
+import { UserAvailabilityService } from './user-availability.service.js';
 import type { PaginatedResult, SafeUserResponse } from './users.service.js';
 import { UsersService } from './users.service.js';
 
@@ -109,7 +116,10 @@ interface MessageResponse {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly availabilityService: UserAvailabilityService,
+  ) {}
 
   /**
    * GET /users
@@ -327,9 +337,10 @@ export class UsersController {
   async updateAvailabilityByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateAvailabilityDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.usersService.updateAvailabilityByUuid(uuid, dto, tenantId);
+    return await this.availabilityService.updateAvailabilityByUuid(uuid, dto, tenantId, user.id);
   }
 
   /**
@@ -342,9 +353,57 @@ export class UsersController {
   async updateAvailability(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAvailabilityDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.usersService.updateAvailability(id, dto, tenantId);
+    return await this.availabilityService.updateAvailability(id, dto, tenantId, user.id);
+  }
+
+  /**
+   * GET /users/uuid/:uuid/availability/history
+   * Get availability history for a user (admin only)
+   * Query params: ?year=2026&month=01 (optional filters)
+   */
+  @Get('uuid/:uuid/availability/history')
+  @Roles('admin', 'root')
+  async getAvailabilityHistory(
+    @Param('uuid') uuid: string,
+    @Query() query: AvailabilityHistoryQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<AvailabilityHistoryResponse> {
+    const year = query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
+    const month = query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
+    return await this.availabilityService.getAvailabilityHistoryByUuid(uuid, tenantId, year, month);
+  }
+
+  /**
+   * PUT /users/availability/:id
+   * Update a specific availability history entry (admin only)
+   * Business rule: Only entries with endDate \>= today can be edited
+   */
+  @Put('availability/:id')
+  @Roles('admin', 'root')
+  async updateAvailabilityEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAvailabilityEntryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.availabilityService.updateAvailabilityEntry(id, dto, tenantId, user.id);
+  }
+
+  /**
+   * DELETE /users/availability/:id
+   * Delete a specific availability history entry (admin only)
+   */
+  @Delete('availability/:id')
+  @Roles('admin', 'root')
+  async deleteAvailabilityEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.availabilityService.deleteAvailabilityEntry(id, tenantId, user.id);
   }
 
   // ============================================

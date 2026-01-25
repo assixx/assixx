@@ -653,13 +653,14 @@ export class SettingsService {
       throw new ForbiddenException("Only admins can view other users' settings");
     }
 
+    // SECURITY: Only return settings for ACTIVE users (is_active = 1)
     const userRows = await this.db.query<DbIdResult>(
-      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [targetUserId, tenantId],
     );
 
     if (userRows.length === 0) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or inactive');
     }
 
     return await this.getUserSettings(targetUserId, {});

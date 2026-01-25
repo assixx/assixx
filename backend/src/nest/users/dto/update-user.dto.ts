@@ -32,7 +32,14 @@ const EmployeeNumberSchema = z
 /**
  * Availability status enum
  */
-const AvailabilityStatusSchema = z.enum(['available', 'vacation', 'sick', 'training', 'other']);
+const AvailabilityStatusSchema = z.enum([
+  'available',
+  'vacation',
+  'sick',
+  'unavailable',
+  'training',
+  'other',
+]);
 
 /**
  * Update user request body schema
@@ -56,6 +63,11 @@ export const UpdateUserSchema = z.object({
   availabilityStatus: AvailabilityStatusSchema.optional(),
   availabilityStart: z.string().nullable().optional(),
   availabilityEnd: z.string().nullable().optional(),
+  availabilityReason: z
+    .string()
+    .trim()
+    .max(255, 'Reason must not exceed 255 characters')
+    .optional(),
   availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 

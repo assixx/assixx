@@ -82,6 +82,20 @@ export const rootMenuItems: NavItem[] = [
     badgeType: 'calendar',
   },
   {
+    id: 'documents',
+    icon: ICONS.document,
+    label: 'Dokumente',
+    hasSubmenu: true,
+    submenu: [
+      {
+        id: 'documents-explorer',
+        label: LABELS.FILE_EXPLORER,
+        url: '/documents-explorer',
+        badgeType: 'documents',
+      },
+    ],
+  },
+  {
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',

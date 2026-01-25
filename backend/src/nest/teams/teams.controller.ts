@@ -38,6 +38,7 @@ import {
   CreateTeamDto,
   DeleteTeamQueryDto,
   ListTeamsQueryDto,
+  TeamMembersQueryDto,
   UpdateTeamDto,
 } from './dto/index.js';
 import type { TeamMachine, TeamMember, TeamResponse } from './teams.service.js';
@@ -138,14 +139,16 @@ export class TeamsController {
 
   /**
    * GET /teams/:id/members
-   * Get team members
+   * Get team members with optional date range for availability filtering
+   * Query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
   @Get(':id/members')
   async getTeamMembers(
     @Param('id', ParseIntPipe) id: number,
+    @Query() query: TeamMembersQueryDto,
     @TenantId() tenantId: number,
   ): Promise<TeamMember[]> {
-    return await this.teamsService.getTeamMembers(id, tenantId);
+    return await this.teamsService.getTeamMembers(id, tenantId, query.startDate, query.endDate);
   }
 
   /**

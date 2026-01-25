@@ -449,8 +449,9 @@ export class ReportsService {
         SELECT
           survey_id,
           COUNT(DISTINCT user_id) / (
+            -- SECURITY: Only count ACTIVE employees (is_active = 1)
             SELECT COUNT(*) FROM users
-            WHERE tenant_id = $1 AND role = 'employee'
+            WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1
           ) as response_rate
         FROM survey_responses
         WHERE started_at BETWEEN $2 AND $3
@@ -505,11 +506,12 @@ export class ReportsService {
     _departmentId?: number,
     _teamId?: number,
   ): Promise<PerformanceMetrics> {
+    // SECURITY: Only count ACTIVE employees (is_active = 1)
     const rows = await this.db.query<DbMetricsRow>(
       `
       SELECT
         COUNT(DISTINCT submitted_by) as participants,
-        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee') as total_employees
+        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1) as total_employees
       FROM kvp_suggestions
       WHERE tenant_id = $2
         AND created_at BETWEEN $3 AND $4

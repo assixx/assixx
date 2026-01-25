@@ -56,7 +56,7 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
 export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
   // If not shared (private)
   if (!suggestion.isShared) {
-    return { icon: 'fa-lock', text: 'Privat' };
+    return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
   // If shared, show org level info (Record guarantees all OrgLevel keys exist)

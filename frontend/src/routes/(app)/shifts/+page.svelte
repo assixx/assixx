@@ -193,7 +193,9 @@
 
   async function handleTeamChange(teamId: number) {
     shiftsState.setSelectedContext({ teamId });
-    const members = await fetchTeamMembers(teamId);
+    // Pass date range to get availability for the current week view
+    const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
+    const members = await fetchTeamMembers(teamId, startDate, endDate);
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
     shiftsState.setShowPlanningUI(true);
     await loadShiftPlan();
@@ -214,8 +216,16 @@
     const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
 
     try {
-      const { planResponse, rotationHistory, planData, rotationData } =
-        await fetchAndProcessShiftData(startDate, endDate);
+      // Reload team members with new date range to update availability status
+      const teamId = shiftsState.selectedContext.teamId;
+      const [members, { planResponse, rotationHistory, planData, rotationData }] =
+        await Promise.all([
+          fetchTeamMembers(teamId, startDate, endDate),
+          fetchAndProcessShiftData(startDate, endDate),
+        ]);
+
+      // Update employees with fresh availability data for this week
+      shiftsState.setEmployees(convertTeamMembersToEmployees(members));
 
       // Load pattern type from rotation history
       const { patternId, patternType } = await loadPatternFromHistory(
@@ -302,11 +312,14 @@
   }
 
   async function handleFavoriteClick(favorite: ShiftFavorite) {
+    // Get date range for availability filtering
+    const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
+
     const [depts, machs, tms, members] = await Promise.all([
       fetchDepartments(favorite.areaId),
       fetchMachines(favorite.departmentId, favorite.areaId),
       fetchTeams(favorite.departmentId),
-      fetchTeamMembers(favorite.teamId),
+      fetchTeamMembers(favorite.teamId, startDate, endDate),
     ]);
 
     shiftsState.setDepartments(depts);
