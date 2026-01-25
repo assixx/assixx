@@ -1121,13 +1121,13 @@ export class BlackboardService {
   async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
 
-    // Get user's tenant
+    // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1',
+      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
     if (users[0] === undefined) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('User not found or inactive');
     }
     const tenantId = users[0].tenant_id;
 
@@ -1163,13 +1163,13 @@ export class BlackboardService {
   async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
 
-    // Get user's tenant
+    // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1',
+      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
     if (users[0] === undefined) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('User not found or inactive');
     }
     const tenantId = users[0].tenant_id;
 

@@ -36,6 +36,7 @@ export interface Team {
  */
 export interface Employee {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   firstName: string;
@@ -113,6 +114,7 @@ export interface BadgeInfo {
   class: string;
   text: string;
   title?: string;
+  icon?: string;
 }
 
 /**
@@ -152,7 +154,7 @@ export interface EmployeePayload {
   isActive: FormIsActiveStatus;
   role: 'employee';
   password?: string;
-  availabilityStatus: AvailabilityStatus;
+  availabilityStatus?: AvailabilityStatus;
   availabilityStart?: string;
   availabilityEnd?: string;
   availabilityNotes?: string;

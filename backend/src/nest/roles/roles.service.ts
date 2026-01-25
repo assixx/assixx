@@ -168,13 +168,14 @@ export class RolesService {
   ): Promise<RoleCheckResult> {
     this.logger.log(`Checking role for user ${userId}, required: ${requiredRole}`);
 
+    // SECURITY: Only check roles for ACTIVE users (is_active = 1)
     const [rows] = await execute<UserRoleRow[]>(
-      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or inactive');
     }
 
     const userRole = rows[0].role as RoleName;

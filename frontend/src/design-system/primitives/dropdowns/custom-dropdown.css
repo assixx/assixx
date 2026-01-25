@@ -28,7 +28,6 @@
     background: var(--form-field-bg);
     padding: var(--form-field-padding-y) var(--form-field-padding-x);
 
-    min-height: 44px;
     color: var(--form-field-text);
 
     font-size: var(--form-field-font-size);

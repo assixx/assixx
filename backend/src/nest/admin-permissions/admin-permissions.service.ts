@@ -562,24 +562,25 @@ export class AdminPermissionsService {
 
   /**
    * Get user role and has_full_access status
+   * SECURITY: Only return role info for ACTIVE users (is_active = 1)
    */
   private async getUserRoleInfo(
     userId: number,
     tenantId: number,
   ): Promise<{ isRoot: boolean; hasFullAccess: boolean }> {
     const rows = await this.db.query<DbRoleResult>(
-      'SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0) {
-      this.logger.error(`User not found - userId: ${userId}, tenantId: ${tenantId}`);
-      throw new NotFoundException('User not found');
+      this.logger.error(`User not found or inactive - userId: ${userId}, tenantId: ${tenantId}`);
+      throw new NotFoundException('User not found or inactive');
     }
 
     const userRow = rows[0];
     if (userRow === undefined) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or inactive');
     }
 
     return {

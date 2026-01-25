@@ -1037,10 +1037,11 @@ export class DocumentsService {
 
   /**
    * Get user by ID
+   * SECURITY: Only returns data for ACTIVE users (is_active = 1)
    */
   private async getUserById(userId: number, tenantId: number): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [userId, tenantId],
     );
     return rows[0] ?? null;

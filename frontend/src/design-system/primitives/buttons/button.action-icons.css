@@ -92,6 +92,17 @@
   color: #2563eb; /* Tailwind blue-600 */
 }
 
+/* ========== INFO VARIANT (Cyan/Teal) ========== */
+
+.action-icon--info:hover {
+  background: rgb(6 182 212 / 10%);
+  color: #06b6d4; /* Tailwind cyan-500 */
+}
+
+.action-icon--info:active {
+  color: #0891b2; /* Tailwind cyan-600 */
+}
+
 /* ========== MORE VARIANT (Neutral) ========== */
 
 .action-icon--more:hover {

@@ -206,6 +206,25 @@ export async function deleteEmployee(employeeId: number): Promise<void> {
 }
 
 /**
+ * Update employee availability (quick update via users table)
+ * @param employeeId - Employee ID
+ * @param availability - Availability data
+ */
+export async function updateEmployeeAvailability(
+  employeeId: number,
+  availability: {
+    availabilityStatus: string;
+    availabilityStart?: string;
+    availabilityEnd?: string;
+    availabilityReason?: string;
+    availabilityNotes?: string;
+  },
+): Promise<void> {
+  if (!checkAuth()) throw new Error('Not authenticated');
+  await apiClient.put(API_ENDPOINTS.user(employeeId), availability);
+}
+
+/**
  * Sync team memberships for an employee
  * Calculates diff between original and new team IDs, then adds/removes as needed
  * @param userId - Employee user ID
@@ -240,6 +259,7 @@ export async function syncTeamMemberships(
 
 /**
  * Build employee payload from form data
+ * NOTE: Availability is managed separately via AvailabilityModal
  */
 export function buildEmployeePayload(
   formData: {
@@ -252,10 +272,6 @@ export function buildEmployeePayload(
     dateOfBirth: string;
     employeeNumber: string;
     isActive: 0 | 1 | 3;
-    availabilityStatus: string;
-    availabilityStart: string;
-    availabilityEnd: string;
-    availabilityNotes: string;
   },
   isEdit: boolean,
 ): EmployeePayload {
@@ -270,10 +286,6 @@ export function buildEmployeePayload(
     employeeNumber: formData.employeeNumber !== '' ? formData.employeeNumber : `EMP${Date.now()}`,
     isActive: formData.isActive,
     role: 'employee',
-    availabilityStatus: formData.availabilityStatus as EmployeePayload['availabilityStatus'],
-    availabilityStart: toOptional(formData.availabilityStart),
-    availabilityEnd: toOptional(formData.availabilityEnd),
-    availabilityNotes: toOptional(formData.availabilityNotes),
   };
 
   // Add password: new employee requires it, edit only if valid new password provided

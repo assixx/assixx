@@ -252,7 +252,25 @@ export function getEffectiveAvailability(employee: Employee, date: Date): Availa
 }
 
 /**
- * Get effective availability for the current week
+ * Format availability period as "DD.MM.YYYY - DD.MM.YYYY"
+ * Returns null if no dates are set
+ */
+export function formatAvailabilityPeriod(startDate?: string, endDate?: string): string | null {
+  if (startDate === undefined && endDate === undefined) return null;
+
+  const formatStr = (dateStr?: string): string => {
+    if (dateStr === undefined || dateStr === '') return '?';
+    const date = new Date(dateStr);
+    return formatDateGerman(date);
+  };
+
+  return `${formatStr(startDate)} - ${formatStr(endDate)}`;
+}
+
+/**
+ * Get effective availability for the current week (for CSS class - draggability)
+ * Returns unavailable status ONLY if ALL days in the week are unavailable.
+ * If at least one day is available, returns 'available' (employee can be scheduled).
  */
 export function getEffectiveAvailabilityForWeek(
   employee: Employee,
@@ -268,11 +286,42 @@ export function getEffectiveAvailabilityForWeek(
     return employee.availabilityStatus;
   }
 
-  // Check if ANY day in the week overlaps with absence
+  // Check if ALL days in the week are unavailable
+  // If at least one day is available, employee should be draggable
+  for (const date of weekDates) {
+    const status = getEffectiveAvailability(employee, date);
+    if (status === 'available') {
+      return 'available'; // At least one day available → employee is available for this week
+    }
+  }
+
+  // All days are unavailable
+  return employee.availabilityStatus;
+}
+
+/**
+ * Check if employee has ANY unavailability overlapping with the week (for badge display)
+ * Returns the unavailability status if ANY day overlaps, otherwise 'available'.
+ */
+export function getOverlappingUnavailability(
+  employee: Employee,
+  weekDates: Date[],
+): AvailabilityStatus {
+  // If no availability status or explicitly available, return available
+  if (employee.availabilityStatus === undefined || employee.availabilityStatus === 'available') {
+    return 'available';
+  }
+
+  // Check if absence period is defined
+  if (employee.availabilityStart === undefined || employee.availabilityEnd === undefined) {
+    return employee.availabilityStatus;
+  }
+
+  // Check if ANY day in the week overlaps with absence (for showing badge)
   for (const date of weekDates) {
     const status = getEffectiveAvailability(employee, date);
     if (status !== 'available') {
-      return status;
+      return status; // At least one day unavailable → show badge
     }
   }
 

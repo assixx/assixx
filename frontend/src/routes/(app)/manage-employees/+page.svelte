@@ -5,9 +5,10 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
+  import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageEmployeesPage');
@@ -20,9 +21,11 @@
   import {
     saveEmployee as apiSaveEmployee,
     deleteEmployee as apiDeleteEmployee,
+    updateEmployeeAvailability as apiUpdateAvailability,
     syncTeamMemberships,
     buildEmployeePayload,
   } from './_lib/api';
+  import AvailabilityModal from './_lib/AvailabilityModal.svelte';
   import { MESSAGES } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
@@ -35,6 +38,8 @@
     validateEmailMatch,
     validatePasswordMatch,
     validateSaveEmployeeForm,
+    validateAvailabilityForm,
+    buildAvailabilityPayload,
   } from './_lib/utils';
 
   // Extracted Components
@@ -76,13 +81,23 @@
   let showEmployeeModal = $state(false);
   let showDeleteModal = $state(false);
   let showDeleteConfirmModal = $state(false);
+  let showAvailabilityModal = $state(false);
+
+  // Availability Modal State
+  let availabilityEmployeeId = $state<number | null>(null);
+  let availabilityStatus = $state<AvailabilityStatus>('available');
+  let availabilityStart = $state('');
+  let availabilityEnd = $state('');
+  let availabilityReason = $state('');
+  let availabilityNotes = $state('');
+  let availabilitySubmitting = $state(false);
 
   // Edit State
   let currentEditId = $state<number | null>(null);
   let deleteEmployeeId = $state<number | null>(null);
   let originalTeamIds = $state<number[]>([]);
 
-  // Form Fields
+  // Form Fields (for EmployeeFormModal)
   let formFirstName = $state('');
   let formLastName = $state('');
   let formEmail = $state('');
@@ -95,10 +110,6 @@
   let formDateOfBirth = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
   let formTeamIds = $state<number[]>([]);
-  let formAvailabilityStatus = $state<AvailabilityStatus>('available');
-  let formAvailabilityStart = $state('');
-  let formAvailabilityEnd = $state('');
-  let formAvailabilityNotes = $state('');
 
   // Validation State
   let emailError = $state(false);
@@ -115,6 +126,13 @@
   // Derived: Filtered employees based on current filter/search state
   const filteredEmployees = $derived(
     applyAllFilters(allEmployees, currentStatusFilter, currentSearchQuery),
+  );
+
+  // Derived: Current employee for availability modal
+  const availabilityEmployee = $derived(
+    availabilityEmployeeId !== null
+      ? (allEmployees.find((e) => e.id === availabilityEmployeeId) ?? null)
+      : null,
   );
 
   // =============================================================================
@@ -152,10 +170,6 @@
           dateOfBirth: formDateOfBirth,
           employeeNumber: formEmployeeNumber,
           isActive: formIsActive,
-          availabilityStatus: formAvailabilityStatus,
-          availabilityStart: formAvailabilityStart,
-          availabilityEnd: formAvailabilityEnd,
-          availabilityNotes: formAvailabilityNotes,
         },
         isEditMode,
       );
@@ -225,10 +239,6 @@
     formTeamIds = formData.teamIds;
     // Store original team IDs for diff calculation on save
     originalTeamIds = [...formData.teamIds];
-    formAvailabilityStatus = formData.availabilityStatus;
-    formAvailabilityStart = formData.availabilityStart;
-    formAvailabilityEnd = formData.availabilityEnd;
-    formAvailabilityNotes = formData.availabilityNotes;
     emailError = false;
     passwordError = false;
     showEmployeeModal = true;
@@ -260,6 +270,76 @@
     deleteEmployeeId = null;
   }
 
+  // Availability Modal Handlers
+  // NOTE: Modal is CREATE-only. PUT/UPDATE is on history page.
+  function openAvailabilityModal(employeeId: number): void {
+    const employee = allEmployees.find((e) => e.id === employeeId);
+    if (!employee) return;
+
+    availabilityEmployeeId = employeeId;
+    // Reset to defaults - this modal is for CREATE only
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+    showAvailabilityModal = true;
+  }
+
+  function closeAvailabilityModal(): void {
+    showAvailabilityModal = false;
+    availabilityEmployeeId = null;
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+  }
+
+  async function saveAvailability(): Promise<void> {
+    if (availabilityEmployeeId === null) return;
+
+    const formData = {
+      status: availabilityStatus,
+      start: availabilityStart,
+      end: availabilityEnd,
+      reason: availabilityReason,
+      notes: availabilityNotes,
+    };
+
+    const validationError = validateAvailabilityForm(formData);
+    if (validationError === 'dates_required') {
+      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
+      return;
+    }
+    if (validationError === 'end_before_start') {
+      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
+      return;
+    }
+
+    availabilitySubmitting = true;
+    try {
+      const payload = buildAvailabilityPayload(formData);
+      await apiUpdateAvailability(availabilityEmployeeId, payload);
+      closeAvailabilityModal();
+      await invalidateAll();
+      showSuccessAlert('Verfügbarkeit aktualisiert');
+    } catch (err) {
+      log.error({ err }, 'Error updating availability');
+      const message =
+        err instanceof ApiError ? err.message : 'Fehler beim Speichern der Verfügbarkeit';
+      showErrorAlert(message);
+    } finally {
+      availabilitySubmitting = false;
+    }
+  }
+
+  function navigateToAvailabilityPage(uuid: string): void {
+    // Navigate to the full availability history page
+    closeAvailabilityModal();
+    void goto(`/manage-employees/availability/${uuid}`);
+  }
+
   function resetForm(): void {
     const defaults = getDefaultFormValues();
     formFirstName = defaults.firstName;
@@ -275,10 +355,6 @@
     formIsActive = defaults.isActive;
     formTeamIds = defaults.teamIds;
     originalTeamIds = []; // Reset original teams for diff calculation
-    formAvailabilityStatus = defaults.availabilityStatus;
-    formAvailabilityStart = defaults.availabilityStart;
-    formAvailabilityEnd = defaults.availabilityEnd;
-    formAvailabilityNotes = defaults.availabilityNotes;
     emailError = false;
     passwordError = false;
   }
@@ -495,7 +571,12 @@
               </thead>
               <tbody>
                 {#each filteredEmployees as employee (employee.id)}
-                  <EmployeeTableRow {employee} onedit={openEditModal} ondelete={openDeleteModal} />
+                  <EmployeeTableRow
+                    {employee}
+                    onedit={openEditModal}
+                    onavailability={openAvailabilityModal}
+                    ondelete={openDeleteModal}
+                  />
                 {/each}
               </tbody>
             </table>
@@ -535,10 +616,6 @@
   bind:formDateOfBirth
   bind:formIsActive
   bind:formTeamIds
-  bind:formAvailabilityStatus
-  bind:formAvailabilityStart
-  bind:formAvailabilityEnd
-  bind:formAvailabilityNotes
   bind:emailError
   bind:passwordError
   onclose={closeEmployeeModal}
@@ -555,4 +632,19 @@
   oncloseDeleteConfirm={closeDeleteConfirmModal}
   onproceedToConfirm={proceedToDeleteConfirm}
   ondeleteConfirm={deleteEmployee}
+/>
+
+<!-- Availability Modal Component -->
+<AvailabilityModal
+  show={showAvailabilityModal}
+  employee={availabilityEmployee}
+  submitting={availabilitySubmitting}
+  bind:availabilityStatus
+  bind:availabilityStart
+  bind:availabilityEnd
+  bind:availabilityReason
+  bind:availabilityNotes
+  onclose={closeAvailabilityModal}
+  onsave={saveAvailability}
+  onmanage={navigateToAvailabilityPage}
 />

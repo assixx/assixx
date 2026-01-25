@@ -59,15 +59,16 @@ export class RoleSwitchService {
 
   /**
    * Verify user belongs to tenant and return user data
+   * SECURITY: Only allows ACTIVE users (is_active = 1) to perform role switches
    */
   private async verifyUserTenant(userId: number, tenantId: number): Promise<UserRow> {
     const [rows] = await execute<UserRow[]>(
-      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new NotFoundException('User not found or tenant mismatch');
+      throw new NotFoundException('User not found, inactive, or tenant mismatch');
     }
 
     const user = rows[0];

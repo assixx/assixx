@@ -44,7 +44,8 @@ export type ActivityEntityType =
   | 'tenant'
   | 'settings'
   | 'calendar'
-  | 'shift';
+  | 'shift'
+  | 'availability';
 
 /**
  * Parameters for logging an activity

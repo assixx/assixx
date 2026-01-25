@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict scmb01XRhcn0cgBZEcM90STy43ksImjwrxNy6KVCrih3homYc5hNqYWoPf5sX7s
+\restrict x5rgHQpEwSjbdMqHiWbi19c4rMVO5rVA5dVajKP3e7jkLX7EmREIzIKQBCkP877
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
@@ -413,7 +413,8 @@ CREATE TYPE "public"."kvp_suggestions_status" AS ENUM (
     'approved',
     'implemented',
     'rejected',
-    'archived'
+    'archived',
+    'restored'
 );
 
 
@@ -2946,7 +2947,9 @@ CREATE TABLE "public"."blackboard_confirmations" (
     "tenant_id" integer NOT NULL,
     "entry_id" integer NOT NULL,
     "user_id" integer NOT NULL,
-    "confirmed_at" timestamp with time zone
+    "confirmed_at" timestamp with time zone,
+    "first_seen_at" timestamp with time zone,
+    "is_confirmed" boolean DEFAULT true NOT NULL
 );
 
 ALTER TABLE ONLY "public"."blackboard_confirmations" FORCE ROW LEVEL SECURITY;
@@ -4158,7 +4161,9 @@ CREATE TABLE "public"."kvp_confirmations" (
     "tenant_id" integer NOT NULL,
     "suggestion_id" integer NOT NULL,
     "user_id" integer NOT NULL,
-    "confirmed_at" timestamp with time zone DEFAULT "now"()
+    "confirmed_at" timestamp with time zone DEFAULT "now"(),
+    "first_seen_at" timestamp with time zone,
+    "is_confirmed" boolean DEFAULT true NOT NULL
 );
 
 ALTER TABLE ONLY "public"."kvp_confirmations" FORCE ROW LEVEL SECURITY;
@@ -7599,10 +7604,6 @@ CREATE TABLE "public"."users" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "created_by" integer,
-    "availability_status" "public"."users_availability_status" DEFAULT 'available'::"public"."users_availability_status",
-    "availability_start" "date",
-    "availability_end" "date",
-    "availability_notes" "text",
     "uuid" character(36) NOT NULL,
     "uuid_created_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
@@ -14745,13 +14746,6 @@ CREATE INDEX "idx_19802_idx_username" ON "public"."users" USING "btree" ("userna
 
 
 --
--- Name: idx_19802_idx_users_availability_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "idx_19802_idx_users_availability_status" ON "public"."users" USING "btree" ("availability_status");
-
-
---
 -- Name: idx_19802_idx_users_full_access; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14941,6 +14935,13 @@ CREATE UNIQUE INDEX "idx_areas_uuid" ON "public"."areas" USING "btree" ("uuid");
 
 
 --
+-- Name: idx_blackboard_confirmations_is_confirmed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_blackboard_confirmations_is_confirmed" ON "public"."blackboard_confirmations" USING "btree" ("entry_id", "user_id", "is_confirmed");
+
+
+--
 -- Name: idx_conversations_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15032,6 +15033,13 @@ CREATE INDEX "idx_feature_visits_user" ON "public"."feature_visits" USING "btree
 
 
 --
+-- Name: idx_kvp_confirmations_is_confirmed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "idx_kvp_confirmations_is_confirmed" ON "public"."kvp_confirmations" USING "btree" ("suggestion_id", "user_id", "is_confirmed");
+
+
+--
 -- Name: idx_kvp_confirmations_lookup; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15091,7 +15099,7 @@ CREATE INDEX "idx_messages_uuid_created_at" ON "public"."messages" USING "btree"
 -- Name: idx_notifications_feature_types; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "idx_notifications_feature_types" ON "public"."notifications" USING "btree" ("tenant_id", "recipient_type", "recipient_id", "type") WHERE (("type")::"text" = ANY ((ARRAY['survey'::character varying, 'document'::character varying, 'kvp'::character varying])::"text"[]));
+CREATE INDEX "idx_notifications_feature_types" ON "public"."notifications" USING "btree" ("tenant_id", "recipient_type", "recipient_id", "type") WHERE (("type")::"text" = ANY (ARRAY[('survey'::character varying)::"text", ('document'::character varying)::"text", ('kvp'::character varying)::"text"]));
 
 
 --
@@ -23338,5 +23346,5 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict scmb01XRhcn0cgBZEcM90STy43ksImjwrxNy6KVCrih3homYc5hNqYWoPf5sX7s
+\unrestrict x5rgHQpEwSjbdMqHiWbi19c4rMVO5rVA5dVajKP3e7jkLX7EmREIzIKQBCkP877
 

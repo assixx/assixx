@@ -108,7 +108,8 @@ const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: string }> =
   kvp: { table: 'kvp_suggestions', nameField: 'title' },
   survey: { table: 'surveys', nameField: 'title' },
   notification: { table: 'notifications', nameField: 'title' },
-  shift: { table: 'shift_entries', nameField: 'id' },
+  shift: { table: 'shifts', nameField: 'date' },
+  'shift-plan': { table: 'shift_plans', nameField: 'name' },
   feature: { table: 'tenant_features', nameField: 'feature_key' },
   plan: { table: 'plans', nameField: 'name' },
   setting: { table: 'tenant_settings', nameField: 'setting_key' },
@@ -1052,6 +1053,16 @@ export class AuditTrailInterceptor implements NestInterceptor {
     const firstSegment = segments[0];
     if (firstSegment === undefined) {
       return 'unknown';
+    }
+
+    // Handle nested resources like /shifts/plan/2 → shift-plan
+    const secondSegment = segments[1];
+    if (secondSegment !== undefined && !/^\d+$/.test(secondSegment)) {
+      const combined = `${this.singularize(firstSegment)}-${this.singularize(secondSegment)}`;
+      // Only return combined if we have a mapping for it
+      if (combined in RESOURCE_TABLE_MAP) {
+        return combined;
+      }
     }
 
     return this.singularize(firstSegment);

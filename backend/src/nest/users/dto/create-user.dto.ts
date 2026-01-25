@@ -30,6 +30,18 @@ const EmployeeNumberSchema = z
   .optional();
 
 /**
+ * Availability status enum
+ */
+const AvailabilityStatusSchema = z.enum([
+  'available',
+  'vacation',
+  'sick',
+  'unavailable',
+  'training',
+  'other',
+]);
+
+/**
  * Create user request body schema
  */
 export const CreateUserSchema = z.object({
@@ -46,6 +58,11 @@ export const CreateUserSchema = z.object({
   phone: PhoneSchema,
   address: z.string().trim().optional(),
   employeeNumber: EmployeeNumberSchema,
+  dateOfBirth: z.string().trim().optional(),
+  availabilityStatus: AvailabilityStatusSchema.optional(),
+  availabilityStart: z.string().nullable().optional(),
+  availabilityEnd: z.string().nullable().optional(),
+  availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 
 /**

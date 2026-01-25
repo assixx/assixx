@@ -1127,15 +1127,18 @@ export class ChatService {
     );
   }
 
-  /** Fetch sender information for message response */
+  /**
+   * Fetch sender information for message response
+   * SECURITY: Only returns info for ACTIVE users (is_active = 1)
+   */
   private async fetchSenderInfo(senderId: number, tenantId: number): Promise<SenderInfo> {
     const senderInfo = await this.databaseService.query<SenderInfo>(
-      `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [senderId, tenantId],
     );
     const sender = senderInfo[0];
     if (sender === undefined) {
-      throw new NotFoundException('Sender not found');
+      throw new NotFoundException('Sender not found or inactive');
     }
     return sender;
   }

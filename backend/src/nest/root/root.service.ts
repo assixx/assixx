@@ -21,6 +21,7 @@ import { tenantDeletionService } from '../../services/tenantDeletion.service.js'
 import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { UserRepository } from '../database/repositories/user.repository.js';
 
 // ============================================================================
 // CONSTANTS
@@ -339,6 +340,7 @@ export class RootService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   // ==========================================================================
@@ -351,11 +353,12 @@ export class RootService {
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     this.logger.debug(`Getting admins for tenant ${tenantId}`);
 
+    // SECURITY: Only return active admins (is_active = 1)
     const admins = await this.db.query<DbUserRow>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.role = 'admin' AND u.tenant_id = $1
+       WHERE u.role = 'admin' AND u.tenant_id = $1 AND u.is_active = 1
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -369,11 +372,12 @@ export class RootService {
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
     this.logger.debug(`Getting admin ${id} for tenant ${tenantId}`);
 
+    // SECURITY: Only return active admins (is_active = 1)
     const rows = await this.db.query<DbUserRow & { tenant_name?: string }>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2`,
+       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2 AND u.is_active = 1`,
       [id, tenantId],
     );
 
@@ -575,25 +579,18 @@ export class RootService {
       return [];
     }
 
-    // Get additional stats
+    // Get additional stats - SECURITY: Use UserRepository for accurate active user counts
     return await Promise.all(
       tenants.map(async (tenant: DbTenantRow) => {
         const [adminCount, employeeCount, storageUsed] = await Promise.all([
-          this.db.query<DbCountRow>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
-            [tenant.id],
-          ),
-          this.db.query<DbCountRow>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
-            [tenant.id],
-          ),
+          this.userRepository.countByRole('admin', tenant.id),
+          this.userRepository.countByRole('employee', tenant.id),
           this.db.query<DbStorageTotalRow>(
             'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
             [tenant.id],
           ),
         ]);
 
-        // PostgreSQL COUNT/SUM returns bigint/numeric as string - must convert
         return {
           id: tenant.id,
           companyName: tenant.company_name,
@@ -602,8 +599,8 @@ export class RootService {
           status: tenant.status as Tenant['status'],
           createdAt: tenant.created_at,
           updatedAt: tenant.updated_at,
-          adminCount: Number(adminCount[0]?.count ?? 0),
-          employeeCount: Number(employeeCount[0]?.count ?? 0),
+          adminCount,
+          employeeCount,
           storageUsed: Number(storageUsed[0]?.total ?? 0),
         };
       }),
@@ -620,11 +617,12 @@ export class RootService {
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     this.logger.debug(`Getting root users for tenant ${tenantId}`);
 
+    // SECURITY: Only return active root users (is_active = 1)
     const users = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.role = 'root' AND u.tenant_id = $1
+       WHERE u.role = 'root' AND u.tenant_id = $1 AND u.is_active = 1
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -638,11 +636,12 @@ export class RootService {
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
+    // SECURITY: Only return active root users (is_active = 1)
     const rows = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2`,
+       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2 AND u.is_active = 1`,
       [id, tenantId],
     );
 
@@ -775,9 +774,9 @@ export class RootService {
       throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Root user not found' });
     }
 
-    // Check if at least one root user will remain
+    // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
     const rootCount = await this.db.query<DbCountRow>(
-      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2",
+      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = 1",
       [tenantId, id],
     );
 
@@ -831,19 +830,11 @@ export class RootService {
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
-    // Get counts in parallel
+    // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
     const [adminCount, employeeCount, totalUserCount, tenantCount, features] = await Promise.all([
-      this.db.query<DbCountRow>(
-        "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
-        [tenantId],
-      ),
-      this.db.query<DbCountRow>(
-        "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
-        [tenantId],
-      ),
-      this.db.query<DbCountRow>('SELECT COUNT(*) as count FROM users WHERE tenant_id = $1', [
-        tenantId,
-      ]),
+      this.userRepository.countByRole('admin', tenantId),
+      this.userRepository.countByRole('employee', tenantId),
+      this.userRepository.countAll(tenantId),
       this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
       this.db.query<DbFeatureCodeRow>(
         `SELECT f.code FROM tenant_features tf
@@ -853,17 +844,12 @@ export class RootService {
       ),
     ]);
 
-    // IMPORTANT: PostgreSQL COUNT(*) returns bigint, which pg serializes as STRING
-    // Must convert to Number to avoid string concatenation bugs (e.g., "2" + "0" + 1 = "201")
-    const adminCountNum = Number(adminCount[0]?.count ?? 0);
-    const employeeCountNum = Number(employeeCount[0]?.count ?? 0);
-    const totalUserCountNum = Number(totalUserCount[0]?.count ?? 0);
     const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
 
     return {
-      adminCount: adminCountNum,
-      employeeCount: employeeCountNum,
-      totalUsers: totalUserCountNum, // All users in tenant (root + admin + employee)
+      adminCount,
+      employeeCount,
+      totalUsers: totalUserCount,
       tenantCount: tenantCountNum,
       activeFeatures: features.map((f: DbFeatureCodeRow) => f.code),
       systemHealth: {
@@ -952,13 +938,10 @@ export class RootService {
   ): Promise<number> {
     this.logger.log(`Requesting tenant deletion for tenant ${tenantId}`);
 
-    // Check if there are at least 2 root users
-    const rootCount = await this.db.query<DbCountRow>(
-      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1",
-      [tenantId],
-    );
+    // SECURITY: Check if there are at least 2 ACTIVE root users (is_active = 1)
+    const rootCount = await this.userRepository.countByRole('root', tenantId);
 
-    if (Number(rootCount[0]?.count ?? 0) < 2) {
+    if (rootCount < 2) {
       throw new BadRequestException({
         code: ERROR_CODES.INSUFFICIENT_ROOT_USERS,
         message: 'At least 2 root users required before tenant deletion',
@@ -1154,15 +1137,17 @@ export class RootService {
     this.logger.log(`Approving deletion ${queueId} - verifying user password`);
 
     // SECURITY: Get user's password hash for verification
+    // IMPORTANT: Only allow ACTIVE users (is_active = 1) to approve deletions
+    // TODO: Add tenantId parameter to use UserRepository.getPasswordHash() for full isolation
     const users = await this.db.query<{ password: string | null }>(
-      'SELECT password FROM users WHERE id = $1',
+      'SELECT password FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
 
     const userRecord = users[0];
     if (userRecord === undefined) {
-      this.logger.error(`User ${userId} not found for deletion approval`);
-      throw new Error('User not found');
+      this.logger.error(`User ${userId} not found or inactive for deletion approval`);
+      throw new Error('User not found or inactive');
     }
 
     // SECURITY: Verify the password matches
@@ -1203,15 +1188,13 @@ export class RootService {
   // ==========================================================================
 
   /**
-   * Check for duplicate email
+   * Check for duplicate email among ACTIVE users
+   * SECURITY: Uses UserRepository which filters by is_active = 1
    */
   private async checkDuplicateEmail(email: string, tenantId: number): Promise<void> {
-    const existing = await this.db.query<DbIdRow>(
-      'SELECT id FROM users WHERE email = $1 AND tenant_id = $2',
-      [email, tenantId],
-    );
+    const isTaken = await this.userRepository.isEmailTaken(email, tenantId);
 
-    if (existing.length > 0) {
+    if (isTaken) {
       throw new ConflictException({
         code: ERROR_CODES.DUPLICATE_EMAIL,
         message: 'Email already in use',

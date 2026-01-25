@@ -32,6 +32,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-007](./ADR-007-api-response-standardization.md)     | API Response Standardization       | Accepted | 2026-01-14 |
 | [ADR-008](./ADR-008-dependency-version-management.md)    | Dependency Version Management      | Accepted | 2026-01-15 |
 | [ADR-009](./ADR-009-user-role-assignment-permissions.md) | User Role Assignment & Permissions | Accepted | 2026-01-22 |
+| [ADR-011](./ADR-011-shift-data-architecture.md)          | Shift Data Architecture & Sync     | Accepted | 2026-01-25 |
 
 ## Template
 

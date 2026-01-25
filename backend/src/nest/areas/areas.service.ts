@@ -89,6 +89,7 @@ export class AreasService {
 
   /**
    * SQL query for fetching areas with counts
+   * Excludes soft-deleted areas (is_active = 4)
    */
   private readonly FIND_ALL_AREAS_QUERY = `
     SELECT
@@ -101,7 +102,7 @@ export class AreasService {
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-    WHERE a.tenant_id = $1
+    WHERE a.tenant_id = $1 AND a.is_active != 4
   `;
 
   /**

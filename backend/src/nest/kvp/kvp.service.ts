@@ -61,10 +61,13 @@ interface DbExtendedOrgInfo {
   departments_area_ids: number[];
 }
 
-/** SQL query to get all user org info in one query */
+/**
+ * SQL query to get all user org info in one query
+ * SECURITY: Only returns data for ACTIVE users (is_active = 1)
+ */
 const EXTENDED_ORG_INFO_QUERY = `
   WITH user_data AS (
-    SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2
+    SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1
   ),
   user_team_ids AS (
     SELECT DISTINCT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2

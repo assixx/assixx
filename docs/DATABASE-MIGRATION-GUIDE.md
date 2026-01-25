@@ -185,7 +185,12 @@ Pfad: `/database/backups/`
 
 ```bash
 docker exec -i assixx-postgres pg_restore -U assixx_user -d assixx < database/backups/full_backup_XXXXXX.dump
+
+# WICHTIG: Nach Restore GRANTs wiederherstellen!
+cd /home/scs/projects/Assixx/customer/fresh-install && ./install.sh --grants-only
 ```
+
+> **WICHTIG:** Nach einem Restore fehlen die GRANTs fuer `app_user` weil das Backup mit `--no-privileges` erstellt wird. Ohne GRANTs bekommt das Backend "permission denied" Fehler!
 
 ---
 
