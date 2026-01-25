@@ -320,15 +320,6 @@
   font-size: 0.875rem;
 }
 
-/* Allow dropdowns to overflow outside card boundaries */
-.card:has(.dropdown) {
-  overflow: visible !important;
-}
-
-.card__header:has(.dropdown) {
-  overflow: visible !important;
-}
-
 /* ========================================
    KVP Filter Layout
    ======================================== */
