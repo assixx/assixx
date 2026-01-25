@@ -127,9 +127,8 @@
             <i class="fas fa-thumbtack"></i>
             Schwarzes Brett
           </h3>
-          <a href="/blackboard" class="card--blackboard__link">
-            Alle anzeigen
-            <i class="fas fa-arrow-right"></i>
+          <a href="/blackboard" class="btn btn-link">
+            <i class="fas fa-external-link-alt mr-1.5"></i> Alle anzeigen
           </a>
         </div>
         <div id="blackboard-widget-content">

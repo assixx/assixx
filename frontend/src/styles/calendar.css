@@ -599,7 +599,7 @@
   margin: 0 !important;
   border: 0;
   border-radius: 0 !important;
-  background: rgb(0 0 30 / 12%);
+  background: #00000063;
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__header {
