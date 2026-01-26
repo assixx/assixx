@@ -69,19 +69,28 @@
     background: var(--form-field-bg-focus);
   }
 
-  /* Browser Autofill Override - Prevent yellow background
+  /* Browser Autofill Override - Prevent yellow/colored background
    * Uses :is() forgiving selector list for cross-browser support:
    * - Chrome/Safari: :-webkit-autofill
    * - Firefox/Standard: :autofill
+   *
+   * Firefox 135+ sets autofill styles with !important in the UA stylesheet,
+   * so we use an infinite transition to prevent them from ever applying.
+   * The box-shadow inset trick still works for Chrome/Safari.
+   *
    * Reference: https://developer.mozilla.org/en-US/docs/Web/CSS/:autofill
    */
   .form-field__control:is(:-webkit-autofill, :autofill),
   .form-field__control:is(:-webkit-autofill, :autofill):hover,
   .form-field__control:is(:-webkit-autofill, :autofill):focus,
   .form-field__control:is(:-webkit-autofill, :autofill):active {
-    transition: background-color 5000s ease-in-out 0s;
+    /* Firefox 135+: infinite transition prevents UA !important styles from showing */
+    transition:
+      background-color calc(infinity * 1s) step-end,
+      background-image calc(infinity * 1s) step-end allow-discrete,
+      color calc(infinity * 1s) step-end;
 
-    /* Trick: Use box-shadow to override background (works in Chrome/Safari) */
+    /* Chrome/Safari: box-shadow inset overrides background */
     box-shadow: 0 0 0 1000px var(--form-field-bg) inset !important;
     border: var(--form-field-border) !important;
 

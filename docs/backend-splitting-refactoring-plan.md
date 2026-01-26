@@ -1,8 +1,10 @@
-# Backend Splitting Refactoring Plan (v2 — Pragmatic Revision)
+# Backend Splitting Refactoring Plan (v3 — Review-Hardened)
 
 > All backend service files exceeding the ESLint `max-lines: 800` limit, sorted by size, with a decision-driven splitting approach.
 >
-> **v2 Changes:** Added Decision Framework, merged micro-services (<100 lines), dropped `*.queries.ts` default layer, fixed users.service.ts facade bloat, consolidated reports module, added Risk Mitigation section. Net result: ~69 new files (down from ~92 in v1) with every file having genuine substance.
+> **v3 Changes (from v2):** Fixed contradictory facade line limits (250 target vs 400 max clarified), extracted blackboard access control to stay under 400-line sub-service limit, added rules for inter-sub-service communication and shared types, expanded transaction boundary pattern, added Bruno coverage pre-check to checklist. Net result: ~70 new files.
+>
+> **v2 Changes:** Added Decision Framework, merged micro-services (<100 lines), dropped `*.queries.ts` default layer, fixed users.service.ts facade bloat, consolidated reports module, added Risk Mitigation section.
 
 ---
 
@@ -46,21 +48,26 @@ Before extracting any code into a new file, it **MUST** pass this test.
 Not every service needs all layers. Use only what's justified.
 
 ```
-Layer 1: *.service.ts              Facade / Orchestration          max 400 lines
+Layer 1: *.service.ts              Facade — pure delegation        target 250 lines
+                                   OR Facade + core CRUD           max 400 lines
 Layer 2: *-[domain].service.ts     Sub-domain business logic       max 400 lines  (needs DI)
 Layer 3: *.helpers.ts              Transform, mapping, pure fns    max 300 lines  (no DI)
 Layer 4: *.constants.ts            Defaults, enums, config values  max 100 lines
 ```
 
+**When to use Facade + core CRUD (max 400):** When extracting CRUD into a sub-service would leave the facade as a pointless pass-through with no orchestration logic (e.g., machines, documents, teams). When the facade has 3+ sub-domains to coordinate, extract CRUD into its own sub-service and keep the facade at <=250 lines (e.g., users, chat, blackboard).
+
 **Dropped from v1:** `*.queries.ts` — SQL stays co-located with the service that executes it. Extracting SQL into a separate file breaks co-location: you change business logic in one file, its SQL in another. Only extract shared query builders if genuinely reused by 3+ services.
 
 ### Rules
 
-1. **Facade stays thin** — Orchestrates sub-services, holds no complex logic. Target: **<=250 lines**.
+1. **Facade stays thin** — Orchestrates sub-services, holds no complex logic. Target: **<=250 lines** for pure delegation. Hard max: **400 lines** when the facade also holds core CRUD (see Splitting Schema above for when each applies).
 2. **Sub-services own one domain** — Each handles one bounded context (e.g., comments, attachments, maintenance).
 3. **Helpers are stateless** — Mappers, transformers, parsers. No injected dependencies, no DB calls.
 4. **Constants never change at runtime** — Defaults, column lists, enum-like objects.
 5. **No micro-services** — Every @Injectable sub-service must have **>=100 lines** of genuine logic (not counting imports/boilerplate).
+6. **Sub-services never call each other** — All cross-domain coordination goes through the facade. Sub-services depend only on `DatabaseService`, shared utilities, and `ConfigService`. This prevents circular dependencies and keeps the facade as the single orchestration point.
+7. **Shared types stay in the module's existing types file** — When splitting, shared interfaces/types remain in the existing `*.dto.ts` or module types file. Sub-services import from there. Do NOT create per-sub-service type files.
 
 ### NestJS Integration
 
@@ -147,19 +154,20 @@ chat/
 
 **Current Domains:** Entry CRUD, Access Control, Org Management, Comments, Attachments, Confirmations
 
-**New files: 5** | Comments, confirmations, and attachments each have their own table and distinct bounded context. Despite being ~100 lines each, they pass the Decision Framework: own table, DI needed, clear growth potential (threading, reactions, bulk operations).
+**New files: 7** | Comments, confirmations, and attachments each have their own table and distinct bounded context. Despite being ~100 lines each, they pass the Decision Framework: own table, DI needed, clear growth potential (threading, reactions, bulk operations). Access control extracted from entries to stay under the 400-line sub-service limit — consistent with `calendar-permission.service.ts` pattern.
 
 ```
 blackboard/
   blackboard.service.ts                    Facade (~200 lines)
     delegates to:
-  blackboard-entries.service.ts            Entry CRUD + access control (~500 lines)
+  blackboard-entries.service.ts            Entry CRUD (~350 lines)
     - listEntries()
     - getEntryById()
     - createEntry()
     - updateEntry()
     - deleteEntry()
     - archiveEntry()
+  blackboard-access.service.ts             Access control (~150 lines)
     - checkAccess()
     - buildOrgLevelFilter()
     - buildPermissionFilter()
@@ -930,7 +938,7 @@ Revised to prioritize by **business value + risk**, not just file size.
 | Risk                       | Mitigation                                                                                                                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Circular dependencies**  | NestJS detects at startup. Run `docker-compose restart backend` after each split. Check logs for circular DI warnings.                                     |
-| **Transaction boundaries** | If two sub-services need to share a transaction, the facade passes the `PoolClient` down. Document which methods need transactional coordination.          |
+| **Transaction boundaries** | Facade owns the transaction lifecycle — see **Transaction Pattern** below.                                                                                 |
 | **Missing providers**      | Forgetting to register a sub-service in the module's `providers` array → NestJS throws at startup. Always verify container startup after adding providers. |
 | **Import path breakage**   | After extracting to new files, all internal imports need updating. `pnpm run type-check` catches 100% of these.                                            |
 | **Test mock updates**      | Unit tests mocking the original service need updating to mock sub-services. Verify all existing tests still pass.                                          |
@@ -942,6 +950,19 @@ Revised to prioritize by **business value + risk**, not just file size.
 - Branch naming: `refactor/split-{service-name}` (e.g., `refactor/split-chat-service`)
 - Each PR must include: type-check pass, lint pass, Bruno test results, startup log showing no circular dependency warnings.
 - Merge to development branch first. Verify in staging before master.
+
+### Transaction Pattern
+
+When a facade operation spans multiple sub-services atomically, the **facade** owns the full lifecycle:
+
+1. Acquire `PoolClient` from the pool
+2. `BEGIN` the transaction
+3. Pass the client to each sub-service method
+4. `COMMIT` on success, `ROLLBACK` on error, `release` in `finally`
+
+Sub-service methods that participate in transactions accept an **optional `PoolClient` parameter**. When provided, they use it instead of acquiring their own connection. When called without it, they acquire their own (for standalone operations).
+
+Document which facade methods require transactional coordination in their JSDoc.
 
 ### Rollback Plan
 
@@ -960,7 +981,7 @@ If a split causes production issues:
 | Files over 800 lines      |     18 |          0 |           0 |
 | Average lines per service |   1244 |       ~200 |        ~200 |
 | Max file size             |   1723 |       ~550 |        ~550 |
-| Total new files created   |      — |        ~69 |         ~75 |
+| Total new files created   |      — |        ~70 |         ~75 |
 | Average methods per file  |     33 |         ~8 |          ~8 |
 | Smallest @Injectable      |      — | ~100 lines |   ~60 lines |
 
@@ -979,6 +1000,7 @@ If a split causes production issues:
 
 For each service being split:
 
+0. **Verify Bruno API test coverage exists** for the module's endpoints. If not, create basic smoke tests BEFORE splitting — otherwise the "run Bruno tests" safety net in step 8 is meaningless.
 1. Create sub-service files with `@Injectable()` decorator
 2. Move methods to their new home (**copy, not rewrite** — zero behavior changes)
 3. Update the facade to inject and delegate to sub-services
@@ -994,13 +1016,14 @@ For each service being split:
 
 ## Revision History
 
-| Version | Date       | Changes                                                                                                                                                           |
-| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v1      | 2026-01-26 | Initial plan. 18 services, ~75 new files, mechanical splitting by size.                                                                                           |
-| v2      | 2026-01-26 | Pragmatic revision. Decision Framework added. Micro-services merged. Queries layer dropped. Risk mitigation added. ~69 new files with genuine substance per file. |
+| Version | Date       | Changes                                                                                                                                                                                                                                               |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1      | 2026-01-26 | Initial plan. 18 services, ~75 new files, mechanical splitting by size.                                                                                                                                                                               |
+| v2      | 2026-01-26 | Pragmatic revision. Decision Framework added. Micro-services merged. Queries layer dropped. Risk mitigation added. ~69 new files with genuine substance per file.                                                                                     |
+| v3      | 2026-01-27 | Review-hardened. Facade line limits clarified (250 target / 400 max). Blackboard access control extracted. Rules 6-7 added (no inter-sub-service calls, shared types). Transaction pattern documented. Bruno coverage pre-check added. ~70 new files. |
 
 ---
 
 **ESLint Rule:** `max-lines: 800` (error)
 **Total Services Affected:** 18
-**Total New Files Estimated:** ~69
+**Total New Files Estimated:** ~70
