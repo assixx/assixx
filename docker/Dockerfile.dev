@@ -8,7 +8,10 @@
 # - Cache mounts for pnpm store (faster rebuilds)
 # =============================================================================
 
-FROM node:24.12.0-alpine3.22
+# Node version is configurable via docker-compose.yml build args
+# Default: LTS version for stability
+ARG NODE_VERSION=24.13.0-alpine3.22
+FROM node:${NODE_VERSION}
 
 # Install development tools
 # Fix CVE-2025-10966: Upgrade curl to latest available version
@@ -19,7 +22,9 @@ RUN apk add --no-cache curl jq && \
 # tsx and nodemon are in devDependencies - no need to install globally!
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.28.0
+# pnpm version is configurable for consistency across environments
+ARG PNPM_VERSION=10.28.0
+RUN npm install -g npm@latest pnpm@${PNPM_VERSION}
 
 # Arbeitsverzeichnis
 WORKDIR /app

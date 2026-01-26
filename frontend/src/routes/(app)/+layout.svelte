@@ -19,12 +19,15 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
-  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
   import { createLogger } from '$lib/utils/logger';
+  import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
   import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
   import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
+
+  import { getMenuItemsForRole, type NavItem } from './_lib/navigation-config';
 
   import type { LayoutData } from './$types';
 
@@ -67,7 +70,10 @@
   const ssrUser = $derived(data.user ?? null);
   const ssrTenant = $derived(data.tenant ?? null);
 
-  // User State - initialize from SSR data
+  // User State - initialize from SSR data to prevent hydration FOUC
+  // INTENTIONAL: We capture initial data.user to match SSR render.
+  // Future updates are handled by $effect (line ~118) that syncs ssrUser → user.
+  // svelte-ignore state_referenced_locally
   let user = $state<{
     id?: number;
     firstName?: string;
@@ -77,27 +83,43 @@
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;
-  } | null>(null);
+  } | null>(data.user ?? null);
 
-  // Role Switch State (original role vs active role after switching)
-  let userRole = $state<'root' | 'admin' | 'employee'>('employee');
-  let activeRole = $state<'root' | 'admin' | 'employee'>('employee');
+  // Immediate client-side init (hydration) - ensures role switch banner shows instantly
+  const getStorageValue = (key: string): string | null =>
+    typeof window === 'undefined' ? null : localStorage.getItem(key);
 
-  // Sidebar State
+  const getInitialActiveRole = (): 'root' | 'admin' | 'employee' => {
+    const stored = getStorageValue('activeRole');
+    return stored === 'root' || stored === 'admin' || stored === 'employee'
+      ? stored
+      : (data.user?.role ?? 'employee');
+  };
+
+  const isBannerDismissed = (role: string): boolean =>
+    getStorageValue(`roleSwitchBannerDismissed_${role}`) === 'true';
+
+  // Role Switch State - activeRole read from localStorage IMMEDIATELY during hydration
+  // svelte-ignore state_referenced_locally
+  let userRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
+  let activeRole = $state<'root' | 'admin' | 'employee'>(getInitialActiveRole());
   let sidebarCollapsed = $state(false);
   let openSubmenu = $state<string | null>(null);
+  let roleSwitchBannerDismissed = $state(isBannerDismissed(getInitialActiveRole()));
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
   let tokenWarning = $state(false);
   let tokenExpired = $state(false);
-  let tokenTimerInterval = $state<ReturnType<typeof setInterval> | null>(null);
+  let tokenTimerUnsubscribe = $state<(() => void) | null>(null);
 
   // Logout Modal State
   let showLogoutModal = $state(false);
 
-  // Tenant Info - from SSR
-  let tenant = $state<{ id?: number; companyName?: string } | null>(null);
+  // Tenant Info - initialize from SSR data to prevent hydration FOUC
+  // INTENTIONAL: Capture initial SSR value. Updates via ssrTenant → effect sync.
+  // svelte-ignore state_referenced_locally
+  let tenant = $state<{ id?: number; companyName?: string } | null>(data.tenant ?? null);
 
   // Session Manager instance (for cleanup on destroy)
   let sessionManagerInstance = $state<SessionManager | null>(null);
@@ -109,129 +131,27 @@
   // activeRole reflects the current view, which may differ from original userRole
   const currentRole = $derived(activeRole);
 
-  // =============================================================================
-  // NAVIGATION MENU CONFIG
-  // =============================================================================
+  // Role Switch Banner: Show when user is viewing as different role
+  const isRoleSwitched = $derived(userRole !== activeRole);
+  const showRoleSwitchBanner = $derived(isRoleSwitched && !roleSwitchBannerDismissed);
 
-  /** Navigation item type */
-  interface NavItem {
-    id: string;
-    icon?: string;
-    label: string;
-    url?: string;
-    hasSubmenu?: boolean;
-    submenu?: NavItem[];
-    /** Badge type for real-time notification count */
-    badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat';
-  }
-
-  const ICONS: Record<string, string> = {
-    home: '<i class="fas fa-home"></i>',
-    pin: '<i class="fas fa-thumbtack"></i>',
-    users: '<i class="fas fa-users"></i>',
-    team: '<i class="fas fa-user-friends"></i>',
-    generator: '<i class="fas fa-cogs"></i>',
-    document: '<i class="fas fa-file-alt"></i>',
-    calendar: '<i class="fas fa-calendar-alt"></i>',
-    lean: '<i class="fas fa-chart-line"></i>',
-    clock: '<i class="fas fa-clock"></i>',
-    chat: '<i class="fas fa-comments"></i>',
-    settings: '<i class="fas fa-cog"></i>',
-    user: '<i class="fas fa-user"></i>',
-    'user-shield': '<i class="fas fa-user-shield"></i>',
-    admin: '<i class="fas fa-user-tie"></i>',
-    sitemap: '<i class="fas fa-sitemap"></i>',
-    building: '<i class="fas fa-building"></i>',
-    feature: '<i class="fas fa-puzzle-piece"></i>',
-    logs: '<i class="fas fa-list-alt"></i>',
-    folder: '<i class="fas fa-folder"></i>',
-    lightbulb: '<i class="fas fa-lightbulb"></i>',
-    poll: '<i class="fas fa-poll"></i>',
+  // Role display names for banner
+  const roleDisplayNames: Record<'root' | 'admin' | 'employee', string> = {
+    root: 'Root',
+    admin: 'Administrator',
+    employee: 'Mitarbeiter',
   };
 
-  const rootMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Root Dashboard', url: '/root-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
-    { id: 'root-users', icon: ICONS['user-shield'], label: 'Root User', url: '/manage-root' },
-    { id: 'admins', icon: ICONS.admin, label: 'Administratoren', url: '/manage-admins' },
-    { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
-    { id: 'departments', icon: ICONS.building, label: 'Abteilungen', url: '/manage-departments' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
-    { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/root-profile' },
-    {
-      id: 'system',
-      icon: ICONS.settings,
-      label: 'System',
-      hasSubmenu: true,
-      submenu: [{ id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' }],
-    },
-  ]);
+  // Sync SSR user data to local state on invalidateAll() / navigation
+  // This ensures UI updates immediately after PATCH /users/me
+  $effect(() => {
+    if (ssrUser !== null) {
+      user = ssrUser;
+    }
+  });
 
-  const adminMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Übersicht', url: '/admin-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
-    { id: 'employees', icon: ICONS.users, label: 'Mitarbeiter', url: '/manage-employees' },
-    { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
-    { id: 'machines', icon: ICONS.generator, label: 'Maschinen', url: '/manage-machines' },
-    {
-      id: 'documents',
-      icon: ICONS.document,
-      label: 'Dokumente',
-      hasSubmenu: true,
-      submenu: [{ id: 'documents-explorer', label: 'Datei Explorer', url: '/documents-explorer' }],
-    },
-    { id: 'calendar', icon: ICONS.calendar, label: 'Kalender', url: '/calendar' },
-    {
-      id: 'lean-management',
-      icon: ICONS.lean,
-      label: 'LEAN-Management',
-      hasSubmenu: true,
-      submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-admin' },
-      ],
-    },
-    { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'settings', icon: ICONS.settings, label: 'Einstellungen', url: '#settings' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/admin-profile' },
-  ]);
-
-  const employeeMenuItems = $derived<NavItem[]>([
-    { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
-    { id: 'blackboard', icon: ICONS.pin, label: 'Schwarzes Brett', url: '/blackboard' },
-    {
-      id: 'documents',
-      icon: ICONS.document,
-      label: 'Dokumente',
-      hasSubmenu: true,
-      submenu: [{ id: 'documents-explorer', label: 'Datei Explorer', url: '/documents-explorer' }],
-    },
-    { id: 'calendar', icon: ICONS.calendar, label: 'Kalender', url: '/calendar' },
-    {
-      id: 'lean-management',
-      icon: ICONS.lean,
-      label: 'LEAN-Management',
-      hasSubmenu: true,
-      submenu: [
-        { id: 'kvp', label: 'KVP System', url: '/kvp' },
-        { id: 'surveys', label: 'Umfragen', url: '/survey-employee' },
-      ],
-    },
-    { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-    { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-    { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/employee-profile' },
-  ]);
-
-  const menuItems = $derived<NavItem[]>(
-    currentRole === 'root'
-      ? rootMenuItems
-      : currentRole === 'admin'
-        ? adminMenuItems
-        : employeeMenuItems,
-  );
+  // Navigation menu items - imported from navigation-config.ts
+  const menuItems = $derived<NavItem[]>(getMenuItemsForRole(currentRole));
 
   // =============================================================================
   // HELPER FUNCTIONS
@@ -283,6 +203,13 @@
     return false;
   }
 
+  /** Check if submenu child item is active */
+  function isSubmenuItemActive(subItem: NavItem): boolean {
+    const currentPath = $page.url.pathname;
+    if (subItem.url === undefined || subItem.url === '') return false;
+    return currentPath === subItem.url || currentPath.startsWith(subItem.url + '/');
+  }
+
   // =============================================================================
   // API FUNCTIONS
   // =============================================================================
@@ -329,45 +256,23 @@
   // TOKEN TIMER
   // =============================================================================
 
-  /** Parse JWT and get expiration timestamp (ms) */
-  function getTokenExpiration(token: string): number | null {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
-      return payload.exp !== undefined ? payload.exp * 1000 : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Update token timer display */
-  function updateTokenTimer(): void {
-    const token = localStorage.getItem('accessToken');
-    if (token === null) {
-      tokenTimeLeft = '--:--';
-      return;
-    }
-
-    const exp = getTokenExpiration(token);
-    if (exp === null) {
-      tokenTimeLeft = '--:--';
-      return;
-    }
-
-    const now = Date.now();
-    const diff = exp - now;
-
-    if (diff <= 0) {
+  /**
+   * Handle token timer update from TokenManager.
+   * Uses TokenManager's relative time calculation (no clock skew!)
+   */
+  function handleTokenTimerUpdate(remainingSeconds: number): void {
+    if (remainingSeconds <= 0) {
       tokenTimeLeft = '00:00';
       tokenExpired = true;
       tokenWarning = false;
       return;
     }
 
-    const minutes = Math.floor(diff / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
     tokenTimeLeft = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-    tokenWarning = diff <= 120000; // 2 minutes warning
+    tokenWarning = remainingSeconds <= 120; // 2 minutes warning
     tokenExpired = false;
   }
 
@@ -379,11 +284,28 @@
   function toggleSidebar(): void {
     sidebarCollapsed = !sidebarCollapsed;
     localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
+    // Close all submenus when collapsing sidebar
+    if (sidebarCollapsed) {
+      openSubmenu = null;
+    }
   }
 
   /** Toggle submenu */
   function toggleSubmenu(itemId: string): void {
+    // Don't open submenus when sidebar is collapsed
+    if (sidebarCollapsed) return;
     openSubmenu = openSubmenu === itemId ? null : itemId;
+  }
+
+  /** Calculate aggregated badge count for all submenu items */
+  function getSubmenuBadgeCount(submenu: NavItem[] | undefined): number {
+    if (!submenu) return 0;
+    return submenu.reduce((total, item) => {
+      if (item.badgeType) {
+        return total + notificationStore.counts[item.badgeType];
+      }
+      return total;
+    }, 0);
   }
 
   /** Handle logout button click */
@@ -402,6 +324,12 @@
     showLogoutModal = false;
   }
 
+  /** Dismiss role switch banner */
+  function dismissRoleSwitchBanner(): void {
+    roleSwitchBannerDismissed = true;
+    localStorage.setItem(`roleSwitchBannerDismissed_${activeRole}`, 'true');
+  }
+
   // =============================================================================
   // LIFECYCLE
   // =============================================================================
@@ -410,8 +338,12 @@
    * Initialize client-side state from SSR data
    * SSR provides user/tenant data - we only need to:
    * 1. Sync SSR data to local state
-   * 2. Load UI preferences from localStorage (sidebar, role switch)
-   * 3. Start client-side services (token timer, session manager)
+   * 2. Load UI preferences from localStorage (sidebar)
+   * 3. Persist role to localStorage
+   *
+   * NOTE: activeRole and roleSwitchBannerDismissed are already initialized
+   * IMMEDIATELY during hydration (see getInitialActiveRole / isBannerDismissedForRole)
+   * to ensure the role switch banner shows instantly, not after page load.
    */
   function initializeFromSSR(): void {
     // 1. Sync SSR user/tenant data to local state
@@ -419,25 +351,13 @@
       user = ssrUser;
       tenant = ssrTenant;
 
-      // Set role from SSR user data
+      // Set userRole from SSR (original role never changes)
       const role = ssrUser.role;
       userRole = role;
 
-      // Check if activeRole was stored (for role switching persistence)
-      const storedActiveRole = localStorage.getItem('activeRole');
-      if (
-        storedActiveRole === 'root' ||
-        storedActiveRole === 'admin' ||
-        storedActiveRole === 'employee'
-      ) {
-        activeRole = storedActiveRole;
-      } else {
-        activeRole = role;
-      }
-
       // Persist role to localStorage for role switching component
       localStorage.setItem('userRole', role);
-      if (storedActiveRole === null) {
+      if (localStorage.getItem('activeRole') === null) {
         localStorage.setItem('activeRole', role);
       }
     }
@@ -450,49 +370,82 @@
   }
 
   onMount(() => {
+    const endLayoutMount = perf.start('layout:mount:total');
+
     // Initialize state from SSR data
-    initializeFromSSR();
+    perf.timeSync('layout:initializeFromSSR', () => {
+      initializeFromSSR();
+    });
 
-    // Start token timer (reads from localStorage accessToken set by login)
-    updateTokenTimer();
-    tokenTimerInterval = setInterval(updateTokenTimer, 1000);
+    // Subscribe to TokenManager timer updates (uses relative time - no clock skew!)
+    // Also handles token expiration events
+    perf.timeSync('layout:tokenManager:init', () => {
+      const tokenManager = getTokenManager();
 
-    // Subscribe to token expiration events
-    // If token expires during session, redirect to login
-    const tokenManager = getTokenManager();
-    tokenManager.onTokenExpired(() => {
-      log.warn({}, 'Token expired during session, redirecting to login');
-      void goto('/login', { replaceState: true });
+      // Subscribe to timer updates (fires every second with remaining seconds)
+      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(handleTokenTimerUpdate);
+
+      // Subscribe to token expiration events
+      tokenManager.onTokenExpired(() => {
+        log.warn({}, 'Token expired during session, redirecting to login');
+        void goto('/login', { replaceState: true });
+      });
     });
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)
-    sessionManagerInstance = getSessionManager();
+    perf.timeSync('layout:sessionManager:init', () => {
+      sessionManagerInstance = getSessionManager();
+    });
 
     // Initialize Role Sync Manager (handles cross-tab role synchronization)
     // When another tab switches role, this callback updates local state
-    roleSyncManagerInstance = getRoleSyncManager();
-    roleSyncManagerInstance.init((newRole: string, token?: string) => {
-      log.warn({ newRole }, 'Role changed in another tab');
+    perf.timeSync('layout:roleSyncManager:init', () => {
+      roleSyncManagerInstance = getRoleSyncManager();
+      roleSyncManagerInstance.init((newRole: string, token?: string) => {
+        log.warn({ newRole }, 'Role changed in another tab');
 
-      // Update local state - the manager handles redirect/reload
-      if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
-        activeRole = newRole;
-      }
+        // Update local state - the manager handles redirect/reload
+        if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
+          activeRole = newRole;
+        }
 
-      // Update token if provided
-      if (token !== undefined && token !== '') {
-        localStorage.setItem('accessToken', token);
+        // Update token if provided
+        if (token !== undefined && token !== '') {
+          localStorage.setItem('accessToken', token);
+        }
+      });
+    });
+
+    // Initialize notification counts from SSR data (0ms!) or fetch client-side (fallback)
+    perf.timeSync('layout:notifications:init', () => {
+      if (data.dashboardCounts !== null) {
+        // SSR path: counts already fetched server-side, just sync to store
+        notificationStore.initFromSSR(data.dashboardCounts);
+      } else {
+        // Fallback: fetch client-side if SSR didn't provide counts
+        void notificationStore.loadInitialCounts();
       }
     });
 
-    // Load initial counts and connect to SSE for real-time notifications
-    void notificationStore.loadInitialCounts();
-    notificationStore.connect();
+    perf.timeSync('layout:sse:connect', () => {
+      notificationStore.connect();
+    });
+
+    endLayoutMount();
+
+    // Log page load timing after everything is mounted
+    // Use setTimeout to ensure all resources are loaded
+    setTimeout(() => {
+      logPageLoadTiming();
+      logResourceTiming('/api/');
+      perf.logSummary();
+    }, 100);
   });
 
   onDestroy(() => {
-    if (tokenTimerInterval) {
-      clearInterval(tokenTimerInterval);
+    // Unsubscribe from TokenManager timer updates
+    if (tokenTimerUnsubscribe !== null) {
+      tokenTimerUnsubscribe();
     }
     // Cleanup SessionManager
     if (sessionManagerInstance !== null) {
@@ -562,7 +515,7 @@
               />
             </div>
           {:else}
-            <div class="avatar avatar--md avatar--color-5">
+            <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
               <span class="avatar__initials">{getInitials()}</span>
             </div>
           {/if}
@@ -582,6 +535,35 @@
       </div>
     </div>
   </header>
+
+  <!-- Role Switch Warning Banner -->
+  {#if showRoleSwitchBanner}
+    <div class="role-switch-banner" id="role-switch-warning-banner">
+      <div class="role-switch-banner-content">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+          />
+        </svg>
+        <span>
+          Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>. Ihre
+          ursprüngliche Rolle ist <strong>{roleDisplayNames[userRole]}</strong>.
+        </span>
+        <button
+          type="button"
+          class="role-switch-banner-close"
+          onclick={dismissRoleSwitchBanner}
+          title="Banner schließen"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Main Layout -->
   <div class="layout-container">
@@ -603,8 +585,13 @@
                     toggleSubmenu(item.id);
                   }}
                 >
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded in ICONS object, safe -->
-                  <span class="icon" style="position: relative;">{@html item.icon}</span>
+                  <span class="icon" style="position: relative;">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded ICONS object, safe -->
+                    {@html item.icon}
+                    {#if openSubmenu !== item.id}
+                      <NotificationBadge count={getSubmenuBadgeCount(item.submenu)} size="sm" />
+                    {/if}
+                  </span>
                   <span class="label">{item.label}</span>
                   <span class="submenu-arrow">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
@@ -614,10 +601,21 @@
                 </button>
                 <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
                   {#each item.submenu as subItem (subItem.id)}
-                    <li class="submenu-item">
-                      <a href={resolveDynamicPath(subItem.url ?? '')} class="submenu-link"
-                        >{subItem.label}</a
+                    <li class="submenu-item" class:active={isSubmenuItemActive(subItem)}>
+                      <a
+                        href={resolveDynamicPath(subItem.url ?? '')}
+                        class="submenu-link"
+                        class:active={isSubmenuItemActive(subItem)}
                       >
+                        <span>{subItem.label}</span>
+                        {#if subItem.badgeType && openSubmenu === item.id}
+                          <NotificationBadge
+                            count={notificationStore.counts[subItem.badgeType]}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                      </a>
                     </li>
                   {/each}
                 </ul>
@@ -641,25 +639,6 @@
             {/if}
           {/each}
         </ul>
-
-        <!-- Storage Widget (Root only) -->
-        {#if currentRole === 'root'}
-          <div class="storage-widget">
-            <div class="storage-header">
-              <i class="fas fa-database"></i>
-              <span>Speicherplatz</span>
-            </div>
-            <div class="storage-info">
-              <div class="storage-usage-text">
-                <span>-- GB</span> von <span>-- GB</span>
-              </div>
-              <div class="storage-progress">
-                <div class="storage-progress-bar" style="width: 0%"></div>
-              </div>
-              <div class="storage-percentage">0% belegt</div>
-            </div>
-          </div>
-        {/if}
       </nav>
 
       <!-- User Info Card -->
@@ -673,7 +652,7 @@
             />
           </div>
         {:else}
-          <div class="avatar avatar--md avatar--color-0">
+          <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
             <span class="avatar__initials">{getInitials()}</span>
           </div>
         {/if}
@@ -694,6 +673,25 @@
           <span class="badge badge--sm {getRoleBadgeClass()}">{getRoleBadgeText()}</span>
         </div>
       </div>
+
+      <!-- Storage Widget (Root only) -->
+      {#if currentRole === 'root'}
+        <div class="storage-widget">
+          <div class="storage-header">
+            <i class="fas fa-database"></i>
+            <span>Speicherplatz</span>
+          </div>
+          <div class="storage-info">
+            <div class="storage-usage-text">
+              <span>-- GB</span> von <span>-- GB</span>
+            </div>
+            <div class="storage-progress">
+              <div class="storage-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="storage-percentage">0% belegt</div>
+          </div>
+        </div>
+      {/if}
     </aside>
 
     <!-- Main Content (Child Routes) -->

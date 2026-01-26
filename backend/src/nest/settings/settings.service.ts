@@ -141,7 +141,7 @@ export class SettingsService {
    * Get all system settings
    */
   async getSystemSettings(filters: SettingFilters, userRole: string): Promise<ParsedSetting[]> {
-    this.logger.log('Fetching system settings');
+    this.logger.debug('Fetching system settings');
 
     if (userRole !== 'root') {
       throw new ForbiddenException('Access denied');
@@ -178,7 +178,7 @@ export class SettingsService {
    * Get single system setting
    */
   async getSystemSetting(key: string, userRole: string): Promise<ParsedSetting> {
-    this.logger.log(`Fetching system setting: ${key}`);
+    this.logger.debug(`Fetching system setting: ${key}`);
 
     const rows = await this.db.query<DbSystemSetting>(
       `SELECT * FROM system_settings WHERE setting_key = $1`,
@@ -316,7 +316,7 @@ export class SettingsService {
    * Get all tenant settings
    */
   async getTenantSettings(tenantId: number, filters: SettingFilters): Promise<ParsedSetting[]> {
-    this.logger.log(`Fetching tenant settings for tenant ${tenantId}`);
+    this.logger.debug(`Fetching tenant settings for tenant ${tenantId}`);
 
     let query = `SELECT * FROM tenant_settings WHERE tenant_id = $1`;
     const params: (string | number)[] = [tenantId];
@@ -343,7 +343,7 @@ export class SettingsService {
    * Get single tenant setting
    */
   async getTenantSetting(key: string, tenantId: number): Promise<ParsedSetting> {
-    this.logger.log(`Fetching tenant setting: ${key}`);
+    this.logger.debug(`Fetching tenant setting: ${key}`);
 
     const rows = await this.db.query<DbTenantSetting>(
       `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
@@ -482,7 +482,7 @@ export class SettingsService {
     tenantId?: number,
     teamId?: number | null,
   ): Promise<ParsedSetting[]> {
-    this.logger.log(`Fetching user settings for user ${userId}`);
+    this.logger.debug(`Fetching user settings for user ${userId}`);
 
     let query = `SELECT * FROM user_settings WHERE user_id = $1`;
     const params: (string | number | null)[] = [userId];
@@ -525,7 +525,7 @@ export class SettingsService {
    * Get single user setting
    */
   async getUserSetting(key: string, userId: number): Promise<ParsedSetting> {
-    this.logger.log(`Fetching user setting: ${key}`);
+    this.logger.debug(`Fetching user setting: ${key}`);
 
     const rows = await this.db.query<DbUserSetting>(
       `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
@@ -647,19 +647,20 @@ export class SettingsService {
     tenantId: number,
     userRole: string,
   ): Promise<ParsedSetting[]> {
-    this.logger.log(`Fetching settings for user ${targetUserId} (admin)`);
+    this.logger.debug(`Fetching settings for user ${targetUserId} (admin)`);
 
     if (userRole !== 'admin' && userRole !== 'root') {
       throw new ForbiddenException("Only admins can view other users' settings");
     }
 
+    // SECURITY: Only return settings for ACTIVE users (is_active = 1)
     const userRows = await this.db.query<DbIdResult>(
-      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [targetUserId, tenantId],
     );
 
     if (userRows.length === 0) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or inactive');
     }
 
     return await this.getUserSettings(targetUserId, {});

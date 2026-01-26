@@ -61,14 +61,28 @@ export const STATUS_LABELS: Record<IsActiveStatus, string> = {
 
 /**
  * Availability status badge classes
+ * IMPORTANT: Must match shifts/_lib/constants.ts AVAILABILITY_COLORS for consistency!
  */
 export const AVAILABILITY_BADGE_CLASSES: Record<AvailabilityStatus, string> = {
   available: 'badge--success',
-  vacation: 'badge--info',
-  sick: 'badge--warning',
+  vacation: 'badge--warning',
+  sick: 'badge--danger',
   unavailable: 'badge--error',
-  training: 'badge--primary',
-  other: 'badge--secondary',
+  training: 'badge--info',
+  other: 'badge--dark',
+};
+
+/**
+ * Availability status icons (FontAwesome classes)
+ * IMPORTANT: Must match shifts/_lib/constants.ts AVAILABILITY_ICONS for consistency!
+ */
+export const AVAILABILITY_ICONS: Record<AvailabilityStatus, string> = {
+  available: 'fa-check-circle',
+  vacation: 'fa-plane',
+  sick: 'fa-notes-medical',
+  unavailable: 'fa-ban',
+  training: 'fa-graduation-cap',
+  other: 'fa-clock',
 };
 
 /**
@@ -95,6 +109,18 @@ export const AVAILABILITY_STATUS_LABELS: Record<AvailabilityStatus, string> = {
   training: 'Schulung',
   other: 'Sonstiges',
 };
+
+/**
+ * Availability status options for select dropdown
+ */
+export const AVAILABILITY_STATUS_OPTIONS: { value: AvailabilityStatus; label: string }[] = [
+  { value: 'available', label: 'Verfügbar' },
+  { value: 'vacation', label: 'Urlaub' },
+  { value: 'sick', label: 'Krank' },
+  { value: 'unavailable', label: 'Nicht verfügbar' },
+  { value: 'training', label: 'Schulung' },
+  { value: 'other', label: 'Sonstiges' },
+];
 
 /**
  * Password strength labels
@@ -168,14 +194,14 @@ export const MESSAGES = {
 } as const;
 
 /**
- * API Endpoints
+ * API Endpoints (relative to /api/v2 base)
  */
 export const API_ENDPOINTS = {
-  EMPLOYEES: '/api/v2/users?role=employee',
-  TEAMS: '/api/v2/teams',
-  user: (id: number) => `/api/v2/users/${id}`,
-  USERS: '/api/v2/users',
-  teamMembers: (teamId: number) => `/api/v2/teams/${teamId}/members`,
+  EMPLOYEES: '/users?role=employee',
+  TEAMS: '/teams',
+  user: (id: number) => `/users/${id}`,
+  USERS: '/users',
+  teamMembers: (teamId: number) => `/teams/${teamId}/members`,
 } as const;
 
 /**

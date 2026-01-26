@@ -94,14 +94,16 @@
                 class="fas fa-file-alt flex-shrink-0"
                 style="font-size: 24px; color: var(--color-icon-primary);"
               ></i>
-              <div class="flex items-center gap-2 min-w-0">
-                <span class={!doc.isRead ? 'font-semibold' : ''} title={getDisplayName(doc)}>
+              <div class="user-info">
+                <span
+                  class="user-name"
+                  class:font-semibold={!doc.isRead}
+                  title={getDisplayName(doc)}
+                >
                   {getDisplayName(doc)}
                 </span>
                 {#if isNew}
-                  <span class="badge badge--success" style="font-size: 11px; padding: 2px 8px;"
-                    >Neu</span
-                  >
+                  <span class="badge badge--sm badge--success">Neu</span>
                 {/if}
                 {#if !doc.isRead}
                   <span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0" title="Ungelesen"

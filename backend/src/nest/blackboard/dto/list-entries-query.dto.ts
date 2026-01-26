@@ -9,11 +9,15 @@ import { z } from 'zod';
 import { PaginationSchema } from '../../../schemas/common.schema.js';
 
 /**
- * Entry status enum
+ * is_active status (consistent with rest of app)
+ * 0 = inactive, 1 = active, 3 = archive, 4 = deleted (soft delete)
  */
-const EntryStatusSchema = z.enum(['active', 'archived'], {
-  message: "Status must be 'active' or 'archived'",
-});
+const IsActiveSchema = z.coerce
+  .number()
+  .int()
+  .refine((val: number) => [0, 1, 3, 4].includes(val), {
+    message: 'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
+  });
 
 /**
  * Filter type enum
@@ -47,7 +51,7 @@ const SortDirSchema = z.enum(['ASC', 'DESC'], {
  * List blackboard entries query parameters schema
  */
 export const ListEntriesQuerySchema = PaginationSchema.extend({
-  status: EntryStatusSchema.optional(),
+  isActive: IsActiveSchema.optional(),
   filter: FilterSchema.optional(),
   search: z.string().trim().max(100, 'Search term cannot exceed 100 characters').optional(),
   sortBy: SortBySchema.optional(),

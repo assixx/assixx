@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // =============================================================================
 // MANAGE EMPLOYEES - UTILITY FUNCTIONS
 // =============================================================================
@@ -8,6 +9,7 @@ import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
   AVAILABILITY_BADGE_CLASSES,
+  AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
   AVAILABILITY_STATUS_LABELS,
   PASSWORD_STRENGTH_LABELS,
@@ -168,17 +170,83 @@ export function getTeamsBadge(employee: Employee): BadgeInfo {
 // AVAILABILITY BADGE HELPERS
 // =============================================================================
 
+/** Check if a date string is defined and non-empty */
+function isValidDateString(date: string | undefined): date is string {
+  return date !== undefined && date !== '';
+}
+
+/**
+ * Check if today's date falls within a date range
+ * @param startDate - Start date string (ISO format)
+ * @param endDate - End date string (ISO format)
+ * @returns true if today is within the range (inclusive), false otherwise
+ */
+function isDateRangeActive(startDate?: string, endDate?: string): boolean {
+  // No dates specified → considered always active (indefinite status)
+  if (!isValidDateString(startDate) && !isValidDateString(endDate)) {
+    return true;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Check start date - if today is before start, not active yet
+  if (isValidDateString(startDate)) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    if (today < start) return false;
+  }
+
+  // Check end date - if today is after end, no longer active
+  if (isValidDateString(endDate)) {
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    if (today > end) return false;
+  }
+
+  return true;
+}
+
 /**
  * Get availability badge info for display
+ * Shows current availability status based on date range
+ * - If status is 'available' → always show "Verfügbar"
+ * - If status is not 'available' (vacation, sick, etc.):
+ *   - If today is BEFORE availabilityStart → show "Verfügbar"
+ *   - If today is WITHIN availabilityStart-availabilityEnd → show actual status
+ *   - If today is AFTER availabilityEnd → show "Verfügbar"
  * @param employee - Employee object
- * @returns Badge info with class and text
+ * @returns Badge info with class, text, and icon
  */
 export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   const status = employee.availabilityStatus ?? 'available';
 
+  // If status is 'available', always show available
+  if (status === 'available') {
+    return {
+      class: AVAILABILITY_BADGE_CLASSES.available,
+      text: AVAILABILITY_LABELS.available,
+      icon: AVAILABILITY_ICONS.available,
+    };
+  }
+
+  // For non-available statuses, check if date range is currently active
+  const isActive = isDateRangeActive(employee.availabilityStart, employee.availabilityEnd);
+
+  if (isActive) {
+    // Date range is active → show the actual status
+    return {
+      class: AVAILABILITY_BADGE_CLASSES[status],
+      text: AVAILABILITY_LABELS[status],
+      icon: AVAILABILITY_ICONS[status],
+    };
+  }
+
+  // Date range is not active (future or past) → show as available
   return {
-    class: AVAILABILITY_BADGE_CLASSES[status],
-    text: AVAILABILITY_LABELS[status],
+    class: AVAILABILITY_BADGE_CLASSES.available,
+    text: AVAILABILITY_LABELS.available,
+    icon: AVAILABILITY_ICONS.available,
   };
 }
 
@@ -663,5 +731,65 @@ export function getTruncatedNotes(
   return {
     text: text.length > maxLength ? text.substring(0, maxLength) + '...' : text,
     title: text,
+  };
+}
+
+// =============================================================================
+// AVAILABILITY MODAL HELPERS
+// =============================================================================
+
+/** Availability form data for validation */
+export interface AvailabilityFormData {
+  status: AvailabilityStatus;
+  start: string;
+  end: string;
+  reason: string;
+  notes: string;
+}
+
+/** Availability validation error types */
+export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
+
+/**
+ * Validate availability form data
+ * @param data - Form data to validate
+ * @returns Validation error type or null if valid
+ */
+export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
+  // Dates required for non-available status
+  if (data.status !== 'available' && (data.start === '' || data.end === '')) {
+    return 'dates_required';
+  }
+
+  // End date must be on or after start date
+  if (data.start !== '' && data.end !== '' && data.end < data.start) {
+    return 'end_before_start';
+  }
+
+  return null;
+}
+
+/** Availability API payload */
+export interface AvailabilityPayload {
+  availabilityStatus: AvailabilityStatus;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityReason?: string;
+  availabilityNotes?: string;
+}
+
+/**
+ * Build availability API payload from form data
+ * Converts empty strings to undefined
+ * @param data - Form data
+ * @returns API payload
+ */
+export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
+  return {
+    availabilityStatus: data.status,
+    availabilityStart: data.start !== '' ? data.start : undefined,
+    availabilityEnd: data.end !== '' ? data.end : undefined,
+    availabilityReason: data.reason !== '' ? data.reason : undefined,
+    availabilityNotes: data.notes !== '' ? data.notes : undefined,
   };
 }

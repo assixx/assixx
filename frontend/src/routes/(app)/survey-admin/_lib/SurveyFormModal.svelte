@@ -271,7 +271,7 @@
               {/each}
             </select>
             <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt fuer Mehrfachauswahl
+              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
             </small>
           </div>
         {/if}
@@ -293,7 +293,7 @@
               {/each}
             </select>
             <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt fuer Mehrfachauswahl
+              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
             </small>
           </div>
         {/if}
@@ -315,7 +315,7 @@
               {/each}
             </select>
             <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt fuer Mehrfachauswahl
+              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
             </small>
           </div>
         {/if}

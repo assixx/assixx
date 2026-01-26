@@ -14,7 +14,11 @@
   // Global calendar styles - MUST be imported for legend-*, event-level-*, etc. classes
   import '$styles/calendar.css';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
+
+  import { tooltip } from '$design-system/primitives/tooltip/tooltip.svelte';
 
   import * as api from './_lib/api';
   import { FILTER_OPTIONS, DE_LOCALE } from './_lib/constants';
@@ -45,6 +49,7 @@
 
   // Derived from SSR data
   const upcomingEvents = $derived(data.upcomingEvents);
+  const recentlyAddedEvents = $derived(data.recentlyAddedEvents);
   const departments = $derived(data.departments);
   const teams = $derived(data.teams);
   const areas = $derived(data.areas);
@@ -72,10 +77,9 @@
     allDay: false,
     location: '',
     orgLevel: 'personal',
-    departmentId: undefined,
-    teamId: undefined,
-    areaId: undefined,
-    reminderMinutes: undefined,
+    departmentIds: [],
+    teamIds: [],
+    areaIds: [],
     attendeeIds: [],
     recurrence: undefined,
     recurrenceEndType: undefined,
@@ -123,60 +127,37 @@
     select: handleCalendarSelect,
     eventMouseEnter: handleEventMouseEnter,
     eventMouseLeave: handleEventMouseLeave,
+    eventDragStart: handleEventDragStart,
   });
 
   // ==========================================================================
-  // TOOLTIP HANDLERS
+  // TOOLTIP HANDLERS (using Design System utility)
   // ==========================================================================
+
+  // Register cleanup on SvelteKit navigation
+  tooltip.registerNavigationCleanup();
 
   function handleEventMouseEnter(info: EventHoverInfo): void {
     const extendedProps = info.event.extendedProps ?? {};
     const description = extendedProps.description ?? '';
-    const location = extendedProps.location;
+    const location = extendedProps.location ?? '';
 
-    // Build tooltip using DOM APIs (no innerHTML for security)
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip__content tooltip__content--info tooltip__content--bottom show';
-    tooltip.setAttribute('role', 'tooltip');
-
-    // Title (bold)
-    const titleEl = document.createElement('strong');
-    titleEl.textContent = info.event.title;
-    tooltip.appendChild(titleEl);
-
-    // Description
-    if (description !== '') {
-      tooltip.appendChild(document.createElement('br'));
-      tooltip.appendChild(document.createTextNode(description));
-    }
-
-    // Location with icon
-    if (location !== undefined && location !== '') {
-      tooltip.appendChild(document.createElement('br'));
-      const iconEl = document.createElement('i');
-      iconEl.className = 'fas fa-map-marker-alt';
-      tooltip.appendChild(iconEl);
-      tooltip.appendChild(document.createTextNode(` ${location}`));
-    }
-
-    document.body.append(tooltip);
-
-    const rect = info.el.getBoundingClientRect();
-    tooltip.style.position = 'fixed';
-    tooltip.style.left = `${rect.left + rect.width / 2}px`;
-    tooltip.style.top = `${rect.bottom + 8}px`;
-    tooltip.style.transform = 'translateX(-50%)';
-    tooltip.style.zIndex = '9999';
-
-    (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
+    tooltip.show(info.el, {
+      content: info.event.title,
+      description: description !== '' ? description : undefined,
+      location: location !== '' ? location : undefined,
+      position: 'bottom',
+      variant: 'info',
+    });
   }
 
   function handleEventMouseLeave(info: EventHoverInfo): void {
-    const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
-    if (el._tooltip) {
-      el._tooltip.remove();
-      delete el._tooltip;
-    }
+    tooltip.hide(info.el);
+  }
+
+  function handleEventDragStart(): void {
+    // Remove tooltip when drag starts - prevents orphaned tooltips
+    tooltip.hideAll();
   }
 
   // ==========================================================================
@@ -186,6 +167,17 @@
   $effect(() => {
     // One-time setup
     calendarState.loadSavedFilter();
+  });
+
+  // Mark calendar as visited and reset notification badge
+  let hasMarkedVisit = $state(false);
+  $effect(() => {
+    if (!hasMarkedVisit && browser) {
+      hasMarkedVisit = true;
+      void api.markCalendarVisited();
+      notificationStore.resetCount('calendar');
+      log.debug('Calendar visit marked, badge reset');
+    }
   });
 
   $effect(() => {
@@ -198,6 +190,7 @@
   });
 
   onDestroy(() => {
+    tooltip.hideAll();
     calendarState.reset();
   });
 
@@ -363,10 +356,9 @@
       allDay,
       location: '',
       orgLevel: 'personal',
-      departmentId: undefined,
-      teamId: undefined,
-      areaId: undefined,
-      reminderMinutes: undefined,
+      departmentIds: [],
+      teamIds: [],
+      areaIds: [],
       attendeeIds: [],
       recurrence: undefined,
       recurrenceEndType: undefined,
@@ -378,6 +370,11 @@
     log.debug({ isAdmin: calendarState.isAdmin }, 'Modal configured');
   }
 
+  /** Convert optional single ID to array for multi-select pre-population */
+  function toIdArray(id: number | null | undefined): number[] {
+    return id !== null && id !== undefined ? [id] : [];
+  }
+
   function openEditForm(event: CalendarEvent) {
     formData = {
       title: event.title,
@@ -387,10 +384,9 @@
       allDay: event.allDay,
       location: event.location ?? '',
       orgLevel: event.orgLevel,
-      departmentId: undefined,
-      teamId: undefined,
-      areaId: undefined,
-      reminderMinutes: event.reminderMinutes,
+      departmentIds: toIdArray(event.departmentId),
+      teamIds: toIdArray(event.teamId),
+      areaIds: toIdArray(event.areaId),
       attendeeIds: event.attendees?.map((a) => a.userId) ?? [],
       recurrence: undefined,
       recurrenceEndType: undefined,
@@ -403,6 +399,7 @@
   }
 
   async function handleSaveEvent() {
+    const isEditMode = calendarState.editingEvent !== null;
     const result = await api.saveEvent(
       { ...formData, attendeeIds: calendarState.selectedAttendees },
       calendarState.editingEvent?.id,
@@ -412,8 +409,10 @@
       calendarState.closeEventModal();
       refetchCalendarEvents();
       await invalidateAll();
+      showSuccessAlert(isEditMode ? 'Termin aktualisiert' : 'Termin erstellt');
     } else {
       log.error({ error: result.error }, 'Save failed');
+      showErrorAlert(result.error ?? 'Fehler beim Speichern des Termins');
     }
   }
 
@@ -435,8 +434,10 @@
       calendarState.closeDeleteModal();
       refetchCalendarEvents();
       await invalidateAll();
+      showSuccessAlert('Termin wurde gelöscht');
     } else {
       log.error({ error: result.error }, 'Delete failed');
+      showErrorAlert(result.error ?? 'Fehler beim Löschen des Termins');
     }
   }
 
@@ -544,16 +545,16 @@
               <span class="legend-label">Firma</span>
             </div>
             <div class="legend-item">
+              <span class="legend-color legend-area"></span>
+              <span class="legend-label">Bereich</span>
+            </div>
+            <div class="legend-item">
               <span class="legend-color legend-department"></span>
               <span class="legend-label">Abteilung</span>
             </div>
             <div class="legend-item">
               <span class="legend-color legend-team"></span>
               <span class="legend-label">Team</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-area"></span>
-              <span class="legend-label">Bereich</span>
             </div>
             <div class="legend-item">
               <span class="legend-color legend-personal"></span>
@@ -604,48 +605,132 @@
     </div>
   </div>
 
-  <!-- Upcoming Events -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <h3 class="card__title">
-        <i class="fas fa-clock mr-2"></i>
-        Anstehende Termine
-      </h3>
-    </div>
-    <div class="card__body">
-      <div class="upcoming-events">
-        {#if upcomingEvents.length === 0}
-          <p class="text-center text-[var(--color-text-secondary)]">
-            Keine anstehenden Termine gefunden.
-          </p>
-        {:else}
-          {#each upcomingEvents as event (event.id)}
-            {@const levelInfo = getEventLevelInfo(event.orgLevel)}
-            <button
-              type="button"
-              class="event-item w-full text-left"
-              onclick={() => handleEventClick(event.id)}
-            >
-              <div class="event-date">
-                <span class="event-day">{new Date(event.startTime).getDate()}</span>
-                <span class="event-month">
-                  {new Date(event.startTime).toLocaleDateString('de-DE', { month: 'short' })}
-                </span>
-                <span class="event-time">{getUpcomingEventTimeStr(event)}</span>
-              </div>
-              <div class="event-details">
-                <div class="event-title">{event.title}</div>
-                {#if event.location}
-                  <div class="event-location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    {event.location}
+  <!-- Two-column layout for events -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Upcoming Events (Current Month) -->
+    <div class="card">
+      <div class="card__header">
+        <h3 class="card__title">
+          <i class="fas fa-clock mr-2"></i>
+          Anstehende Termine
+          <span class="text-sm font-normal text-[var(--color-text-secondary)] ml-2">
+            (Aktueller Monat)
+          </span>
+        </h3>
+      </div>
+      <div class="card__body">
+        <div class="upcoming-events">
+          {#if upcomingEvents.length === 0}
+            <p class="text-center text-[var(--color-text-secondary)]">
+              Keine anstehenden Termine in diesem Monat.
+            </p>
+          {:else}
+            {#each upcomingEvents as event (event.id)}
+              {@const levelInfo = getEventLevelInfo(event.orgLevel)}
+              {@const hasArea = event.areaId !== null && event.areaId !== undefined}
+              {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
+              {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
+              <button
+                type="button"
+                class="event-item w-full text-left"
+                onclick={() => handleEventClick(event.id)}
+              >
+                <div class="event-date">
+                  <span class="event-day">{new Date(event.startTime).getDate()}</span>
+                  <span class="event-month">
+                    {new Date(event.startTime).toLocaleDateString('de-DE', { month: 'short' })}
+                  </span>
+                  <span class="event-time">{getUpcomingEventTimeStr(event)}</span>
+                </div>
+                <div class="event-details">
+                  <div class="event-title">{event.title}</div>
+                  {#if event.location}
+                    <div class="event-location">
+                      <i class="fas fa-map-marker-alt"></i>
+                      {event.location}
+                    </div>
+                  {/if}
+                  <div class="event-badges">
+                    {#if hasArea}
+                      <span class="event-level event-level-area">Bereich</span>
+                    {/if}
+                    {#if hasDept}
+                      <span class="event-level event-level-department">Abteilung</span>
+                    {/if}
+                    {#if hasTeam}
+                      <span class="event-level event-level-team">Team</span>
+                    {/if}
+                    {#if !hasArea && !hasDept && !hasTeam}
+                      <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
+                    {/if}
                   </div>
-                {/if}
-                <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
-              </div>
-            </button>
-          {/each}
-        {/if}
+                </div>
+              </button>
+            {/each}
+          {/if}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recently Added Events -->
+    <div class="card">
+      <div class="card__header">
+        <h3 class="card__title">
+          <i class="fas fa-plus-circle mr-2"></i>
+          Neueste Termine
+        </h3>
+      </div>
+      <div class="card__body">
+        <div class="upcoming-events">
+          {#if recentlyAddedEvents.length === 0}
+            <p class="text-center text-[var(--color-text-secondary)]">
+              Keine neuen Termine hinzugefuegt.
+            </p>
+          {:else}
+            {#each recentlyAddedEvents as event (event.id)}
+              {@const levelInfo = getEventLevelInfo(event.orgLevel)}
+              {@const hasArea = event.areaId !== null && event.areaId !== undefined}
+              {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
+              {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
+              <button
+                type="button"
+                class="event-item w-full text-left"
+                onclick={() => handleEventClick(event.id)}
+              >
+                <div class="event-date">
+                  <span class="event-day">{new Date(event.startTime).getDate()}</span>
+                  <span class="event-month">
+                    {new Date(event.startTime).toLocaleDateString('de-DE', { month: 'short' })}
+                  </span>
+                  <span class="event-time">{getUpcomingEventTimeStr(event)}</span>
+                </div>
+                <div class="event-details">
+                  <div class="event-title">{event.title}</div>
+                  {#if event.location}
+                    <div class="event-location">
+                      <i class="fas fa-map-marker-alt"></i>
+                      {event.location}
+                    </div>
+                  {/if}
+                  <div class="event-badges">
+                    {#if hasArea}
+                      <span class="event-level event-level-area">Bereich</span>
+                    {/if}
+                    {#if hasDept}
+                      <span class="event-level event-level-department">Abteilung</span>
+                    {/if}
+                    {#if hasTeam}
+                      <span class="event-level event-level-team">Team</span>
+                    {/if}
+                    {#if !hasArea && !hasDept && !hasTeam}
+                      <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
+                    {/if}
+                  </div>
+                </div>
+              </button>
+            {/each}
+          {/if}
+        </div>
       </div>
     </div>
   </div>
@@ -660,6 +745,9 @@
     event={calendarState.viewingEvent}
     canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
     canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
+    {areas}
+    {departments}
+    {teams}
     onclose={() => {
       calendarState.closeDetailModal();
     }}

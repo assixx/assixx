@@ -20,7 +20,8 @@ export interface DetailEntry {
   expiresAt: string | null;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   color: 'yellow' | 'blue' | 'green' | 'red' | 'orange' | 'pink';
-  status: 'active' | 'archived';
+  /** is_active: 0=inactive, 1=active, 3=archive, 4=deleted */
+  isActive: number;
   authorId: number;
   authorName?: string;
   authorFullName?: string;

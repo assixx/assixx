@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  import { goto } from '$app/navigation';
+
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { getApiClient } from '$lib/utils/api-client';
+
   // Page-specific CSS
   import '../../../styles/admin-dashboard.css';
 
@@ -13,16 +18,37 @@
     getPriorityLabel,
     getBlackboardOrgLabel,
     formatBlackboardDate,
+    isExpired,
     parseContent,
     truncateContent,
     formatEventDate,
     isAllDay,
-    openBlackboardEntry,
     navigateTo,
     goToCalendar,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
+
+  // =============================================================================
+  // BLACKBOARD AUTO-CONFIRM
+  // =============================================================================
+
+  const apiClient = getApiClient();
+
+  /**
+   * Open blackboard entry and auto-confirm if not yet read
+   * @param uuid - Entry UUID
+   * @param isConfirmed - Whether entry is already confirmed
+   */
+  function openBlackboardEntry(uuid: string, isConfirmed: boolean): void {
+    // Auto-confirm if not yet read (non-blocking)
+    if (!isConfirmed) {
+      void apiClient.post(`/blackboard/entries/${uuid}/confirm`, {}).then(() => {
+        notificationStore.decrementCount('blackboard');
+      });
+    }
+    void goto(`/blackboard/${uuid}`);
+  }
 
   // =============================================================================
   // SSR DATA - Loaded server-side in +page.server.ts
@@ -101,9 +127,8 @@
             <i class="fas fa-thumbtack"></i>
             Schwarzes Brett
           </h3>
-          <a href="/blackboard" class="card--blackboard__link">
-            Alle anzeigen
-            <i class="fas fa-arrow-right"></i>
+          <a href="/blackboard" class="btn btn-link">
+            <i class="fas fa-external-link-alt mr-1.5"></i> Alle anzeigen
           </a>
         </div>
         <div id="blackboard-widget-content">
@@ -118,20 +143,36 @@
               {#each blackboardEntries as entry (entry.id)}
                 {@const contentText = parseContent(entry.content)}
                 {@const isRead = entry.isConfirmed === true}
+                {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
                 <div
                   class="sticky-note sticky-note--{entry.color} sticky-note--large"
                   id="sticky-note-{entry.id}"
                   onclick={() => {
-                    openBlackboardEntry(entry.uuid);
+                    openBlackboardEntry(entry.uuid, isRead);
                   }}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter') openBlackboardEntry(entry.uuid);
+                    if (e.key === 'Enter') openBlackboardEntry(entry.uuid, isRead);
                   }}
                   role="button"
                   tabindex="0"
                 >
                   <div class="sticky-note__pin"></div>
-                  <div class="sticky-note__title">{entry.title}</div>
+                  <div class="sticky-note__header">
+                    <div class="sticky-note__title">
+                      {entry.title}
+                      {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
+                    </div>
+                    {#if entry.expiresAt}
+                      <span
+                        class="sticky-note__expires"
+                        class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
+                        title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                      >
+                        <i class="fas fa-clock"></i>
+                        {formatBlackboardDate(entry.expiresAt)}
+                      </span>
+                    {/if}
+                  </div>
                   <div class="sticky-note__content">{truncateContent(contentText)}</div>
                   <div class="sticky-note__indicators">
                     {#if (entry.attachmentCount ?? 0) > 0}
@@ -172,6 +213,7 @@
                         {entry.authorFullName ?? entry.authorName ?? MESSAGES.unknownAuthor}
                       </span>
                       <span class="sticky-note__date">
+                        <i class="fas fa-calendar"></i>
                         {formatBlackboardDate(entry.createdAt)}
                       </span>
                     </div>
@@ -350,6 +392,9 @@
               {:else}
                 {#each upcomingEvents as event (event.id)}
                   {@const dateInfo = formatEventDate(event.startTime)}
+                  {@const hasArea = event.areaId !== null && event.areaId !== undefined}
+                  {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
+                  {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
                   <div
                     class="event-item"
                     onclick={goToCalendar}
@@ -376,9 +421,24 @@
                           {event.location}
                         </div>
                       {/if}
-                      <span class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}">
-                        {getOrgLevelText(event.orgLevel ?? 'personal')}
-                      </span>
+                      <div class="event-badges">
+                        {#if hasArea}
+                          <span class="event-level event-level-area">Bereich</span>
+                        {/if}
+                        {#if hasDept}
+                          <span class="event-level event-level-department">Abteilung</span>
+                        {/if}
+                        {#if hasTeam}
+                          <span class="event-level event-level-team">Team</span>
+                        {/if}
+                        {#if !hasArea && !hasDept && !hasTeam}
+                          <span
+                            class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}"
+                          >
+                            {getOrgLevelText(event.orgLevel ?? 'personal')}
+                          </span>
+                        {/if}
+                      </div>
                     </div>
                   </div>
                 {/each}

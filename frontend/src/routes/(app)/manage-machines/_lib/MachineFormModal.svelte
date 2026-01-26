@@ -426,11 +426,11 @@
             name="operatingHours"
             class="form-field__control"
             min="0"
-            step="0.1"
+            step="1"
             value={machineState.formOperatingHours ?? ''}
             oninput={(e) => {
               const val = (e.target as HTMLInputElement).value;
-              machineState.setFormOperatingHours(val !== '' ? parseFloat(val) : null);
+              machineState.setFormOperatingHours(val !== '' ? Math.round(Number(val)) : null);
             }}
           />
         </div>

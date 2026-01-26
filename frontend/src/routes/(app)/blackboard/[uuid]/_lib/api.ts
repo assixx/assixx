@@ -120,10 +120,24 @@ export async function addComment(uuid: string, comment: string): Promise<boolean
 
 /**
  * Archive entry (admin only)
+ * Sets is_active = 3 in database
  */
 export async function archiveEntry(uuid: string): Promise<boolean> {
   try {
-    await apiClient.patch(`/blackboard/entries/${uuid}/archive`, {});
+    await apiClient.post(`/blackboard/entries/${uuid}/archive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Unarchive/restore entry (admin only)
+ * Sets is_active = 1 in database
+ */
+export async function unarchiveEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/unarchive`, {});
     return true;
   } catch {
     return false;
@@ -133,13 +147,17 @@ export async function archiveEntry(uuid: string): Promise<boolean> {
 /**
  * Delete entry
  * Allowed for: root, admin with hasFullAccess, or creator
+ * Returns { success: true } or { success: false, error: string }
  */
-export async function deleteEntry(uuid: string): Promise<boolean> {
+export async function deleteEntry(
+  uuid: string,
+): Promise<{ success: true } | { success: false; error: string }> {
   try {
     await apiClient.delete(`/blackboard/entries/${uuid}`);
-    return true;
-  } catch {
-    return false;
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
+    return { success: false, error: errorMessage };
   }
 }
 

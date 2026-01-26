@@ -116,3 +116,26 @@
 #list-view .data-table td > div {
   line-height: 1;
 }
+
+/* =================================================================
+   USER INFO IN TABLES - Document name + badges alignment
+   Same pattern as logs.css for consistent badge alignment
+   ================================================================= */
+
+.data-table .user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.data-table .user-info .user-name {
+  display: inline-block;
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table .user-info .badge {
+  flex-shrink: 0;
+}

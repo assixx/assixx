@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { hierarchyPermissionService } from '../../services/hierarchyPermission.service.js';
 import { dbToApi } from '../../utils/fieldMapping.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import type { CreateEntryDto } from './dto/create-entry.dto.js';
@@ -40,13 +41,14 @@ interface DbBlackboardEntry {
   expires_at: Date | null;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   color: string;
-  status: 'active' | 'archived';
+  is_active: number; // 0=inactive, 1=active, 3=archive, 4=deleted
   created_at: Date;
   updated_at: Date;
   uuid_created_at?: Date;
   author_name?: string;
-  is_confirmed?: number;
+  is_confirmed?: boolean | number;
   confirmed_at?: Date;
+  first_seen_at?: Date;
   author_first_name?: string;
   author_last_name?: string;
   author_full_name?: string;
@@ -110,7 +112,7 @@ export interface PaginatedEntriesResult {
 }
 
 export interface EntryFilters {
-  status: 'active' | 'archived' | undefined;
+  isActive: number | undefined; // 0=inactive, 1=active, 3=archive, 4=deleted
   filter: 'all' | 'company' | 'department' | 'team' | 'area' | undefined;
   search: string | undefined;
   page: number | undefined;
@@ -122,7 +124,7 @@ export interface EntryFilters {
 
 /** Normalized filter values with defaults applied */
 interface NormalizedFilters {
-  status: 'active' | 'archived';
+  isActive: number; // 0=inactive, 1=active, 3=archive, 4=deleted
   filter: 'all' | 'company' | 'department' | 'team' | 'area';
   search: string;
   page: number;
@@ -155,27 +157,28 @@ const ALLOWED_SORT_COLUMNS = new Set([
   'title',
   'priority',
   'expires_at',
-  'status',
+  'is_active',
 ]);
 
 const ERROR_ENTRY_NOT_FOUND = 'Entry not found';
 
 const FETCH_ENTRIES_BASE_QUERY = `
   SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-         e.expires_at, e.priority, e.color, e.status,
+         e.expires_at, e.priority, e.color, e.is_active,
          e.created_at, e.updated_at, e.uuid_created_at,
          u.username as author_name,
          u.first_name as author_first_name,
          u.last_name as author_last_name,
          CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-         CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+         COALESCE(c.is_confirmed, false) as is_confirmed,
          c.confirmed_at as confirmed_at,
+         c.first_seen_at as first_seen_at,
          (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
          (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
   FROM blackboard_entries e
   LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
   LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-  WHERE e.tenant_id = $2 AND e.status = $3
+  WHERE e.tenant_id = $2 AND e.is_active = $3
 `;
 
 // ============================================================================
@@ -189,6 +192,7 @@ export class BlackboardService {
   constructor(
     private readonly db: DatabaseService,
     private readonly documentsService: DocumentsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ==========================================================================
@@ -276,6 +280,7 @@ export class BlackboardService {
 
     transformed['isConfirmed'] = Boolean(entry.is_confirmed);
     transformed['confirmedAt'] = entry.confirmed_at?.toISOString() ?? null;
+    transformed['firstSeenAt'] = entry.first_seen_at?.toISOString() ?? null;
 
     if (entry.author_full_name !== undefined && entry.author_full_name !== '') {
       transformed['authorFullName'] = entry.author_full_name;
@@ -289,6 +294,7 @@ export class BlackboardService {
 
     delete transformed['is_confirmed'];
     delete transformed['confirmed_at'];
+    delete transformed['first_seen_at'];
 
     return transformed as BlackboardEntryResponse;
   }
@@ -436,7 +442,7 @@ export class BlackboardService {
     userId: number,
     filters: EntryFilters,
   ): Promise<PaginatedEntriesResult> {
-    this.logger.log(`Listing entries for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(`Listing entries for tenant ${tenantId}, user ${userId}`);
 
     const userAccess = await this.getUserDepartmentAndTeam(userId);
     const normalized = this.normalizeEntryFilters(filters);
@@ -464,7 +470,7 @@ export class BlackboardService {
   /** Normalize filter values with defaults */
   private normalizeEntryFilters(filters: EntryFilters): NormalizedFilters {
     return {
-      status: filters.status ?? 'active',
+      isActive: filters.isActive ?? 1, // Default to active (1)
       filter: filters.filter ?? 'all',
       search: filters.search ?? '',
       page: filters.page ?? 1,
@@ -488,7 +494,7 @@ export class BlackboardService {
     },
   ): { query: string; params: unknown[] } {
     let query = FETCH_ENTRIES_BASE_QUERY;
-    const params: unknown[] = [userId, tenantId, filters.status];
+    const params: unknown[] = [userId, tenantId, filters.isActive];
 
     if (filters.filter !== 'all') {
       query += ` AND e.org_level = $${params.length + 1}`;
@@ -551,7 +557,7 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<BlackboardEntryResponse> {
-    this.logger.log(`Getting entry ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting entry ${String(id)} for tenant ${tenantId}`);
 
     const { role, departmentId, teamId, hasFullAccess } =
       await this.getUserDepartmentAndTeam(userId);
@@ -559,14 +565,15 @@ export class BlackboardService {
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
     const query = `
       SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-             e.expires_at, e.priority, e.color, e.status,
+             e.expires_at, e.priority, e.color, e.is_active,
              e.created_at, e.updated_at, e.uuid_created_at,
              u.username as author_name,
              u.first_name as author_first_name,
              u.last_name as author_last_name,
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-             CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+             COALESCE(c.is_confirmed, false) as is_confirmed,
              c.confirmed_at as confirmed_at,
+             c.first_seen_at as first_seen_at,
              (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
              (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e
@@ -692,7 +699,7 @@ export class BlackboardService {
     comments: BlackboardComment[];
     attachments: Record<string, unknown>[];
   }> {
-    this.logger.log(`Getting full entry ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
 
     const entry = await this.getEntryById(id, tenantId, userId);
     const comments = await this.getComments(id, tenantId);
@@ -730,7 +737,24 @@ export class BlackboardService {
       await this.syncEntryOrganizations(insertedId, dto.departmentIds, dto.teamIds, dto.areaIds);
     }
 
-    return await this.getEntryById(insertedId, tenantId, userId);
+    const createdEntry = await this.getEntryById(insertedId, tenantId, userId);
+
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'blackboard',
+      insertedId,
+      `Blackboard-Eintrag erstellt: ${dto.title}`,
+      {
+        title: dto.title,
+        orgLevel,
+        priority: dto.priority ?? 'medium',
+        expiresAt: dto.expiresAt,
+      },
+    );
+
+    return createdEntry;
   }
 
   /** Check if DTO targets multiple organizations */
@@ -842,7 +866,10 @@ export class BlackboardService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    await this.getEntryById(id, tenantId, userId);
+    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
+      string,
+      unknown
+    >;
 
     const hasMultiOrg =
       dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
@@ -871,7 +898,33 @@ export class BlackboardService {
       );
     }
 
-    return await this.getEntryById(numericId, tenantId, userId);
+    const updatedEntry = await this.getEntryById(numericId, tenantId, userId);
+
+    // Log activity (handles both regular updates and archive/unarchive)
+    // is_active: 0=inactive, 1=active, 3=archive, 4=deleted
+    const action =
+      dto.isActive === 3 ? 'archiviert'
+      : dto.isActive === 1 ? 'reaktiviert'
+      : 'aktualisiert';
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag ${action}: ${existingEntry['title'] as string}`,
+      {
+        title: existingEntry['title'],
+        isActive: existingEntry['isActive'],
+        priority: existingEntry['priority'],
+      },
+      {
+        title: dto.title ?? existingEntry['title'],
+        isActive: dto.isActive ?? existingEntry['isActive'],
+        priority: dto.priority ?? existingEntry['priority'],
+      },
+    );
+
+    return updatedEntry;
   }
 
   /** Build UPDATE query with field and org updates */
@@ -916,7 +969,7 @@ export class BlackboardService {
       { key: 'content', column: 'content' },
       { key: 'priority', column: 'priority' },
       { key: 'color', column: 'color' },
-      { key: 'status', column: 'status' },
+      { key: 'isActive', column: 'is_active' },
       {
         key: 'expiresAt',
         column: 'expires_at',
@@ -980,6 +1033,11 @@ export class BlackboardService {
 
   /**
    * Delete a blackboard entry
+   *
+   * Allowed to delete:
+   * - Root users (any entry)
+   * - Users with has_full_access = true (any entry in their tenant)
+   * - Author of the entry
    */
   async deleteEntry(
     id: number | string,
@@ -991,24 +1049,45 @@ export class BlackboardService {
 
     const entry = await this.getEntryById(id, tenantId, userId);
 
-    // Only root or author can delete
+    // Check delete permissions: root, has_full_access, or author
     const isRoot = userRole === 'root';
     const isAuthor = (entry as Record<string, unknown>)['authorId'] === userId;
-    if (!isRoot && !isAuthor) {
-      throw new ForbiddenException('Only the author or root can delete this entry');
+    const { hasFullAccess } = await this.getUserDepartmentAndTeam(userId);
+
+    if (!isRoot && !hasFullAccess && !isAuthor) {
+      throw new ForbiddenException(
+        'Only the author, root, or users with full access can delete this entry',
+      );
     }
 
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
+    const numericId = (entry as Record<string, unknown>)['id'] as number;
+
     await this.db.query(
       `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag gelöscht: ${(entry as Record<string, unknown>)['title'] as string}`,
+      {
+        title: (entry as Record<string, unknown>)['title'],
+        isActive: (entry as Record<string, unknown>)['isActive'],
+        priority: (entry as Record<string, unknown>)['priority'],
+        orgLevel: (entry as Record<string, unknown>)['orgLevel'],
+      },
     );
 
     return { message: 'Entry deleted successfully' };
   }
 
   /**
-   * Archive a blackboard entry
+   * Archive a blackboard entry (set is_active = 3)
    */
   async archiveEntry(
     id: number | string,
@@ -1016,11 +1095,11 @@ export class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Archiving entry ${String(id)}`);
-    return await this.updateEntry(id, { status: 'archived' }, tenantId, userId);
+    return await this.updateEntry(id, { isActive: 3 }, tenantId, userId);
   }
 
   /**
-   * Unarchive a blackboard entry
+   * Unarchive a blackboard entry (set is_active = 1)
    */
   async unarchiveEntry(
     id: number | string,
@@ -1028,7 +1107,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Unarchiving entry ${String(id)}`);
-    return await this.updateEntry(id, { status: 'active' }, tenantId, userId);
+    return await this.updateEntry(id, { isActive: 1 }, tenantId, userId);
   }
 
   // ==========================================================================
@@ -1037,17 +1116,18 @@ export class BlackboardService {
 
   /**
    * Confirm reading a blackboard entry
+   * Uses UPSERT: first_seen_at is set only on first confirmation (never reset)
    */
   async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
 
-    // Get user's tenant
+    // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1',
+      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
     if (users[0] === undefined) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('User not found or inactive');
     }
     const tenantId = users[0].tenant_id;
 
@@ -1062,18 +1142,14 @@ export class BlackboardService {
     }
     const numericId = entries[0].id;
 
-    // Check if already confirmed
-    const confirmations = await this.db.query(
-      'SELECT * FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
-      [numericId, userId],
-    );
-    if (confirmations.length > 0) {
-      return { message: 'Entry already confirmed' };
-    }
-
-    // Add confirmation
+    // UPSERT: Insert if not exists, otherwise update is_confirmed
+    // first_seen_at is only set on INSERT (never reset on re-confirm)
     await this.db.query(
-      'INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES ($1, $2, $3)',
+      `INSERT INTO blackboard_confirmations
+         (tenant_id, entry_id, user_id, confirmed_at, first_seen_at, is_confirmed)
+       VALUES ($1, $2, $3, NOW(), NOW(), true)
+       ON CONFLICT (entry_id, user_id, tenant_id)
+       DO UPDATE SET is_confirmed = true, confirmed_at = NOW()`,
       [tenantId, numericId, userId],
     );
 
@@ -1082,17 +1158,18 @@ export class BlackboardService {
 
   /**
    * Remove confirmation (mark as unread)
+   * Sets is_confirmed = false instead of deleting to preserve first_seen_at
    */
   async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
 
-    // Get user's tenant
+    // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1',
+      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
     if (users[0] === undefined) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('User not found or inactive');
     }
     const tenantId = users[0].tenant_id;
 
@@ -1107,8 +1184,11 @@ export class BlackboardService {
     }
     const numericId = entries[0].id;
 
+    // Set is_confirmed = false (preserve first_seen_at for "Neu" badge logic)
     await this.db.query(
-      'DELETE FROM blackboard_confirmations WHERE entry_id = $1 AND user_id = $2',
+      `UPDATE blackboard_confirmations
+       SET is_confirmed = false, confirmed_at = NULL
+       WHERE entry_id = $1 AND user_id = $2`,
       [numericId, userId],
     );
 
@@ -1122,7 +1202,7 @@ export class BlackboardService {
     id: number | string,
     tenantId: number,
   ): Promise<Record<string, unknown>[]> {
-    this.logger.log(`Getting confirmation status for entry ${String(id)}`);
+    this.logger.debug(`Getting confirmation status for entry ${String(id)}`);
 
     // Get entry info
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
@@ -1172,27 +1252,28 @@ export class BlackboardService {
     userId: number,
     limit: number = 3,
   ): Promise<BlackboardEntryResponse[]> {
-    this.logger.log(`Getting dashboard entries for tenant ${tenantId}`);
+    this.logger.debug(`Getting dashboard entries for tenant ${tenantId}`);
 
     const { role, departmentId, teamId, hasFullAccess } =
       await this.getUserDepartmentAndTeam(userId);
 
     let query = `
       SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-             e.expires_at, e.priority, e.color, e.status,
+             e.expires_at, e.priority, e.color, e.is_active,
              e.created_at, e.updated_at, e.uuid_created_at,
              u.username as author_name,
              u.first_name as author_first_name,
              u.last_name as author_last_name,
              CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-             CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+             COALESCE(c.is_confirmed, false) as is_confirmed,
              c.confirmed_at as confirmed_at,
+             c.first_seen_at as first_seen_at,
              (SELECT COUNT(*)::integer FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
              (SELECT COUNT(*)::integer FROM blackboard_comments WHERE entry_id = e.id) as comment_count
       FROM blackboard_entries e
       LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-      WHERE e.tenant_id = $2 AND e.status = 'active'
+      WHERE e.tenant_id = $2 AND e.is_active = 1
     `;
     const params: unknown[] = [userId, tenantId];
 
@@ -1233,7 +1314,7 @@ export class BlackboardService {
    * Get comments for an entry
    */
   async getComments(id: number | string, tenantId: number): Promise<BlackboardComment[]> {
-    this.logger.log(`Getting comments for entry ${String(id)}`);
+    this.logger.debug(`Getting comments for entry ${String(id)}`);
 
     // Get numeric ID
     let numericId: number;
@@ -1384,7 +1465,7 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<Record<string, unknown>[]> {
-    this.logger.log(`Getting attachments for entry ${String(entryId)}`);
+    this.logger.debug(`Getting attachments for entry ${String(entryId)}`);
 
     const entry = await this.getEntryById(entryId, tenantId, userId);
     const numericId = (entry as Record<string, unknown>)['id'] as number;
@@ -1457,5 +1538,63 @@ export class BlackboardService {
     this.logger.log(`Deleting attachment ${attachmentId}`);
     await this.documentsService.deleteDocument(attachmentId, userId, tenantId);
     return { message: 'Attachment deleted successfully' };
+  }
+
+  // ==========================================================================
+  // NOTIFICATION COUNT METHODS
+  // ==========================================================================
+
+  /**
+   * Get count of unconfirmed entries for a user
+   * Used for notification badge in sidebar
+   */
+  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    // Get user info for visibility filtering
+    const users = await this.db.query<{
+      role: string;
+      department_id: number | null;
+      team_id: number | null;
+    }>(
+      `SELECT u.role, ud.department_id, ut.team_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+       WHERE u.id = $1 AND u.tenant_id = $2`,
+      [userId, tenantId],
+    );
+
+    if (users[0] === undefined) {
+      return { count: 0 };
+    }
+
+    const { role, department_id: departmentId, team_id: teamId } = users[0];
+
+    // Count active entries visible to user that they haven't confirmed
+    // is_active = 1 means active
+    let query = `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM blackboard_entries e
+      LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
+      WHERE e.tenant_id = $2
+        AND e.is_active = 1
+        AND c.id IS NULL
+    `;
+    const params: unknown[] = [userId, tenantId];
+
+    // Apply visibility filter based on role
+    if (role !== 'root' && role !== 'admin') {
+      // Employees can only see entries targeting them
+      query += ` AND (
+        e.org_level = 'company'
+        OR (e.org_level = 'department' AND e.org_id = $3)
+        OR (e.org_level = 'team' AND e.org_id = $4)
+      )`;
+      params.push(departmentId ?? 0, teamId ?? 0);
+    }
+
+    const result = await this.db.query<{ count: string }>(query, params);
+    const count = Number.parseInt(result[0]?.count ?? '0', 10);
+
+    return { count };
   }
 }

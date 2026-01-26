@@ -65,6 +65,20 @@
   backdrop-filter: blur(20px) saturate(180%);
 }
 
+/* Read confirmation done state */
+.confirmation-done {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  text-align: center;
+}
+
+.confirmation-done .text-success {
+  font-size: 2rem;
+  color: var(--color-success);
+}
+
 /* ========================================
    HEADER - Domain-Specific
    ======================================== */
@@ -103,6 +117,24 @@
   color: var(--primary-color);
 }
 
+/* Expiration date indicator in detail-meta */
+.detail-meta__expires {
+  font-style: italic;
+  color: rgb(255 255 255 / 50%);
+}
+
+.detail-meta__expires i {
+  color: rgb(255 255 255 / 50%);
+}
+
+.detail-meta__expires--expired {
+  color: var(--color-red-400, #f87171);
+}
+
+.detail-meta__expires--expired i {
+  color: var(--color-red-400, #f87171);
+}
+
 /* Category Tag */
 .category-tag {
   display: inline-flex;
@@ -110,7 +142,7 @@
   align-items: center;
 
   padding: 4px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
 
   font-size: 0.8rem;
 }
@@ -375,6 +407,22 @@
    NOTE: Native .org-select was removed in favor of Design System custom dropdowns (2025-11-15) */
 
 /* ========================================
+   STATUS DROPDOWN - Compact Override
+   ======================================== */
+
+/* Narrower status dropdown - override width: 100% from component */
+[data-dropdown='status'] .dropdown__trigger {
+  width: auto;
+  min-width: 180px;
+}
+
+[data-dropdown='status'] .dropdown__menu {
+  min-width: 180px;
+  left: auto;
+  right: auto;
+}
+
+/* ========================================
    ACTION BUTTONS CONTAINER
    ======================================== */
 
@@ -390,13 +438,30 @@
 
 .share-info {
   display: inline-flex;
-  gap: 0.5rem;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.share-info > i {
+/* Explicit styling to prevent inheritance from button colors */
+.share-info > i.fa-share-alt {
   font-size: 0.875rem;
-  color: #666;
+  color: #666 !important;
+}
+
+/* ========================================
+   SHARE MODAL DROPDOWNS
+   ======================================== */
+
+[data-dropdown='shareDept'] .dropdown__trigger,
+[data-dropdown='shareArea'] .dropdown__trigger {
+  min-width: 220px;
+  width: 50%;
+}
+
+[data-dropdown='shareDept'] .dropdown__menu,
+[data-dropdown='shareArea'] .dropdown__menu {
+  min-width: 220px;
+  width: 50%;
 }
 
 /* ========================================

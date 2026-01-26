@@ -119,6 +119,7 @@ export class RootController {
   async createAdmin(
     @Body() dto: CreateAdminDto,
     @TenantId() tenantId: number,
+    @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string; adminId: number }> {
     const adminId = await this.rootService.createAdmin(
       {
@@ -131,6 +132,7 @@ export class RootController {
         position: dto.position,
       },
       tenantId,
+      user.id,
     );
     return { message: 'Admin user created successfully', adminId };
   }
@@ -162,8 +164,9 @@ export class RootController {
   async deleteAdmin(
     @Param() params: AdminIdParamDto,
     @TenantId() tenantId: number,
+    @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
-    await this.rootService.deleteAdmin(params.id, tenantId);
+    await this.rootService.deleteAdmin(params.id, tenantId, user.id);
     return { message: 'Admin deleted successfully' };
   }
 
@@ -213,6 +216,7 @@ export class RootController {
   async createRootUser(
     @Body() dto: CreateRootUserDto,
     @TenantId() tenantId: number,
+    @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string; userId: number }> {
     const userId = await this.rootService.createRootUser(
       {
@@ -226,6 +230,7 @@ export class RootController {
         isActive: dto.isActive,
       },
       tenantId,
+      user.id,
     );
     return { message: 'Root user created successfully', userId };
   }

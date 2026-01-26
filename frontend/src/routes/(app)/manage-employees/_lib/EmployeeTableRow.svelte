@@ -20,10 +20,11 @@
   interface Props {
     employee: Employee;
     onedit: (employeeId: number) => void;
+    onavailability: (employeeId: number) => void;
     ondelete: (employeeId: number) => void;
   }
 
-  const { employee, onedit, ondelete }: Props = $props();
+  const { employee, onedit, onavailability, ondelete }: Props = $props();
 
   // =============================================================================
   // DERIVED VALUES
@@ -73,7 +74,10 @@
     </span>
   </td>
   <td>
-    <span class="badge {availabilityBadge.class}">{availabilityBadge.text}</span>
+    <span class="badge {availabilityBadge.class}">
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"></i>{/if}
+      {availabilityBadge.text}
+    </span>
   </td>
   <td>{plannedAvailability}</td>
   <td title={notes.title}>{notes.text}</td>
@@ -89,6 +93,17 @@
         }}
       >
         <i class="fas fa-edit"></i>
+      </button>
+      <button
+        type="button"
+        class="action-icon action-icon--info"
+        title="Verfügbarkeit bearbeiten"
+        aria-label="Verfügbarkeit bearbeiten"
+        onclick={() => {
+          onavailability(employee.id);
+        }}
+      >
+        <i class="fas fa-calendar-alt"></i>
       </button>
       <button
         type="button"

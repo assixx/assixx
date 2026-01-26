@@ -80,6 +80,13 @@
   color: #9e9e9e;
 }
 
+/* Restored - Cyan/Teal (Wiederhergestellt) */
+.badge--kvp-restored {
+  border-color: rgb(0 188 212 / 50%);
+  background: rgb(0 188 212 / 20%);
+  color: #00bcd4;
+}
+
 /* ========== VISIBILITY BADGES ========== */
 
 /* Team - Purple */

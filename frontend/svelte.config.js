@@ -23,6 +23,7 @@ const config = {
       $utils: 'src/lib/utils',
       $types: 'src/lib/types',
       $styles: 'src/styles',
+      '$design-system': 'src/design-system',
     },
 
     // CSP Headers für Sicherheit

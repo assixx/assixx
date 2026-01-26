@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import ImageCropModal from '$lib/components/ImageCropModal.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
 
@@ -44,17 +45,16 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const user = $derived<UserProfile | null>(data.profile ?? null);
+  // profile is guaranteed by server (redirect if missing)
+  const user = $derived<UserProfile>(data.profile);
   const pendingApprovals = $derived<ApprovalItem[]>(data.pendingApprovals);
 
-  // Initialize form values from SSR data
+  // Initialize form values from SSR data (user guaranteed by server)
   $effect(() => {
-    if (user) {
-      formEmail = user.email;
-      formFirstName = user.firstName ?? '';
-      formLastName = user.lastName ?? '';
-      profilePicture = apiLoadProfilePicture(user.profilePicture);
-    }
+    formEmail = user.email;
+    formFirstName = user.firstName ?? '';
+    formLastName = user.lastName ?? '';
+    profilePicture = apiLoadProfilePicture(user.profilePicture);
   });
 
   // =============================================================================
@@ -70,6 +70,10 @@
   // Profile Picture
   let profilePicture = $state<string | null>(null);
   let pictureUploading = $state(false);
+
+  // Crop Modal State
+  let showCropModal = $state(false);
+  let cropImageSrc = $state<string | null>(null);
 
   // Password Form
   let currentPassword = $state('');
@@ -93,8 +97,8 @@
   // DERIVED STATE
   // =============================================================================
 
-  const avatarColorClass = $derived(getAvatarColorClass(user?.id));
-  const initials = $derived(getInitials(user?.firstName, user?.lastName));
+  const avatarColorClass = $derived(getAvatarColorClass(user.id));
+  const initials = $derived(getInitials(user.firstName, user.lastName));
   const hasProfilePicture = $derived(profilePicture !== null && profilePicture !== '');
   const hasPendingApprovals = $derived(pendingApprovals.length > 0);
   const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
@@ -132,20 +136,56 @@
     }
   }
 
-  async function handlePictureUpload(event: Event): Promise<void> {
+  /**
+   * Handle file selection - opens crop modal instead of direct upload
+   */
+  function handlePictureSelect(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) return;
 
     const file = target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast(MESSAGES.invalidImageType, 'error');
+      target.value = '';
+      return;
+    }
+
+    // Create object URL for cropping
+    cropImageSrc = URL.createObjectURL(file);
+    showCropModal = true;
+
+    // Reset file input for next selection
+    target.value = '';
+  }
+
+  /**
+   * Handle cropped image save - uploads the cropped blob
+   */
+  async function handleCropSave(blob: Blob): Promise<void> {
+    // Close modal immediately for better UX
+    showCropModal = false;
+
+    // Clean up object URL if it exists
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit null check required for strict-boolean-expressions
+    if (cropImageSrc !== null && cropImageSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    cropImageSrc = null;
+
     pictureUploading = true;
 
     try {
+      // Convert blob to File for upload
+      const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
       const newUrl = await uploadProfilePicture(file);
       if (newUrl !== null) {
         profilePicture = newUrl;
         showToast(MESSAGES.pictureUpdated, 'success');
+        // Trigger SSR refetch to update sidebar/header avatars
+        await invalidateAll();
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
@@ -154,16 +194,39 @@
       else showToast(MESSAGES.pictureUploadError, 'error');
     } finally {
       pictureUploading = false;
-      target.value = '';
     }
   }
 
-  async function removePicture() {
+  /**
+   * Close crop modal and cleanup
+   */
+  function handleCropClose(): void {
+    showCropModal = false;
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit null check required for strict-boolean-expressions
+    if (cropImageSrc !== null && cropImageSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    cropImageSrc = null;
+  }
+
+  /**
+   * Open crop modal with existing profile picture for re-cropping
+   */
+  function openCropModalForEdit(): void {
+    if (profilePicture !== null) {
+      cropImageSrc = profilePicture;
+      showCropModal = true;
+    }
+  }
+
+  async function removePicture(): Promise<void> {
     pictureUploading = true;
     try {
       await removeProfilePicture();
       profilePicture = null;
       showToast(MESSAGES.pictureRemoved, 'success');
+      // Trigger SSR refetch to update sidebar/header avatars
+      await invalidateAll();
     } catch {
       showToast(MESSAGES.pictureRemoveError, 'error');
     } finally {
@@ -355,7 +418,7 @@
             id="profile-picture-input"
             accept="image/*"
             class="u-hidden"
-            onchange={handlePictureUpload}
+            onchange={handlePictureSelect}
           />
           <button
             type="button"
@@ -371,6 +434,14 @@
             Bild ändern
           </button>
           {#if hasProfilePicture}
+            <button
+              type="button"
+              class="btn btn-edit"
+              onclick={openCropModalForEdit}
+              disabled={pictureUploading}
+            >
+              <i class="fas fa-crop-alt"></i> Bearbeiten
+            </button>
             <button
               type="button"
               class="btn btn-cancel"
@@ -583,3 +654,11 @@
     </div>
   </div>
 </div>
+
+<!-- Image Crop Modal -->
+<ImageCropModal
+  show={showCropModal}
+  imageSrc={cropImageSrc}
+  onclose={handleCropClose}
+  onsave={handleCropSave}
+/>

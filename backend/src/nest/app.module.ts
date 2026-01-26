@@ -9,6 +9,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SentryModule } from '@sentry/nestjs/setup';
 import type { FastifyRequest } from 'fastify';
 import { ClsModule, ClsService } from 'nestjs-cls';
@@ -26,13 +27,16 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 // CustomThrottlerGuard is NOT global - applied selectively via @AuthThrottle(), @UploadThrottle()
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
+import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
 import { AppConfigModule } from './config/config.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
+import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
@@ -76,6 +80,11 @@ import { UsersModule } from './users/users.module.js';
     // Initialized in instrument.ts (must be imported first in main.ts)
     // Only active when SENTRY_DSN is configured
     SentryModule.forRoot(),
+
+    // Schedule Module for Cron Jobs
+    // Used for: PartitionManagerService, LogRetentionService
+    // @see ADR-009 Central Audit Logging
+    ScheduleModule.forRoot(),
 
     // JWT Module
     // SECURITY: JWT_SECRET must be set in environment (no fallback allowed)
@@ -127,11 +136,13 @@ import { UsersModule } from './users/users.module.js';
     AuditTrailModule,
     AuthModule,
     UsersModule,
+    DashboardModule,
     DepartmentsModule,
     TeamsModule,
     CalendarModule,
     DocumentsModule,
     BlackboardModule,
+    FeatureVisitsModule,
     FeaturesModule,
     KvpModule,
     LogsModule,
@@ -177,6 +188,13 @@ import { UsersModule } from './users/users.module.js';
     {
       provide: APP_INTERCEPTOR,
       useClass: TenantContextInterceptor,
+    },
+    // Global Audit Trail Interceptor
+    // Logs ALL authenticated requests to audit_trail table
+    // @see ADR-009 Central Audit Logging
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditTrailInterceptor,
     },
   ],
 })

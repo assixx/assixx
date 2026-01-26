@@ -81,10 +81,8 @@ export async function fetchEntries(
  */
 export async function fetchEntryByUuid(uuid: string): Promise<BlackboardEntry | null> {
   try {
-    const result = await apiClient.get<{ success: boolean; data: BlackboardEntry }>(
-      `/blackboard/entries/${encodeURIComponent(uuid)}`,
-    );
-    return result.data;
+    // Backend returns entry directly (no wrapper)
+    return await apiClient.get<BlackboardEntry>(`/blackboard/entries/${encodeURIComponent(uuid)}`);
   } catch (err) {
     // Return null for 404
     if (err !== null && typeof err === 'object' && 'status' in err && err.status === 404) {
@@ -117,9 +115,15 @@ export async function deleteEntry(id: number): Promise<void> {
 
 /**
  * Confirm entry (mark as read/confirmed)
+ * Uses UUID for consistent API pattern
  */
-export async function confirmEntry(entryId: number): Promise<void> {
-  await apiClient.post(`/blackboard/${entryId}/confirm`, {});
+export async function confirmEntry(uuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/blackboard/entries/${uuid}/confirm`, {});
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================

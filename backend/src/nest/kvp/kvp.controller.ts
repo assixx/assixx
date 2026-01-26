@@ -4,6 +4,9 @@
  * HTTP endpoints for Continuous Improvement Process (KVP) management:
  * - GET    /kvp/categories        - Get categories
  * - GET    /kvp/dashboard/stats   - Get dashboard statistics
+ * - GET    /kvp/unconfirmed-count - Get unread count for notification badge
+ * - POST   /kvp/:uuid/confirm     - Mark suggestion as read
+ * - DELETE /kvp/:uuid/confirm     - Mark suggestion as unread
  * - GET    /kvp                   - List suggestions with filters
  * - GET    /kvp/:id               - Get suggestion by ID
  * - POST   /kvp                   - Create suggestion
@@ -108,6 +111,49 @@ export class KvpController {
     return await this.kvpService.getDashboardStats(tenantId);
   }
 
+  // ==========================================================================
+  // READ CONFIRMATION ENDPOINTS (Pattern 2: Individual Decrement/Increment)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/unconfirmed-count
+   * Get count of unconfirmed suggestions for notification badge
+   */
+  @Get('unconfirmed-count')
+  async getUnconfirmedCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.kvpService.getUnconfirmedCount(user.id, tenantId);
+  }
+
+  /**
+   * POST /kvp/:uuid/confirm
+   * Mark a suggestion as read (confirmed) by current user
+   */
+  @Post(':uuid/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmSuggestion(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ success: boolean }> {
+    return await this.kvpService.confirmSuggestion(uuid, user.id, tenantId);
+  }
+
+  /**
+   * DELETE /kvp/:uuid/confirm
+   * Mark a suggestion as unread (remove confirmation) by current user
+   */
+  @Delete(':uuid/confirm')
+  async unconfirmSuggestion(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ success: boolean }> {
+    return await this.kvpService.unconfirmSuggestion(uuid, user.id, tenantId);
+  }
+
   /**
    * GET /kvp
    * List suggestions with filters and pagination
@@ -126,6 +172,7 @@ export class KvpController {
       search: query.search,
       page: query.page,
       limit: query.limit,
+      mineOnly: query.mineOnly,
     });
   }
 
@@ -146,6 +193,7 @@ export class KvpController {
   /**
    * POST /kvp
    * Create a new suggestion
+   * Rate limit: Employees can create max 1 KVP per day
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -154,7 +202,7 @@ export class KvpController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
-    return await this.kvpService.createSuggestion(dto, tenantId, user.id);
+    return await this.kvpService.createSuggestion(dto, tenantId, user.id, user.role);
   }
 
   /**
@@ -220,6 +268,40 @@ export class KvpController {
   }
 
   /**
+   * POST /kvp/:id/archive
+   * Archive a suggestion (admin/root only)
+   */
+  @Post(':id/archive')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  @HttpCode(HttpStatus.OK)
+  async archiveSuggestion(
+    @Param('id') id: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    const suggestionId = this.parseIdParam(id);
+    return await this.kvpService.archiveSuggestion(suggestionId, tenantId, user.id);
+  }
+
+  /**
+   * POST /kvp/:id/unarchive
+   * Restore an archived suggestion (admin/root only)
+   */
+  @Post(':id/unarchive')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  @HttpCode(HttpStatus.OK)
+  async unarchiveSuggestion(
+    @Param('id') id: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    const suggestionId = this.parseIdParam(id);
+    return await this.kvpService.unarchiveSuggestion(suggestionId, tenantId, user.id);
+  }
+
+  /**
    * GET /kvp/:id/comments
    * Get comments for a suggestion
    */
@@ -236,8 +318,11 @@ export class KvpController {
   /**
    * POST /kvp/:id/comments
    * Add a comment to a suggestion
+   * Only admin and root users can add comments
    */
   @Post(':id/comments')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id') id: string,

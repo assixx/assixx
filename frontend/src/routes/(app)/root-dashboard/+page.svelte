@@ -8,17 +8,17 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../styles/root-dashboard.css';
+  import '../../../styles/logs.css';
 
   // Module imports
   import { saveEmployeeNumber as saveEmployeeNumberApi } from './_lib/api';
   import { EMPLOYEE_NUMBER, MESSAGES } from './_lib/constants';
   import {
     filterEmployeeNumberInput,
-    getActionBadgeClass,
     getActionLabel,
     getDisplayName,
     getRoleBadgeClass,
@@ -75,6 +75,7 @@
     const result = await saveEmployeeNumberApi(trimmed);
 
     if (result.success) {
+      showSuccessAlert(MESSAGES.employeeNumberSaved);
       // Level 3: Refresh SSR data after mutation
       await invalidateAll();
     } else if (result.error !== null) {
@@ -224,11 +225,7 @@
                     </div>
                   </td>
                   <td class="text-muted">{log.employeeNumber ?? '-'}</td>
-                  <td
-                    ><span class="badge badge--{getActionBadgeClass(log.action)}"
-                      >{getActionLabel(log.action)}</span
-                    ></td
-                  >
+                  <td>{getActionLabel(log.action)}</td>
                 </tr>
               {/each}
             {/if}

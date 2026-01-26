@@ -9,7 +9,8 @@ const MAX_SCHEDULED_MESSAGE_LENGTH = 10000;
 const MIN_SCHEDULE_MINUTES = 5;
 const MAX_SCHEDULE_DAYS = 30;
 
-export const CreateScheduledMessageBodySchema = z.object({
+/** Base schema for scheduled message (before refine) */
+const ScheduledMessageBaseSchema = z.object({
   conversationId: z
     .number()
     .int('conversationId must be an integer')
@@ -17,11 +18,11 @@ export const CreateScheduledMessageBodySchema = z.object({
 
   content: z
     .string()
-    .min(1, 'Message cannot be empty')
     .max(
       MAX_SCHEDULED_MESSAGE_LENGTH,
       `Message is too long (max ${MAX_SCHEDULED_MESSAGE_LENGTH} characters)`,
-    ),
+    )
+    .optional(),
 
   scheduledFor: z.iso
     .datetime({ message: 'Invalid date format (ISO 8601 expected)' })
@@ -47,6 +48,19 @@ export const CreateScheduledMessageBodySchema = z.object({
   attachmentType: z.string().max(100).optional(),
   attachmentSize: z.number().int().nonnegative().optional(),
 });
+
+/** Inferred type for refine callback */
+type ScheduledMessageBase = z.infer<typeof ScheduledMessageBaseSchema>;
+
+/** Schema with validation: requires either content OR attachment */
+export const CreateScheduledMessageBodySchema = ScheduledMessageBaseSchema.refine(
+  (data: ScheduledMessageBase): boolean => {
+    const hasContent = typeof data.content === 'string' && data.content.trim().length > 0;
+    const hasAttachment = typeof data.attachmentPath === 'string' && data.attachmentPath.length > 0;
+    return hasContent || hasAttachment;
+  },
+  { message: 'Either message content or attachment is required' },
+);
 
 export class CreateScheduledMessageDto extends createZodDto(CreateScheduledMessageBodySchema) {}
 

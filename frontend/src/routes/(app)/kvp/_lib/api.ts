@@ -135,6 +135,7 @@ export async function loadTeams(): Promise<Team[]> {
 
 /**
  * Build query params for suggestions API
+ * Maps frontend filter values to backend API parameters
  */
 function buildSuggestionParams(
   filter: KvpFilter,
@@ -143,13 +144,30 @@ function buildSuggestionParams(
   departmentFilter: string,
   searchQuery: string,
 ): URLSearchParams {
-  const params = new URLSearchParams({ filter });
+  const params = new URLSearchParams();
 
-  if (statusFilter !== '') params.append('status', statusFilter);
+  // Map filter to backend orgLevel parameter
+  // Backend expects: orgLevel = 'team' | 'department' | 'area' | 'company'
+  const orgLevelFilters = ['team', 'department', 'area', 'company'];
+  if (orgLevelFilters.includes(filter)) {
+    params.append('orgLevel', filter);
+  }
+
+  // Handle "mine" filter - show only current user's submissions
+  if (filter === 'mine') {
+    params.append('mineOnly', 'true');
+  }
+
+  // Handle archived filter
+  if (filter === 'archived') {
+    params.append('status', 'archived');
+  } else if (statusFilter !== '') {
+    params.append('status', statusFilter);
+  }
+
   if (categoryFilter !== '') params.append('categoryId', categoryFilter);
   if (departmentFilter !== '') params.append('departmentId', departmentFilter);
   if (searchQuery !== '') params.append('search', searchQuery);
-  if (filter === 'archived') params.append('includeArchived', 'true');
 
   return params;
 }
@@ -251,7 +269,7 @@ export async function unshareSuggestion(id: number): Promise<{ success: boolean;
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
 
-    const message = err instanceof Error ? err.message : 'Fehler beim Rueckgaengigmachen';
+    const message = err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
     return { success: false, error: message };
   }
 }

@@ -52,6 +52,9 @@ export interface CalendarEvent {
   allDay: boolean | number;
   location?: string;
   orgLevel?: string;
+  areaId?: number | null;
+  departmentId?: number | null;
+  teamId?: number | null;
 }
 
 /** Blackboard entry entity */
@@ -64,11 +67,13 @@ export interface BlackboardEntry {
   color: 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
   orgLevel: 'company' | 'department' | 'team' | 'area';
   createdAt: string;
+  expiresAt?: string | null;
   authorFullName?: string;
   authorName?: string;
   commentCount?: number;
   attachmentCount?: number;
   isConfirmed?: boolean;
+  firstSeenAt?: string | null;
 }
 
 /** Formatted event date for display */

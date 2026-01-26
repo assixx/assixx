@@ -34,7 +34,6 @@
   /* Layout Structure */
   position: relative;
   flex-direction: column;
-  backdrop-filter: blur(20px) saturate(180%);
 
   /* Transitions */
   transition: all var(--transition-normal);

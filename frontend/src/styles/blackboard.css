@@ -72,6 +72,10 @@
   justify-content: center; /* Same as mini-notes-container */
   gap: 1rem; /* Same as mini-notes-container */
   z-index: 2;
+
+  /* Zoom: --zoom-level wird per inline style gesetzt (default 1 = 100%) */
+  transform: scale(var(--zoom-level, 1));
+  transform-origin: top center;
 }
 
 /* Base Pinboard Item (wrapper for sticky-note) */
@@ -98,33 +102,6 @@
 
 /* Image Style */
 
-/* Pushpin Styles - Mini-Note Pattern (right-aligned) */
-.pushpin {
-  position: absolute;
-  top: -5px;
-  right: 15px;
-  transform: rotate(-45deg);
-  z-index: 5;
-  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
-  border-radius: 50% 50% 50% 0;
-
-  background: radial-gradient(circle at 30% 30%, #f44, #c00);
-
-  width: 15px;
-  height: 15px;
-}
-
-.pushpin::after {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  border-radius: 50%;
-
-  width: 10px;
-  height: 10px;
-  content: '';
-}
-
 /* Pinboard Attachment Style */
 
 /* PDF Preview Styles */
@@ -134,11 +111,6 @@
 /* PDF Inner Wrapper */
 
 /* PDF Overlay for click */
-
-/* Red Pushpin - simplified (uses base .pushpin styling) */
-.pushpin-red {
-  /* All styling inherited from .pushpin */
-}
 
 /* Blue Pushpin */
 
@@ -435,40 +407,6 @@
   font-size: 0.875rem;
 }
 
-/* Detail modal - Compact Design Standards */
-#entryDetailModal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  justify-content: center;
-
-  /* display wird durch .u-hidden bzw. JavaScript gesteuert */
-  align-items: center;
-  z-index: 2000; /* Merged: was 1001, keeping higher value */
-  backdrop-filter: blur(10px);
-
-  background-color: rgb(0 0 0 / 70%);
-
-  width: 100%;
-  height: 100%;
-}
-
-/* Display flex nur wenn Modal aktiv ist */
-#entryDetailModal:not(.u-hidden) {
-  display: flex;
-}
-
-#entryDetailModal .modal-container {
-  width: 90%;
-  max-width: 600px; /* Merged: kept original max-width */
-}
-
-#entryDetailModal .modal-body {
-  padding: var(--spacing-6);
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
 .entry-detail-header {
   margin-bottom: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
@@ -649,11 +587,6 @@
   color: rgb(255 255 255 / 90%);
   font-weight: 500;
   font-size: 14px;
-}
-
-.attachment-size {
-  color: rgb(255 255 255 / 50%);
-  font-size: 12px;
 }
 
 /* Attachment Display in Entry - Compact Design */
@@ -896,14 +829,6 @@
   font-size: 48px;
 }
 
-.empty-title {
-  color: #000;
-}
-
-.empty-text {
-  color: #000;
-}
-
 /* ========================================
    Color Swatch Variants
    ======================================== */
@@ -941,22 +866,12 @@
 
 /* Allow dropdown to overflow the filter card bounds */
 .card:has(#sort-dropdown) {
-  position: relative; /* Create stacking context */
-  z-index: 100; /* Above sibling elements (controls/buttons) */
-  overflow: visible !important;
-}
-
-.card:has(#sort-dropdown) .card__body {
   overflow: visible !important;
 }
 
 /* Ensure dropdown is above other elements within the card */
-#sort-dropdown .dropdown__menu {
-  z-index: 9999 !important;
-}
 
-/* Only hide filter content when collapsed, not the sidebar! */
-#filterContent.collapsed,
+/* Only hide content when collapsed, not the sidebar! */
 .card-body.collapsed {
   display: none;
 }
@@ -996,7 +911,6 @@ body.fullscreen-mode .pinboard-grid {
 /* Hide everything else in fullscreen mode */
 body.fullscreen-mode .sidebar,
 body.fullscreen-mode .header,
-body.fullscreen-mode #navigation-container,
 body.fullscreen-mode #breadcrumb-container,
 body.fullscreen-mode .card.mb-6,
 body.fullscreen-mode .flex.flex-between.mb-6,
@@ -1004,9 +918,8 @@ body.fullscreen-mode .flex.justify-between.mb-6 {
   display: none !important;
 }
 
-/* Hide zoom controls and action buttons in fullscreen mode */
-body.fullscreen-mode .zoom-controls,
-body.fullscreen-mode #newEntryBtn {
+/* Hide zoom controls in fullscreen mode */
+body.fullscreen-mode .zoom-controls {
   display: none !important;
 }
 

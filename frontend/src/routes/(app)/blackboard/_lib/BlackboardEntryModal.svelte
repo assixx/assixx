@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from '$lib/utils';
+
   import { COLOR_OPTIONS, PRIORITY_OPTIONS, MESSAGES, FILE_UPLOAD_CONFIG } from './constants';
   import { getPriorityLabel } from './utils';
 
@@ -65,6 +67,24 @@
   let priorityDropdownOpen = $state(false);
 
   const priorityLabel = $derived(getPriorityLabel(priority));
+
+  // Filter departments based on selected areas (inheritance logic)
+  const availableDepartments = $derived.by(() => {
+    return filterAvailableDepartments(departments, areaIds, companyWide);
+  });
+
+  /**
+   * Handle area selection change.
+   * Also filters out departments that are now covered by selected areas.
+   */
+  function handleAreaChange(newAreaIds: number[]): void {
+    onareaschange(newAreaIds);
+    // Remove departments that are now covered by selected areas
+    const filteredDeptIds = filterDepartmentIdsByAreas(departmentIds, departments, newAreaIds);
+    if (filteredDeptIds.length !== departmentIds.length) {
+      ondepartmentschange(filteredDeptIds);
+    }
+  }
 
   function setPriority(value: Priority): void {
     onprioritychange(value);
@@ -177,7 +197,7 @@
       {#if !companyWide}
         <div class="form-field">
           <label for="entry-area-select" class="form-field__label">
-            <i class="fas fa-map-marked-alt mr-1"></i>Bereiche
+            <i class="fas fa-layer-group mr-1"></i>Bereiche (Areas)
           </label>
           <select
             id="entry-area-select"
@@ -186,17 +206,25 @@
             value={areaIds}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              onareaschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+              handleAreaChange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
             }}
           >
             {#each areas as area (area.id)}
-              <option value={area.id}>{area.name}</option>
+              <option value={area.id}>
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
+                  ? ` (${area.departmentCount} Abt.)`
+                  : ''}
+              </option>
             {/each}
           </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
+          </span>
         </div>
         <div class="form-field">
           <label for="entry-department-select" class="form-field__label">
-            <i class="fas fa-sitemap mr-1"></i>Abteilungen
+            <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
           </label>
           <select
             id="entry-department-select"
@@ -208,10 +236,19 @@
               ondepartmentschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
             }}
           >
-            {#each departments as dept (dept.id)}
-              <option value={dept.id}>{dept.name}</option>
+            {#each availableDepartments as dept (dept.id)}
+              <option value={dept.id}>
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
+                  ? ` (${dept.areaName})`
+                  : ''}
+              </option>
             {/each}
           </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
+            sind.
+          </span>
         </div>
         <div class="form-field">
           <label for="entry-team-select" class="form-field__label">
@@ -231,6 +268,10 @@
               <option value={team.id}>{team.name}</option>
             {/each}
           </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet zugehoerige Teams.
+          </span>
         </div>
       {/if}
 

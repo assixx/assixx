@@ -50,6 +50,7 @@ import type {
   DocumentResponse,
   DocumentStatsResponse,
   PaginatedDocumentsResult,
+  UnreadCountResponse,
 } from './documents.service.js';
 import { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
 import { UpdateDocumentDto } from './dto/update-document.dto.js';
@@ -143,6 +144,18 @@ export class DocumentsController {
     @TenantId() tenantId: number,
   ): Promise<DocumentStatsResponse> {
     return await this.documentsService.getDocumentStats(tenantId, user.id);
+  }
+
+  /**
+   * GET /documents/unread-count
+   * Get count of unread documents for notification badge
+   */
+  @Get('unread-count')
+  async getUnreadCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<UnreadCountResponse> {
+    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
   }
 
   /**

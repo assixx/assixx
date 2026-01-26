@@ -17,65 +17,65 @@
 .kvp-card {
   position: relative;
   cursor: pointer;
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
 }
 
 .kvp-card:hover {
   transform: translateY(-4px);
-  box-shadow:
-    0 12px 40px rgb(0 0 0 / 50%),
-    inset 0 1px 0 rgb(255 255 255 / 15%);
   border-color: rgb(0 142 255 / 50%);
 }
 
 /* ========================================
-   KVP-SPECIFIC: Status Badge Positioning
+   KVP-SPECIFIC: Status Container (Eye + Badge)
    ======================================== */
 
 /*
- * IMPORTANT: Status badge COLORS are defined in Design System (badge.kvp.css)
- * This class only handles POSITIONING for badges in suggestion cards
- * Usage: <span class="badge badge--kvp-new status-badge">Neu</span>
+ * Container for read status icon and status badge
+ * Positioned in top-right corner of card
+ * Eye icon on left, status badge on right
  */
-.status-badge {
+.kvp-status-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
   position: absolute;
   top: var(--spacing-4);
   right: var(--spacing-4);
 }
 
 /* ========================================
-   KVP-SPECIFIC: Visibility Badges
+   KVP-SPECIFIC: Read Confirmation Status
+   Pattern 2: Individual tracking (like blackboard)
    ======================================== */
 
-.visibility-badge {
-  display: inline-flex;
+.kvp-read-status {
+  display: flex;
   align-items: center;
-  gap: 4px;
-
-  margin-top: var(--spacing-2);
-  border-radius: 16px;
-
-  font-size: 0.75rem;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.visibility-badge.department {
-  border: 1px solid rgb(78 205 196 / 50%);
-  background: rgb(78 205 196 / 20%);
-  padding: 6px 12px;
-  color: #4ecdc4;
+.kvp-read-status--read {
+  background: rgb(16 185 129 / 20%);
+  color: rgb(16 185 129);
 }
 
-.visibility-badge.company {
-  border: 1px solid rgb(102 126 234 / 50%);
-  background: rgb(102 126 234 / 20%);
-  padding: 6px 12px;
-  color: #667eea;
+.kvp-read-status--unread {
+  background: rgb(245 158 11 / 20%);
+  color: rgb(245 158 11);
 }
 
-.visibility-badge.team {
-  border: 1px solid rgb(255 159 67 / 50%);
-  background: rgb(255 159 67 / 20%);
-  padding: 6px 12px;
-  color: #ff9f43;
+.kvp-read-status:hover {
+  transform: scale(1.1);
 }
 
 /* ========================================
@@ -94,6 +94,7 @@
   align-items: center;
   gap: var(--spacing-4);
   color: rgb(255 255 255 / 60%);
+  padding-bottom: 10px;
 
   font-size: 0.85rem;
 }
@@ -146,44 +147,13 @@
   align-items: center;
   gap: 4px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
 
   padding: 4px 12px;
 
   font-size: 0.8rem;
-}
-
-/* ========================================
-   KVP-SPECIFIC: Action Buttons
-   ======================================== */
-
-.action-btn {
-  cursor: pointer;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 5%);
-
-  padding: 6px 12px;
-  color: var(--text-primary);
-
-  font-size: 0.85rem;
-}
-
-.action-btn:hover {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 10%);
-}
-
-.action-btn.share {
-  border-color: rgb(33 150 243 / 50%);
-  color: var(--primary-color);
-}
-
-.action-btn.share:hover {
-  background: rgb(33 150 243 / 10%);
 }
 
 /* ========================================
@@ -281,6 +251,21 @@
 .share-info > i {
   color: #666;
   font-size: 0.875rem;
+}
+
+/* ========================================
+   KVP Filter Layout
+   ======================================== */
+
+.kvp-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  align-items: flex-end;
+}
+
+.kvp-search-field {
+  width: 220px;
 }
 
 /* ========================================

@@ -5,7 +5,12 @@
  * Usage:
  *   <div class="sticky-note sticky-note--yellow">
  *     <div class="sticky-note__pin"></div>
- *     <div class="sticky-note__title">Title</div>
+ *     <div class="sticky-note__header">
+ *       <div class="sticky-note__title">Title</div>
+ *       <span class="sticky-note__expires sticky-note__expires--expired">
+ *         <i class="fas fa-clock"></i> 20.01.2026
+ *       </span>
+ *     </div>
  *     <div class="sticky-note__content">Content text...</div>
  *     <div class="sticky-note__indicators">
  *       <span class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</span>
@@ -129,6 +134,21 @@
    CONTENT ELEMENTS
    ======================================== */
 
+/* Header wrapper for title + expiration date */
+.sticky-note__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.3em;
+  margin-bottom: 0.5rem;
+}
+
+.sticky-note__header .sticky-note__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
 .sticky-note__title {
   margin-top: 0.3em;
   margin-bottom: 0.5rem;
@@ -138,6 +158,24 @@
   font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Expiration date indicator */
+.sticky-note__expires {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-style: italic;
+  color: var(--color-gray-600);
+  white-space: nowrap;
+}
+
+.sticky-note__expires--expired {
+  color: var(--color-red-500);
+  font-weight: 500;
+}
+
+.sticky-note__expires i {
+  margin-right: 0.2em;
 }
 
 .sticky-note__content {

@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 
 /**
@@ -330,7 +331,10 @@ export interface MachineTeamResponse {
 export class MachinesService {
   private readonly logger = new Logger(MachinesService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Helper: parse int or return 0
@@ -502,9 +506,10 @@ export class MachinesService {
 
   /**
    * List all machines with filters
+   * Excludes soft-deleted machines (is_active = 4) by default
    */
   async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
-    this.logger.log(`Listing machines for tenant ${tenantId}`);
+    this.logger.debug(`Listing machines for tenant ${tenantId}`);
 
     let sql = `
       SELECT m.*,
@@ -524,7 +529,7 @@ export class MachinesService {
       LEFT JOIN areas a ON m.area_id = a.id AND a.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
-      WHERE m.tenant_id = $1
+      WHERE m.tenant_id = $1 AND m.is_active != 4
     `;
     const params: unknown[] = [tenantId];
     let paramIndex = 2;
@@ -572,7 +577,7 @@ export class MachinesService {
    * Get machine by ID
    */
   async getMachineById(id: number, tenantId: number): Promise<MachineResponse> {
-    this.logger.log(`Getting machine ${id}`);
+    this.logger.debug(`Getting machine ${id}`);
 
     const row = await this.db.queryOne<DbMachineRow>(
       `
@@ -617,6 +622,44 @@ export class MachinesService {
   }
 
   /**
+   * Build INSERT parameters for machine creation
+   */
+  private buildMachineInsertParams(
+    data: MachineCreateRequest,
+    tenantId: number,
+    userId: number,
+    machineUuid: string,
+  ): unknown[] {
+    return [
+      tenantId,
+      data.name,
+      data.model ?? null,
+      data.manufacturer ?? null,
+      data.serialNumber ?? null,
+      data.assetNumber ?? null,
+      data.departmentId ?? null,
+      data.areaId ?? null,
+      data.location ?? null,
+      data.machineType ?? 'production',
+      data.status ?? 'operational',
+      this.hasContent(data.purchaseDate) ? new Date(data.purchaseDate) : null,
+      this.hasContent(data.installationDate) ? new Date(data.installationDate) : null,
+      this.hasContent(data.warrantyUntil) ? new Date(data.warrantyUntil) : null,
+      this.hasContent(data.lastMaintenance) ? new Date(data.lastMaintenance) : null,
+      this.hasContent(data.nextMaintenance) ? new Date(data.nextMaintenance) : null,
+      data.operatingHours ?? 0,
+      data.productionCapacity ?? null,
+      data.energyConsumption ?? null,
+      data.manualUrl ?? null,
+      data.qrCode ?? null,
+      data.notes ?? null,
+      userId,
+      userId,
+      machineUuid,
+    ];
+  }
+
+  /**
    * Create new machine
    */
   async createMachine(
@@ -627,13 +670,12 @@ export class MachinesService {
     _userAgent?: string,
   ): Promise<MachineResponse> {
     this.logger.log(`Creating machine: ${data.name}`);
-
     await this.validateSerialNumberUnique(data.serialNumber, tenantId);
 
     const machineUuid = uuidv7();
+    const params = this.buildMachineInsertParams(data, tenantId, userId, machineUuid);
     const rows = await this.db.query<{ id: number }>(
-      `
-      INSERT INTO machines (
+      `INSERT INTO machines (
         tenant_id, name, model, manufacturer, serial_number, asset_number,
         department_id, area_id, location, machine_type, status,
         purchase_date, installation_date, warranty_until,
@@ -641,40 +683,26 @@ export class MachinesService {
         production_capacity, energy_consumption, manual_url,
         qr_code, notes, created_by, updated_by, uuid, uuid_created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
-      RETURNING id
-      `,
-      [
-        tenantId,
-        data.name,
-        data.model ?? null,
-        data.manufacturer ?? null,
-        data.serialNumber ?? null,
-        data.assetNumber ?? null,
-        data.departmentId ?? null,
-        data.areaId ?? null,
-        data.location ?? null,
-        data.machineType ?? 'production',
-        data.status ?? 'operational',
-        this.hasContent(data.purchaseDate) ? new Date(data.purchaseDate) : null,
-        this.hasContent(data.installationDate) ? new Date(data.installationDate) : null,
-        this.hasContent(data.warrantyUntil) ? new Date(data.warrantyUntil) : null,
-        this.hasContent(data.lastMaintenance) ? new Date(data.lastMaintenance) : null,
-        this.hasContent(data.nextMaintenance) ? new Date(data.nextMaintenance) : null,
-        data.operatingHours ?? 0,
-        data.productionCapacity ?? null,
-        data.energyConsumption ?? null,
-        data.manualUrl ?? null,
-        data.qrCode ?? null,
-        data.notes ?? null,
-        userId,
-        userId,
-        machineUuid,
-      ],
+      RETURNING id`,
+      params,
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new InternalServerErrorException('Failed to create machine');
     }
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'machine',
+      rows[0].id,
+      `Maschine erstellt: ${data.name}`,
+      {
+        name: data.name,
+        serialNumber: data.serialNumber,
+        status: data.status ?? 'operational',
+      },
+    );
 
     return await this.getMachineById(rows[0].id, tenantId);
   }
@@ -775,6 +803,22 @@ export class MachinesService {
     `;
 
     await this.db.query(sql, params);
+
+    // Log activity to root_logs
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'machine',
+      id,
+      `Maschine aktualisiert: ${existing.name}`,
+      { name: existing.name, status: existing.status, serialNumber: existing.serialNumber },
+      {
+        name: data.name ?? existing.name,
+        status: data.status ?? existing.status,
+        serialNumber: data.serialNumber ?? existing.serialNumber,
+      },
+    );
+
     return await this.getMachineById(id, tenantId);
   }
 
@@ -784,15 +828,29 @@ export class MachinesService {
   async deleteMachine(
     id: number,
     tenantId: number,
-    _userId: number,
+    userId: number,
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<void> {
     this.logger.log(`Deleting machine ${id}`);
 
-    await this.getMachineById(id, tenantId);
+    const existing = await this.getMachineById(id, tenantId);
 
     await this.db.query('DELETE FROM machines WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+
+    // Log activity to root_logs
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'machine',
+      id,
+      `Maschine gelöscht: ${existing.name}`,
+      {
+        name: existing.name,
+        serialNumber: existing.serialNumber,
+        status: existing.status,
+      },
+    );
   }
 
   /**
@@ -842,7 +900,7 @@ export class MachinesService {
     machineId: number,
     tenantId: number,
   ): Promise<MaintenanceHistoryResponse[]> {
-    this.logger.log(`Getting maintenance history for machine ${machineId}`);
+    this.logger.debug(`Getting maintenance history for machine ${machineId}`);
 
     await this.getMachineById(machineId, tenantId);
 
@@ -957,7 +1015,7 @@ export class MachinesService {
    * Get upcoming maintenance
    */
   async getUpcomingMaintenance(tenantId: number, days: number = 30): Promise<MachineResponse[]> {
-    this.logger.log(`Getting upcoming maintenance for tenant ${tenantId}`);
+    this.logger.debug(`Getting upcoming maintenance for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbMachineRow>(
       `
@@ -980,7 +1038,7 @@ export class MachinesService {
    * Get statistics
    */
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
-    this.logger.log(`Getting machine statistics for tenant ${tenantId}`);
+    this.logger.debug(`Getting machine statistics for tenant ${tenantId}`);
 
     const row = await this.db.queryOne<DbStatisticsRow>(
       `
@@ -1025,7 +1083,7 @@ export class MachinesService {
    * Get machine categories
    */
   async getCategories(): Promise<MachineCategory[]> {
-    this.logger.log('Getting machine categories');
+    this.logger.debug('Getting machine categories');
 
     const rows = await this.db.query<DbCategoryRow>(
       `
@@ -1054,7 +1112,7 @@ export class MachinesService {
    * Get teams assigned to a machine
    */
   async getMachineTeams(machineId: number, tenantId: number): Promise<MachineTeamResponse[]> {
-    this.logger.log(`Getting teams for machine ${machineId}`);
+    this.logger.debug(`Getting teams for machine ${machineId}`);
 
     await this.getMachineById(machineId, tenantId);
 

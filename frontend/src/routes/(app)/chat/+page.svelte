@@ -12,6 +12,7 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { createLogger } from '$lib/utils/logger';
+  import { getNotificationSSE, type NotificationEvent } from '$lib/utils/notification-sse';
 
   const log = createLogger('ChatPage');
 
@@ -130,6 +131,7 @@
   let showScheduleModal = $state(false);
   let scheduleDate = $state('');
   let scheduleTime = $state('');
+  let scheduleError = $state('');
   let scheduledFor: Date | null = $state(null);
 
   // Confirm dialog
@@ -137,15 +139,20 @@
   let confirmMessage = $state('');
   let confirmCallback = $state<(() => void | Promise<void>) | null>(null);
 
-  // Image preview modal
-  interface PreviewImage {
+  // Image/PDF preview modal
+  interface PreviewFile {
     src: string;
     alt: string;
+    /** MIME type for determining preview method (image vs pdf) */
+    mimeType?: string;
   }
-  let previewImage: PreviewImage | null = $state(null);
+  let previewImage: PreviewFile | null = $state(null);
 
   // WebSocket
   let typingUsers: number[] = $state([]);
+
+  // SSE subscription for scheduled messages
+  let sseUnsubscribe: (() => void) | null = null;
 
   // Refs - typed by expected interface, not component type
   interface MessagesAreaRef {
@@ -177,9 +184,6 @@
   onMount(() => {
     if (!browser) return;
 
-    // Reset chat notification count when visiting the chat page
-    notificationStore.resetCount('chat');
-
     // Initialize local state from SSR data (one-time, browser-only)
     // Best practice: Do state initialization in onMount, not $effect
     if (ssrConversations.length > 0) {
@@ -191,11 +195,71 @@
     // Auth handled by connection ticket (fetched inside connectWebSocket)
     void connectWebSocket();
     handlers.startPeriodicPing();
+
+    // Subscribe to SSE for scheduled message notifications
+    // Scheduled messages are sent via eventBus → SSE (not WebSocket)
+    const sse = getNotificationSSE();
+    sseUnsubscribe = sse.subscribe((event: NotificationEvent) => {
+      if (event.type !== 'NEW_MESSAGE') return;
+
+      const messageData = event.data as
+        | { conversationId: number; senderId: number; preview?: string }
+        | undefined;
+      if (messageData === undefined) return;
+
+      log.info(
+        { conversationId: messageData.conversationId, senderId: messageData.senderId },
+        'Received scheduled message via SSE',
+      );
+
+      // If this is for the active conversation, reload messages to show the new one
+      if (activeConversation?.id === messageData.conversationId) {
+        void reloadActiveConversationMessages();
+      } else {
+        // Update unread count for non-active conversation
+        const convIndex = conversations.findIndex((c) => c.id === messageData.conversationId);
+        if (convIndex >= 0) {
+          const conv = { ...conversations[convIndex] };
+          conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+          conv.lastMessage = {
+            content: messageData.preview ?? '',
+            createdAt: new Date().toISOString(),
+          };
+          // Move to top
+          conversations = [conv, ...conversations.filter((_, i) => i !== convIndex)];
+        }
+      }
+    });
   });
 
   onDestroy(() => {
     handlers.disconnectWebSocket();
+    // Cleanup SSE subscription
+    if (sseUnsubscribe !== null) {
+      sseUnsubscribe();
+      sseUnsubscribe = null;
+    }
   });
+
+  /**
+   * Reload messages for the active conversation (used for SSE scheduled message updates)
+   */
+  async function reloadActiveConversationMessages(): Promise<void> {
+    if (activeConversation === null || activeConversation.isPending === true) return;
+
+    try {
+      const result = await handlers.loadMessages(activeConversation.id);
+      messages = result.messages;
+      scheduledMessages = result.scheduled;
+      setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
+      log.debug(
+        { conversationId: activeConversation.id },
+        'Reloaded messages after SSE notification',
+      );
+    } catch (error) {
+      log.error({ err: error }, 'Failed to reload messages after SSE notification');
+    }
+  }
 
   // ==========================================================================
   // PERFORMANCE: Smart scroll - only scroll on NEW messages, not isRead updates
@@ -295,6 +359,14 @@
     activeConversation = conversation;
     messages = [];
     scheduledMessages = [];
+
+    // LAZY CREATION: Pending conversations have no messages to load
+    // They only exist locally until first message is sent
+    if (conversation.isPending === true) {
+      isLoadingMessages = false;
+      return;
+    }
+
     isLoadingMessages = true;
 
     try {
@@ -303,7 +375,14 @@
       scheduledMessages = result.scheduled;
 
       const conv = conversations.find((c) => c.id === conversation.id);
-      if (conv) conv.unreadCount = 0;
+      if (conv) {
+        // Decrement notification badge by number of unread messages in this conversation
+        const unreadToDecrement = conv.unreadCount ?? 0;
+        for (let i = 0; i < unreadToDecrement; i++) {
+          notificationStore.decrementCount('chat');
+        }
+        conv.unreadCount = 0;
+      }
 
       handlers.sendWebSocketMessage(buildJoinMessage(conversation.id));
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
@@ -329,43 +408,105 @@
   }
 
   async function startConversationWith(user: ChatUser): Promise<void> {
-    try {
-      const result = await handlers.startConversationWith(user, conversations);
-      if (result.isNew) {
-        // New conversation created - reload SSR data and update local state
-        await invalidateAll();
-        conversations = [result.conversation, ...conversations];
-      }
-      await selectConversation(result.conversation);
-      userSearchQuery = '';
-      userSearchResults = [];
-    } catch {
-      showNotification(MESSAGES.errorCreateConversation, 'error');
+    const result = handlers.startConversationWith(user, conversations);
+    if (result.isNew) {
+      // LAZY CREATION: Only add to local state, NOT persisted to DB yet
+      // Conversation will be created when first message is sent
+      conversations = [result.conversation, ...conversations];
     }
+    await selectConversation(result.conversation);
+    userSearchQuery = '';
+    userSearchResults = [];
   }
 
   // ==========================================================================
   // MESSAGE HANDLERS
   // ==========================================================================
 
-  /** Upload files and return attachment IDs, or null on failure */
+  /** Upload files and return attachment info, or null on failure */
   async function uploadFiles(
     conversationId: number,
     files: FilePreviewItem[],
-  ): Promise<number[] | null> {
+  ): Promise<handlers.UploadedAttachmentInfo[] | null> {
     if (files.length === 0) return [];
 
-    const attachmentIds = await handlers.uploadFiles(
+    const uploaded = await handlers.uploadFiles(
       conversationId,
       files.map((f) => f.file),
     );
 
-    if (attachmentIds.length === 0) {
+    if (uploaded.length === 0 && files.length > 0) {
       showNotification(MESSAGES.errorUploadFiles, 'error');
       return null;
     }
 
-    return attachmentIds;
+    return uploaded;
+  }
+
+  /**
+   * Persist a pending conversation to the database and update local state.
+   * @returns The persisted conversation ID, or null if failed
+   */
+  async function persistPendingIfNeeded(): Promise<number | null> {
+    if (activeConversation?.isPending !== true) {
+      return activeConversation?.id ?? null;
+    }
+
+    const persistedConversation = await handlers.persistPendingConversation(activeConversation);
+    const pendingId = activeConversation.id;
+
+    // Update local state with persisted conversation
+    activeConversation = persistedConversation;
+
+    // Replace pending conversation in list with persisted one
+    conversations = conversations.map((c) => (c.id === pendingId ? persistedConversation : c));
+
+    // Reload SSR data to sync with server
+    await invalidateAll();
+
+    // Join the new conversation's WebSocket room
+    handlers.sendWebSocketMessage(buildJoinMessage(persistedConversation.id));
+
+    log.info(
+      { conversationId: persistedConversation.id },
+      'Pending conversation persisted on first message',
+    );
+    return persistedConversation.id;
+  }
+
+  /** Send a scheduled message */
+  async function sendScheduledMsg(
+    conversationId: number,
+    content: string,
+    scheduleTime: Date,
+    attachments: handlers.UploadedAttachmentInfo[],
+  ): Promise<void> {
+    try {
+      scheduledMessages = await handlers.sendScheduledMessage(
+        conversationId,
+        content,
+        scheduleTime,
+        attachments,
+      );
+      showNotification(MESSAGES.successScheduled, 'success');
+    } catch {
+      showNotification(MESSAGES.errorScheduleMessage, 'error');
+    }
+  }
+
+  /** Send an immediate message via WebSocket */
+  function sendImmediateMsg(
+    conversationId: number,
+    content: string,
+    attachments: handlers.UploadedAttachmentInfo[],
+  ): void {
+    const attachmentIds = attachments.map((a) => a.id);
+    const sent = handlers.sendWebSocketMessage(
+      buildSendMessage(conversationId, content, attachmentIds),
+    );
+    if (!sent) {
+      showNotification(MESSAGES.errorConnectionRetry, 'error');
+    }
   }
 
   async function sendMessage(): Promise<void> {
@@ -375,7 +516,6 @@
     const content = messageInput.trim();
     const filesToSend = [...selectedFiles];
     const scheduleTime = scheduledFor;
-    const conversationId = activeConversation.id;
 
     if (content === '' && filesToSend.length === 0) return;
 
@@ -384,28 +524,23 @@
     selectedFiles = [];
     scheduledFor = null;
 
-    const attachmentIds = await uploadFiles(conversationId, filesToSend);
-    if (attachmentIds === null) return;
+    // LAZY CREATION: Persist pending conversation first if needed
+    let conversationId: number | null;
+    try {
+      conversationId = await persistPendingIfNeeded();
+    } catch {
+      showNotification(MESSAGES.errorCreateConversation, 'error');
+      return;
+    }
+    if (conversationId === null) return;
+
+    const uploadedAttachments = await uploadFiles(conversationId, filesToSend);
+    if (uploadedAttachments === null) return;
 
     if (scheduleTime !== null) {
-      try {
-        scheduledMessages = await handlers.sendScheduledMessage(
-          conversationId,
-          content,
-          scheduleTime,
-          attachmentIds,
-        );
-        showNotification(MESSAGES.successScheduled, 'success');
-      } catch {
-        showNotification(MESSAGES.errorScheduleMessage, 'error');
-      }
+      await sendScheduledMsg(conversationId, content, scheduleTime, uploadedAttachments);
     } else {
-      const sent = handlers.sendWebSocketMessage(
-        buildSendMessage(conversationId, content, attachmentIds),
-      );
-      if (!sent) {
-        showNotification(MESSAGES.errorConnectionRetry, 'error');
-      }
+      sendImmediateMsg(conversationId, content, uploadedAttachments);
     }
   }
 
@@ -458,17 +593,19 @@
     const defaults = handlers.getDefaultScheduleDateTime();
     scheduleDate = defaults.date;
     scheduleTime = defaults.time;
+    scheduleError = '';
     showScheduleModal = true;
   }
 
   function confirmSchedule(): void {
     const result = handlers.validateAndSetSchedule(scheduleDate, scheduleTime);
     if (!result.isValid) {
-      showNotification(result.error ?? MESSAGES.errorScheduleMessage, 'warning');
+      scheduleError = result.error ?? MESSAGES.errorScheduleMessage;
       return;
     }
     if (result.date === undefined) return;
     scheduledFor = result.date;
+    scheduleError = '';
     showScheduleModal = false;
     showNotification(`${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`, 'info');
   }
@@ -516,12 +653,17 @@
     if (activeConversation === null) return;
 
     const conversationId = activeConversation.id;
+    const isPending = activeConversation.isPending === true;
+
     confirmMessage = MESSAGES.confirmDeleteConversation;
     confirmCallback = async () => {
       try {
-        await handlers.deleteConversation(conversationId);
-        // Reload SSR data after structural change
-        await invalidateAll();
+        // LAZY CREATION: Pending conversations only exist locally, no API call needed
+        if (!isPending) {
+          await handlers.deleteConversation(conversationId);
+          // Reload SSR data after structural change
+          await invalidateAll();
+        }
         conversations = conversations.filter((c) => c.id !== conversationId);
         activeConversation = null;
         messages = [];
@@ -537,8 +679,8 @@
   // IMAGE PREVIEW
   // ==========================================================================
 
-  function openImagePreview(image: PreviewImage): void {
-    previewImage = image;
+  function openImagePreview(file: PreviewFile): void {
+    previewImage = file;
   }
 
   function closeImagePreview(): void {
@@ -649,7 +791,11 @@
   show={showScheduleModal}
   bind:date={scheduleDate}
   bind:time={scheduleTime}
-  onclose={() => (showScheduleModal = false)}
+  errorMessage={scheduleError}
+  onclose={() => {
+    scheduleError = '';
+    showScheduleModal = false;
+  }}
   onconfirm={confirmSchedule}
 />
 

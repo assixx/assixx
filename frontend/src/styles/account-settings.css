@@ -34,37 +34,3 @@
 
   font-size: 0.875rem;
 }
-
-/* Deletion Status Icon - Domain-specific animation */
-.deletion-status-icon {
-  animation: pulse-icon 2s infinite;
-  margin-bottom: 20px;
-  color: var(--color-blue-500);
-  font-size: 64px;
-}
-
-@keyframes pulse-icon {
-  0%,
-  100% {
-    opacity: 100%;
-  }
-
-  50% {
-    opacity: 50%;
-  }
-}
-
-/* Deletion Info Box - Domain-specific info display */
-.deletion-info {
-  margin: 20px 0;
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(33 150 243 / 10%);
-  padding: 16px;
-}
-
-.deletion-info p {
-  margin: 8px 0;
-  color: var(--text-primary);
-}

@@ -59,15 +59,16 @@ export class RoleSwitchService {
 
   /**
    * Verify user belongs to tenant and return user data
+   * SECURITY: Only allows ACTIVE users (is_active = 1) to perform role switches
    */
   private async verifyUserTenant(userId: number, tenantId: number): Promise<UserRow> {
     const [rows] = await execute<UserRow[]>(
-      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new NotFoundException('User not found or tenant mismatch');
+      throw new NotFoundException('User not found, inactive, or tenant mismatch');
     }
 
     const user = rows[0];
@@ -106,7 +107,7 @@ export class RoleSwitchService {
   }
 
   /**
-   * Log role switch action for audit
+   * Log role switch action to root_logs for audit trail
    */
   private async logRoleSwitch(
     tenantId: number,
@@ -117,7 +118,7 @@ export class RoleSwitchService {
   ): Promise<void> {
     try {
       await execute(
-        `INSERT INTO logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
+        `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
         [
           tenantId,
@@ -125,12 +126,12 @@ export class RoleSwitchService {
           action,
           'user',
           userId,
-          JSON.stringify({ from_role: fromRole, to_role: toRole, timestamp: new Date() }),
+          JSON.stringify({ from_role: fromRole, to_role: toRole }),
           true,
         ],
       );
     } catch (error: unknown) {
-      // Log error but don't fail the operation
+      // Don't fail the operation if audit logging fails
       this.logger.warn(`Failed to log role switch: ${(error as Error).message}`);
     }
   }

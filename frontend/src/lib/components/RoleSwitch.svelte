@@ -152,7 +152,7 @@
   }
 
   function redirectToDashboard(role: RoleType): void {
-    showSuccessAlert(`Wechsel zur ${getRoleDisplayName(role)}-Ansicht...`);
+    showSuccessAlert(`Wechsel zur ${getRoleDisplayName(role)}-Ansicht`);
     setTimeout(() => {
       window.location.href = getDashboardUrl(role);
     }, 1000);

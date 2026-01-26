@@ -9,8 +9,6 @@
 
 /* Stat Card */
 .card-stat {
-  backdrop-filter: blur(20px) saturate(180%);
-
   transition: all 0.2s ease;
   box-shadow: var(--shadow-md);
   border: 1px solid rgb(255 255 255 / 10%);
@@ -23,7 +21,8 @@
 }
 
 .card-stat:hover {
-  border-color: var(--color-icon-primary);
+  /* border-color: var(--color-icon-primary); */
+  border-color: #a9d9ff91;
 }
 
 /* Stat Value (Big Number) */

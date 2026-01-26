@@ -24,6 +24,16 @@ const HexColorSchema = z
   .optional();
 
 /**
+ * Recurrence type enum
+ */
+const RecurrenceSchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional();
+
+/**
+ * Recurrence end type enum
+ */
+const RecurrenceEndTypeSchema = z.enum(['never', 'after', 'until']).optional();
+
+/**
  * Create event request body schema
  */
 export const CreateEventSchema = z
@@ -41,8 +51,12 @@ export const CreateEventSchema = z
     location: z.string().optional(),
     reminderMinutes: z.number().int().min(0).optional(),
     color: HexColorSchema,
-    recurrenceRule: z.string().optional(),
     attendeeIds: z.array(IdSchema).optional(),
+    // Recurrence fields
+    recurrence: RecurrenceSchema,
+    recurrenceEndType: RecurrenceEndTypeSchema,
+    recurrenceCount: z.number().int().min(1).max(365).optional(),
+    recurrenceUntil: z.string().optional(),
   })
   .refine(
     (data: { startTime: string; endTime: string }) =>

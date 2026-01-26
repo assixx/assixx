@@ -10,6 +10,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
 import { execute } from '../../utils/db.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
 import type { ListAreasQueryDto } from './dto/list-areas-query.dto.js';
 import type { UpdateAreaDto } from './dto/update-area.dto.js';
@@ -84,8 +85,11 @@ interface AreaDependencies {
 export class AreasService {
   private readonly logger = new Logger(AreasService.name);
 
+  constructor(private readonly activityLogger: ActivityLoggerService) {}
+
   /**
    * SQL query for fetching areas with counts
+   * Excludes soft-deleted areas (is_active = 4)
    */
   private readonly FIND_ALL_AREAS_QUERY = `
     SELECT
@@ -98,7 +102,7 @@ export class AreasService {
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-    WHERE a.tenant_id = $1
+    WHERE a.tenant_id = $1 AND a.is_active != 4
   `;
 
   /**
@@ -158,7 +162,7 @@ export class AreasService {
    * List all areas for a tenant
    */
   async listAreas(tenantId: number, query: ListAreasQueryDto): Promise<AreaResponse[]> {
-    this.logger.log(`Fetching areas for tenant ${tenantId}`);
+    this.logger.debug(`Fetching areas for tenant ${tenantId}`);
 
     const { whereClause, params } = this.buildFilteredQuery(query);
     const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause} GROUP BY a.id ORDER BY a.name`;
@@ -172,7 +176,7 @@ export class AreasService {
    * Get a single area by ID
    */
   async getAreaById(id: number, tenantId: number): Promise<AreaResponse> {
-    this.logger.log(`Fetching area ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Fetching area ${id} for tenant ${tenantId}`);
 
     const query = `${this.FIND_ALL_AREAS_QUERY} AND a.id = $2 GROUP BY a.id`;
     const [rows] = await execute<AreaRow[]>(query, [tenantId, id]);
@@ -188,7 +192,7 @@ export class AreasService {
    * Get area statistics
    */
   async getAreaStats(tenantId: number): Promise<AreaStatsResponse> {
-    this.logger.log(`Fetching area stats for tenant ${tenantId}`);
+    this.logger.debug(`Fetching area stats for tenant ${tenantId}`);
 
     interface StatsRow extends RowDataPacket {
       total_areas: string;
@@ -271,50 +275,79 @@ export class AreasService {
       throw new Error('Failed to create area');
     }
 
-    return await this.getAreaById(rows[0].id, tenantId);
+    const areaId = rows[0].id;
+    const result = await this.getAreaById(areaId, tenantId);
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'area',
+      areaId,
+      `Bereich erstellt: ${dto.name}`,
+      {
+        name: dto.name,
+        description: dto.description,
+        type: dto.type,
+        areaLeadId: dto.areaLeadId,
+        capacity: dto.capacity,
+        address: dto.address,
+      },
+    );
+
+    return result;
+  }
+
+  /**
+   * Build update fields from DTO
+   */
+  private buildUpdateFields(dto: UpdateAreaDto): { fields: string[]; values: unknown[] } {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    const fieldMap: [keyof UpdateAreaDto, string][] = [
+      ['name', 'name'],
+      ['description', 'description'],
+      ['areaLeadId', 'area_lead_id'],
+      ['type', 'type'],
+      ['capacity', 'capacity'],
+      ['address', 'address'],
+      ['isActive', 'is_active'],
+    ];
+
+    for (const [dtoKey, dbCol] of fieldMap) {
+      const value = dto[dtoKey];
+      if (value !== undefined) {
+        fields.push(`${dbCol} = $${values.length + 1}`);
+        values.push(value);
+      }
+    }
+
+    return { fields, values };
   }
 
   /**
    * Update an area
    */
-  async updateArea(id: number, dto: UpdateAreaDto, tenantId: number): Promise<AreaResponse> {
+  async updateArea(
+    id: number,
+    dto: UpdateAreaDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<AreaResponse> {
     this.logger.log(`Updating area ${id}`);
 
-    // Check if area exists
-    await this.getAreaById(id, tenantId);
+    const existingArea = await this.getAreaById(id, tenantId);
+    const oldValues = {
+      name: existingArea.name,
+      description: existingArea.description,
+      type: existingArea.type,
+      areaLeadId: existingArea.areaLeadId,
+      capacity: existingArea.capacity,
+      address: existingArea.address,
+      isActive: existingArea.isActive,
+    };
 
-    const fields: string[] = [];
-    const values: unknown[] = [];
-
-    if (dto.name !== undefined) {
-      fields.push(`name = $${values.length + 1}`);
-      values.push(dto.name);
-    }
-    if (dto.description !== undefined) {
-      fields.push(`description = $${values.length + 1}`);
-      values.push(dto.description);
-    }
-    if (dto.areaLeadId !== undefined) {
-      fields.push(`area_lead_id = $${values.length + 1}`);
-      values.push(dto.areaLeadId);
-    }
-    if (dto.type !== undefined) {
-      fields.push(`type = $${values.length + 1}`);
-      values.push(dto.type);
-    }
-    if (dto.capacity !== undefined) {
-      fields.push(`capacity = $${values.length + 1}`);
-      values.push(dto.capacity);
-    }
-    if (dto.address !== undefined) {
-      fields.push(`address = $${values.length + 1}`);
-      values.push(dto.address);
-    }
-    if (dto.isActive !== undefined) {
-      fields.push(`is_active = $${values.length + 1}`);
-      values.push(dto.isActive);
-    }
-
+    const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id, tenantId);
@@ -324,7 +357,28 @@ export class AreasService {
       );
     }
 
-    return await this.getAreaById(id, tenantId);
+    const result = await this.getAreaById(id, tenantId);
+    const newValues = {
+      name: dto.name,
+      description: dto.description,
+      type: dto.type,
+      areaLeadId: dto.areaLeadId,
+      capacity: dto.capacity,
+      address: dto.address,
+      isActive: dto.isActive,
+    };
+
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'area',
+      id,
+      `Bereich aktualisiert: ${existingArea.name}`,
+      oldValues,
+      newValues,
+    );
+
+    return result;
   }
 
   /**
@@ -399,13 +453,14 @@ export class AreasService {
    */
   async deleteArea(
     id: number,
+    actingUserId: number,
     tenantId: number,
     force: boolean = false,
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting area ${id}, force: ${force}`);
 
-    // Check if area exists
-    await this.getAreaById(id, tenantId);
+    // Check if area exists and get values for logging
+    const existingArea = await this.getAreaById(id, tenantId);
 
     const deps = await this.checkAreaDependencies(id, tenantId);
 
@@ -428,6 +483,21 @@ export class AreasService {
     }
 
     await execute('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+
+    await this.activityLogger.logDelete(
+      tenantId,
+      actingUserId,
+      'area',
+      id,
+      `Bereich gelöscht: ${existingArea.name}`,
+      {
+        name: existingArea.name,
+        description: existingArea.description,
+        type: existingArea.type,
+        areaLeadId: existingArea.areaLeadId,
+        force,
+      },
+    );
 
     return { message: 'Area deleted successfully' };
   }

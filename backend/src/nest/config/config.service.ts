@@ -183,11 +183,6 @@ export class AppConfigService {
     return this.config.ALLOWED_ORIGINS.split(',').map((origin: string) => origin.trim());
   }
 
-  /** @deprecated Use allowedOrigins instead */
-  get corsOrigin(): string {
-    return this.config.ALLOWED_ORIGINS;
-  }
-
   // Email
   get smtpHost(): string | undefined {
     return this.config.SMTP_HOST;

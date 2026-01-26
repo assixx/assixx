@@ -22,16 +22,14 @@
 
 /* NOTE: Design System components are loaded via tailwind.css → design-system/index.css
    Previously imported directly here (card-base, card-stat, card-accent, card.css)
-   but removed to prevent duplicate imports. See tailwind.css:198 for the single import point.
-   Migrated: 2025-11-22 */
+   but removed to prevent duplicate imports. See tailwind.css:205 for the single import point.
+   Migrated: 2025-11-22
 
-/* Design System Modal Component */
-@import '../design-system/primitives/modals/modal.base.css';
-
-/* Design System Choice Cards Component */
-@import '../design-system/primitives/choice-cards/choice-card.base.css';
-@import '../design-system/primitives/choice-cards/choice-card.feature.css';
-@import '../design-system/primitives/choice-cards/choice-card.plan.css';
+   REMOVED 2026-01-20 (duplicate imports - already in design-system/index.css):
+   - ../design-system/primitives/modals/modal.base.css
+   - ../design-system/primitives/choice-cards/choice-card.base.css
+   - ../design-system/primitives/choice-cards/choice-card.feature.css
+   - ../design-system/primitives/choice-cards/choice-card.plan.css */
 
 /* FontAwesome - loaded globally (91% of pages need it, browser caches it)
    Previously loaded individually in each HTML file which caused:

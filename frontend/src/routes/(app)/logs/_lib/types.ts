@@ -81,3 +81,52 @@ export interface DeleteLogsBody {
   entityType?: string;
   olderThanDays?: number;
 }
+
+// ============================================================================
+// Export Types (ADR-009)
+// ============================================================================
+
+/** Export format options */
+export type ExportFormat = 'json' | 'csv' | 'txt';
+
+/** Export source options */
+export type ExportSource = 'audit_trail' | 'root_logs' | 'all';
+
+/** Export request parameters */
+export interface ExportLogsParams {
+  dateFrom: string;
+  dateTo: string;
+  format: ExportFormat;
+  source: ExportSource;
+  action?: string;
+  userId?: number;
+  entityType?: string;
+}
+
+/** Export status for UI feedback */
+export interface ExportStatus {
+  loading: boolean;
+  error: string | null;
+  rateLimitedUntil: Date | null;
+}
+
+// ============================================================================
+// Quick Timerange Presets (for Export)
+// ============================================================================
+
+/** Quick timerange preset values for export date filter */
+export type ExportQuickTimerange =
+  | '5min'
+  | '15min'
+  | '1hour'
+  | '24hours'
+  | '3days'
+  | '1week'
+  | 'custom';
+
+/** Quick timerange option for dropdown/buttons */
+export interface QuickTimerangeOption {
+  value: ExportQuickTimerange;
+  text: string;
+  minutes: number; // Duration in minutes (0 for custom)
+}

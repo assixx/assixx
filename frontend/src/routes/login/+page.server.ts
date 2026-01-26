@@ -1,15 +1,17 @@
 /**
- * Login Page - Server Actions
+ * Login Page - Server Actions & Load
  * @module login/+page.server
  *
- * Handles login form submission server-side to set httpOnly cookies.
+ * - Load: Redirects already-authenticated users to their dashboard
+ * - Actions: Handles login form submission server-side to set httpOnly cookies
+ *
  * This enables SSR pages to access the auth token via cookies.
  */
-import { fail, type Cookies } from '@sveltejs/kit';
+import { fail, redirect, type Cookies } from '@sveltejs/kit';
 
 import { createLogger } from '$lib/utils/logger';
 
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
 const log = createLogger('Login');
 
@@ -102,6 +104,72 @@ function getRedirectPath(role: UserRole): string {
   };
   return paths[role];
 }
+
+/** API response for /users/me */
+interface MeResponse {
+  success?: boolean;
+  data?: { role: UserRole };
+  role?: UserRole;
+}
+
+/** Clear all auth cookies */
+function clearAuthCookies(cookies: Cookies): void {
+  cookies.delete('accessToken', { path: '/' });
+  cookies.delete('refreshToken', { path: '/api/v2/auth' });
+  cookies.delete('userRole', { path: '/' });
+}
+
+/** Extract role from /users/me response */
+function extractRoleFromResponse(result: MeResponse): UserRole | null {
+  return result.data?.role ?? result.role ?? null;
+}
+
+/** Check if error is a redirect (SvelteKit uses throw for redirects) */
+function isRedirectError(err: unknown): boolean {
+  if (err instanceof Response) return true;
+  return typeof err === 'object' && err !== null && 'status' in err;
+}
+
+/**
+ * Load function - redirects already-authenticated users to their dashboard
+ *
+ * This runs BEFORE the page renders, checking if user is already logged in.
+ * If they have a valid token, they get redirected to their dashboard.
+ */
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
+  const token = cookies.get('accessToken');
+
+  if (token === undefined || token === '') {
+    return {};
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/users/me`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      log.debug('Token invalid, clearing cookies');
+      clearAuthCookies(cookies);
+      return {};
+    }
+
+    const result = (await response.json()) as MeResponse;
+    const role = extractRoleFromResponse(result);
+
+    if (role === null) {
+      log.warn('No role in /users/me response');
+      return {};
+    }
+
+    log.debug({ role }, 'User already logged in, redirecting to dashboard');
+    redirect(302, getRedirectPath(role));
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
+    log.error({ err }, 'Error checking auth status');
+    return {};
+  }
+};
 
 /** Validate that a form field is a non-empty string */
 function isValidStringField(value: FormDataEntryValue | null): value is string {

@@ -449,8 +449,9 @@ export class ReportsService {
         SELECT
           survey_id,
           COUNT(DISTINCT user_id) / (
+            -- SECURITY: Only count ACTIVE employees (is_active = 1)
             SELECT COUNT(*) FROM users
-            WHERE tenant_id = $1 AND role = 'employee'
+            WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1
           ) as response_rate
         FROM survey_responses
         WHERE started_at BETWEEN $2 AND $3
@@ -505,11 +506,12 @@ export class ReportsService {
     _departmentId?: number,
     _teamId?: number,
   ): Promise<PerformanceMetrics> {
+    // SECURITY: Only count ACTIVE employees (is_active = 1)
     const rows = await this.db.query<DbMetricsRow>(
       `
       SELECT
         COUNT(DISTINCT submitted_by) as participants,
-        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee') as total_employees
+        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1) as total_employees
       FROM kvp_suggestions
       WHERE tenant_id = $2
         AND created_at BETWEEN $3 AND $4
@@ -540,7 +542,7 @@ export class ReportsService {
    * Get company overview report with all KPIs aggregated
    */
   async getOverviewReport(tenantId: number, dateFrom?: string, dateTo?: string): Promise<unknown> {
-    this.logger.log(`Getting overview report for tenant ${tenantId}`);
+    this.logger.debug(`Getting overview report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -578,7 +580,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting employee report for tenant ${tenantId}`);
+    this.logger.debug(`Getting employee report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -632,7 +634,7 @@ export class ReportsService {
     dateFrom?: string,
     dateTo?: string,
   ): Promise<unknown> {
-    this.logger.log(`Getting department report for tenant ${tenantId}`);
+    this.logger.debug(`Getting department report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -730,7 +732,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting shift report for tenant ${tenantId}`);
+    this.logger.debug(`Getting shift report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -860,7 +862,7 @@ export class ReportsService {
     dateTo?: string,
     categoryId?: number,
   ): Promise<unknown> {
-    this.logger.log(`Getting KVP report for tenant ${tenantId}`);
+    this.logger.debug(`Getting KVP report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
@@ -996,7 +998,7 @@ export class ReportsService {
     departmentId?: number,
     teamId?: number,
   ): unknown {
-    this.logger.log(`Getting attendance report for tenant ${tenantId}`);
+    this.logger.debug(`Getting attendance report for tenant ${tenantId}`);
 
     const avgAttendanceRate = 0.92;
     const totalAbsences = Math.floor(Math.random() * 50) + 10;
@@ -1051,7 +1053,7 @@ export class ReportsService {
     dateTo: string,
     departmentId?: number,
   ): unknown {
-    this.logger.log(`Getting compliance report for tenant ${tenantId}`);
+    this.logger.debug(`Getting compliance report for tenant ${tenantId}`);
 
     const violations = {
       total: Math.floor(Math.random() * 20) + 5,

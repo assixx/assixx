@@ -236,10 +236,17 @@ export class AuthService {
   /**
    * Logout user - revoke all refresh tokens
    */
-  async logout(user: NestAuthUser): Promise<{ tokensRevoked: number }> {
+  async logout(
+    user: NestAuthUser,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ tokensRevoked: number }> {
     const revokedCount = await this.revokeAllUserTokens(user.id, user.tenantId);
 
     this.logger.log(`Logout: Revoked ${revokedCount} refresh tokens for user ${user.id}`);
+
+    // Log logout for audit trail
+    await this.logLogoutAudit(user, ipAddress, userAgent);
 
     return { tokensRevoked: revokedCount };
   }
@@ -677,6 +684,40 @@ export class AuthService {
     } catch (error: unknown) {
       // Don't fail login if audit log fails
       this.logger.warn('Failed to log login audit', error);
+    }
+  }
+
+  /**
+   * Log logout for audit trail
+   */
+  private async logLogoutAudit(
+    user: NestAuthUser,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    try {
+      await this.databaseService.query(
+        `INSERT INTO root_logs
+         (tenant_id, user_id, action, entity_type, entity_id, details, new_values, ip_address, user_agent, was_role_switched)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          user.tenantId,
+          user.id,
+          'logout',
+          'auth',
+          user.id,
+          `Abgemeldet als ${user.role}`,
+          JSON.stringify({
+            role: user.role,
+          }),
+          ipAddress ?? null,
+          userAgent ?? null,
+          false,
+        ],
+      );
+    } catch (error: unknown) {
+      // Don't fail logout if audit log fails
+      this.logger.warn('Failed to log logout audit', error);
     }
   }
 }

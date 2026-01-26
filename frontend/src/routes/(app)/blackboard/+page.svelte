@@ -18,6 +18,7 @@
   }
 
   // API Client (for mutations only)
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
@@ -28,11 +29,12 @@
   import '../../../styles/blackboard.css';
 
   // _lib/ imports
-  import { fetchEntryByUuid, uploadAttachment } from './_lib/api';
+  import { fetchEntryByUuid, uploadAttachment, confirmEntry } from './_lib/api';
   import BlackboardEntryModal from './_lib/BlackboardEntryModal.svelte';
   import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
   import {
     formatDateShort,
+    isExpired,
     truncateText,
     getPriorityLabel,
     getPriorityClass,
@@ -181,6 +183,32 @@
   // MUTATIONS (Level 3: invalidateAll() after success)
   // =============================================================================
 
+  /**
+   * Convert YYYY-MM-DD to ISO 8601 format (end of day in LOCAL timezone)
+   * Backend requires: YYYY-MM-DDTHH:mm:ss format
+   *
+   * IMPORTANT: Creates date at 23:59:59 LOCAL time, then converts to UTC.
+   * This ensures "Gültig bis 21.01" expires at 23:59:59 German time,
+   * not 23:59:59 UTC (which would be 00:59:59 German time next day).
+   */
+  function toIso8601EndOfDay(dateStr: string): string | null {
+    if (dateStr === '' || dateStr.length === 0) return null;
+    // Create date at 23:59:59 LOCAL time (no 'Z' = local timezone)
+    // toISOString() then converts to correct UTC equivalent
+    const localEndOfDay = new Date(`${dateStr}T23:59:59`);
+    return localEndOfDay.toISOString();
+  }
+
+  /**
+   * Convert ISO 8601 date to YYYY-MM-DD for HTML date input
+   * Server returns: 2026-01-20T23:59:59.000Z → Input needs: 2026-01-20
+   */
+  function fromIso8601ToDateInput(isoDate: string | null | undefined): string {
+    if (isoDate === null || isoDate === undefined || isoDate === '') return '';
+    // Extract YYYY-MM-DD from ISO string
+    return isoDate.substring(0, 10);
+  }
+
   function buildEntryPayload(): Record<string, unknown> {
     const orgIds = formCompanyWide
       ? { departmentIds: [], teamIds: [], areaIds: [] }
@@ -191,7 +219,7 @@
       content: formContent,
       priority: formPriority,
       color: formColor,
-      expiresAt: formExpiresAt || null,
+      expiresAt: toIso8601EndOfDay(formExpiresAt),
       ...orgIds,
     };
   }
@@ -333,7 +361,7 @@
     formContent = entry.content;
     formPriority = entry.priority;
     formColor = entry.color;
-    formExpiresAt = entry.expiresAt ?? '';
+    formExpiresAt = fromIso8601ToDateInput(entry.expiresAt);
     formCompanyWide = entry.orgLevel === 'company';
     formDepartmentIds = entry.departmentIds ?? [];
     formTeamIds = entry.teamIds ?? [];
@@ -352,7 +380,18 @@
     void saveEntry();
   }
 
-  function goToDetail(uuid: string): void {
+  /**
+   * Navigate to entry detail and auto-confirm if not yet read
+   */
+  function goToDetail(uuid: string, isConfirmed: boolean): void {
+    // Auto-confirm if not yet read (non-blocking)
+    if (!isConfirmed) {
+      void confirmEntry(uuid).then((success) => {
+        if (success) {
+          notificationStore.decrementCount('blackboard');
+        }
+      });
+    }
     void goto(resolvePath(`/blackboard/${uuid}`));
   }
 
@@ -574,21 +613,37 @@
     {:else}
       <div class="pinboard-grid" style="--zoom-level: {zoomLevel / 100};">
         {#each entries as entry (entry.id)}
+          {@const isRead = entry.isConfirmed === true}
+          {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
           <div
             class="pinboard-item"
             onclick={() => {
-              goToDetail(entry.uuid);
+              goToDetail(entry.uuid, isRead);
             }}
-            style="transform: scale(var(--zoom-level, 1));"
             role="button"
             tabindex="0"
             onkeydown={(e) => {
-              if (e.key === 'Enter') goToDetail(entry.uuid);
+              if (e.key === 'Enter') goToDetail(entry.uuid, isRead);
             }}
           >
             <div class="sticky-note sticky-note--{entry.color} sticky-note--large">
               <div class="sticky-note__pin"></div>
-              <div class="sticky-note__title">{entry.title}</div>
+              <div class="sticky-note__header">
+                <div class="sticky-note__title">
+                  {entry.title}
+                  {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
+                </div>
+                {#if entry.expiresAt}
+                  <span
+                    class="sticky-note__expires"
+                    class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
+                    title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                  >
+                    <i class="fas fa-clock"></i>
+                    {formatDateShort(entry.expiresAt)}
+                  </span>
+                {/if}
+              </div>
               <div class="sticky-note__content">{truncateText(entry.content)}</div>
               <div class="sticky-note__indicators">
                 {#if (entry.commentCount ?? 0) > 0}
@@ -621,7 +676,8 @@
                 </div>
                 <div class="sticky-note__footer-row">
                   <span class="sticky-note__author"
-                    ><i class="fas fa-user"></i> {entry.authorName ?? 'Unbekannt'}</span
+                    ><i class="fas fa-user"></i>
+                    {entry.authorFullName ?? entry.authorName ?? 'Unbekannt'}</span
                   >
                   <span class="sticky-note__date"
                     ><i class="fas fa-calendar"></i> {formatDateShort(entry.createdAt)}</span

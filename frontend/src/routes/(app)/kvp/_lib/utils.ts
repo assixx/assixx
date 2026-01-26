@@ -5,12 +5,14 @@
 import {
   STATUS_BADGE_CLASSES,
   STATUS_TEXT,
+  PRIORITY_BADGE_CLASSES,
+  PRIORITY_TEXT,
   VISIBILITY_BADGE_CLASSES,
   VISIBILITY_INFO,
   UPLOAD_CONFIG,
 } from './constants';
 
-import type { KvpSuggestion, KvpStatus, OrgLevel } from './types';
+import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel } from './types';
 
 /**
  * Get status badge CSS class
@@ -27,6 +29,20 @@ export function getStatusText(status: KvpStatus): string {
 }
 
 /**
+ * Get priority badge CSS class
+ */
+export function getPriorityBadgeClass(priority: KvpPriority): string {
+  return PRIORITY_BADGE_CLASSES[priority];
+}
+
+/**
+ * Get priority display text
+ */
+export function getPriorityText(priority: KvpPriority): string {
+  return PRIORITY_TEXT[priority];
+}
+
+/**
  * Get visibility badge CSS class
  */
 export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
@@ -39,20 +55,28 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
  */
 export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
   // If not shared (private)
-  if (suggestion.isShared === 0) {
-    return { icon: 'fa-lock', text: 'Privat' };
+  if (!suggestion.isShared) {
+    return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
   // If shared, show org level info (Record guarantees all OrgLevel keys exist)
   const info = VISIBILITY_INFO[suggestion.orgLevel];
 
-  // Use specific name if available
+  // Use specific name if available (check for empty string)
   let text = info.text;
   if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
-  } else if (suggestion.orgLevel === 'area' && suggestion.areaName !== undefined) {
+  } else if (
+    suggestion.orgLevel === 'area' &&
+    suggestion.areaName !== undefined &&
+    suggestion.areaName !== ''
+  ) {
     text = suggestion.areaName;
-  } else if (suggestion.orgLevel === 'team' && suggestion.teamName !== undefined) {
+  } else if (
+    suggestion.orgLevel === 'team' &&
+    suggestion.teamName !== undefined &&
+    suggestion.teamName !== ''
+  ) {
     text = suggestion.teamName;
   }
 
@@ -160,15 +184,23 @@ export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: str
 
 /**
  * Check if user can unshare suggestion
+ * Allows unsharing for any shared suggestion (department, area, company)
+ * - Admin/Root can always unshare
+ * - Original sharer can unshare their own shares
  */
 export function canUnshareSuggestion(
   suggestion: KvpSuggestion,
   effectiveRole: string,
   currentUserId: number | undefined,
 ): boolean {
+  // Must be shared and not at team level (team is default, not "shared")
+  if (!suggestion.isShared || suggestion.orgLevel === 'team') {
+    return false;
+  }
+
+  // Admin/Root can always unshare, or the person who shared it
   return (
-    suggestion.orgLevel === 'company' &&
-    (effectiveRole === 'root' || suggestion.sharedBy === currentUserId)
+    effectiveRole === 'admin' || effectiveRole === 'root' || suggestion.sharedBy === currentUserId
   );
 }
 

@@ -31,6 +31,20 @@ services:
         reservations:
           cpus: "1.0"
           memory: 1G
+    # PostgreSQL Performance Configuration
+    # pg_stat_statements: Query performance tracking (essential for optimization)
+    # track_io_timing: I/O statistics per query
+    # Reference: https://www.postgresql.org/docs/17/pgstatstatements.html
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "track_io_timing=on"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -56,6 +70,10 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
+      args:
+        # Node/pnpm versions - configurable via .env (Single Source of Truth)
+        NODE_VERSION: ${NODE_VERSION_DEV:-24.13.0-alpine3.22}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.0}
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
@@ -287,6 +305,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.frontend
       args:
+        # Node/pnpm versions - configurable via .env (Single Source of Truth)
+        NODE_VERSION: ${NODE_VERSION_PROD:-24.13.0-alpine3.22}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.0}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     image: assixx-frontend:prod

@@ -65,30 +65,31 @@ interface DbIdRow extends QueryResultRow {
   id: number;
 }
 
+// NOTE: PostgreSQL returns COUNT(*) as bigint, which pg driver converts to string
 interface DbCountRow extends QueryResultRow {
-  total?: number;
-  count?: number;
-  unread_count?: number;
+  total?: string;
+  count?: string;
+  unread_count?: string;
 }
 
 interface DbTypeCountRow extends QueryResultRow {
   type: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 interface DbPriorityCountRow extends QueryResultRow {
   priority: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 interface DbReadRateRow extends QueryResultRow {
-  total_notifications: number;
-  read_notifications: number;
+  total_notifications: string; // PostgreSQL bigint → string
+  read_notifications: string; // PostgreSQL bigint → string
 }
 
 interface DbDateCountRow extends QueryResultRow {
   date: string;
-  count: number;
+  count: string; // PostgreSQL bigint → string
 }
 
 // ============================================================================
@@ -199,7 +200,7 @@ export class NotificationsService {
     tenantId: number,
     filters: NotificationFilters,
   ): Promise<PaginatedNotificationsResult> {
-    this.logger.log(`Listing notifications for user ${userId} in tenant ${tenantId}`);
+    this.logger.debug(`Listing notifications for user ${userId} in tenant ${tenantId}`);
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
@@ -449,7 +450,7 @@ export class NotificationsService {
    * Get notification preferences
    */
   async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
-    this.logger.log(`Getting preferences for user ${userId}`);
+    this.logger.debug(`Getting preferences for user ${userId}`);
 
     const rows = await this.db.query<DbNotificationPreferencesRow>(
       `SELECT * FROM notification_preferences
@@ -585,14 +586,14 @@ export class NotificationsService {
    * Get notification statistics (admin only)
    */
   async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
-    this.logger.log(`Getting statistics for tenant ${tenantId}`);
+    this.logger.debug(`Getting statistics for tenant ${tenantId}`);
 
-    // Total count
+    // Total count (PostgreSQL returns bigint as string)
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = $1`,
       [tenantId],
     );
-    const total = totalRows[0]?.total ?? 0;
+    const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // By type
     const byTypeRows = await this.db.query<DbTypeCountRow>(
@@ -618,10 +619,9 @@ export class NotificationsService {
       [tenantId],
     );
     const readRateData = readRateRows[0];
-    const readRate =
-      readRateData !== undefined && readRateData.total_notifications > 0 ?
-        readRateData.read_notifications / readRateData.total_notifications
-      : 0;
+    const totalNotifications = Number.parseInt(readRateData?.total_notifications ?? '0', 10);
+    const readNotifications = Number.parseInt(readRateData?.read_notifications ?? '0', 10);
+    const readRate = totalNotifications > 0 ? readNotifications / totalNotifications : 0;
 
     // Trends (last 30 days)
     const trendsRows = await this.db.query<DbDateCountRow>(
@@ -638,7 +638,10 @@ export class NotificationsService {
       byType,
       byPriority,
       readRate,
-      trends: trendsRows.map((row: DbDateCountRow) => ({ date: row.date, count: row.count })),
+      trends: trendsRows.map((row: DbDateCountRow) => ({
+        date: row.date,
+        count: Number.parseInt(row.count, 10),
+      })),
     };
   }
 
@@ -646,8 +649,6 @@ export class NotificationsService {
    * Get personal notification statistics
    */
   async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
-    this.logger.log(`Getting personal stats for user ${userId}`);
-
     // Total notifications for user
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications n
@@ -660,7 +661,7 @@ export class NotificationsService {
             OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))`,
       [tenantId, userId],
     );
-    const total = totalRows[0]?.total ?? 0;
+    const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // Unread count
     const unreadRows = await this.db.query<DbCountRow>(
@@ -676,12 +677,14 @@ export class NotificationsService {
        AND nrs.id IS NULL`,
       [tenantId, userId],
     );
-    const unread = unreadRows[0]?.unread_count ?? 0;
+    const unread = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
-    // By type
+    // By type (UNREAD only - for badge counts)
     const byTypeRows = await this.db.query<DbTypeCountRow>(
       `SELECT n.type, COUNT(*) as count FROM notifications n
+       LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
        WHERE n.tenant_id = $1
+       AND nrs.id IS NULL
        AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
             OR (n.recipient_type = 'department' AND n.recipient_id IN (
               SELECT ud.department_id FROM users u
@@ -694,6 +697,107 @@ export class NotificationsService {
     const byType = this.rowsToRecord(byTypeRows, (r: DbTypeCountRow) => r.type);
 
     return { total, unread, byType };
+  }
+
+  // ==========================================================================
+  // FEATURE NOTIFICATIONS (ADR-004)
+  // ==========================================================================
+
+  /**
+   * Create notification for feature event (survey, document, kvp)
+   * Called by SurveysService, DocumentsService, KvpService when creating items.
+   *
+   * @param type - 'survey' | 'document' | 'kvp'
+   * @param featureId - ID of the created feature
+   * @param title - Notification title
+   * @param message - Notification message
+   * @param recipientType - 'user' | 'department' | 'team' | 'all'
+   * @param recipientId - ID of recipient (null for 'all')
+   * @param tenantId - Tenant ID
+   * @param createdBy - User ID who created the feature
+   */
+  async createFeatureNotification(
+    type: 'survey' | 'document' | 'kvp',
+    featureId: number,
+    title: string,
+    message: string,
+    recipientType: 'user' | 'department' | 'team' | 'all',
+    recipientId: number | null,
+    tenantId: number,
+    createdBy: number,
+  ): Promise<void> {
+    try {
+      const notificationUuid = uuidv7();
+      await this.db.query(
+        `INSERT INTO notifications (
+          tenant_id, type, title, message, priority,
+          recipient_type, recipient_id, feature_id,
+          created_by, uuid, uuid_created_at
+        ) VALUES ($1, $2, $3, $4, 'normal', $5, $6, $7, $8, $9, NOW())
+        ON CONFLICT (tenant_id, type, feature_id, recipient_type, COALESCE(recipient_id, 0))
+        WHERE feature_id IS NOT NULL
+        DO NOTHING`,
+        [
+          tenantId,
+          type,
+          title,
+          message,
+          recipientType,
+          recipientId,
+          featureId,
+          createdBy,
+          notificationUuid,
+        ],
+      );
+      this.logger.log(`Created ${type} notification for feature ${featureId}`);
+    } catch (error) {
+      // Log but don't fail - notification is secondary to feature creation
+      this.logger.error(`Failed to create ${type} notification: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Mark all notifications of a feature type as read for a user.
+   * Called when user visits the feature page (e.g., /surveys).
+   *
+   * @param type - 'survey' | 'document' | 'kvp'
+   * @param userId - User ID
+   * @param tenantId - Tenant ID
+   * @returns Number of notifications marked as read
+   */
+  async markFeatureTypeAsRead(
+    type: 'survey' | 'document' | 'kvp',
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
+    this.logger.log(`Marking all ${type} notifications as read for user ${userId}`);
+
+    const result = await this.db.query<{ id: number }>(
+      `WITH unread_notifications AS (
+        SELECT n.id FROM notifications n
+        LEFT JOIN notification_read_status nrs
+          ON n.id = nrs.notification_id AND nrs.user_id = $2
+        WHERE n.tenant_id = $1
+          AND n.type = $3
+          AND nrs.id IS NULL
+          AND (n.recipient_type = 'all'
+               OR (n.recipient_type = 'user' AND n.recipient_id = $2)
+               OR (n.recipient_type = 'department' AND n.recipient_id IN
+                   (SELECT ud.department_id FROM users u
+                    LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+                    WHERE u.id = $2 AND u.tenant_id = $1))
+               OR (n.recipient_type = 'team' AND n.recipient_id IN
+                   (SELECT team_id FROM user_teams WHERE user_id = $2 AND tenant_id = $1)))
+      )
+      INSERT INTO notification_read_status (notification_id, user_id, tenant_id, read_at)
+      SELECT id, $2, $1, NOW() FROM unread_notifications
+      ON CONFLICT DO NOTHING
+      RETURNING id`,
+      [tenantId, userId, type],
+    );
+
+    this.logger.log(`Marked ${result.length} ${type} notifications as read`);
+    return result.length;
   }
 
   // ==========================================================================
@@ -809,7 +913,7 @@ export class NotificationsService {
       ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
     `;
     const countRows = await this.db.query<DbCountRow>(countQuery, [...params, userId]);
-    const total = countRows[0]?.total ?? 0;
+    const total = Number.parseInt(countRows[0]?.total ?? '0', 10);
 
     // Unread count
     const unreadQuery = `
@@ -819,7 +923,7 @@ export class NotificationsService {
       WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
     `;
     const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [...params, userId]);
-    const unreadCount = unreadRows[0]?.unread_count ?? 0;
+    const unreadCount = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     return { total, unreadCount };
   }
@@ -881,14 +985,15 @@ export class NotificationsService {
 
   /**
    * Convert database rows to record map
+   * NOTE: PostgreSQL COUNT() returns bigint as string, so we parse it
    */
-  private rowsToRecord<T extends { count: number }>(
+  private rowsToRecord<T extends { count: string }>(
     rows: T[],
     keyFn: (row: T) => string,
   ): Record<string, number> {
     const result: Record<string, number> = {};
     for (const row of rows) {
-      result[keyFn(row)] = row.count;
+      result[keyFn(row)] = Number.parseInt(row.count, 10);
     }
     return result;
   }

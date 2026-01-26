@@ -19,7 +19,9 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { tenantDeletionService } from '../../services/tenantDeletion.service.js';
 import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { UserRepository } from '../database/repositories/user.repository.js';
 
 // ============================================================================
 // CONSTANTS
@@ -76,12 +78,20 @@ interface DbTenantRow {
   updated_at: Date;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg driver serializes as STRING!
+ * ALWAYS use Number() when using this value in arithmetic operations.
+ */
 interface DbCountRow {
-  count: number;
+  count: string | number; // pg returns string for bigint, but might be number in tests
 }
 
+/**
+ * PostgreSQL SUM() returns numeric which pg driver may serialize as STRING.
+ * ALWAYS use Number() when using this value in arithmetic operations.
+ */
 interface DbStorageTotalRow {
-  total: number;
+  total: string | number;
 }
 
 interface DbFeatureCodeRow {
@@ -327,7 +337,11 @@ export interface UpdateRootUserRequest {
 export class RootService {
   private readonly logger = new Logger(RootService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+    private readonly userRepository: UserRepository,
+  ) {}
 
   // ==========================================================================
   // ADMIN MANAGEMENT
@@ -337,13 +351,14 @@ export class RootService {
    * Get all admin users for a tenant
    */
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
-    this.logger.log(`Getting admins for tenant ${tenantId}`);
+    this.logger.debug(`Getting admins for tenant ${tenantId}`);
 
+    // SECURITY: Only return active admins (is_active = 1)
     const admins = await this.db.query<DbUserRow>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.role = 'admin' AND u.tenant_id = $1
+       WHERE u.role = 'admin' AND u.tenant_id = $1 AND u.is_active = 1
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -355,13 +370,14 @@ export class RootService {
    * Get single admin by ID
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
-    this.logger.log(`Getting admin ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Getting admin ${id} for tenant ${tenantId}`);
 
+    // SECURITY: Only return active admins (is_active = 1)
     const rows = await this.db.query<DbUserRow & { tenant_name?: string }>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2`,
+       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2 AND u.is_active = 1`,
       [id, tenantId],
     );
 
@@ -389,7 +405,11 @@ export class RootService {
   /**
    * Create new admin user
    */
-  async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
+  async createAdmin(
+    data: CreateAdminRequest,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<number> {
     this.logger.log(`Creating admin for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -424,6 +444,21 @@ export class RootService {
       if (userId === undefined) {
         throw new BadRequestException('Failed to create admin');
       }
+
+      // Log activity
+      await this.activityLogger.logCreate(
+        tenantId,
+        actingUserId,
+        'user',
+        userId,
+        `Admin erstellt: ${normalizedEmail} (Rolle: admin)`,
+        {
+          email: normalizedEmail,
+          role: 'admin',
+          firstName: data.firstName ?? '',
+          lastName: data.lastName ?? '',
+        },
+      );
 
       return userId;
     } catch (error: unknown) {
@@ -472,7 +507,7 @@ export class RootService {
   /**
    * Delete admin user
    */
-  async deleteAdmin(id: number, tenantId: number): Promise<void> {
+  async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
     this.logger.log(`Deleting admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
@@ -481,6 +516,21 @@ export class RootService {
       throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Admin not found' });
     }
 
+    // Log activity BEFORE deleting
+    await this.activityLogger.logDelete(
+      tenantId,
+      actingUserId,
+      'user',
+      id,
+      `Admin gelöscht: ${admin.email}`,
+      {
+        email: admin.email,
+        role: 'admin',
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+      },
+    );
+
     await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
 
@@ -488,7 +538,7 @@ export class RootService {
    * Get admin logs
    */
   async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
-    this.logger.log(`Getting logs for admin ${adminId}`);
+    this.logger.debug(`Getting logs for admin ${adminId}`);
 
     // Verify admin exists
     const admin = await this.getAdminById(adminId, tenantId);
@@ -518,7 +568,7 @@ export class RootService {
    * Get tenants - ONLY the root user's own tenant for security
    */
   async getTenants(tenantId: number): Promise<Tenant[]> {
-    this.logger.log(`Getting tenants for tenant ${tenantId}`);
+    this.logger.debug(`Getting tenants for tenant ${tenantId}`);
 
     // Only return user's own tenant (multi-tenant isolation)
     const tenants = await this.db.query<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
@@ -529,18 +579,12 @@ export class RootService {
       return [];
     }
 
-    // Get additional stats
+    // Get additional stats - SECURITY: Use UserRepository for accurate active user counts
     return await Promise.all(
       tenants.map(async (tenant: DbTenantRow) => {
         const [adminCount, employeeCount, storageUsed] = await Promise.all([
-          this.db.query<DbCountRow>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
-            [tenant.id],
-          ),
-          this.db.query<DbCountRow>(
-            "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
-            [tenant.id],
-          ),
+          this.userRepository.countByRole('admin', tenant.id),
+          this.userRepository.countByRole('employee', tenant.id),
           this.db.query<DbStorageTotalRow>(
             'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
             [tenant.id],
@@ -555,9 +599,9 @@ export class RootService {
           status: tenant.status as Tenant['status'],
           createdAt: tenant.created_at,
           updatedAt: tenant.updated_at,
-          adminCount: adminCount[0]?.count ?? 0,
-          employeeCount: employeeCount[0]?.count ?? 0,
-          storageUsed: storageUsed[0]?.total ?? 0,
+          adminCount,
+          employeeCount,
+          storageUsed: Number(storageUsed[0]?.total ?? 0),
         };
       }),
     );
@@ -571,13 +615,14 @@ export class RootService {
    * Get all root users for a tenant
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
-    this.logger.log(`Getting root users for tenant ${tenantId}`);
+    this.logger.debug(`Getting root users for tenant ${tenantId}`);
 
+    // SECURITY: Only return active root users (is_active = 1)
     const users = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.role = 'root' AND u.tenant_id = $1
+       WHERE u.role = 'root' AND u.tenant_id = $1 AND u.is_active = 1
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -589,13 +634,14 @@ export class RootService {
    * Get single root user
    */
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
-    this.logger.log(`Getting root user ${id} for tenant ${tenantId}`);
+    this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
+    // SECURITY: Only return active root users (is_active = 1)
     const rows = await this.db.query<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2`,
+       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2 AND u.is_active = 1`,
       [id, tenantId],
     );
 
@@ -610,7 +656,11 @@ export class RootService {
   /**
    * Create root user
    */
-  async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
+  async createRootUser(
+    data: CreateRootUserRequest,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<number> {
     this.logger.log(`Creating root user for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -652,6 +702,22 @@ export class RootService {
     // Generate and update employee_id
     const employeeId = generateEmployeeId(subdomain, 'root', userId);
     await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
+
+    // Log activity
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Root-User erstellt: ${normalizedEmail} (Rolle: root)`,
+      {
+        email: normalizedEmail,
+        role: 'root',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        hasFullAccess: true,
+      },
+    );
 
     return userId;
   }
@@ -708,18 +774,33 @@ export class RootService {
       throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Root user not found' });
     }
 
-    // Check if at least one root user will remain
+    // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
     const rootCount = await this.db.query<DbCountRow>(
-      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2",
+      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = 1",
       [tenantId, id],
     );
 
-    if ((rootCount[0]?.count ?? 0) < 1) {
+    if (Number(rootCount[0]?.count ?? 0) < 1) {
       throw new BadRequestException({
         code: ERROR_CODES.LAST_ROOT_USER,
         message: 'At least one root user must remain',
       });
     }
+
+    // Log activity BEFORE deleting
+    await this.activityLogger.logDelete(
+      tenantId,
+      currentUserId,
+      'user',
+      id,
+      `Root-User gelöscht: ${user.email}`,
+      {
+        email: user.email,
+        role: 'root',
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    );
 
     // Delete related data first (foreign key constraints)
     await this.db.query('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
@@ -747,18 +828,13 @@ export class RootService {
    * Get dashboard statistics
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
-    this.logger.log(`Getting dashboard stats for tenant ${tenantId}`);
+    this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
-    // Get counts in parallel
-    const [adminCount, employeeCount, tenantCount, features] = await Promise.all([
-      this.db.query<DbCountRow>(
-        "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'admin'",
-        [tenantId],
-      ),
-      this.db.query<DbCountRow>(
-        "SELECT COUNT(*) as count FROM users WHERE tenant_id = $1 AND role = 'employee'",
-        [tenantId],
-      ),
+    // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
+    const [adminCount, employeeCount, totalUserCount, tenantCount, features] = await Promise.all([
+      this.userRepository.countByRole('admin', tenantId),
+      this.userRepository.countByRole('employee', tenantId),
+      this.userRepository.countAll(tenantId),
       this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
       this.db.query<DbFeatureCodeRow>(
         `SELECT f.code FROM tenant_features tf
@@ -768,11 +844,13 @@ export class RootService {
       ),
     ]);
 
+    const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
+
     return {
-      adminCount: adminCount[0]?.count ?? 0,
-      employeeCount: employeeCount[0]?.count ?? 0,
-      totalUsers: (adminCount[0]?.count ?? 0) + (employeeCount[0]?.count ?? 0) + 1,
-      tenantCount: tenantCount[0]?.count ?? 0,
+      adminCount,
+      employeeCount,
+      totalUsers: totalUserCount,
+      tenantCount: tenantCountNum,
       activeFeatures: features.map((f: DbFeatureCodeRow) => f.code),
       systemHealth: {
         database: 'healthy',
@@ -786,7 +864,7 @@ export class RootService {
    * Get storage information
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
-    this.logger.log(`Getting storage info for tenant ${tenantId}`);
+    this.logger.debug(`Getting storage info for tenant ${tenantId}`);
 
     // Get tenant plan
     const tenant = await this.db.query<DbTenantRow>(
@@ -824,9 +902,10 @@ export class RootService {
       ),
     ]);
 
-    const documents = documentsSize[0]?.total ?? 0;
-    const attachments = attachmentsSize[0]?.total ?? 0;
-    const logs = logsSize[0]?.total ?? 0;
+    // PostgreSQL SUM() returns bigint/numeric as string - must convert
+    const documents = Number(documentsSize[0]?.total ?? 0);
+    const attachments = Number(attachmentsSize[0]?.total ?? 0);
+    const logs = Number(logsSize[0]?.total ?? 0);
     const usedStorage = documents + attachments + logs;
     const percentage = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
@@ -859,13 +938,10 @@ export class RootService {
   ): Promise<number> {
     this.logger.log(`Requesting tenant deletion for tenant ${tenantId}`);
 
-    // Check if there are at least 2 root users
-    const rootCount = await this.db.query<DbCountRow>(
-      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1",
-      [tenantId],
-    );
+    // SECURITY: Check if there are at least 2 ACTIVE root users (is_active = 1)
+    const rootCount = await this.userRepository.countByRole('root', tenantId);
 
-    if ((rootCount[0]?.count ?? 0) < 2) {
+    if (rootCount < 2) {
       throw new BadRequestException({
         code: ERROR_CODES.INSUFFICIENT_ROOT_USERS,
         message: 'At least 2 root users required before tenant deletion',
@@ -899,7 +975,7 @@ export class RootService {
     tenantId: number,
     currentUserId?: number,
   ): Promise<TenantDeletionStatus | null> {
-    this.logger.log(`Getting deletion status for tenant ${tenantId}`);
+    this.logger.debug(`Getting deletion status for tenant ${tenantId}`);
 
     const deletions = await this.db.query<DbDeletionQueueRow>(
       `SELECT dq.*, t.company_name, u.username as requested_by_name
@@ -992,7 +1068,7 @@ export class RootService {
    * Get all deletion requests
    */
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
-    this.logger.log('Getting all deletion requests');
+    this.logger.debug('Getting all deletion requests');
 
     const deletions = await this.db.query<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email
@@ -1020,7 +1096,7 @@ export class RootService {
    * Get pending approvals
    */
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
-    this.logger.log(`Getting pending approvals for user ${currentUserId}`);
+    this.logger.debug(`Getting pending approvals for user ${currentUserId}`);
 
     const approvals = await this.db.query<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email
@@ -1061,15 +1137,17 @@ export class RootService {
     this.logger.log(`Approving deletion ${queueId} - verifying user password`);
 
     // SECURITY: Get user's password hash for verification
+    // IMPORTANT: Only allow ACTIVE users (is_active = 1) to approve deletions
+    // TODO: Add tenantId parameter to use UserRepository.getPasswordHash() for full isolation
     const users = await this.db.query<{ password: string | null }>(
-      'SELECT password FROM users WHERE id = $1',
+      'SELECT password FROM users WHERE id = $1 AND is_active = 1',
       [userId],
     );
 
     const userRecord = users[0];
     if (userRecord === undefined) {
-      this.logger.error(`User ${userId} not found for deletion approval`);
-      throw new Error('User not found');
+      this.logger.error(`User ${userId} not found or inactive for deletion approval`);
+      throw new Error('User not found or inactive');
     }
 
     // SECURITY: Verify the password matches
@@ -1110,15 +1188,13 @@ export class RootService {
   // ==========================================================================
 
   /**
-   * Check for duplicate email
+   * Check for duplicate email among ACTIVE users
+   * SECURITY: Uses UserRepository which filters by is_active = 1
    */
   private async checkDuplicateEmail(email: string, tenantId: number): Promise<void> {
-    const existing = await this.db.query<DbIdRow>(
-      'SELECT id FROM users WHERE email = $1 AND tenant_id = $2',
-      [email, tenantId],
-    );
+    const isTaken = await this.userRepository.isEmailTaken(email, tenantId);
 
-    if (existing.length > 0) {
+    if (isTaken) {
       throw new ConflictException({
         code: ERROR_CODES.DUPLICATE_EMAIL,
         message: 'Email already in use',

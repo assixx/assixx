@@ -71,8 +71,7 @@ export class SignupService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<SignupResponseData> {
-    this.logger.log(`Starting tenant registration: ${dto.companyName} (${dto.subdomain})`);
-
+    // Validation (no logging needed - errors throw)
     this.validateSubdomainOrThrow(dto.subdomain);
     await this.ensureSubdomainAvailable(dto.subdomain);
 
@@ -87,7 +86,11 @@ export class SignupService {
         ipAddress,
         userAgent,
       );
-      this.logger.log(`Tenant registration successful: ${dto.subdomain} (ID: ${result.tenantId})`);
+
+      // ONE log per operation - all relevant info in one line
+      this.logger.log(
+        `Tenant registered: "${dto.companyName}" (${dto.subdomain}) | tenant=${result.tenantId} user=${result.userId}`,
+      );
 
       return {
         tenantId: result.tenantId,
