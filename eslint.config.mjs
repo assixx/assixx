@@ -493,10 +493,33 @@ export default [
   },
 
   // =============================================================================
-  // PostgreSQL Migrations
+  // PostgreSQL Migrations - TypeScript parser for root-level database/ directory
+  // ADR-014: node-pg-migrate migrations live in database/migrations/*.ts
+  // No projectService needed - migrations are simple pgm.sql() wrappers
   // =============================================================================
   {
-    files: ['backend/src/database/migrations/**/*.ts', 'migration/**/*.ts'],
+    files: ['database/migrations/**/*.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
+  },
+
+  // =============================================================================
+  // PostgreSQL Migrations - Relaxed rules for all migration locations
+  // =============================================================================
+  {
+    files: [
+      'backend/src/database/migrations/**/*.ts',
+      'migration/**/*.ts',
+      'database/migrations/**/*.ts',
+    ],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',

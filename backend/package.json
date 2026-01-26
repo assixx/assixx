@@ -16,9 +16,6 @@
     "prettier": "prettier --check src/**/*.ts",
     "prettier:fix": "prettier --write src/**/*.ts",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node scripts/run-migration.js",
-    "db:seed": "node scripts/seed-database.js",
-    "setup:dev": "npm run build && npm run db:migrate && npm run db:seed",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"

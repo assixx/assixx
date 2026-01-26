@@ -100,7 +100,14 @@
     "test:api:auth": "cd api-tests && bru run auth --env local",
     "prepare": "husky",
     "knip": "knip",
-    "knip:fix": "knip --fix"
+    "knip:fix": "knip --fix",
+    "db:migrate": "node-pg-migrate -m database/migrations",
+    "db:migrate:up": "node-pg-migrate up -m database/migrations",
+    "db:migrate:down": "node-pg-migrate down -m database/migrations",
+    "db:migrate:create": "node-pg-migrate create -j ts -m database/migrations",
+    "db:migrate:redo": "node-pg-migrate redo -m database/migrations",
+    "db:migrate:dry": "node-pg-migrate up --dry-run -m database/migrations",
+    "db:seed": "./scripts/run-seeds.sh"
   },
   "keywords": [
     "assixx",
@@ -145,6 +152,7 @@
     "husky": "9.1.7",
     "knip": "5.82.1",
     "markdownlint-cli": "^0.47.0",
+    "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.11",
     "prettier": "^3.8.1",
     "prettier-plugin-css-order": "^2.2.0",

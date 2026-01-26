@@ -1,0 +1,10 @@
+{
+  "migrationsDir": "database/migrations",
+  "migrationsTable": "pgmigrations",
+  "schema": "public",
+  "checkOrder": true,
+  "verbose": true,
+  "decamelize": true,
+  "migrationFilenameFormat": "utc",
+  "migrationFileLanguage": "ts"
+}

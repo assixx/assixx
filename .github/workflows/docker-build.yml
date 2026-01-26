@@ -67,10 +67,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # TEMPORARILY DISABLED: GitHub Actions Cache service having 502/504 errors (2026-01-13)
-          # Re-enable when GitHub's cache service is stable again
-          # cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   integration-test-docker-compose:
     runs-on: ubuntu-latest
@@ -229,30 +227,26 @@ jobs:
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run Trivy vulnerability scanner
+      - name: Check for critical vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          # Use lowercase repository name for Docker registry compatibility
-          # Tag must match docker/metadata-action output (pr-<number> for PRs)
+          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL"
+
+      - name: Generate vulnerability report
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
-        continue-on-error: true # Keep for now to not break CI
-
-      - name: Check if SARIF file exists
-        id: check_sarif
-        run: |
-          if [ -f "trivy-results.sarif" ]; then
-            echo "sarif_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "sarif_exists=false" >> $GITHUB_OUTPUT
-          fi
-        continue-on-error: true
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v4
-        if: steps.check_sarif.outputs.sarif_exists == 'true'
+        if: always()
         with:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true
