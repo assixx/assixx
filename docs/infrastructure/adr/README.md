@@ -33,6 +33,9 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-008](./ADR-008-dependency-version-management.md)    | Dependency Version Management      | Accepted | 2026-01-15 |
 | [ADR-009](./ADR-009-user-role-assignment-permissions.md) | User Role Assignment & Permissions | Accepted | 2026-01-22 |
 | [ADR-011](./ADR-011-shift-data-architecture.md)          | Shift Data Architecture & Sync     | Accepted | 2026-01-25 |
+| [ADR-012](./ADR-012-frontend-route-security-groups.md)   | Frontend Route Security Groups     | Accepted | 2026-01-26 |
+| [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)         | CI/CD Pipeline Hardening           | Accepted | 2026-01-26 |
+| [ADR-014](./ADR-014-database-migration-architecture.md)  | Database & Migration Architecture  | Accepted | 2026-01-27 |
 
 ## Template
 

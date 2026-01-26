@@ -1,12 +1,7 @@
 #!/bin/bash
 
 # Assixx Development Status Check
-# Führt alle wichtigen Checks in einem Script aus
-# Tests werden IMMER automatisch ausgeführt
-
-# Tests immer ausführen - keine Option zum Überspringen
-# RUN_TESTS=true  # Auskommentiert - Tests werden nicht mehr automatisch ausgeführt
-RUN_TESTS=false
+# Prüft Docker, API, Git, Code Quality
 
 echo "🚀 Assixx Development Status Check"
 echo "=================================="
@@ -89,7 +84,6 @@ fi
 echo -n "   🏗️  TypeScript Check... "
 if docker exec assixx-backend pnpm run type-check > /dev/null 2>&1; then
     echo -e "${GREEN}✅${NC}"
-    echo -e "   ${YELLOW}ℹ️  56 Test-Fehler bekannt (werden ignoriert)${NC}"
 else
     echo -e "${RED}❌ TypeScript Fehler${NC}"
     HAS_ERRORS=true
@@ -108,32 +102,8 @@ echo ""
 
 # 5. Test Status
 echo "5️⃣  Test Status:"
-echo "   📊 Test-Strategie: Klare Trennung GitHub/Lokal"
-echo ""
-
-# GitHub Actions Tests
-echo "   🌐 GitHub Actions (Automatisch bei Push/PR):"
-echo "      • Unit Tests: 2 Tests (errorHandler, health)"
-echo "      • Code Quality: TypeScript, ESLint, Prettier"
-echo "      • Docker Build Test"
-echo ""
-
-# Lokale Tests
-echo "   🏠 Lokale Tests (Mit Docker MySQL):"
-echo "      • DB Tests: 17 Integration Tests"
-echo "      • Nutzt Hauptdatenbank 'main'"
-echo "      • Keine Mocks, nur echte DB"
-echo ""
-
-# Quick Test Command
-echo "   ${YELLOW}→ Tests lokal ausführen: ./scripts/test-local.sh${NC}"
-echo ""
-
-# 6. Aktuelle Phase
-echo "6️⃣  Aktuelle Phase:"
-echo "   🎯 Version 0.1.0 - Systematisches Testing & Debugging"
-echo "   👤 Verantwortlich: Simon"
-echo "   📊 Fortschritt: 0/12 Bereiche getestet"
+echo "   📊 API Tests: pnpm run test:api (Bruno, 169 Tests)"
+echo "   📊 CI: code-quality-checks.yml (Backend + Frontend)"
 echo ""
 
 # Zusammenfassung
@@ -154,108 +124,3 @@ else
 fi
 echo ""
 
-# 7. Automatischer Test-Durchlauf (IMMER)
-# if [ "$RUN_TESTS" = true ]; then  # Auskommentiert - Tests deaktiviert
-if [ "$RUN_TESTS" = true ]; then
-    echo "7️⃣  Automatischer Test-Durchlauf:"
-    echo "=================================="
-    echo ""
-    
-    # Arrays für Test-Tracking
-    declare -a PASSED_TESTS=()
-    declare -a FAILED_TESTS=()
-    declare -a SKIPPED_TESTS=()
-    
-    # Unit Tests (GitHub Actions)
-    echo "   🌐 Unit Tests (auch auf GitHub):"
-    UNIT_TESTS=(
-        "errorHandler.test.ts"
-        "health.test.ts"
-    )
-    
-    for test in "${UNIT_TESTS[@]}"; do
-        echo -n "      • $test ... "
-        if docker exec -w /app/backend assixx-backend pnpm test "$test" > /tmp/test-$test.log 2>&1; then
-            echo -e "${GREEN}✅ PASSED${NC}"
-            PASSED_TESTS+=("$test")
-        else
-            echo -e "${RED}❌ FAILED${NC}"
-            FAILED_TESTS+=("$test")
-        fi
-    done
-    echo ""
-    
-    # DB Tests (Nur lokal)
-    echo "   🏠 Integration Tests (DB erforderlich):"
-    DB_TESTS=(
-        "auth.test.ts"
-        "auth-refactored.test.ts"
-        "users.test.ts"
-        "teams.test.ts"
-        "departments.test.ts"
-        "shifts.test.ts"
-        "calendar.test.ts"
-        "chat.test.ts"
-        "notifications.test.ts"
-        "surveys.test.ts"
-        "kvp.test.ts"
-        "signup.test.ts"
-        "blackboard.integration.test.ts"
-        "tenantDeletion.integration.test.ts"
-        "blackboard.test.ts"
-        "tenantDeletion.service.test.ts"
-        "documents.test.ts"
-    )
-    
-    for test in "${DB_TESTS[@]}"; do
-        echo -n "      • $test ... "
-        # Documents test ist bekannt problematisch
-        if [ "$test" = "documents.test.ts" ]; then
-            echo -e "${YELLOW}⏭️  SKIPPED (Known issue)${NC}"
-            SKIPPED_TESTS+=("$test")
-        else
-            if docker exec -w /app/backend -e DB_NAME=main -e NODE_ENV=production assixx-backend pnpm test "$test" > /tmp/test-$test.log 2>&1; then
-                echo -e "${GREEN}✅ PASSED${NC}"
-                PASSED_TESTS+=("$test")
-            else
-                echo -e "${RED}❌ FAILED${NC}"
-                FAILED_TESTS+=("$test")
-                # Optional: Zeige erste Fehlerzeile
-                ERROR_LINE=$(grep -m1 "FAIL\|Error\|Expected" /tmp/test-$test.log 2>/dev/null || echo "")
-                if [ ! -z "$ERROR_LINE" ]; then
-                    echo "        └─ $ERROR_LINE"
-                fi
-            fi
-        fi
-    done
-    echo ""
-    
-    # Test-Zusammenfassung
-    echo "   📊 Test-Zusammenfassung:"
-    echo "   ════════════════════════"
-    TOTAL_TESTS=$((${#PASSED_TESTS[@]} + ${#FAILED_TESTS[@]} + ${#SKIPPED_TESTS[@]}))
-    echo -e "   Total Tests: $TOTAL_TESTS"
-    echo -e "   ${GREEN}✅ Passed: ${#PASSED_TESTS[@]}${NC}"
-    echo -e "   ${RED}❌ Failed: ${#FAILED_TESTS[@]}${NC}"
-    echo -e "   ${YELLOW}⏭️  Skipped: ${#SKIPPED_TESTS[@]}${NC}"
-    echo ""
-    
-    # Erfolgsrate
-    if [ ${#FAILED_TESTS[@]} -eq 0 ] && [ ${#SKIPPED_TESTS[@]} -eq 0 ]; then
-        echo -e "   ${GREEN}🎉 Alle Tests erfolgreich!${NC}"
-    elif [ ${#FAILED_TESTS[@]} -eq 0 ]; then
-        echo -e "   ${YELLOW}⚠️  Tests mit Warnungen (${#SKIPPED_TESTS[@]} übersprungen)${NC}"
-    else
-        echo -e "   ${RED}❌ ${#FAILED_TESTS[@]} Tests fehlgeschlagen!${NC}"
-        echo ""
-        echo "   Fehlgeschlagene Tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo "   - $test"
-        done
-    fi
-    echo ""
-    echo "   💡 Tipp: Logs unter /tmp/test-*.log für Details"
-    echo ""
-fi
-# Tests werden immer ausgeführt - kein else-Zweig mehr nötig
-# Tests sind jetzt auskommentiert und werden nicht mehr automatisch ausgeführt

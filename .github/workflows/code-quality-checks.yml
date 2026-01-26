@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  linting-and-formatting:
+  backend-quality:
     runs-on: ubuntu-latest
-    name: Linting & Formatting (ESLint, Prettier, TypeScript)
+    name: Backend (TypeScript, ESLint, Prettier)
     permissions:
       contents: read
 
@@ -31,23 +31,51 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run TypeScript check
-        run: |
-          cd backend
-          pnpm run typecheck
+        run: cd backend && pnpm run typecheck
 
       - name: Run ESLint
-        run: |
-          cd backend
-          pnpm run lint
+        run: cd backend && pnpm run lint
 
       - name: Check formatting
-        run: |
-          cd backend
-          pnpm run prettier
+        run: cd backend && pnpm run prettier
+
+  frontend-quality:
+    runs-on: ubuntu-latest
+    name: Frontend (Svelte Check, ESLint, Prettier, Stylelint)
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Svelte Check (TypeScript + Svelte)
+        run: cd frontend && pnpm run check
+
+      - name: Run ESLint
+        run: cd frontend && pnpm run lint
+
+      - name: Check formatting
+        run: cd frontend && pnpm run format:check
+
+      - name: Run Stylelint
+        run: pnpm run stylelint
 
   docker-build-verification:
     runs-on: ubuntu-latest

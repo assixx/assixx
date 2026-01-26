@@ -1,11 +1,14 @@
 /**
  * SvelteKit Server Hooks
  *
- * - Role-Based Access Control (RBAC) - SECURITY CRITICAL
+ * - Authentication Gate - Validates tokens for all non-public routes
  * - Sentry error tracking integration
  * - Pino request logging (to Loki)
  * - HTML Minification for Production Builds
  *
+ * SECURITY: Authorization (role checks) is handled by route group layouts.
+ * This hook only handles Authentication (token validation + user data fetch).
+ * @see ADR-012: Frontend Route Security Groups
  * @see https://kit.svelte.dev/docs/hooks#server-hooks
  * @see https://docs.sentry.io/platforms/javascript/guides/sveltekit/
  */
@@ -22,7 +25,7 @@ import { createLogger } from '$lib/utils/logger';
 const log = createLogger('hooks.server');
 
 // ============================================================================
-// RBAC - Role-Based Access Control
+// Authentication Gate
 // ============================================================================
 
 /** User role type - matches backend UserRole enum */
@@ -31,53 +34,10 @@ type UserRole = 'root' | 'admin' | 'employee';
 /** API base URL for server-side fetching */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-/**
- * Route → Required roles mapping
- *
- * IMPORTANT: Routes not listed here allow ALL authenticated users.
- * Keep this list updated when adding new admin/root routes!
- */
-const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
-  // ROOT ONLY - System administration
-  '/root-dashboard': ['root'],
-  '/root-profile': ['root'],
-  '/manage-root': ['root'],
-  '/logs': ['root'],
-
-  // ADMIN + ROOT - Tenant management
-  '/admin-dashboard': ['admin', 'root'],
-  '/admin-profile': ['admin', 'root'],
-  '/manage-employees': ['admin', 'root'],
-  '/manage-admins': ['admin', 'root'],
-  '/manage-teams': ['admin', 'root'],
-  '/manage-departments': ['admin', 'root'],
-  '/manage-areas': ['admin', 'root'],
-  '/manage-machines': ['admin', 'root'],
-  '/features': ['admin', 'root'],
-  '/survey-admin': ['admin', 'root'],
-  '/survey-results': ['admin', 'root'],
-  '/shifts': ['employee', 'admin', 'root'],
-  '/storage-upgrade': ['admin', 'root'],
-  '/tenant-deletion-status': ['admin', 'root'],
-
-  // ALL AUTHENTICATED USERS - enables FAST PATH optimization
-  // (RBAC fetches user once, layout reuses it - saves ~50-80ms)
-  '/employee-dashboard': ['employee', 'admin', 'root'],
-  '/employee-profile': ['employee', 'admin', 'root'],
-  '/chat': ['employee', 'admin', 'root'],
-  '/blackboard': ['employee', 'admin', 'root'],
-  '/calendar': ['employee', 'admin', 'root'],
-  '/documents-explorer': ['employee', 'admin', 'root'],
-  '/kvp': ['employee', 'admin', 'root'],
-  '/kvp-detail': ['employee', 'admin', 'root'],
-  '/survey-employee': ['employee', 'admin', 'root'],
-  '/account-settings': ['employee', 'admin', 'root'],
-};
-
 /** Public routes - no authentication required */
 const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
 
-/** Routes to skip RBAC check (internal, assets, API proxy) */
+/** Routes to skip authentication check (internal, assets, API proxy) */
 const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];
 
 /** User data structure from API */
@@ -104,8 +64,8 @@ interface ApiUserResponse {
   hasFullAccess?: boolean;
 }
 
-/** Check if path should skip RBAC */
-function shouldSkipRbac(pathname: string): boolean {
+/** Check if path should skip authentication */
+function shouldSkipAuth(pathname: string): boolean {
   if (SKIP_ROUTES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return true;
   }
@@ -113,23 +73,6 @@ function shouldSkipRbac(pathname: string): boolean {
     return true;
   }
   return false;
-}
-
-/** Find required roles for a path */
-function getRequiredRoles(pathname: string): UserRole[] | null {
-  // Check exact match using Object.hasOwn for proper type narrowing
-  if (Object.hasOwn(ROUTE_PERMISSIONS, pathname)) {
-    return ROUTE_PERMISSIONS[pathname];
-  }
-
-  // Check prefix match for dynamic routes
-  for (const [route, roles] of Object.entries(ROUTE_PERMISSIONS)) {
-    if (pathname.startsWith(route + '/')) {
-      return roles;
-    }
-  }
-
-  return null;
 }
 
 /** Extract user data from API response */
@@ -180,63 +123,49 @@ function isRedirectError(err: unknown): boolean {
 }
 
 /**
- * Role-Based Access Control Hook
+ * Authentication Hook
  *
- * SECURITY: This is the first line of defense!
- * Checks user role BEFORE page load and redirects if unauthorized.
+ * SECURITY: Validates auth token and fetches user data for all protected routes.
+ * Authorization (role checks) is handled by route group layouts.
+ * @see ADR-012: Frontend Route Security Groups
  */
-const rbacHandle: Handle = async ({ event, resolve }) => {
+const authHandle: Handle = async ({ event, resolve }) => {
   const { pathname } = event.url;
 
-  // Skip routes that don't need RBAC
-  if (shouldSkipRbac(pathname)) {
+  // Skip routes that don't need authentication
+  if (shouldSkipAuth(pathname)) {
     return await resolve(event);
   }
 
   // Check for auth token
   const token = event.cookies.get('accessToken');
   if (token === undefined || token === '') {
-    log.debug({ pathname }, 'RBAC: No token, redirecting to login');
+    log.debug({ pathname }, 'Auth: No token, redirecting to login');
     redirect(302, '/login');
   }
 
-  // Check if route requires specific roles
-  const requiredRoles = getRequiredRoles(pathname);
-  if (requiredRoles === null) {
-    return await resolve(event);
-  }
-
-  // Verify user role - capture locals reference before async operation
+  // Fetch user data for downstream layouts (FAST PATH optimization)
   const locals = event.locals;
 
   try {
     const userData = await fetchUserData(token);
 
     if (userData === null) {
-      log.warn({ pathname }, 'RBAC: Failed to fetch user data');
+      log.warn({ pathname }, 'Auth: Failed to fetch user data');
       event.cookies.delete('accessToken', { path: '/' });
       event.cookies.delete('refreshToken', { path: '/api/v2/auth' });
       redirect(302, '/login');
     }
 
-    // Store user in locals (reference captured before await)
+    // Store user in locals — group layouts access via parent()
     locals.user = userData;
 
-    // Check permission
-    if (!requiredRoles.includes(userData.role)) {
-      log.warn(
-        { pathname, userRole: userData.role, requiredRoles },
-        `RBAC: Access denied - ${userData.role} tried to access ${pathname}`,
-      );
-      redirect(302, '/permission-denied');
-    }
-
-    log.debug({ pathname, userRole: userData.role }, 'RBAC: Access granted');
+    log.debug({ pathname, userRole: userData.role }, 'Auth: User authenticated');
   } catch (err) {
     if (isRedirectError(err)) {
       throw err;
     }
-    log.error({ err, pathname }, 'RBAC: Error checking permissions');
+    log.error({ err, pathname }, 'Auth: Error during authentication');
     redirect(302, '/login');
   }
 
@@ -335,11 +264,12 @@ const htmlMinificationHandle: Handle = async ({ event, resolve }) => {
 /**
  * Combined handle hook
  *
- * Order: Sentry → RBAC → Logging → Minification
+ * Order: Sentry → Auth → Logging → Minification
+ * Authorization is handled by route group layouts (@see ADR-012)
  */
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
-  rbacHandle,
+  authHandle,
   requestLoggingHandle,
   htmlMinificationHandle,
 );
