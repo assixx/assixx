@@ -79,42 +79,6 @@
 }
 
 /* ========================================
-   KVP-SPECIFIC: Visibility Badges
-   ======================================== */
-
-.visibility-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-
-  margin-top: var(--spacing-2);
-  border-radius: var(--radius-xl);
-
-  font-size: 0.75rem;
-}
-
-.visibility-badge.department {
-  border: 1px solid rgb(78 205 196 / 50%);
-  background: rgb(78 205 196 / 20%);
-  padding: 6px 12px;
-  color: #4ecdc4;
-}
-
-.visibility-badge.company {
-  border: 1px solid rgb(102 126 234 / 50%);
-  background: rgb(102 126 234 / 20%);
-  padding: 6px 12px;
-  color: #667eea;
-}
-
-.visibility-badge.team {
-  border: 1px solid rgb(255 159 67 / 50%);
-  background: rgb(255 159 67 / 20%);
-  padding: 6px 12px;
-  color: #ff9f43;
-}
-
-/* ========================================
    KVP-SPECIFIC: Suggestion Card Content
    ======================================== */
 
@@ -190,37 +154,6 @@
   padding: 4px 12px;
 
   font-size: 0.8rem;
-}
-
-/* ========================================
-   KVP-SPECIFIC: Action Buttons
-   ======================================== */
-
-.action-btn {
-  cursor: pointer;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 5%);
-
-  padding: 6px 12px;
-  color: var(--text-primary);
-
-  font-size: 0.85rem;
-}
-
-.action-btn:hover {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 10%);
-}
-
-.action-btn.share {
-  border-color: rgb(33 150 243 / 50%);
-  color: var(--primary-color);
-}
-
-.action-btn.share:hover {
-  background: rgb(33 150 243 / 10%);
 }
 
 /* ========================================

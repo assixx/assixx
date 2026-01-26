@@ -69,6 +69,9 @@ module.exports = {
 
   // Content files to scan for class usage
   content: [
+    // SvelteKit components (PRIMARY - most classes are used here!)
+    'frontend/src/**/*.svelte',
+
     // HTML files
     'frontend/src/pages/**/*.html',
     'frontend/src/**/*.html',
@@ -76,6 +79,7 @@ module.exports = {
     // TypeScript files (main source)
     'frontend/src/scripts/**/*.ts',
     'frontend/src/utils/**/*.ts',
+    'frontend/src/**/*.ts',
 
     // JavaScript files (legacy + compiled)
     'frontend/src/scripts/**/*.js',
@@ -301,6 +305,10 @@ module.exports = {
       /^fc-/,
       /^fc$/,
 
+      // === EVENTCALENDAR (@event-calendar) ===
+      /^ec-/,
+      /^ec$/,
+
       // === BOOTSTRAP COMPAT (until fully removed) ===
       /^btn-/,
       /^form-/,
@@ -407,18 +415,31 @@ module.exports = {
     // Match classes in className assignments
     const classNameMatches = content.match(/className\s*=\s*['"]([^'"]+)['"]/g) || [];
 
-    return [...broadMatches, ...classListMatches, ...classNameMatches];
+    // Svelte class: directive — class:foo={condition} → extract "foo"
+    const svelteClassDirectiveMatches = [];
+    const svelteRegex = /class:([\w-]+)/g;
+    let svelteMatch;
+    while ((svelteMatch = svelteRegex.exec(content)) !== null) {
+      svelteClassDirectiveMatches.push(svelteMatch[1]);
+    }
+
+    return [
+      ...broadMatches,
+      ...classListMatches,
+      ...classNameMatches,
+      ...svelteClassDirectiveMatches,
+    ];
   },
 
-  // Reject files that should never be purged
-  rejected: true, // Output rejected (removed) selectors for review
+  // Include rejected (removed) selectors in output for review
+  rejected: true,
 
-  // Font face rules - keep them
+  // true = PURGE unused @font-face rules (false = keep all)
   fontFace: true,
 
-  // Keyframes - keep them
+  // true = PURGE unused keyframes (false = keep all)
   keyframes: true,
 
-  // CSS variables - keep them
+  // true = PURGE unused CSS custom properties (false = keep all)
   variables: true,
 };

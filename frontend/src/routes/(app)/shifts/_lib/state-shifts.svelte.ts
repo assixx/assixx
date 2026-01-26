@@ -17,6 +17,7 @@ function createShiftDataState() {
     weeklyShifts = new Map();
     shiftDetails = new Map();
     currentShiftNotes = '';
+    weeklyNotes = '';
   };
 
   return {
@@ -72,7 +73,6 @@ function createShiftDataState() {
 
     reset: () => {
       clearCore();
-      weeklyNotes = '';
     },
   };
 }

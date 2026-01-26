@@ -938,35 +938,6 @@ body:has(.sidebar.collapsed) .header .logo {
   text-align: right;
 }
 
-.storage-upgrade-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--spacing-1);
-  cursor: pointer;
-  box-shadow:
-    0 1px 8px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-  border: none;
-  border-radius: var(--radius-xl);
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  padding: var(--spacing-3);
-
-  width: 100%;
-  color: #fff;
-  font-weight: 600;
-
-  font-size: 13px;
-}
-
-.storage-upgrade-btn:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
 /* Responsive Design */
 @media (width <=768px) {
   .header {
@@ -1106,18 +1077,9 @@ body:has(.sidebar.collapsed) .header .logo {
    ============================================ */
 
 /* Employee Number Styles (replaces inline styles) */
-.employee-number--visible {
-  display: flex;
-  justify-content: center;
-}
-
 .employee-number__text {
   letter-spacing: 2px;
   font-size: 13px;
-}
-
-.employee-number--temp {
-  color: var(--warning-color);
 }
 
 /* User Info Styles (replaces inline template styles) */
@@ -1134,23 +1096,6 @@ body:has(.sidebar.collapsed) .header .logo {
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Logo Clickable State (replaces style.cursor = 'pointer') */
-.logo-container--clickable {
-  cursor: pointer;
-}
-
-/* Storage Progress Bar - CSS Variables for dynamic values
-   Usage: element.style.setProperty('--storage-progress', '75%');
-          element.style.setProperty('--storage-color', 'var(--success-color)');
-*/
-.storage-progress-bar--dynamic {
-  transition:
-    width 0.5s ease,
-    background-color 0.3s ease;
-  background-color: var(--storage-color, var(--success-color));
-  width: var(--storage-progress, 0%);
 }
 
 /* Submenu Open State (replaces style.display = 'block') */
