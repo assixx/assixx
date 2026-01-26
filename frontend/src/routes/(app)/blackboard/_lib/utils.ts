@@ -59,6 +59,22 @@ export function formatDateShort(dateString: string | undefined | null): string {
   });
 }
 
+/**
+ * Check if a date is expired (in the past)
+ */
+export function isExpired(dateString: string | undefined | null): boolean {
+  if (dateString === undefined || dateString === null || dateString === '') {
+    return false;
+  }
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return date.getTime() < Date.now();
+}
+
 // ============================================================================
 // Text Formatting
 // ============================================================================

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Users Service
  *
@@ -6,8 +7,9 @@
  * - CRUD operations
  * - Profile management
  * - Password changes
- * - Availability tracking
  * - Profile pictures
+ *
+ * NOTE: Availability logic extracted to UserAvailabilityService
  */
 import {
   BadRequestException,
@@ -23,18 +25,22 @@ import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { fieldMapper } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { UserRepository } from '../database/repositories/user.repository.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
-import type { UpdateAvailabilityDto } from './dto/update-availability.dto.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
+import { UserAvailabilityService } from './user-availability.service.js';
 
 /**
  * User row type from database
+ * NOTE: Availability fields removed - now in employee_availability table
  */
 export interface UserRow {
   id: number;
+  uuid: string;
   tenant_id: number;
   email: string;
   password?: string;
@@ -53,10 +59,6 @@ export interface UserRow {
   profile_picture: string | null;
   emergency_contact: string | null;
   date_of_birth: string | null;
-  availability_status: string | null;
-  availability_start: Date | null;
-  availability_end: Date | null;
-  availability_notes: string | null;
   has_full_access: number | null;
 }
 
@@ -113,6 +115,7 @@ export interface TenantInfo {
  */
 export interface SafeUserResponse {
   id: number;
+  uuid: string;
   tenantId: number;
   email: string;
   role: string;
@@ -153,6 +156,7 @@ export interface SafeUserResponse {
 const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
   EMAIL_EXISTS: 'Email already exists',
+  EMPLOYEE_NUMBER_EXISTS: 'Personalnummer bereits vergeben',
   INVALID_PASSWORD: 'Invalid current password',
 } as const;
 
@@ -163,7 +167,12 @@ const VALID_SORT_FIELDS = new Set(['firstName', 'lastName', 'email', 'createdAt'
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+    private readonly userRepository: UserRepository,
+    private readonly availabilityService: UserAvailabilityService,
+  ) {}
 
   // ============================================
   // Public Methods
@@ -194,13 +203,12 @@ export class UsersService {
     const sortBy = this.mapSortField(query.sortBy ?? 'createdAt');
     const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
 
-    // Get users
+    // Get users (availability fields removed - now from employee_availability table)
     const users = await this.databaseService.query<UserRow>(
-      `SELECT id, tenant_id, email, role, username, first_name, last_name,
+      `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
               emergency_contact, date_of_birth,
-              availability_status, availability_start, availability_end, availability_notes,
               has_full_access
        FROM users
        WHERE ${whereClause}
@@ -212,14 +220,18 @@ export class UsersService {
     // Convert to responses
     const responses = users.map((user: UserRow) => this.toSafeUserResponse(user));
 
-    // Fetch team assignments in batch (single query for all users)
+    // Fetch team assignments and availability in batch (single query each for all users)
     const userIds = users.map((u: UserRow) => u.id);
-    const teamsByUser = await this.getUserTeamsBatch(userIds, tenantId);
+    const [teamsByUser, availabilityByUser] = await Promise.all([
+      this.getUserTeamsBatch(userIds, tenantId),
+      this.availabilityService.getUserAvailabilityBatch(userIds, tenantId),
+    ]);
 
-    // Add team info to each response
+    // Add team and availability info to each response
     for (const response of responses) {
       const teams = teamsByUser.get(response.id) ?? [];
       this.addTeamInfo(response, teams);
+      this.availabilityService.addAvailabilityInfo(response, availabilityByUser.get(response.id));
     }
 
     return {
@@ -242,16 +254,18 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // Get department, team assignments and tenant info
-    const [departments, teams, tenantInfo] = await Promise.all([
+    // Get department, team assignments, availability and tenant info
+    const [departments, teams, availability, tenantInfo] = await Promise.all([
       this.getUserDepartments(userId, tenantId),
       this.getUserTeams(userId, tenantId),
+      this.availabilityService.getUserAvailability(userId, tenantId),
       this.getTenantInfo(tenantId),
     ]);
 
     const response = this.toSafeUserResponse(user);
     this.addDepartmentInfo(response, departments);
     this.addTeamInfo(response, teams);
+    this.availabilityService.addAvailabilityInfo(response, availability ?? undefined);
 
     // Add tenant info if available
     if (tenantInfo !== null) {
@@ -264,71 +278,112 @@ export class UsersService {
   /**
    * Create new user
    */
-  async createUser(dto: CreateUserDto, tenantId: number): Promise<SafeUserResponse> {
-    // Check if email already exists
+  async createUser(
+    dto: CreateUserDto,
+    actingUserId: number,
+    tenantId: number,
+  ): Promise<SafeUserResponse> {
     const existingUser = await this.findUserByEmail(dto.email, tenantId);
     if (existingUser !== null) {
       throw new ConflictException('Email already exists');
     }
 
-    // Generate employee number if not provided
-    const employeeNumber = dto.employeeNumber ?? `EMP${String(Date.now())}`;
-
-    // Hash password
-    const hashedPassword = await bcryptjs.hash(dto.password, 12);
-
-    // Extract department/team arrays
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
-    void teamIds; // Reserved for future use
+    void teamIds;
 
-    // Insert user with UUIDv7
-    const userUuid = uuidv7();
-    const result = await this.databaseService.query<{ id: number; uuid: string }>(
-      `INSERT INTO users (
-        tenant_id, email, password, username, first_name, last_name, role,
-        position, phone, address, employee_number,
-        is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
-      RETURNING id, uuid`,
-      [
-        tenantId,
-        userData.email,
-        hashedPassword,
-        userData.email, // username = email
-        userData.firstName,
-        userData.lastName,
-        userData.role,
-        userData.position ?? null,
-        userData.phone ?? null,
-        userData.address ?? null,
-        employeeNumber,
-        1, // is_active = 1 (active)
-        hasFullAccess === true ? 1 : 0,
-        userUuid,
-      ],
-    );
-
-    const userId = result[0]?.id;
-    if (userId === undefined) {
-      throw new InternalServerErrorException('Failed to create user');
-    }
-
-    // Assign departments if provided
+    const userId = await this.insertUserRecord(userData, hasFullAccess, tenantId);
     if (Array.isArray(departmentIds) && departmentIds.length > 0) {
       await this.assignUserDepartments(userId, departmentIds, tenantId);
     }
 
-    // Fetch and return created user
-    const createdUser = await this.findUserById(userId, tenantId);
-    if (createdUser === null) {
-      throw new InternalServerErrorException('Failed to retrieve created user');
+    const response = await this.fetchUserWithDepartments(userId, tenantId);
+
+    await this.activityLogger.logCreate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Benutzer erstellt: ${dto.email} (Rolle: ${dto.role})`,
+      {
+        email: dto.email,
+        role: dto.role,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        hasFullAccess: hasFullAccess ?? false,
+      },
+    );
+
+    // Log full access grant separately for audit trail
+    if (hasFullAccess === true) {
+      await this.activityLogger.log({
+        tenantId,
+        userId: actingUserId,
+        action: 'assign',
+        entityType: 'user',
+        entityId: userId,
+        details: `Vollzugriff gewährt für: ${dto.email}`,
+        newValues: { hasFullAccess: true },
+      });
     }
 
-    const departments = await this.getUserDepartments(userId, tenantId);
-    const response = this.toSafeUserResponse(createdUser);
-    this.addDepartmentInfo(response, departments);
-
     return response;
+  }
+
+  /**
+   * Insert user record into database
+   * NOTE: Availability fields removed - now managed via employee_availability table
+   */
+  private async insertUserRecord(
+    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess'>,
+    hasFullAccess: boolean | undefined,
+    tenantId: number,
+  ): Promise<number> {
+    const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
+    const hashedPassword = await bcryptjs.hash(userData.password, 12);
+    const userUuid = uuidv7();
+
+    try {
+      const result = await this.databaseService.query<{ id: number }>(
+        `INSERT INTO users (
+          tenant_id, email, password, username, first_name, last_name, role,
+          position, phone, address, employee_number, date_of_birth,
+          is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW(), NOW())
+        RETURNING id`,
+        [
+          tenantId,
+          userData.email,
+          hashedPassword,
+          userData.email,
+          userData.firstName,
+          userData.lastName,
+          userData.role,
+          userData.position ?? null,
+          userData.phone ?? null,
+          userData.address ?? null,
+          employeeNumber,
+          userData.dateOfBirth ?? null,
+          1,
+          hasFullAccess === true ? 1 : 0,
+          userUuid,
+        ],
+      );
+
+      const userId = result[0]?.id;
+      if (userId === undefined) {
+        throw new InternalServerErrorException('Failed to create user');
+      }
+      return userId;
+    } catch (error: unknown) {
+      // Handle PostgreSQL unique constraint violations (code 23505)
+      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+        throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
+      }
+      if (this.isUniqueConstraintViolation(error, 'email')) {
+        throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -337,12 +392,21 @@ export class UsersService {
   async updateUser(
     userId: number,
     dto: UpdateUserDto,
+    actingUserId: number,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const existingUser = await this.findUserById(userId, tenantId);
     if (existingUser === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
+
+    // Store old values for logging
+    const oldValues = {
+      email: existingUser.email,
+      role: existingUser.role,
+      firstName: existingUser.first_name,
+      lastName: existingUser.last_name,
+    };
 
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
@@ -352,7 +416,37 @@ export class UsersService {
     await this.executeUserUpdate(userId, tenantId, updateData, hasFullAccess, password);
     await this.updateDepartmentAssignments(userId, tenantId, departmentIds);
 
-    return await this.fetchUserWithDepartments(userId, tenantId);
+    // Insert into availability history if availability fields were updated
+    await this.availabilityService.insertAvailabilityHistoryIfNeeded(
+      userId,
+      tenantId,
+      dto.availabilityStatus,
+      dto.availabilityStart,
+      dto.availabilityEnd,
+      dto.availabilityReason,
+      dto.availabilityNotes,
+      actingUserId,
+    );
+
+    const result = await this.fetchUserWithDepartments(userId, tenantId);
+
+    // Log activity
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Benutzer aktualisiert: ${existingUser.email}`,
+      oldValues,
+      {
+        email: dto.email ?? existingUser.email,
+        role: dto.role ?? existingUser.role,
+        firstName: dto.firstName ?? existingUser.first_name,
+        lastName: dto.lastName ?? existingUser.last_name,
+      },
+    );
+
+    return result;
   }
 
   /**
@@ -394,19 +488,44 @@ export class UsersService {
     if (params.length === 0) return;
 
     params.push(userId, tenantId);
-    await this.databaseService.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
-      params,
-    );
+    try {
+      await this.databaseService.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
+        params,
+      );
+    } catch (error: unknown) {
+      // Handle PostgreSQL unique constraint violations (code 23505)
+      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+        throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
+      }
+      if (this.isUniqueConstraintViolation(error, 'email')) {
+        throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check if error is a PostgreSQL unique constraint violation for a specific field
+   */
+  private isUniqueConstraintViolation(error: unknown, fieldName: string): boolean {
+    if (typeof error !== 'object' || error === null) return false;
+    const pgError = error as { code?: string; constraint?: string };
+    // PostgreSQL unique violation code is 23505
+    if (pgError.code !== '23505') return false;
+    // Check if constraint name contains the field name
+    return pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ?? false;
   }
 
   /**
    * Build update fields and params from DTO data
+   * NOTE: Availability fields removed - now managed via employee_availability table
    */
   private buildUpdateFields(
     data: Record<string, unknown>,
     hasFullAccess: boolean | undefined,
   ): { updates: string[]; params: unknown[]; paramIndex: number } {
+    // Availability fields removed - now in employee_availability table
     const fieldMap: Record<string, string> = {
       email: 'email',
       firstName: 'first_name',
@@ -416,6 +535,7 @@ export class UsersService {
       phone: 'phone',
       address: 'address',
       employeeNumber: 'employee_number',
+      dateOfBirth: 'date_of_birth',
     };
 
     const updates: string[] = ['updated_at = NOW()'];
@@ -552,19 +672,15 @@ export class UsersService {
     currentPassword: string,
     newPassword: string,
   ): Promise<{ message: string }> {
-    // Get user with password
-    const rows = await this.databaseService.query<{ password: string }>(
-      `SELECT password FROM users WHERE id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
+    // SECURITY: Get password hash for ACTIVE users only (is_active = 1)
+    const passwordHash = await this.userRepository.getPasswordHash(userId, tenantId);
 
-    const user = rows[0];
-    if (user === undefined) {
+    if (passwordHash === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     // Verify current password
-    const isValid = await bcryptjs.compare(currentPassword, user.password);
+    const isValid = await bcryptjs.compare(currentPassword, passwordHash);
     if (!isValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -600,6 +716,21 @@ export class UsersService {
     await this.databaseService.query(
       `UPDATE users SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      currentUserId,
+      'user',
+      userId,
+      `Benutzer gelöscht: ${user.email}`,
+      {
+        email: user.email,
+        role: user.role,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
     );
 
     return { message: 'User deleted successfully' };
@@ -639,46 +770,13 @@ export class UsersService {
     return { message: 'User unarchived successfully' };
   }
 
-  /**
-   * Update availability
-   */
-  async updateAvailability(
-    userId: number,
-    dto: UpdateAvailabilityDto,
-    tenantId: number,
-  ): Promise<{ message: string }> {
-    const user = await this.findUserById(userId, tenantId);
-    if (user === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    await this.databaseService.query(
-      `UPDATE users SET
-        availability_status = $1,
-        availability_start = $2,
-        availability_end = $3,
-        availability_notes = $4,
-        updated_at = NOW()
-       WHERE id = $5 AND tenant_id = $6`,
-      [
-        dto.availabilityStatus,
-        dto.availabilityStart ?? null,
-        dto.availabilityEnd ?? null,
-        dto.availabilityNotes ?? null,
-        userId,
-        tenantId,
-      ],
-    );
-
-    return { message: 'Availability updated successfully' };
-  }
-
   // ============================================
   // Private Helper Methods
   // ============================================
 
   /**
    * Build WHERE clause and params for user list query
+   * Always excludes soft-deleted users (is_active = 4) unless specific isActive filter is provided
    */
   private buildUserListWhereClause(
     tenantId: number,
@@ -695,9 +793,13 @@ export class UsersService {
     }
 
     if (query.isActive !== undefined) {
+      // Explicit isActive filter - use exactly what was requested
       conditions.push(`is_active = $${paramIndex}`);
       params.push(query.isActive);
       paramIndex++;
+    } else {
+      // Default: exclude soft-deleted users (is_active = 4)
+      conditions.push('is_active != 4');
     }
 
     if (query.search !== undefined && query.search !== '') {
@@ -713,17 +815,18 @@ export class UsersService {
 
   /**
    * Find user by ID
+   * SECURITY: Only returns ACTIVE users (is_active = 1)
+   * NOTE: Availability fields removed - now from employee_availability table
    */
   private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
-      `SELECT id, tenant_id, email, role, username, first_name, last_name,
+      `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
               emergency_contact, date_of_birth,
-              availability_status, availability_start, availability_end, availability_notes,
               has_full_access
        FROM users
-       WHERE id = $1 AND tenant_id = $2`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [userId, tenantId],
     );
 
@@ -732,10 +835,11 @@ export class UsersService {
 
   /**
    * Find user by email
+   * SECURITY: Only returns ACTIVE users (is_active = 1)
    */
   private async findUserByEmail(email: string, tenantId: number): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
-      `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2`,
+      `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = 1`,
       [email.toLowerCase(), tenantId],
     );
 
@@ -1038,17 +1142,15 @@ export class UsersService {
 
   /**
    * Resolve user ID from UUID
-   * @throws NotFoundException if user not found
+   * SECURITY: Only resolves ACTIVE users (is_active = 1)
+   * @throws NotFoundException if user not found or deleted
    */
   private async resolveUserIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2`,
-      [uuid, tenantId],
-    );
-    if (result[0] === undefined) {
+    const userId = await this.userRepository.resolveUuidToId(uuid, tenantId);
+    if (userId === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
-    return result[0].id;
+    return userId;
   }
 
   /**
@@ -1065,10 +1167,11 @@ export class UsersService {
   async updateUserByUuid(
     uuid: string,
     dto: UpdateUserDto,
+    actingUserId: number,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
-    return await this.updateUser(userId, dto, tenantId);
+    return await this.updateUser(userId, dto, actingUserId, tenantId);
   }
 
   /**
@@ -1097,17 +1200,5 @@ export class UsersService {
   async unarchiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.unarchiveUser(userId, tenantId);
-  }
-
-  /**
-   * Update user availability by UUID (wrapper for UUID-based API)
-   */
-  async updateAvailabilityByUuid(
-    uuid: string,
-    dto: UpdateAvailabilityDto,
-    tenantId: number,
-  ): Promise<{ message: string }> {
-    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
-    return await this.updateAvailability(userId, dto, tenantId);
   }
 }

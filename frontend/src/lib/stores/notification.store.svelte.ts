@@ -6,7 +6,11 @@
  */
 import { browser } from '$app/environment';
 
+import { createLogger } from '$lib/utils/logger';
 import { type NotificationEvent, getNotificationSSE } from '$lib/utils/notification-sse';
+import { perf } from '$lib/utils/perf-logger';
+
+const log = createLogger('NotificationStore');
 
 // ============================================
 // Types
@@ -18,6 +22,8 @@ export interface NotificationCounts {
   documents: number;
   kvp: number;
   chat: number;
+  blackboard: number;
+  calendar: number;
 }
 
 interface NotificationState {
@@ -34,7 +40,7 @@ type CountType = keyof Omit<NotificationCounts, 'total'>;
 // ============================================
 
 function createInitialCounts(): NotificationCounts {
-  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0 };
+  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0, blackboard: 0, calendar: 0 };
 }
 
 function incrementCount(state: NotificationState, type: CountType): void {
@@ -86,33 +92,192 @@ function setCountsMut(state: NotificationState, counts: Partial<NotificationCoun
     documents: counts.documents ?? 0,
     kvp: counts.kvp ?? 0,
     chat: counts.chat ?? 0,
+    blackboard: counts.blackboard ?? 0,
+    calendar: counts.calendar ?? 0,
   };
   state.lastUpdate = new Date();
 }
 
-async function fetchInitialCounts(state: NotificationState): Promise<void> {
+export type FeatureType = 'survey' | 'document' | 'kvp';
+
+/** Map feature type to store count key */
+const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
+  survey: 'surveys',
+  document: 'documents',
+  kvp: 'kvp',
+};
+
+/** Rollback count after failed API call */
+function rollbackCount(state: NotificationState, countKey: CountType, previousCount: number): void {
+  state.counts[countKey] = previousCount;
+  state.counts.total += previousCount;
+}
+
+/**
+ * Mark all notifications of a feature type as read via API (ADR-004)
+ * Resets local count and persists to backend
+ */
+async function markFeatureTypeAsRead(
+  state: NotificationState,
+  featureType: FeatureType,
+): Promise<void> {
+  const countKey = FEATURE_TO_COUNT_KEY[featureType];
+  const previousCount = state.counts[countKey];
+
+  // Optimistically reset local count
+  resetCountMut(state, countKey);
+
   try {
-    const response = await fetch('/api/v2/chat/unread-count', {
+    const response = await fetch(`/api/v2/notifications/mark-read/${featureType}`, {
+      method: 'POST',
       credentials: 'include',
     });
 
-    if (!response.ok) return;
-
-    // API returns { success: true, data: { totalUnread: number } }
-    const json = (await response.json()) as { data: { totalUnread: number } };
-    const unreadCount = json.data.totalUnread;
-    state.counts.chat = unreadCount;
-    state.counts.total =
-      state.counts.surveys + state.counts.documents + state.counts.kvp + unreadCount;
-    state.lastUpdate = new Date();
+    if (!response.ok) {
+      rollbackCount(state, countKey, previousCount);
+    }
   } catch {
-    // Silently fail - SSE will update counts when connected
+    rollbackCount(state, countKey, previousCount);
+  }
+}
+
+/**
+ * Dashboard counts response from /api/v2/dashboard/counts
+ * Single endpoint that combines all notification counts
+ */
+interface DashboardCountsResponse {
+  success: boolean;
+  data: {
+    chat: { totalUnread: number };
+    notifications: { total: number; unread: number; byType: Record<string, number> };
+    blackboard: { count: number };
+    calendar: { count: number };
+    documents: { count: number };
+    /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+    kvp: { count: number };
+    fetchedAt: string;
+  };
+}
+
+/**
+ * Fetch initial counts from combined dashboard endpoint (optimized)
+ * Single HTTP request instead of 5 parallel requests
+ */
+async function fetchInitialCounts(state: NotificationState): Promise<void> {
+  const endTotal = perf.start('notifications:fetchInitialCounts:total');
+
+  try {
+    log.debug({}, '📡 Fetching dashboard counts (single optimized request)...');
+
+    const response = await perf.time('notifications:fetch:dashboard-counts', () =>
+      fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
+    );
+
+    if (!response.ok) {
+      throw new Error(`Dashboard counts failed: ${response.status}`);
+    }
+
+    const json = (await response.json()) as DashboardCountsResponse;
+    const { data } = json;
+
+    // Extract counts from combined response
+    const chatCount = data.chat.totalUnread;
+    const byType = data.notifications.byType as Partial<Record<string, number>>;
+    const surveyCount = byType.survey ?? 0;
+    // KVP uses Pattern 2 (Individual read tracking) - separate count field
+    const kvpCount = data.kvp.count;
+    const blackboardCount = data.blackboard.count;
+    const calendarCount = data.calendar.count;
+    const documentsCount = data.documents.count;
+
+    // Update state
+    state.counts.chat = chatCount;
+    state.counts.surveys = surveyCount;
+    state.counts.documents = documentsCount;
+    state.counts.kvp = kvpCount;
+    state.counts.blackboard = blackboardCount;
+    state.counts.calendar = calendarCount;
+    state.counts.total =
+      chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
+    state.lastUpdate = new Date();
+
+    log.debug({ counts: state.counts }, `✅ Initial counts loaded: total=${state.counts.total}`);
+  } catch (err) {
+    log.warn({ err }, 'Failed to fetch dashboard counts - SSE will update when connected');
+  } finally {
+    endTotal();
   }
 }
 
 // ============================================
 // Store Implementation
 // ============================================
+
+/** Connect to SSE and subscribe to events */
+function connectSSE(
+  state: NotificationState,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+): void {
+  if (!browser) return;
+  state.connectionState = 'connecting';
+  const sse = getNotificationSSE();
+  setUnsubscribe(
+    sse.subscribe((event) => {
+      handleSSEEvent(state, event);
+    }),
+  );
+  sse.connect();
+}
+
+/** SSR counts input type */
+interface SSRCounts {
+  chat: { totalUnread: number };
+  notifications: { byType: Record<string, number> };
+  blackboard: { count: number };
+  calendar: { count: number };
+  documents: { count: number };
+  /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
+  kvp: { count: number };
+}
+
+/** Initialize counts from SSR data (no HTTP request needed) */
+function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
+  const chatCount = counts.chat.totalUnread;
+  const byType = counts.notifications.byType as Partial<Record<string, number>>;
+  const surveyCount = byType.survey ?? 0;
+  // KVP uses Pattern 2 (Individual read tracking) - separate count field
+  const kvpCount = counts.kvp.count;
+  const blackboardCount = counts.blackboard.count;
+  const calendarCount = counts.calendar.count;
+  const documentsCount = counts.documents.count;
+
+  state.counts.chat = chatCount;
+  state.counts.surveys = surveyCount;
+  state.counts.documents = documentsCount;
+  state.counts.kvp = kvpCount;
+  state.counts.blackboard = blackboardCount;
+  state.counts.calendar = calendarCount;
+  state.counts.total =
+    chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
+  state.lastUpdate = new Date();
+
+  log.debug({ counts: state.counts }, '✅ Counts initialized from SSR (0ms fetch!)');
+}
+
+/** Disconnect from SSE */
+function disconnectSSE(
+  state: NotificationState,
+  unsubscribe: (() => void) | null,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+): void {
+  if (unsubscribe !== null) {
+    unsubscribe();
+    setUnsubscribe(null);
+  }
+  getNotificationSSE().disconnect();
+  state.isConnected = false;
+  state.connectionState = 'disconnected';
+}
 
 function createNotificationStore() {
   const state = $state<NotificationState>({
@@ -121,8 +286,10 @@ function createNotificationStore() {
     lastUpdate: null,
     connectionState: 'disconnected',
   });
-
   let unsubscribeSSE: (() => void) | null = null;
+  const setUnsubscribe = (fn: (() => void) | null): void => {
+    unsubscribeSSE = fn;
+  };
 
   return {
     get counts() {
@@ -140,26 +307,17 @@ function createNotificationStore() {
     get totalUnread() {
       return state.counts.total;
     },
-    connect(): void {
-      if (!browser) return;
-      state.connectionState = 'connecting';
-      const sse = getNotificationSSE();
-      unsubscribeSSE = sse.subscribe((event) => {
-        handleSSEEvent(state, event);
-      });
-      sse.connect();
+    connect: () => {
+      connectSSE(state, setUnsubscribe);
     },
-    disconnect(): void {
-      if (unsubscribeSSE !== null) {
-        unsubscribeSSE();
-        unsubscribeSSE = null;
-      }
-      getNotificationSSE().disconnect();
-      state.isConnected = false;
-      state.connectionState = 'disconnected';
+    disconnect: () => {
+      disconnectSSE(state, unsubscribeSSE, setUnsubscribe);
     },
     decrementCount: (type: CountType) => {
       decrementCountMut(state, type);
+    },
+    incrementCount: (type: CountType) => {
+      incrementCount(state, type);
     },
     resetCount: (type: CountType) => {
       resetCountMut(state, type);
@@ -170,10 +328,15 @@ function createNotificationStore() {
     setCounts: (counts: Partial<NotificationCounts>) => {
       setCountsMut(state, counts);
     },
-    /** Load initial unread counts from API */
-    async loadInitialCounts(): Promise<void> {
-      if (!browser) return;
-      await fetchInitialCounts(state);
+    loadInitialCounts: async () => {
+      if (browser) await fetchInitialCounts(state);
+    },
+    /** Initialize counts from SSR data (no HTTP request needed) */
+    initFromSSR: (counts: SSRCounts) => {
+      initFromSSRData(state, counts);
+    },
+    markTypeAsRead: async (featureType: FeatureType) => {
+      if (browser) await markFeatureTypeAsRead(state, featureType);
     },
   };
 }

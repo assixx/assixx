@@ -1,9 +1,7 @@
 <script lang="ts">
-  import {
-    RECURRENCE_OPTIONS,
-    RECURRENCE_END_OPTIONS,
-    REMINDER_DROPDOWN_OPTIONS,
-  } from './constants';
+  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from '$lib/utils';
+
+  import { RECURRENCE_OPTIONS, RECURRENCE_END_OPTIONS } from './constants';
 
   import type { EventFormData, CalendarEvent, Department, Team, Area } from './types';
 
@@ -26,7 +24,6 @@
   // Dropdown states
   let recurrenceDropdownOpen = $state(false);
   let recurrenceEndDropdownOpen = $state(false);
-  let reminderDropdownOpen = $state(false);
 
   // Get display text for current selection
   const selectedRecurrenceText = $derived(
@@ -35,22 +32,40 @@
   const selectedRecurrenceEndText = $derived(
     RECURRENCE_END_OPTIONS.find((o) => o.value === formData.recurrenceEndType)?.label ?? 'Nie',
   );
-  const selectedReminderText = $derived(
-    REMINDER_DROPDOWN_OPTIONS.find((o) => o.value === formData.reminderMinutes)?.label ??
-      'Keine Erinnerung',
-  );
+
+  // Derived: Is company-wide event selected?
+  const isCompanyWide = $derived(formData.orgLevel === 'company');
+
+  // Filter departments based on selected areas (inheritance logic)
+  const availableDepartments = $derived.by(() => {
+    return filterAvailableDepartments(departments, formData.areaIds, isCompanyWide);
+  });
+
+  /**
+   * Handle area selection change.
+   * Also filters out departments that are now covered by selected areas.
+   */
+  function handleAreaChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    const newAreaIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
+    formData.areaIds = newAreaIds;
+    // Remove departments that are now covered by selected areas
+    formData.departmentIds = filterDepartmentIdsByAreas(
+      formData.departmentIds,
+      departments,
+      newAreaIds,
+    );
+  }
 
   // Close all dropdowns
   function closeAllDropdowns() {
     recurrenceDropdownOpen = false;
     recurrenceEndDropdownOpen = false;
-    reminderDropdownOpen = false;
   }
 
   // Outside-click handler for dropdowns
   $effect(() => {
-    const anyDropdownOpen =
-      recurrenceDropdownOpen || recurrenceEndDropdownOpen || reminderDropdownOpen;
+    const anyDropdownOpen = recurrenceDropdownOpen || recurrenceEndDropdownOpen;
     if (!anyDropdownOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
@@ -205,47 +220,61 @@
         </div>
 
         <!-- Area Selection -->
-        <div class="form-field">
+        <div class="form-field" class:opacity-50={isCompanyWide}>
           <label class="form-field__label" for="event-area-select">
-            <i class="fas fa-map-marked-alt mr-1"></i> Bereiche
+            <i class="fas fa-layer-group mr-1"></i> Bereiche (Areas)
           </label>
           <select
             id="event-area-select"
             multiple
             class="form-field__control min-h-[100px]"
-            bind:value={formData.areaId}
+            value={formData.areaIds}
+            disabled={isCompanyWide}
+            onchange={handleAreaChange}
           >
             {#each areas as area (area.id)}
-              <option value={area.id}>{area.name}</option>
+              <option value={area.id} selected={formData.areaIds.includes(area.id)}>
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
+                  ? ` (${area.departmentCount} Abt.)`
+                  : ''}
+              </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
-            Strg/Cmd + Klick für Mehrfachauswahl
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
           </span>
         </div>
 
         <!-- Department Selection -->
-        <div class="form-field">
+        <div class="form-field" class:opacity-50={isCompanyWide}>
           <label class="form-field__label" for="event-department-select">
-            <i class="fas fa-sitemap mr-1"></i> Abteilungen
+            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
           </label>
           <select
             id="event-department-select"
             multiple
             class="form-field__control min-h-[100px]"
-            bind:value={formData.departmentId}
+            bind:value={formData.departmentIds}
+            disabled={isCompanyWide}
           >
-            {#each departments as dept (dept.id)}
-              <option value={dept.id}>{dept.name}</option>
+            {#each availableDepartments as dept (dept.id)}
+              <option value={dept.id}>
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
+                  ? ` (${dept.areaName})`
+                  : ''}
+              </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
-            Strg/Cmd + Klick für Mehrfachauswahl
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
+            sind.
           </span>
         </div>
 
         <!-- Team Selection -->
-        <div class="form-field">
+        <div class="form-field" class:opacity-50={isCompanyWide}>
           <label class="form-field__label" for="event-team-select">
             <i class="fas fa-users mr-1"></i> Teams
           </label>
@@ -253,14 +282,16 @@
             id="event-team-select"
             multiple
             class="form-field__control min-h-[100px]"
-            bind:value={formData.teamId}
+            bind:value={formData.teamIds}
+            disabled={isCompanyWide}
           >
             {#each teams as team (team.id)}
               <option value={team.id}>{team.name}</option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
-            Strg/Cmd + Klick für Mehrfachauswahl
+            <i class="fas fa-info-circle mr-1"></i>
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet zugehoerige Teams.
           </span>
         </div>
 
@@ -371,40 +402,6 @@
           </div>
         {/if}
       {/if}
-
-      <!-- Reminder (Custom Dropdown like Legacy) -->
-      <div class="form-field">
-        <span class="form-field__label">Erinnerung</span>
-        <div class="dropdown">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={reminderDropdownOpen}
-            onclick={() => {
-              closeAllDropdowns();
-              reminderDropdownOpen = !reminderDropdownOpen;
-            }}
-          >
-            <span>{selectedReminderText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={reminderDropdownOpen}>
-            {#each REMINDER_DROPDOWN_OPTIONS as option (option.label)}
-              <button
-                type="button"
-                class="dropdown__option"
-                class:dropdown__option--selected={formData.reminderMinutes === option.value}
-                onclick={() => {
-                  formData.reminderMinutes = option.value as typeof formData.reminderMinutes;
-                  reminderDropdownOpen = false;
-                }}
-              >
-                {option.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
     </div>
     <div class="ds-modal__footer">
       <button type="button" class="btn btn-cancel" onclick={onclose}> Abbrechen </button>

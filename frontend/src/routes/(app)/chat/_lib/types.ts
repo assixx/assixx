@@ -84,6 +84,16 @@ export interface Conversation {
   unreadCount?: number;
   typingUsers?: number[];
   displayName?: string;
+  /**
+   * Indicates this is a pending (not yet persisted) conversation.
+   * Used for lazy creation - conversation is only created in DB when first message is sent.
+   */
+  isPending?: boolean;
+  /**
+   * Target user ID for pending 1:1 conversations.
+   * Used to create the conversation when first message is sent.
+   */
+  pendingTargetUserId?: number;
 }
 
 /**
@@ -136,6 +146,16 @@ export interface Message {
 }
 
 /**
+ * Scheduled message attachment info
+ */
+export interface ScheduledAttachment {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Scheduled message
  */
 export interface ScheduledMessage {
@@ -147,7 +167,8 @@ export interface ScheduledMessage {
   status: ScheduledMessageStatus;
   createdAt: string;
   sentAt: string | null;
-  attachment: unknown;
+  /** Attachment info (nested object from backend) */
+  attachment: ScheduledAttachment | null;
 }
 
 /**
@@ -223,6 +244,10 @@ export interface CreateConversationResponse {
 export interface UploadResponse {
   id: number;
   fileUuid: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
 }
 
 // =============================================================================

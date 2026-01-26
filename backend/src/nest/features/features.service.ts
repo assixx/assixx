@@ -306,7 +306,7 @@ export class FeaturesService {
    * Get all available features
    */
   async getAllFeatures(includeInactive: boolean = false): Promise<Feature[]> {
-    this.logger.log(`Getting all features (includeInactive: ${includeInactive})`);
+    this.logger.debug(`Getting all features (includeInactive: ${includeInactive})`);
 
     const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
     const rows = await this.db.query<DbFeatureRow>(
@@ -320,7 +320,7 @@ export class FeaturesService {
    * Get features grouped by category
    */
   async getFeaturesByCategory(includeInactive: boolean = false): Promise<FeatureCategory[]> {
-    this.logger.log('Getting features by category');
+    this.logger.debug('Getting features by category');
 
     const features = await this.getAllFeatures(includeInactive);
 
@@ -342,7 +342,7 @@ export class FeaturesService {
    * Get single feature by code
    */
   async getFeatureByCode(code: string): Promise<Feature | null> {
-    this.logger.log(`Getting feature by code: ${code}`);
+    this.logger.debug(`Getting feature by code: ${code}`);
 
     const row = await this.db.queryOne<DbFeatureRow>('SELECT * FROM features WHERE code = $1', [
       code,
@@ -359,7 +359,7 @@ export class FeaturesService {
    * Get tenant features
    */
   async getTenantFeatures(tenantId: number): Promise<TenantFeature[]> {
-    this.logger.log(`Getting tenant features for tenant ${tenantId}`);
+    this.logger.debug(`Getting tenant features for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbTenantFeatureRow>(
       `
@@ -384,7 +384,7 @@ export class FeaturesService {
    * Get all features with tenant-specific info
    */
   async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
-    this.logger.log(`Getting features with tenant info for tenant ${tenantId}`);
+    this.logger.debug(`Getting features with tenant info for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbFeatureWithTenantStatusRow>(
       `
@@ -414,7 +414,7 @@ export class FeaturesService {
    * Get tenant features summary
    */
   async getTenantFeaturesSummary(tenantId: number): Promise<TenantFeaturesSummary> {
-    this.logger.log(`Getting tenant features summary for tenant ${tenantId}`);
+    this.logger.debug(`Getting tenant features summary for tenant ${tenantId}`);
 
     const features = await this.getTenantFeatures(tenantId);
 
@@ -529,7 +529,7 @@ export class FeaturesService {
     startDate: string,
     endDate: string,
   ): Promise<FeatureUsageStats[]> {
-    this.logger.log(`Getting usage stats for feature ${featureCode}`);
+    this.logger.debug(`Getting usage stats for feature ${featureCode}`);
 
     const feature = await this.getFeatureByCode(featureCode);
     if (feature === null) {
@@ -589,7 +589,7 @@ export class FeaturesService {
    * Get all tenants with features (Root only)
    */
   async getAllTenantsWithFeatures(): Promise<TenantWithFeatures[]> {
-    this.logger.log('Getting all tenants with features');
+    this.logger.debug('Getting all tenants with features');
 
     const tenants = await this.db.query<DbTenantRow>(`
       SELECT id, subdomain, company_name, status

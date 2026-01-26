@@ -457,7 +457,7 @@
                   selectStatus(3);
                 }}
               >
-                <span class="badge badge--error">Archiviert</span>
+                <span class="badge badge--secondary">Archiviert</span>
               </button>
             </div>
           </div>

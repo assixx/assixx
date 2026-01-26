@@ -30,18 +30,20 @@ export const STATUS_BADGE_CLASSES: Record<KvpStatus, string> = {
   implemented: 'badge--kvp-implemented',
   rejected: 'badge--kvp-rejected',
   archived: 'badge--kvp-archived',
+  restored: 'badge--kvp-restored',
 } as const;
 
 /**
  * Status display text (German)
  */
 export const STATUS_TEXT: Record<KvpStatus, string> = {
-  new: 'Neu',
+  new: 'Offen',
   in_review: 'In Prüfung',
   approved: 'Genehmigt',
   implemented: 'Umgesetzt',
   rejected: 'Abgelehnt',
   archived: 'Archiviert',
+  restored: 'Wiederhergestellt',
 } as const;
 
 /**
@@ -116,11 +118,12 @@ export const FILTER_OPTIONS: {
  */
 export const STATUS_FILTER_OPTIONS = [
   { value: '', label: 'Alle Status' },
-  { value: 'new', label: 'Neu' },
+  { value: 'new', label: 'Offen' },
   { value: 'in_review', label: 'In Prüfung' },
   { value: 'approved', label: 'Genehmigt' },
   { value: 'implemented', label: 'Umgesetzt' },
   { value: 'rejected', label: 'Abgelehnt' },
+  { value: 'restored', label: 'Wiederhergestellt' },
 ] as const;
 
 /**

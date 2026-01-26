@@ -30,72 +30,6 @@
         </p>
 
         <div class="choice-group">
-          <!-- Team -->
-          <label class="choice-card choice-card--lg">
-            <input
-              type="radio"
-              name="orgLevel"
-              value="team"
-              class="choice-card__input"
-              checked={kvpDetailState.selectedShareLevel === 'team'}
-              onchange={() => {
-                kvpDetailState.setSelectedShareLevel('team');
-              }}
-            />
-            <span class="choice-card__text">
-              Team
-              <span class="choice-card__description">Fuer alle Team-Mitglieder sichtbar</span>
-            </span>
-            <!-- Dropdown inside label like Legacy -->
-            {#if kvpDetailState.selectedShareLevel === 'team'}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="dropdown"
-                data-dropdown="shareTeam"
-                onclick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={kvpDetailState.activeDropdown === 'shareTeam'}
-                  onclick={(e) => {
-                    e.preventDefault();
-                    kvpDetailState.toggleDropdown('shareTeam');
-                  }}
-                >
-                  <span>
-                    {kvpDetailState.selectedOrgId !== null
-                      ? (kvpDetailState.teams.find((t) => t.id === kvpDetailState.selectedOrgId)
-                          ?.name ?? 'Team auswaehlen...')
-                      : 'Team auswaehlen...'}
-                  </span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={kvpDetailState.activeDropdown === 'shareTeam'}
-                >
-                  {#each kvpDetailState.teams as team (team.id)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        kvpDetailState.setSelectedOrgId(team.id);
-                        kvpDetailState.closeAllDropdowns();
-                      }}
-                    >
-                      {team.name}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </label>
-
           <!-- Department -->
           <label class="choice-card choice-card--lg">
             <input
@@ -110,7 +44,7 @@
             />
             <span class="choice-card__text">
               Abteilung
-              <span class="choice-card__description">Fuer Ihre gesamte Abteilung sichtbar</span>
+              <span class="choice-card__description">Für Ihre gesamte Abteilung sichtbar</span>
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'department'}
@@ -177,7 +111,7 @@
             />
             <span class="choice-card__text">
               Bereich
-              <span class="choice-card__description">Fuer alle im gleichen Bereich sichtbar</span>
+              <span class="choice-card__description">Für alle im gleichen Bereich sichtbar</span>
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'area'}
@@ -243,7 +177,7 @@
             />
             <span class="choice-card__text">
               Firma
-              <span class="choice-card__description">Fuer die gesamte Firma sichtbar</span>
+              <span class="choice-card__description">Für die gesamte Firma sichtbar</span>
             </span>
           </label>
         </div>

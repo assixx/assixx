@@ -342,7 +342,7 @@ export class PlansService {
    * Get all available plans
    */
   async getAllPlans(includeInactive: boolean = false): Promise<PlanWithFeatures[]> {
-    this.logger.log(`Getting all plans (includeInactive: ${includeInactive})`);
+    this.logger.debug(`Getting all plans (includeInactive: ${includeInactive})`);
 
     const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
     const rows = await this.db.query<DbPlanRow>(
@@ -369,7 +369,7 @@ export class PlansService {
    * Get plan by ID
    */
   async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
-    this.logger.log(`Getting plan ${planId}`);
+    this.logger.debug(`Getting plan ${planId}`);
 
     const row = await this.db.queryOne<DbPlanRow>('SELECT * FROM plans WHERE id = $1', [planId]);
 
@@ -401,7 +401,7 @@ export class PlansService {
    * Get current plan for tenant
    */
   async getCurrentPlan(tenantId: number): Promise<CurrentPlanResponse | null> {
-    this.logger.log(`Getting current plan for tenant ${tenantId}`);
+    this.logger.debug(`Getting current plan for tenant ${tenantId}`);
 
     const tenantPlanRow = await this.db.queryOne<DbTenantPlanRow>(
       `
@@ -464,7 +464,7 @@ export class PlansService {
    * Get plan features
    */
   async getPlanFeatures(planId: number): Promise<PlanFeature[]> {
-    this.logger.log(`Getting features for plan ${planId}`);
+    this.logger.debug(`Getting features for plan ${planId}`);
     return await this.getPlanFeaturesFromDb(planId);
   }
 
@@ -472,7 +472,7 @@ export class PlansService {
    * Get tenant addons (simple counts)
    */
   async getTenantAddons(tenantId: number): Promise<TenantAddons> {
-    this.logger.log(`Getting addons for tenant ${tenantId}`);
+    this.logger.debug(`Getting addons for tenant ${tenantId}`);
 
     const row = await this.db.queryOne<DbAddonSummaryRow>(
       `SELECT

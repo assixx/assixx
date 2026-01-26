@@ -5,25 +5,60 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Font Preconnect for Performance -->
+    <!-- Google Fonts Performance: dns-prefetch + preconnect (Best Practice 2025) -->
+    <!-- dns-prefetch: Early DNS lookup (~20ms saved) -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <!-- preconnect: Full connection setup (DNS + TCP + TLS, ~100-200ms saved) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Outfit Font - Main Typography -->
+    <!-- Outfit Font - Main Typography (preload for critical above-the-fold) -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap"
+      as="style"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Material Symbols - Google Icons -->
+    <!-- Material Symbols - Google Icons (Optimized: subset + display=block) -->
+    <!-- Icons: manage_accounts, person_apron, supervisor_account (RoleSwitch), hourglass_check (rate-limit) -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght@24,400&icon_names=hourglass_check,manage_accounts,person_apron,supervisor_account&display=block"
     />
+
+    <!-- FOUT Prevention: Hide Material Icons until font loads (Font Loading API) -->
+    <!-- Problem: Even with display=block, browser may briefly show text before CSS parses -->
+    <!-- Solution: CSS hides icons → JS detects font load → adds class to show icons -->
+    <style>
+      .material-symbols-outlined {
+        visibility: hidden;
+      }
+      .fonts-loaded .material-symbols-outlined {
+        visibility: visible;
+      }
+    </style>
+    <script>
+      (function () {
+        if (document.fonts && document.fonts.check('1em "Material Symbols Outlined"')) {
+          document.documentElement.classList.add('fonts-loaded');
+        } else if (document.fonts) {
+          document.fonts.ready.then(function () {
+            document.documentElement.classList.add('fonts-loaded');
+          });
+        } else {
+          document.documentElement.classList.add('fonts-loaded');
+        }
+      })();
+    </script>
 
     %sveltekit.head%
   </head>
-  <body data-sveltekit-preload-data="hover">
+  <body data-sveltekit-preload-data="tap">
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

@@ -3,15 +3,23 @@
 
   interface Props {
     show: boolean;
-    date?: string; // Optional for $bindable() - parent uses bind:date
-    time?: string; // Optional for $bindable() - parent uses bind:time
+    date?: string;
+    time?: string;
+    errorMessage?: string;
     onclose: () => void;
     onconfirm: () => void;
   }
 
   /* eslint-disable prefer-const */
   // $bindable() required for two-way binding (bind:date, bind:time) in Svelte 5
-  let { show, date = $bindable(''), time = $bindable(''), onclose, onconfirm }: Props = $props();
+  let {
+    show,
+    date = $bindable(''),
+    time = $bindable(''),
+    errorMessage = '',
+    onclose,
+    onconfirm,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 </script>
 
@@ -64,6 +72,13 @@
           <i class="fas fa-info-circle"></i>
           &nbsp; {MESSAGES.labelScheduleHint}
         </small>
+
+        {#if errorMessage}
+          <div class="alert alert--warning mt-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            {errorMessage}
+          </div>
+        {/if}
       </div>
       <div class="ds-modal__footer ds-modal__footer--spaced">
         <button type="button" class="btn btn-cancel" onclick={onclose}

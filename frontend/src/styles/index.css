@@ -8,21 +8,6 @@
  */
 
 /* Glassmorphismus Header */
-.header {
-  position: sticky;
-  z-index: 1000;
-  top: 0;
-
-  display: flex;
-  align-items: center;
-
-  height: 56px;
-  padding: 8px 16px;
-
-  background: rgb(0 0 0 / 0%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-}
 
 .nav {
   display: flex;
@@ -77,8 +62,12 @@
   max-width: 100%;
   text-align: center;
 
-  /* Background Image */
-  background-image: url('/images/background_index.png');
+  /* Background Image - Optimized WebP with JPG fallback */
+  background-image: url('/images/background_index_1920.jpg');
+  background-image: image-set(
+    url('/images/background_index.webp') type('image/webp'),
+    url('/images/background_index_1920.jpg') type('image/jpeg')
+  );
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -150,8 +139,10 @@
   max-width: 1400px;
 }
 
-/* Glassmorphismus Feature Cards */
-.feature-card {
+/* Glassmorphismus Feature Cards (Landing Page only)
+ * Scoped under .landing-page to avoid conflict with Design System .feature-card
+ */
+.landing-page .feature-card {
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
@@ -161,7 +152,7 @@
   padding: var(--spacing-6);
 }
 
-.feature-card:hover {
+.landing-page .feature-card:hover {
   transform: translateY(-4px);
   box-shadow:
     0 10px 40px rgb(33 150 243 / 30%),
@@ -170,13 +161,14 @@
   background: rgb(255 255 255 / 4%);
 }
 
-.feature-card h3 {
+.landing-page .feature-card h3 {
   margin-bottom: var(--spacing-4);
   color: var(--primary-color);
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.feature-card p {
+.landing-page .feature-card p {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Calendar Service
  *
@@ -7,7 +8,10 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { FeatureVisitsService } from '../feature-visits/feature-visits.service.js';
+import { generateCsvExport, generateIcsExport } from './calendar-export.utils.js';
 import type { CreateEventDto } from './dto/create-event.dto.js';
 import type { UpdateEventDto } from './dto/update-event.dto.js';
 
@@ -93,12 +97,13 @@ export interface EventFilters {
 }
 
 /**
- * User role info
+ * User role info with full access flag
  */
 interface UserRoleInfo {
   role: string | null;
   department_id: number | null;
   team_id: number | null;
+  has_full_access: boolean;
 }
 
 // ============================================
@@ -115,12 +120,114 @@ const ALLOWED_SORT_COLUMNS = new Set([
   'updated_at',
 ]);
 
+/**
+ * SQL query for permission-based event visibility
+ * Params: $1=tenantId, $2=startOfDay, $3=endOfWeek, $4=lastVisited, $5=userId
+ */
+const PERMISSION_BASED_COUNT_QUERY = `
+  SELECT COUNT(DISTINCT e.id) as count
+  FROM calendar_events e
+  WHERE e.tenant_id = $1
+    AND e.start_date >= $2
+    AND e.start_date < $3
+    AND e.status != 'cancelled'
+    AND e.created_at > $4
+    AND e.user_id != $5
+    AND (
+      -- 1. Company level: everyone sees
+      e.org_level = 'company'
+      -- 2. Area level: check area permissions
+      OR (e.org_level = 'area' AND (
+        EXISTS (SELECT 1 FROM admin_area_permissions aap
+                WHERE aap.admin_user_id = $5 AND aap.area_id = e.area_id AND aap.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM areas a
+                   WHERE a.id = e.area_id AND a.area_lead_id = $5 AND a.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM user_departments ud
+                   JOIN departments d ON ud.department_id = d.id
+                   WHERE ud.user_id = $5 AND ud.tenant_id = $1 AND d.area_id = e.area_id)
+      ))
+      -- 3. Department level: check department permissions
+      OR (e.org_level = 'department' AND (
+        EXISTS (SELECT 1 FROM admin_department_permissions adp
+                WHERE adp.admin_user_id = $5 AND adp.department_id = e.department_id AND adp.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM departments d
+                   WHERE d.id = e.department_id AND d.department_lead_id = $5 AND d.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM user_departments ud
+                   WHERE ud.user_id = $5 AND ud.department_id = e.department_id AND ud.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM departments d
+                   JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                   WHERE d.id = e.department_id AND aap.admin_user_id = $5 AND aap.tenant_id = $1)
+      ))
+      -- 4. Team level: check team membership or lead
+      OR (e.org_level = 'team' AND (
+        EXISTS (SELECT 1 FROM user_teams ut
+                WHERE ut.user_id = $5 AND ut.team_id = e.team_id AND ut.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM teams t
+                   WHERE t.id = e.team_id AND t.team_lead_id = $5 AND t.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM teams t
+                   JOIN admin_department_permissions adp ON adp.department_id = t.department_id
+                   WHERE t.id = e.team_id AND adp.admin_user_id = $5 AND adp.tenant_id = $1)
+        OR EXISTS (SELECT 1 FROM teams t
+                   JOIN departments d ON t.department_id = d.id
+                   JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                   WHERE t.id = e.team_id AND aap.admin_user_id = $5 AND aap.tenant_id = $1)
+      ))
+    )
+`;
+
 const SORT_BY_MAP: Record<string, string> = {
   startDate: 'start_date',
   endDate: 'end_date',
   title: 'title',
   createdAt: 'created_at',
 };
+
+/**
+ * Build SQL visibility clause for permission-based event access
+ * Checks: admin permissions, lead positions, department/team memberships, personal, attendees
+ * @param userIdx - Parameter index for userId
+ * @param tenantIdx - Parameter index for tenantId
+ */
+function buildVisibilityClause(userIdx: number, tenantIdx: number): string {
+  return `(
+    e.org_level = 'company'
+    OR (e.org_level = 'area' AND (
+      EXISTS (SELECT 1 FROM admin_area_permissions aap
+              WHERE aap.admin_user_id = $${userIdx} AND aap.area_id = e.area_id AND aap.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM areas a
+                 WHERE a.id = e.area_id AND a.area_lead_id = $${userIdx} AND a.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM user_departments ud
+                 JOIN departments d ON ud.department_id = d.id
+                 WHERE ud.user_id = $${userIdx} AND ud.tenant_id = $${tenantIdx} AND d.area_id = e.area_id)
+    ))
+    OR (e.org_level = 'department' AND (
+      EXISTS (SELECT 1 FROM admin_department_permissions adp
+              WHERE adp.admin_user_id = $${userIdx} AND adp.department_id = e.department_id AND adp.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM departments d
+                 WHERE d.id = e.department_id AND d.department_lead_id = $${userIdx} AND d.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM user_departments ud
+                 WHERE ud.user_id = $${userIdx} AND ud.department_id = e.department_id AND ud.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM departments d
+                 JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                 WHERE d.id = e.department_id AND aap.admin_user_id = $${userIdx} AND aap.tenant_id = $${tenantIdx})
+    ))
+    OR (e.org_level = 'team' AND (
+      EXISTS (SELECT 1 FROM user_teams ut
+              WHERE ut.user_id = $${userIdx} AND ut.team_id = e.team_id AND ut.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM teams t
+                 WHERE t.id = e.team_id AND t.team_lead_id = $${userIdx} AND t.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM teams t
+                 JOIN admin_department_permissions adp ON adp.department_id = t.department_id
+                 WHERE t.id = e.team_id AND adp.admin_user_id = $${userIdx} AND adp.tenant_id = $${tenantIdx})
+      OR EXISTS (SELECT 1 FROM teams t
+                 JOIN departments d ON t.department_id = d.id
+                 JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                 WHERE t.id = e.team_id AND aap.admin_user_id = $${userIdx} AND aap.tenant_id = $${tenantIdx})
+    ))
+    OR (e.org_level = 'personal' AND e.user_id = $${userIdx})
+    OR EXISTS (SELECT 1 FROM calendar_attendees ca WHERE ca.event_id = e.id AND ca.user_id = $${userIdx})
+  )`;
+}
 
 // ============================================
 // Service
@@ -130,7 +237,11 @@ const SORT_BY_MAP: Record<string, string> = {
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly featureVisitsService: FeatureVisitsService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================
   // Public Methods
@@ -142,11 +253,11 @@ export class CalendarService {
   async listEvents(
     tenantId: number,
     userId: number,
-    userDepartmentId: number | null,
-    userTeamId: number | null,
+    _userDepartmentId: number | null,
+    _userTeamId: number | null,
     filters: EventFilters,
   ): Promise<PaginatedEventsResult> {
-    this.logger.log(`Listing events for tenant ${tenantId}, user ${userId}`);
+    // No log for READ operations - reduces noise
 
     const { page, limit, offset } = this.normalizePagination(filters);
     const status = filters.status === 'cancelled' ? 'cancelled' : 'confirmed';
@@ -161,19 +272,27 @@ export class CalendarService {
     const params: unknown[] = [tenantId, status];
     let paramIndex = 3;
 
-    // Apply org level filter
+    // CRITICAL: Only root OR has_full_access=true gets unrestricted access
     const filterType = filters.filter ?? 'all';
-    if (filterType !== 'all' && userRole.role !== 'admin' && userRole.role !== 'root') {
-      const orgFilter = this.buildOrgLevelFilter(
+    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+
+    if (!hasUnrestrictedAccess) {
+      // Users without full access get permission-based visibility filtering
+      const permissionFilter = this.buildPermissionBasedFilter(
         filterType,
         userId,
-        userDepartmentId,
-        userTeamId,
+        tenantId,
         paramIndex,
       );
-      query += orgFilter.clause;
-      params.push(...orgFilter.newParams);
-      paramIndex = orgFilter.newIndex;
+      query += permissionFilter.clause;
+      params.push(...permissionFilter.newParams);
+      paramIndex = permissionFilter.newIndex;
+    } else {
+      // Full access users can see all events, apply UI filter only
+      const adminFilter = this.buildAdminOrgLevelFilter(filterType, userId, paramIndex);
+      query += adminFilter.clause;
+      params.push(...adminFilter.newParams);
+      paramIndex = adminFilter.newIndex;
     }
 
     // Apply date and search filters
@@ -208,7 +327,7 @@ export class CalendarService {
     tenantId: number,
     userId: number,
   ): Promise<CalendarEventResponse> {
-    this.logger.log(`Getting event ${eventId} for tenant ${tenantId}`);
+    // No log for READ operations
 
     const events = await this.databaseService.query<DbCalendarEvent>(
       `SELECT e.*, u.username as creator_name
@@ -247,7 +366,7 @@ export class CalendarService {
   }
 
   /**
-   * Create a new event
+   * Create a new event (with optional recurrence)
    */
   async createEvent(
     dto: CreateEventDto,
@@ -256,7 +375,6 @@ export class CalendarService {
   ): Promise<CalendarEventResponse> {
     this.logger.log(`Creating event: ${dto.title}`);
 
-    const eventUuid = uuidv7();
     const startDate = new Date(dto.startTime);
     const endDate = new Date(dto.endTime);
 
@@ -264,12 +382,173 @@ export class CalendarService {
       throw new ForbiddenException('Start time must be before end time');
     }
 
+    // Calculate event duration in milliseconds
+    const durationMs = endDate.getTime() - startDate.getTime();
+
+    // Calculate recurrence dates (first date is the original event)
+    const recurrenceDates = this.calculateRecurrenceDates(
+      startDate,
+      dto.recurrence as string | undefined,
+      dto.recurrenceEndType as string | undefined,
+      dto.recurrenceCount,
+      dto.recurrenceUntil,
+    );
+
+    this.logger.debug(`Creating ${recurrenceDates.length} event instance(s)`);
+
+    // Create parent event (first occurrence)
+    const firstDate = recurrenceDates[0] ?? startDate;
+    const recurrenceStr = dto.recurrence ?? null;
+
+    const parentEventId = await this.insertEvent(
+      dto,
+      tenantId,
+      userId,
+      firstDate,
+      new Date(firstDate.getTime() + durationMs),
+      null,
+      recurrenceStr,
+    );
+
+    // Add attendees to parent event
+    await this.addAttendeesToEvent(parentEventId, userId, dto.attendeeIds, tenantId);
+
+    // Create child events for remaining occurrences
+    await this.createChildEvents(recurrenceDates, dto, tenantId, userId, durationMs, parentEventId);
+
+    // Log activity to root_logs
+    await this.logEventCreated(tenantId, userId, parentEventId, dto);
+
+    return await this.getEventById(parentEventId, tenantId, userId);
+  }
+
+  /** Create child events for recurrence series */
+  private async createChildEvents(
+    recurrenceDates: Date[],
+    dto: CreateEventDto,
+    tenantId: number,
+    userId: number,
+    durationMs: number,
+    parentEventId: number,
+  ): Promise<void> {
+    for (let i = 1; i < recurrenceDates.length; i++) {
+      const childStart = recurrenceDates[i];
+      if (childStart === undefined) continue;
+
+      const childEnd = new Date(childStart.getTime() + durationMs);
+      const childEventId = await this.insertEvent(
+        dto,
+        tenantId,
+        userId,
+        childStart,
+        childEnd,
+        parentEventId,
+        null,
+      );
+      await this.addAttendeesToEvent(childEventId, userId, dto.attendeeIds, tenantId);
+    }
+  }
+
+  /** Log calendar event creation to root_logs */
+  private async logEventCreated(
+    tenantId: number,
+    userId: number,
+    eventId: number,
+    dto: CreateEventDto,
+  ): Promise<void> {
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'calendar',
+      eventId,
+      `Kalender-Event erstellt: ${dto.title}`,
+      {
+        title: dto.title,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        recurrence: dto.recurrence ?? null,
+      },
+    );
+  }
+
+  /**
+   * Add creator and additional attendees to an event
+   */
+  private async addAttendeesToEvent(
+    eventId: number,
+    creatorId: number,
+    attendeeIds: number[] | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    await this.addEventAttendee(eventId, creatorId, tenantId);
+    if (attendeeIds !== undefined && attendeeIds.length > 0) {
+      for (const attendeeId of attendeeIds) {
+        await this.addEventAttendee(eventId, attendeeId, tenantId);
+      }
+    }
+  }
+
+  /**
+   * Determine org_level, department_id, team_id, and area_id from DTO
+   * Priority for orgLevel: area \> department \> team \> company \> personal
+   * IMPORTANT: Keep ALL provided IDs (area, department, team can coexist)
+   * The orgLevel only determines primary visibility scope
+   */
+  private determineOrgTarget(dto: CreateEventDto | UpdateEventDto): {
+    orgLevel: string;
+    departmentId: number | null;
+    teamId: number | null;
+    areaId: number | null;
+  } {
+    // Extract all IDs - keep them ALL, don't nullify any
+    const departmentId = dto.departmentIds?.[0] ?? null;
+    const teamId = dto.teamIds?.[0] ?? null;
+    const areaId = dto.areaIds?.[0] ?? null;
+
+    // Determine orgLevel based on highest priority (for visibility)
+    // Priority: area > department > team > company > personal
+    let orgLevel: string;
+    if (areaId !== null) {
+      orgLevel = 'area';
+    } else if (departmentId !== null) {
+      orgLevel = 'department';
+    } else if (teamId !== null) {
+      orgLevel = 'team';
+    } else if (dto.orgLevel === 'company') {
+      orgLevel = 'company';
+    } else {
+      orgLevel = dto.orgLevel ?? 'personal';
+    }
+
+    return {
+      orgLevel,
+      departmentId,
+      teamId,
+      areaId,
+    };
+  }
+
+  /**
+   * Insert a single event into the database
+   */
+  private async insertEvent(
+    dto: CreateEventDto,
+    tenantId: number,
+    userId: number,
+    startDate: Date,
+    endDate: Date,
+    parentEventId: number | null,
+    recurrenceRule: string | null,
+  ): Promise<number> {
+    const eventUuid = uuidv7();
+    const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
+
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO calendar_events
        (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
-        org_level, department_id, team_id, created_by_role, allow_attendees,
+        org_level, department_id, team_id, area_id, created_by_role, allow_attendees,
         type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
        RETURNING id`,
       [
         eventUuid,
@@ -281,9 +560,10 @@ export class CalendarService {
         startDate,
         endDate,
         dto.allDay === true ? 1 : 0,
-        dto.orgLevel ?? 'personal',
-        dto.departmentIds.length > 0 ? dto.departmentIds[0] : null,
-        dto.teamIds.length > 0 ? dto.teamIds[0] : null,
+        orgLevel,
+        departmentId,
+        teamId,
+        areaId,
         'user',
         1, // allow_attendees
         'other',
@@ -291,8 +571,8 @@ export class CalendarService {
         0, // is_private
         dto.reminderMinutes ?? null,
         dto.color ?? '#3498db',
-        dto.recurrenceRule ?? null,
-        null, // parent_event_id
+        recurrenceRule,
+        parentEventId,
       ],
     );
 
@@ -301,17 +581,77 @@ export class CalendarService {
       throw new Error('Failed to create event');
     }
 
-    // Add creator as attendee
-    await this.addEventAttendee(eventId, userId, tenantId);
+    return eventId;
+  }
 
-    // Add other attendees
-    if (dto.attendeeIds !== undefined && dto.attendeeIds.length > 0) {
-      for (const attendeeId of dto.attendeeIds) {
-        await this.addEventAttendee(eventId, attendeeId, tenantId);
-      }
+  /**
+   * Calculate all recurrence dates based on recurrence settings
+   * Returns array of start dates for each occurrence
+   */
+  private calculateRecurrenceDates(
+    startDate: Date,
+    recurrence: string | undefined,
+    endType: string | undefined,
+    count: number | undefined,
+    untilDate: string | undefined,
+  ): Date[] {
+    const dates: Date[] = [new Date(startDate)];
+
+    // No recurrence - return single date
+    if (recurrence === undefined) {
+      return dates;
     }
 
-    return await this.getEventById(eventId, tenantId, userId);
+    // Determine max occurrences
+    const MAX_OCCURRENCES = 52; // Safety limit (1 year of weekly events)
+    let maxCount = MAX_OCCURRENCES;
+
+    if (endType === 'after' && count !== undefined) {
+      maxCount = Math.min(count, MAX_OCCURRENCES);
+    }
+
+    const untilDateObj = untilDate !== undefined ? new Date(untilDate) : null;
+
+    // Generate dates
+    let currentDate = new Date(startDate);
+    while (dates.length < maxCount) {
+      currentDate = this.addRecurrenceInterval(currentDate, recurrence);
+
+      // Check if we've passed the until date
+      if (endType === 'until' && untilDateObj !== null && currentDate > untilDateObj) {
+        break;
+      }
+
+      dates.push(new Date(currentDate));
+    }
+
+    return dates;
+  }
+
+  /**
+   * Add interval to date based on recurrence type
+   */
+  private addRecurrenceInterval(date: Date, recurrence: string): Date {
+    const newDate = new Date(date);
+
+    switch (recurrence) {
+      case 'daily':
+        newDate.setDate(newDate.getDate() + 1);
+        break;
+      case 'weekly':
+        newDate.setDate(newDate.getDate() + 7);
+        break;
+      case 'monthly':
+        newDate.setMonth(newDate.getMonth() + 1);
+        break;
+      case 'yearly':
+        newDate.setFullYear(newDate.getFullYear() + 1);
+        break;
+      default:
+        throw new Error(`Unknown recurrence type: ${recurrence}`);
+    }
+
+    return newDate;
   }
 
   /** Build update query parts for event */
@@ -320,6 +660,31 @@ export class CalendarService {
     const params: unknown[] = [];
     let paramIndex = 1;
 
+    // Handle assignment fields specially - use determineOrgTarget for consistency
+    const hasAssignmentUpdate =
+      dto.areaIds !== undefined || dto.departmentIds !== undefined || dto.teamIds !== undefined;
+
+    if (hasAssignmentUpdate) {
+      const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
+
+      updates.push(`org_level = $${paramIndex}`);
+      params.push(orgLevel);
+      paramIndex++;
+
+      updates.push(`department_id = $${paramIndex}`);
+      params.push(departmentId);
+      paramIndex++;
+
+      updates.push(`team_id = $${paramIndex}`);
+      params.push(teamId);
+      paramIndex++;
+
+      updates.push(`area_id = $${paramIndex}`);
+      params.push(areaId);
+      paramIndex++;
+    }
+
+    // Handle non-assignment fields
     const fields: {
       key: keyof UpdateEventDto;
       column: string;
@@ -338,6 +703,11 @@ export class CalendarService {
       },
       { key: 'color', column: 'color' },
     ];
+
+    // Only include orgLevel if no assignment update (otherwise already handled above)
+    if (!hasAssignmentUpdate) {
+      fields.push({ key: 'orgLevel', column: 'org_level' });
+    }
 
     for (const { key, column, transform } of fields) {
       // Safe: key is from hardcoded array with keyof UpdateEventDto, not user input
@@ -389,6 +759,17 @@ export class CalendarService {
       params,
     );
 
+    // Log activity to root_logs
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'calendar',
+      eventId,
+      `Kalender-Event aktualisiert: ${existing.title}`,
+      { title: existing.title, startDate: existing.start_date, endDate: existing.end_date },
+      { title: dto.title ?? existing.title, startTime: dto.startTime, endTime: dto.endTime },
+    );
+
     return await this.getEventById(eventId, tenantId, userId);
   }
 
@@ -428,13 +809,26 @@ export class CalendarService {
       [eventId, tenantId],
     );
 
+    // Log activity to root_logs
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'calendar',
+      eventId,
+      `Kalender-Event gelöscht: ${existing.title}`,
+      {
+        title: existing.title,
+        startDate: existing.start_date,
+        endDate: existing.end_date,
+      },
+    );
+
     return { message: 'Event deleted successfully' };
   }
 
   // ============================================
   // UUID-based methods (for API consistency)
   // ============================================
-
   /**
    * Resolve event ID from UUID
    * @throws NotFoundException if event not found
@@ -499,8 +893,6 @@ export class CalendarService {
     _userDepartmentId: number | null,
     format: 'ics' | 'csv',
   ): Promise<string> {
-    this.logger.log(`Exporting events as ${format} for tenant ${tenantId}`);
-
     const events = await this.databaseService.query<DbCalendarEvent>(
       `SELECT e.*, u.username as creator_name
        FROM calendar_events e
@@ -512,30 +904,29 @@ export class CalendarService {
     );
 
     if (format === 'ics') {
-      return this.generateIcsExport(events);
+      return generateIcsExport(events);
     }
-    return this.generateCsvExport(events);
+    return generateCsvExport(events);
   }
 
   /**
-   * Get dashboard events
+   * Get dashboard events for the CURRENT MONTH
+   * Shows upcoming events starting from today until end of current month
    */
   async getDashboardEvents(
     tenantId: number,
     userId: number,
-    days: number = 7,
-    limit: number = 5,
+    limit: number = 10,
   ): Promise<CalendarEventResponse[]> {
-    this.logger.log(`Getting dashboard events for tenant ${tenantId}`);
-
     const today = new Date();
-    const endDate = new Date();
-    endDate.setDate(today.getDate() + days);
+    // End of current month
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
 
     const todayStr = today.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
 
     const userRole = await this.getUserRole(userId, tenantId);
+    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -544,18 +935,17 @@ export class CalendarService {
       WHERE e.tenant_id = $1 AND e.status = 'confirmed'
       AND e.start_date >= $2 AND e.start_date <= $3
     `;
-    const params: unknown[] = [tenantId, todayStr, endDateStr];
+    const params: unknown[] = [tenantId, todayStr, endOfMonthStr];
 
-    // Access control for non-admins
-    if (userRole.role !== 'admin' && userRole.role !== 'root') {
-      query += ` AND (
-        e.org_level = 'company' OR
-        (e.org_level = 'department' AND e.department_id = $4) OR
-        (e.org_level = 'team' AND e.team_id = $5) OR
-        e.user_id = $6 OR
-        EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $7)
-      )`;
-      params.push(userRole.department_id, userRole.team_id, userId, userId);
+    // Permission-based access control
+    if (!hasUnrestrictedAccess) {
+      // Regular users: full visibility check
+      query += ` AND ${buildVisibilityClause(4, 1)}`;
+      params.push(userId);
+    } else {
+      // ADR-010: Even admins/root can only see their OWN personal events
+      query += ` AND (e.org_level != 'personal' OR e.user_id = $4)`;
+      params.push(userId);
     }
 
     const limitIndex = params.length + 1;
@@ -567,28 +957,71 @@ export class CalendarService {
   }
 
   /**
-   * Get unread events (deprecated - returns empty)
+   * Get recently added events (last 3 by created_at)
+   * Shows the newest events regardless of their start date
    */
-  getUnreadEvents(): { totalUnread: number; eventsRequiringResponse: never[] } {
-    return {
-      totalUnread: 0,
-      eventsRequiringResponse: [],
-    };
+  async getRecentlyAddedEvents(
+    tenantId: number,
+    userId: number,
+    limit: number = 3,
+  ): Promise<CalendarEventResponse[]> {
+    const userRole = await this.getUserRole(userId, tenantId);
+    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+
+    let query = `
+      SELECT e.*, u.username as creator_name
+      FROM calendar_events e
+      LEFT JOIN users u ON e.user_id = u.id
+      WHERE e.tenant_id = $1 AND e.status = 'confirmed'
+    `;
+    const params: unknown[] = [tenantId];
+
+    // Permission-based access control
+    if (!hasUnrestrictedAccess) {
+      // Regular users: full visibility check
+      query += ` AND ${buildVisibilityClause(2, 1)}`;
+      params.push(userId);
+    } else {
+      // ADR-010: Even admins/root can only see their OWN personal events
+      query += ` AND (e.org_level != 'personal' OR e.user_id = $2)`;
+      params.push(userId);
+    }
+
+    const limitIndex = params.length + 1;
+    query += ` ORDER BY e.created_at DESC LIMIT $${limitIndex}`;
+    params.push(limit);
+
+    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    return events.map((e: DbCalendarEvent) => this.dbToApiEvent(e));
   }
 
   // ============================================
   // Private Helper Methods
   // ============================================
-
   /**
-   * Get user role info
+   * Get user role info with department and team
    */
   private async getUserRole(userId: number, tenantId: number): Promise<UserRoleInfo> {
     const rows = await this.databaseService.query<UserRoleInfo>(
-      `SELECT role, NULL as department_id, NULL as team_id FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT u.role,
+              u.has_full_access,
+              ud.department_id,
+              ut.team_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+       WHERE u.id = $1 AND u.tenant_id = $2
+       LIMIT 1`,
       [userId, tenantId],
     );
-    return rows[0] ?? { role: null, department_id: null, team_id: null };
+    return (
+      rows[0] ?? {
+        role: null,
+        department_id: null,
+        team_id: null,
+        has_full_access: false,
+      }
+    );
   }
 
   /**
@@ -633,13 +1066,12 @@ export class CalendarService {
   }
 
   /**
-   * Build org level filter clause
+   * Build org level filter for ADMIN users (UI filter only, no visibility restrictions)
+   * Admins can see ALL events but may want to filter by org_level type
    */
-  private buildOrgLevelFilter(
+  private buildAdminOrgLevelFilter(
     filterType: string,
     userId: number,
-    userDepartmentId: number | null,
-    userTeamId: number | null,
     startIndex: number,
   ): { clause: string; newParams: unknown[]; newIndex: number } {
     const params: unknown[] = [];
@@ -651,49 +1083,57 @@ export class CalendarService {
         clause = ` AND e.org_level = 'company'`;
         break;
       case 'area':
-        // Filter by area: get area_id from user's department(s)
-        clause = ` AND e.org_level = 'area' AND e.area_id IN (
-          SELECT d.area_id FROM departments d
-          JOIN user_departments ud ON d.id = ud.department_id
-          WHERE ud.user_id = $${index} AND d.area_id IS NOT NULL
-        )`;
-        params.push(userId);
-        index++;
+        clause = ` AND e.org_level = 'area'`;
         break;
       case 'department':
-        clause = ` AND e.org_level = 'department' AND e.department_id = $${index}`;
-        params.push(userDepartmentId);
-        index++;
+        clause = ` AND e.org_level = 'department'`;
         break;
       case 'team':
-        clause = ` AND e.org_level = 'team' AND e.team_id = $${index}`;
-        params.push(userTeamId);
-        index++;
+        clause = ` AND e.org_level = 'team'`;
         break;
       case 'personal':
-        clause = ` AND (e.org_level = 'personal' AND e.user_id = $${index})`;
+        // For admins, show their own personal events only
+        clause = ` AND e.org_level = 'personal' AND e.user_id = $${index}`;
         params.push(userId);
         index++;
         break;
       default:
-        // 'all' - show accessible events including area-level
-        clause = ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'area' AND e.area_id IN (
-            SELECT d.area_id FROM departments d
-            JOIN user_departments ud ON d.id = ud.department_id
-            WHERE ud.user_id = $${index} AND d.area_id IS NOT NULL
-          )) OR
-          (e.org_level = 'department' AND e.department_id = $${index + 1}) OR
-          (e.org_level = 'team' AND e.team_id = $${index + 2}) OR
-          e.user_id = $${index + 3} OR
-          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = $${index + 4})
-        )`;
-        params.push(userId, userDepartmentId, userTeamId, userId, userId);
-        index += 5;
+        // 'all' - show everything EXCEPT other users' personal events
+        // ADR-010: personal events are ONLY visible to their creator
+        clause = ` AND (e.org_level != 'personal' OR e.user_id = $${index})`;
+        params.push(userId);
+        index++;
+        break;
     }
 
     return { clause, newParams: params, newIndex: index };
+  }
+
+  /**
+   * Build permission-based filter for users without full_access
+   * Uses shared buildVisibilityClause helper for consistency
+   */
+  private buildPermissionBasedFilter(
+    filterType: string,
+    userId: number,
+    tenantId: number,
+    startIndex: number,
+  ): { clause: string; newParams: unknown[]; newIndex: number } {
+    // Use helper to build visibility clause with correct parameter indices
+    const visibilityClause = buildVisibilityClause(startIndex, startIndex + 1);
+    let clause = ` AND ${visibilityClause}`;
+
+    // Apply additional UI filter if requested
+    const orgLevelFilters: Record<string, string> = {
+      company: ` AND e.org_level = 'company'`,
+      area: ` AND e.org_level = 'area'`,
+      department: ` AND e.org_level = 'department'`,
+      team: ` AND e.org_level = 'team'`,
+      personal: ` AND e.org_level = 'personal'`,
+    };
+    clause += orgLevelFilters[filterType] ?? '';
+
+    return { clause, newParams: [userId, tenantId], newIndex: startIndex + 2 };
   }
 
   /**
@@ -739,8 +1179,7 @@ export class CalendarService {
   } {
     const page = Math.max(1, filters.page ?? 1);
     const limit = Math.min(200, Math.max(1, filters.limit ?? 50));
-    const offset = (page - 1) * limit;
-    return { page, limit, offset };
+    return { page, limit, offset: (page - 1) * limit };
   }
 
   /** Append date and search filters to query */
@@ -820,59 +1259,104 @@ export class CalendarService {
     };
   }
 
+  // ==========================================================================
+  // NOTIFICATION COUNT METHODS
+  // ==========================================================================
   /**
-   * Generate ICS format export
+   * Get count of upcoming events for notification badge
+   * Counts events created AFTER user's last visit to calendar
+   * Events must also start within the next 7 days
    */
-  private generateIcsExport(events: DbCalendarEvent[]): string {
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Assixx//Calendar//EN'];
+  async getUpcomingCount(
+    tenantId: number,
+    userId: number,
+    _userDepartmentId: number | null,
+    _userTeamId: number | null,
+  ): Promise<{ count: number }> {
+    const userRole = await this.getUserRole(userId, tenantId);
+    const lastVisited = await this.featureVisitsService.getLastVisited(
+      tenantId,
+      userId,
+      'calendar',
+    );
 
-    for (const event of events) {
-      lines.push('BEGIN:VEVENT');
-      lines.push(`UID:${event.id}@assixx`);
-      lines.push(`DTSTART:${this.formatDateIcs(event.start_date)}`);
-      lines.push(`DTEND:${this.formatDateIcs(event.end_date)}`);
-      lines.push(`SUMMARY:${event.title}`);
-      if (event.description !== null && event.description !== '') {
-        lines.push(`DESCRIPTION:${event.description}`);
-      }
-      if (event.location !== null && event.location !== '') {
-        lines.push(`LOCATION:${event.location}`);
-      }
-      lines.push('END:VEVENT');
-    }
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfWeek = new Date(startOfDay);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
 
-    lines.push('END:VCALENDAR');
-    return lines.join('\r\n');
+    // CRITICAL: Only root OR has_full_access=true gets unrestricted access
+    // Regular admins use permission-based visibility like employees
+    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+    const lastVisitDate = lastVisited ?? new Date('1970-01-01');
+
+    const count =
+      hasUnrestrictedAccess ?
+        await this.countUpcomingForFullAccess(
+          tenantId,
+          userId,
+          startOfDay,
+          endOfWeek,
+          lastVisitDate,
+        )
+      : await this.countUpcomingWithPermissions(
+          tenantId,
+          userId,
+          startOfDay,
+          endOfWeek,
+          lastVisitDate,
+        );
+
+    return { count };
   }
 
   /**
-   * Generate CSV format export
+   * Count upcoming events for users with unrestricted access (root or has_full_access=true)
    */
-  private generateCsvExport(events: DbCalendarEvent[]): string {
-    const headers = ['ID', 'Title', 'Start', 'End', 'Location', 'Description', 'Status'];
-    const rows = events.map((event: DbCalendarEvent) => {
-      const desc = typeof event.description === 'string' ? event.description : '';
-      return [
-        event.id.toString(),
-        `"${event.title.replace(/"/g, '""')}"`,
-        event.start_date.toISOString(),
-        event.end_date.toISOString(),
-        `"${(event.location ?? '').replace(/"/g, '""')}"`,
-        `"${desc.replace(/"/g, '""')}"`,
-        event.status ?? 'confirmed',
-      ];
-    });
-
-    return [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join('\n');
+  private async countUpcomingForFullAccess(
+    tenantId: number,
+    userId: number,
+    startOfDay: Date,
+    endOfWeek: Date,
+    lastVisited: Date,
+  ): Promise<number> {
+    // ADR-010: Exclude other users' personal events from count
+    const query = `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM calendar_events e
+      WHERE e.tenant_id = $1
+        AND e.start_date >= $2
+        AND e.start_date < $3
+        AND e.status != 'cancelled'
+        AND e.created_at > $4
+        AND e.user_id != $5
+        AND (e.org_level != 'personal' OR e.user_id = $5)
+    `;
+    const result = await this.databaseService.query<{ count: string }>(query, [
+      tenantId,
+      startOfDay,
+      endOfWeek,
+      lastVisited,
+      userId,
+    ]);
+    return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
   /**
-   * Format date for ICS
+   * Count upcoming events with permission-based visibility
+   * Uses PERMISSION_BASED_COUNT_QUERY constant for visibility rules
    */
-  private formatDateIcs(date: Date): string {
-    return date
-      .toISOString()
-      .replace(/[-:]/g, '')
-      .replace(/\.\d{3}/, '');
+  private async countUpcomingWithPermissions(
+    tenantId: number,
+    userId: number,
+    startOfDay: Date,
+    endOfWeek: Date,
+    lastVisited: Date,
+  ): Promise<number> {
+    const result = await this.databaseService.query<{ count: string }>(
+      PERMISSION_BASED_COUNT_QUERY,
+      [tenantId, startOfDay, endOfWeek, lastVisited, userId],
+    );
+    return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 }

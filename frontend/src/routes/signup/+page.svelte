@@ -59,6 +59,8 @@
   // Password
   let password = $state('');
   let passwordConfirm = $state('');
+  let showPassword = $state(false);
+  let showPasswordConfirm = $state(false);
 
   // Plan
   let selectedPlan = $state(DEFAULT_PLAN.value);
@@ -130,6 +132,11 @@
   function handlePasswordConfirmInput(): void {
     passwordMatchError =
       passwordConfirm !== '' && !passwordMatch ? ERROR_MESSAGES.passwordMismatch : null;
+  }
+
+  function togglePasswordVisibility(field: 'password' | 'confirm'): void {
+    if (field === 'password') showPassword = !showPassword;
+    if (field === 'confirm') showPasswordConfirm = !showPasswordConfirm;
   }
 
   function selectCountry(country: Country): void {
@@ -439,19 +446,31 @@
             </span>
           </span>
         </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          class="form-field__control"
-          required
-          minlength="12"
-          maxlength="72"
-          placeholder="Min. 12 Zeichen"
-          autocomplete="new-password"
-          bind:value={password}
-          disabled={loading}
-        />
+        <div class="form-field__password-wrapper">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            name="password"
+            class="form-field__control"
+            required
+            minlength="12"
+            maxlength="72"
+            placeholder="Min. 12 Zeichen"
+            autocomplete="new-password"
+            bind:value={password}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            class="form-field__password-toggle"
+            aria-label="Passwort anzeigen"
+            onclick={() => {
+              togglePasswordVisibility('password');
+            }}
+          >
+            <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Password Strength Indicator -->
@@ -466,25 +485,46 @@
         </div>
       {/if}
 
-      <div class="form-field">
+      <div
+        class="form-field"
+        class:is-error={passwordMatchError}
+        class:is-success={passwordConfirm !== '' && passwordMatch}
+      >
         <label class="form-field__label form-field__label--required" for="password_confirm"
           >Passwort bestätigen</label
         >
-        <input
-          type="password"
-          id="password_confirm"
-          name="password_confirm"
-          class="form-field__control"
-          class:is-error={passwordMatchError}
-          required
-          placeholder=""
-          autocomplete="new-password"
-          bind:value={passwordConfirm}
-          oninput={handlePasswordConfirmInput}
-          disabled={loading}
-        />
+        <div class="form-field__password-wrapper">
+          <input
+            type={showPasswordConfirm ? 'text' : 'password'}
+            id="password_confirm"
+            name="password_confirm"
+            class="form-field__control"
+            class:is-error={passwordMatchError}
+            class:is-success={passwordConfirm !== '' && passwordMatch}
+            required
+            placeholder=""
+            autocomplete="new-password"
+            bind:value={passwordConfirm}
+            oninput={handlePasswordConfirmInput}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            class="form-field__password-toggle"
+            aria-label="Passwort anzeigen"
+            onclick={() => {
+              togglePasswordVisibility('confirm');
+            }}
+          >
+            <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
+          </button>
+        </div>
         {#if passwordMatchError}
           <p class="form-field__message form-field__message--error">{passwordMatchError}</p>
+        {:else if passwordConfirm !== '' && passwordMatch}
+          <p class="form-field__message form-field__message--success">
+            <i class="fas fa-check"></i> Passwörter stimmen überein
+          </p>
         {/if}
       </div>
 

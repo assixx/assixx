@@ -9,7 +9,10 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+
+  import { filterState } from '../kvp/_lib/state-filters.svelte';
 
   import '../../../styles/kvp-detail.css';
 
@@ -19,8 +22,11 @@
     shareSuggestion,
     unshareSuggestion,
     archiveSuggestion,
+    unarchiveSuggestion,
     getAttachmentPreviewUrl,
     getShareLevelText,
+    confirmSuggestion,
+    unconfirmSuggestion,
   } from './_lib/api';
   import AttachmentPreviewModal from './_lib/AttachmentPreviewModal.svelte';
   import CommentsSection from './_lib/CommentsSection.svelte';
@@ -296,15 +302,41 @@
   }
 
   async function handleUnshare() {
-    const confirmed = await showConfirm('Moechten Sie das Teilen wirklich rueckgaengig machen?');
+    const confirmed = await showConfirm('Moechten Sie das Teilen wirklich rückgängig machen?');
     if (!confirmed) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
     if (result.success) {
-      showSuccessAlert('Teilen wurde rueckgaengig gemacht');
+      showSuccessAlert('Teilen wurde rückgängig gemacht');
       await invalidateAll();
     } else {
-      showErrorAlert(result.error ?? 'Fehler beim Rueckgaengigmachen');
+      showErrorAlert(result.error ?? 'Fehler beim rückgängigmachen');
+    }
+  }
+
+  // ==========================================================================
+  // READ CONFIRMATION HANDLERS (Pattern 2: Individual Decrement/Increment)
+  // ==========================================================================
+
+  async function handleConfirm() {
+    const result = await confirmSuggestion(suggestion.uuid);
+    if (result.success) {
+      notificationStore.decrementCount('kvp'); // Update badge immediately
+      showSuccessAlert('Als gelesen markiert');
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.error ?? 'Fehler beim Markieren');
+    }
+  }
+
+  async function handleUnconfirm() {
+    const result = await unconfirmSuggestion(suggestion.uuid);
+    if (result.success) {
+      notificationStore.incrementCount('kvp'); // Update badge immediately
+      showSuccessAlert('Als ungelesen markiert');
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.error ?? 'Fehler beim Markieren');
     }
   }
 
@@ -322,6 +354,23 @@
       setTimeout(() => void goto(resolvePath('/kvp')), 1500);
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Archivieren');
+    }
+  }
+
+  // ==========================================================================
+  // UNARCHIVE (RESTORE) HANDLER
+  // ==========================================================================
+
+  async function handleUnarchive() {
+    const confirmed = await showConfirm('Moechten Sie diesen Vorschlag wirklich wiederherstellen?');
+    if (!confirmed) return;
+
+    const result = await unarchiveSuggestion(suggestion.uuid);
+    if (result.success) {
+      showSuccessAlert('Vorschlag wurde wiederhergestellt');
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.error ?? 'Fehler beim Wiederherstellen');
     }
   }
 
@@ -358,7 +407,14 @@
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button type="button" class="btn btn-light" onclick={() => goto(resolvePath('/kvp'))}>
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={() => {
+        filterState.reset();
+        void goto(resolvePath('/kvp'));
+      }}
+    >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
     </button>
   </div>
@@ -472,7 +528,7 @@
               >
             </div>
           {/if}
-          {#if suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
+          {#if suggestion.status === 'rejected' && suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
             <div class="data-list__item">
               <span class="data-list__label">Ablehnungsgrund</span>
               <span class="data-list__value">{suggestion.rejectionReason}</span>
@@ -569,6 +625,9 @@
       onopensharemodal={handleOpenShareModal}
       onunshare={handleUnshare}
       onarchive={handleArchive}
+      onunarchive={handleUnarchive}
+      onconfirm={handleConfirm}
+      onunconfirm={handleUnconfirm}
     />
   </div>
 </div>

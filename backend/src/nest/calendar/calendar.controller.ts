@@ -9,7 +9,6 @@
  * - DELETE /calendar/events/:id  - Delete event
  * - GET  /calendar/export        - Export events (ICS/CSV)
  * - GET  /calendar/dashboard     - Get upcoming events
- * - GET  /calendar/unread-events - Get unread events
  */
 import {
   Body,
@@ -47,14 +46,6 @@ interface MessageResponse {
   message: string;
 }
 
-/**
- * Response type for unread events
- */
-interface UnreadEventsResponse {
-  totalUnread: number;
-  eventsRequiringResponse: never[];
-}
-
 @Controller('calendar')
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
@@ -90,7 +81,7 @@ export class CalendarController {
 
   /**
    * GET /calendar/dashboard
-   * Get upcoming events for dashboard
+   * Get upcoming events for current month
    */
   @Get('dashboard')
   async getDashboardEvents(
@@ -98,11 +89,36 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CalendarEventResponse[]> {
-    return await this.calendarService.getDashboardEvents(
+    return await this.calendarService.getDashboardEvents(tenantId, user.id, query.limit ?? 10);
+  }
+
+  /**
+   * GET /calendar/recently-added
+   * Get recently added events (last 3 by created_at)
+   */
+  @Get('recently-added')
+  async getRecentlyAddedEvents(
+    @Query() query: DashboardEventsQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarEventResponse[]> {
+    return await this.calendarService.getRecentlyAddedEvents(tenantId, user.id, query.limit ?? 3);
+  }
+
+  /**
+   * GET /calendar/upcoming-count
+   * Get count of upcoming events for notification badge
+   */
+  @Get('upcoming-count')
+  async getUpcomingCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.calendarService.getUpcomingCount(
       tenantId,
       user.id,
-      query.days ?? 7,
-      query.limit ?? 5,
+      user.departmentId ?? null,
+      user.teamId ?? null,
     );
   }
 
@@ -131,15 +147,6 @@ export class CalendarController {
       .header('Content-Type', contentType)
       .header('Content-Disposition', `attachment; filename="${filename}"`)
       .send(data);
-  }
-
-  /**
-   * GET /calendar/unread-events
-   * Get unread events requiring response (deprecated)
-   */
-  @Get('unread-events')
-  getUnreadEvents(): UnreadEventsResponse {
-    return this.calendarService.getUnreadEvents();
   }
 
   /**

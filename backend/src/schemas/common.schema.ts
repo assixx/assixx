@@ -11,11 +11,18 @@ import { z } from 'zod';
 /**
  * ID validation with string-to-number transform
  * Handles both string and number inputs
+ * Returns undefined for empty strings to avoid NaN issues
  */
-export const IdSchema = z.preprocess(
-  (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
-  z.number().int().positive('ID must be a positive integer'),
-);
+export const IdSchema = z.preprocess((val: unknown) => {
+  if (val === undefined || val === null || val === '') {
+    return undefined;
+  }
+  if (typeof val === 'string') {
+    const parsed = Number.parseInt(val, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return val;
+}, z.number().int().positive('ID must be a positive integer'));
 
 /**
  * Email validation with normalization

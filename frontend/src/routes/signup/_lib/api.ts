@@ -19,8 +19,9 @@ const apiClient = getApiClient();
  */
 export async function registerUser(payload: RegisterPayload): Promise<RegisterResponse> {
   try {
-    // Registration endpoint is unauthenticated
-    return await apiClient.post<RegisterResponse>('/auth/register', payload, {
+    // Public signup endpoint (creates tenant + admin user)
+    // Note: /auth/register is for admins creating users, /signup is for public tenant registration
+    return await apiClient.post<RegisterResponse>('/signup', payload, {
       useAuth: false,
     });
   } catch (err) {
@@ -35,7 +36,7 @@ export async function registerUser(payload: RegisterPayload): Promise<RegisterRe
  * Creates the API payload from form data
  *
  * @param formData - Form data from the signup form
- * @returns API payload ready to send
+ * @returns API payload ready to send (matches backend SignupSchema)
  */
 export function createRegisterPayload(formData: {
   companyName: string;
@@ -53,13 +54,19 @@ export function createRegisterPayload(formData: {
   const fullPhone = `${formData.countryCode}${phoneDigits}`;
 
   return {
-    company_name: formData.companyName,
+    // Company information
+    companyName: formData.companyName,
     subdomain: formData.subdomain,
-    email: formData.email,
-    first_name: formData.firstName,
-    last_name: formData.lastName,
+    email: formData.email, // Company contact email (same as admin for now)
     phone: fullPhone,
-    password: formData.password,
-    plan: formData.selectedPlan,
+
+    // Admin user information
+    adminEmail: formData.email, // Admin uses same email as company contact
+    adminPassword: formData.password,
+    adminFirstName: formData.firstName,
+    adminLastName: formData.lastName,
+
+    // Subscription plan
+    plan: formData.selectedPlan as RegisterPayload['plan'],
   };
 }

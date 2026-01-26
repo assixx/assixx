@@ -9,6 +9,7 @@
 
   import { goto, invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -111,6 +112,10 @@
       userRole = ssrUser.role;
     }
   });
+
+  // NOTE: Document read status is tracked individually via document_read_status table
+  // Badge decrements when user clicks on a document (markAsRead function)
+
   let currentCategory = $state<DocumentCategory>('all');
   let searchQuery = $state('');
   let sortOption = $state<SortOption>('newest');
@@ -228,6 +233,7 @@
   async function markAsRead(documentId: number) {
     try {
       await apiMarkAsRead(documentId);
+      notificationStore.decrementCount('documents'); // Update sidebar badge
       allDocuments = allDocuments.map((doc) =>
         doc.id === documentId ? { ...doc, isRead: true } : doc,
       );

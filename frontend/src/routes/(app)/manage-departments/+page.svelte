@@ -506,16 +506,14 @@
                       >
                     </td>
                     <td>
-                      <div class="text-center">
-                        <span
-                          class="badge {(dept.teamCount ?? 0) > 0
-                            ? 'badge--info'
-                            : 'badge--secondary'}"
-                          title={dept.teamNames ?? 'Keine Teams zugewiesen'}
-                        >
-                          {getTeamCountText(dept.teamCount ?? 0)}
-                        </span>
-                      </div>
+                      <span
+                        class="badge {(dept.teamCount ?? 0) > 0
+                          ? 'badge--info'
+                          : 'badge--secondary'}"
+                        title={dept.teamNames ?? 'Keine Teams zugewiesen'}
+                      >
+                        {getTeamCountText(dept.teamCount ?? 0)}
+                      </span>
                     </td>
                     <td>
                       <div class="flex gap-2">

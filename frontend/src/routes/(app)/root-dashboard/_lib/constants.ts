@@ -57,11 +57,11 @@ export const EMPLOYEE_NUMBER = {
   tempPrefixes: ['TEMP-', 'TEMP_'],
 } as const;
 
-/** API endpoints */
+/** API endpoints (relative to /api/v2 base) */
 export const API_ENDPOINTS = {
-  dashboard: '/api/v2/root/dashboard',
-  logs: '/api/v2/logs?limit=5',
-  userMe: '/api/v2/users/me',
+  dashboard: '/root/dashboard',
+  logs: '/logs?limit=5',
+  userMe: '/users/me',
 } as const;
 
 /** LocalStorage keys */
@@ -77,6 +77,9 @@ export const MESSAGES = {
   saveError: 'Fehler beim Speichern',
   employeeNumberSaveError: 'Fehler beim Speichern der Personalnummer',
   genericError: 'Ein Fehler ist aufgetreten',
+
+  // Success
+  employeeNumberSaved: 'Personalnummer erfolgreich gespeichert',
 
   // Validation
   employeeNumberRequired: 'Bitte geben Sie eine gültige Personalnummer ein.',

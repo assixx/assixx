@@ -36,12 +36,6 @@
   transition: all 0.2s;
 }
 */
-
-/* Hover state - EXACT match to .card-stat:hover */
-.card--blackboard:hover {
-  border-color: var(--color-icon-primary);
-}
-
 /* After content loads */
 .card--blackboard.loaded {
   opacity: 100%;
@@ -62,7 +56,7 @@
   align-items: center;
 
   /* Remove default card header styles */
-  margin-bottom: 1rem; /* Custom spacing for widget */
+  margin-bottom: -1.35rem; /* Custom spacing for widget */
   border: none !important; /* No bottom border */
   padding-bottom: 0; /* No bottom padding */
 

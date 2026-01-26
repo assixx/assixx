@@ -8,7 +8,7 @@
 
 export default {
   // Story files location
-  stories: ['../stories/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
+  stories: ['../design-system/stories/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
 
   // Addons (essentials are now built into Storybook 9 core)
   addons: [
@@ -53,6 +53,6 @@ export default {
     defaultName: 'Docs', // Name of the docs tab
   },
 
-  // Static files (only directories that exist)
-  staticDirs: ['../frontend/public'],
+  // Static files (SvelteKit uses 'static' not 'public')
+  staticDirs: ['../frontend/static'],
 };

@@ -73,20 +73,42 @@ export const REDACTED_VALUE = '[REDACTED]';
 /**
  * Log levels by environment
  */
+/**
+ * Default log levels by environment.
+ * INFO is the standard for both production AND development.
+ * DEBUG is only enabled via explicit LOG_LEVEL=debug env var when troubleshooting.
+ *
+ * Best Practice:
+ * - INFO: Significant events (login, create, delete, errors)
+ * - DEBUG: Only for active troubleshooting, not default
+ */
 export const LOG_LEVELS = {
   production: 'info',
-  development: 'debug',
+  development: 'info', // Changed from 'debug' - DEBUG via LOG_LEVEL=debug only
   test: 'silent',
 } as const;
 
 /**
  * Routes to exclude from request logging
  * (health checks, metrics, etc.)
+ *
+ * Used by both:
+ * 1. nestjs-pino exclude (NestJS route matching - without global prefix)
+ * 2. pino-http autoLogging.ignore (full URL path matching)
  */
 export const EXCLUDED_ROUTES = [
-  { method: 'GET' as const, path: '/health' },
-  { method: 'GET' as const, path: '/api/v2/health' },
-  { method: 'GET' as const, path: '/api/v2/metrics' },
+  { method: 'GET' as const, path: 'health' },
+  { method: 'GET' as const, path: 'metrics' },
+] as const;
+
+/**
+ * Full URL paths to exclude from pino-http autoLogging
+ * These are matched against req.url (includes global prefix)
+ */
+export const EXCLUDED_URL_PATHS: readonly string[] = [
+  '/health',
+  '/api/v2/health',
+  '/api/v2/metrics',
 ] as const;
 
 /**

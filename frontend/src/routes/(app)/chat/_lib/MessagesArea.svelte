@@ -20,9 +20,11 @@
 
   import type { Message, ScheduledMessage } from './types';
 
-  interface ImageAttachment {
+  interface PreviewAttachment {
     src: string;
     alt: string;
+    /** MIME type for determining preview method (image vs pdf) */
+    mimeType?: string;
   }
 
   interface Props {
@@ -33,7 +35,7 @@
     typingUsers: number[];
     isLoading: boolean;
     oncancelscheduled: (scheduled: ScheduledMessage) => void;
-    onimageclick: (image: ImageAttachment) => void;
+    onimageclick: (file: PreviewAttachment) => void;
   }
 
   /* eslint-disable prefer-const */
@@ -160,10 +162,41 @@
   {:else}
     <!-- Scheduled Messages First -->
     {#each scheduledMessages as scheduled (scheduled.id)}
+      {@const att = scheduled.attachment}
+      {@const isImage = att?.type.startsWith('image/') === true}
       <div class="message own message--scheduled" data-scheduled-id={scheduled.id}>
         <div class="message-bubble">
           <div class="message-content">
-            <p class="message-text">{scheduled.content}</p>
+            {#if scheduled.content}
+              <p class="message-text">{scheduled.content}</p>
+            {/if}
+
+            <!-- Scheduled message attachment preview -->
+            {#if att !== null}
+              {#if isImage}
+                <div class="attachment image-attachment scheduled-attachment">
+                  <div class="attachment-image-wrapper">
+                    <img
+                      src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
+                      alt={att.name}
+                      loading="lazy"
+                    />
+                    <div class="attachment-overlay scheduled-overlay">
+                      <i class="far fa-clock"></i>
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <div class="attachment file-attachment scheduled-attachment">
+                  <i class="fas {getFileIcon(att.type)}"></i>
+                  <div class="file-info">
+                    <span class="file-name">{att.name}</span>
+                    <span class="file-size">{formatFileSize(att.size)}</span>
+                  </div>
+                </div>
+              {/if}
+            {/if}
+
             <div class="message--scheduled-info">
               <i class="far fa-clock"></i>
               <span>
@@ -211,23 +244,41 @@
             <!-- Attachments (only render block if hasAttachments) -->
             {#if message.hasAttachments}
               {#each message.attachments as att (att.id)}
-                {#if att.mimeType.startsWith('image/')}
-                  {@const imageSrc =
-                    att.downloadUrl ??
-                    `/api/v2/chat/attachments/${att.fileUuid}/download?inline=true`}
+                {@const isImage = att.mimeType.startsWith('image/')}
+                {@const isPdf = att.mimeType === 'application/pdf'}
+                {@const canPreview = isImage || isPdf}
+                {@const inlineSrc =
+                  att.downloadUrl ?? `/api/v2/documents/uuid/${att.fileUuid}/download?inline=true`}
+                {@const previewSrc = isPdf
+                  ? `/api/v2/documents/uuid/${att.fileUuid}/preview`
+                  : inlineSrc}
+                {#if canPreview}
                   <button
                     type="button"
-                    class="attachment image-attachment"
+                    class="attachment {isImage ? 'image-attachment' : 'file-attachment'}"
                     onclick={() => {
-                      onimageclick({ src: imageSrc, alt: att.fileName });
+                      onimageclick({ src: previewSrc, alt: att.fileName, mimeType: att.mimeType });
                     }}
                   >
-                    <div class="attachment-image-wrapper">
-                      <img src={imageSrc} alt={att.fileName} loading="lazy" />
-                      <div class="attachment-overlay">
-                        <i class="fas fa-search-plus"></i>
+                    {#if isImage}
+                      <div class="attachment-image-wrapper">
+                        <img src={inlineSrc} alt={att.fileName} loading="lazy" />
+                        <div class="attachment-overlay">
+                          <i class="fas fa-search-plus"></i>
+                        </div>
                       </div>
-                    </div>
+                    {:else}
+                      <i class="fas fa-file-pdf"></i>
+                      <div class="file-info">
+                        <span class="file-name">{att.fileName}</span>
+                        <span class="file-size">{formatFileSize(att.fileSize)}</span>
+                      </div>
+                      <div class="attachment-actions">
+                        <span class="btn btn-icon btn-sm" aria-label="Vorschau">
+                          <i class="fas fa-eye"></i>
+                        </span>
+                      </div>
+                    {/if}
                   </button>
                 {:else}
                   <a
@@ -257,18 +308,64 @@
 
             <!-- Legacy attachment support -->
             {#if message.attachment}
-              <a
-                class="attachment file-attachment"
-                href={message.attachment.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <i class="fas {getFileIcon(message.attachment.mimeType)}"></i>
-                <div class="file-info">
-                  <span class="file-name">{message.attachment.filename}</span>
-                  <span class="file-size">{formatFileSize(message.attachment.size)}</span>
-                </div>
-              </a>
+              {@const isLegacyImage = message.attachment.mimeType.startsWith('image/')}
+              {@const isLegacyPdf = message.attachment.mimeType === 'application/pdf'}
+              {@const canPreview = isLegacyImage || isLegacyPdf}
+              {@const legacyInlineSrc = `${message.attachment.url}?inline=true`}
+              {@const legacyUuidMatch = /attachments\/([^/]+)\/download/.exec(
+                message.attachment.url,
+              )}
+              {@const legacyUuid = legacyUuidMatch !== null ? legacyUuidMatch[1] : null}
+              {@const legacyPreviewSrc =
+                isLegacyPdf && legacyUuid !== null
+                  ? `/api/v2/documents/uuid/${legacyUuid}/preview`
+                  : legacyInlineSrc}
+              {#if canPreview}
+                <button
+                  type="button"
+                  class="attachment {isLegacyImage ? 'image-attachment' : 'file-attachment'}"
+                  onclick={() => {
+                    onimageclick({
+                      src: legacyPreviewSrc,
+                      alt: message.attachment?.filename ?? 'Attachment',
+                      mimeType: message.attachment?.mimeType,
+                    });
+                  }}
+                >
+                  {#if isLegacyImage}
+                    <div class="attachment-image-wrapper">
+                      <img src={legacyInlineSrc} alt={message.attachment.filename} loading="lazy" />
+                      <div class="attachment-overlay">
+                        <i class="fas fa-search-plus"></i>
+                      </div>
+                    </div>
+                  {:else}
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="file-info">
+                      <span class="file-name">{message.attachment.filename}</span>
+                      <span class="file-size">{formatFileSize(message.attachment.size)}</span>
+                    </div>
+                    <div class="attachment-actions">
+                      <span class="btn btn-icon btn-sm" aria-label="Vorschau">
+                        <i class="fas fa-eye"></i>
+                      </span>
+                    </div>
+                  {/if}
+                </button>
+              {:else}
+                <a
+                  class="attachment file-attachment"
+                  href={message.attachment.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i class="fas {getFileIcon(message.attachment.mimeType)}"></i>
+                  <div class="file-info">
+                    <span class="file-name">{message.attachment.filename}</span>
+                    <span class="file-size">{formatFileSize(message.attachment.size)}</span>
+                  </div>
+                </a>
+              {/if}
             {/if}
 
             <!-- Time + Read Indicator (using pre-formatted time) -->
@@ -393,5 +490,89 @@
     font: inherit;
     color: inherit;
     text-align: inherit;
+  }
+
+  /* Reset button styles for file attachment (PDF preview) */
+  button.file-attachment {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2, 0.5rem);
+    padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
+    background: rgb(0 0 0 / 5%);
+    border-radius: var(--radius-md, 8px);
+    cursor: pointer;
+    border: 1px solid rgb(0 0 0 / 10%);
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    transition: background-color 0.2s ease;
+  }
+
+  button.file-attachment:hover {
+    background: rgb(0 0 0 / 10%);
+  }
+
+  .own button.file-attachment {
+    background: rgb(255 255 255 / 10%);
+    border-color: rgb(255 255 255 / 15%);
+  }
+
+  .own button.file-attachment:hover {
+    background: rgb(255 255 255 / 20%);
+  }
+
+  /* Scheduled message attachment styles */
+  .scheduled-attachment {
+    opacity: 0.85;
+    position: relative;
+  }
+
+  .scheduled-attachment .attachment-image-wrapper {
+    position: relative;
+  }
+
+  .scheduled-attachment .attachment-image-wrapper img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: var(--radius-md, 8px);
+    object-fit: cover;
+  }
+
+  .scheduled-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 30%);
+    border-radius: var(--radius-md, 8px);
+    color: white;
+    font-size: 1.5rem;
+  }
+
+  .scheduled-attachment.file-attachment {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2, 0.5rem);
+    padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
+    background: rgb(255 255 255 / 10%);
+    border-radius: var(--radius-md, 8px);
+    border: 1px dashed rgb(255 255 255 / 30%);
+  }
+
+  .scheduled-attachment.file-attachment .file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .scheduled-attachment.file-attachment .file-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .scheduled-attachment.file-attachment .file-size {
+    font-size: 0.75rem;
+    opacity: 0.7;
   }
 </style>

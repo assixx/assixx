@@ -34,8 +34,12 @@ interface TableNameRow extends RowDataPacket {
   TABLE_NAME: string;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg driver serializes as STRING.
+ * ALWAYS use Number() when using this value in arithmetic operations.
+ */
 interface CountResult extends RowDataPacket {
-  count: number;
+  count: string | number;
 }
 
 interface TenantInfoRow extends RowDataPacket {
@@ -441,7 +445,8 @@ export class TenantDeletionService {
         [tenantId],
       );
       const firstUserResult: CountResult | undefined = userResults[0];
-      const userCount = firstUserResult?.count ?? 0;
+      // PostgreSQL COUNT(*) returns bigint as string - must convert
+      const userCount = Number(firstUserResult?.count ?? 0);
 
       await conn.query(
         `INSERT INTO deletion_audit_trail
@@ -915,7 +920,7 @@ export class TenantDeletionService {
       );
 
       const firstResult: CountResult | undefined = countResult[0];
-      if (firstResult !== undefined && firstResult.count > 0) {
+      if (firstResult !== undefined && Number(firstResult.count) > 0) {
         remainingData.push(`${tableName}: ${String(firstResult.count)} rows remaining`);
       }
     }
@@ -1128,7 +1133,8 @@ export class TenantDeletionService {
           );
 
           const firstResult: CountResult | undefined = countResult[0];
-          const count: number = firstResult?.count ?? 0;
+          // PostgreSQL COUNT(*) returns bigint as string - must convert
+          const count: number = Number(firstResult?.count ?? 0);
           // Use Object.defineProperty to safely set the property and avoid injection
           Object.defineProperty(report.affectedRecords, tableName, {
             value: count,

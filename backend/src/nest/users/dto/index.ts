@@ -8,3 +8,14 @@ export { UpdateAvailabilityDto, UpdateAvailabilitySchema } from './update-availa
 export { ListUsersQueryDto, ListUsersQuerySchema } from './list-users-query.dto.js';
 export { UserIdParamDto, UserIdParamSchema } from './user-id-param.dto.js';
 export { ChangePasswordDto, ChangePasswordSchema } from './change-password.dto.js';
+export {
+  AvailabilityHistoryQueryDto,
+  AvailabilityHistoryQuerySchema,
+  type AvailabilityHistoryEntry,
+  type AvailabilityHistoryResponse,
+  type AvailabilityStatus,
+} from './availability-history-query.dto.js';
+export {
+  UpdateAvailabilityEntryDto,
+  UpdateAvailabilityEntrySchema,
+} from './update-availability-entry.dto.js';

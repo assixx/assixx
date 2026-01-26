@@ -432,25 +432,6 @@ body:has(#signupForm) {
   text-decoration: underline;
 }
 
-/* Success Message - Glassmorphismus */
-.success-message {
-  display: none;
-  backdrop-filter: blur(10px);
-
-  margin-bottom: 16px;
-  box-shadow:
-    0 4px 12px rgb(16 185 129 / 20%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-  border: 1px solid rgb(16 185 129 / 30%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(16 185 129 / 15%);
-  padding: 10px 16px;
-  color: #10b981;
-
-  font-size: 14px;
-}
-
 /* Help Button - Glassmorphismus */
 .help-button {
   display: flex;

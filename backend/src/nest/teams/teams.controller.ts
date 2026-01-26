@@ -38,6 +38,7 @@ import {
   CreateTeamDto,
   DeleteTeamQueryDto,
   ListTeamsQueryDto,
+  TeamMembersQueryDto,
   UpdateTeamDto,
 } from './dto/index.js';
 import type { TeamMachine, TeamMember, TeamResponse } from './teams.service.js';
@@ -99,9 +100,10 @@ export class TeamsController {
   @HttpCode(HttpStatus.CREATED)
   async createTeam(
     @Body() dto: CreateTeamDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TeamResponse> {
-    return await this.teamsService.createTeam(dto, tenantId);
+    return await this.teamsService.createTeam(dto, user.id, tenantId);
   }
 
   /**
@@ -113,9 +115,10 @@ export class TeamsController {
   async updateTeam(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTeamDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TeamResponse> {
-    return await this.teamsService.updateTeam(id, dto, tenantId);
+    return await this.teamsService.updateTeam(id, dto, user.id, tenantId);
   }
 
   /**
@@ -128,21 +131,24 @@ export class TeamsController {
   async deleteTeam(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteTeamQueryDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.deleteTeam(id, tenantId, query.force ?? false);
+    return await this.teamsService.deleteTeam(id, user.id, tenantId, query.force ?? false);
   }
 
   /**
    * GET /teams/:id/members
-   * Get team members
+   * Get team members with optional date range for availability filtering
+   * Query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
   @Get(':id/members')
   async getTeamMembers(
     @Param('id', ParseIntPipe) id: number,
+    @Query() query: TeamMembersQueryDto,
     @TenantId() tenantId: number,
   ): Promise<TeamMember[]> {
-    return await this.teamsService.getTeamMembers(id, tenantId);
+    return await this.teamsService.getTeamMembers(id, tenantId, query.startDate, query.endDate);
   }
 
   /**

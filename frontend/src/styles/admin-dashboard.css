@@ -153,6 +153,7 @@ body:not(.loaded) * {
 /* Event level badges - Organization level indicators */
 .event-level {
   display: inline-block;
+  width: fit-content; /* Prevents expansion during CSR - Tailwind @layer base fix */
 
   margin-top: 5px;
   border-radius: var(--radius-xl);
@@ -175,11 +176,23 @@ body:not(.loaded) * {
 }
 
 .event-level-area {
-  background-color: #1abc9c;
+  background-color: #e53935;
 }
 
 .event-level-personal {
   background-color: #9b59b6;
+}
+
+/* Event badges container for multiple assignments */
+.event-badges {
+  display: grid;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.event-badges .event-level {
+  margin-top: 0; /* Remove margin since container handles spacing */
 }
 
 /* Mobile responsive for events */

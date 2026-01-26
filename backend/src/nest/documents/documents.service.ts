@@ -16,7 +16,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { eventBus } from '../../utils/eventBus.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 
@@ -93,6 +95,13 @@ export interface DocumentStatsResponse {
   unreadCount: number;
   storageUsed: number;
   categoryCounts: Record<string, number>;
+}
+
+/**
+ * Unread count response for notification badge
+ */
+export interface UnreadCountResponse {
+  count: number;
 }
 
 /**
@@ -191,7 +200,11 @@ const ALLOWED_MIME_TYPES = [
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================
   // Public Methods
@@ -205,8 +218,6 @@ export class DocumentsService {
     userId: number,
     query: ListDocumentsQueryDto,
   ): Promise<PaginatedDocumentsResult> {
-    this.logger.log(`Listing documents for tenant ${tenantId}, user ${userId}`);
-
     const page = query.page;
     const limit = query.limit;
     const offset = (page - 1) * limit;
@@ -357,7 +368,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentResponse> {
-    this.logger.log(`Getting document ${documentId} for tenant ${tenantId}`);
+    this.logger.debug(`Getting document ${documentId} for tenant ${tenantId}`);
 
     const documents = await this.databaseService.query<DbDocument>(
       `SELECT d.*, u.username as uploaded_by_name
@@ -392,7 +403,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentResponse | null> {
-    this.logger.log(`Getting document by fileUuid ${fileUuid}`);
+    this.logger.debug(`Getting document by fileUuid ${fileUuid}`);
 
     const documents = await this.databaseService.query<DbDocument>(
       `SELECT d.*, u.username as uploaded_by_name
@@ -443,36 +454,31 @@ export class DocumentsService {
       throw new ForbiddenException("You don't have permission to update this document");
     }
 
-    // Build update
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (dto.filename !== undefined) {
-      updates.push(`filename = $${paramIndex}`);
-      params.push(dto.filename);
-      paramIndex++;
-    }
-    if (dto.category !== undefined) {
-      updates.push(`category = $${paramIndex}`);
-      params.push(dto.category);
-      paramIndex++;
-    }
-    if (dto.description !== undefined) {
-      updates.push(`description = $${paramIndex}`);
-      params.push(dto.description);
-      paramIndex++;
-    }
-    if (dto.tags !== undefined) {
-      updates.push(`tags = $${paramIndex}`);
-      params.push(JSON.stringify(dto.tags));
-      paramIndex++;
-    }
-
+    // Build and execute update
+    const { updates, params, paramIndex } = this.buildDocumentUpdateClause(dto);
     params.push(documentId, tenantId);
     await this.databaseService.query(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
       params,
+    );
+
+    // Log activity
+    await this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument aktualisiert: ${document.original_name ?? document.filename}`,
+      {
+        filename: document.filename,
+        category: document.category,
+        description: document.description,
+      },
+      {
+        filename: dto.filename ?? document.filename,
+        category: dto.category ?? document.category,
+        description: dto.description ?? document.description,
+      },
     );
 
     return { message: 'Document updated successfully' };
@@ -505,6 +511,22 @@ export class DocumentsService {
     await this.databaseService.query(
       `UPDATE documents SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
+    );
+
+    // Log activity
+    await this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument gelöscht: ${document.original_name ?? document.filename}`,
+      {
+        filename: document.filename,
+        originalName: document.original_name,
+        category: document.category,
+        accessScope: document.access_scope,
+        fileSize: document.file_size,
+      },
     );
 
     return { message: 'Document deleted successfully' };
@@ -570,7 +592,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<DocumentContentResponse> {
-    this.logger.log(`Getting document content ${documentId}`);
+    this.logger.debug(`Getting document content ${documentId}`);
 
     const document = await this.getDocumentRow(documentId, tenantId);
     if (document === null) {
@@ -725,7 +747,7 @@ export class DocumentsService {
    * Get document statistics
    */
   async getDocumentStats(tenantId: number, userId: number): Promise<DocumentStatsResponse> {
-    this.logger.log(`Getting document stats for tenant ${tenantId}`);
+    this.logger.debug(`Getting document stats for tenant ${tenantId}`);
 
     const user = await this.getUserById(userId, tenantId);
     if (user === null) {
@@ -770,13 +792,51 @@ export class DocumentsService {
   }
 
   /**
+   * Get count of unread documents for notification badge
+   * Applies the same access_scope filter as listDocuments to ensure consistency
+   */
+  async getUnreadCount(
+    tenantId: number,
+    userId: number,
+    userRole: 'root' | 'admin' | 'employee',
+  ): Promise<UnreadCountResponse> {
+    const isAdmin = userRole === 'admin' || userRole === 'root';
+
+    // Build query with same access scope filter as listDocuments
+    let query = `
+      SELECT COUNT(*) as count FROM documents d
+      WHERE d.tenant_id = $1 AND d.is_active = 1
+      AND NOT EXISTS (
+        SELECT 1 FROM document_read_status rs
+        WHERE rs.document_id = d.id AND rs.user_id = $2
+      )
+    `;
+    const params: unknown[] = [tenantId, userId];
+
+    // Apply access scope filter for non-admin users (same logic as buildDocumentsBaseQuery)
+    if (!isAdmin) {
+      query += ` AND (
+        d.access_scope = 'company' OR
+        (d.access_scope = 'personal' AND d.owner_user_id = $3) OR
+        (d.access_scope = 'payroll' AND d.owner_user_id = $3)
+      )`;
+      params.push(userId);
+    }
+
+    const result = await this.databaseService.query<{ count: string }>(query, params);
+    const count = Number.parseInt(result[0]?.count ?? '0', 10);
+
+    return { count };
+  }
+
+  /**
    * Get chat folders for document explorer
    */
   async getChatFolders(
     tenantId: number,
     userId: number,
   ): Promise<{ folders: ChatFolderResponse[]; total: number }> {
-    this.logger.log(`Getting chat folders for user ${userId}`);
+    this.logger.debug(`Getting chat folders for user ${userId}`);
 
     const folders = await this.databaseService.query<ChatFolderResponse>(
       `SELECT DISTINCT ON (c.id)
@@ -825,7 +885,60 @@ export class DocumentsService {
       category: data.category,
     });
 
+    // Create persistent notification for ADR-004
+    const recipientMapping = this.mapAccessScopeToRecipient(data);
+    if (recipientMapping !== null) {
+      void this.notificationsService.createFeatureNotification(
+        'document',
+        documentId,
+        `Neues Dokument: ${data.originalName}`,
+        `Kategorie: ${data.category}`,
+        recipientMapping.type,
+        recipientMapping.id,
+        tenantId,
+        userId,
+      );
+    }
+
+    // Log activity to root_logs
+    await this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'document',
+      documentId,
+      `Dokument hochgeladen: ${data.originalName}`,
+      {
+        filename: data.originalName,
+        category: data.category,
+        accessScope: data.accessScope,
+      },
+    );
+
     return createdDocument;
+  }
+
+  /**
+   * Map document access scope to notification recipient
+   * Returns null for scopes that don't need notifications (payroll, blackboard, chat)
+   */
+  private mapAccessScopeToRecipient(
+    data: DocumentCreateInput,
+  ): { type: 'user' | 'department' | 'team' | 'all'; id: number | null } | null {
+    switch (data.accessScope) {
+      case 'personal':
+        return data.ownerUserId !== undefined ? { type: 'user', id: data.ownerUserId } : null;
+      case 'team':
+        return data.targetTeamId !== undefined ? { type: 'team', id: data.targetTeamId } : null;
+      case 'department':
+        return data.targetDepartmentId !== undefined ?
+            { type: 'department', id: data.targetDepartmentId }
+          : null;
+      case 'company':
+        return { type: 'all', id: null };
+      default:
+        // payroll, blackboard, chat have their own notification mechanisms
+        return null;
+    }
   }
 
   /** Validate document input data */
@@ -892,12 +1005,43 @@ export class DocumentsService {
   // Private Helper Methods
   // ============================================
 
+  /** Build document update clause from DTO */
+  private buildDocumentUpdateClause(dto: UpdateDocumentDto): {
+    updates: string[];
+    params: unknown[];
+    paramIndex: number;
+  } {
+    const updates: string[] = ['updated_at = NOW()'];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (dto.filename !== undefined) {
+      updates.push(`filename = $${paramIndex++}`);
+      params.push(dto.filename);
+    }
+    if (dto.category !== undefined) {
+      updates.push(`category = $${paramIndex++}`);
+      params.push(dto.category);
+    }
+    if (dto.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      params.push(dto.description);
+    }
+    if (dto.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      params.push(JSON.stringify(dto.tags));
+    }
+
+    return { updates, params, paramIndex };
+  }
+
   /**
    * Get user by ID
+   * SECURITY: Only returns data for ACTIVE users (is_active = 1)
    */
   private async getUserById(userId: number, tenantId: number): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2`,
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [userId, tenantId],
     );
     return rows[0] ?? null;

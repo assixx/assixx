@@ -54,20 +54,28 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
  */
 export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
   // If not shared (private)
-  if (suggestion.isShared === 0) {
-    return { icon: 'fa-lock', text: 'Privat' };
+  if (!suggestion.isShared) {
+    return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
   // If shared, show org level info
   const info = VISIBILITY_INFO[suggestion.orgLevel];
 
-  // Use specific name if available
+  // Use specific name if available (check for empty string)
   let text = info.text;
   if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
-  } else if (suggestion.orgLevel === 'area' && suggestion.areaName !== undefined) {
+  } else if (
+    suggestion.orgLevel === 'area' &&
+    suggestion.areaName !== undefined &&
+    suggestion.areaName !== ''
+  ) {
     text = suggestion.areaName;
-  } else if (suggestion.orgLevel === 'team' && suggestion.teamName !== undefined) {
+  } else if (
+    suggestion.orgLevel === 'team' &&
+    suggestion.teamName !== undefined &&
+    suggestion.teamName !== ''
+  ) {
     text = suggestion.teamName;
   }
 
@@ -79,6 +87,21 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; te
  */
 export function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('de-DE');
+}
+
+/**
+ * Format date with time for display (German locale)
+ */
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (dateStr === null || dateStr === undefined || dateStr === '') return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**
@@ -193,22 +216,36 @@ export function canShareSuggestion(suggestion: KvpSuggestion, userRole: string):
 
 /**
  * Check if user can unshare suggestion
+ * Allows unsharing for any shared suggestion (department, area, company)
+ * - Admin/Root can always unshare
+ * - Original sharer can unshare their own shares
  */
 export function canUnshareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
   userId: number | undefined,
 ): boolean {
-  return (
-    suggestion.orgLevel === 'company' && (userRole === 'root' || suggestion.sharedBy === userId)
-  );
+  // Must be shared and not at team level (team is default, not "shared")
+  if (!suggestion.isShared || suggestion.orgLevel === 'team') {
+    return false;
+  }
+
+  // Admin/Root can always unshare, or the person who shared it
+  return userRole === 'admin' || userRole === 'root' || suggestion.sharedBy === userId;
 }
 
 /**
- * Check if user can archive suggestion
+ * Check if user can archive suggestion (must be admin/root AND not already archived)
  */
-export function canArchiveSuggestion(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canArchiveSuggestion(userRole: string, status: string): boolean {
+  return (userRole === 'admin' || userRole === 'root') && status !== 'archived';
+}
+
+/**
+ * Check if user can unarchive (restore) suggestion (must be admin/root AND archived)
+ */
+export function canUnarchiveSuggestion(userRole: string, status: string): boolean {
+  return (userRole === 'admin' || userRole === 'root') && status === 'archived';
 }
 
 /**

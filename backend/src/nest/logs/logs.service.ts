@@ -14,6 +14,7 @@ import {
 import bcrypt from 'bcryptjs';
 
 import { DatabaseService } from '../database/database.service.js';
+import { UserRepository } from '../database/repositories/user.repository.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type {
   DeleteLogsBodyDto,
@@ -59,21 +60,24 @@ interface StatsRow {
   unique_tenants?: number;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg serializes as STRING.
+ */
 interface TopActionResult {
   action: string | null;
-  count: number | null;
+  count: string | number | null;
 }
 
+/**
+ * PostgreSQL COUNT(*) returns bigint which pg serializes as STRING.
+ */
 interface TopUserResult {
   user_id: number | null;
   user_name: string | null;
-  count: number | null;
+  count: string | number | null;
 }
 
-interface DbUserRow {
-  id: number;
-  password: string;
-}
+// DbUserRow removed - now using UserRepository.getPasswordHash() instead
 
 // ============================================================
 // RESPONSE TYPES
@@ -137,7 +141,10 @@ interface LogsFilterParams {
 export class LogsService {
   private readonly logger = new Logger(LogsService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly userRepository: UserRepository,
+  ) {}
 
   // ============================================================
   // ACCESS CONTROL
@@ -157,21 +164,22 @@ export class LogsService {
 
   /**
    * Verify user password for destructive operations
+   * SECURITY: Only allows ACTIVE users (is_active = 1) to perform destructive operations
    */
   private async verifyPassword(currentUser: NestAuthUser, password: string): Promise<void> {
-    const users = await this.databaseService.query<DbUserRow>(
-      'SELECT id, password FROM users WHERE id = $1 AND tenant_id = $2',
-      [currentUser.id, currentUser.tenantId],
+    const passwordHash = await this.userRepository.getPasswordHash(
+      currentUser.id,
+      currentUser.tenantId,
     );
 
-    if (users.length === 0 || users[0] === undefined) {
+    if (passwordHash === null) {
       throw new UnauthorizedException({
         code: 'UNAUTHORIZED',
-        message: 'User not found',
+        message: 'User not found or inactive',
       });
     }
 
-    const isValidPassword = await bcrypt.compare(password, users[0].password);
+    const isValidPassword = await bcrypt.compare(password, passwordHash);
     if (!isValidPassword) {
       throw new UnauthorizedException({
         code: 'UNAUTHORIZED',
@@ -490,11 +498,12 @@ export class LogsService {
       todayLogs: stats.today_logs ?? 0,
       uniqueUsers: stats.unique_users ?? 0,
       uniqueTenants: stats.unique_tenants ?? 0,
-      topActions: topActions.map((r: TopActionResult) => ({ action: r.action ?? 'unknown', count: r.count ?? 0 })),
+      // PostgreSQL COUNT returns string - must convert
+      topActions: topActions.map((r: TopActionResult) => ({ action: r.action ?? 'unknown', count: Number(r.count ?? 0) })),
       topUsers: topUsers.map((r: TopUserResult) => ({
         userId: r.user_id ?? 0,
         userName: r.user_name ?? 'Unknown',
-        count: r.count ?? 0,
+        count: Number(r.count ?? 0),
       })),
     };
   }

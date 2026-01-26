@@ -56,13 +56,26 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/features': ['admin', 'root'],
   '/survey-admin': ['admin', 'root'],
   '/survey-results': ['admin', 'root'],
-  '/shifts': ['admin', 'root'],
+  '/shifts': ['employee', 'admin', 'root'],
   '/storage-upgrade': ['admin', 'root'],
   '/tenant-deletion-status': ['admin', 'root'],
+
+  // ALL AUTHENTICATED USERS - enables FAST PATH optimization
+  // (RBAC fetches user once, layout reuses it - saves ~50-80ms)
+  '/employee-dashboard': ['employee', 'admin', 'root'],
+  '/employee-profile': ['employee', 'admin', 'root'],
+  '/chat': ['employee', 'admin', 'root'],
+  '/blackboard': ['employee', 'admin', 'root'],
+  '/calendar': ['employee', 'admin', 'root'],
+  '/documents-explorer': ['employee', 'admin', 'root'],
+  '/kvp': ['employee', 'admin', 'root'],
+  '/kvp-detail': ['employee', 'admin', 'root'],
+  '/survey-employee': ['employee', 'admin', 'root'],
+  '/account-settings': ['employee', 'admin', 'root'],
 };
 
 /** Public routes - no authentication required */
-const PUBLIC_ROUTES = ['/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
 
 /** Routes to skip RBAC check (internal, assets, API proxy) */
 const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];
@@ -243,7 +256,11 @@ const requestLoggingHandle: Handle = async ({ event, resolve }) => {
   const { method } = event.request;
   const pathname = event.url.pathname;
 
-  if (pathname.startsWith('/_app/') || pathname.startsWith('/favicon')) {
+  if (
+    pathname.startsWith('/_app/') ||
+    pathname.startsWith('/favicon') ||
+    pathname === '/sentry-tunnel'
+  ) {
     return await resolve(event);
   }
 

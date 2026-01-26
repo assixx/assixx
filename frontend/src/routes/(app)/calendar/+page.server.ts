@@ -74,37 +74,41 @@ async function apiFetch<T>(
   }
 }
 
+/** Safe array fallback - returns empty array if data is not an array */
+function toArray<T>(data: T[] | null): T[] {
+  return Array.isArray(data) ? data : [];
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: upcoming events + organization data for dropdowns
-  const [upcomingEventsData, departmentsData, teamsData, areasData, usersData] = await Promise.all([
-    apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-    apiFetch<User[]>('/users', token, fetch),
-  ]);
-
-  // Get user from parent layout
+  // Get user from parent layout FIRST to check role
   const parentData = await parent();
+  const userRole = parentData.user?.role;
+  const canFetchUsers = userRole === 'admin' || userRole === 'root';
 
-  // Safe fallbacks
-  const upcomingEvents = Array.isArray(upcomingEventsData) ? upcomingEventsData : [];
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
-  const teams = Array.isArray(teamsData) ? teamsData : [];
-  const areas = Array.isArray(areasData) ? areasData : [];
-  const users = Array.isArray(usersData) ? usersData : [];
+  // Parallel fetch: upcoming events + organization data
+  // Note: /users only for admin/root (employees get 403)
+  const [upcomingEventsData, recentlyAddedData, departmentsData, teamsData, areasData, usersData] =
+    await Promise.all([
+      apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
+      apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+      canFetchUsers ? apiFetch<User[]>('/users', token, fetch) : Promise.resolve(null),
+    ]);
 
   return {
-    upcomingEvents,
-    departments,
-    teams,
-    areas,
-    users,
+    upcomingEvents: toArray(upcomingEventsData),
+    recentlyAddedEvents: toArray(recentlyAddedData),
+    departments: toArray(departmentsData),
+    teams: toArray(teamsData),
+    areas: toArray(areasData),
+    users: toArray(usersData),
     currentUser: parentData.user,
   };
 };

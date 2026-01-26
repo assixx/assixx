@@ -103,7 +103,7 @@ export class RolesService {
    * Get all available roles
    */
   getAllRoles(): Role[] {
-    this.logger.log('Getting all roles');
+    this.logger.debug('Getting all roles');
     return Object.values(RolesService.ROLES);
   }
 
@@ -111,7 +111,7 @@ export class RolesService {
    * Get a single role by ID
    */
   getRoleById(roleId: RoleName): Role {
-    this.logger.log(`Getting role: ${roleId}`);
+    this.logger.debug(`Getting role: ${roleId}`);
     // TypeScript ensures roleId is a valid RoleName union type, not arbitrary string
 
     return RolesService.ROLES[roleId];
@@ -121,7 +121,7 @@ export class RolesService {
    * Get role hierarchy
    */
   getRoleHierarchy(): { hierarchy: RoleHierarchyEntry[] } {
-    this.logger.log('Getting role hierarchy');
+    this.logger.debug('Getting role hierarchy');
     return {
       hierarchy: [
         {
@@ -144,7 +144,7 @@ export class RolesService {
    * Get roles that can be assigned by current user
    */
   getAssignableRoles(currentUserRole: RoleName): Role[] {
-    this.logger.log(`Getting assignable roles for: ${currentUserRole}`);
+    this.logger.debug(`Getting assignable roles for: ${currentUserRole}`);
 
     switch (currentUserRole) {
       case 'root':
@@ -168,13 +168,14 @@ export class RolesService {
   ): Promise<RoleCheckResult> {
     this.logger.log(`Checking role for user ${userId}, required: ${requiredRole}`);
 
+    // SECURITY: Only check roles for ACTIVE users (is_active = 1)
     const [rows] = await execute<UserRoleRow[]>(
-      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2',
+      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or inactive');
     }
 
     const userRole = rows[0].role as RoleName;

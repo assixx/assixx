@@ -230,11 +230,28 @@ function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | 
 
 /**
  * Fetch team members with availability data
+ * @param teamId - Team ID
+ * @param startDate - Optional start date for availability range (YYYY-MM-DD)
+ * @param endDate - Optional end date for availability range (YYYY-MM-DD)
  */
-export async function fetchTeamMembers(teamId: number): Promise<TeamMember[]> {
+export async function fetchTeamMembers(
+  teamId: number,
+  startDate?: string,
+  endDate?: string,
+): Promise<TeamMember[]> {
   try {
+    // Build URL with optional date range query params
+    const params: string[] = [];
+    if (startDate !== undefined && startDate !== '') {
+      params.push(`startDate=${startDate}`);
+    }
+    if (endDate !== undefined && endDate !== '') {
+      params.push(`endDate=${endDate}`);
+    }
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+
     const response = await apiClient.get<TeamMemberApiResponse[]>(
-      `${API_ENDPOINTS.TEAMS}/${teamId}/members`,
+      `${API_ENDPOINTS.TEAMS}/${teamId}/members${queryString}`,
     );
 
     const members: TeamMember[] = response.map(

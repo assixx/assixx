@@ -48,6 +48,9 @@ export const ENTITY_OPTIONS: DropdownOption[] = [
   { value: 'department', text: 'Abteilung' },
   { value: 'document', text: 'Dokument' },
   { value: 'blackboard', text: 'Schwarzes Brett' },
+  { value: 'calendar', text: 'Kalender' },
+  { value: 'machine', text: 'Maschine' },
+  { value: 'shift', text: 'Schicht' },
   { value: 'logs', text: 'Logs' },
   { value: 'tenant', text: 'Tenant' },
   { value: 'survey', text: 'Umfrage' },
@@ -129,6 +132,7 @@ export const MESSAGES = {
   LOADING: 'Logs werden geladen...',
   ERROR_LOADING: 'Fehler beim Laden der Logs',
   ERROR_DELETING: 'Fehler beim Löschen der Logs',
+  DELETE_SUCCESS: 'Logs wurden erfolgreich gelöscht',
   EMPTY_STATE_TITLE: 'Keine Logs gefunden',
   EMPTY_STATE_DESCRIPTION: 'Versuche andere Filterkriterien',
   DELETE_MODAL_TITLE: 'Gefilterte Logs löschen',
@@ -138,4 +142,53 @@ export const MESSAGES = {
   DELETE_PASSWORD_HINT: 'Erforderlich für Löschung von Audit-Logs',
   NO_FILTERS_WARNING: 'Keine spezifischen Filter aktiv (ALLE Logs werden gelöscht!)',
   DELETE_BUTTON_DISABLED_TITLE: 'Bitte "Filter anwenden" klicken um Logs zu löschen',
+  // Export Messages
+  EXPORT_LOADING: 'Export wird erstellt...',
+  EXPORT_ERROR: 'Fehler beim Export',
+  EXPORT_RATE_LIMITED: 'Bitte warten Sie vor dem nächsten Export',
+  EXPORT_SUCCESS: 'Export erfolgreich heruntergeladen',
 } as const;
+
+// ============================================================================
+// Export Configuration (ADR-009)
+// ============================================================================
+
+/** Export format dropdown options */
+export const EXPORT_FORMAT_OPTIONS: DropdownOption[] = [
+  { value: 'csv', text: 'CSV (Excel-kompatibel)' },
+  { value: 'json', text: 'JSON' },
+  { value: 'txt', text: 'TXT (Lesbar)' },
+];
+
+/** Export source dropdown options */
+export const EXPORT_SOURCE_OPTIONS: DropdownOption[] = [
+  { value: 'all', text: 'Alle Quellen' },
+  { value: 'audit_trail', text: 'Audit Trail (API-Logs)' },
+  { value: 'root_logs', text: 'System-Logs (Admin)' },
+];
+
+/** Default export date range (last 30 days) */
+export const DEFAULT_EXPORT_DAYS = 30;
+
+/** Maximum export date range (365 days - enforced by backend) */
+export const MAX_EXPORT_DAYS = 365;
+
+/** Rate limit duration in milliseconds (1 minute) */
+export const EXPORT_RATE_LIMIT_MS = 60000;
+
+/** Quick timerange option interface */
+interface QuickTimerangeOption {
+  readonly value: string;
+  readonly text: string;
+  readonly minutes: number;
+}
+
+/** Quick timerange presets for export date filter */
+export const EXPORT_QUICK_TIMERANGE_OPTIONS: readonly QuickTimerangeOption[] = [
+  { value: '5min', text: '5 Min', minutes: 5 },
+  { value: '15min', text: '15 Min', minutes: 15 },
+  { value: '1hour', text: '1 Std', minutes: 60 },
+  { value: '24hours', text: '24 Std', minutes: 1440 },
+  { value: '3days', text: '3 Tage', minutes: 4320 },
+  { value: '1week', text: '1 Woche', minutes: 10080 },
+] as const;

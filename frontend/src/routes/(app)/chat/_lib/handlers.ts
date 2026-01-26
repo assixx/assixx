@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // =============================================================================
 // CHAT - EVENT HANDLERS
 // =============================================================================
@@ -136,18 +137,84 @@ export async function searchUsers(query: string): Promise<ChatUser[]> {
   return await apiSearchUsers(query);
 }
 
-export async function startConversationWith(
+/**
+ * Counter for generating temporary IDs for pending conversations.
+ * Uses negative numbers to distinguish from real DB IDs.
+ */
+let pendingConversationIdCounter: number = -1;
+
+/**
+ * Start a conversation with a user.
+ * LAZY CREATION: If no existing conversation exists, returns a PENDING conversation
+ * that is NOT persisted to the database. The conversation is only created when
+ * the first message is sent.
+ *
+ * @param user - User to start conversation with
+ * @param conversations - Existing conversations list
+ * @returns Conversation object (existing or pending) and isNew flag
+ */
+export function startConversationWith(
   user: ChatUser,
   conversations: Conversation[],
-): Promise<{ conversation: Conversation; isNew: boolean }> {
+): { conversation: Conversation; isNew: boolean } {
   const existing = findExistingConversation(conversations, user.id);
   if (existing) {
     return { conversation: existing, isNew: false };
   }
 
-  const apiConversation = await createConversation([user.id], false);
-  const newConv = buildNewConversation(apiConversation);
-  return { conversation: newConv, isNew: true };
+  // Create a PENDING conversation (not persisted to DB yet)
+  // Will be created when first message is sent
+  const pendingId = pendingConversationIdCounter--;
+  const pendingConversation: Conversation = {
+    id: pendingId, // Temporary negative ID
+    uuid: `pending-${pendingId}`, // Temporary UUID
+    isGroup: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    participants: [
+      {
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        profileImageUrl: user.profileImageUrl ?? user.profilePicture,
+        status: user.status,
+      },
+    ],
+    unreadCount: 0,
+    isPending: true,
+    pendingTargetUserId: user.id,
+  };
+
+  return { conversation: pendingConversation, isNew: true };
+}
+
+/**
+ * Create a pending conversation in the database.
+ * Called when the first message is sent to a pending conversation.
+ *
+ * @param pendingConversation - The pending conversation to persist
+ * @returns The persisted conversation with real DB ID
+ */
+export async function persistPendingConversation(
+  pendingConversation: Conversation,
+): Promise<Conversation> {
+  if (pendingConversation.pendingTargetUserId === undefined) {
+    throw new Error('Pending conversation has no target user ID');
+  }
+
+  const apiConversation = await createConversation(
+    [pendingConversation.pendingTargetUserId],
+    false,
+  );
+  const persistedConv = buildNewConversation(apiConversation);
+
+  // Copy over participant info from pending conversation
+  return {
+    ...persistedConv,
+    isPending: false,
+    pendingTargetUserId: undefined,
+  };
 }
 
 export async function deleteConversation(conversationId: number): Promise<void> {
@@ -158,13 +225,36 @@ export async function deleteConversation(conversationId: number): Promise<void> 
 // Message Handlers
 // ==========================================================================
 
+/**
+ * Uploaded attachment info for scheduled messages
+ */
+export interface UploadedAttachmentInfo {
+  id: number;
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export async function sendScheduledMessage(
   conversationId: number,
   content: string,
   scheduledFor: Date,
-  attachmentIds: number[],
+  attachments: UploadedAttachmentInfo[],
 ): Promise<ScheduledMessage[]> {
-  await createScheduledMessage(conversationId, content, scheduledFor.toISOString(), attachmentIds);
+  // For now, only support single attachment (first one)
+  const firstAttachment = attachments.length > 0 ? attachments[0] : undefined;
+  const attachmentInfo =
+    firstAttachment !== undefined
+      ? {
+          path: firstAttachment.path,
+          name: firstAttachment.name,
+          type: firstAttachment.type,
+          size: firstAttachment.size,
+        }
+      : undefined;
+
+  await createScheduledMessage(conversationId, content, scheduledFor.toISOString(), attachmentInfo);
   return await apiLoadScheduledMessages(conversationId);
 }
 
@@ -176,19 +266,31 @@ export async function cancelScheduledMessage(messageId: string): Promise<void> {
 // File Handlers
 // ==========================================================================
 
-export async function uploadFiles(conversationId: number, files: File[]): Promise<number[]> {
-  const uploadedIds: number[] = [];
+/**
+ * Upload files and return full attachment info
+ */
+export async function uploadFiles(
+  conversationId: number,
+  files: File[],
+): Promise<UploadedAttachmentInfo[]> {
+  const uploaded: UploadedAttachmentInfo[] = [];
 
   for (const file of files) {
     try {
       const result = await uploadAttachment(conversationId, file);
-      uploadedIds.push(result.id);
+      uploaded.push({
+        id: result.id,
+        path: result.fileUuid,
+        name: result.originalName,
+        type: result.mimeType,
+        size: result.fileSize,
+      });
     } catch (err) {
       log.error({ err }, 'Error uploading file');
     }
   }
 
-  return uploadedIds;
+  return uploaded;
 }
 
 export function createFilePreview(file: File): {
@@ -231,7 +333,7 @@ export function validateAndSetSchedule(
 }
 
 export function getDefaultScheduleDateTime(): { date: string; time: string } {
-  return getMinScheduleDateTime(SCHEDULE_CONSTRAINTS.minFutureTime);
+  return getMinScheduleDateTime(SCHEDULE_CONSTRAINTS.defaultFutureTime);
 }
 
 // ==========================================================================

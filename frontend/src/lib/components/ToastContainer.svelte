@@ -99,7 +99,7 @@
         margin-bottom: 10px;
         pointer-events: auto;
         width: max-content;
-        max-width: 360px;
+        max-width: 500px;
       "
     >
       <!-- Icon -->

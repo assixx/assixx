@@ -13,28 +13,26 @@
 
   // KVP-specific styles (migrated from legacy)
   import '../../../styles/kvp.css';
-  import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { showErrorAlert } from '$lib/utils';
+  import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpPage');
+  const apiClient = getApiClient();
 
-  import {
-    fetchSuggestions,
-    shareSuggestion,
-    unshareSuggestion,
-    findUserTeamAsLead,
-  } from './_lib/api';
+  import { fetchSuggestions, findUserTeamAsLead } from './_lib/api';
   import { FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from './_lib/constants';
   import KvpCreateModal from './_lib/KvpCreateModal.svelte';
   import { kvpState } from './_lib/state.svelte';
   import {
     getStatusBadgeClass,
     getStatusText,
+    getPriorityBadgeClass,
+    getPriorityText,
     getVisibilityBadgeClass,
     getVisibilityInfo,
     formatDate,
-    canShareSuggestion,
-    canUnshareSuggestion,
     getSharedByInfo,
     getAttachmentText,
     debounce,
@@ -176,40 +174,17 @@
   // SUGGESTION ACTIONS
   // ==========================================================================
 
-  function viewSuggestion(uuid: string) {
+  /**
+   * View suggestion detail and auto-confirm if not yet read
+   */
+  function viewSuggestion(uuid: string, isConfirmed: boolean) {
+    // Auto-confirm if not yet read (non-blocking)
+    if (!isConfirmed) {
+      void apiClient.post(`/kvp/${uuid}/confirm`, {}).then(() => {
+        notificationStore.decrementCount('kvp');
+      });
+    }
     void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
-  }
-
-  async function handleShare(id: number): Promise<void> {
-    const confirmed = await showConfirm(
-      'Moechten Sie diesen Vorschlag wirklich firmenweit teilen?',
-    );
-    if (!confirmed) return;
-
-    const result = await shareSuggestion(id);
-    if (result.success) {
-      showSuccessAlert('Vorschlag wurde firmenweit geteilt');
-      // Level 3: Trigger SSR refetch
-      await invalidateAll();
-    } else {
-      showErrorAlert(result.error ?? 'Fehler beim Teilen');
-    }
-  }
-
-  async function handleUnshare(id: number): Promise<void> {
-    const confirmed = await showConfirm(
-      'Moechten Sie das Teilen wirklich rueckgaengig machen? Der Vorschlag wird wieder nur fuer das urspruengliche Team sichtbar sein.',
-    );
-    if (!confirmed) return;
-
-    const result = await unshareSuggestion(id);
-    if (result.success) {
-      showSuccessAlert('Teilen wurde rueckgaengig gemacht');
-      // Level 3: Trigger SSR refetch
-      await invalidateAll();
-    } else {
-      showErrorAlert(result.error ?? 'Fehler beim Rueckgaengigmachen');
-    }
   }
 
   // ==========================================================================
@@ -334,151 +309,172 @@
     </div>
 
     <div class="card-body">
-      <!-- Filter Toggle Group + Search -->
-      <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
-        <div class="toggle-group">
-          {#each FILTER_OPTIONS as option (option.value)}
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={kvpState.currentFilter === option.value}
-              title={option.title}
-              onclick={() => {
-                handleFilterChange(option.value);
-              }}
-            >
-              <i class="fas {option.icon}"></i>
-              {option.label}
-              {#if option.showBadge}
-                <span class="badge">{kvpState.badgeCounts[option.value]}</span>
-              {/if}
-            </button>
-          {/each}
-        </div>
+      <!-- Filter Card (wie Calendar) -->
+      <div class="card mb-6">
+        <div class="card__header">
+          <h3 class="card__title">
+            <i class="fas fa-filter mr-2"></i>
+            Filter & Anzeige
+          </h3>
+          <!-- Alle Filter in einer Zeile -->
+          <div class="kvp-filter-row mt-6">
+            <!-- Ansichts-Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Ansicht</span>
+              <div class="toggle-group mt-2" id="kvpFilter">
+                {#each FILTER_OPTIONS as option (option.value)}
+                  <button
+                    type="button"
+                    class="toggle-group__btn"
+                    class:active={kvpState.currentFilter === option.value}
+                    data-value={option.value}
+                    onclick={() => {
+                      handleFilterChange(option.value);
+                    }}
+                    title={option.title}
+                  >
+                    <i class="fas {option.icon}"></i>
+                    {option.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
 
-        <div class="search-input max-w-80">
-          <i class="search-input__icon fas fa-search"></i>
-          <input
-            type="search"
-            class="search-input__field"
-            placeholder="Vorschläge durchsuchen..."
-            value={kvpState.searchQuery}
-            oninput={handleSearchInput}
-          />
-        </div>
-      </div>
+            <!-- Status Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Status</span>
+              <div class="dropdown mt-2" data-dropdown="status">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'status'}
+                  onclick={() => {
+                    toggleDropdown('status');
+                  }}
+                >
+                  <span>{statusDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'status'}>
+                  {#each STATUS_FILTER_OPTIONS as option (option.value)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-status"
+                      data-value={option.value}
+                      onclick={() => {
+                        handleStatusSelect(option.value, option.label);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-      <!-- Secondary Filters - Design System Dropdowns -->
-      <div class="flex flex-nowrap gap-4 items-center mb-6">
-        <!-- Status Filter Dropdown -->
-        <div class="dropdown" data-dropdown="status">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'status'}
-            onclick={() => {
-              toggleDropdown('status');
-            }}
-          >
-            <span>{statusDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'status'}>
-            {#each STATUS_FILTER_OPTIONS as option (option.value)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-status"
-                data-value={option.value}
-                onclick={() => {
-                  handleStatusSelect(option.value, option.label);
-                }}
-              >
-                {option.label}
-              </button>
-            {/each}
-          </div>
-        </div>
+            <!-- Category Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Kategorie</span>
+              <div class="dropdown mt-2" data-dropdown="category">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'category'}
+                  onclick={() => {
+                    toggleDropdown('category');
+                  }}
+                >
+                  <span>{categoryDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'category'}>
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-category"
+                    data-value=""
+                    onclick={() => {
+                      handleCategorySelect('', 'Alle Kategorien');
+                    }}
+                  >
+                    Alle Kategorien
+                  </button>
+                  {#each kvpState.categories as category (category.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-category"
+                      data-value={category.id.toString()}
+                      onclick={() => {
+                        handleCategorySelect(category.id.toString(), category.name);
+                      }}
+                    >
+                      {category.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-        <!-- Category Filter Dropdown -->
-        <div class="dropdown" data-dropdown="category">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'category'}
-            onclick={() => {
-              toggleDropdown('category');
-            }}
-          >
-            <span>{categoryDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'category'}>
-            <button
-              type="button"
-              class="dropdown__option"
-              data-action="select-category"
-              data-value=""
-              onclick={() => {
-                handleCategorySelect('', 'Alle Kategorien');
-              }}
-            >
-              Alle Kategorien
-            </button>
-            {#each kvpState.categories as category (category.id)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-category"
-                data-value={category.id.toString()}
-                onclick={() => {
-                  handleCategorySelect(category.id.toString(), category.name);
-                }}
-              >
-                {category.name}
-              </button>
-            {/each}
-          </div>
-        </div>
+            <!-- Department Filter -->
+            <div class="form-field">
+              <span class="form-field__label">Abteilung</span>
+              <div class="dropdown mt-2" data-dropdown="department">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'department'}
+                  onclick={() => {
+                    toggleDropdown('department');
+                  }}
+                >
+                  <span>{departmentDisplayText}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown__menu" class:active={activeDropdown === 'department'}>
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-department"
+                    data-value=""
+                    onclick={() => {
+                      handleDepartmentSelect('', 'Alle Abteilungen');
+                    }}
+                  >
+                    Alle Abteilungen
+                  </button>
+                  {#each kvpState.departments as dept (dept.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      data-action="select-department"
+                      data-value={dept.id.toString()}
+                      onclick={() => {
+                        handleDepartmentSelect(dept.id.toString(), dept.name);
+                      }}
+                    >
+                      {dept.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
 
-        <!-- Department Filter Dropdown -->
-        <div class="dropdown" data-dropdown="department">
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={activeDropdown === 'department'}
-            onclick={() => {
-              toggleDropdown('department');
-            }}
-          >
-            <span>{departmentDisplayText}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown__menu" class:active={activeDropdown === 'department'}>
-            <button
-              type="button"
-              class="dropdown__option"
-              data-action="select-department"
-              data-value=""
-              onclick={() => {
-                handleDepartmentSelect('', 'Alle Abteilungen');
-              }}
-            >
-              Alle Abteilungen
-            </button>
-            {#each kvpState.departments as dept (dept.id)}
-              <button
-                type="button"
-                class="dropdown__option"
-                data-action="select-department"
-                data-value={dept.id.toString()}
-                onclick={() => {
-                  handleDepartmentSelect(dept.id.toString(), dept.name);
-                }}
-              >
-                {dept.name}
-              </button>
-            {/each}
+            <!-- Suche -->
+            <div class="form-field kvp-search-field">
+              <span class="form-field__label">Suche</span>
+              <div class="search-input mt-2">
+                <i class="search-input__icon fas fa-search"></i>
+                <input
+                  type="search"
+                  class="search-input__field"
+                  placeholder="Vorschläge durchsuchen..."
+                  value={kvpState.searchQuery}
+                  oninput={handleSearchInput}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -498,20 +494,40 @@
         <div class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6">
           {#each kvpState.suggestions as suggestion (suggestion.id)}
             {@const visibilityInfo = getVisibilityInfo(suggestion)}
+            {@const isRead = suggestion.isConfirmed === true}
+            {@const isNew = suggestion.firstSeenAt === null || suggestion.firstSeenAt === undefined}
             <div
               class="glass-card kvp-card text-left w-full cursor-pointer"
               role="button"
               tabindex="0"
               onclick={() => {
-                viewSuggestion(suggestion.uuid);
+                viewSuggestion(suggestion.uuid, isRead);
               }}
               onkeydown={(e) => {
-                if (e.key === 'Enter') viewSuggestion(suggestion.uuid);
+                if (e.key === 'Enter') viewSuggestion(suggestion.uuid, isRead);
               }}
             >
-              <span class="badge {getStatusBadgeClass(suggestion.status)} status-badge">
-                {getStatusText(suggestion.status)}
-              </span>
+              <!-- Status container: Eye icon (left) + Badges (right) -->
+              <div class="kvp-status-container">
+                <!-- Read confirmation status (Pattern 2: Individual tracking) -->
+                <span
+                  class="kvp-read-status"
+                  class:kvp-read-status--read={isRead}
+                  class:kvp-read-status--unread={!isRead}
+                  title={isRead ? 'Gelesen' : 'Ungelesen'}
+                >
+                  <i class="fas {isRead ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </span>
+
+                <div class="flex items-center gap-2">
+                  {#if isNew}
+                    <span class="badge badge--sm badge--success">Neu</span>
+                  {/if}
+                  <span class="badge {getStatusBadgeClass(suggestion.status)}">
+                    {getStatusText(suggestion.status)}
+                  </span>
+                </div>
+              </div>
 
               <div class="mb-4">
                 <h3 class="suggestion-title">{suggestion.title}</h3>
@@ -544,53 +560,19 @@
               <div class="suggestion-description">{suggestion.description}</div>
 
               <div class="suggestion-footer">
-                <div
-                  class="category-tag"
-                  style:background="{suggestion.categoryColor}20"
-                  style:color={suggestion.categoryColor}
-                  style:border="1px solid {suggestion.categoryColor}"
-                >
-                  {suggestion.categoryIcon}
-                  {suggestion.categoryName}
-                </div>
-
-                <div class="flex gap-2">
-                  <button
-                    type="button"
-                    class="action-btn"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      viewSuggestion(suggestion.uuid);
-                    }}
+                <div class="flex gap-2 flex-wrap">
+                  <span class="badge {getPriorityBadgeClass(suggestion.priority)}">
+                    {getPriorityText(suggestion.priority)}
+                  </span>
+                  <div
+                    class="category-tag"
+                    style:background="{suggestion.categoryColor}20"
+                    style:color={suggestion.categoryColor}
+                    style:border="1px solid {suggestion.categoryColor}"
                   >
-                    <i class="fas fa-eye"></i> Ansehen
-                  </button>
-
-                  {#if canShareSuggestion(suggestion, kvpState.effectiveRole)}
-                    <button
-                      type="button"
-                      class="action-btn share"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        void handleShare(suggestion.id);
-                      }}
-                    >
-                      <i class="fas fa-share-alt"></i> Teilen
-                    </button>
-                  {/if}
-
-                  {#if canUnshareSuggestion(suggestion, kvpState.effectiveRole, kvpState.currentUser?.id)}
-                    <button
-                      type="button"
-                      class="action-btn"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        void handleUnshare(suggestion.id);
-                      }}
-                    >
-                      <i class="fas fa-undo"></i> Rueckgaengig
-                    </button>
-                  {/if}
+                    {suggestion.categoryIcon}
+                    {suggestion.categoryName}
+                  </div>
                 </div>
               </div>
             </div>

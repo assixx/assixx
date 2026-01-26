@@ -118,7 +118,12 @@
     content: '';
   }
 
-  /* Disable gradient on landing page (has own background image) */
+  /* Disable gradient on landing page (has own background image)
+   * Uses :has() for SSR-friendly detection - no FOUC!
+   * .landing-page is rendered server-side, so gradient is hidden immediately
+   * Fallback: .landing-page-active class added via onMount (legacy browsers)
+   */
+  body:has(.landing-page)::after,
   body.landing-page-active::after {
     display: none;
   }

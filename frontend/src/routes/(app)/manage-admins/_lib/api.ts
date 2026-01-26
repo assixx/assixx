@@ -165,7 +165,7 @@ export async function updateDepartmentPermissions(
   await apiClient.post('/admin-permissions', {
     adminId,
     departmentIds,
-    permissions: { can_read: true, can_write: false, can_delete: false },
+    permissions: { canRead: true, canWrite: false, canDelete: false },
   });
 }
 

@@ -13,7 +13,6 @@
   display: flex;
   position: relative;
   flex-direction: column;
-  backdrop-filter: blur(20px) saturate(180%);
 
   /* Spacing */
   margin-bottom: var(--spacing-6); /* 24px */
@@ -29,7 +28,7 @@
 
   min-width: 0;
 
-  overflow: hidden;
+  overflow: visible;
 
   overflow-wrap: break-word;
 }

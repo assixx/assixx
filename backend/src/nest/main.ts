@@ -353,7 +353,9 @@ async function bootstrap(): Promise<void> {
   // Development: pino-pretty for readable output
   // Production: JSON to stdout (Docker logs)
   const pinoLoggerConfig = {
-    level: process.env['LOG_LEVEL'] ?? (isProduction ? 'info' : 'debug'),
+    // Default to 'info' - DEBUG only via explicit LOG_LEVEL=debug
+    // Best practice: INFO shows significant events, DEBUG for active troubleshooting
+    level: process.env['LOG_LEVEL'] ?? 'info',
     // Only include transport in development (pino-pretty)
     // Production uses JSON to stdout
     ...(isProduction ?
@@ -375,11 +377,14 @@ async function bootstrap(): Promise<void> {
   };
 
   // Create Fastify adapter with Pino logger and trust proxy for Docker
+  // disableRequestLogging: true → Fastify's native request logging is disabled
+  // Request logging is handled by nestjs-pino (with EXCLUDED_ROUTES for /health, /metrics)
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       logger: pinoLoggerConfig,
       trustProxy: true,
+      disableRequestLogging: true,
     }),
     { bufferLogs: true }, // Buffer logs until nestjs-pino is ready
   );

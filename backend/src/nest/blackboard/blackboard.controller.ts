@@ -129,7 +129,7 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedEntriesResult> {
     return await this.blackboardService.listEntries(tenantId, user.id, {
-      status: query.status,
+      isActive: query.isActive,
       filter: query.filter,
       search: query.search,
       page: query.page,
@@ -151,6 +151,18 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<BlackboardEntryResponse[]> {
     return await this.blackboardService.getDashboardEntries(tenantId, user.id, query.limit ?? 3);
+  }
+
+  /**
+   * GET /blackboard/unconfirmed-count
+   * Get count of unconfirmed entries for notification badge
+   */
+  @Get('unconfirmed-count')
+  async getUnconfirmedCount(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.blackboardService.getUnconfirmedCount(user.id, tenantId);
   }
 
   /**

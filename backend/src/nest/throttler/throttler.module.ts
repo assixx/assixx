@@ -2,7 +2,7 @@
  * Throttler Module - Rate Limiting for NestJS
  *
  * Provides multi-tier rate limiting with Redis storage for distributed deployments.
- * Tiers: auth (5/15min), public (100/15min), user (1000/15min), admin (2000/15min), upload (20/hour)
+ * Tiers: auth (10/5min), public (100/15min), user (1000/15min), admin (2000/15min), upload (20/hour)
  */
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { type ExecutionContext, Module } from '@nestjs/common';
@@ -37,8 +37,8 @@ const MS_HOUR = 3_600_000;
 
         return {
           throttlers: [
-            // Auth: 5 requests per 15 minutes (brute-force protection)
-            { name: 'auth', ttl: 15 * MS_MINUTE, limit: 5 },
+            // Auth: 10 requests per 5 minutes (brute-force protection)
+            { name: 'auth', ttl: 5 * MS_MINUTE, limit: 10 },
             // Public: 100 requests per 15 minutes
             { name: 'public', ttl: 15 * MS_MINUTE, limit: 100 },
             // User: 1000 requests per 15 minutes
@@ -47,6 +47,8 @@ const MS_HOUR = 3_600_000;
             { name: 'admin', ttl: 15 * MS_MINUTE, limit: 2000 },
             // Upload: 20 requests per hour
             { name: 'upload', ttl: MS_HOUR, limit: 20 },
+            // Export: 1 request per minute (audit log export)
+            { name: 'export', ttl: MS_MINUTE, limit: 1 },
           ],
           storage: new ThrottlerStorageRedisService(redisClient),
           // Custom error message with retry info (v6.5.0+)
