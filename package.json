@@ -149,7 +149,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-css-order": "^2.2.0",
     "prettier-plugin-svelte": "3.4.1",
-    "purgecss": "7.0.2",
+    "purgecss": "8.0.0",
     "storybook": "^10.2.0",
     "stylelint": "^17.0.0",
     "stylelint-config-clean-order": "^8.0.0",

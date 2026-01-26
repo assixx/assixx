@@ -113,35 +113,6 @@
   content: '';
 }
 
-/* Legacy grid support (hidden by default) */
-.process-info__grid {
-  display: none;
-}
-
-.process-info__section {
-  padding: var(--spacing-3);
-}
-
-.process-info__heading {
-  margin-bottom: var(--spacing-2);
-  color: var(--color-primary);
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.process-info__list {
-  margin: 0;
-  padding-left: var(--spacing-5);
-  color: var(--color-text-secondary);
-
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.process-info__list li {
-  margin-bottom: var(--spacing-1);
-}
-
 /* ========================================
    INFO BOXES (Permission, Grace Period)
    ======================================== */
@@ -336,10 +307,6 @@
 
 @media (width <= 768px) {
   .status-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .process-info__grid {
     grid-template-columns: 1fr;
   }
 

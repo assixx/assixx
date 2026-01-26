@@ -70,52 +70,6 @@
 }
 
 /* ============================================
-   DETAILS MODAL CONTENT
-   Modal structure uses Design System: .modal-overlay, .ds-modal
-   These are content styles for the log details display
-   ============================================ */
-
-.detail-row {
-  display: flex;
-  gap: var(--spacing-3);
-  padding: var(--spacing-2) 0;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-key {
-  min-width: 120px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-
-.detail-value {
-  flex: 1;
-  color: var(--color-text-primary);
-}
-
-.detail-value pre {
-  overflow-x: auto;
-
-  margin: 0;
-  padding: var(--spacing-2);
-  border-radius: var(--radius-md);
-
-  font-size: 12px;
-
-  background: rgb(0 0 0 / 30%);
-}
-
-.null-value {
-  font-style: italic;
-  color: var(--color-text-secondary);
-  opacity: 60%;
-}
-
-/* ============================================
    USER INFO IN TABLES
    Ensures badges align vertically across rows
    ============================================ */

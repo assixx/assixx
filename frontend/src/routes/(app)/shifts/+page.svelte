@@ -537,11 +537,25 @@
       });
       if (shiftsState.currentPlanId === null && result.planId !== undefined)
         shiftsState.setCurrentPlanId(result.planId);
-      shiftsState.setIsEditMode(false);
       shiftsState.setIsPlanLocked(true);
+      shiftsState.setIsEditMode(false);
       showSuccessAlert('Schichtplan erfolgreich gespeichert!');
-    } catch {
-      showErrorAlert('Fehler beim Speichern des Schichtplans.');
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        'details' in error &&
+        (error as unknown as { code: string }).code === 'VALIDATION_ERROR' &&
+        Array.isArray((error as unknown as { details: unknown }).details)
+      ) {
+        const details = (error as unknown as { details: { message: string }[] }).details;
+        const messages = details.map((d) => d.message).join(', ');
+        showErrorAlert(messages);
+      } else {
+        const message =
+          error instanceof Error ? error.message : 'Fehler beim Speichern des Schichtplans.';
+        showErrorAlert(message);
+      }
     } finally {
       shiftsState.setIsLoading(false);
     }
