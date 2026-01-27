@@ -44,6 +44,7 @@ export interface User {
   tenantId: number;
   departmentId: number | null;
   teamId?: number;
+  hasFullAccess?: boolean;
 }
 
 /**
@@ -84,8 +85,11 @@ export interface SurveyAssignment {
   type?: AssignmentType;
   assignmentType?: AssignmentType;
   areaId?: number;
+  areaName?: string;
   departmentId?: number;
+  departmentName?: string;
   teamId?: number;
+  teamName?: string;
   userId?: number;
 }
 
@@ -102,14 +106,15 @@ export interface Survey {
   isAnonymous: boolean | string | number;
   isMandatory: boolean | string | number;
   allowMultipleResponses?: boolean;
-  startDate?: string | Date;
-  endDate?: string | Date;
+  startDate?: string | Date | null;
+  endDate?: string | Date | null;
   questions?: SurveyQuestion[];
   assignments?: SurveyAssignment[];
   responseCount?: number;
   completedCount?: number;
   creatorFirstName?: string;
   creatorLastName?: string;
+  canManage?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -131,8 +136,11 @@ export interface SurveyTemplate {
 export interface Department {
   id: number;
   name: string;
+  areaId?: number;
+  areaName?: string;
   memberCount?: number;
   employeeCount?: number;
+  departmentLeadId?: number | null;
 }
 
 /**
@@ -142,6 +150,8 @@ export interface Team {
   id: number;
   name: string;
   memberCount?: number;
+  departmentId?: number | null;
+  leaderId?: number | null;
 }
 
 /**
@@ -150,6 +160,8 @@ export interface Team {
 export interface Area {
   id: number;
   name: string;
+  departmentCount?: number;
+  areaLeadId?: number | null;
 }
 
 /**

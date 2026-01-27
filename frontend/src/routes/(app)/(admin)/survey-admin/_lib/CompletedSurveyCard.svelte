@@ -20,22 +20,12 @@
     surveyId: string;
     canManage: boolean;
     assignmentBadges: AssignmentBadgeInfo[];
-    onedit: (surveyId: number | string) => void;
     onviewresults: (surveyId: string) => void;
     ondelete: (surveyId: number | string) => void;
-    oncomplete: (surveyId: number | string) => void;
   }
 
-  const {
-    survey,
-    surveyId,
-    canManage,
-    assignmentBadges,
-    onedit,
-    onviewresults,
-    ondelete,
-    oncomplete,
-  }: Props = $props();
+  const { survey, surveyId, canManage, assignmentBadges, onviewresults, ondelete }: Props =
+    $props();
 
   // =============================================================================
   // DERIVED
@@ -49,27 +39,21 @@
   const title = $derived(getTextFromBuffer(survey.title));
   const description = $derived(getTextFromBuffer(survey.description));
   const isAnonymous = $derived(toBool(survey.isAnonymous));
-  const isMandatory = $derived(toBool(survey.isMandatory));
-  const hasNoEndDate = $derived(endDate === '');
+  const status = $derived(survey.status ?? 'completed');
 </script>
 
 {#snippet cardContent()}
   <div class="flex justify-between items-start mb-4">
     <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>
-    <span class="badge {getStatusBadgeClass(survey.status ?? 'active')} badge--uppercase">
-      {getStatusText(survey.status ?? 'active')}
+    <span class="badge {getStatusBadgeClass(status)} badge--uppercase">
+      {getStatusText(status)}
     </span>
   </div>
 
-  <!-- Survey properties badges -->
   <div class="mb-4 flex items-center gap-2 flex-wrap">
     <span class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}">
       <i class="fas {isAnonymous ? 'fa-user-secret' : 'fa-user'}"></i>
       {isAnonymous ? 'Anonym' : 'Nicht anonym'}
-    </span>
-    <span class="badge badge--sm {isMandatory ? 'badge--warning' : 'badge--success'}">
-      <i class="fas {isMandatory ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-      {isMandatory ? 'Verpflichtend' : 'Freiwillig'}
     </span>
   </div>
 
@@ -82,9 +66,9 @@
     {#if startDate !== '' && endDate !== ''}
       <span>{startDate} - {endDate}</span>
     {:else if startDate !== ''}
-      <span>Ab {startDate}, laufend</span>
+      <span>Ab {startDate}</span>
     {:else}
-      <span>Laufend, bis beendet wird</span>
+      <span>Kein Zeitraum</span>
     {/if}
   </div>
 
@@ -110,21 +94,8 @@
     </div>
   </div>
 
-  <div class="survey-actions">
-    {#if canManage && responseCount === 0}
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick={(e) => {
-          e.stopPropagation();
-          onedit(survey.id ?? surveyId);
-        }}
-      >
-        <i class="fas fa-edit"></i>
-        Bearbeiten
-      </button>
-    {/if}
-    {#if canManage}
+  {#if canManage}
+    <div class="survey-actions">
       <button
         type="button"
         class="btn btn-secondary"
@@ -136,8 +107,6 @@
         <i class="fas fa-chart-bar"></i>
         Ergebnisse
       </button>
-    {/if}
-    {#if canManage}
       <button
         type="button"
         class="btn btn-secondary"
@@ -149,21 +118,8 @@
         <i class="fas fa-trash"></i>
         Löschen
       </button>
-    {/if}
-    {#if canManage && hasNoEndDate}
-      <button
-        type="button"
-        class="btn btn-danger"
-        onclick={(e) => {
-          e.stopPropagation();
-          oncomplete(survey.id ?? surveyId);
-        }}
-      >
-        <i class="fas fa-stop-circle"></i>
-        Beenden
-      </button>
-    {/if}
-  </div>
+    </div>
+  {/if}
 {/snippet}
 
 {#if canManage}

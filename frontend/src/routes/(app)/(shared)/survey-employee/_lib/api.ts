@@ -62,8 +62,10 @@ export async function loadSurveys(): Promise<Survey[]> {
   try {
     const surveys = await apiClient.get<Survey[]>(API_ENDPOINTS.SURVEYS);
 
-    // Filter only active and closed surveys (not draft or archived)
-    return surveys.filter((s: Survey): boolean => s.status === 'active' || s.status === 'closed');
+    // Filter only active and completed surveys (not draft, paused, or archived)
+    return surveys.filter(
+      (s: Survey): boolean => s.status === 'active' || s.status === 'completed',
+    );
   } catch (err) {
     log.error({ err }, 'Error loading surveys');
     checkSessionExpired(err);

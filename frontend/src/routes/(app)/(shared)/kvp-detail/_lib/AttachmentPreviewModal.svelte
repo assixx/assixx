@@ -47,7 +47,7 @@
           <div class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1">
             <div class="text-center text-content-secondary">
               <i class="fas fa-file-alt text-6xl mb-4"></i>
-              <p class="text-lg">Vorschau nicht verfuegbar</p>
+              <p class="text-lg">Vorschau nicht verfügbar</p>
               <p class="text-sm mt-2">Bitte laden Sie die Datei herunter, um sie anzuzeigen.</p>
             </div>
           </div>

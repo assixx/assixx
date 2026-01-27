@@ -55,22 +55,15 @@
     }
   });
 
-  // =============================================================================
-  // MARK NOTIFICATIONS AS READ (ADR-004)
-  // =============================================================================
-
-  // Mark survey notifications as read when page is visited
-  let surveysReadMarked = $state(false);
-  $effect(() => {
-    if (!surveysReadMarked) {
-      surveysReadMarked = true;
-      void notificationStore.markTypeAsRead('survey');
-    }
-  });
-
-  // Derived: Filter surveys by response status
-  const pendingSurveys = $derived(allSurveys.filter((s) => !s.hasResponded));
-  const completedSurveys = $derived(allSurveys.filter((s) => s.hasResponded));
+  // Derived: Filter surveys into sections
+  // Open = active AND not yet responded (employee can still participate)
+  const pendingSurveys = $derived(
+    allSurveys.filter((s) => s.status === 'active' && !s.hasResponded),
+  );
+  // Completed = already responded OR survey ended by admin (status 'completed')
+  const completedSurveys = $derived(
+    allSurveys.filter((s) => s.hasResponded || s.status === 'completed'),
+  );
 
   // Derived: Response modal data (typed object when guard passes, null otherwise)
   const responseModalData = $derived.by(() => {
@@ -223,6 +216,9 @@
         showSuccessAlert('Vielen Dank für Ihre Teilnahme!');
         surveyEmployeeState.closeSurveyModal();
 
+        // Optimistically decrement survey badge count
+        notificationStore.decrementCount('surveys');
+
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
@@ -320,7 +316,15 @@
         {:else}
           <div class="surveys-grid">
             {#each completedSurveys as survey (survey.id)}
-              <SurveyCard {survey} mode="completed" onclick={() => handleViewResponse(survey.id)} />
+              <SurveyCard
+                {survey}
+                mode={survey.hasResponded ? 'responded' : 'ended'}
+                onclick={() => {
+                  if (survey.hasResponded) {
+                    void handleViewResponse(survey.id);
+                  }
+                }}
+              />
             {/each}
           </div>
         {/if}
@@ -582,7 +586,7 @@
             <div class="response-question">
               <h4>{answer.questionText}</h4>
               <div class="response-answer">
-                {#if answer.answerText !== undefined}
+                {#if answer.answerText !== undefined && answer.answerText !== ''}
                   <p>{answer.answerText}</p>
                 {:else if answer.answerNumber !== undefined}
                   {#if answer.questionType === 'rating'}
@@ -595,7 +599,7 @@
                     <i class="fas fa-calendar"></i>
                     {formatSurveyDate(answer.answerDate)}
                   </p>
-                {:else if answer.answerOptions !== undefined}
+                {:else if answer.answerOptions !== undefined && answer.answerOptions.length > 0}
                   {#each answer.answerOptions as optionText, idx (idx)}
                     <p><i class="fas fa-check-square"></i> {optionText}</p>
                   {/each}

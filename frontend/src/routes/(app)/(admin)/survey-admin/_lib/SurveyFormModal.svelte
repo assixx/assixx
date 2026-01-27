@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { ASSIGNMENT_TYPE_OPTIONS } from './constants';
+  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from '$lib/utils';
+
   import QuestionItem from './QuestionItem.svelte';
   import { surveyAdminState } from './state.svelte';
-  import { getDepartmentMemberCount, getTeamMemberCount } from './utils';
+  import { getTeamMemberCount } from './utils';
 
-  import type { QuestionType } from './types';
+  import type { QuestionType, Department, Team, Area } from './types';
 
   // =============================================================================
   // PROPS
@@ -19,7 +20,7 @@
     formStartTime: string;
     formEndDate: string;
     formEndTime: string;
-    formAssignmentType: string;
+    formCompanyWide: boolean;
     formSelectedAreas: number[];
     formSelectedDepartments: number[];
     formSelectedTeams: number[];
@@ -30,7 +31,10 @@
       isOptional: boolean;
       options: string[];
     }[];
-    assignmentDisplayText: string;
+    departments: Department[];
+    teams: Team[];
+    areas: Area[];
+    canAssignCompanyWide: boolean;
     onclose: () => void;
     onsavedraft: () => void;
     onsaveactive: () => void;
@@ -40,12 +44,11 @@
     onaddoption: (questionId: string) => void;
     onremoveoption: (questionId: string, optionIndex: number) => void;
     onupdateoption: (questionId: string, optionIndex: number, text: string) => void;
-    onassignmentselect: (value: string, label: string) => void;
   }
 
   /* eslint-disable */
   // prettier-ignore
-  let { formTitle = $bindable(), formDescription = $bindable(), formIsAnonymous = $bindable(), formIsMandatory = $bindable(), formStartDate = $bindable(), formStartTime = $bindable(), formEndDate = $bindable(), formEndTime = $bindable(), formAssignmentType = $bindable(), formSelectedAreas = $bindable(), formSelectedDepartments = $bindable(), formSelectedTeams = $bindable(), formQuestions = $bindable(), assignmentDisplayText, onclose, onsavedraft, onsaveactive, onaddquestion, onremovequestion, onquestiontypechange, onaddoption, onremoveoption, onupdateoption, onassignmentselect }: Props = $props();
+  let { formTitle = $bindable(), formDescription = $bindable(), formIsAnonymous = $bindable(), formIsMandatory = $bindable(), formStartDate = $bindable(), formStartTime = $bindable(), formEndDate = $bindable(), formEndTime = $bindable(), formCompanyWide = $bindable(), formSelectedAreas = $bindable(), formSelectedDepartments = $bindable(), formSelectedTeams = $bindable(), formQuestions = $bindable(), departments, teams, areas, canAssignCompanyWide, onclose, onsavedraft, onsaveactive, onaddquestion, onremovequestion, onquestiontypechange, onaddoption, onremoveoption, onupdateoption }: Props = $props();
   /* eslint-enable */
 
   // =============================================================================
@@ -54,6 +57,30 @@
 
   let activeDropdown = $state<string | null>(null);
   let formElement: HTMLFormElement | undefined = $state();
+
+  // =============================================================================
+  // VISIBILITY LOGIC (Calendar-style inheritance)
+  // =============================================================================
+
+  /** Filter departments based on selected areas (inheritance logic) */
+  const availableDepartments = $derived.by(() => {
+    return filterAvailableDepartments(departments, formSelectedAreas, formCompanyWide);
+  });
+
+  /**
+   * Handle area selection change.
+   * Also filters out departments that are now covered by selected areas.
+   */
+  function handleAreaChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    const newAreaIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
+    formSelectedAreas = newAreaIds;
+    formSelectedDepartments = filterDepartmentIdsByAreas(
+      formSelectedDepartments,
+      departments,
+      newAreaIds,
+    );
+  }
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -65,11 +92,6 @@
 
   function closeAllDropdowns() {
     activeDropdown = null;
-  }
-
-  function handleAssignmentSelect(value: string, label: string) {
-    onassignmentselect(value, label);
-    closeAllDropdowns();
   }
 
   function handleQuestionTypeChange(questionId: string, type: QuestionType) {
@@ -225,100 +247,113 @@
           </div>
         </div>
 
-        <!-- Target Audience -->
+        <!-- Zielgruppe / Sichtbarkeit (Calendar-style) -->
         <div class="form-field">
-          <span class="form-field__label">Zielgruppe</span>
-          <div class="dropdown" data-dropdown="assignment">
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={activeDropdown === 'assignment'}
-              onclick={() => {
-                toggleDropdown('assignment');
-              }}
-            >
-              <span>{assignmentDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div class="dropdown__menu" class:active={activeDropdown === 'assignment'}>
-              {#each ASSIGNMENT_TYPE_OPTIONS as option (option.value)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  onclick={() => {
-                    handleAssignmentSelect(option.value, option.label);
-                  }}
-                >
-                  {option.label}
-                </button>
-              {/each}
-            </div>
-          </div>
+          <span class="form-field__label">
+            <i class="fas fa-users mr-2"></i>
+            Sichtbarkeit
+          </span>
+          <p class="text-sm text-[var(--color-text-secondary)] mb-2">
+            Waehlen Sie keine Organisation fuer firmenweite Umfragen oder eine/mehrere spezifische
+            Organisationen.
+          </p>
         </div>
 
-        <!-- Area Selection -->
-        {#if formAssignmentType === 'area'}
+        <!-- Ganze Firma Toggle (only for root / has_full_access users) -->
+        {#if canAssignCompanyWide}
           <div class="form-field">
-            <label class="form-field__label" for="areaSelect">Bereiche auswaehlen</label>
-            <select
-              id="areaSelect"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formSelectedAreas}
-            >
-              {#each surveyAdminState.areas as area (area.id)}
-                <option value={area.id}>{area.name}</option>
-              {/each}
-            </select>
-            <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
-            </small>
+            <label class="toggle-switch toggle-switch--danger">
+              <input type="checkbox" class="toggle-switch__input" bind:checked={formCompanyWide} />
+              <span class="toggle-switch__slider"></span>
+              <span class="toggle-switch__label">
+                <i class="fas fa-building mr-2"></i>
+                Ganze Firma (Alle Mitarbeiter)
+              </span>
+            </label>
+            <span class="form-field__message text-[var(--color-danger)]">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diese Umfrage
+            </span>
           </div>
         {/if}
 
-        <!-- Department Selection -->
-        {#if formAssignmentType === 'department'}
-          <div class="form-field">
-            <label class="form-field__label" for="departmentSelect">Abteilungen auswaehlen</label>
-            <select
-              id="departmentSelect"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formSelectedDepartments}
-            >
-              {#each surveyAdminState.departments as dept (dept.id)}
-                <option value={dept.id}>
-                  {dept.name} ({getDepartmentMemberCount(dept)} Mitglieder)
-                </option>
-              {/each}
-            </select>
-            <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
-            </small>
-          </div>
-        {/if}
+        <!-- Area Selection -->
+        <div class="form-field" class:opacity-50={formCompanyWide}>
+          <label class="form-field__label" for="survey-area-select">
+            <i class="fas fa-layer-group mr-1"></i> Bereiche (Areas)
+          </label>
+          <select
+            id="survey-area-select"
+            multiple
+            class="form-field__control min-h-[100px]"
+            value={formSelectedAreas}
+            disabled={formCompanyWide}
+            onchange={handleAreaChange}
+          >
+            {#each areas as area (area.id)}
+              <option value={area.id} selected={formSelectedAreas.includes(area.id)}>
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
+                  ? ` (${area.departmentCount} Abt.)`
+                  : ''}
+              </option>
+            {/each}
+          </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick fuer Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
+          </span>
+        </div>
+
+        <!-- Department Selection (filtered by area inheritance) -->
+        <div class="form-field" class:opacity-50={formCompanyWide}>
+          <label class="form-field__label" for="survey-department-select">
+            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
+          </label>
+          <select
+            id="survey-department-select"
+            multiple
+            class="form-field__control min-h-[100px]"
+            bind:value={formSelectedDepartments}
+            disabled={formCompanyWide}
+          >
+            {#each availableDepartments as dept (dept.id)}
+              <option value={dept.id}>
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
+                  ? ` (${dept.areaName})`
+                  : ''}
+              </option>
+            {/each}
+          </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
+            sind.
+          </span>
+        </div>
 
         <!-- Team Selection -->
-        {#if formAssignmentType === 'team'}
-          <div class="form-field">
-            <label class="form-field__label" for="teamSelect">Teams auswaehlen</label>
-            <select
-              id="teamSelect"
-              multiple
-              class="form-field__control min-h-[120px]"
-              bind:value={formSelectedTeams}
-            >
-              {#each surveyAdminState.teams as team (team.id)}
-                <option value={team.id}>
-                  {team.name} ({getTeamMemberCount(team)} Mitglieder)
-                </option>
-              {/each}
-            </select>
-            <small class="text-secondary text-xs mt-1 block">
-              Halten Sie Strg/Cmd gedrueckt für Mehrfachauswahl
-            </small>
-          </div>
-        {/if}
+        <div class="form-field" class:opacity-50={formCompanyWide}>
+          <label class="form-field__label" for="survey-team-select">
+            <i class="fas fa-users mr-1"></i> Teams
+          </label>
+          <select
+            id="survey-team-select"
+            multiple
+            class="form-field__control min-h-[100px]"
+            bind:value={formSelectedTeams}
+            disabled={formCompanyWide}
+          >
+            {#each teams as team (team.id)}
+              <option value={team.id}>
+                {team.name} ({getTeamMemberCount(team)} Mitglieder)
+              </option>
+            {/each}
+          </select>
+          <span class="form-field__message text-[var(--color-text-secondary)]">
+            <i class="fas fa-info-circle mr-1"></i>
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet zugehoerige Teams.
+          </span>
+        </div>
 
         <!-- Question Builder -->
         <div class="question-builder">

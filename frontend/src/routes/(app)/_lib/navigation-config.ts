@@ -102,7 +102,7 @@ export const rootMenuItems: NavItem[] = [
     hasSubmenu: true,
     submenu: [
       { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-employee', badgeType: 'surveys' },
+      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-admin', badgeType: 'surveys' },
     ],
   },
   { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },

@@ -127,6 +127,24 @@ export async function updateSurvey(
 }
 
 /**
+ * Complete (end) a survey by setting its status to 'completed'.
+ * Uses the existing PUT endpoint with COALESCE -- only status changes.
+ */
+export async function completeSurvey(
+  surveyId: number | string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiClient.put(API_ENDPOINTS.surveyById(surveyId), { status: 'completed' });
+    return { success: true };
+  } catch (err) {
+    log.error({ err, surveyId }, 'Error completing survey');
+    checkSessionExpired(err);
+    const message = err instanceof Error ? err.message : 'Fehler beim Beenden der Umfrage';
+    return { success: false, error: message };
+  }
+}
+
+/**
  * Delete survey
  */
 export async function deleteSurvey(

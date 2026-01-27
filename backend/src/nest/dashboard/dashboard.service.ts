@@ -17,6 +17,7 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import { KvpService } from '../kvp/kvp.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { SurveysService } from '../surveys/surveys.service.js';
 import type {
   ChatCounts,
   DashboardCounts,
@@ -44,6 +45,7 @@ export class DashboardService {
     private readonly calendarService: CalendarService,
     private readonly documentsService: DocumentsService,
     private readonly kvpService: KvpService,
+    private readonly surveysService: SurveysService,
   ) {}
 
   /**
@@ -65,6 +67,7 @@ export class DashboardService {
       calendarResult,
       documentsResult,
       kvpResult,
+      surveysResult,
     ] = await Promise.all([
       this.fetchChatCounts().catch((err: unknown) => {
         this.logger.warn(`Chat counts failed: ${String(err)}`);
@@ -90,6 +93,10 @@ export class DashboardService {
         this.logger.warn(`KVP count failed: ${String(err)}`);
         return EMPTY_COUNT;
       }),
+      this.fetchSurveyPendingCount(user.id, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Survey count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
     ]);
 
     const data: DashboardCounts = {
@@ -99,6 +106,7 @@ export class DashboardService {
       calendar: calendarResult,
       documents: documentsResult,
       kvp: kvpResult,
+      surveys: surveysResult,
       fetchedAt: new Date().toISOString(),
     };
 
@@ -176,5 +184,15 @@ export class DashboardService {
    */
   private async fetchKvpCount(userId: number, tenantId: number): Promise<{ count: number }> {
     return await this.kvpService.getUnconfirmedCount(userId, tenantId);
+  }
+
+  /**
+   * Fetch pending survey count (active surveys not yet responded to by user)
+   */
+  private async fetchSurveyPendingCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.surveysService.getPendingSurveyCount(userId, tenantId);
   }
 }

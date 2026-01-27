@@ -2,11 +2,19 @@
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
+import { notificationStore } from '$lib/stores/notification.store.svelte';
 import { showConfirmDanger, showErrorAlert, showSuccessAlert } from '$lib/utils';
 import { createLogger } from '$lib/utils/logger';
 
-import { loadSurveys, loadSurveyById, createSurvey, updateSurvey, deleteSurvey } from './api';
-import { ASSIGNMENT_TYPE_OPTIONS } from './constants';
+import {
+  loadSurveys,
+  loadSurveyById,
+  createSurvey,
+  updateSurvey,
+  deleteSurvey,
+  completeSurvey,
+} from './api';
+import { ASSIGNMENT_BADGE_MAP } from './constants';
 import { surveyAdminState } from './state.svelte';
 import {
   getTextFromBuffer,
@@ -40,7 +48,7 @@ export interface FormState {
   formStartTime: string;
   formEndDate: string;
   formEndTime: string;
-  formAssignmentType: string;
+  formCompanyWide: boolean;
   formSelectedAreas: number[];
   formSelectedDepartments: number[];
   formSelectedTeams: number[];
@@ -51,7 +59,6 @@ export interface FormState {
     isOptional: boolean;
     options: string[];
   }[];
-  assignmentDisplayText: string;
 }
 
 // =============================================================================
@@ -71,11 +78,6 @@ export function getSurveyId(survey: Survey): string {
   return survey.uuid ?? survey.id?.toString() ?? '';
 }
 
-export function getAssignmentLabel(type: string): string {
-  const option = ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === type);
-  return option?.label ?? 'Ganze Firma';
-}
-
 export function getOptionsFromQuestion(question: SurveyQuestion): string[] {
   if (question.options === undefined || question.options.length === 0) return [];
   return question.options.map((opt) => {
@@ -85,106 +87,99 @@ export function getOptionsFromQuestion(question: SurveyQuestion): string[] {
 }
 
 /**
- * Resolves an entity name by ID with a fallback label.
+ * Structured assignment badge info (mirrors KVP visibility badges)
  */
-function resolveEntityName(
+export interface AssignmentBadgeInfo {
+  badgeClass: string;
+  icon: string;
+  text: string;
+}
+
+/**
+ * Resolves an entity name by ID, returns just the name or a fallback label.
+ */
+function resolveEntityText(
   id: number | undefined,
   finder: (id: number) => { name: string } | undefined,
-  prefix: string,
   fallback: string,
 ): string {
   if (id === undefined) return fallback;
   const entity = finder(id);
-  return entity !== undefined ? `${prefix}: ${entity.name}` : fallback;
+  return entity !== undefined ? entity.name : fallback;
 }
 
 /**
- * Extracts the first assignment from a survey, returns null if none exists.
+ * Build a single badge from one assignment + lookup arrays.
  */
-function getFirstAssignment(survey: Survey): SurveyAssignment | null {
-  if (survey.assignments === undefined || survey.assignments.length === 0) return null;
-  return survey.assignments[0] ?? null;
-}
-
-export function getAssignmentInfo(survey: Survey): string {
-  const assignment = getFirstAssignment(survey);
-  if (assignment === null) return '';
-
+function buildBadgeFromAssignment(
+  assignment: SurveyAssignment,
+  departments: { id: number; name: string }[],
+  teams: { id: number; name: string }[],
+  areas: { id: number; name: string }[],
+): AssignmentBadgeInfo | null {
   const type = assignment.assignmentType ?? assignment.type;
+  if (type === undefined) return null;
 
-  if (type === 'all_users') return 'Alle Mitarbeiter';
+  const badge = ASSIGNMENT_BADGE_MAP[type];
+  if (badge === undefined) return null;
+
+  // Prefer inline name from backend, fall back to lookup arrays
+  let text = badge.label;
+
   if (type === 'team') {
-    return resolveEntityName(
-      assignment.teamId,
-      (id) => surveyAdminState.getTeamById(id),
-      'Team',
-      'Team',
-    );
+    text =
+      assignment.teamName ??
+      resolveEntityText(assignment.teamId, (id) => teams.find((t) => t.id === id), badge.label);
+  } else if (type === 'department') {
+    text =
+      assignment.departmentName ??
+      resolveEntityText(
+        assignment.departmentId,
+        (id) => departments.find((d) => d.id === id),
+        badge.label,
+      );
+  } else if (type === 'area') {
+    text =
+      assignment.areaName ??
+      resolveEntityText(assignment.areaId, (id) => areas.find((a) => a.id === id), badge.label);
   }
-  if (type === 'department') {
-    return resolveEntityName(
-      assignment.departmentId,
-      (id) => surveyAdminState.getDepartmentById(id),
-      'Abteilung',
-      'Abteilung',
-    );
-  }
-  if (type === 'area') {
-    return resolveEntityName(
-      assignment.areaId,
-      (id) => surveyAdminState.getAreaById(id),
-      'Bereich',
-      'Bereich',
-    );
-  }
-  return '';
+
+  return { badgeClass: badge.badgeClass, icon: badge.icon, text };
 }
 
 /**
- * Level 3: Get assignment info using passed data instead of state store
+ * Get assignment badges for a survey (Level 3 SSR).
+ * Returns ALL assignment badges (surveys can target multiple groups).
  */
-export function getAssignmentInfoWithData(
+export function getAssignmentBadges(
   survey: Survey,
   departments: { id: number; name: string }[],
   teams: { id: number; name: string }[],
   areas: { id: number; name: string }[],
-): string {
-  const assignment = getFirstAssignment(survey);
-  if (assignment === null) return '';
+): AssignmentBadgeInfo[] {
+  if (survey.assignments === undefined || survey.assignments.length === 0) return [];
 
-  const type = assignment.assignmentType ?? assignment.type;
-
-  if (type === 'all_users') return 'Alle Mitarbeiter';
-  if (type === 'team') {
-    return resolveEntityName(
-      assignment.teamId,
-      (id) => teams.find((t) => t.id === id),
-      'Team',
-      'Team',
-    );
+  const badges: AssignmentBadgeInfo[] = [];
+  for (const assignment of survey.assignments) {
+    const badge = buildBadgeFromAssignment(assignment, departments, teams, areas);
+    if (badge !== null) {
+      badges.push(badge);
+    }
   }
-  if (type === 'department') {
-    return resolveEntityName(
-      assignment.departmentId,
-      (id) => departments.find((d) => d.id === id),
-      'Abteilung',
-      'Abteilung',
-    );
-  }
-  if (type === 'area') {
-    return resolveEntityName(
-      assignment.areaId,
-      (id) => areas.find((a) => a.id === id),
-      'Bereich',
-      'Bereich',
-    );
-  }
-  return '';
+  return badges;
 }
 
 // =============================================================================
 // FORM POPULATION HELPERS
 // =============================================================================
+
+/** Check if a date value from the API is usable (not null, undefined, or empty) */
+function isValidDateValue(value: string | Date | null | undefined): value is string | Date {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string' && value === '') return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime());
+}
 
 function populateDates(
   survey: Survey,
@@ -195,12 +190,12 @@ function populateDates(
     formEndDate: '',
     formEndTime: '23:59',
   };
-  if (survey.startDate !== undefined) {
+  if (isValidDateValue(survey.startDate)) {
     const startDate = new Date(survey.startDate);
     result.formStartDate = formatDateForInput(startDate);
     result.formStartTime = formatTimeForInput(startDate);
   }
-  if (survey.endDate !== undefined) {
+  if (isValidDateValue(survey.endDate)) {
     const endDate = new Date(survey.endDate);
     result.formEndDate = formatDateForInput(endDate);
     result.formEndTime = formatTimeForInput(endDate);
@@ -208,56 +203,58 @@ function populateDates(
   return result;
 }
 
+/**
+ * Extract area/department/team IDs from all assignments simultaneously.
+ * Reads the type from each individual assignment record (supports mixed types).
+ */
 function extractAssignmentIds(
   assignments: SurveyAssignment[],
-  type: string,
 ): Pick<FormState, 'formSelectedAreas' | 'formSelectedDepartments' | 'formSelectedTeams'> {
-  const result = {
-    formSelectedAreas: [] as number[],
-    formSelectedDepartments: [] as number[],
-    formSelectedTeams: [] as number[],
-  };
-  if (type === 'area') {
-    result.formSelectedAreas = assignments
-      .map((a) => a.areaId)
-      .filter((id): id is number => id !== undefined);
-  } else if (type === 'department') {
-    result.formSelectedDepartments = assignments
-      .map((a) => a.departmentId)
-      .filter((id): id is number => id !== undefined);
-  } else if (type === 'team') {
-    result.formSelectedTeams = assignments
-      .map((a) => a.teamId)
-      .filter((id): id is number => id !== undefined);
+  const formSelectedAreas: number[] = [];
+  const formSelectedDepartments: number[] = [];
+  const formSelectedTeams: number[] = [];
+
+  for (const assignment of assignments) {
+    const type = assignment.assignmentType ?? assignment.type;
+    if (type === 'area' && assignment.areaId !== undefined) {
+      formSelectedAreas.push(assignment.areaId);
+    } else if (type === 'department' && assignment.departmentId !== undefined) {
+      formSelectedDepartments.push(assignment.departmentId);
+    } else if (type === 'team' && assignment.teamId !== undefined) {
+      formSelectedTeams.push(assignment.teamId);
+    }
   }
-  return result;
+
+  return { formSelectedAreas, formSelectedDepartments, formSelectedTeams };
 }
 
 function populateAssignments(
   survey: Survey,
 ): Pick<
   FormState,
-  | 'formAssignmentType'
-  | 'assignmentDisplayText'
-  | 'formSelectedAreas'
-  | 'formSelectedDepartments'
-  | 'formSelectedTeams'
+  'formCompanyWide' | 'formSelectedAreas' | 'formSelectedDepartments' | 'formSelectedTeams'
 > {
   const defaults = {
-    formAssignmentType: 'all_users',
-    assignmentDisplayText: 'Ganze Firma',
+    formCompanyWide: false,
     formSelectedAreas: [] as number[],
     formSelectedDepartments: [] as number[],
     formSelectedTeams: [] as number[],
   };
-  const assignment = getFirstAssignment(survey);
-  if (assignment === null) return defaults;
 
-  const type = assignment.assignmentType ?? assignment.type ?? 'all_users';
+  const assignments = survey.assignments;
+  if (assignments === undefined || assignments.length === 0) return defaults;
+
+  // Check if any assignment is company-wide
+  const hasCompanyWide = assignments.some((a) => {
+    const type = a.assignmentType ?? a.type;
+    return type === 'all_users';
+  });
+
+  if (hasCompanyWide) return { ...defaults, formCompanyWide: true };
+
   return {
-    formAssignmentType: type,
-    assignmentDisplayText: getAssignmentLabel(type),
-    ...extractAssignmentIds(survey.assignments ?? [], type),
+    formCompanyWide: false,
+    ...extractAssignmentIds(assignments),
   };
 }
 
@@ -292,40 +289,35 @@ export function populateFormFromSurvey(survey: Survey): FormState {
 // ASSIGNMENT BUILDER
 // =============================================================================
 
+/**
+ * Build assignments from combined selections.
+ * Supports mixed types: areas + departments + teams simultaneously.
+ */
 export function buildAssignments(
-  formAssignmentType: string,
+  formCompanyWide: boolean,
   formSelectedAreas: number[],
   formSelectedDepartments: number[],
   formSelectedTeams: number[],
 ): SurveyAssignment[] | null {
-  switch (formAssignmentType) {
-    case 'all_users':
-      return [{ type: 'all_users' }];
-    case 'area':
-      if (formSelectedAreas.length === 0) {
-        showErrorAlert('Bitte waehlen Sie mindestens einen Bereich aus');
-        return null;
-      }
-      return formSelectedAreas.map((areaId) => ({ type: 'area' as const, areaId }));
-    case 'department':
-      if (formSelectedDepartments.length === 0) {
-        showErrorAlert('Bitte waehlen Sie mindestens eine Abteilung aus');
-        return null;
-      }
-      return formSelectedDepartments.map((departmentId) => ({
-        type: 'department' as const,
-        departmentId,
-      }));
-    case 'team':
-      if (formSelectedTeams.length === 0) {
-        showErrorAlert('Bitte waehlen Sie mindestens ein Team aus');
-        return null;
-      }
-      return formSelectedTeams.map((teamId) => ({ type: 'team' as const, teamId }));
-    default:
-      showErrorAlert('Bitte waehlen Sie eine Zielgruppe aus');
-      return null;
+  if (formCompanyWide) {
+    return [{ type: 'all_users' }];
   }
+
+  const assignments: SurveyAssignment[] = [
+    ...formSelectedAreas.map((areaId) => ({ type: 'area' as const, areaId })),
+    ...formSelectedDepartments.map((departmentId) => ({
+      type: 'department' as const,
+      departmentId,
+    })),
+    ...formSelectedTeams.map((teamId) => ({ type: 'team' as const, teamId })),
+  ];
+
+  if (assignments.length === 0) {
+    showErrorAlert('Bitte waehlen Sie mindestens eine Zielgruppe aus');
+    return null;
+  }
+
+  return assignments;
 }
 
 // =============================================================================
@@ -472,7 +464,7 @@ async function saveSurveyCore(
   if (!isValid) return;
 
   const assignments = buildAssignments(
-    formState.formAssignmentType,
+    formState.formCompanyWide,
     formState.formSelectedAreas,
     formState.formSelectedDepartments,
     formState.formSelectedTeams,
@@ -487,6 +479,12 @@ async function saveSurveyCore(
     if (result.success) {
       showSuccessAlert(getSaveSuccessMessage(status));
       onSuccess();
+
+      // Refresh notification badge counts (survey pending count changed)
+      if (status === 'active') {
+        void notificationStore.loadInitialCounts();
+      }
+
       await postSaveAction();
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Speichern der Umfrage');
@@ -517,6 +515,31 @@ export async function saveSurveyWithInvalidate(
   invalidateAll: () => Promise<void>,
 ): Promise<void> {
   await saveSurveyCore(status, formState, onSuccess, invalidateAll);
+}
+
+// =============================================================================
+// COMPLETE SURVEY (manually end an open-ended survey)
+// =============================================================================
+
+export async function handleCompleteSurveyWithInvalidate(
+  surveyId: number | string,
+  invalidateAll: () => Promise<void>,
+): Promise<void> {
+  const confirmed = await showConfirmDanger(
+    'Die Umfrage wird fuer alle Mitarbeiter beendet. Neue Antworten sind danach nicht mehr moeglich.',
+    'Umfrage beenden?',
+  );
+  if (!confirmed) return;
+
+  const result = await completeSurvey(surveyId);
+  if (result.success) {
+    showSuccessAlert('Umfrage erfolgreich beendet');
+    // Refresh notification badge counts (survey no longer active → pending count changed)
+    void notificationStore.loadInitialCounts();
+    await invalidateAll();
+  } else {
+    showErrorAlert(result.error ?? 'Fehler beim Beenden der Umfrage');
+  }
 }
 
 // =============================================================================

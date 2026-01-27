@@ -3,9 +3,16 @@
 // Based on: frontend/src/scripts/survey/employee/ui.ts
 // =============================================================================
 
-import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP } from './constants';
+import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP, ASSIGNMENT_BADGE_MAP } from './constants';
 
-import type { BufferData, Question, AnswerMap, Answer } from './types';
+import type {
+  AssignmentType,
+  BufferData,
+  Question,
+  AnswerMap,
+  Answer,
+  SurveyAssignment,
+} from './types';
 
 /**
  * Convert Buffer to string
@@ -168,11 +175,56 @@ export function validateRequiredQuestions(
 }
 
 /**
- * Get assignment info as readable string
- * Note: Employee surveys typically don't have detailed assignment info in the response
+ * Structured assignment badge info (mirrors KVP visibility badges)
  */
-export function getAssignmentInfo(): string {
-  return 'Alle Mitarbeiter';
+export interface AssignmentBadgeInfo {
+  badgeClass: string;
+  icon: string;
+  text: string;
+}
+
+/**
+ * Resolve the display name for an assignment badge.
+ * Uses inline names (teamName, departmentName, areaName) when available.
+ */
+function resolveAssignmentText(
+  assignmentType: AssignmentType,
+  assignment: SurveyAssignment,
+  defaultLabel: string,
+): string {
+  if (assignmentType === 'team' && assignment.teamName !== undefined) {
+    return assignment.teamName;
+  }
+  if (assignmentType === 'department' && assignment.departmentName !== undefined) {
+    return assignment.departmentName;
+  }
+  if (assignmentType === 'area' && assignment.areaName !== undefined) {
+    return assignment.areaName;
+  }
+  return defaultLabel;
+}
+
+/**
+ * Build assignment badges from survey assignments.
+ * Uses inline names from backend (areaName, departmentName, teamName).
+ */
+export function getAssignmentBadges(
+  assignments: SurveyAssignment[] | undefined,
+): AssignmentBadgeInfo[] {
+  if (assignments === undefined || assignments.length === 0) return [];
+
+  const badges: AssignmentBadgeInfo[] = [];
+  for (const assignment of assignments) {
+    const assignmentType: AssignmentType | undefined = assignment.assignmentType ?? assignment.type;
+    if (assignmentType === undefined) continue;
+
+    const badgeMeta = ASSIGNMENT_BADGE_MAP[assignmentType];
+    if (badgeMeta === undefined) continue;
+
+    const text: string = resolveAssignmentText(assignmentType, assignment, badgeMeta.label);
+    badges.push({ badgeClass: badgeMeta.badgeClass, icon: badgeMeta.icon, text });
+  }
+  return badges;
 }
 
 /**

@@ -6,7 +6,7 @@
 /**
  * Survey status
  */
-export type SurveyStatus = 'draft' | 'active' | 'closed' | 'archived';
+export type SurveyStatus = 'draft' | 'active' | 'paused' | 'completed' | 'archived';
 
 /**
  * Question type
@@ -48,6 +48,26 @@ export interface Question {
 }
 
 /**
+ * Assignment type
+ */
+export type AssignmentType = 'all_users' | 'area' | 'department' | 'team' | 'user';
+
+/**
+ * Survey assignment (from backend, includes resolved names)
+ */
+export interface SurveyAssignment {
+  assignmentType?: AssignmentType;
+  type?: AssignmentType;
+  areaId?: number;
+  areaName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  teamId?: number;
+  teamName?: string;
+  userId?: number;
+}
+
+/**
  * Survey
  */
 export interface Survey {
@@ -60,6 +80,7 @@ export interface Survey {
   startDate: string | null;
   endDate: string | null;
   questions: Question[];
+  assignments?: SurveyAssignment[];
 }
 
 /**

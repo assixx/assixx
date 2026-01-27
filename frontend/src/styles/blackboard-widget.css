@@ -56,7 +56,6 @@
   align-items: center;
 
   /* Remove default card header styles */
-  margin-bottom: -1.35rem; /* Custom spacing for widget */
   border: none !important; /* No bottom border */
   padding-bottom: 0; /* No bottom padding */
 

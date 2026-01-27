@@ -18,7 +18,7 @@ cd /home/scs/projects/Assixx/docker
 
 # 1. Docker Status
 echo "1️⃣  Docker Status:"
-if docker-compose ps 2>/dev/null | grep -q "Up"; then
+if doppler run -- docker-compose ps 2>/dev/null | grep -q "Up"; then
     echo -e "   ${GREEN}✅ Docker Container laufen${NC}"
 else
     echo -e "   ${RED}❌ Docker Container nicht gestartet${NC}"

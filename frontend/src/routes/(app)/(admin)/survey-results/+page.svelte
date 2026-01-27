@@ -186,7 +186,10 @@
               ><i class="fas fa-calendar"></i> Erstellt: {formatGermanDate(survey.createdAt)}</span
             >
             <span
-              ><i class="fas fa-calendar-check"></i> Endet: {formatGermanDate(survey.endDate)}</span
+              ><i class="fas fa-calendar-check"></i> Endet: {survey.endDate !== undefined &&
+              survey.endDate !== ''
+                ? formatGermanDate(survey.endDate)
+                : 'Laufend'}</span
             >
             <span>
               <i class="fas fa-user-shield"></i>
@@ -265,7 +268,7 @@
                   <!-- Choice Questions (single_choice, multiple_choice, yes_no) -->
                   {#if question.questionType === 'single_choice' || question.questionType === 'multiple_choice' || question.questionType === 'yes_no' || question.questionType === 'date'}
                     {#if question.options === undefined || question.options.length === 0}
-                      <p>Keine Optionen verfuegbar</p>
+                      <p>Keine Optionen verfügbar</p>
                     {:else}
                       {@const totalResponses = calculateTotalResponses(question)}
                       {#each question.options as option (option.optionId ?? option.optionText)}
