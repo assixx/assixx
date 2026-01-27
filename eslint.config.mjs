@@ -133,7 +133,10 @@ export default [
       'import-x/parsers': {
         '@typescript-eslint/parser': ['.ts', '.tsx'],
       },
-      'import-x/external-module-folders': ['node_modules', 'node_modules/@types'],
+      'import-x/external-module-folders': [
+        'node_modules',
+        'node_modules/@types',
+      ],
     },
     rules: {
       // v8: Access rules via tseslint.plugin.configs (same structure as before)
@@ -150,7 +153,8 @@ export default [
         'error',
         // Verbiete String-Konkatenation als erstes Argument in query()
         {
-          selector: 'CallExpression[callee.property.name="query"] > BinaryExpression:first-child',
+          selector:
+            'CallExpression[callee.property.name="query"] > BinaryExpression:first-child',
           message:
             '⚠️ SQL INJECTION: Keine String-Konkatenation in query()! Nutze parameterisierte Queries: pool.query("SELECT * FROM x WHERE id = $1", [id])',
         },
@@ -189,19 +193,7 @@ export default [
       'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
       'max-classes-per-file': ['error', 1], // Regel 10: Zero Warnings
 
-      // Line Length Control
-      'max-len': [
-        'error', // Regel 10: Zero Warnings
-        {
-          code: 120,
-          tabWidth: 2,
-          ignoreUrls: true,
-          ignoreStrings: true,
-          ignoreTemplateLiterals: true,
-          ignoreRegExpLiterals: true,
-          ignoreComments: true,
-        },
-      ],
+      // max-len: removed — deprecated in ESLint v8.53.0, Prettier handles line length
 
       // Import Dependencies Limit
       'import-x/max-dependencies': [
@@ -290,10 +282,20 @@ export default [
       // --- ANGEPASST --- Radikal vereinfachte Naming Convention.
       '@typescript-eslint/naming-convention': [
         'error',
-        { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
-        { selector: 'variable', format: ['camelCase', 'UPPER_CASE', 'PascalCase'] },
+        {
+          selector: 'default',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'variable',
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+        },
         // Erlaube jede Benennung für Properties, die von externen Quellen (DB, API) kommen.
-        { selector: ['property', 'objectLiteralProperty', 'typeProperty'], format: null },
+        {
+          selector: ['property', 'objectLiteralProperty', 'typeProperty'],
+          format: null,
+        },
         { selector: 'typeLike', format: ['PascalCase'] },
         { selector: 'enumMember', format: ['UPPER_CASE'] },
       ],
@@ -367,7 +369,8 @@ export default [
         {
           selector:
             "CallExpression[callee.property.name='setAttribute'][arguments.0.value='onclick']",
-          message: 'Use addEventListener instead of onclick attributes to prevent XSS',
+          message:
+            'Use addEventListener instead of onclick attributes to prevent XSS',
         },
       ],
     },
@@ -460,7 +463,8 @@ export default [
           tolerance: 5.2,
           additionalRegexes: {
             'German Password': '(passwort|kennwort)\\s*[:=]\\s*[\'"]?.+[\'"]?',
-            'JWT Token': 'eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*',
+            'JWT Token':
+              'eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*',
             // PostgreSQL Connection Strings (nur env vars, nicht generische password strings)
             'PostgreSQL Env Hardcoded':
               '(PG_PASSWORD|POSTGRES_PASSWORD|DATABASE_URL)\\s*[:=]\\s*[\'"][^$\\{][^\'"]{8,}[\'"]',
@@ -481,7 +485,10 @@ export default [
     ],
     rules: {
       // Längere Dateien für komplexe DB-Queries erlauben
-      'max-lines': ['error', { max: 1000, skipBlankLines: true, skipComments: true }],
+      'max-lines': [
+        'error',
+        { max: 1000, skipBlankLines: true, skipComments: true },
+      ],
       // Längere Funktionen für komplexe DB-Operationen
       'max-lines-per-function': [
         'error',
@@ -653,7 +660,10 @@ export default [
     },
     rules: {
       'prettier/prettier': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
@@ -672,7 +682,11 @@ export default [
   },
   // NOTE: Frontend JS/config blocks REMOVED - handled by frontend/eslint.config.mjs
   {
-    files: ['eslint.config.mjs', 'backend/eslint.config.mjs', 'scripts/fix-esm-imports.js'],
+    files: [
+      'eslint.config.mjs',
+      'backend/eslint.config.mjs',
+      'scripts/fix-esm-imports.js',
+    ],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',

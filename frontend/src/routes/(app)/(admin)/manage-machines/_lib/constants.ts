@@ -53,7 +53,11 @@ export const STATUS_LABELS: Record<MachineStatus, string> = {
 /**
  * Status options for dropdown
  */
-export const STATUS_OPTIONS: { value: MachineStatus; label: string; class: string }[] = [
+export const STATUS_OPTIONS: {
+  value: MachineStatus;
+  label: string;
+  class: string;
+}[] = [
   { value: 'operational', label: 'Betriebsbereit', class: 'badge--success' },
   { value: 'maintenance', label: 'In Wartung', class: 'badge--warning' },
   { value: 'repair', label: 'In Reparatur', class: 'badge--danger' },
@@ -118,7 +122,8 @@ export const MESSAGES = {
 
   // Empty state
   EMPTY_TITLE: 'Keine Maschinen gefunden',
-  EMPTY_DESCRIPTION: 'Fügen Sie Ihre erste Maschine hinzu, um die Verwaltung zu starten.',
+  EMPTY_DESCRIPTION:
+    'Fügen Sie Ihre erste Maschine hinzu, um die Verwaltung zu starten.',
 
   // Empty state by filter
   EMPTY_OPERATIONAL: 'Keine betriebsbereiten Maschinen',
@@ -138,8 +143,10 @@ export const MESSAGES = {
 
   // Delete confirmation
   DELETE_CONFIRM_MESSAGE: 'Möchten Sie diese Maschine wirklich löschen?',
-  DELETE_FINAL_WARNING: 'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_INFO: 'Die Maschine wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_WARNING:
+    'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
+  DELETE_FINAL_INFO:
+    'Die Maschine wird unwiderruflich aus dem System entfernt.',
 
   // Success messages
   SUCCESS_CREATED: 'Maschine erfolgreich erstellt',
@@ -160,7 +167,8 @@ export const MESSAGES = {
   TH_ACTIONS: 'Aktionen',
 
   // Teams display
-  teamsSelected: (count: number) => (count <= 2 ? '' : `${count} Teams ausgewählt`),
+  teamsSelected: (count: number) =>
+    count <= 2 ? '' : `${count} Teams ausgewählt`,
 } as const;
 
 /**

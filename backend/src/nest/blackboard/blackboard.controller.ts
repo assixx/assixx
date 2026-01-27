@@ -150,7 +150,11 @@ export class BlackboardController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<BlackboardEntryResponse[]> {
-    return await this.blackboardService.getDashboardEntries(tenantId, user.id, query.limit ?? 3);
+    return await this.blackboardService.getDashboardEntries(
+      tenantId,
+      user.id,
+      query.limit ?? 3,
+    );
   }
 
   /**
@@ -176,7 +180,11 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<BlackboardEntryResponse> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.getEntryById(entryId, tenantId, user.id);
+    return await this.blackboardService.getEntryById(
+      entryId,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -190,7 +198,11 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<FullEntryResponse> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.getEntryFull(entryId, tenantId, user.id);
+    return await this.blackboardService.getEntryFull(
+      entryId,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -223,7 +235,12 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<BlackboardEntryResponse> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.updateEntry(entryId, dto, tenantId, user.id);
+    return await this.blackboardService.updateEntry(
+      entryId,
+      dto,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -239,7 +256,12 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.deleteEntry(entryId, tenantId, user.id, user.role);
+    return await this.blackboardService.deleteEntry(
+      entryId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -256,7 +278,11 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<EntryWithMessageResponse> {
     const entryId = this.parseIdParam(id);
-    const entry = await this.blackboardService.archiveEntry(entryId, tenantId, user.id);
+    const entry = await this.blackboardService.archiveEntry(
+      entryId,
+      tenantId,
+      user.id,
+    );
     return { message: 'Entry archived successfully', entry };
   }
 
@@ -273,7 +299,11 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<EntryWithMessageResponse> {
     const entryId = this.parseIdParam(id);
-    const entry = await this.blackboardService.unarchiveEntry(entryId, tenantId, user.id);
+    const entry = await this.blackboardService.unarchiveEntry(
+      entryId,
+      tenantId,
+      user.id,
+    );
     return { message: 'Entry unarchived successfully', entry };
   }
 
@@ -316,7 +346,10 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<Record<string, unknown>[]> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.getConfirmationStatus(entryId, tenantId);
+    return await this.blackboardService.getConfirmationStatus(
+      entryId,
+      tenantId,
+    );
   }
 
   /**
@@ -346,7 +379,8 @@ export class BlackboardController {
   ): Promise<CommentCreatedResponse> {
     const entryId = this.parseIdParam(id);
     // Only admins/root can create internal comments
-    const isInternal = dto.isInternal && (user.role === 'admin' || user.role === 'root');
+    const isInternal =
+      dto.isInternal && (user.role === 'admin' || user.role === 'root');
     return await this.blackboardService.addComment(
       entryId,
       user.id,
@@ -393,7 +427,12 @@ export class BlackboardController {
       throw new BadRequestException('No file uploaded');
     }
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.uploadAttachment(entryId, file, tenantId, user.id);
+    return await this.blackboardService.uploadAttachment(
+      entryId,
+      file,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -407,7 +446,11 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<Record<string, unknown>[]> {
     const entryId = this.parseIdParam(id);
-    return await this.blackboardService.getAttachments(entryId, tenantId, user.id);
+    return await this.blackboardService.getAttachments(
+      entryId,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -429,7 +472,10 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.originalName}"`)
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${result.originalName}"`,
+      )
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);
@@ -454,7 +500,10 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `inline; filename="${result.originalName}"`)
+      .header(
+        'Content-Disposition',
+        `inline; filename="${result.originalName}"`,
+      )
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);
@@ -479,7 +528,10 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.originalName}"`)
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${result.originalName}"`,
+      )
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);
@@ -497,7 +549,11 @@ export class BlackboardController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.blackboardService.deleteAttachment(params.attachmentId, user.id, tenantId);
+    return await this.blackboardService.deleteAttachment(
+      params.attachmentId,
+      user.id,
+      tenantId,
+    );
   }
 
   // ============================================
@@ -510,7 +566,8 @@ export class BlackboardController {
    */
   private parseIdParam(id: string): number | string {
     // Check UUID pattern first
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(id)) {
       return id;
     }

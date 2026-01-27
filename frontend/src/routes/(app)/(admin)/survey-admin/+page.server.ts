@@ -9,7 +9,13 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
+import type {
+  Survey,
+  SurveyTemplate,
+  Department,
+  Team,
+  Area,
+} from './_lib/types';
 
 const log = createLogger('SurveyAdmin');
 
@@ -67,13 +73,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { user } = await parent();
 
   // Parallel fetch: surveys + templates + org data
-  const [surveysData, templatesData, departmentsData, teamsData, areasData] = await Promise.all([
-    apiFetch<Survey[]>('/surveys', token, fetch),
-    apiFetch<SurveyTemplate[]>('/surveys/templates', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-  ]);
+  const [surveysData, templatesData, departmentsData, teamsData, areasData] =
+    await Promise.all([
+      apiFetch<Survey[]>('/surveys', token, fetch),
+      apiFetch<SurveyTemplate[]>('/surveys/templates', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+    ]);
 
   // Safe fallbacks
   const surveys = toSafeArray(surveysData);

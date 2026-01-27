@@ -104,13 +104,18 @@
 
   const avatarColorClass = $derived(getAvatarColorClass(user?.id));
   const initials = $derived(getInitials(user?.firstName, user?.lastName));
-  const hasProfilePicture = $derived(profilePicture !== null && profilePicture !== '');
-  const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
+  const hasProfilePicture = $derived(
+    profilePicture !== null && profilePicture !== '',
+  );
+  const passwordsMatch = $derived(
+    doPasswordsMatch(newPassword, confirmPassword),
+  );
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
 
   // Password feedback visibility helpers
   const hasWarning = $derived(
-    passwordStrength?.feedback.warning !== undefined && passwordStrength.feedback.warning !== '',
+    passwordStrength?.feedback.warning !== undefined &&
+      passwordStrength.feedback.warning !== '',
   );
   const hasSuggestions = $derived(
     passwordStrength?.feedback.suggestions !== undefined &&
@@ -170,7 +175,9 @@
 
     try {
       // Convert blob to File for upload
-      const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
+      const file = new File([blob], 'profile-picture.jpg', {
+        type: 'image/jpeg',
+      });
       const newUrl = await uploadProfilePicture(file);
       if (newUrl !== null) {
         profilePicture = newUrl;
@@ -284,7 +291,10 @@
     passwordSaving = true;
 
     try {
-      await apiChangePassword({ currentPassword: currentPwd, newPassword: newPwd });
+      await apiChangePassword({
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+      });
       onPasswordChangeSuccess();
     } catch (err) {
       handlePasswordChangeError(err);
@@ -301,7 +311,9 @@
 
     strengthLoading = true;
     try {
-      const userInputs = [formEmail, formFirstName, formLastName].filter(Boolean);
+      const userInputs = [formEmail, formFirstName, formLastName].filter(
+        Boolean,
+      );
       passwordStrength = await analyzePassword(newPassword, userInputs);
     } catch {
       // Ignore strength check errors
@@ -327,7 +339,9 @@
   // UI HELPERS
   // =============================================================================
 
-  function togglePasswordVisibility(field: 'current' | 'new' | 'confirm'): void {
+  function togglePasswordVisibility(
+    field: 'current' | 'new' | 'confirm',
+  ): void {
     if (field === 'current') showCurrentPassword = !showCurrentPassword;
     if (field === 'new') showNewPassword = !showNewPassword;
     if (field === 'confirm') showConfirmPassword = !showConfirmPassword;
@@ -346,7 +360,11 @@
       <div class="profile-picture-section">
         {#if hasProfilePicture}
           <div class="avatar avatar--xxl">
-            <img src={profilePicture} alt="Profilbild" class="avatar__image" />
+            <img
+              src={profilePicture}
+              alt="Profilbild"
+              class="avatar__image"
+            />
           </div>
         {:else}
           <div class="avatar avatar--xxl {avatarColorClass}">
@@ -370,9 +388,8 @@
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-                class="fas fa-camera"
-              ></i>{/if}
+            {#if pictureUploading}<i class="fas fa-spinner fa-spin"
+              ></i>{:else}<i class="fas fa-camera"></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -409,7 +426,10 @@
       <form id="profile-form">
         <div class="form-grid">
           <div class="form-field">
-            <label class="form-field__label" for="email">E-Mail</label>
+            <label
+              class="form-field__label"
+              for="email">E-Mail</label
+            >
             <input
               type="email"
               id="email"
@@ -420,7 +440,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="first_name">Vorname</label>
+            <label
+              class="form-field__label"
+              for="first_name">Vorname</label
+            >
             <input
               type="text"
               id="first_name"
@@ -431,7 +454,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="last_name">Nachname</label>
+            <label
+              class="form-field__label"
+              for="last_name">Nachname</label
+            >
             <input
               type="text"
               id="last_name"
@@ -442,7 +468,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="position">Position</label>
+            <label
+              class="form-field__label"
+              for="position">Position</label
+            >
             <input
               type="text"
               id="position"
@@ -459,10 +488,17 @@
     <!-- Password Change Card -->
     <div class="profile-card">
       <h2 class="card-title">Passwort ändern</h2>
-      <form id="password-form" autocomplete="off" onsubmit={handleChangePassword}>
+      <form
+        id="password-form"
+        autocomplete="off"
+        onsubmit={handleChangePassword}
+      >
         <!-- Current Password -->
         <div class="form-field">
-          <label class="form-field__label" for="current_password">Aktuelles Passwort</label>
+          <label
+            class="form-field__label"
+            for="current_password">Aktuelles Passwort</label
+          >
           <div class="form-field__password-wrapper">
             <input
               type={showCurrentPassword ? 'text' : 'password'}
@@ -482,7 +518,8 @@
                 togglePasswordVisibility('current');
               }}
             >
-              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
+              ></i>
             </button>
           </div>
           {#if currentPasswordError}
@@ -494,10 +531,14 @@
 
         <!-- New Password -->
         <div class="form-field">
-          <label class="form-field__label" for="new_password">
+          <label
+            class="form-field__label"
+            for="new_password"
+          >
             Neues Passwort
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip">{PASSWORD_TOOLTIP}</span
@@ -531,14 +572,24 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div class="password-strength-container" class:is-loading={strengthLoading}>
+            <div
+              class="password-strength-container"
+              class:is-loading={strengthLoading}
+            >
               <div class="password-strength-meter">
-                <div class="password-strength-bar" data-score={passwordStrength?.score ?? -1}></div>
+                <div
+                  class="password-strength-bar"
+                  data-score={passwordStrength?.score ?? -1}
+                ></div>
               </div>
               {#if passwordStrength !== null}
                 <div class="password-strength-info">
-                  <span class="password-strength-label">{passwordStrength.label}</span>
-                  <span class="password-strength-time">{passwordStrength.crackTime}</span>
+                  <span class="password-strength-label"
+                    >{passwordStrength.label}</span
+                  >
+                  <span class="password-strength-time"
+                    >{passwordStrength.crackTime}</span
+                  >
                 </div>
               {/if}
             </div>
@@ -553,7 +604,9 @@
           {#if hasPasswordFeedback && passwordStrength !== null}
             <div class="password-feedback">
               {#if hasWarning}
-                <span class="password-feedback-warning">{passwordStrength.feedback.warning}</span>
+                <span class="password-feedback-warning"
+                  >{passwordStrength.feedback.warning}</span
+                >
               {/if}
               {#if hasSuggestions}
                 <ul class="password-feedback-suggestions">
@@ -568,7 +621,10 @@
 
         <!-- Confirm Password -->
         <div class="form-field">
-          <label class="form-field__label" for="confirm_password">Neues Passwort bestätigen</label>
+          <label
+            class="form-field__label"
+            for="confirm_password">Neues Passwort bestätigen</label
+          >
           <div class="form-field__password-wrapper">
             <input
               type={showConfirmPassword ? 'text' : 'password'}
@@ -591,7 +647,8 @@
                 togglePasswordVisibility('confirm');
               }}
             >
-              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"
+              ></i>
             </button>
           </div>
           {#if passwordMismatchError}
@@ -601,8 +658,13 @@
           {/if}
         </div>
 
-        <button type="submit" class="btn btn-modal" disabled={passwordSaving}>
-          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i class="fas fa-key"
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={passwordSaving}
+        >
+          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
+              class="fas fa-key"
             ></i>{/if}
           Passwort ändern
         </button>

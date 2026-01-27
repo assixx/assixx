@@ -22,7 +22,13 @@ export interface NavItem {
   hasSubmenu?: boolean;
   submenu?: NavItem[];
   /** Badge type for real-time notification count */
-  badgeType?: 'surveys' | 'documents' | 'kvp' | 'chat' | 'blackboard' | 'calendar';
+  badgeType?:
+    | 'surveys'
+    | 'documents'
+    | 'kvp'
+    | 'chat'
+    | 'blackboard'
+    | 'calendar';
 }
 
 export const ICONS: Record<string, string> = {
@@ -50,7 +56,12 @@ export const ICONS: Record<string, string> = {
 };
 
 export const rootMenuItems: NavItem[] = [
-  { id: 'dashboard', icon: ICONS.home, label: 'Root Dashboard', url: '/root-dashboard' },
+  {
+    id: 'dashboard',
+    icon: ICONS.home,
+    label: 'Root Dashboard',
+    url: '/root-dashboard',
+  },
   {
     id: 'blackboard',
     icon: ICONS.pin,
@@ -70,10 +81,25 @@ export const rootMenuItems: NavItem[] = [
       },
     ],
   },
-  { id: 'root-users', icon: ICONS['user-shield'], label: 'Root User', url: '/manage-root' },
-  { id: 'admins', icon: ICONS.admin, label: 'Administratoren', url: '/manage-admins' },
+  {
+    id: 'root-users',
+    icon: ICONS['user-shield'],
+    label: 'Root User',
+    url: '/manage-root',
+  },
+  {
+    id: 'admins',
+    icon: ICONS.admin,
+    label: 'Administratoren',
+    url: '/manage-admins',
+  },
   { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
-  { id: 'departments', icon: ICONS.building, label: 'Abteilungen', url: '/manage-departments' },
+  {
+    id: 'departments',
+    icon: ICONS.building,
+    label: 'Abteilungen',
+    url: '/manage-departments',
+  },
   {
     id: 'calendar',
     icon: ICONS.calendar,
@@ -102,24 +128,51 @@ export const rootMenuItems: NavItem[] = [
     hasSubmenu: true,
     submenu: [
       { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-admin', badgeType: 'surveys' },
+      {
+        id: 'surveys',
+        label: LABELS.SURVEYS,
+        url: '/survey-admin',
+        badgeType: 'surveys',
+      },
     ],
   },
-  { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
+  {
+    id: 'chat',
+    icon: ICONS.chat,
+    label: 'Chat',
+    url: '/chat',
+    badgeType: 'chat',
+  },
   { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
-  { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/root-profile' },
+  {
+    id: 'profile',
+    icon: ICONS.user,
+    label: 'Mein Profil',
+    url: '/root-profile',
+  },
   {
     id: 'system',
     icon: ICONS.settings,
     label: 'System',
     hasSubmenu: true,
-    submenu: [{ id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' }],
+    submenu: [
+      {
+        id: 'account-settings',
+        label: 'Kontoeinstellungen',
+        url: '/account-settings',
+      },
+    ],
   },
 ];
 
 export const adminMenuItems: NavItem[] = [
-  { id: 'dashboard', icon: ICONS.home, label: 'Übersicht', url: '/admin-dashboard' },
+  {
+    id: 'dashboard',
+    icon: ICONS.home,
+    label: 'Übersicht',
+    url: '/admin-dashboard',
+  },
   {
     id: 'blackboard',
     icon: ICONS.pin,
@@ -139,9 +192,19 @@ export const adminMenuItems: NavItem[] = [
       },
     ],
   },
-  { id: 'employees', icon: ICONS.users, label: 'Mitarbeiter', url: '/manage-employees' },
+  {
+    id: 'employees',
+    icon: ICONS.users,
+    label: 'Mitarbeiter',
+    url: '/manage-employees',
+  },
   { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
-  { id: 'machines', icon: ICONS.generator, label: 'Maschinen', url: '/manage-machines' },
+  {
+    id: 'machines',
+    icon: ICONS.generator,
+    label: 'Maschinen',
+    url: '/manage-machines',
+  },
   {
     id: 'documents',
     icon: ICONS.document,
@@ -170,17 +233,43 @@ export const adminMenuItems: NavItem[] = [
     hasSubmenu: true,
     submenu: [
       { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-admin', badgeType: 'surveys' },
+      {
+        id: 'surveys',
+        label: LABELS.SURVEYS,
+        url: '/survey-admin',
+        badgeType: 'surveys',
+      },
     ],
   },
   { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-  { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
-  { id: 'settings', icon: ICONS.settings, label: 'Einstellungen', url: '#settings' },
-  { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/admin-profile' },
+  {
+    id: 'chat',
+    icon: ICONS.chat,
+    label: 'Chat',
+    url: '/chat',
+    badgeType: 'chat',
+  },
+  {
+    id: 'settings',
+    icon: ICONS.settings,
+    label: 'Einstellungen',
+    url: '#settings',
+  },
+  {
+    id: 'profile',
+    icon: ICONS.user,
+    label: 'Mein Profil',
+    url: '/admin-profile',
+  },
 ];
 
 export const employeeMenuItems: NavItem[] = [
-  { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
+  {
+    id: 'dashboard',
+    icon: ICONS.home,
+    label: 'Dashboard',
+    url: '/employee-dashboard',
+  },
   {
     id: 'blackboard',
     icon: ICONS.pin,
@@ -216,18 +305,36 @@ export const employeeMenuItems: NavItem[] = [
     hasSubmenu: true,
     submenu: [
       { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      { id: 'surveys', label: LABELS.SURVEYS, url: '/survey-employee', badgeType: 'surveys' },
+      {
+        id: 'surveys',
+        label: LABELS.SURVEYS,
+        url: '/survey-employee',
+        badgeType: 'surveys',
+      },
     ],
   },
-  { id: 'chat', icon: ICONS.chat, label: 'Chat', url: '/chat', badgeType: 'chat' },
+  {
+    id: 'chat',
+    icon: ICONS.chat,
+    label: 'Chat',
+    url: '/chat',
+    badgeType: 'chat',
+  },
   { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
-  { id: 'profile', icon: ICONS.user, label: 'Mein Profil', url: '/employee-profile' },
+  {
+    id: 'profile',
+    icon: ICONS.user,
+    label: 'Mein Profil',
+    url: '/employee-profile',
+  },
 ];
 
 /**
  * Get menu items for a specific role
  */
-export function getMenuItemsForRole(role: 'root' | 'admin' | 'employee'): NavItem[] {
+export function getMenuItemsForRole(
+  role: 'root' | 'admin' | 'employee',
+): NavItem[] {
   switch (role) {
     case 'root':
       return rootMenuItems;

@@ -6,14 +6,23 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
-import type { SignupDto, SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
+import type {
+  SignupDto,
+  SignupResponseData,
+  SubdomainCheckResponseData,
+} from './dto/index.js';
 
 // ============================================================================
 // CONSTANTS
@@ -26,7 +35,16 @@ const ERROR_CODES = {
   CHECK_FAILED: 'CHECK_FAILED',
 } as const;
 
-const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'mail', 'ftp', 'test', 'dev'];
+const RESERVED_SUBDOMAINS = [
+  'www',
+  'api',
+  'admin',
+  'app',
+  'mail',
+  'ftp',
+  'test',
+  'dev',
+];
 const TRIAL_DAYS = 14;
 
 // ============================================================================
@@ -140,19 +158,21 @@ export class SignupService {
   private async executeRegistrationTransaction(
     dto: SignupDto,
   ): Promise<{ tenantId: number; userId: number; trialEndsAt: Date }> {
-    return await this.db.transaction<{ tenantId: number; userId: number; trialEndsAt: Date }>(
-      async (client: PoolClient) => {
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS);
+    return await this.db.transaction<{
+      tenantId: number;
+      userId: number;
+      trialEndsAt: Date;
+    }>(async (client: PoolClient) => {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS);
 
-        const tenantId = await this.createTenant(client, dto, trialEndsAt);
-        const userId = await this.createRootUser(client, tenantId, dto);
-        await this.assignBasicPlan(client, tenantId);
-        await this.activateTrialFeatures(client, tenantId);
+      const tenantId = await this.createTenant(client, dto, trialEndsAt);
+      const userId = await this.createRootUser(client, tenantId, dto);
+      await this.assignBasicPlan(client, tenantId);
+      await this.activateTrialFeatures(client, tenantId);
 
-        return { tenantId, userId, trialEndsAt };
-      },
-    );
+      return { tenantId, userId, trialEndsAt };
+    });
   }
 
   /**
@@ -190,7 +210,9 @@ export class SignupService {
   /**
    * Check if a subdomain is available for registration
    */
-  async checkSubdomainAvailability(subdomain: string): Promise<SubdomainCheckResponseData> {
+  async checkSubdomainAvailability(
+    subdomain: string,
+  ): Promise<SubdomainCheckResponseData> {
     // Validate subdomain format first
     const validation = this.validateSubdomain(subdomain);
     if (!validation.valid) {
@@ -219,7 +241,10 @@ export class SignupService {
   /**
    * Validate subdomain format only (no DB check)
    */
-  validateSubdomain(subdomain: string): { valid: boolean; error?: string | undefined } {
+  validateSubdomain(subdomain: string): {
+    valid: boolean;
+    error?: string | undefined;
+  } {
     // Only lowercase letters, numbers, and hyphens
     const regex = /^[-0-9a-z]+$/;
 
@@ -252,9 +277,10 @@ export class SignupService {
    * Check if subdomain is available in database
    */
   private async isSubdomainAvailable(subdomain: string): Promise<boolean> {
-    const rows = await this.db.query<DbIdResult>('SELECT id FROM tenants WHERE subdomain = $1', [
-      subdomain,
-    ]);
+    const rows = await this.db.query<DbIdResult>(
+      'SELECT id FROM tenants WHERE subdomain = $1',
+      [subdomain],
+    );
     return rows.length === 0;
   }
 
@@ -294,7 +320,10 @@ export class SignupService {
 
     // Generate employee_id
     const employeeId = this.generateEmployeeId(dto.subdomain, 'root', userId);
-    await client.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
+    await client.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
+      employeeId,
+      userId,
+    ]);
 
     return userId;
   }
@@ -302,7 +331,10 @@ export class SignupService {
   /**
    * Assign basic plan to new tenant
    */
-  private async assignBasicPlan(client: PoolClient, tenantId: number): Promise<void> {
+  private async assignBasicPlan(
+    client: PoolClient,
+    tenantId: number,
+  ): Promise<void> {
     const planRows = await client.query<DbPlanResult>(
       'SELECT id FROM plans WHERE code = $1 AND is_active = 1',
       ['basic'],
@@ -317,10 +349,10 @@ export class SignupService {
           [tenantId, basicPlanId],
         );
 
-        await client.query('UPDATE tenants SET current_plan_id = $1 WHERE id = $2', [
-          basicPlanId,
-          tenantId,
-        ]);
+        await client.query(
+          'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
+          [basicPlanId, tenantId],
+        );
       }
     }
   }
@@ -328,9 +360,14 @@ export class SignupService {
   /**
    * Activate trial features for new tenant
    */
-  private async activateTrialFeatures(client: PoolClient, tenantId: number): Promise<void> {
+  private async activateTrialFeatures(
+    client: PoolClient,
+    tenantId: number,
+  ): Promise<void> {
     // TEMPORARY: Activate ALL features for beta test
-    const featureRows = await client.query<DbFeatureResult>('SELECT id FROM features');
+    const featureRows = await client.query<DbFeatureResult>(
+      'SELECT id FROM features',
+    );
 
     for (const feature of featureRows.rows) {
       await client.query(
@@ -360,7 +397,11 @@ export class SignupService {
   /**
    * Generate employee ID
    */
-  private generateEmployeeId(subdomain: string, role: string, userId: number): string {
+  private generateEmployeeId(
+    subdomain: string,
+    role: string,
+    userId: number,
+  ): string {
     const prefix = subdomain.substring(0, 3).toUpperCase();
     const rolePrefix =
       role === 'root' ? 'R'

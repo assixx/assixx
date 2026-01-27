@@ -60,14 +60,20 @@ export const TimeSchema = z
  */
 export const TimeWithSecondsSchema = z
   .string()
-  .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Time must be in HH:MM:SS format');
+  .regex(
+    /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/,
+    'Time must be in HH:MM:SS format',
+  );
 
 /**
  * Sort field enum for shifts
  */
-export const SortBySchema = z.enum(['date', 'startTime', 'endTime', 'userId', 'status', 'type'], {
-  message: 'Invalid sort field',
-});
+export const SortBySchema = z.enum(
+  ['date', 'startTime', 'endTime', 'userId', 'status', 'type'],
+  {
+    message: 'Invalid sort field',
+  },
+);
 
 /**
  * Sort order enum
@@ -79,6 +85,9 @@ export const SortOrderSchema = z.enum(['asc', 'desc'], {
 /**
  * Swap request status enum
  */
-export const SwapRequestStatusSchema = z.enum(['pending', 'approved', 'rejected', 'cancelled'], {
-  message: 'Invalid status',
-});
+export const SwapRequestStatusSchema = z.enum(
+  ['pending', 'approved', 'rejected', 'cancelled'],
+  {
+    message: 'Invalid status',
+  },
+);

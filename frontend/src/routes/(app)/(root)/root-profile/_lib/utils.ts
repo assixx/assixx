@@ -57,7 +57,11 @@ export function isCurrentPasswordError(errorMsg: string): boolean {
  * @param minLength - Minimum length (default 12)
  * @param maxLength - Maximum length (default 72)
  */
-export function isPasswordLengthValid(password: string, minLength = 12, maxLength = 72): boolean {
+export function isPasswordLengthValid(
+  password: string,
+  minLength = 12,
+  maxLength = 72,
+): boolean {
   return password.length >= minLength && password.length <= maxLength;
 }
 
@@ -66,6 +70,9 @@ export function isPasswordLengthValid(password: string, minLength = 12, maxLengt
  * @param password - New password
  * @param confirmPassword - Confirmation password
  */
-export function doPasswordsMatch(password: string, confirmPassword: string): boolean {
+export function doPasswordsMatch(
+  password: string,
+  confirmPassword: string,
+): boolean {
   return password === confirmPassword;
 }

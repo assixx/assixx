@@ -4,7 +4,13 @@
    * SSR: Data loaded in +page.server.ts
    * Level 3: $derived from SSR data + invalidateAll() after mutations
    */
-  import { Calendar, DayGrid, TimeGrid, List, Interaction } from '@event-calendar/core';
+  import {
+    Calendar,
+    DayGrid,
+    TimeGrid,
+    List,
+    Interaction,
+  } from '@event-calendar/core';
   import { onDestroy } from 'svelte';
 
   import { browser } from '$app/environment';
@@ -26,7 +32,11 @@
   import EventDetailModal from './_lib/EventDetailModal.svelte';
   import EventFormModal from './_lib/EventFormModal.svelte';
   import { calendarState } from './_lib/state.svelte';
-  import { getUpcomingEventTimeStr, getEventLevelInfo, formatDatetimeLocal } from './_lib/utils';
+  import {
+    getUpcomingEventTimeStr,
+    getEventLevelInfo,
+    formatDatetimeLocal,
+  } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -239,7 +249,11 @@
       indicator.textContent = shift.type;
       indicator.setAttribute(
         'aria-label',
-        `Schicht: ${shift.type === 'F' ? 'Frühschicht' : shift.type === 'S' ? 'Spätschicht' : 'Nachtschicht'}`,
+        `Schicht: ${
+          shift.type === 'F' ? 'Frühschicht'
+          : shift.type === 'S' ? 'Spätschicht'
+          : 'Nachtschicht'
+        }`,
       );
 
       // Insert AFTER time - library uses row-reverse, so visually indicator appears LEFT
@@ -247,13 +261,19 @@
       renderedCount++;
     });
 
-    log.debug({ renderedCount, cachedCount: shiftsCache.size }, 'Rendered shift indicators');
+    log.debug(
+      { renderedCount, cachedCount: shiftsCache.size },
+      'Rendered shift indicators',
+    );
   }
 
   /**
    * Fetch and cache shifts, then render indicators
    */
-  async function fetchAndRenderShifts(startStr: string, endStr: string): Promise<void> {
+  async function fetchAndRenderShifts(
+    startStr: string,
+    endStr: string,
+  ): Promise<void> {
     if (!showShifts) {
       shiftsCache.clear();
       return;
@@ -298,7 +318,10 @@
     }
   }
 
-  function handleCalendarEventClick(info: { event: { id: string }; jsEvent: MouseEvent }): void {
+  function handleCalendarEventClick(info: {
+    event: { id: string };
+    jsEvent: MouseEvent;
+  }): void {
     info.jsEvent.preventDefault();
     void handleEventClick(Number.parseInt(info.event.id, 10));
   }
@@ -312,7 +335,11 @@
     handleDateClick(info.date, info.allDay);
   }
 
-  function handleCalendarSelect(info: { start: Date; end: Date; allDay: boolean }) {
+  function handleCalendarSelect(info: {
+    start: Date;
+    end: Date;
+    allDay: boolean;
+  }) {
     if (isFullscreen) return;
     handleDateSelect(info.start, info.end, info.allDay);
   }
@@ -343,7 +370,11 @@
   // EVENT FORM
   // ==========================================================================
 
-  function openEventForm(startDate?: Date, endDate?: Date, allDay: boolean = false): void {
+  function openEventForm(
+    startDate?: Date,
+    endDate?: Date,
+    allDay: boolean = false,
+  ): void {
     log.debug({ startDate, endDate, allDay }, 'Opening event form');
     const now = startDate ?? new Date();
     const later = endDate ?? new Date(now.getTime() + 60 * 60 * 1000);
@@ -487,7 +518,10 @@
         <!-- Level Filter -->
         <div class="form-field">
           <span class="form-field__label">Organisationsebene</span>
-          <div class="toggle-group mt-2" id="levelFilter">
+          <div
+            class="toggle-group mt-2"
+            id="levelFilter"
+          >
             {#each FILTER_OPTIONS as option (option.value)}
               <button
                 type="button"
@@ -516,16 +550,21 @@
                 log.debug({ showShifts }, 'Shifts toggle');
                 // Persist to localStorage
                 if (browser) {
-                  localStorage.setItem('showShiftsInCalendar', String(showShifts));
+                  localStorage.setItem(
+                    'showShiftsInCalendar',
+                    String(showShifts),
+                  );
                 }
                 // Render or remove shift indicators
                 if (showShifts) {
                   refetchCalendarEvents(); // This triggers fetchAndRenderShifts
                 } else {
                   // Remove all shift indicators
-                  document.querySelectorAll('.shift-indicator').forEach((el) => {
-                    el.remove();
-                  });
+                  document
+                    .querySelectorAll('.shift-indicator')
+                    .forEach((el) => {
+                      el.remove();
+                    });
                   shiftsCache.clear();
                 }
               }}
@@ -567,7 +606,10 @@
   </div>
 
   <!-- Calendar Card -->
-  <div class="card calendar-card mb-6" id="calendarContainer">
+  <div
+    class="card calendar-card mb-6"
+    id="calendarContainer"
+  >
     <div class="card__header">
       <div class="flex items-center justify-between">
         <h3 class="card__title">
@@ -600,7 +642,11 @@
     </div>
     <div class="card__body p-0">
       <div id="calendar">
-        <Calendar bind:this={calendarRef} plugins={calendarPlugins} options={calendarOptions} />
+        <Calendar
+          bind:this={calendarRef}
+          plugins={calendarPlugins}
+          options={calendarOptions}
+        />
       </div>
     </div>
   </div>
@@ -613,7 +659,9 @@
         <h3 class="card__title">
           <i class="fas fa-clock mr-2"></i>
           Anstehende Termine
-          <span class="text-sm font-normal text-[var(--color-text-secondary)] ml-2">
+          <span
+            class="text-sm font-normal text-[var(--color-text-secondary)] ml-2"
+          >
             (Aktueller Monat)
           </span>
         </h3>
@@ -627,20 +675,29 @@
           {:else}
             {#each upcomingEvents as event (event.id)}
               {@const levelInfo = getEventLevelInfo(event.orgLevel)}
-              {@const hasArea = event.areaId !== null && event.areaId !== undefined}
-              {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
-              {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
+              {@const hasArea =
+                event.areaId !== null && event.areaId !== undefined}
+              {@const hasDept =
+                event.departmentId !== null && event.departmentId !== undefined}
+              {@const hasTeam =
+                event.teamId !== null && event.teamId !== undefined}
               <button
                 type="button"
                 class="event-item w-full text-left"
                 onclick={() => handleEventClick(event.id)}
               >
                 <div class="event-date">
-                  <span class="event-day">{new Date(event.startTime).getDate()}</span>
+                  <span class="event-day"
+                    >{new Date(event.startTime).getDate()}</span
+                  >
                   <span class="event-month">
-                    {new Date(event.startTime).toLocaleDateString('de-DE', { month: 'short' })}
+                    {new Date(event.startTime).toLocaleDateString('de-DE', {
+                      month: 'short',
+                    })}
                   </span>
-                  <span class="event-time">{getUpcomingEventTimeStr(event)}</span>
+                  <span class="event-time"
+                    >{getUpcomingEventTimeStr(event)}</span
+                  >
                 </div>
                 <div class="event-details">
                   <div class="event-title">{event.title}</div>
@@ -655,13 +712,17 @@
                       <span class="event-level event-level-area">Bereich</span>
                     {/if}
                     {#if hasDept}
-                      <span class="event-level event-level-department">Abteilung</span>
+                      <span class="event-level event-level-department"
+                        >Abteilung</span
+                      >
                     {/if}
                     {#if hasTeam}
                       <span class="event-level event-level-team">Team</span>
                     {/if}
                     {#if !hasArea && !hasDept && !hasTeam}
-                      <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
+                      <span class="event-level {levelInfo.class}"
+                        >{levelInfo.text}</span
+                      >
                     {/if}
                   </div>
                 </div>
@@ -689,20 +750,29 @@
           {:else}
             {#each recentlyAddedEvents as event (event.id)}
               {@const levelInfo = getEventLevelInfo(event.orgLevel)}
-              {@const hasArea = event.areaId !== null && event.areaId !== undefined}
-              {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
-              {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
+              {@const hasArea =
+                event.areaId !== null && event.areaId !== undefined}
+              {@const hasDept =
+                event.departmentId !== null && event.departmentId !== undefined}
+              {@const hasTeam =
+                event.teamId !== null && event.teamId !== undefined}
               <button
                 type="button"
                 class="event-item w-full text-left"
                 onclick={() => handleEventClick(event.id)}
               >
                 <div class="event-date">
-                  <span class="event-day">{new Date(event.startTime).getDate()}</span>
+                  <span class="event-day"
+                    >{new Date(event.startTime).getDate()}</span
+                  >
                   <span class="event-month">
-                    {new Date(event.startTime).toLocaleDateString('de-DE', { month: 'short' })}
+                    {new Date(event.startTime).toLocaleDateString('de-DE', {
+                      month: 'short',
+                    })}
                   </span>
-                  <span class="event-time">{getUpcomingEventTimeStr(event)}</span>
+                  <span class="event-time"
+                    >{getUpcomingEventTimeStr(event)}</span
+                  >
                 </div>
                 <div class="event-details">
                   <div class="event-title">{event.title}</div>
@@ -717,13 +787,17 @@
                       <span class="event-level event-level-area">Bereich</span>
                     {/if}
                     {#if hasDept}
-                      <span class="event-level event-level-department">Abteilung</span>
+                      <span class="event-level event-level-department"
+                        >Abteilung</span
+                      >
                     {/if}
                     {#if hasTeam}
                       <span class="event-level event-level-team">Team</span>
                     {/if}
                     {#if !hasArea && !hasDept && !hasTeam}
-                      <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
+                      <span class="event-level {levelInfo.class}"
+                        >{levelInfo.text}</span
+                      >
                     {/if}
                   </div>
                 </div>

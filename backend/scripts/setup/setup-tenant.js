@@ -119,7 +119,9 @@ const [tenantId, companyName] = args;
 
 // Validierung
 if (!/^[a-z0-9-]+$/.test(tenantId)) {
-  console.error('Fehler: Tenant-ID darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.');
+  console.error(
+    'Fehler: Tenant-ID darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.',
+  );
   process.exit(1);
 }
 

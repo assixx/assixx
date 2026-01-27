@@ -29,7 +29,11 @@ import type {
 const EMPTY_CHAT: ChatCounts = { totalUnread: 0, conversations: [] };
 
 /** Fallback for notification stats on error */
-const EMPTY_NOTIFICATIONS: NotificationStats = { total: 0, unread: 0, byType: {} };
+const EMPTY_NOTIFICATIONS: NotificationStats = {
+  total: 0,
+  unread: 0,
+  byType: {},
+};
 
 /** Fallback for simple counts on error */
 const EMPTY_COUNT = { count: 0 };
@@ -58,7 +62,10 @@ export class DashboardService {
    * @param tenantId - Current tenant ID
    * @returns Combined counts from all services
    */
-  async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCountsResponse> {
+  async getCounts(
+    user: NestAuthUser,
+    tenantId: number,
+  ): Promise<DashboardCountsResponse> {
     // Execute all count queries in parallel
     const [
       chatResult,
@@ -142,7 +149,10 @@ export class DashboardService {
     userId: number,
     tenantId: number,
   ): Promise<NotificationStats> {
-    const stats = await this.notificationsService.getPersonalStats(userId, tenantId);
+    const stats = await this.notificationsService.getPersonalStats(
+      userId,
+      tenantId,
+    );
     return {
       total: stats.total,
       unread: stats.unread,
@@ -153,7 +163,10 @@ export class DashboardService {
   /**
    * Fetch blackboard unconfirmed count
    */
-  private async fetchBlackboardCount(userId: number, tenantId: number): Promise<{ count: number }> {
+  private async fetchBlackboardCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
     return await this.blackboardService.getUnconfirmedCount(userId, tenantId);
   }
 
@@ -166,7 +179,12 @@ export class DashboardService {
   ): Promise<{ count: number }> {
     const departmentId = user.departmentId ?? 0;
     const teamId = user.teamId ?? 0;
-    return await this.calendarService.getUpcomingCount(tenantId, user.id, departmentId, teamId);
+    return await this.calendarService.getUpcomingCount(
+      tenantId,
+      user.id,
+      departmentId,
+      teamId,
+    );
   }
 
   /**
@@ -176,13 +194,20 @@ export class DashboardService {
     user: NestAuthUser,
     tenantId: number,
   ): Promise<{ count: number }> {
-    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
+    return await this.documentsService.getUnreadCount(
+      tenantId,
+      user.id,
+      user.activeRole,
+    );
   }
 
   /**
    * Fetch KVP unconfirmed count (Pattern 2: Individual read tracking)
    */
-  private async fetchKvpCount(userId: number, tenantId: number): Promise<{ count: number }> {
+  private async fetchKvpCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
     return await this.kvpService.getUnconfirmedCount(userId, tenantId);
   }
 

@@ -14,7 +14,8 @@ export function cloneWeeklyShifts(
   const result = new SvelteMap<string, Map<string, number[]>>();
   for (const [d, dayShifts] of source.entries()) {
     const newDayShifts = new SvelteMap<string, number[]>();
-    for (const [shift, emps] of dayShifts.entries()) newDayShifts.set(shift, [...emps]);
+    for (const [shift, emps] of dayShifts.entries())
+      newDayShifts.set(shift, [...emps]);
     result.set(d, newDayShifts);
   }
   return result;
@@ -53,7 +54,10 @@ export function removeAssignment(
   date: string,
   shiftType: string,
   employeeId: number,
-): { weeklyShifts: WeeklyShiftsMap; shiftDetails: Map<string, ShiftDetailData> } {
+): {
+  weeklyShifts: WeeklyShiftsMap;
+  shiftDetails: Map<string, ShiftDetailData>;
+} {
   const ws = cloneWeeklyShifts(weeklyShifts);
   const day = ws.get(date);
   if (day !== undefined) {

@@ -3,14 +3,23 @@
 // Employees, team members, favorites
 // =============================================================================
 
-import type { Employee, TeamMember, ShiftFavorite, EmployeeTeamInfo } from './types';
+import type {
+  Employee,
+  TeamMember,
+  ShiftFavorite,
+  EmployeeTeamInfo,
+} from './types';
 
 /** Format employee display name from employee object */
-function formatEmployeeName(employee: Employee | undefined, fallbackId: number): string {
+function formatEmployeeName(
+  employee: Employee | undefined,
+  fallbackId: number,
+): string {
   if (employee === undefined) return `User ${fallbackId}`;
   const firstName = employee.firstName ?? '';
   const lastName = employee.lastName ?? '';
-  if (firstName !== '' || lastName !== '') return `${firstName} ${lastName}`.trim();
+  if (firstName !== '' || lastName !== '')
+    return `${firstName} ${lastName}`.trim();
   return employee.username !== '' ? employee.username : `User ${fallbackId}`;
 }
 
@@ -55,7 +64,8 @@ export function createEmployeeState() {
       favorites = data;
     },
     getEmployeeById,
-    getMemberNameById: (userId: number) => formatEmployeeName(getEmployeeById(userId), userId),
+    getMemberNameById: (userId: number) =>
+      formatEmployeeName(getEmployeeById(userId), userId),
     reset: () => {
       employees = [];
       teamMembers = [];

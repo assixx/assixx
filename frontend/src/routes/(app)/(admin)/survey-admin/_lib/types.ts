@@ -11,12 +11,22 @@ export type UserRole = 'root' | 'admin' | 'employee';
 /**
  * Survey status
  */
-export type SurveyStatus = 'draft' | 'active' | 'paused' | 'completed' | 'archived';
+export type SurveyStatus =
+  | 'draft'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'archived';
 
 /**
  * Survey type
  */
-export type SurveyType = 'feedback' | 'satisfaction' | 'poll' | 'assessment' | 'other';
+export type SurveyType =
+  | 'feedback'
+  | 'satisfaction'
+  | 'poll'
+  | 'assessment'
+  | 'other';
 
 /**
  * Question type
@@ -33,7 +43,12 @@ export type QuestionType =
 /**
  * Assignment type
  */
-export type AssignmentType = 'all_users' | 'area' | 'department' | 'team' | 'user';
+export type AssignmentType =
+  | 'all_users'
+  | 'area'
+  | 'department'
+  | 'team'
+  | 'user';
 
 /**
  * Current user

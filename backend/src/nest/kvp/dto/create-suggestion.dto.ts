@@ -39,7 +39,10 @@ export const CreateSuggestionSchema = z.object({
   categoryId: IdSchema,
   departmentId: IdSchema.optional().nullable(),
   orgLevel: OrgLevelSchema,
-  orgId: z.number().int().min(0, 'Organization ID must be a non-negative integer'),
+  orgId: z
+    .number()
+    .int()
+    .min(0, 'Organization ID must be a non-negative integer'),
   priority: PrioritySchema.optional(),
   expectedBenefit: z
     .string()

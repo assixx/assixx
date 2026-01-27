@@ -137,7 +137,10 @@ export function addTypingUser(typingUsers: number[], userId: number): number[] {
  * @param userId - User ID to remove
  * @returns New typing users array
  */
-export function removeTypingUser(typingUsers: number[], userId: number): number[] {
+export function removeTypingUser(
+  typingUsers: number[],
+  userId: number,
+): number[] {
   return typingUsers.filter((id) => id !== userId);
 }
 
@@ -155,7 +158,9 @@ export function updateConversationsUserStatus(
 ): Conversation[] {
   return conversations.map((conv) => ({
     ...conv,
-    participants: conv.participants.map((p) => (p.id === userId ? { ...p, status } : p)),
+    participants: conv.participants.map((p) =>
+      p.id === userId ? { ...p, status } : p,
+    ),
   }));
 }
 
@@ -165,9 +170,14 @@ export function updateConversationsUserStatus(
  * @param messageId - Message ID to mark as read
  * @returns New messages array with updated message
  */
-export function markMessageAsRead(messages: Message[], messageId: number): Message[] {
+export function markMessageAsRead(
+  messages: Message[],
+  messageId: number,
+): Message[] {
   return messages.map((m) =>
-    m.id === messageId ? { ...m, isRead: true, readAt: new Date().toISOString() } : m,
+    m.id === messageId ?
+      { ...m, isRead: true, readAt: new Date().toISOString() }
+    : m,
   );
 }
 
@@ -244,7 +254,9 @@ export function buildSendMessage(
  * @param conversationId - Conversation ID
  * @returns WebSocket message object
  */
-export function buildTypingStartMessage(conversationId: number): WebSocketMessage {
+export function buildTypingStartMessage(
+  conversationId: number,
+): WebSocketMessage {
   return {
     type: WS_MESSAGE_TYPES.TYPING_START,
     data: { conversationId },
@@ -256,7 +268,9 @@ export function buildTypingStartMessage(conversationId: number): WebSocketMessag
  * @param conversationId - Conversation ID
  * @returns WebSocket message object
  */
-export function buildTypingStopMessage(conversationId: number): WebSocketMessage {
+export function buildTypingStopMessage(
+  conversationId: number,
+): WebSocketMessage {
   return {
     type: WS_MESSAGE_TYPES.TYPING_STOP,
     data: { conversationId },
@@ -320,7 +334,10 @@ export function isTypingMessage(type: string): boolean {
  * @returns true if typing started
  */
 export function isTypingStartMessage(type: string): boolean {
-  return type === WS_MESSAGE_TYPES.TYPING_START || type === WS_MESSAGE_TYPES.USER_TYPING;
+  return (
+    type === WS_MESSAGE_TYPES.TYPING_START ||
+    type === WS_MESSAGE_TYPES.USER_TYPING
+  );
 }
 
 /**
@@ -329,7 +346,10 @@ export function isTypingStartMessage(type: string): boolean {
  * @returns true if status-related
  */
 export function isStatusMessage(type: string): boolean {
-  return type === WS_MESSAGE_TYPES.USER_STATUS || type === WS_MESSAGE_TYPES.USER_STATUS_CHANGED;
+  return (
+    type === WS_MESSAGE_TYPES.USER_STATUS ||
+    type === WS_MESSAGE_TYPES.USER_STATUS_CHANGED
+  );
 }
 
 /**
@@ -338,5 +358,7 @@ export function isStatusMessage(type: string): boolean {
  * @returns true if can be ignored
  */
 export function isIgnorableMessage(type: string): boolean {
-  return type === WS_MESSAGE_TYPES.PONG || type === WS_MESSAGE_TYPES.MESSAGE_SENT;
+  return (
+    type === WS_MESSAGE_TYPES.PONG || type === WS_MESSAGE_TYPES.MESSAGE_SENT
+  );
 }

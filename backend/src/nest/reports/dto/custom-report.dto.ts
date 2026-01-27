@@ -4,7 +4,9 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)');
+const DateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)');
 const IdSchema = z.coerce.number().int().positive();
 
 const MetricSchema = z.enum(
@@ -22,7 +24,11 @@ const CustomReportBaseSchema = z.object({
     .trim()
     .min(3, 'Name must be at least 3 characters')
     .max(100, 'Name must not exceed 100 characters'),
-  description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
+  description: z
+    .string()
+    .trim()
+    .max(500, 'Description cannot exceed 500 characters')
+    .optional(),
   metrics: z.array(MetricSchema).min(1, 'At least one metric must be selected'),
   dateFrom: DateSchema,
   dateTo: DateSchema,

@@ -2,7 +2,14 @@
 // KVP-DETAIL - DATA STATE MODULE
 // =============================================================================
 
-import type { KvpSuggestion, Comment, Attachment, Department, Team, Area } from './types';
+import type {
+  KvpSuggestion,
+  Comment,
+  Attachment,
+  Department,
+  Team,
+  Area,
+} from './types';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 

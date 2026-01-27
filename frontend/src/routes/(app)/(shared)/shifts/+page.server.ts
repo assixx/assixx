@@ -13,7 +13,14 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { User, Area, Team, TeamMember, ShiftFavorite, AvailabilityStatus } from './_lib/types';
+import type {
+  User,
+  Area,
+  Team,
+  TeamMember,
+  ShiftFavorite,
+  AvailabilityStatus,
+} from './_lib/types';
 
 const log = createLogger('Shifts');
 
@@ -60,7 +67,9 @@ interface FetchResults {
 /**
  * Type guard: safely convert API string to AvailabilityStatus
  */
-function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | undefined {
+function toAvailabilityStatus(
+  status: string | undefined,
+): AvailabilityStatus | undefined {
   if (status === undefined || status === '') {
     return undefined;
   }
@@ -148,7 +157,9 @@ function extractTeamLeaderId(
  */
 function processRawTeamMembers(raw: unknown): TeamMember[] {
   const members = asArray<TeamMemberApiResponse>(raw);
-  return members.filter((m) => m.userRole === 'employee').map(convertTeamMember);
+  return members
+    .filter((m) => m.userRole === 'employee')
+    .map(convertTeamMember);
 }
 
 /**
@@ -199,7 +210,8 @@ function buildEmployeeTeamInfo(
 
   return {
     teamId: primaryTeamId,
-    teamName: userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
+    teamName:
+      userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
     departmentId: userData.teamDepartmentId ?? 0,
     departmentName: userData.teamDepartmentName ?? 'Unbekannte Abteilung',
     areaId: userData.teamAreaId ?? 0,
@@ -254,17 +266,25 @@ function prepareFetchPromises(
   if (hasTeam && primaryTeamId !== null) {
     const departmentId = userData.teamDepartmentId;
     if (departmentId !== undefined && departmentId !== null) {
-      promises.push(apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetchFn));
+      promises.push(
+        apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetchFn),
+      );
       labels.push('teams');
     }
     promises.push(
-      apiFetch<TeamMemberApiResponse[]>(`/teams/${primaryTeamId}/members`, token, fetchFn),
+      apiFetch<TeamMemberApiResponse[]>(
+        `/teams/${primaryTeamId}/members`,
+        token,
+        fetchFn,
+      ),
     );
     labels.push('teamMembers');
   }
 
   if (isAdminOrRoot) {
-    promises.push(apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn));
+    promises.push(
+      apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn),
+    );
     labels.push('favorites');
   }
 
@@ -308,14 +328,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const results = await Promise.all(promises);
 
   // Process results
-  const { areas, teams, teamMembers, favorites, teamLeaderId } = processFetchResults(
-    results,
-    labels,
+  const { areas, teams, teamMembers, favorites, teamLeaderId } =
+    processFetchResults(results, labels, hasTeam, primaryTeamId);
+
+  const employeeTeamInfo = buildEmployeeTeamInfo(
+    userData,
     hasTeam,
     primaryTeamId,
+    teamLeaderId,
   );
-
-  const employeeTeamInfo = buildEmployeeTeamInfo(userData, hasTeam, primaryTeamId, teamLeaderId);
 
   return {
     user: buildUserResponse(userData, primaryTeamId),

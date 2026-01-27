@@ -105,7 +105,12 @@ export default ts.config(
   // =============================================================================
   {
     files: ['src/**/*.svelte', 'src/**/*.ts', 'src/**/*.js'],
-    ignores: ['**/*.server.ts', '**/*.server.js', '**/+*.server.ts', '**/+*.server.js'],
+    ignores: [
+      '**/*.server.ts',
+      '**/*.server.js',
+      '**/+*.server.ts',
+      '**/+*.server.js',
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -239,12 +244,23 @@ export default ts.config(
       'import-x/no-duplicates': 'error',
       'import-x/no-self-import': 'error',
       'import-x/no-useless-path-segments': 'error',
-      'import-x/max-dependencies': ['error', { max: 25, ignoreTypeImports: true }],
+      'import-x/max-dependencies': [
+        'error',
+        { max: 25, ignoreTypeImports: true },
+      ],
       // Import sorting for team consistency (auto-fixable)
       'import-x/order': [
         'error',
         {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+            'type',
+          ],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
           pathGroups: [
@@ -293,18 +309,7 @@ export default ts.config(
       'max-depth': ['error', 4],
       'max-nested-callbacks': ['error', 4],
       'max-classes-per-file': ['error', 2],
-      'max-len': [
-        'error',
-        {
-          code: 120,
-          tabWidth: 2,
-          ignoreUrls: true,
-          ignoreStrings: true,
-          ignoreTemplateLiterals: true,
-          ignoreRegExpLiterals: true,
-          ignoreComments: true,
-        },
-      ],
+      // max-len: removed — deprecated in ESLint v8.53.0, Prettier handles line length
       complexity: ['error', 10], // Cyclomatic complexity
 
       // =======================================================================
@@ -380,10 +385,20 @@ export default ts.config(
       ],
       '@typescript-eslint/naming-convention': [
         'error',
-        { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
-        { selector: 'variable', format: ['camelCase', 'UPPER_CASE', 'PascalCase'] },
+        {
+          selector: 'default',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'variable',
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+        },
         { selector: 'import', format: ['camelCase', 'PascalCase'] },
-        { selector: ['property', 'objectLiteralProperty', 'typeProperty'], format: null },
+        {
+          selector: ['property', 'objectLiteralProperty', 'typeProperty'],
+          format: null,
+        },
         { selector: 'typeLike', format: ['PascalCase'] },
         { selector: 'enumMember', format: ['UPPER_CASE'] },
       ],

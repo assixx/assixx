@@ -166,7 +166,9 @@ http://localhost:6006/?path=/docs/design-system-containers--docs
 **New (Design System):**
 
 ```html
-<div class="page-container page-container--narrow page-container--centered">...</div>
+<div class="page-container page-container--narrow page-container--centered">
+  ...
+</div>
 ```
 
 **Changes:**

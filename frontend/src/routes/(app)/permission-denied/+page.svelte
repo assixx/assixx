@@ -61,30 +61,42 @@
 
   <!-- Description -->
   <p class="empty-state__description">
-    Sie haben keine Berechtigung, diese Seite aufzurufen. Bitte wenden Sie sich an Ihren
-    Administrator, wenn Sie glauben, dass dies ein Fehler ist.
+    Sie haben keine Berechtigung, diese Seite aufzurufen. Bitte wenden Sie sich
+    an Ihren Administrator, wenn Sie glauben, dass dies ein Fehler ist.
   </p>
 
   <!-- Error Code Badge - Design System badge component -->
   <div class="error-code-badge">
-    <span class="badge badge--danger badge--lg badge--uppercase"> 403 Forbidden </span>
+    <span class="badge badge--danger badge--lg badge--uppercase">
+      403 Forbidden
+    </span>
   </div>
 
   <!-- Actions - Design System button components -->
   <div class="empty-state__actions">
-    <button type="button" class="btn btn-cancel" onclick={goBack}>
+    <button
+      type="button"
+      class="btn btn-cancel"
+      onclick={goBack}
+    >
       <i class="fas fa-arrow-left"></i>
       Zurück
     </button>
 
-    <button type="button" class="btn btn-primary" onclick={goHome}>
+    <button
+      type="button"
+      class="btn btn-primary"
+      onclick={goHome}
+    >
       <i class="fas fa-home"></i>
       Zur Startseite
     </button>
   </div>
 
   <!-- Screen reader announcement -->
-  <span class="empty-state__sr-only"> Fehler 403: Zugriff auf diese Seite wurde verweigert. </span>
+  <span class="empty-state__sr-only">
+    Fehler 403: Zugriff auf diese Seite wurde verweigert.
+  </span>
 </div>
 
 <style>

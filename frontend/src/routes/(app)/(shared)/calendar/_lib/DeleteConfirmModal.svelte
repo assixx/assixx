@@ -4,12 +4,14 @@
     onconfirm: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  let { onclose, onconfirm }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { onclose, onconfirm }: Props = $props();
 </script>
 
-<div class="modal-overlay modal-overlay--active" role="presentation" onclick={onclose}>
+<div
+  class="modal-overlay modal-overlay--active"
+  role="presentation"
+  onclick={onclose}
+>
   <div
     class="confirm-modal confirm-modal--danger"
     role="presentation"
@@ -22,11 +24,15 @@
     </div>
     <h3 class="confirm-modal__title">Termin Löschen</h3>
     <p class="confirm-modal__message">
-      Moechten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht rückgängig gemacht
-      werden.
+      Moechten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht
+      rückgängig gemacht werden.
     </p>
     <div class="confirm-modal__actions">
-      <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" onclick={onclose}>
+      <button
+        type="button"
+        class="confirm-modal__btn confirm-modal__btn--cancel"
+        onclick={onclose}
+      >
         Abbrechen
       </button>
       <button

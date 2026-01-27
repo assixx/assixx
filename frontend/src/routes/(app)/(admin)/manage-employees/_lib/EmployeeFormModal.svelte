@@ -1,6 +1,10 @@
 <script lang="ts">
   import { POSITION_OPTIONS, MESSAGES } from './constants';
-  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
+  import {
+    getStatusBadgeClass,
+    getStatusLabel,
+    calculatePasswordStrength,
+  } from './utils';
 
   import type { Team, FormIsActiveStatus } from './types';
 
@@ -36,10 +40,10 @@
     onvalidatepasswords: () => void;
   }
 
-  /* eslint-disable */
+  /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
   let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords }: Props = $props();
-  /* eslint-enable */
+  /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
   // LOCAL STATE
@@ -90,7 +94,9 @@
 
   function handleTeamChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    formTeamIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
+    formTeamIds = Array.from(select.selectedOptions).map((opt) =>
+      parseInt(opt.value, 10),
+    );
   }
 
   // =============================================================================
@@ -119,7 +125,10 @@
   /**
    * Checks if a click occurred outside a dropdown element
    */
-  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
+  function isClickOutsideDropdown(
+    target: HTMLElement,
+    elementId: string,
+  ): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -129,10 +138,16 @@
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
-        if (positionDropdownOpen && isClickOutsideDropdown(target, 'position-dropdown')) {
+        if (
+          positionDropdownOpen &&
+          isClickOutsideDropdown(target, 'position-dropdown')
+        ) {
           positionDropdownOpen = false;
         }
-        if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
+        if (
+          statusDropdownOpen &&
+          isClickOutsideDropdown(target, 'status-dropdown')
+        ) {
           statusDropdownOpen = false;
         }
       };
@@ -170,15 +185,28 @@
       {onsubmit}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="employee-modal-title">{modalTitle}</h3>
-        <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
+        <h3
+          class="ds-modal__title"
+          id="employee-modal-title"
+        >
+          {modalTitle}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={onclose}
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="ds-modal__body">
         <!-- Personal Information -->
         <div class="form-field">
-          <label class="form-field__label" for="employee-first-name">
+          <label
+            class="form-field__label"
+            for="employee-first-name"
+          >
             Vorname <span class="text-red-500">*</span>
           </label>
           <input
@@ -192,7 +220,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-last-name">
+          <label
+            class="form-field__label"
+            for="employee-last-name"
+          >
             Nachname <span class="text-red-500">*</span>
           </label>
           <input
@@ -206,7 +237,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-email">
+          <label
+            class="form-field__label"
+            for="employee-email"
+          >
             E-Mail <span class="text-red-500">*</span>
           </label>
           <input
@@ -224,8 +258,14 @@
           >
         </div>
 
-        <div class="form-field" id="email-confirm-group">
-          <label class="form-field__label" for="employee-email-confirm">
+        <div
+          class="form-field"
+          id="email-confirm-group"
+        >
+          <label
+            class="form-field__label"
+            for="employee-email-confirm"
+          >
             E-Mail bestätigen <span class="text-red-500">*</span>
           </label>
           <input
@@ -245,11 +285,18 @@
           {/if}
         </div>
 
-        <div class="form-field" id="password-group">
-          <label class="form-field__label" for="employee-password">
+        <div
+          class="form-field"
+          id="password-group"
+        >
+          <label
+            class="form-field__label"
+            for="employee-password"
+          >
             Passwort {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
@@ -278,14 +325,26 @@
               aria-label="Passwort anzeigen"
               onclick={() => (showPassword = !showPassword)}
             >
-              <i class="fas" class:fa-eye={!showPassword} class:fa-eye-slash={showPassword}></i>
+              <i
+                class="fas"
+                class:fa-eye={!showPassword}
+                class:fa-eye-slash={showPassword}
+              ></i>
             </button>
           </div>
         </div>
 
-        <div class="form-field" id="password-confirm-group">
-          <label class="form-field__label" for="employee-password-confirm">
-            Passwort bestätigen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
+        <div
+          class="form-field"
+          id="password-confirm-group"
+        >
+          <label
+            class="form-field__label"
+            for="employee-password-confirm"
+          >
+            Passwort bestätigen {#if !isEditMode}<span class="text-red-500"
+                >*</span
+              >{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -319,9 +378,15 @@
         </div>
 
         {#if formPassword}
-          <div class="password-strength-container" id="employee-password-strength-container">
+          <div
+            class="password-strength-container"
+            id="employee-password-strength-container"
+          >
             <div class="password-strength-meter">
-              <div class="password-strength-bar" data-score={passwordScore}></div>
+              <div
+                class="password-strength-bar"
+                data-score={passwordScore}
+              ></div>
             </div>
             <div class="password-strength-info">
               <span class="password-strength-label">{passwordLabel}</span>
@@ -331,7 +396,10 @@
         {/if}
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-phone">Telefon</label>
+          <label
+            class="form-field__label"
+            for="employee-phone">Telefon</label
+          >
           <input
             type="tel"
             id="employee-phone"
@@ -342,8 +410,14 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-position">Position</label>
-          <div class="dropdown" id="position-dropdown">
+          <label
+            class="form-field__label"
+            for="employee-position">Position</label
+          >
+          <div
+            class="dropdown"
+            id="position-dropdown"
+          >
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -351,10 +425,15 @@
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span>
+              <span
+                >{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span
+              >
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={positionDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={positionDropdownOpen}
+            >
               {#each POSITION_OPTIONS as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -372,7 +451,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-number">Personalnummer</label>
+          <label
+            class="form-field__label"
+            for="employee-number">Personalnummer</label
+          >
           <input
             type="text"
             id="employee-number"
@@ -388,7 +470,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="employee-dateOfBirth">Geburtsdatum</label>
+          <label
+            class="form-field__label"
+            for="employee-dateOfBirth">Geburtsdatum</label
+          >
           <div class="date-picker">
             <i class="date-picker__icon fas fa-calendar"></i>
             <input
@@ -419,8 +504,14 @@
             </div>
           </div>
 
-          <div class="form-field" id="team-select-container">
-            <label class="form-field__label" for="employee-teams">
+          <div
+            class="form-field"
+            id="team-select-container"
+          >
+            <label
+              class="form-field__label"
+              for="employee-teams"
+            >
               <i class="fas fa-users mr-1"></i>
               Teams
             </label>
@@ -432,14 +523,22 @@
               onchange={handleTeamChange}
             >
               {#each allTeams as team (team.id)}
-                <option value={team.id} selected={formTeamIds.includes(team.id)}>
-                  {team.name}{team.departmentName !== undefined && team.departmentName !== ''
-                    ? ` (${team.departmentName})`
-                    : ''}
+                <option
+                  value={team.id}
+                  selected={formTeamIds.includes(team.id)}
+                >
+                  {team.name}{(
+                    team.departmentName !== undefined &&
+                    team.departmentName !== ''
+                  ) ?
+                    ` (${team.departmentName})`
+                  : ''}
                 </option>
               {/each}
             </select>
-            <span class="form-field__message text-[var(--color-text-secondary)]">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)]"
+            >
               <i class="fas fa-info-circle mr-1"></i>
               {MESSAGES.TEAM_MULTISELECT_HINT}
             </span>
@@ -447,11 +546,20 @@
         </div>
 
         {#if isEditMode}
-          <div class="form-field mt-6" id="status-field-group">
-            <label class="form-field__label" for="employee-status">
+          <div
+            class="form-field mt-6"
+            id="status-field-group"
+          >
+            <label
+              class="form-field__label"
+              for="employee-status"
+            >
               Account Status <span class="text-red-500">*</span>
             </label>
-            <div class="dropdown" id="status-dropdown">
+            <div
+              class="dropdown"
+              id="status-dropdown"
+            >
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -464,7 +572,10 @@
                 >
                 <i class="fas fa-chevron-down"></i>
               </div>
-              <div class="dropdown__menu" class:active={statusDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={statusDropdownOpen}
+              >
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
@@ -497,7 +608,9 @@
                 </div>
               </div>
             </div>
-            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+            >
               {MESSAGES.STATUS_HINT}
             </span>
           </div>
@@ -505,9 +618,18 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>Abbrechen</button
+        >
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           Speichern
         </button>
       </div>

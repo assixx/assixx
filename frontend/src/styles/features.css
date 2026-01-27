@@ -30,14 +30,22 @@
   font-weight: 500;
   color: var(--color-text-primary);
 
-  background: linear-gradient(135deg, rgb(255 255 255 / 15%), rgb(255 255 255 / 5%));
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 15%),
+    rgb(255 255 255 / 5%)
+  );
   backdrop-filter: blur(10px);
 }
 
 .plan-badge.enterprise {
   border-color: rgb(255 215 0 / 30%);
   color: #ffd700;
-  background: linear-gradient(135deg, rgb(255 215 0 / 15%), rgb(255 215 0 / 5%));
+  background: linear-gradient(
+    135deg,
+    rgb(255 215 0 / 15%),
+    rgb(255 215 0 / 5%)
+  );
 }
 
 /**

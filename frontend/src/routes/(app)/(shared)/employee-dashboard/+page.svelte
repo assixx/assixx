@@ -58,9 +58,11 @@
   function openBlackboardEntry(uuid: string, isConfirmed: boolean): void {
     // Auto-confirm if not yet read (non-blocking)
     if (!isConfirmed) {
-      void apiClient.post(`/blackboard/entries/${uuid}/confirm`, {}).then(() => {
-        notificationStore.decrementCount('blackboard');
-      });
+      void apiClient
+        .post(`/blackboard/entries/${uuid}/confirm`, {})
+        .then(() => {
+          notificationStore.decrementCount('blackboard');
+        });
     }
     void goto(`/blackboard/${uuid}`);
   }
@@ -80,15 +82,23 @@
   // User data from parent layout (via $page.data)
   // The (app) layout provides user data to all child pages
   const user = $derived($page.data.user as LayoutUser | null);
-  const employeeName = $derived(getDisplayName(user?.firstName, user?.lastName));
+  const employeeName = $derived(
+    getDisplayName(user?.firstName, user?.lastName),
+  );
   const employeeArea = $derived(getDisplayValue(user?.teamAreaName));
-  const employeeDepartment = $derived(getDisplayValue(user?.teamDepartmentName));
+  const employeeDepartment = $derived(
+    getDisplayValue(user?.teamDepartmentName),
+  );
   // teamNames is array - take first team name
   const employeeTeam = $derived(getDisplayValue(user?.teamNames?.[0]));
-  const employeePosition = $derived(getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee));
+  const employeePosition = $derived(
+    getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
+  );
 
   // Notification count (placeholder for now)
-  const alertCount = $derived(blackboardEntries.filter((e) => e.isConfirmed !== true).length);
+  const alertCount = $derived(
+    blackboardEntries.filter((e) => e.isConfirmed !== true).length,
+  );
 
   // =============================================================================
   // FLOATING DOTS - Generated client-side for animation
@@ -131,7 +141,9 @@
       <h1 class="text-3xl font-bold mb-1">{MESSAGES.welcomeBack}</h1>
       <p class="text-lg text-white/90">
         {MESSAGES.niceToSeeYou}&nbsp;
-        <span class="text-[var(--color-primary)] font-semibold">{employeeName}</span>
+        <span class="text-[var(--color-primary)] font-semibold"
+          >{employeeName}</span
+        >
       </p>
     </div>
 
@@ -177,30 +189,41 @@
   </div>
 
   <!-- Blackboard Widget -->
-  <div id="blackboard-widget-container" class="mt-8 mb-8">
+  <div
+    id="blackboard-widget-container"
+    class="mt-8 mb-8"
+  >
     <div class="card card--blackboard loaded">
       <div class="card__header">
         <h3 class="card__title">
           <i class="fas fa-thumbtack"></i>
           Schwarzes Brett
         </h3>
-        <a href="/blackboard" class="btn btn-link">
+        <a
+          href="/blackboard"
+          class="btn btn-link"
+        >
           <i class="fas fa-external-link-alt mr-1.5"></i> Alle anzeigen
         </a>
       </div>
       <div id="blackboard-widget-content">
         {#if blackboardEntries.length === 0}
           <div class="empty-state">
-            <div class="empty-state__icon"><i class="fas fa-sticky-note"></i></div>
+            <div class="empty-state__icon">
+              <i class="fas fa-sticky-note"></i>
+            </div>
             <h3 class="empty-state__title">{MESSAGES.noBlackboard}</h3>
-            <p class="empty-state__description">{MESSAGES.noBlackboardDescription}</p>
+            <p class="empty-state__description">
+              {MESSAGES.noBlackboardDescription}
+            </p>
           </div>
         {:else}
           <div class="sticky-notes-container">
             {#each blackboardEntries as entry (entry.id)}
               {@const contentText = parseContent(entry.content)}
               {@const isRead = entry.isConfirmed === true}
-              {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
+              {@const isNew =
+                entry.firstSeenAt === null || entry.firstSeenAt === undefined}
               <div
                 class="sticky-note sticky-note--{entry.color} sticky-note--large"
                 id="sticky-note-{entry.id}"
@@ -208,7 +231,8 @@
                   openBlackboardEntry(entry.uuid, isRead);
                 }}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter') openBlackboardEntry(entry.uuid, isRead);
+                  if (e.key === 'Enter')
+                    openBlackboardEntry(entry.uuid, isRead);
                 }}
                 role="button"
                 tabindex="0"
@@ -217,23 +241,34 @@
                 <div class="sticky-note__header">
                   <div class="sticky-note__title">
                     {entry.title}
-                    {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
+                    {#if isNew}<span class="badge badge--sm badge--success ml-2"
+                        >Neu</span
+                      >{/if}
                   </div>
                   {#if entry.expiresAt}
                     <span
                       class="sticky-note__expires"
-                      class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
-                      title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                      class:sticky-note__expires--expired={isExpired(
+                        entry.expiresAt,
+                      )}
+                      title={isExpired(entry.expiresAt) ? 'Abgelaufen' : (
+                        'Gültig bis'
+                      )}
                     >
                       <i class="fas fa-clock"></i>
                       {formatBlackboardDate(entry.expiresAt)}
                     </span>
                   {/if}
                 </div>
-                <div class="sticky-note__content">{truncateContent(contentText)}</div>
+                <div class="sticky-note__content">
+                  {truncateContent(contentText)}
+                </div>
                 <div class="sticky-note__indicators">
                   {#if (entry.attachmentCount ?? 0) > 0}
-                    <span class="sticky-note__attachments" title="Anhänge">
+                    <span
+                      class="sticky-note__attachments"
+                      title="Anhänge"
+                    >
                       <i class="fas fa-paperclip"></i>
                       <span>{entry.attachmentCount}</span>
                     </span>
@@ -255,17 +290,23 @@
                 </div>
                 <div class="sticky-note__footer">
                   <div class="sticky-note__badges">
-                    <span class="sticky-note__badge sticky-note__badge--priority-{entry.priority}">
+                    <span
+                      class="sticky-note__badge sticky-note__badge--priority-{entry.priority}"
+                    >
                       {getPriorityLabel(entry.priority)}
                     </span>
-                    <span class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}">
+                    <span
+                      class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}"
+                    >
                       {getBlackboardOrgLabel(entry.orgLevel)}
                     </span>
                   </div>
                   <div class="sticky-note__footer-row">
                     <span class="sticky-note__author">
                       <i class="fas fa-user"></i>
-                      {entry.authorFullName ?? entry.authorName ?? MESSAGES.unknownAuthor}
+                      {entry.authorFullName ??
+                        entry.authorName ??
+                        MESSAGES.unknownAuthor}
                     </span>
                     <span class="sticky-note__date">
                       <i class="fas fa-calendar"></i>
@@ -288,7 +329,10 @@
       <div class="card-accent card-accent--success card-accent--static">
         <div class="card-accent__header">
           <h3 class="card-accent__title">
-            <i class="fas fa-file-alt" style="color: var(--color-icon-primary)"></i>
+            <i
+              class="fas fa-file-alt"
+              style="color: var(--color-icon-primary)"
+            ></i>
             {MESSAGES.documentsCardTitle}
           </h3>
         </div>
@@ -302,13 +346,19 @@
           >
             {MESSAGES.documentsButton}
           </button>
-          <div class="space-y-2" id="recent-documents">
+          <div
+            class="space-y-2"
+            id="recent-documents"
+          >
             {#if recentDocuments.length === 0}
               <p class="p-2 text-muted">{PLACEHOLDER_TEXT.noDocuments}</p>
             {:else}
               {#each recentDocuments as doc (doc.id)}
                 <div class="compact-item">
-                  <span class="compact-item-name" title={doc.filename}>{doc.filename}</span>
+                  <span
+                    class="compact-item-name"
+                    title={doc.filename}>{doc.filename}</span
+                  >
                 </div>
               {/each}
             {/if}
@@ -322,7 +372,10 @@
       <div class="card-accent card-accent--danger card-accent--static">
         <div class="card-accent__header">
           <h3 class="card-accent__title">
-            <i class="fas fa-calendar" style="color: var(--color-icon-primary)"></i>
+            <i
+              class="fas fa-calendar"
+              style="color: var(--color-icon-primary)"
+            ></i>
             {MESSAGES.calendarCardTitle}
           </h3>
         </div>
@@ -336,18 +389,29 @@
           >
             {MESSAGES.calendarButton}
           </button>
-          <div class="space-y-2" id="calendar-events-list">
+          <div
+            class="space-y-2"
+            id="calendar-events-list"
+          >
             {#if upcomingEvents.length === 0}
               <div class="p-2 rounded text-xs">
-                <strong class="block font-semibold">{MESSAGES.upcomingEvents}</strong>
-                <p class="text-[var(--color-text-secondary)] mt-1">{PLACEHOLDER_TEXT.noEvents}</p>
+                <strong class="block font-semibold"
+                  >{MESSAGES.upcomingEvents}</strong
+                >
+                <p class="text-[var(--color-text-secondary)] mt-1">
+                  {PLACEHOLDER_TEXT.noEvents}
+                </p>
               </div>
             {:else}
               {#each upcomingEvents as event (event.id)}
                 {@const dateInfo = formatEventDate(event)}
-                {@const hasArea = event.areaId !== null && event.areaId !== undefined}
-                {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
-                {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
+                {@const hasArea =
+                  event.areaId !== null && event.areaId !== undefined}
+                {@const hasDept =
+                  event.departmentId !== null &&
+                  event.departmentId !== undefined}
+                {@const hasTeam =
+                  event.teamId !== null && event.teamId !== undefined}
                 <div
                   class="event-item"
                   onclick={goToCalendar}
@@ -376,16 +440,23 @@
                     {/if}
                     <div class="event-badges">
                       {#if hasArea}
-                        <span class="event-level event-level-area">Bereich</span>
+                        <span class="event-level event-level-area">Bereich</span
+                        >
                       {/if}
                       {#if hasDept}
-                        <span class="event-level event-level-department">Abteilung</span>
+                        <span class="event-level event-level-department"
+                          >Abteilung</span
+                        >
                       {/if}
                       {#if hasTeam}
                         <span class="event-level event-level-team">Team</span>
                       {/if}
                       {#if !hasArea && !hasDept && !hasTeam}
-                        <span class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}">
+                        <span
+                          class="event-level {getOrgLevelClass(
+                            event.orgLevel ?? 'personal',
+                          )}"
+                        >
                           {getOrgLevelText(event.orgLevel ?? 'personal')}
                         </span>
                       {/if}
@@ -404,7 +475,10 @@
       <div class="card-accent card-accent--warning card-accent--static">
         <div class="card-accent__header">
           <h3 class="card-accent__title">
-            <i class="fas fa-lightbulb" style="color: var(--color-icon-primary)"></i>
+            <i
+              class="fas fa-lightbulb"
+              style="color: var(--color-icon-primary)"
+            ></i>
             {MESSAGES.kvpCardTitle}
           </h3>
         </div>
@@ -418,7 +492,9 @@
           >
             {MESSAGES.kvpButton}
           </button>
-          <p class="text-sm text-[var(--color-text-secondary)]">{MESSAGES.kvpDescription}</p>
+          <p class="text-sm text-[var(--color-text-secondary)]">
+            {MESSAGES.kvpDescription}
+          </p>
         </div>
       </div>
     </div>
@@ -428,7 +504,10 @@
       <div class="card-accent card-accent--purple card-accent--static">
         <div class="card-accent__header">
           <h3 class="card-accent__title">
-            <i class="fas fa-user-circle" style="color: var(--color-icon-primary)"></i>
+            <i
+              class="fas fa-user-circle"
+              style="color: var(--color-icon-primary)"
+            ></i>
             {MESSAGES.profileCardTitle}
           </h3>
         </div>
@@ -442,7 +521,9 @@
           >
             {MESSAGES.profileButton}
           </button>
-          <p class="text-sm text-[var(--color-text-secondary)]">{MESSAGES.profileDescription}</p>
+          <p class="text-sm text-[var(--color-text-secondary)]">
+            {MESSAGES.profileDescription}
+          </p>
         </div>
       </div>
     </div>

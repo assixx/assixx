@@ -10,8 +10,7 @@
     onconfirm: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  // $bindable() required for two-way binding (bind:date, bind:time) in Svelte 5
+  /* eslint-disable prefer-const -- Svelte $bindable() requires let */
   let {
     show,
     date = $bindable(''),
@@ -44,7 +43,10 @@
         <p class="schedule-description">{MESSAGES.labelScheduleDescription}</p>
         <div class="schedule-inputs">
           <div class="form-field">
-            <label class="form-field__label form-field__label--required" for="scheduleDate">
+            <label
+              class="form-field__label form-field__label--required"
+              for="scheduleDate"
+            >
               {MESSAGES.labelDate}
             </label>
             <input
@@ -56,7 +58,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label form-field__label--required" for="scheduleTime">
+            <label
+              class="form-field__label form-field__label--required"
+              for="scheduleTime"
+            >
               {MESSAGES.labelTime}
             </label>
             <input
@@ -81,10 +86,16 @@
         {/if}
       </div>
       <div class="ds-modal__footer ds-modal__footer--spaced">
-        <button type="button" class="btn btn-cancel" onclick={onclose}
-          >{MESSAGES.labelCancel}</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>{MESSAGES.labelCancel}</button
         >
-        <button type="button" class="btn btn-modal" onclick={onconfirm}>
+        <button
+          type="button"
+          class="btn btn-modal"
+          onclick={onconfirm}
+        >
           <i class="far fa-clock"></i>
           {MESSAGES.labelSchedule}
         </button>

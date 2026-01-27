@@ -42,10 +42,19 @@ export const CreateEntrySchema = z.object({
   areaIds: z.array(z.number().int().positive()).optional().default([]),
   // Legacy fields (backwards compatibility)
   orgLevel: OrgLevelSchema.optional(),
-  orgId: z.number().int().positive('Organization ID must be positive').nullable().optional(),
+  orgId: z
+    .number()
+    .int()
+    .positive('Organization ID must be positive')
+    .nullable()
+    .optional(),
   expiresAt: DateSchema.nullable().optional(),
   priority: PrioritySchema.optional(),
-  color: z.string().trim().max(50, 'Color cannot exceed 50 characters').optional(),
+  color: z
+    .string()
+    .trim()
+    .max(50, 'Color cannot exceed 50 characters')
+    .optional(),
 });
 
 /**

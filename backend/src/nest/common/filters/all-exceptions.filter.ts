@@ -58,7 +58,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const reply = ctx.getResponse<FastifyReply>();
     const request = ctx.getRequest<FastifyRequest>();
 
-    const { status, errorResponse } = this.buildErrorResponse(exception, request);
+    const { status, errorResponse } = this.buildErrorResponse(
+      exception,
+      request,
+    );
 
     // Log error (only log 500s as errors, others as warnings)
     if (status >= 500) {
@@ -105,16 +108,31 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // NestJS HttpException
     if (exception instanceof HttpException) {
-      return this.buildHttpExceptionResponse(exception, timestamp, path, requestId);
+      return this.buildHttpExceptionResponse(
+        exception,
+        timestamp,
+        path,
+        requestId,
+      );
     }
 
     // ServiceError (from existing codebase)
     if (this.isServiceError(exception)) {
-      return this.buildServiceErrorResponse(exception, timestamp, path, requestId);
+      return this.buildServiceErrorResponse(
+        exception,
+        timestamp,
+        path,
+        requestId,
+      );
     }
 
     // Unknown error (500)
-    return this.buildUnknownErrorResponse(exception, timestamp, path, requestId);
+    return this.buildUnknownErrorResponse(
+      exception,
+      timestamp,
+      path,
+      requestId,
+    );
   }
 
   private buildZodErrorResponse(
@@ -130,10 +148,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Validation failed',
-          details: exception.issues.map((issue: ZodError['issues'][number]) => ({
-            field: issue.path.join('.'),
-            message: issue.message,
-          })),
+          details: exception.issues.map(
+            (issue: ZodError['issues'][number]) => ({
+              field: issue.path.join('.'),
+              message: issue.message,
+            }),
+          ),
         },
         timestamp,
         path,
@@ -155,8 +175,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (typeof exceptionResponse === 'object') {
       const response = exceptionResponse as Record<string, unknown>;
       const details = response['details'] as FieldError[] | undefined;
-      const code = (response['code'] as string | undefined) ?? this.getErrorCode(status);
-      const message = (response['message'] as string | undefined) ?? exception.message;
+      const code =
+        (response['code'] as string | undefined) ?? this.getErrorCode(status);
+      const message =
+        (response['message'] as string | undefined) ?? exception.message;
 
       return {
         status,
@@ -181,7 +203,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         success: false,
         error: {
           code: this.getErrorCode(status),
-          message: typeof exceptionResponse === 'string' ? exceptionResponse : exception.message,
+          message:
+            typeof exceptionResponse === 'string' ? exceptionResponse : (
+              exception.message
+            ),
         },
         timestamp,
         path,
@@ -203,7 +228,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         error: {
           code: exception.code,
           message: exception.message,
-          ...(exception.details !== undefined && { details: exception.details }),
+          ...(exception.details !== undefined && {
+            details: exception.details,
+          }),
         },
         timestamp,
         path,

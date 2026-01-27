@@ -9,7 +9,9 @@ export function createUserState() {
   let currentUser = $state<User | null>(null);
   let effectiveRole = $state<string>('employee');
 
-  const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');
+  const isAdmin = $derived(
+    effectiveRole === 'admin' || effectiveRole === 'root',
+  );
 
   function updateEffectiveRole() {
     if (currentUser === null) {
@@ -32,7 +34,11 @@ export function createUserState() {
     // Check localStorage for activeRole
     if (typeof localStorage !== 'undefined') {
       const activeRole = localStorage.getItem('activeRole');
-      if (activeRole !== null && activeRole !== '' && activeRole !== currentUser.role) {
+      if (
+        activeRole !== null &&
+        activeRole !== '' &&
+        activeRole !== currentUser.role
+      ) {
         effectiveRole = activeRole;
         return;
       }

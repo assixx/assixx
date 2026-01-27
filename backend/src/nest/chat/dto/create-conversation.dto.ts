@@ -23,11 +23,18 @@ export const CreateConversationBodySchema = z.object({
   initialMessage: z
     .string()
     .min(1, 'Initial message cannot be empty')
-    .max(MAX_MESSAGE_LENGTH, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`)
+    .max(
+      MAX_MESSAGE_LENGTH,
+      `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    )
     .optional(),
 });
 
-export class CreateConversationDto extends createZodDto(CreateConversationBodySchema) {}
+export class CreateConversationDto extends createZodDto(
+  CreateConversationBodySchema,
+) {}
 
 // Type export
-export type CreateConversationBody = z.infer<typeof CreateConversationBodySchema>;
+export type CreateConversationBody = z.infer<
+  typeof CreateConversationBodySchema
+>;

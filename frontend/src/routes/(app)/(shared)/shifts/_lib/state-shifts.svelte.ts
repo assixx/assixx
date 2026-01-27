@@ -3,7 +3,11 @@
 // Weekly shifts, shift details, notes
 // =============================================================================
 
-import { addAssignment, removeAssignment, createShiftDetail } from './shift-operations';
+import {
+  addAssignment,
+  removeAssignment,
+  createShiftDetail,
+} from './shift-operations';
 
 import type { WeeklyShiftsMap, ShiftDetailData, Employee } from './types';
 
@@ -55,17 +59,36 @@ function createShiftDataState() {
       return dayShifts === undefined ? [] : (dayShifts.get(shiftType) ?? []);
     },
 
-    addShiftAssignment: (date: string, shiftType: string, employeeId: number) => {
+    addShiftAssignment: (
+      date: string,
+      shiftType: string,
+      employeeId: number,
+    ) => {
       weeklyShifts = addAssignment(weeklyShifts, date, shiftType, employeeId);
     },
 
-    removeShiftAssignment: (date: string, shiftType: string, employeeId: number) => {
-      const result = removeAssignment(weeklyShifts, shiftDetails, date, shiftType, employeeId);
+    removeShiftAssignment: (
+      date: string,
+      shiftType: string,
+      employeeId: number,
+    ) => {
+      const result = removeAssignment(
+        weeklyShifts,
+        shiftDetails,
+        date,
+        shiftType,
+        employeeId,
+      );
       weeklyShifts = result.weeklyShifts;
       shiftDetails = result.shiftDetails;
     },
 
-    addShiftDetail: (date: string, shiftType: string, employeeId: number, employee: Employee) => {
+    addShiftDetail: (
+      date: string,
+      shiftType: string,
+      employeeId: number,
+      employee: Employee,
+    ) => {
       shiftDetails = createShiftDetail(shiftDetails, date, shiftType, employee);
     },
 

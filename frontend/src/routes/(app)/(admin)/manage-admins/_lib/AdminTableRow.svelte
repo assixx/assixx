@@ -44,9 +44,9 @@
   <td>
     <div class="flex items-center gap-2">
       <div
-        class="avatar avatar--sm {hasProfilePicture
-          ? ''
-          : `avatar--color-${getAvatarColor(admin.id)}`}"
+        class="avatar avatar--sm {hasProfilePicture ? '' : (
+          `avatar--color-${getAvatarColor(admin.id)}`
+        )}"
       >
         {#if hasProfilePicture}
           <img
@@ -55,7 +55,8 @@
             class="avatar__image"
           />
         {:else}
-          <span class="avatar__initials">{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span
+          <span class="avatar__initials"
+            >{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span
           >
         {/if}
       </div>
@@ -66,23 +67,33 @@
   <td>{admin.employeeNumber ?? '-'}</td>
   <td>{getPositionDisplay(admin.position ?? '')}</td>
   <td>
-    <span class="badge {getStatusBadgeClass(admin.isActive)}">{getStatusLabel(admin.isActive)}</span
+    <span class="badge {getStatusBadgeClass(admin.isActive)}"
+      >{getStatusLabel(admin.isActive)}</span
     >
   </td>
   <td>
-    <span class="badge {areasBadge.class}" title={areasBadge.title}>
+    <span
+      class="badge {areasBadge.class}"
+      title={areasBadge.title}
+    >
       {#if areasBadge.icon}<i class="fas {areasBadge.icon} mr-1"></i>{/if}
       {areasBadge.text}
     </span>
   </td>
   <td>
-    <span class="badge {deptsBadge.class}" title={deptsBadge.title}>
+    <span
+      class="badge {deptsBadge.class}"
+      title={deptsBadge.title}
+    >
       {#if deptsBadge.icon}<i class="fas {deptsBadge.icon} mr-1"></i>{/if}
       {deptsBadge.text}
     </span>
   </td>
   <td>
-    <span class="badge {teamsBadge.class}" title={teamsBadge.title}>
+    <span
+      class="badge {teamsBadge.class}"
+      title={teamsBadge.title}
+    >
       {#if teamsBadge.icon}<i class="fas {teamsBadge.icon} mr-1"></i>{/if}
       {teamsBadge.text}
     </span>

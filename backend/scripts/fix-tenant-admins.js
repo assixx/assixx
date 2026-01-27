@@ -22,12 +22,16 @@ async function fixTenantAdmins() {
       )
     `);
 
-    logger.info(`Found ${missingAdmins.length} admin users not in tenant_admins table`);
+    logger.info(
+      `Found ${missingAdmins.length} admin users not in tenant_admins table`,
+    );
 
     if (missingAdmins.length > 0) {
       console.info('\nMissing admins:');
       missingAdmins.forEach((admin) => {
-        console.info(`- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`);
+        console.info(
+          `- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`,
+        );
       });
 
       // 2. Insert missing admins into tenant_admins
@@ -40,7 +44,9 @@ async function fixTenantAdmins() {
         logger.info(`Added admin ${admin.username} to tenant_admins`);
       }
 
-      console.info(`\n✅ Added ${missingAdmins.length} admins to tenant_admins table`);
+      console.info(
+        `\n✅ Added ${missingAdmins.length} admins to tenant_admins table`,
+      );
     } else {
       console.info('\n✅ All admins are already in tenant_admins table');
     }

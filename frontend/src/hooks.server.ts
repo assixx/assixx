@@ -35,10 +35,22 @@ type UserRole = 'root' | 'admin' | 'employee';
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 /** Public routes - no authentication required */
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/signup',
+  '/tenant-deletion-approve',
+  '/rate-limit',
+];
 
 /** Routes to skip authentication check (internal, assets, API proxy) */
-const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];
+const SKIP_ROUTES_PREFIXES = [
+  '/_app/',
+  '/favicon',
+  '/api/',
+  '/sentry-tunnel',
+  '/health',
+];
 
 /** User data structure from API */
 interface UserData {
@@ -69,7 +81,11 @@ function shouldSkipAuth(pathname: string): boolean {
   if (SKIP_ROUTES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return true;
   }
-  if (PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))) {
+  if (
+    PUBLIC_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(route + '/'),
+    )
+  ) {
     return true;
   }
   return false;
@@ -160,7 +176,10 @@ const authHandle: Handle = async ({ event, resolve }) => {
     // Store user in locals — group layouts access via parent()
     locals.user = userData;
 
-    log.debug({ pathname, userRole: userData.role }, 'Auth: User authenticated');
+    log.debug(
+      { pathname, userRole: userData.role },
+      'Auth: User authenticated',
+    );
   } catch (err) {
     if (isRedirectError(err)) {
       throw err;
@@ -211,7 +230,10 @@ const requestLoggingHandle: Handle = async ({ event, resolve }) => {
     return response;
   } catch (err) {
     const duration = Date.now() - start;
-    log.error({ method, pathname, duration, err }, `${method} ${pathname} ERROR ${duration}ms`);
+    log.error(
+      { method, pathname, duration, err },
+      `${method} ${pathname} ERROR ${duration}ms`,
+    );
     throw err;
   }
 };

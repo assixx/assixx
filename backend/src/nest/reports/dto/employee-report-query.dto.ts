@@ -13,4 +13,6 @@ export const EmployeeReportQuerySchema = z.object({
   teamId: IdSchema.optional(),
 });
 
-export class EmployeeReportQueryDto extends createZodDto(EmployeeReportQuerySchema) {}
+export class EmployeeReportQueryDto extends createZodDto(
+  EmployeeReportQuerySchema,
+) {}

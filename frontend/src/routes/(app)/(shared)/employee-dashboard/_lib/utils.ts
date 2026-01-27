@@ -48,9 +48,13 @@ export function formatEventDate(event: CalendarEvent): FormattedEventDate {
   const day = startDate.getDate().toString();
   const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
   const isAllDay = event.allDay === true || event.allDay === 1;
-  const time = isAllDay
-    ? 'Ganztägig'
-    : startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const time =
+    isAllDay ? 'Ganztägig' : (
+      startDate.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
 
   return { day, month, time };
 }
@@ -188,7 +192,9 @@ export function truncateContent(content: string, maxLength = 150): string {
  * Format blackboard date for display
  * @param dateStr - ISO date string
  */
-export function formatBlackboardDate(dateStr: string | null | undefined): string {
+export function formatBlackboardDate(
+  dateStr: string | null | undefined,
+): string {
   if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';

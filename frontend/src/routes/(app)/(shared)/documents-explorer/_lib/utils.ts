@@ -2,7 +2,12 @@
 // DOCUMENTS EXPLORER - UTILITY FUNCTIONS
 // =============================================================================
 
-import { CATEGORY_LABELS, CATEGORY_MAPPINGS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from './constants';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_MAPPINGS,
+  ALLOWED_FILE_TYPES,
+  MAX_FILE_SIZE,
+} from './constants';
 
 import type {
   Document,
@@ -129,19 +134,31 @@ export function getFileType(doc: Document): 'pdf' | 'image' | 'document' {
 /**
  * Get file type display info for upload preview
  */
-export function getFileTypeDisplayInfo(mimeType: string, extension: string): FileTypeDisplayInfo {
+export function getFileTypeDisplayInfo(
+  mimeType: string,
+  extension: string,
+): FileTypeDisplayInfo {
   if (mimeType === 'application/pdf' || extension === 'pdf') {
-    return { cssClass: 'file-upload-item__preview--pdf', iconClass: 'fas fa-file-pdf' };
+    return {
+      cssClass: 'file-upload-item__preview--pdf',
+      iconClass: 'fas fa-file-pdf',
+    };
   }
 
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   if (mimeType.startsWith('image/') || imageExtensions.includes(extension)) {
-    return { cssClass: 'file-upload-item__preview--image', iconClass: 'fas fa-file-image' };
+    return {
+      cssClass: 'file-upload-item__preview--image',
+      iconClass: 'fas fa-file-image',
+    };
   }
 
   const wordExtensions = ['doc', 'docx'];
   if (mimeType.includes('word') || wordExtensions.includes(extension)) {
-    return { cssClass: 'file-upload-item__preview--word', iconClass: 'fas fa-file-word' };
+    return {
+      cssClass: 'file-upload-item__preview--word',
+      iconClass: 'fas fa-file-word',
+    };
   }
 
   const excelExtensions = ['xls', 'xlsx'];
@@ -150,7 +167,10 @@ export function getFileTypeDisplayInfo(mimeType: string, extension: string): Fil
     mimeType.includes('spreadsheet') ||
     excelExtensions.includes(extension)
   ) {
-    return { cssClass: 'file-upload-item__preview--excel', iconClass: 'fas fa-file-excel' };
+    return {
+      cssClass: 'file-upload-item__preview--excel',
+      iconClass: 'fas fa-file-excel',
+    };
   }
 
   return { cssClass: '', iconClass: 'fas fa-file' };
@@ -188,7 +208,8 @@ export function truncateFilename(filename: string, maxLength: number): string {
 
   const extension = filename.slice(lastDot);
   const nameWithoutExt = filename.slice(0, lastDot);
-  const truncated = nameWithoutExt.slice(0, maxLength - extension.length - 3) + '...';
+  const truncated =
+    nameWithoutExt.slice(0, maxLength - extension.length - 3) + '...';
 
   return truncated + extension;
 }
@@ -240,10 +261,14 @@ export function validateUserForCategory(
     return { valid: true };
   }
 
-  if (mapping.requiresField === 'teamId' && (user.teamId === null || user.teamId === undefined)) {
+  if (
+    mapping.requiresField === 'teamId' &&
+    (user.teamId === null || user.teamId === undefined)
+  ) {
     return {
       valid: false,
-      error: 'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
+      error:
+        'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
     };
   }
 
@@ -253,7 +278,8 @@ export function validateUserForCategory(
   ) {
     return {
       valid: false,
-      error: 'Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!',
+      error:
+        'Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!',
     };
   }
 
@@ -283,7 +309,11 @@ function populateTargetIds(
     return;
   }
 
-  if (accessScope === 'team' && user.teamId !== null && user.teamId !== undefined) {
+  if (
+    accessScope === 'team' &&
+    user.teamId !== null &&
+    user.teamId !== undefined
+  ) {
     uploadData.targetTeamId = user.teamId;
     return;
   }
@@ -391,7 +421,10 @@ export function canSeeActions(role: string | null): boolean {
  * @param user - Current user (null if not loaded)
  * @returns true if user can edit
  */
-export function canEditDocument(doc: Document, user: CurrentUser | null): boolean {
+export function canEditDocument(
+  doc: Document,
+  user: CurrentUser | null,
+): boolean {
   if (user === null) return false;
 
   // root can edit everything
@@ -419,7 +452,10 @@ export function canEditDocument(doc: Document, user: CurrentUser | null): boolea
  * @param user - Current user (null if not loaded)
  * @returns true if user can delete
  */
-export function canDeleteDocument(doc: Document, user: CurrentUser | null): boolean {
+export function canDeleteDocument(
+  doc: Document,
+  user: CurrentUser | null,
+): boolean {
   // Same logic as edit for now
   return canEditDocument(doc, user);
 }

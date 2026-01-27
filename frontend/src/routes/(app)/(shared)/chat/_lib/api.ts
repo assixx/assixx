@@ -82,7 +82,9 @@ export async function createConversation(
  * Delete a conversation
  * @param conversationId - ID of conversation to delete
  */
-export async function deleteConversation(conversationId: number): Promise<void> {
+export async function deleteConversation(
+  conversationId: number,
+): Promise<void> {
   await apiClient.delete(API_ENDPOINTS.deleteConversation(conversationId));
 }
 
@@ -116,7 +118,9 @@ export async function loadMessages(conversationId: number): Promise<Message[]> {
  * Mark a conversation as read
  * @param conversationId - ID of the conversation
  */
-export async function markConversationAsRead(conversationId: number): Promise<void> {
+export async function markConversationAsRead(
+  conversationId: number,
+): Promise<void> {
   await apiClient.post(API_ENDPOINTS.markRead(conversationId), {});
 }
 
@@ -129,8 +133,12 @@ export async function markConversationAsRead(conversationId: number): Promise<vo
  * @param conversationId - ID of the conversation
  * @returns Promise with scheduled messages array
  */
-export async function loadScheduledMessages(conversationId: number): Promise<ScheduledMessage[]> {
-  const response = await apiClient.get(API_ENDPOINTS.scheduledMessages(conversationId));
+export async function loadScheduledMessages(
+  conversationId: number,
+): Promise<ScheduledMessage[]> {
+  const response = await apiClient.get(
+    API_ENDPOINTS.scheduledMessages(conversationId),
+  );
 
   // Handle different API response formats
   if (Array.isArray(response)) {
@@ -184,7 +192,9 @@ export async function createScheduledMessage(
  * Cancel/delete a scheduled message
  * @param scheduledId - ID of the scheduled message
  */
-export async function cancelScheduledMessage(scheduledId: string): Promise<void> {
+export async function cancelScheduledMessage(
+  scheduledId: string,
+): Promise<void> {
   await apiClient.delete(API_ENDPOINTS.deleteScheduled(scheduledId));
 }
 
@@ -220,7 +230,8 @@ export async function searchUsers(query: string): Promise<ChatUser[]> {
   const searchLower = query.toLowerCase();
 
   return users.filter((user: ChatUser) => {
-    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase();
+    const fullName =
+      `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase();
     return (
       user.username.toLowerCase().includes(searchLower) ||
       fullName.includes(searchLower) ||
@@ -246,7 +257,10 @@ export async function uploadAttachment(
   const formData = new FormData();
   formData.append('file', file);
 
-  return await apiClient.upload(API_ENDPOINTS.attachments(conversationId), formData);
+  return await apiClient.upload(
+    API_ENDPOINTS.attachments(conversationId),
+    formData,
+  );
 }
 
 // =============================================================================
@@ -264,8 +278,9 @@ export function findExistingConversation(
   userId: number,
 ): Conversation | null {
   return (
-    conversations.find((conv) => !conv.isGroup && conv.participants.some((p) => p.id === userId)) ??
-    null
+    conversations.find(
+      (conv) => !conv.isGroup && conv.participants.some((p) => p.id === userId),
+    ) ?? null
   );
 }
 

@@ -110,8 +110,9 @@ export async function loadAreas(): Promise<{
 }> {
   try {
     const data: unknown = await apiClient.get(API_ENDPOINTS.AREAS);
-    const areas: Area[] = Array.isArray(data)
-      ? (data as Area[])
+    const areas: Area[] =
+      Array.isArray(data) ?
+        (data as Area[])
       : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
   } catch (err) {
@@ -124,7 +125,8 @@ export async function loadAreas(): Promise<{
 
     return {
       areas: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+      error:
+        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
     };
   }
 }
@@ -156,7 +158,10 @@ export async function loadAreaLeads(): Promise<{
     log.error({ err }, 'Error loading area leads');
     return {
       users: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden der Bereichsleiter',
+      error:
+        err instanceof Error ?
+          err.message
+        : 'Fehler beim Laden der Bereichsleiter',
     };
   }
 }
@@ -170,15 +175,19 @@ export async function loadDepartments(): Promise<{
 }> {
   try {
     const data: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
-    const departments: Department[] = Array.isArray(data)
-      ? (data as Department[])
+    const departments: Department[] =
+      Array.isArray(data) ?
+        (data as Department[])
       : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
   } catch (err) {
     log.error({ err }, 'Error loading departments');
     return {
       departments: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden der Abteilungen',
+      error:
+        err instanceof Error ?
+          err.message
+        : 'Fehler beim Laden der Abteilungen',
     };
   }
 }

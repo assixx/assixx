@@ -35,11 +35,15 @@
     onbackToFolders,
   }: Props = $props();
 
-  const placeholderRowCount = $derived(Math.max(0, MIN_LIST_ROWS - documents.length));
+  const placeholderRowCount = $derived(
+    Math.max(0, MIN_LIST_ROWS - documents.length),
+  );
 </script>
 
 <div class="overflow-x-auto">
-  <table class="data-table data-table--striped data-table--hover data-table--bordered">
+  <table
+    class="data-table data-table--striped data-table--hover data-table--bordered"
+  >
     <thead>
       <tr>
         <th>{MESSAGES.TH_NAME}</th>
@@ -52,7 +56,10 @@
     </thead>
     <tbody id="list-rows">
       {#if showBackToFolders}
-        <tr class="back-to-folders-row cursor-pointer" onclick={onbackToFolders}>
+        <tr
+          class="back-to-folders-row cursor-pointer"
+          onclick={onbackToFolders}
+        >
           <td>
             <div class="flex items-center gap-3">
               <i
@@ -72,7 +79,10 @@
 
       {#if documents.length === 0 && !showBackToFolders}
         <tr>
-          <td colspan="6" class="text-center text-content-secondary py-8">
+          <td
+            colspan="6"
+            class="text-center text-content-secondary py-8"
+          >
             {MESSAGES.EMPTY_DESCRIPTION}
           </td>
         </tr>
@@ -106,7 +116,9 @@
                   <span class="badge badge--sm badge--success">Neu</span>
                 {/if}
                 {#if !doc.isRead}
-                  <span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0" title="Ungelesen"
+                  <span
+                    class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"
+                    title="Ungelesen"
                   ></span>
                 {/if}
               </div>
@@ -117,10 +129,15 @@
             {#if doc.tags && doc.tags.length > 0}
               <div class="flex flex-wrap gap-1">
                 {#each doc.tags.slice(0, 3) as tag (tag)}
-                  <span class="badge badge--info" style="padding: 2px 6px;">{tag}</span>
+                  <span
+                    class="badge badge--info"
+                    style="padding: 2px 6px;">{tag}</span
+                  >
                 {/each}
                 {#if doc.tags.length > 3}
-                  <span class="text-xs text-content-tertiary">+{doc.tags.length - 3}</span>
+                  <span class="text-xs text-content-tertiary"
+                    >+{doc.tags.length - 3}</span
+                  >
                 {/if}
               </div>
             {:else}

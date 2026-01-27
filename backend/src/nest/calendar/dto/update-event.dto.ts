@@ -11,16 +11,22 @@ import { IdSchema } from '../../../schemas/common.schema.js';
 /**
  * Organization level enum for event visibility
  */
-const OrgLevelSchema = z.enum(['company', 'department', 'team', 'area', 'personal'], {
-  message: 'Valid organization level is required',
-});
+const OrgLevelSchema = z.enum(
+  ['company', 'department', 'team', 'area', 'personal'],
+  {
+    message: 'Valid organization level is required',
+  },
+);
 
 /**
  * Event status for updates
  */
-const UpdateEventStatusSchema = z.enum(['tentative', 'confirmed', 'cancelled'], {
-  message: 'Valid event status is required',
-});
+const UpdateEventStatusSchema = z.enum(
+  ['tentative', 'confirmed', 'cancelled'],
+  {
+    message: 'Valid event status is required',
+  },
+);
 
 /**
  * Hex color validation

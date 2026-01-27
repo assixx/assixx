@@ -14,7 +14,13 @@ import {
   MESSAGES,
 } from './constants';
 
-import type { Admin, AdminFormData, BadgeInfo, FormIsActiveStatus, IsActiveStatus } from './types';
+import type {
+  Admin,
+  AdminFormData,
+  BadgeInfo,
+  FormIsActiveStatus,
+  IsActiveStatus,
+} from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -268,7 +274,9 @@ export interface PasswordStrengthResult {
  * @param password - Password to evaluate
  * @returns Score (0-4), label, and crack time estimate
  */
-export function calculatePasswordStrength(password: string): PasswordStrengthResult {
+export function calculatePasswordStrength(
+  password: string,
+): PasswordStrengthResult {
   if (!password) {
     return { score: -1, label: '', crackTime: '' };
   }
@@ -296,14 +304,20 @@ export function calculatePasswordStrength(password: string): PasswordStrengthRes
 /**
  * Check if two email addresses match
  */
-export function validateEmailsMatch(email: string, emailConfirm: string): boolean {
+export function validateEmailsMatch(
+  email: string,
+  emailConfirm: string,
+): boolean {
   return email === emailConfirm;
 }
 
 /**
  * Check if two passwords match
  */
-export function validatePasswordsMatch(password: string, passwordConfirm: string): boolean {
+export function validatePasswordsMatch(
+  password: string,
+  passwordConfirm: string,
+): boolean {
   return password === passwordConfirm;
 }
 
@@ -328,7 +342,10 @@ export interface FormState {
 /**
  * Build AdminFormData from form state
  */
-export function buildAdminFormData(form: FormState, isEditMode: boolean): AdminFormData {
+export function buildAdminFormData(
+  form: FormState,
+  isEditMode: boolean,
+): AdminFormData {
   const data: AdminFormData = {
     firstName: form.firstName,
     lastName: form.lastName,

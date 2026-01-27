@@ -17,7 +17,8 @@ const IsActiveSchema = z
   .number()
   .int()
   .refine((val: number) => [0, 1, 3, 4].includes(val), {
-    message: 'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
+    message:
+      'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
   });
 
 /**
@@ -56,10 +57,19 @@ export const UpdateEntrySchema = z.object({
   areaIds: z.array(z.number().int().positive()).optional(),
   // Legacy fields (backwards compatibility)
   orgLevel: OrgLevelSchema.optional(),
-  orgId: z.number().int().positive('Organization ID must be positive').nullable().optional(),
+  orgId: z
+    .number()
+    .int()
+    .positive('Organization ID must be positive')
+    .nullable()
+    .optional(),
   expiresAt: DateSchema.nullable().optional(),
   priority: PrioritySchema.optional(),
-  color: z.string().trim().max(50, 'Color cannot exceed 50 characters').optional(),
+  color: z
+    .string()
+    .trim()
+    .max(50, 'Color cannot exceed 50 characters')
+    .optional(),
   isActive: IsActiveSchema.optional(),
 });
 

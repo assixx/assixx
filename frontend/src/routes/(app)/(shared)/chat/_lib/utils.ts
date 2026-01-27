@@ -7,7 +7,12 @@ import { escapeHtml, sanitizeHtml } from '$lib/utils/sanitize-html';
 
 import { FILE_SIZE_UNITS, MIME_TYPE_ICONS, MESSAGES } from './constants';
 
-import type { Conversation, Message, ConversationParticipant, UserStatus } from './types';
+import type {
+  Conversation,
+  Message,
+  ConversationParticipant,
+  UserStatus,
+} from './types';
 
 // =============================================================================
 // PERFORMANCE: CACHED REGEX & MEMOIZATION
@@ -88,10 +93,17 @@ const MIME_TYPE_MATCHERS: readonly {
   { test: (m) => m.startsWith('video/'), icon: MIME_TYPE_ICONS.video },
   { test: (m) => m.startsWith('audio/'), icon: MIME_TYPE_ICONS.audio },
   { test: (m) => m.includes('pdf'), icon: MIME_TYPE_ICONS.pdf },
-  { test: (m) => m.includes('word') || m.includes('document'), icon: MIME_TYPE_ICONS.word },
-  { test: (m) => m.includes('excel') || m.includes('spreadsheet'), icon: MIME_TYPE_ICONS.excel },
   {
-    test: (m) => m.includes('zip') || m.includes('rar') || m.includes('archive'),
+    test: (m) => m.includes('word') || m.includes('document'),
+    icon: MIME_TYPE_ICONS.word,
+  },
+  {
+    test: (m) => m.includes('excel') || m.includes('spreadsheet'),
+    icon: MIME_TYPE_ICONS.excel,
+  },
+  {
+    test: (m) =>
+      m.includes('zip') || m.includes('rar') || m.includes('archive'),
     icon: MIME_TYPE_ICONS.archive,
   },
 ];
@@ -204,7 +216,10 @@ export function highlightSearchTerm(text: string, searchTerm: string): string {
  * @param searchTerm - Term to highlight
  * @returns Sanitized HTML string with <mark> tags
  */
-export function highlightSearchInMessage(text: string, searchTerm: string): string {
+export function highlightSearchInMessage(
+  text: string,
+  searchTerm: string,
+): string {
   // SECURITY FIX: Escape HTML first
   const escaped = escapeHtml(text);
   if (searchTerm.trim() === '') return escaped;
@@ -275,7 +290,10 @@ export function formatMessageTime(dateStr: string): string {
   if (cached !== undefined) return cached;
 
   const date = new Date(dateStr);
-  const result = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const result = date.toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   messageTimeCache.set(dateStr, result);
   return result;
 }
@@ -357,7 +375,10 @@ export function formatDateSeparator(dateStr: string): string {
  * @param current - Current message
  * @returns true if dates differ
  */
-export function shouldShowDateSeparator(prev: Message | undefined, current: Message): boolean {
+export function shouldShowDateSeparator(
+  prev: Message | undefined,
+  current: Message,
+): boolean {
   if (!prev) return true;
 
   const prevDate = getDateString(prev.createdAt);
@@ -376,7 +397,10 @@ export function shouldShowDateSeparator(prev: Message | undefined, current: Mess
  * @param currentUserId - Current user's ID
  * @returns Display name string
  */
-export function getConversationDisplayName(conv: Conversation, currentUserId: number): string {
+export function getConversationDisplayName(
+  conv: Conversation,
+  currentUserId: number,
+): string {
   if (conv.name !== undefined && conv.name !== '') return conv.name;
   if (conv.isGroup) return MESSAGES.labelGroupConversation;
 
@@ -393,7 +417,10 @@ export function getConversationDisplayName(conv: Conversation, currentUserId: nu
  * @param currentUserId - Current user's ID
  * @returns Avatar URL or null
  */
-export function getConversationAvatar(conv: Conversation, currentUserId: number): string | null {
+export function getConversationAvatar(
+  conv: Conversation,
+  currentUserId: number,
+): string | null {
   if (conv.isGroup) return null;
 
   const partner = conv.participants.find((p) => p.id !== currentUserId);
@@ -488,7 +515,10 @@ export function getRoleBadgeClass(role: string): string {
  * @param query - Search query
  * @returns Filtered messages
  */
-export function filterMessagesByQuery(messages: Message[], query: string): Message[] {
+export function filterMessagesByQuery(
+  messages: Message[],
+  query: string,
+): Message[] {
   if (query.trim() === '') return messages;
 
   const queryLower = query.toLowerCase();
@@ -542,7 +572,10 @@ export function validateScheduleTime(
  * @param minFutureMs - Minimum future time in ms
  * @returns Object with date and time strings
  */
-export function getMinScheduleDateTime(minFutureMs: number): { date: string; time: string } {
+export function getMinScheduleDateTime(minFutureMs: number): {
+  date: string;
+  time: string;
+} {
   const now = new Date();
   const minDate = new Date(now.getTime() + minFutureMs);
 

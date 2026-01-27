@@ -10,7 +10,12 @@ import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 import { API_ENDPOINTS, MESSAGES } from './constants';
 import { isTemporaryEmployeeNumber } from './utils';
 
-import type { DashboardData, ActivityLog, UserData, LogsApiResponse } from './types';
+import type {
+  DashboardData,
+  ActivityLog,
+  UserData,
+  LogsApiResponse,
+} from './types';
 
 const log = createLogger('RootDashboardApi');
 
@@ -101,7 +106,8 @@ export async function saveEmployeeNumber(employeeNumber: string): Promise<{
     log.error({ err }, 'Error saving employee number');
     return {
       success: false,
-      error: err instanceof Error ? err.message : MESSAGES.employeeNumberSaveError,
+      error:
+        err instanceof Error ? err.message : MESSAGES.employeeNumberSaveError,
     };
   }
 }

@@ -3,7 +3,11 @@
 // Based on: frontend/src/scripts/shifts/utils.ts
 // =============================================================================
 
-import { SHIFT_TIMES, SHIFT_TYPE_TO_API, SHIFT_TYPE_FROM_API } from './constants';
+import {
+  SHIFT_TIMES,
+  SHIFT_TYPE_TO_API,
+  SHIFT_TYPE_FROM_API,
+} from './constants';
 
 import type { Employee, AvailabilityStatus, ShiftType } from './types';
 
@@ -64,7 +68,9 @@ export function formatDateShort(date: Date): string {
  * Get the ISO week number for a date
  */
 export function getWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   const dayNum = d.getUTCDay() !== 0 ? d.getUTCDay() : 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -151,7 +157,11 @@ export function parseDate(dateString: string): Date {
 /**
  * Get shift time info by type
  */
-export function getShiftTimeInfo(shiftType: string): { start: string; end: string; label: string } {
+export function getShiftTimeInfo(shiftType: string): {
+  start: string;
+  end: string;
+  label: string;
+} {
   if (shiftType in SHIFT_TIMES) {
     return SHIFT_TIMES[shiftType as keyof typeof SHIFT_TIMES];
   }
@@ -202,7 +212,9 @@ export function convertShiftTypeForAPI(frontendType: string): string {
  */
 export function convertShiftTypeFromDB(dbShiftType: string): ShiftType {
   if (dbShiftType in SHIFT_TYPE_FROM_API) {
-    return SHIFT_TYPE_FROM_API[dbShiftType as keyof typeof SHIFT_TYPE_FROM_API] as ShiftType;
+    return SHIFT_TYPE_FROM_API[
+      dbShiftType as keyof typeof SHIFT_TYPE_FROM_API
+    ] as ShiftType;
   }
   return dbShiftType as ShiftType;
 }
@@ -224,13 +236,22 @@ export function getEmployeeDisplayName(employee: Employee): string {
 /**
  * Get effective availability status for an employee on a specific date
  */
-export function getEffectiveAvailability(employee: Employee, date: Date): AvailabilityStatus {
-  if (employee.availabilityStatus === undefined || employee.availabilityStatus === 'available') {
+export function getEffectiveAvailability(
+  employee: Employee,
+  date: Date,
+): AvailabilityStatus {
+  if (
+    employee.availabilityStatus === undefined ||
+    employee.availabilityStatus === 'available'
+  ) {
     return 'available';
   }
 
   // Check if absence period is defined
-  if (employee.availabilityStart === undefined || employee.availabilityEnd === undefined) {
+  if (
+    employee.availabilityStart === undefined ||
+    employee.availabilityEnd === undefined
+  ) {
     return employee.availabilityStatus;
   }
 
@@ -255,7 +276,10 @@ export function getEffectiveAvailability(employee: Employee, date: Date): Availa
  * Format availability period as "DD.MM.YYYY - DD.MM.YYYY"
  * Returns null if no dates are set
  */
-export function formatAvailabilityPeriod(startDate?: string, endDate?: string): string | null {
+export function formatAvailabilityPeriod(
+  startDate?: string,
+  endDate?: string,
+): string | null {
   if (startDate === undefined && endDate === undefined) return null;
 
   const formatStr = (dateStr?: string): string => {
@@ -277,12 +301,18 @@ export function getEffectiveAvailabilityForWeek(
   weekDates: Date[],
 ): AvailabilityStatus {
   // If no availability status or explicitly available, return available
-  if (employee.availabilityStatus === undefined || employee.availabilityStatus === 'available') {
+  if (
+    employee.availabilityStatus === undefined ||
+    employee.availabilityStatus === 'available'
+  ) {
     return 'available';
   }
 
   // Check if absence period is defined
-  if (employee.availabilityStart === undefined || employee.availabilityEnd === undefined) {
+  if (
+    employee.availabilityStart === undefined ||
+    employee.availabilityEnd === undefined
+  ) {
     return employee.availabilityStatus;
   }
 
@@ -308,12 +338,18 @@ export function getOverlappingUnavailability(
   weekDates: Date[],
 ): AvailabilityStatus {
   // If no availability status or explicitly available, return available
-  if (employee.availabilityStatus === undefined || employee.availabilityStatus === 'available') {
+  if (
+    employee.availabilityStatus === undefined ||
+    employee.availabilityStatus === 'available'
+  ) {
     return 'available';
   }
 
   // Check if absence period is defined
-  if (employee.availabilityStart === undefined || employee.availabilityEnd === undefined) {
+  if (
+    employee.availabilityStart === undefined ||
+    employee.availabilityEnd === undefined
+  ) {
     return employee.availabilityStatus;
   }
 

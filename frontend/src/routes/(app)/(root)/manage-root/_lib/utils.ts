@@ -12,7 +12,12 @@ import {
   FORM_DEFAULTS,
 } from './constants';
 
-import type { RootUser, IsActiveStatus, FormIsActiveStatus, PasswordStrengthResult } from './types';
+import type {
+  RootUser,
+  IsActiveStatus,
+  FormIsActiveStatus,
+  PasswordStrengthResult,
+} from './types';
 
 // =============================================================================
 // STATUS BADGE HELPERS
@@ -100,7 +105,9 @@ export function highlightMatch(text: string, query: string): string {
  * @param password - Password to evaluate
  * @returns Password strength result
  */
-export function calculatePasswordStrength(password: string): PasswordStrengthResult {
+export function calculatePasswordStrength(
+  password: string,
+): PasswordStrengthResult {
   if (password === '') {
     return { score: -1, label: '', time: '' };
   }
@@ -179,7 +186,10 @@ export function getDefaultFormValues(): typeof FORM_DEFAULTS {
  * @param emailConfirm - Email confirmation
  * @returns True if emails match or confirm is empty
  */
-export function validateEmailMatch(email: string, emailConfirm: string): boolean {
+export function validateEmailMatch(
+  email: string,
+  emailConfirm: string,
+): boolean {
   if (emailConfirm === '') return true;
   return email === emailConfirm;
 }
@@ -190,7 +200,10 @@ export function validateEmailMatch(email: string, emailConfirm: string): boolean
  * @param passwordConfirm - Password confirmation
  * @returns True if passwords match or confirm is empty
  */
-export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
+export function validatePasswordMatch(
+  password: string,
+  passwordConfirm: string,
+): boolean {
   if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }

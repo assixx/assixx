@@ -45,7 +45,11 @@ export function isCurrentPasswordError(errorMsg: string): boolean {
  * @param minLength - Minimum length (default 12)
  * @param maxLength - Maximum length (default 72)
  */
-export function isPasswordLengthValid(password: string, minLength = 12, maxLength = 72): boolean {
+export function isPasswordLengthValid(
+  password: string,
+  minLength = 12,
+  maxLength = 72,
+): boolean {
   return password.length >= minLength && password.length <= maxLength;
 }
 
@@ -54,7 +58,10 @@ export function isPasswordLengthValid(password: string, minLength = 12, maxLengt
  * @param password - New password
  * @param confirmPassword - Confirmation password
  */
-export function doPasswordsMatch(password: string, confirmPassword: string): boolean {
+export function doPasswordsMatch(
+  password: string,
+  confirmPassword: string,
+): boolean {
   return password === confirmPassword;
 }
 
@@ -76,7 +83,9 @@ export function getDisplayPosition(position?: string): string {
  * @returns Department name or placeholder
  */
 export function getDisplayDepartment(departmentName?: string): string {
-  return departmentName !== undefined && departmentName !== '' ? departmentName : '-';
+  return departmentName !== undefined && departmentName !== '' ?
+      departmentName
+    : '-';
 }
 
 /**
@@ -115,9 +124,15 @@ export function countPasswordCategories(password: string): number {
  * @param password - Password to validate
  * @returns Validation result with error message
  */
-export function validatePassword(password: string): { isValid: boolean; errorMessage: string } {
+export function validatePassword(password: string): {
+  isValid: boolean;
+  errorMessage: string;
+} {
   if (password.length < 12) {
-    return { isValid: false, errorMessage: 'Passwort muss mindestens 12 Zeichen lang sein' };
+    return {
+      isValid: false,
+      errorMessage: 'Passwort muss mindestens 12 Zeichen lang sein',
+    };
   }
   if (password.length > 72) {
     return {

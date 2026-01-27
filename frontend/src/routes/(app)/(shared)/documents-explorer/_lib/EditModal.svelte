@@ -70,7 +70,11 @@
 {#if show && document}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div id="edit-modal" class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
+  <div
+    id="edit-modal"
+    class="modal-overlay modal-overlay--active"
+    onclick={handleOverlayClick}
+  >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="edit-form"
@@ -88,15 +92,21 @@
           <i class="fas fa-edit mr-2"></i>
           Dokument bearbeiten
         </h3>
-        <button type="button" class="ds-modal__close" onclick={onclose} aria-label="Schließen">
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={onclose}
+          aria-label="Schließen"
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="ds-modal__body">
         <!-- Document Name -->
         <div class="form-field">
-          <label class="form-field__label form-field__label--required" for="edit-doc-name"
-            >Dokumentname</label
+          <label
+            class="form-field__label form-field__label--required"
+            for="edit-doc-name">Dokumentname</label
           >
           <input
             type="text"
@@ -112,8 +122,13 @@
         <!-- Category Selection -->
         <div class="form-field">
           <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-field__label form-field__label--required">Kategorie</label>
-          <div class="dropdown w-full" id="edit-category-dropdown">
+          <label class="form-field__label form-field__label--required"
+            >Kategorie</label
+          >
+          <div
+            class="dropdown w-full"
+            id="edit-category-dropdown"
+          >
             <button
               type="button"
               class="dropdown__trigger w-full gap-2"
@@ -134,7 +149,10 @@
               </span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div class="dropdown__menu" class:active={categoryDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={categoryDropdownOpen}
+            >
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -185,7 +203,10 @@
 
         <!-- Tags -->
         <div class="form-field">
-          <label class="form-field__label" for="edit-doc-tags">Tags</label>
+          <label
+            class="form-field__label"
+            for="edit-doc-tags">Tags</label
+          >
           <input
             type="text"
             id="edit-doc-tags"
@@ -194,7 +215,9 @@
             placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
             bind:value={editTags}
           />
-          <small class="form-field__message">Tags helfen beim späteren Suchen und Filtern</small>
+          <small class="form-field__message"
+            >Tags helfen beim späteren Suchen und Filtern</small
+          >
         </div>
 
         <!-- Info about current file -->
@@ -212,8 +235,16 @@
         </div>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>Abbrechen</button
+        >
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
           {#if submitting}
             <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {:else}

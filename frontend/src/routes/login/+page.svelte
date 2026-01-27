@@ -66,7 +66,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
+    if (
+      urlParams.get('timeout') === 'true' ||
+      urlParams.get('session') === 'expired'
+    ) {
       showError(
         'Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.',
       );
@@ -75,7 +78,8 @@
     } else if (urlParams.get('ratelimit') === 'expired') {
       // Rate limit message - use warning style by setting isTimeout
       isTimeout = false; // Not a timeout, but show as success/info
-      error = 'Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.';
+      error =
+        'Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.';
       showToast = true;
       // Clean up URL - SvelteKit's replaceState (safe inside afterNavigate)
       replaceState(window.location.pathname, {});
@@ -157,7 +161,8 @@
         body: JSON.stringify({ email, password }),
       });
 
-      const result: LoginApiResponse = (await response.json()) as LoginApiResponse;
+      const result: LoginApiResponse =
+        (await response.json()) as LoginApiResponse;
 
       if (!response.ok || !result.success) {
         throw new Error(result.error?.message ?? 'Login fehlgeschlagen');
@@ -167,7 +172,10 @@
       // Direct localStorage writes don't update the TokenManager singleton's in-memory state
       if (result.data !== undefined) {
         // Use TokenManager to properly set tokens (updates singleton memory + localStorage)
-        getTokenManager().setTokens(result.data.accessToken, result.data.refreshToken);
+        getTokenManager().setTokens(
+          result.data.accessToken,
+          result.data.refreshToken,
+        );
         // Legacy: token (backward compatibility for old code)
         localStorage.setItem('token', result.data.accessToken);
 
@@ -189,7 +197,9 @@
         }
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
+      showError(
+        err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten',
+      );
     } finally {
       loading = false;
     }
@@ -250,7 +260,10 @@
 </svelte:head>
 
 <!-- Back to Homepage Button -->
-<a href={resolve('/', {})} class="back-button">
+<a
+  href={resolve('/', {})}
+  class="back-button"
+>
   <span class="icon">←</span>
   <span>Zurück zur Hauptseite</span>
 </a>
@@ -270,21 +283,35 @@
           window.location.reload();
         }}
       >
-        <img src="/images/logo.png" alt="Assixx Logo" class="login-logo" />
+        <img
+          src="/images/logo.png"
+          alt="Assixx Logo"
+          class="login-logo"
+        />
       </button>
     </div>
 
     <!-- Error Toast (Session expired = danger, Login error = error) -->
     {#if showToast && error}
-      <div class="toast {isTimeout ? 'toast--danger' : 'toast--error'}" data-temp-toast="error">
+      <div
+        class="toast {isTimeout ? 'toast--danger' : 'toast--error'}"
+        data-temp-toast="error"
+      >
         <div class="toast__icon">
           <i class="fas fa-times-circle"></i>
         </div>
         <div class="toast__content">
-          <div class="toast__title">{isTimeout ? 'Sitzung abgelaufen' : 'Fehler'}</div>
+          <div class="toast__title">
+            {isTimeout ? 'Sitzung abgelaufen' : 'Fehler'}
+          </div>
           <div class="toast__message">{error}</div>
         </div>
-        <button class="toast__close" type="button" onclick={dismissToast} aria-label="Schließen">
+        <button
+          class="toast__close"
+          type="button"
+          onclick={dismissToast}
+          aria-label="Schließen"
+        >
           <i class="fas fa-times"></i>
         </button>
         <div class="toast__progress">
@@ -298,7 +325,10 @@
 
     <!-- Form Action Error (from server) -->
     {#if form?.error}
-      <div class="toast toast--error" data-temp-toast="error">
+      <div
+        class="toast toast--error"
+        data-temp-toast="error"
+      >
         <div class="toast__icon">
           <i class="fas fa-times-circle"></i>
         </div>
@@ -339,7 +369,12 @@
       }}
     >
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="email"> E-Mail </label>
+        <label
+          class="form-field__label form-field__label--required"
+          for="email"
+        >
+          E-Mail
+        </label>
         <!-- svelte-ignore a11y_autofocus -->
         <input
           type="email"
@@ -355,7 +390,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="password">
+        <label
+          class="form-field__label form-field__label--required"
+          for="password"
+        >
           Passwort
         </label>
         <input
@@ -371,7 +409,11 @@
       </div>
 
       <div class="flex justify-end mt-6">
-        <button type="submit" class="btn btn-primary" disabled={loading || !isFormValid}>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={loading || !isFormValid}
+        >
           {#if loading}
             <i class="fas fa-spinner fa-spin"></i>
           {/if}
@@ -382,7 +424,10 @@
 
     <!-- svelte-ignore a11y_invalid_attribute -->
     <div class="login-footer">
-      <a href="#" onclick={handlePasswordReset}>Passwort vergessen?</a><a
+      <a
+        href="#"
+        onclick={handlePasswordReset}>Passwort vergessen?</a
+      ><a
         href="#"
         onclick={handleRequestAccess}>Zugangsdaten beantragen</a
       >
@@ -391,7 +436,9 @@
 
   <!-- Company Footer -->
   <div class="login-company">
-    <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
+    <p class="text-secondary">
+      © 2025 Assixx - Powered by Simon Öztürks Computer Service
+    </p>
   </div>
 </div>
 

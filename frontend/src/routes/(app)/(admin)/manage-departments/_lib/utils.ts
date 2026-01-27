@@ -4,9 +4,19 @@
 
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants';
+import {
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
+  FORM_DEFAULTS,
+} from './constants';
 
-import type { Department, AdminUser, Area, IsActiveStatus, FormIsActiveStatus } from './types';
+import type {
+  Department,
+  AdminUser,
+  Area,
+  IsActiveStatus,
+  FormIsActiveStatus,
+} from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -95,7 +105,10 @@ export function highlightMatch(text: string, query: string): string {
  * @param areas - Available areas
  * @returns Display name string
  */
-export function getSelectedAreaName(areaId: number | null, areas: Area[]): string {
+export function getSelectedAreaName(
+  areaId: number | null,
+  areas: Area[],
+): string {
   if (areaId === null) return 'Kein Bereich';
   const area = areas.find((a) => a.id === areaId);
   return area?.name ?? 'Kein Bereich';
@@ -107,7 +120,10 @@ export function getSelectedAreaName(areaId: number | null, areas: Area[]): strin
  * @param leads - Available leads
  * @returns Display name string
  */
-export function getSelectedLeadName(leadId: number | null, leads: AdminUser[]): string {
+export function getSelectedLeadName(
+  leadId: number | null,
+  leads: AdminUser[],
+): string {
   if (leadId === null) return 'Kein Abteilungsleiter';
   const lead = leads.find((l) => l.id === leadId);
   if (!lead) return 'Kein Abteilungsleiter';
@@ -136,7 +152,9 @@ export function populateFormFromDepartment(department: Department): {
     description: department.description ?? '',
     areaId: department.areaId ?? null,
     departmentLeadId: department.departmentLeadId ?? null,
-    isActive: (department.isActive === 4 ? 0 : department.isActive) as FormIsActiveStatus,
+    isActive: (department.isActive === 4 ?
+      0
+    : department.isActive) as FormIsActiveStatus,
   };
 }
 

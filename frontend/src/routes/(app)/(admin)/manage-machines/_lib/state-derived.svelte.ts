@@ -13,9 +13,15 @@ import type { UIState } from './state-ui.svelte';
  * Creates derived values from composed state modules
  */
 // eslint-disable-next-line max-lines-per-function -- Svelte 5 derived factory: all $derived values must be in same function scope for reactivity
-export function createDerivedState(data: DataState, ui: UIState, form: FormState) {
+export function createDerivedState(
+  data: DataState,
+  ui: UIState,
+  form: FormState,
+) {
   const isEditMode = $derived(ui.currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE,
+  );
 
   const selectedDepartmentName = $derived.by(() => {
     if (form.formDepartmentId === null) return MESSAGES.PLACEHOLDER_DEPARTMENT;
@@ -27,29 +33,33 @@ export function createDerivedState(data: DataState, ui: UIState, form: FormState
 
   const selectedAreaName = $derived.by(() => {
     if (form.formAreaId === null) return MESSAGES.PLACEHOLDER_AREA;
-    return data.allAreas.find((a) => a.id === form.formAreaId)?.name ?? MESSAGES.PLACEHOLDER_AREA;
+    return (
+      data.allAreas.find((a) => a.id === form.formAreaId)?.name ??
+      MESSAGES.PLACEHOLDER_AREA
+    );
   });
 
   const selectedTypeLabel = $derived.by(() => {
-    return form.formMachineType !== ''
-      ? getMachineTypeLabel(form.formMachineType)
+    return form.formMachineType !== '' ?
+        getMachineTypeLabel(form.formMachineType)
       : MESSAGES.PLACEHOLDER_TYPE;
   });
 
   const filteredDepartments = $derived.by(() => {
-    return form.formAreaId === null
-      ? []
+    return form.formAreaId === null ?
+        []
       : data.allDepartments.filter((d) => d.areaId === form.formAreaId);
   });
 
   const filteredTeams = $derived.by(() => {
-    return form.formDepartmentId === null
-      ? []
+    return form.formDepartmentId === null ?
+        []
       : data.allTeams.filter((t) => t.departmentId === form.formDepartmentId);
   });
 
   const teamsDisplayText = $derived.by(() => {
-    if (form.formDepartmentId === null) return MESSAGES.PLACEHOLDER_SELECT_DEPT_FIRST;
+    if (form.formDepartmentId === null)
+      return MESSAGES.PLACEHOLDER_SELECT_DEPT_FIRST;
     if (form.formTeamIds.length === 0) return MESSAGES.PLACEHOLDER_TEAMS;
     if (form.formTeamIds.length <= 2) {
       return data.allTeams

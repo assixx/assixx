@@ -2,7 +2,11 @@
 // MANAGE EMPLOYEES - CONSTANTS
 // =============================================================================
 
-import type { AvailabilityOption, AvailabilityStatus, IsActiveStatus } from './types';
+import type {
+  AvailabilityOption,
+  AvailabilityStatus,
+  IsActiveStatus,
+} from './types';
 
 /**
  * Default badge class for neutral/no-data states
@@ -113,7 +117,10 @@ export const AVAILABILITY_STATUS_LABELS: Record<AvailabilityStatus, string> = {
 /**
  * Availability status options for select dropdown
  */
-export const AVAILABILITY_STATUS_OPTIONS: { value: AvailabilityStatus; label: string }[] = [
+export const AVAILABILITY_STATUS_OPTIONS: {
+  value: AvailabilityStatus;
+  label: string;
+}[] = [
   { value: 'available', label: 'Verfügbar' },
   { value: 'vacation', label: 'Urlaub' },
   { value: 'sick', label: 'Krank' },
@@ -185,7 +192,8 @@ export const MESSAGES = {
 
   // Form hints
   EMAIL_HINT: 'Wird auch als Benutzername verwendet',
-  PASSWORD_HINT: 'Min. 8 Zeichen. Enthält Großbuchstaben, Kleinbuchstaben und Zahlen.',
+  PASSWORD_HINT:
+    'Min. 8 Zeichen. Enthält Großbuchstaben, Kleinbuchstaben und Zahlen.',
   EMPLOYEE_NUMBER_HINT: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   TEAM_MULTISELECT_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl',
   STATUS_HINT: 'Inaktive/Archivierte Mitarbeiter können sich nicht anmelden',

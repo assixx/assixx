@@ -45,11 +45,20 @@
 <div class="admin-actions flex gap-4 flex-wrap">
   {#if !isPlanLocked && !isEditMode}
     <!-- NEW/UNLOCKED: Creating new plan - show Save button -->
-    <button type="button" class="btn btn-cancel" style="display: none;" onclick={onreset}>
+    <button
+      type="button"
+      class="btn btn-cancel"
+      style="display: none;"
+      onclick={onreset}
+    >
       <i class="fas fa-times mr-2"></i>
       Abbrechen
     </button>
-    <button type="button" class="btn btn-manage" onclick={onsave}>
+    <button
+      type="button"
+      class="btn btn-manage"
+      onclick={onsave}
+    >
       <i class="fas fa-save mr-2"></i>
       Schichtplan speichern
     </button>
@@ -64,11 +73,19 @@
     </button>
   {:else if isEditMode}
     <!-- EDIT MODE: Editing existing plan - show all buttons -->
-    <button type="button" class="btn btn-cancel" onclick={onreset}>
+    <button
+      type="button"
+      class="btn btn-cancel"
+      onclick={onreset}
+    >
       <i class="fas fa-times mr-2"></i>
       Abbrechen
     </button>
-    <button type="button" class="btn btn-success" onclick={onsave}>
+    <button
+      type="button"
+      class="btn btn-success"
+      onclick={onsave}
+    >
       <i class="fas fa-save mr-2"></i>
       Schichtplan aktualisieren
     </button>
@@ -104,7 +121,11 @@
     </button>
   {:else}
     <!-- LOCKED: Saved plan - show Edit button only -->
-    <button type="button" class="btn btn-edit" onclick={onenterEditMode}>
+    <button
+      type="button"
+      class="btn btn-edit"
+      onclick={onenterEditMode}
+    >
       <i class="fas fa-edit mr-2"></i>
       Bearbeiten
     </button>

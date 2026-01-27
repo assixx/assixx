@@ -5,7 +5,11 @@
 
 import { createLogger } from '$lib/utils/logger';
 
-import { STATUS_LABELS, DELETE_CONFIRMATION_TEXT, MIN_REASON_LENGTH } from './constants';
+import {
+  STATUS_LABELS,
+  DELETE_CONFIRMATION_TEXT,
+  MIN_REASON_LENGTH,
+} from './constants';
 
 import type { ToastType, DeletionStatus } from './types';
 

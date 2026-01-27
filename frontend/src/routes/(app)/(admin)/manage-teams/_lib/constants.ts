@@ -78,9 +78,11 @@ export const API_ENDPOINTS = {
   TEAMS: '/teams',
   team: (id: number) => `/teams/${id}`,
   teamMembers: (teamId: number) => `/teams/${teamId}/members`,
-  teamMember: (teamId: number, userId: number) => `/teams/${teamId}/members/${userId}`,
+  teamMember: (teamId: number, userId: number) =>
+    `/teams/${teamId}/members/${userId}`,
   teamMachines: (teamId: number) => `/teams/${teamId}/machines`,
-  teamMachine: (teamId: number, machineId: number) => `/teams/${teamId}/machines/${machineId}`,
+  teamMachine: (teamId: number, machineId: number) =>
+    `/teams/${teamId}/machines/${machineId}`,
   DEPARTMENTS: '/departments',
   ADMINS: '/users?role=admin',
   EMPLOYEES: '/users?role=employee',

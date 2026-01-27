@@ -50,7 +50,9 @@ function parseApiError(err: unknown): ParsedApiError {
   const message = typeof errObj.message === 'string' ? errObj.message : '';
   const detailsRaw = errObj.details;
   const details =
-    detailsRaw !== null && typeof detailsRaw === 'object' ? (detailsRaw as DependencyDetails) : {};
+    detailsRaw !== null && typeof detailsRaw === 'object' ?
+      (detailsRaw as DependencyDetails)
+    : {};
 
   return { code, message, details };
 }
@@ -121,7 +123,9 @@ export function buildDependencyMessage(details: DependencyDetails): string {
   const messages = deps
     .map(([key, label]) => {
       const count = details[key as keyof DependencyDetails];
-      return typeof count === 'number' && count > 0 ? `${count} ${label}` : null;
+      return typeof count === 'number' && count > 0 ?
+          `${count} ${label}`
+        : null;
     })
     .filter((msg): msg is string => msg !== null);
 
@@ -173,7 +177,8 @@ export async function loadAreas(): Promise<{
     log.error({ err }, 'Error loading areas');
     return {
       areas: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+      error:
+        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
     };
   }
 }
@@ -206,7 +211,10 @@ export async function loadDepartmentLeads(): Promise<{
     log.error({ err }, 'Error loading department leads');
     return {
       users: [],
-      error: err instanceof Error ? err.message : 'Fehler beim Laden der Abteilungsleiter',
+      error:
+        err instanceof Error ?
+          err.message
+        : 'Fehler beim Laden der Abteilungsleiter',
     };
   }
 }
@@ -256,7 +264,9 @@ export async function saveDepartment(
 /**
  * Delete department
  */
-export async function deleteDepartment(departmentId: number): Promise<DeleteDepartmentResult> {
+export async function deleteDepartment(
+  departmentId: number,
+): Promise<DeleteDepartmentResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };

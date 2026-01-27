@@ -7,9 +7,13 @@
 import type { MigrationBuilder } from 'node-pg-migrate';
 
 export function up(pgm: MigrationBuilder): void {
-  pgm.sql(`ALTER TYPE kvp_suggestions_status ADD VALUE IF NOT EXISTS 'restored';`);
+  pgm.sql(
+    `ALTER TYPE kvp_suggestions_status ADD VALUE IF NOT EXISTS 'restored';`,
+  );
 }
 
 export function down(): void {
-  throw new Error('Cannot remove ENUM values in PostgreSQL. The "restored" value will remain.');
+  throw new Error(
+    'Cannot remove ENUM values in PostgreSQL. The "restored" value will remain.',
+  );
 }

@@ -180,7 +180,10 @@ export class UserRepository {
    * @param tenantId - Tenant ID
    * @returns Minimal user info or null
    */
-  async findMinimalByUuid(uuid: string, tenantId: number): Promise<UserMinimal | null> {
+  async findMinimalByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<UserMinimal | null> {
     return await this.db.queryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
@@ -198,7 +201,10 @@ export class UserRepository {
    * @param tenantId - Tenant ID
    * @returns Minimal user info or null
    */
-  async findMinimalById(id: number, tenantId: number): Promise<UserMinimal | null> {
+  async findMinimalById(
+    id: number,
+    tenantId: number,
+  ): Promise<UserMinimal | null> {
     return await this.db.queryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
@@ -252,8 +258,17 @@ export class UserRepository {
    * @param options - Query options (role, limit, offset, orderBy)
    * @returns Array of active users
    */
-  async findMany(tenantId: number, options: FindManyOptions = {}): Promise<UserBase[]> {
-    const { role, limit = 50, offset = 0, orderBy = 'created_at', orderDir = 'DESC' } = options;
+  async findMany(
+    tenantId: number,
+    options: FindManyOptions = {},
+  ): Promise<UserBase[]> {
+    const {
+      role,
+      limit = 50,
+      offset = 0,
+      orderBy = 'created_at',
+      orderDir = 'DESC',
+    } = options;
 
     // Whitelist allowed order columns to prevent SQL injection
     const allowedOrderColumns = [
@@ -266,7 +281,8 @@ export class UserRepository {
       'created_at',
       'updated_at',
     ];
-    const safeOrderBy = allowedOrderColumns.includes(orderBy) ? orderBy : 'created_at';
+    const safeOrderBy =
+      allowedOrderColumns.includes(orderBy) ? orderBy : 'created_at';
     const safeOrderDir = orderDir === 'ASC' ? 'ASC' : 'DESC';
 
     const params: unknown[] = [tenantId];
@@ -396,7 +412,10 @@ export class UserRepository {
    * @param tenantId - Tenant ID
    * @returns User with password or null
    */
-  async findForAuthById(id: number, tenantId: number): Promise<UserWithPassword | null> {
+  async findForAuthById(
+    id: number,
+    tenantId: number,
+  ): Promise<UserWithPassword | null> {
     return await this.db.queryOne<UserWithPassword>(
       `SELECT ${USER_AUTH_COLUMNS}
        FROM users
@@ -428,7 +447,9 @@ export class UserRepository {
    * @param id - User ID
    */
   async updateLastLogin(id: number): Promise<void> {
-    await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
+    await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [
+      id,
+    ]);
   }
 
   // =========================================================================
@@ -443,8 +464,13 @@ export class UserRepository {
    * @param tenantId - Tenant ID
    * @returns User or null (including deleted users)
    */
-  async findByIdIncludeDeleted(id: number, tenantId: number): Promise<UserBase | null> {
-    this.logger.warn(`findByIdIncludeDeleted called for user ${id} - audit/admin use only`);
+  async findByIdIncludeDeleted(
+    id: number,
+    tenantId: number,
+  ): Promise<UserBase | null> {
+    this.logger.warn(
+      `findByIdIncludeDeleted called for user ${id} - audit/admin use only`,
+    );
     return await this.db.queryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
@@ -503,7 +529,10 @@ export class UserRepository {
    * @param tenantId - Tenant ID
    * @returns Numeric ID or null
    */
-  async resolveUuidToId(uuid: string, tenantId: number): Promise<number | null> {
+  async resolveUuidToId(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number | null> {
     const result = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM users
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
@@ -536,7 +565,11 @@ export class UserRepository {
    * @param excludeId - User ID to exclude (for updates)
    * @returns True if email is taken
    */
-  async isEmailTaken(email: string, tenantId: number, excludeId?: number): Promise<boolean> {
+  async isEmailTaken(
+    email: string,
+    tenantId: number,
+    excludeId?: number,
+  ): Promise<boolean> {
     const params: unknown[] = [email.toLowerCase(), tenantId];
     let excludeClause = '';
 

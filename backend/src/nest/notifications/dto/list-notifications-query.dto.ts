@@ -9,9 +9,12 @@ import { PaginationSchema } from '../../../schemas/common.schema.js';
 /**
  * Notification type enum for filtering
  */
-const NotificationTypeSchema = z.enum(['system', 'task', 'message', 'announcement', 'reminder'], {
-  message: 'Invalid notification type',
-});
+const NotificationTypeSchema = z.enum(
+  ['system', 'task', 'message', 'announcement', 'reminder'],
+  {
+    message: 'Invalid notification type',
+  },
+);
 
 /**
  * Priority enum for filtering
@@ -38,4 +41,6 @@ export const ListNotificationsQuerySchema = PaginationSchema.extend({
 /**
  * List Notifications Query DTO class
  */
-export class ListNotificationsQueryDto extends createZodDto(ListNotificationsQuerySchema) {}
+export class ListNotificationsQueryDto extends createZodDto(
+  ListNotificationsQuerySchema,
+) {}

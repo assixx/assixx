@@ -12,7 +12,10 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { createLogger } from '$lib/utils/logger';
-  import { getNotificationSSE, type NotificationEvent } from '$lib/utils/notification-sse';
+  import {
+    getNotificationSSE,
+    type NotificationEvent,
+  } from '$lib/utils/notification-sse';
 
   const log = createLogger('ChatPage');
 
@@ -164,17 +167,23 @@
   // DERIVED - Using $derived.by() for function calls (Svelte 5 best practice)
   // ==========================================================================
 
-  const isAdmin = $derived(currentUser?.role === 'admin' || currentUser?.role === 'root');
+  const isAdmin = $derived(
+    currentUser?.role === 'admin' || currentUser?.role === 'root',
+  );
   const canStartNewConversation = $derived(isAdmin);
 
   // $derived.by() for expressions that call functions
-  const chatPartner = $derived.by(() => getChatPartner(activeConversation, currentUser?.id ?? 0));
+  const chatPartner = $derived.by(() =>
+    getChatPartner(activeConversation, currentUser?.id ?? 0),
+  );
   const chatPartnerName = $derived.by(() =>
     getChatPartnerName(chatPartner, activeConversation?.name),
   );
   const chatPartnerStatus = $derived.by(() => chatPartner?.status ?? 'offline');
   // Use debounced query for filtering (prevents re-render on every keystroke)
-  const filteredMessages = $derived.by(() => filterMessagesByQuery(messages, debouncedSearchQuery));
+  const filteredMessages = $derived.by(() =>
+    filterMessagesByQuery(messages, debouncedSearchQuery),
+  );
   const searchResultCount = $derived(filteredMessages.length);
 
   // ==========================================================================
@@ -208,7 +217,10 @@
       if (messageData === undefined) return;
 
       log.info(
-        { conversationId: messageData.conversationId, senderId: messageData.senderId },
+        {
+          conversationId: messageData.conversationId,
+          senderId: messageData.senderId,
+        },
         'Received scheduled message via SSE',
       );
 
@@ -217,7 +229,9 @@
         void reloadActiveConversationMessages();
       } else {
         // Update unread count for non-active conversation
-        const convIndex = conversations.findIndex((c) => c.id === messageData.conversationId);
+        const convIndex = conversations.findIndex(
+          (c) => c.id === messageData.conversationId,
+        );
         if (convIndex >= 0) {
           const conv = { ...conversations[convIndex] };
           conv.unreadCount = (conv.unreadCount ?? 0) + 1;
@@ -226,7 +240,10 @@
             createdAt: new Date().toISOString(),
           };
           // Move to top
-          conversations = [conv, ...conversations.filter((_, i) => i !== convIndex)];
+          conversations = [
+            conv,
+            ...conversations.filter((_, i) => i !== convIndex),
+          ];
         }
       }
     });
@@ -245,7 +262,8 @@
    * Reload messages for the active conversation (used for SSE scheduled message updates)
    */
   async function reloadActiveConversationMessages(): Promise<void> {
-    if (activeConversation === null || activeConversation.isPending === true) return;
+    if (activeConversation === null || activeConversation.isPending === true)
+      return;
 
     try {
       const result = await handlers.loadMessages(activeConversation.id);
@@ -257,7 +275,10 @@
         'Reloaded messages after SSE notification',
       );
     } catch (error) {
-      log.error({ err: error }, 'Failed to reload messages after SSE notification');
+      log.error(
+        { err: error },
+        'Failed to reload messages after SSE notification',
+      );
     }
   }
 
@@ -334,7 +355,11 @@
         typingUsers = removeTypingUser(typingUsers, userId);
       },
       onUserStatus: (userId: number, status: string) => {
-        conversations = updateConversationsUserStatus(conversations, userId, status as UserStatus);
+        conversations = updateConversationsUserStatus(
+          conversations,
+          userId,
+          status as UserStatus,
+        );
       },
       onMessageRead: (messageId: number) => {
         messages = markMessageAsRead(messages, messageId);
@@ -452,14 +477,17 @@
       return activeConversation?.id ?? null;
     }
 
-    const persistedConversation = await handlers.persistPendingConversation(activeConversation);
+    const persistedConversation =
+      await handlers.persistPendingConversation(activeConversation);
     const pendingId = activeConversation.id;
 
     // Update local state with persisted conversation
     activeConversation = persistedConversation;
 
     // Replace pending conversation in list with persisted one
-    conversations = conversations.map((c) => (c.id === pendingId ? persistedConversation : c));
+    conversations = conversations.map((c) =>
+      c.id === pendingId ? persistedConversation : c,
+    );
 
     // Reload SSR data to sync with server
     await invalidateAll();
@@ -538,7 +566,12 @@
     if (uploadedAttachments === null) return;
 
     if (scheduleTime !== null) {
-      await sendScheduledMsg(conversationId, content, scheduleTime, uploadedAttachments);
+      await sendScheduledMsg(
+        conversationId,
+        content,
+        scheduleTime,
+        uploadedAttachments,
+      );
     } else {
       sendImmediateMsg(conversationId, content, uploadedAttachments);
     }
@@ -607,13 +640,18 @@
     scheduledFor = result.date;
     scheduleError = '';
     showScheduleModal = false;
-    showNotification(`${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`, 'info');
+    showNotification(
+      `${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`,
+      'info',
+    );
   }
 
   async function cancelScheduled(scheduled: ScheduledMessage): Promise<void> {
     try {
       await handlers.cancelScheduledMessage(scheduled.id);
-      scheduledMessages = scheduledMessages.filter((s) => s.id !== scheduled.id);
+      scheduledMessages = scheduledMessages.filter(
+        (s) => s.id !== scheduled.id,
+      );
       showNotification(MESSAGES.successCancelScheduled, 'success');
     } catch {
       showNotification(MESSAGES.errorCancelScheduled, 'error');
@@ -637,9 +675,9 @@
     if (results.length === 0) return;
 
     currentSearchIndex =
-      direction === 'next'
-        ? (currentSearchIndex + 1) % results.length
-        : (currentSearchIndex - 1 + results.length) % results.length;
+      direction === 'next' ?
+        (currentSearchIndex + 1) % results.length
+      : (currentSearchIndex - 1 + results.length) % results.length;
 
     const messageId = results[currentSearchIndex]?.id;
     if (messageId) {
@@ -691,7 +729,10 @@
   // UTILITIES
   // ==========================================================================
 
-  function showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
+  function showNotification(
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning',
+  ): void {
     log.warn({ type }, message);
     // TODO: Integrate with toast store
   }
@@ -785,7 +826,13 @@
   </div>
 </main>
 
-<input type="file" class="hidden" multiple bind:this={fileInputRef} onchange={handleFileSelect} />
+<input
+  type="file"
+  class="hidden"
+  multiple
+  bind:this={fileInputRef}
+  onchange={handleFileSelect}
+/>
 
 <ScheduleModal
   show={showScheduleModal}
@@ -813,7 +860,11 @@
   }}
 />
 
-<ImagePreviewModal show={previewImage !== null} image={previewImage} onclose={closeImagePreview} />
+<ImagePreviewModal
+  show={previewImage !== null}
+  image={previewImage}
+  onclose={closeImagePreview}
+/>
 
 <style>
   .hidden {

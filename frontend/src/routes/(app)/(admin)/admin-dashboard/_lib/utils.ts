@@ -8,9 +8,19 @@
 
 import { goto } from '$app/navigation';
 
-import { ORG_LEVEL_LABELS, BLACKBOARD_ORG_LABELS, PRIORITY_LABELS } from './constants';
+import {
+  ORG_LEVEL_LABELS,
+  BLACKBOARD_ORG_LABELS,
+  PRIORITY_LABELS,
+} from './constants';
 
-import type { User, Priority, OrgLevel, BlackboardOrgLevel, FormattedEventDate } from './types';
+import type {
+  User,
+  Priority,
+  OrgLevel,
+  BlackboardOrgLevel,
+  FormattedEventDate,
+} from './types';
 
 /**
  * Get display name for employee
@@ -62,7 +72,9 @@ export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
  * Format blackboard date (German locale, date only - no time)
  * @param dateStr - ISO date string
  */
-export function formatBlackboardDate(dateStr: string | null | undefined): string {
+export function formatBlackboardDate(
+  dateStr: string | null | undefined,
+): string {
   if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';
@@ -145,7 +157,10 @@ export function formatEventDate(dateStr: string): FormattedEventDate {
   return {
     day: date.getDate().toString(),
     month: date.toLocaleDateString('de-DE', { month: 'short' }),
-    time: date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    time: date.toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
   };
 }
 

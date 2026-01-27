@@ -39,7 +39,13 @@ import { beforeNavigate } from '$app/navigation';
 // ==========================================================================
 
 export type TooltipPosition = 'top' | 'bottom' | 'right';
-export type TooltipVariant = 'default' | 'info' | 'warning' | 'error' | 'success' | 'light';
+export type TooltipVariant =
+  | 'default'
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'success'
+  | 'light';
 
 export interface TooltipOptions {
   /** Text or HTML-safe content */
@@ -138,7 +144,12 @@ function buildClassName(
   variant: TooltipVariant,
   extra?: string,
 ): string {
-  const classes = ['tooltip__content', `tooltip__content--${position}`, 'show', TOOLTIP_CLASS];
+  const classes = [
+    'tooltip__content',
+    `tooltip__content--${position}`,
+    'show',
+    TOOLTIP_CLASS,
+  ];
 
   if (variant !== 'default') {
     classes.push(`tooltip__content--${variant}`);
@@ -245,7 +256,11 @@ export const tooltip = {
 
     // Calculate and apply position
     const triggerRect = element.getBoundingClientRect();
-    const pos = calculatePosition(triggerRect, tooltipEl, options.position ?? 'bottom');
+    const pos = calculatePosition(
+      triggerRect,
+      tooltipEl,
+      options.position ?? 'bottom',
+    );
 
     tooltipEl.style.position = 'fixed';
     tooltipEl.style.top = `${pos.top}px`;
@@ -301,7 +316,9 @@ export const tooltip = {
     } catch {
       // beforeNavigate must be called during component initialization
       // If called outside, silently fail - tooltips will still work
-      console.warn('[Tooltip] registerNavigationCleanup must be called during component init');
+      console.warn(
+        '[Tooltip] registerNavigationCleanup must be called during component init',
+      );
     }
   },
 

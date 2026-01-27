@@ -59,7 +59,8 @@ export const MESSAGES = {
   noTeams: 'Keine Teams vorhanden',
   noEvents: 'Keine anstehenden Termine',
   noBlackboard: 'Keine aktuellen Einträge',
-  noBlackboardDescription: 'Es gibt derzeit keine Neuigkeiten am Schwarzen Brett.',
+  noBlackboardDescription:
+    'Es gibt derzeit keine Neuigkeiten am Schwarzen Brett.',
   loadingEntries: 'Lade Einträge...',
   upcomingEvents: 'Nächste Termine',
   allDay: 'Ganztägig',

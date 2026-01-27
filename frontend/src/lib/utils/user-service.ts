@@ -73,7 +73,10 @@ const userCache: {
   data: CurrentUser | null;
   tenant: CurrentTenant | null;
   timestamp: number;
-  promise: Promise<{ user: CurrentUser | null; tenant: CurrentTenant | null }> | null;
+  promise: Promise<{
+    user: CurrentUser | null;
+    tenant: CurrentTenant | null;
+  }> | null;
 } = {
   data: null,
   tenant: null,
@@ -86,7 +89,9 @@ const USER_CACHE_TTL = 300 * 1000;
 
 /** Check if user cache is still valid */
 function isUserCacheValid(): boolean {
-  return Date.now() - userCache.timestamp < USER_CACHE_TTL && userCache.data !== null;
+  return (
+    Date.now() - userCache.timestamp < USER_CACHE_TTL && userCache.data !== null
+  );
 }
 
 /**
@@ -133,12 +138,15 @@ export async function fetchCurrentUser(): Promise<{
       const result = await apiClient.get<UserMeResponse>('/users/me');
 
       // Extract user data (handle both response formats)
-      const user: CurrentUser | null = result.data ?? (result as unknown as CurrentUser);
+      const user: CurrentUser | null =
+        result.data ?? (result as unknown as CurrentUser);
 
       // Extract tenant and map `name` to `companyName` for Layout compatibility
       const rawTenant = result.tenant ?? null;
       const tenant: CurrentTenant | null =
-        rawTenant !== null ? { ...rawTenant, companyName: rawTenant.name } : null;
+        rawTenant !== null ?
+          { ...rawTenant, companyName: rawTenant.name }
+        : null;
 
       // Update cache
       userCache.data = user;

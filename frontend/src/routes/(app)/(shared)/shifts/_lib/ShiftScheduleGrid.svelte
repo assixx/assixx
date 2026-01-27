@@ -30,7 +30,11 @@
     ondragenter: (event: DragEvent) => void;
     ondragleave: (event: DragEvent) => void;
     ondrop: (event: DragEvent, dateKey: string, shiftType: string) => void;
-    onremoveEmployee: (dateKey: string, shiftType: string, employeeId: number) => void;
+    onremoveEmployee: (
+      dateKey: string,
+      shiftType: string,
+      employeeId: number,
+    ) => void;
     onnotesChange: (notes: string) => void;
   }
 
@@ -53,19 +57,37 @@
   }: Props = $props();
 
   // Day names for data attributes
-  const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayNames = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
 
   // Check if cell should be locked
   // Only locked when NOT in edit mode
-  function isCellLocked(dateKey: string, shiftType: string, employeeIds: number[]): boolean {
+  function isCellLocked(
+    dateKey: string,
+    shiftType: string,
+    employeeIds: number[],
+  ): boolean {
     if (isEditMode) return false; // Edit mode always unlocks
     if (currentPlanId !== null) return true;
     // Locked if any employee in this cell has rotation shifts (and not in edit mode)
-    return employeeIds.some((empId) => hasRotationShift(`${dateKey}_${shiftType}_${empId}`));
+    return employeeIds.some((empId) =>
+      hasRotationShift(`${dateKey}_${shiftType}_${empId}`),
+    );
   }
 
   // Check if remove button should be shown for an employee
-  function canRemoveEmployee(dateKey: string, shiftType: string, empId: number): boolean {
+  function canRemoveEmployee(
+    dateKey: string,
+    shiftType: string,
+    empId: number,
+  ): boolean {
     if (!canEditShifts) return false;
     if (isEditMode) return true; // Edit mode allows removing
     if (currentPlanId !== null) return false;
@@ -92,7 +114,9 @@
     <div class="shift-row">
       <div class="shift-label shift-type-{shiftType}">
         {SHIFT_TIMES[shiftType].label}<br />
-        <span class="u-fs-11">{SHIFT_TIMES[shiftType].start}-{SHIFT_TIMES[shiftType].end}</span>
+        <span class="u-fs-11"
+          >{SHIFT_TIMES[shiftType].start}-{SHIFT_TIMES[shiftType].end}</span
+        >
       </div>
 
       {#each weekDates as date, dayIndex (formatDate(date))}
@@ -120,7 +144,9 @@
             {:else}
               {#each employeeIds as empId (empId)}
                 {@const emp = getEmployeeById(empId)}
-                {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
+                {@const detail = getShiftDetail(
+                  `${dateKey}_${shiftType}_${empId}`,
+                )}
                 <div class="employee-card">
                   <span class="employee-name">
                     {#if emp !== undefined}
@@ -157,7 +183,12 @@
   <!-- Info/Todo Area Row -->
   <div class="shift-row">
     <div class="shift-label shift-label-night">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
         <path
           d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z"
         ></path>
@@ -167,7 +198,12 @@
     </div>
     <div class="shift-info-area shift-info-area-full">
       <div class="shift-info-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
           <path
             d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
           ></path>

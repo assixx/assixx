@@ -51,7 +51,10 @@
     <div class="divider"></div>
 
     <!-- Standard Rotation Toggle (disabled when plan is locked) -->
-    <label class="toggle-switch" class:toggle-switch--disabled={isPlanLocked}>
+    <label
+      class="toggle-switch"
+      class:toggle-switch--disabled={isPlanLocked}
+    >
       <input
         type="checkbox"
         class="toggle-switch__input"
@@ -71,7 +74,10 @@
     <div class="divider"></div>
 
     <!-- Custom Rotation Toggle (disabled when plan is locked) -->
-    <label class="toggle-switch" class:toggle-switch--disabled={isPlanLocked}>
+    <label
+      class="toggle-switch"
+      class:toggle-switch--disabled={isPlanLocked}
+    >
       <input
         type="checkbox"
         class="toggle-switch__input"

@@ -9,7 +9,11 @@
 
   const log = createLogger('RotationSetupModal');
 
-  import { createRotationPattern, assignRotation, generateRotationShifts } from './api';
+  import {
+    createRotationPattern,
+    assignRotation,
+    generateRotationShifts,
+  } from './api';
   import {
     validateRotationForm,
     buildRotationPatternData,
@@ -71,9 +75,21 @@
   // =============================================================================
 
   const ROTATION_PATTERNS = [
-    { value: 'weekly', label: 'Wöchentlich', info: 'Schichten wechseln jede Woche' },
-    { value: 'biweekly', label: 'Alle 2 Wochen', info: 'Schichten wechseln alle 2 Wochen' },
-    { value: 'monthly', label: 'Alle 4 Wochen', info: 'Schichten wechseln alle 4 Wochen' },
+    {
+      value: 'weekly',
+      label: 'Wöchentlich',
+      info: 'Schichten wechseln jede Woche',
+    },
+    {
+      value: 'biweekly',
+      label: 'Alle 2 Wochen',
+      info: 'Schichten wechseln alle 2 Wochen',
+    },
+    {
+      value: 'monthly',
+      label: 'Alle 4 Wochen',
+      info: 'Schichten wechseln alle 4 Wochen',
+    },
   ];
 
   // =============================================================================
@@ -159,14 +175,20 @@
     };
   }
 
-  function removeFromAssignment(employeeId: number, shiftType: 'F' | 'S' | 'N') {
+  function removeFromAssignment(
+    employeeId: number,
+    shiftType: 'F' | 'S' | 'N',
+  ) {
     assignments = {
       ...assignments,
       [shiftType]: assignments[shiftType].filter((id) => id !== employeeId),
     };
   }
 
-  function calculateDefaultEndDate(startDateStr: string, weeks: number): string {
+  function calculateDefaultEndDate(
+    startDateStr: string,
+    weeks: number,
+  ): string {
     const startMs = new Date(startDateStr).getTime();
     const endMs = startMs + weeks * 7 * 24 * 60 * 60 * 1000;
     return new Date(endMs).toISOString().split('T')[0] ?? startDateStr;
@@ -177,7 +199,10 @@
     F: number[];
     S: number[];
     N: number[];
-  }): { list: { userId: number; group: 'F' | 'S' | 'N' }[]; groups: ShiftGroups } {
+  }): {
+    list: { userId: number; group: 'F' | 'S' | 'N' }[];
+    groups: ShiftGroups;
+  } {
     const list: { userId: number; group: 'F' | 'S' | 'N' }[] = [];
     const groups: ShiftGroups = { F: [], S: [], N: [] };
 
@@ -231,12 +256,18 @@
         collectEmployeeAssignments(assignments);
 
       if (employeeAssignments.length === 0) {
-        showErrorAlert('Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte');
+        showErrorAlert(
+          'Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte',
+        );
         return;
       }
 
       // 5. Build pattern data
-      const patternData = buildRotationPatternData(teamId, formValues, shiftGroups);
+      const patternData = buildRotationPatternData(
+        teamId,
+        formValues,
+        shiftGroups,
+      );
 
       // 6. Create pattern
       const patternResult = await createRotationPattern(patternData);
@@ -253,9 +284,9 @@
 
       // 8. Generate rotation shifts
       const generateEndDate =
-        formValues.endDate !== ''
-          ? formValues.endDate
-          : calculateDefaultEndDate(formValues.startDate, 4);
+        formValues.endDate !== '' ?
+          formValues.endDate
+        : calculateDefaultEndDate(formValues.startDate, 4);
 
       const generateResult = await generateRotationShifts({
         patternId: patternResult.id,
@@ -270,7 +301,9 @@
       oncomplete(formValues.startDate);
     } catch (error) {
       log.error({ err: error }, 'Rotation error');
-      showErrorAlert(getErrorMessage(error, 'Fehler beim Speichern der Rotation'));
+      showErrorAlert(
+        getErrorMessage(error, 'Fehler beim Speichern der Rotation'),
+      );
     } finally {
       resetSavingState();
     }
@@ -281,7 +314,11 @@
   }
 </script>
 
-<div class="modal-overlay modal-overlay--active" role="presentation" onclick={handleClose}>
+<div
+  class="modal-overlay modal-overlay--active"
+  role="presentation"
+  onclick={handleClose}
+>
   <div
     class="ds-modal ds-modal--lg"
     role="dialog"
@@ -296,7 +333,12 @@
   >
     <div class="ds-modal__header">
       <h2 class="ds-modal__title">Schichtrotation einrichten</h2>
-      <button type="button" class="ds-modal__close" onclick={handleClose} aria-label="Schließen">
+      <button
+        type="button"
+        class="ds-modal__close"
+        onclick={handleClose}
+        aria-label="Schließen"
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -305,7 +347,10 @@
       <form id="rotation-setup-form">
         <!-- Pattern Selection -->
         <div class="form-field">
-          <label class="form-field__label" for="rotation-pattern">
+          <label
+            class="form-field__label"
+            for="rotation-pattern"
+          >
             Rotationsmuster
             <span class="text-red-500">*</span>
           </label>
@@ -325,7 +370,8 @@
               tabindex="0"
               onclick={togglePatternDropdown}
               onkeydown={(e) => {
-                if (e.key === 'Enter') togglePatternDropdown(e as unknown as MouseEvent);
+                if (e.key === 'Enter')
+                  togglePatternDropdown(e as unknown as MouseEvent);
               }}
             >
               <span>{patternLabel}</span>
@@ -336,7 +382,8 @@
                 {#each ROTATION_PATTERNS as pattern (pattern.value)}
                   <div
                     class="dropdown__option"
-                    class:dropdown__option--selected={selectedPattern === pattern.value}
+                    class:dropdown__option--selected={selectedPattern ===
+                      pattern.value}
                     role="option"
                     tabindex="0"
                     aria-selected={selectedPattern === pattern.value}
@@ -344,7 +391,8 @@
                       selectPattern(pattern.value, pattern.label);
                     }}
                     onkeydown={(e) => {
-                      if (e.key === 'Enter') selectPattern(pattern.value, pattern.label);
+                      if (e.key === 'Enter')
+                        selectPattern(pattern.value, pattern.label);
                     }}
                   >
                     {pattern.label}
@@ -366,7 +414,11 @@
           <!-- Weekend Toggles -->
           <div class="flex gap-4 mt-4">
             <label class="toggle-switch">
-              <input type="checkbox" class="toggle-switch__input" bind:checked={skipSaturday} />
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                bind:checked={skipSaturday}
+              />
               <span class="toggle-switch__slider"></span>
               <span class="toggle-switch__label">
                 Samstag überspringen
@@ -374,7 +426,11 @@
               </span>
             </label>
             <label class="toggle-switch">
-              <input type="checkbox" class="toggle-switch__input" bind:checked={skipSunday} />
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                bind:checked={skipSunday}
+              />
               <span class="toggle-switch__slider"></span>
               <span class="toggle-switch__label">
                 Sonntag überspringen
@@ -385,11 +441,17 @@
 
           <!-- Night Shift Toggle (directly after weekend toggles like Legacy) -->
           <label class="toggle-switch mt-4">
-            <input type="checkbox" class="toggle-switch__input" bind:checked={nightStatic} />
+            <input
+              type="checkbox"
+              class="toggle-switch__input"
+              bind:checked={nightStatic}
+            />
             <span class="toggle-switch__slider"></span>
             <span class="toggle-switch__label">
               Nachtschicht konstant
-              <small class="toggle-hint">N bleibt N (nur F ↔ S alternieren)</small>
+              <small class="toggle-hint"
+                >N bleibt N (nur F ↔ S alternieren)</small
+              >
             </span>
           </label>
         </div>
@@ -397,7 +459,10 @@
         <!-- Date Range -->
         <div class="form-grid form-grid--2col mt-6">
           <div class="form-field">
-            <label class="form-field__label" for="rotation-start">
+            <label
+              class="form-field__label"
+              for="rotation-start"
+            >
               Startdatum
               <span class="text-red-500">*</span>
             </label>
@@ -410,11 +475,21 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="rotation-end">
+            <label
+              class="form-field__label"
+              for="rotation-end"
+            >
               Enddatum
-              <small class="text-[var(--color-text-secondary)]">(optional)</small>
+              <small class="text-[var(--color-text-secondary)]"
+                >(optional)</small
+              >
             </label>
-            <input type="date" id="rotation-end" class="form-field__control" bind:value={endDate} />
+            <input
+              type="date"
+              id="rotation-end"
+              class="form-field__control"
+              bind:value={endDate}
+            />
           </div>
         </div>
 
@@ -424,7 +499,9 @@
 
           <!-- Available Employees -->
           <div class="glass-card mb-4 p-4">
-            <h4 class="font-medium mb-2 text-white/80">Verfügbare Mitarbeiter</h4>
+            <h4 class="font-medium mb-2 text-white/80">
+              Verfügbare Mitarbeiter
+            </h4>
             <div class="employee-list">
               {#each availableEmployees as employee (employee.id)}
                 <div
@@ -439,12 +516,16 @@
                   }}
                 >
                   <div class="employee-info">
-                    <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
+                    <span class="employee-name"
+                      >{getEmployeeDisplayName(employee)}</span
+                    >
                   </div>
                 </div>
               {/each}
               {#if availableEmployees.length === 0}
-                <div class="text-[var(--color-text-tertiary)] text-sm italic py-2">
+                <div
+                  class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+                >
                   Alle Mitarbeiter zugewiesen
                 </div>
               {/if}
@@ -453,11 +534,17 @@
 
           <!-- Shift Assignment Drop Zones -->
           <div class="glass-card p-4">
-            <h4 class="font-medium mb-2 text-white/80">Schichtzuweisung (Startschicht)</h4>
+            <h4 class="font-medium mb-2 text-white/80">
+              Schichtzuweisung (Startschicht)
+            </h4>
             <div class="gap-4 grid grid-cols-3 shift-assignment-table">
               <!-- F-Shift Column -->
               <div class="shift-column">
-                <div class="column-header font-medium mb-2 text-blue-400 text-center">F (Früh)</div>
+                <div
+                  class="column-header font-medium mb-2 text-blue-400 text-center"
+                >
+                  F (Früh)
+                </div>
                 <div
                   class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                   data-shift="F"
@@ -473,7 +560,9 @@
                     {@const emp = employees.find((e) => e.id === empId)}
                     {#if emp}
                       <div class="employee-item in-drop-zone">
-                        <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                        <span class="employee-name"
+                          >{getEmployeeDisplayName(emp)}</span
+                        >
                         <button
                           type="button"
                           class="btn-remove-rotation"
@@ -492,7 +581,9 @@
 
               <!-- S-Shift Column -->
               <div class="shift-column">
-                <div class="column-header font-medium mb-2 text-center text-yellow-400">
+                <div
+                  class="column-header font-medium mb-2 text-center text-yellow-400"
+                >
                   S (Spät)
                 </div>
                 <div
@@ -510,7 +601,9 @@
                     {@const emp = employees.find((e) => e.id === empId)}
                     {#if emp}
                       <div class="employee-item in-drop-zone">
-                        <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                        <span class="employee-name"
+                          >{getEmployeeDisplayName(emp)}</span
+                        >
                         <button
                           type="button"
                           class="btn-remove-rotation"
@@ -529,7 +622,9 @@
 
               <!-- N-Shift Column -->
               <div class="shift-column">
-                <div class="column-header font-medium mb-2 text-center text-purple-400">
+                <div
+                  class="column-header font-medium mb-2 text-center text-purple-400"
+                >
                   N (Nacht)
                 </div>
                 <div
@@ -547,7 +642,9 @@
                     {@const emp = employees.find((e) => e.id === empId)}
                     {#if emp}
                       <div class="employee-item in-drop-zone">
-                        <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                        <span class="employee-name"
+                          >{getEmployeeDisplayName(emp)}</span
+                        >
                         <button
                           type="button"
                           class="btn-remove-rotation"
@@ -565,7 +662,8 @@
               </div>
             </div>
             <small class="block form-field__hint mt-2">
-              Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
+              Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
+              Startschicht festzulegen
             </small>
           </div>
         </div>
@@ -573,7 +671,11 @@
     </div>
 
     <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={handleClose}>Abbrechen</button>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={handleClose}>Abbrechen</button
+      >
       <button
         type="button"
         class="btn btn-modal"

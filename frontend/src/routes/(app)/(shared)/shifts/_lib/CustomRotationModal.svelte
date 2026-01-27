@@ -35,7 +35,9 @@
   let shiftBlockLength = $state(10);
   let freeDays = $state(2);
   let startShift = $state<'early' | 'late' | 'night'>('early');
-  let shiftSequence = $state<'early-late-night' | 'night-late-early'>('early-late-night');
+  let shiftSequence = $state<'early-late-night' | 'night-late-early'>(
+    'early-late-night',
+  );
   let nthWeekdayFree = $state(false);
   let nthValue = $state(4);
   let weekdayValue = $state(0);
@@ -159,7 +161,10 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="modal-overlay modal-overlay--active" onclick={closeAllDropdowns}>
+<div
+  class="modal-overlay modal-overlay--active"
+  onclick={closeAllDropdowns}
+>
   <div
     class="ds-modal ds-modal--lg"
     onclick={(e) => {
@@ -168,14 +173,19 @@
   >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">Schichtmuster konfigurieren</h3>
-      <button type="button" class="ds-modal__close" onclick={onclose} aria-label="Schließen">
+      <button
+        type="button"
+        class="ds-modal__close"
+        onclick={onclose}
+        aria-label="Schließen"
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="ds-modal__body">
       <p class="text-[var(--color-text-secondary)] mb-4">
-        Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das gewählte Muster
-        wird automatisch für den gewählten Zeitraum wiederholt.
+        Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das
+        gewählte Muster wird automatisch für den gewählten Zeitraum wiederholt.
       </p>
 
       <!-- Section 1: Zeitraum festlegen -->
@@ -186,7 +196,10 @@
         </h4>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field">
-            <label class="form-field__label" for="custom-rotation-start-date">
+            <label
+              class="form-field__label"
+              for="custom-rotation-start-date"
+            >
               <i class="fas fa-calendar mr-1"></i>
               Startdatum
             </label>
@@ -199,7 +212,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="custom-rotation-end-date">
+            <label
+              class="form-field__label"
+              for="custom-rotation-end-date"
+            >
               <i class="fas fa-calendar-check mr-1"></i>
               Enddatum (max. 1.5 Jahre)
             </label>
@@ -214,12 +230,15 @@
         </div>
         <p class="text-[var(--color-text-tertiary)] text-xs mt-2">
           <i class="fas fa-info-circle mr-1"></i>
-          Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für nahtlosen Übergang.
+          Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für
+          nahtlosen Übergang.
         </p>
       </div>
 
       <!-- Section 2: Schichtblock-Konfiguration -->
-      <div class="glass-card p-4 mb-4 border border-emerald-500/30 bg-emerald-500/5">
+      <div
+        class="glass-card p-4 mb-4 border border-emerald-500/30 bg-emerald-500/5"
+      >
         <h4 class="text-emerald-400 font-medium mb-4">
           <i class="fas fa-cogs mr-2"></i>
           Schichtblock-Konfiguration
@@ -228,16 +247,20 @@
         <div class="grid grid-cols-2 gap-4 mb-4">
           <!-- Schichtblock-Länge -->
           <div class="form-field">
-            <label class="form-field__label" for="shift-block-length">
+            <label
+              class="form-field__label"
+              for="shift-block-length"
+            >
               Schichtblock-Länge (Tage)
               <span class="ml-1 tooltip">
-                <i class="cursor-help fa-info-circle fas text-blue-400 text-sm"></i>
+                <i class="cursor-help fa-info-circle fas text-blue-400 text-sm"
+                ></i>
                 <span
                   class="tooltip__content tooltip__content--info tooltip__content--right"
                   role="tooltip"
                 >
-                  Legt fest, wie viele Tage durchgehend in einer Schicht gearbeitet wird. Beispiel:
-                  10 Tage Frühschicht, dann Freitage.
+                  Legt fest, wie viele Tage durchgehend in einer Schicht
+                  gearbeitet wird. Beispiel: 10 Tage Frühschicht, dann Freitage.
                 </span>
               </span>
             </label>
@@ -255,8 +278,9 @@
 
           <!-- Freie Tage -->
           <div class="form-field">
-            <label class="form-field__label" for="free-days-count"
-              >Freie Tage zwischen Wechseln</label
+            <label
+              class="form-field__label"
+              for="free-days-count">Freie Tage zwischen Wechseln</label
             >
             <input
               type="number"
@@ -273,8 +297,9 @@
         <div class="grid grid-cols-2 gap-4">
           <!-- Startschicht Dropdown -->
           <div class="form-field">
-            <label class="form-field__label" for="start-shift-select"
-              >Startschicht am ersten Tag</label
+            <label
+              class="form-field__label"
+              for="start-shift-select">Startschicht am ersten Tag</label
             >
             <div class="dropdown">
               <button
@@ -331,8 +356,9 @@
 
           <!-- Schicht-Reihenfolge Dropdown -->
           <div class="form-field">
-            <label class="form-field__label" for="shift-sequence-select"
-              >Rotations-Reihenfolge</label
+            <label
+              class="form-field__label"
+              for="shift-sequence-select">Rotations-Reihenfolge</label
             >
             <div class="dropdown">
               <button
@@ -352,7 +378,8 @@
                   <button
                     type="button"
                     class="dropdown__option"
-                    class:dropdown__option--selected={shiftSequence === 'early-late-night'}
+                    class:dropdown__option--selected={shiftSequence ===
+                      'early-late-night'}
                     onclick={() => {
                       shiftSequence = 'early-late-night';
                       shiftSequenceOpen = false;
@@ -363,7 +390,8 @@
                   <button
                     type="button"
                     class="dropdown__option"
-                    class:dropdown__option--selected={shiftSequence === 'night-late-early'}
+                    class:dropdown__option--selected={shiftSequence ===
+                      'night-late-early'}
                     onclick={() => {
                       shiftSequence = 'night-late-early';
                       shiftSequenceOpen = false;
@@ -379,7 +407,9 @@
       </div>
 
       <!-- Section 3: Sonderregeln -->
-      <div class="glass-card p-4 mb-4 border border-amber-500/30 bg-amber-500/5">
+      <div
+        class="glass-card p-4 mb-4 border border-amber-500/30 bg-amber-500/5"
+      >
         <h4 class="text-amber-400 font-medium mb-4">
           <i class="fas fa-star mr-2"></i>
           Sonderregeln (optional)
@@ -387,7 +417,11 @@
 
         <div class="flex items-center gap-3 flex-wrap">
           <label class="choice-card">
-            <input type="checkbox" class="choice-card__input" bind:checked={nthWeekdayFree} />
+            <input
+              type="checkbox"
+              class="choice-card__input"
+              bind:checked={nthWeekdayFree}
+            />
             <span class="choice-card__text">Jeden</span>
           </label>
 
@@ -470,12 +504,16 @@
           <h4 class="font-medium mb-2 text-white/80">Verfügbare Mitarbeiter</h4>
           <div class="employee-list min-h-[60px]">
             {#if employees.length === 0}
-              <div class="text-[var(--color-text-tertiary)] text-sm italic py-2">
+              <div
+                class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+              >
                 <i class="fas fa-info-circle mr-1"></i>
                 Bitte wählen Sie zuerst ein Team aus, um die Mitarbeiter zu laden.
               </div>
             {:else if availableEmployees.length === 0}
-              <div class="text-[var(--color-text-tertiary)] text-sm italic py-2">
+              <div
+                class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+              >
                 <i class="fas fa-check-circle mr-1 text-green-400"></i>
                 Alle Mitarbeiter wurden zugewiesen.
               </div>
@@ -489,7 +527,9 @@
                   }}
                   role="listitem"
                 >
-                  <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
+                  <span class="employee-name"
+                    >{getEmployeeDisplayName(employee)}</span
+                  >
                 </div>
               {/each}
             {/if}
@@ -498,11 +538,17 @@
 
         <!-- Drop Zones for Shift Assignment -->
         <div class="glass-card p-4">
-          <h4 class="font-medium mb-2 text-white/80">Schichtzuweisung (Startschicht)</h4>
+          <h4 class="font-medium mb-2 text-white/80">
+            Schichtzuweisung (Startschicht)
+          </h4>
           <div class="gap-4 grid grid-cols-3 shift-assignment-table">
             <!-- Early Shift Column -->
             <div class="shift-column">
-              <div class="column-header font-medium mb-2 text-blue-400 text-center">F (Früh)</div>
+              <div
+                class="column-header font-medium mb-2 text-blue-400 text-center"
+              >
+                F (Früh)
+              </div>
               <div
                 class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                 ondragover={handleDragOver}
@@ -516,7 +562,9 @@
                   {@const emp = getEmployeeById(empId)}
                   {#if emp}
                     <div class="employee-item in-drop-zone">
-                      <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                      <span class="employee-name"
+                        >{getEmployeeDisplayName(emp)}</span
+                      >
                       <button
                         type="button"
                         class="btn-remove-rotation"
@@ -535,7 +583,11 @@
 
             <!-- Late Shift Column -->
             <div class="shift-column">
-              <div class="column-header font-medium mb-2 text-center text-yellow-400">S (Spät)</div>
+              <div
+                class="column-header font-medium mb-2 text-center text-yellow-400"
+              >
+                S (Spät)
+              </div>
               <div
                 class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
                 ondragover={handleDragOver}
@@ -549,7 +601,9 @@
                   {@const emp = getEmployeeById(empId)}
                   {#if emp}
                     <div class="employee-item in-drop-zone">
-                      <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                      <span class="employee-name"
+                        >{getEmployeeDisplayName(emp)}</span
+                      >
                       <button
                         type="button"
                         class="btn-remove-rotation"
@@ -568,7 +622,9 @@
 
             <!-- Night Shift Column -->
             <div class="shift-column">
-              <div class="column-header font-medium mb-2 text-center text-purple-400">
+              <div
+                class="column-header font-medium mb-2 text-center text-purple-400"
+              >
                 N (Nacht)
               </div>
               <div
@@ -584,7 +640,9 @@
                   {@const emp = getEmployeeById(empId)}
                   {#if emp}
                     <div class="employee-item in-drop-zone">
-                      <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
+                      <span class="employee-name"
+                        >{getEmployeeDisplayName(emp)}</span
+                      >
                       <button
                         type="button"
                         class="btn-remove-rotation"
@@ -602,14 +660,25 @@
             </div>
           </div>
           <small class="block form-field__hint mt-2">
-            Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
+            Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
+            Startschicht festzulegen
           </small>
         </div>
       </div>
     </div>
     <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={onclose}> Abbrechen </button>
-      <button type="button" class="btn btn-modal" onclick={handleGenerate}>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={onclose}
+      >
+        Abbrechen
+      </button>
+      <button
+        type="button"
+        class="btn btn-modal"
+        onclick={handleGenerate}
+      >
         <i class="fas fa-cogs mr-2"></i>
         Rotation generieren
       </button>

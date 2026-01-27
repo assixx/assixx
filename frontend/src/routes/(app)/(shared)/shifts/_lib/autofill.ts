@@ -3,7 +3,10 @@
 // Based on: frontend/src/scripts/shifts/autofill.ts
 // =============================================================================
 
-import { validateEmployeeAvailability, checkDuplicateShiftAssignment } from './validation';
+import {
+  validateEmployeeAvailability,
+  checkDuplicateShiftAssignment,
+} from './validation';
 
 import type { Employee, ShiftType } from './types';
 
@@ -52,10 +55,22 @@ let isAutofilling = false;
 /**
  * Get weekdays to fill (excluding the already assigned day)
  */
-function getDaysToFill(excludeDay: string, skipWeekends: boolean = true): string[] {
-  const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const weekDays = skipWeekends
-    ? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+function getDaysToFill(
+  excludeDay: string,
+  skipWeekends: boolean = true,
+): string[] {
+  const allDays = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
+  const weekDays =
+    skipWeekends ?
+      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
     : allDays;
   return weekDays.filter((day) => day !== excludeDay);
 }
@@ -121,7 +136,10 @@ export function validateAutofillDay(
   // Check availability
   const availabilityResult = validateEmployeeAvailability(employee, date);
   if (!availabilityResult.valid) {
-    return { valid: false, reason: availabilityResult.message ?? 'Nicht verfügbar' };
+    return {
+      valid: false,
+      reason: availabilityResult.message ?? 'Nicht verfügbar',
+    };
   }
 
   // Check for duplicate shift (employee already assigned to another shift on same day)
@@ -158,7 +176,14 @@ interface ProcessDayParams {
  * @returns AutofillDayResult with success status and optional reason
  */
 function processSingleDay(params: ProcessDayParams): AutofillDayResult {
-  const { dayName, employeeId, employee, shiftType, weekDates, getShiftEmployees } = params;
+  const {
+    dayName,
+    employeeId,
+    employee,
+    shiftType,
+    weekDates,
+    getShiftEmployees,
+  } = params;
   const { existingAssignments, onAssign } = params;
 
   const validation = validateAutofillDay(
@@ -214,7 +239,9 @@ export function performAutofill(
     existingAssignments,
     onAssign,
   };
-  const details = daysToFill.map((dayName) => processSingleDay({ dayName, ...baseParams }));
+  const details = daysToFill.map((dayName) =>
+    processSingleDay({ dayName, ...baseParams }),
+  );
 
   const filledCount = details.filter((d) => d.success).length;
   const skippedCount = details.filter((d) => !d.success).length;

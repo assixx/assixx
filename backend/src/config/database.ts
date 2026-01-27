@@ -54,7 +54,12 @@ if (USE_MOCK_DB) {
   };
 
   logger.info(
-    { host: config.host, port: config.port, database: config.database, user: config.user },
+    {
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      user: config.user,
+    },
     '[PostgreSQL] Connecting to database',
   );
 
@@ -69,9 +74,12 @@ if (USE_MOCK_DB) {
     void (async () => {
       try {
         const client = await pool.connect();
-        const result = await client.query<{ version: string }>('SELECT version()');
+        const result = await client.query<{ version: string }>(
+          'SELECT version()',
+        );
         const versionRow = result.rows[0];
-        const versionInfo = versionRow?.version.split(' ').slice(0, 2).join(' ') ?? 'unknown';
+        const versionInfo =
+          versionRow?.version.split(' ').slice(0, 2).join(' ') ?? 'unknown';
         logger.info(`[PostgreSQL] Connected: ${versionInfo}`);
         client.release();
       } catch (error: unknown) {
@@ -88,12 +96,18 @@ if (USE_MOCK_DB) {
  * @param client - PostgreSQL PoolClient
  * @param tenantId - Tenant ID for RLS isolation
  */
-export async function setTenantContext(client: PoolClient, tenantId: number): Promise<void> {
+export async function setTenantContext(
+  client: PoolClient,
+  tenantId: number,
+): Promise<void> {
   if (tenantId <= 0 || Number.isNaN(tenantId)) {
     throw new Error(`Invalid tenant ID: ${tenantId}`);
   }
   // set_config(name, value, is_local) - is_local=true means transaction-scoped
-  await client.query('SELECT set_config($1, $2, true)', ['app.tenant_id', tenantId.toString()]);
+  await client.query('SELECT set_config($1, $2, true)', [
+    'app.tenant_id',
+    tenantId.toString(),
+  ]);
 }
 
 /**
@@ -104,11 +118,17 @@ export async function setTenantContext(client: PoolClient, tenantId: number): Pr
  * @param client - PostgreSQL PoolClient
  * @param userId - User ID for RLS participant checks
  */
-export async function setUserContext(client: PoolClient, userId: number): Promise<void> {
+export async function setUserContext(
+  client: PoolClient,
+  userId: number,
+): Promise<void> {
   if (userId <= 0 || Number.isNaN(userId)) {
     throw new Error(`Invalid user ID: ${userId}`);
   }
-  await client.query('SELECT set_config($1, $2, true)', ['app.user_id', userId.toString()]);
+  await client.query('SELECT set_config($1, $2, true)', [
+    'app.user_id',
+    userId.toString(),
+  ]);
 }
 
 /**

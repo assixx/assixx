@@ -54,7 +54,10 @@ export function getAccessToken(): string | null {
  * Check if user is authenticated and has root role
  * @returns Object with auth status and role
  */
-export function checkAuthRole(): { isAuthenticated: boolean; role: string | null } {
+export function checkAuthRole(): {
+  isAuthenticated: boolean;
+  role: string | null;
+} {
   const token = getAccessToken();
   if (token === null || token === '') {
     return { isAuthenticated: false, role: null };
@@ -74,9 +77,9 @@ export function checkAuthRole(): { isAuthenticated: boolean; role: string | null
  */
 export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
   try {
-    const result = await apiClient.get<DeletionStatusResponse | DeletionStatusData | null>(
-      '/root/tenant/deletion-status',
-    );
+    const result = await apiClient.get<
+      DeletionStatusResponse | DeletionStatusData | null
+    >('/root/tenant/deletion-status');
 
     if (result === null) {
       return null;
@@ -104,7 +107,9 @@ export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
  */
 export async function getRootUserCount(): Promise<number> {
   try {
-    const result = await apiClient.get<RootUsersResponse | { id: number }[]>('/root/users');
+    const result = await apiClient.get<RootUsersResponse | { id: number }[]>(
+      '/root/users',
+    );
 
     if (Array.isArray(result)) {
       return result.length;
@@ -126,7 +131,9 @@ export async function getRootUserCount(): Promise<number> {
  * @param reason - Deletion reason
  * @returns Deletion queue response
  */
-export async function deleteTenant(reason: string): Promise<DeletionQueueResponse> {
+export async function deleteTenant(
+  reason: string,
+): Promise<DeletionQueueResponse> {
   return await apiClient.delete('/root/tenants/current', {
     reason: reason !== '' ? reason : MESSAGES.defaultReason,
   });

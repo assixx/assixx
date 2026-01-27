@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable max-lines -- Complex page with modals and filters */
   /**
    * Availability History - Page Component
    * @module manage-employees/availability/[uuid]/+page
@@ -102,10 +101,12 @@
   const hasActiveFilter = $derived(selectedYear !== '' || selectedMonth !== '');
 
   const yearLabel = $derived(
-    yearOptions.find((opt) => opt.value === selectedYear)?.label ?? 'Alle Jahre',
+    yearOptions.find((opt) => opt.value === selectedYear)?.label ??
+      'Alle Jahre',
   );
   const monthLabel = $derived(
-    monthOptions.find((opt) => opt.value === selectedMonth)?.label ?? 'Alle Monate',
+    monthOptions.find((opt) => opt.value === selectedMonth)?.label ??
+      'Alle Monate',
   );
 
   // =============================================================================
@@ -282,20 +283,23 @@
           .find((row) => row.startsWith('accessToken='))
           ?.split('=')[1] ?? '';
 
-      const response = await fetch(`/api/v2/users/availability/${selectedEntry.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `/api/v2/users/availability/${selectedEntry.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: editStatus,
+            startDate: editStartDate,
+            endDate: editEndDate,
+            reason: editReason !== '' ? editReason : null,
+            notes: editNotes !== '' ? editNotes : null,
+          }),
         },
-        body: JSON.stringify({
-          status: editStatus,
-          startDate: editStartDate,
-          endDate: editEndDate,
-          reason: editReason !== '' ? editReason : null,
-          notes: editNotes !== '' ? editNotes : null,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update entry');
@@ -321,12 +325,15 @@
           .find((row) => row.startsWith('accessToken='))
           ?.split('=')[1] ?? '';
 
-      const response = await fetch(`/api/v2/users/availability/${selectedEntry.id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `/api/v2/users/availability/${selectedEntry.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to delete entry');
@@ -349,7 +356,8 @@
     const target = e.target as HTMLElement;
     if (!target.closest('#year-dropdown')) yearDropdownOpen = false;
     if (!target.closest('#month-dropdown')) monthDropdownOpen = false;
-    if (!target.closest('#edit-status-dropdown')) editStatusDropdownOpen = false;
+    if (!target.closest('#edit-status-dropdown'))
+      editStatusDropdownOpen = false;
   }
 
   function handleKeyDown(e: KeyboardEvent): void {
@@ -370,12 +378,19 @@
   >
 </svelte:head>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeyDown} />
+<svelte:window
+  onclick={handleClickOutside}
+  onkeydown={handleKeyDown}
+/>
 
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button type="button" class="btn btn-light" onclick={goBack}>
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={goBack}
+    >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Mitarbeiterverwaltung
     </button>
   </div>
@@ -402,8 +417,16 @@
       <div class="flex flex-wrap gap-4 items-end">
         <!-- Year Dropdown -->
         <div class="form-field">
-          <label class="form-field__label" for="year-dropdown">Jahr</label>
-          <div class="dropdown" id="year-dropdown" data-dropdown="year" role="listbox">
+          <label
+            class="form-field__label"
+            for="year-dropdown">Jahr</label
+          >
+          <div
+            class="dropdown"
+            id="year-dropdown"
+            data-dropdown="year"
+            role="listbox"
+          >
             <div
               class="dropdown__trigger"
               onclick={() => (yearDropdownOpen = !yearDropdownOpen)}
@@ -441,8 +464,16 @@
 
         <!-- Month Dropdown -->
         <div class="form-field">
-          <label class="form-field__label" for="month-dropdown">Monat</label>
-          <div class="dropdown" id="month-dropdown" data-dropdown="month" role="listbox">
+          <label
+            class="form-field__label"
+            for="month-dropdown">Monat</label
+          >
+          <div
+            class="dropdown"
+            id="month-dropdown"
+            data-dropdown="month"
+            role="listbox"
+          >
             <div
               class="dropdown__trigger"
               onclick={() => (monthDropdownOpen = !monthDropdownOpen)}
@@ -481,7 +512,11 @@
         {#if hasActiveFilter}
           <div class="form-field">
             <span class="form-field__label invisible">Aktion</span>
-            <button type="button" class="btn btn-secondary" onclick={clearFilter}>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick={clearFilter}
+            >
               <i class="fas fa-times mr-2"></i>Filter zurücksetzen
             </button>
           </div>
@@ -492,7 +527,9 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
         </div>
       {:else if entries.length === 0}
@@ -503,12 +540,17 @@
           <h3 class="empty-state__title">Keine Einträge gefunden</h3>
           <p class="empty-state__description">
             {#if hasActiveFilter}
-              Für den ausgewählten Zeitraum gibt es keine Verfügbarkeitseinträge.
+              Für den ausgewählten Zeitraum gibt es keine
+              Verfügbarkeitseinträge.
             {:else}
               Es wurden noch keine Verfügbarkeitseinträge erfasst.
             {/if}
           </p>
-          <button type="button" class="btn btn-primary mt-4" onclick={goBack}>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={goBack}
+          >
             <i class="fas fa-arrow-left mr-2"></i>
             Zurück zur Mitarbeiterverwaltung
           </button>
@@ -531,7 +573,10 @@
                 <th scope="col">Notizen</th>
                 <th scope="col">Erstellt von</th>
                 <th scope="col">Erstellt am</th>
-                <th scope="col" class="text-right">Aktionen</th>
+                <th
+                  scope="col"
+                  class="text-right">Aktionen</th
+                >
               </tr>
             </thead>
             <tbody>
@@ -623,7 +668,10 @@
       }}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="edit-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="edit-modal-title"
+        >
           <i class="fas fa-edit mr-2"></i>
           Eintrag bearbeiten
         </h3>
@@ -640,8 +688,14 @@
       <div class="ds-modal__body">
         <!-- Status Dropdown -->
         <div class="form-field">
-          <label class="form-field__label" for="edit-status-dropdown">Status</label>
-          <div class="dropdown" id="edit-status-dropdown">
+          <label
+            class="form-field__label"
+            for="edit-status-dropdown">Status</label
+          >
+          <div
+            class="dropdown"
+            id="edit-status-dropdown"
+          >
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <div
               class="dropdown__trigger"
@@ -679,7 +733,10 @@
 
         <!-- Date Range -->
         <div class="form-field">
-          <label class="form-field__label" for="edit-start-date">Von Datum</label>
+          <label
+            class="form-field__label"
+            for="edit-start-date">Von Datum</label
+          >
           <div class="date-picker">
             <i class="date-picker__icon fas fa-calendar"></i>
             <input
@@ -693,7 +750,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="edit-end-date">Bis Datum</label>
+          <label
+            class="form-field__label"
+            for="edit-end-date">Bis Datum</label
+          >
           <div class="date-picker">
             <i class="date-picker__icon fas fa-calendar"></i>
             <input
@@ -708,7 +768,10 @@
 
         <!-- Reason -->
         <div class="form-field">
-          <label class="form-field__label" for="edit-reason">Grund (optional)</label>
+          <label
+            class="form-field__label"
+            for="edit-reason">Grund (optional)</label
+          >
           <input
             type="text"
             id="edit-reason"
@@ -721,7 +784,10 @@
 
         <!-- Notes -->
         <div class="form-field">
-          <label class="form-field__label" for="edit-notes">Notiz (optional)</label>
+          <label
+            class="form-field__label"
+            for="edit-notes">Notiz (optional)</label
+          >
           <textarea
             id="edit-notes"
             class="form-field__control"
@@ -734,9 +800,18 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={closeEditModal}>Abbrechen</button>
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeEditModal}>Abbrechen</button
+        >
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           Speichern
         </button>
       </div>
@@ -759,9 +834,15 @@
       if (e.key === 'Escape') closeDeleteModal();
     }}
   >
-    <div class="ds-modal" role="presentation">
+    <div
+      class="ds-modal"
+      role="presentation"
+    >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="delete-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="delete-modal-title"
+        >
           <i class="fas fa-trash mr-2 text-[var(--color-danger)]"></i>
           Eintrag löschen
         </h3>
@@ -788,7 +869,9 @@
           </div>
           <p class="text-sm">
             <strong>Zeitraum:</strong>
-            {formatDate(selectedEntry.startDate)} - {formatDate(selectedEntry.endDate)}
+            {formatDate(selectedEntry.startDate)} - {formatDate(
+              selectedEntry.endDate,
+            )}
           </p>
           {#if selectedEntry.reason}
             <p class="text-sm mt-1">
@@ -804,7 +887,11 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeDeleteModal}>Abbrechen</button
+        >
         <button
           type="button"
           class="btn btn-danger"
@@ -813,7 +900,8 @@
             void deleteEntry();
           }}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           Löschen
         </button>
       </div>

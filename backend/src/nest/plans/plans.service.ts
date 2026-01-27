@@ -341,8 +341,12 @@ export class PlansService {
   /**
    * Get all available plans
    */
-  async getAllPlans(includeInactive: boolean = false): Promise<PlanWithFeatures[]> {
-    this.logger.debug(`Getting all plans (includeInactive: ${includeInactive})`);
+  async getAllPlans(
+    includeInactive: boolean = false,
+  ): Promise<PlanWithFeatures[]> {
+    this.logger.debug(
+      `Getting all plans (includeInactive: ${includeInactive})`,
+    );
 
     const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
     const rows = await this.db.query<DbPlanRow>(
@@ -354,7 +358,9 @@ export class PlansService {
     for (const row of rows) {
       const plan = this.mapDbPlanToApi(row);
       const allFeatures = await this.getPlanFeaturesFromDb(row.id);
-      const includedFeatures = allFeatures.filter((f: PlanFeature) => f.isIncluded);
+      const includedFeatures = allFeatures.filter(
+        (f: PlanFeature) => f.isIncluded,
+      );
 
       results.push({
         ...plan,
@@ -371,7 +377,10 @@ export class PlansService {
   async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
     this.logger.debug(`Getting plan ${planId}`);
 
-    const row = await this.db.queryOne<DbPlanRow>('SELECT * FROM plans WHERE id = $1', [planId]);
+    const row = await this.db.queryOne<DbPlanRow>(
+      'SELECT * FROM plans WHERE id = $1',
+      [planId],
+    );
 
     if (row === null) {
       return null;
@@ -379,7 +388,9 @@ export class PlansService {
 
     const plan = this.mapDbPlanToApi(row);
     const allFeatures = await this.getPlanFeaturesFromDb(planId);
-    const includedFeatures = allFeatures.filter((f: PlanFeature) => f.isIncluded);
+    const includedFeatures = allFeatures.filter(
+      (f: PlanFeature) => f.isIncluded,
+    );
 
     return {
       ...plan,
@@ -431,13 +442,17 @@ export class PlansService {
     const tenantPlan = this.mapDbTenantPlanToApi(tenantPlanRow);
     const planDetails = this.mapDbPlanToApi(planRow);
     const allFeatures = await this.getPlanFeaturesFromDb(tenantPlanRow.plan_id);
-    const includedFeatures = allFeatures.filter((f: PlanFeature) => f.isIncluded);
+    const includedFeatures = allFeatures.filter(
+      (f: PlanFeature) => f.isIncluded,
+    );
 
     const addonRows = await this.db.query<DbTenantAddonRow>(
       `SELECT * FROM tenant_addons WHERE tenant_id = $1 AND status = 'active'`,
       [tenantId],
     );
-    const addons = addonRows.map((row: DbTenantAddonRow) => this.mapDbAddonToApi(row));
+    const addons = addonRows.map((row: DbTenantAddonRow) =>
+      this.mapDbAddonToApi(row),
+    );
 
     const costs = await this.calculateTenantCostFromDb(tenantId);
 
@@ -512,15 +527,27 @@ export class PlansService {
     const updates: { type: string; quantity: number; unitPrice: number }[] = [];
 
     if (addons.employees !== undefined) {
-      updates.push({ type: 'employees', quantity: addons.employees, unitPrice: 5.0 });
+      updates.push({
+        type: 'employees',
+        quantity: addons.employees,
+        unitPrice: 5.0,
+      });
     }
 
     if (addons.admins !== undefined) {
-      updates.push({ type: 'admins', quantity: addons.admins, unitPrice: 10.0 });
+      updates.push({
+        type: 'admins',
+        quantity: addons.admins,
+        unitPrice: 10.0,
+      });
     }
 
     if (addons.storageGb !== undefined) {
-      updates.push({ type: 'storage_gb', quantity: addons.storageGb, unitPrice: 0.1 });
+      updates.push({
+        type: 'storage_gb',
+        quantity: addons.storageGb,
+        unitPrice: 0.1,
+      });
     }
 
     for (const update of updates) {
@@ -637,10 +664,10 @@ export class PlansService {
     );
 
     // Update tenant's current_plan_id
-    await this.db.query('UPDATE tenants SET current_plan_id = $1 WHERE id = $2', [
-      newPlan.id,
-      tenantId,
-    ]);
+    await this.db.query(
+      'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
+      [newPlan.id, tenantId],
+    );
 
     // Deactivate features not included in new plan
     const planFeatures = await this.getPlanFeaturesFromDb(newPlan.id);
@@ -649,7 +676,10 @@ export class PlansService {
       .map((f: PlanFeature) => f.featureId);
 
     if (includedFeatureIds.length > 0) {
-      const { placeholders } = this.db.generateInPlaceholders(includedFeatureIds.length, 2);
+      const { placeholders } = this.db.generateInPlaceholders(
+        includedFeatureIds.length,
+        2,
+      );
       await this.db.query(
         `UPDATE tenant_features
          SET is_active = 0

@@ -26,7 +26,9 @@ export function getActionLabel(action: string): string {
  * @param action - Action type
  */
 export function getActionBadgeClass(action: string): string {
-  return Object.hasOwn(ACTION_BADGE_CLASSES, action) ? ACTION_BADGE_CLASSES[action] : 'info';
+  return Object.hasOwn(ACTION_BADGE_CLASSES, action) ?
+      ACTION_BADGE_CLASSES[action]
+    : 'info';
 }
 
 /**
@@ -43,8 +45,8 @@ export function getRoleLabel(role: string): string {
  */
 export function getRoleBadgeClass(role: string): string {
   const normalizedRole = role.toLowerCase();
-  return Object.hasOwn(ROLE_BADGE_CLASSES, normalizedRole)
-    ? ROLE_BADGE_CLASSES[normalizedRole]
+  return Object.hasOwn(ROLE_BADGE_CLASSES, normalizedRole) ?
+      ROLE_BADGE_CLASSES[normalizedRole]
     : 'info';
 }
 
@@ -68,7 +70,9 @@ export function getDisplayName(
 export function isTemporaryEmployeeNumber(employeeNumber: string): boolean {
   if (employeeNumber === '') return true;
 
-  return EMPLOYEE_NUMBER.tempPrefixes.some((prefix) => employeeNumber.startsWith(prefix));
+  return EMPLOYEE_NUMBER.tempPrefixes.some((prefix) =>
+    employeeNumber.startsWith(prefix),
+  );
 }
 
 /**

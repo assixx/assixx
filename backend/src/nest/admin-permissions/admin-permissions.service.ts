@@ -142,8 +142,13 @@ export class AdminPermissionsService {
   /**
    * Get permissions for a specific admin/user
    */
-  async getAdminPermissions(userId: number, tenantId: number): Promise<AdminPermissionsResponse> {
-    this.logger.debug(`Getting permissions for user ${userId}, tenant ${tenantId}`);
+  async getAdminPermissions(
+    userId: number,
+    tenantId: number,
+  ): Promise<AdminPermissionsResponse> {
+    this.logger.debug(
+      `Getting permissions for user ${userId}, tenant ${tenantId}`,
+    );
 
     const { hasFullAccess } = await this.getUserRoleInfo(userId, tenantId);
     const areas = await this.getAreaPermissions(userId, tenantId);
@@ -231,7 +236,9 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
-    this.logger.log(`Removing department permission for admin ${adminId}, dept ${departmentId}`);
+    this.logger.log(
+      `Removing department permission for admin ${adminId}, dept ${departmentId}`,
+    );
 
     const result = await this.db.query<DbAffectedRows>(
       `DELETE FROM admin_department_permissions
@@ -282,7 +289,8 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<{ success: boolean; error?: string }> {
-    const hasValidDepts = departmentIds !== undefined && departmentIds.length > 0;
+    const hasValidDepts =
+      departmentIds !== undefined && departmentIds.length > 0;
     const shouldAssign = operation === 'assign' && hasValidDepts;
     const shouldRemove = operation === 'remove';
 
@@ -291,7 +299,13 @@ export class AdminPermissionsService {
     }
 
     const deptIds = shouldAssign ? departmentIds : [];
-    await this.setDepartmentPermissions(adminId, deptIds, permissions, modifiedBy, tenantId);
+    await this.setDepartmentPermissions(
+      adminId,
+      deptIds,
+      permissions,
+      modifiedBy,
+      tenantId,
+    );
     return { success: true };
   }
 
@@ -346,7 +360,9 @@ export class AdminPermissionsService {
     tenantId: number,
     permissionLevel: PermissionLevel = 'read',
   ): Promise<PermissionCheckResult> {
-    this.logger.log(`Checking access for admin ${adminId} to department ${departmentId}`);
+    this.logger.log(
+      `Checking access for admin ${adminId} to department ${departmentId}`,
+    );
 
     // Check direct department permissions
     const directPermissions = await this.db.query<DbPermissionResult>(
@@ -447,16 +463,18 @@ export class AdminPermissionsService {
   ): Promise<void> {
     if (allowedAreaIds.length === 0) {
       // No area permissions = remove ALL employee memberships
-      this.logger.log(`Removing all employee memberships for user ${userId} (no area permissions)`);
+      this.logger.log(
+        `Removing all employee memberships for user ${userId} (no area permissions)`,
+      );
 
-      await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
-        userId,
-        tenantId,
-      ]);
-      await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
-        userId,
-        tenantId,
-      ]);
+      await this.db.query(
+        'DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
+        [userId, tenantId],
+      );
+      await this.db.query(
+        'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
+        [userId, tenantId],
+      );
       return;
     }
 
@@ -507,7 +525,9 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
-    this.logger.log(`Removing area permission for user ${userId}, area ${areaId}`);
+    this.logger.log(
+      `Removing area permission for user ${userId}, area ${areaId}`,
+    );
 
     const result = await this.db.query<DbAffectedRows>(
       `DELETE FROM admin_area_permissions
@@ -574,7 +594,9 @@ export class AdminPermissionsService {
     );
 
     if (rows.length === 0) {
-      this.logger.error(`User not found or inactive - userId: ${userId}, tenantId: ${tenantId}`);
+      this.logger.error(
+        `User not found or inactive - userId: ${userId}, tenantId: ${tenantId}`,
+      );
       throw new NotFoundException('User not found or inactive');
     }
 
@@ -592,7 +614,10 @@ export class AdminPermissionsService {
   /**
    * Get area permissions for a user
    */
-  private async getAreaPermissions(userId: number, tenantId: number): Promise<AdminArea[]> {
+  private async getAreaPermissions(
+    userId: number,
+    tenantId: number,
+  ): Promise<AdminArea[]> {
     const rows = await this.db.query<DbAreaPermissionRow>(
       `SELECT
         a.id,

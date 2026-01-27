@@ -4,7 +4,11 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import { AVAILABILITY_ICONS, AVAILABILITY_LABELS, AVAILABILITY_COLORS } from './constants';
+  import {
+    AVAILABILITY_ICONS,
+    AVAILABILITY_LABELS,
+    AVAILABILITY_COLORS,
+  } from './constants';
   import {
     getEmployeeDisplayName,
     getEffectiveAvailabilityForWeek,
@@ -62,7 +66,10 @@
     {#each employees as employee (employee.id)}
       {@const isFullyUnavailable =
         getEffectiveAvailabilityForWeek(employee, weekDates) !== 'available'}
-      {@const overlappingStatus = getOverlappingUnavailability(employee, weekDates)}
+      {@const overlappingStatus = getOverlappingUnavailability(
+        employee,
+        weekDates,
+      )}
       <div
         class="employee-item"
         class:unavailable={isFullyUnavailable}
@@ -83,7 +90,11 @@
               employee.availabilityStart,
               employee.availabilityEnd,
             )}
-            <span class="availability-badge {AVAILABILITY_COLORS[overlappingStatus]}">
+            <span
+              class="availability-badge {AVAILABILITY_COLORS[
+                overlappingStatus
+              ]}"
+            >
               <i class="fas {AVAILABILITY_ICONS[overlappingStatus]}"></i>
               {AVAILABILITY_LABELS[overlappingStatus]}
             </span>

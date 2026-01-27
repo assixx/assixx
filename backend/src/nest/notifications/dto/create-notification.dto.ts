@@ -11,9 +11,12 @@ import { DateSchema, IdSchema } from '../../../schemas/common.schema.js';
 /**
  * Notification type enum
  */
-const NotificationTypeSchema = z.enum(['system', 'task', 'message', 'announcement', 'reminder'], {
-  message: 'Invalid notification type',
-});
+const NotificationTypeSchema = z.enum(
+  ['system', 'task', 'message', 'announcement', 'reminder'],
+  {
+    message: 'Invalid notification type',
+  },
+);
 
 /**
  * Priority enum
@@ -44,13 +47,22 @@ export const CreateNotificationSchema = z
     priority: PrioritySchema.optional(),
     recipientType: RecipientTypeSchema,
     recipientId: IdSchema.optional(),
-    actionUrl: z.string().max(500, 'Action URL cannot exceed 500 characters').optional(),
-    actionLabel: z.string().max(100, 'Action label cannot exceed 100 characters').optional(),
+    actionUrl: z
+      .string()
+      .max(500, 'Action URL cannot exceed 500 characters')
+      .optional(),
+    actionLabel: z
+      .string()
+      .max(100, 'Action label cannot exceed 100 characters')
+      .optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
     scheduledFor: DateSchema.optional(),
   })
   .refine(
-    (data: { recipientType: string; recipientId?: number | undefined }): boolean => {
+    (data: {
+      recipientType: string;
+      recipientId?: number | undefined;
+    }): boolean => {
       return data.recipientType === 'all' || Boolean(data.recipientId);
     },
     {
@@ -62,4 +74,6 @@ export const CreateNotificationSchema = z
 /**
  * Create Notification DTO class
  */
-export class CreateNotificationDto extends createZodDto(CreateNotificationSchema) {}
+export class CreateNotificationDto extends createZodDto(
+  CreateNotificationSchema,
+) {}

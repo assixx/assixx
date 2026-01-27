@@ -74,7 +74,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
       return { statusData: [], currentUserId: userId };
     }
 
-    const json = (await response.json()) as ApiResponse<DeletionStatusItem | DeletionStatusItem[]>;
+    const json = (await response.json()) as ApiResponse<
+      DeletionStatusItem | DeletionStatusItem[]
+    >;
 
     return {
       statusData: parseStatusResponse(json),

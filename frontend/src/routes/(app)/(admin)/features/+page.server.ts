@@ -10,7 +10,12 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { Plan, TenantAddons, TenantFeature, AddonInfo } from './_lib/types';
+import type {
+  Plan,
+  TenantAddons,
+  TenantFeature,
+  AddonInfo,
+} from './_lib/types';
 
 const log = createLogger('Features');
 
@@ -145,8 +150,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   ]);
 
   const plans = buildPlansDictionary(plansData);
-  const { planCode: currentPlanCode, addons } = processCurrentPlan(currentPlanData);
-  const tenantFeatures = Array.isArray(tenantFeaturesData) ? tenantFeaturesData : [];
+  const { planCode: currentPlanCode, addons } =
+    processCurrentPlan(currentPlanData);
+  const tenantFeatures =
+    Array.isArray(tenantFeaturesData) ? tenantFeaturesData : [];
 
   return {
     plans,

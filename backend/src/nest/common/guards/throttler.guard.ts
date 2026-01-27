@@ -82,7 +82,9 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         return null;
       }
 
-      const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+      const payloadJson = Buffer.from(payloadBase64, 'base64').toString(
+        'utf-8',
+      );
       const payload = JSON.parse(payloadJson) as JwtPayloadMinimal;
 
       // Support both 'id' and 'userId' fields

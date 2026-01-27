@@ -76,10 +76,16 @@
 
   // Derived: Filtered machines based on current filter/search state
   const filteredMachines = $derived(
-    applyAllFilters(allMachines, machineState.currentStatusFilter, machineState.currentSearchQuery),
+    applyAllFilters(
+      allMachines,
+      machineState.currentStatusFilter,
+      machineState.currentSearchQuery,
+    ),
   );
 
-  const emptyStateTitle = $derived(getEmptyStateTitle(machineState.currentStatusFilter));
+  const emptyStateTitle = $derived(
+    getEmptyStateTitle(machineState.currentStatusFilter),
+  );
   const emptyStateDescription = $derived(
     getEmptyStateDescription(machineState.currentStatusFilter),
   );
@@ -116,25 +122,35 @@
         nextMaintenance: machineState.formNextMaintenance,
       });
 
-      const savedId = await apiSaveMachine(formData, machineState.currentEditId);
+      const savedId = await apiSaveMachine(
+        formData,
+        machineState.currentEditId,
+      );
 
       const teamsChanged =
-        machineState.formTeamIds.length !== machineState.currentMachineTeamIds.length ||
-        machineState.formTeamIds.some((id) => !machineState.currentMachineTeamIds.includes(id));
+        machineState.formTeamIds.length !==
+          machineState.currentMachineTeamIds.length ||
+        machineState.formTeamIds.some(
+          (id) => !machineState.currentMachineTeamIds.includes(id),
+        );
 
       if (teamsChanged) {
         await apiSetMachineTeams(savedId, machineState.formTeamIds);
       }
 
       showSuccessAlert(
-        machineState.isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        machineState.isEditMode ?
+          MESSAGES.SUCCESS_UPDATED
+        : MESSAGES.SUCCESS_CREATED,
       );
       machineState.closeMachineModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error saving machine');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
+      );
     } finally {
       machineState.setSubmitting(false);
     }
@@ -310,7 +326,8 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (machineState.showDeleteConfirmModal) machineState.closeDeleteConfirmModal();
+      if (machineState.showDeleteConfirmModal)
+        machineState.closeDeleteConfirmModal();
       else if (machineState.showDeleteModal) machineState.closeDeleteModal();
       else if (machineState.showMachineModal) machineState.closeMachineModal();
     }
@@ -336,7 +353,10 @@
 
       <div class="flex gap-4 items-center justify-between mt-6">
         <!-- Status Toggle Group -->
-        <div class="toggle-group" id="machine-status-toggle">
+        <div
+          class="toggle-group"
+          id="machine-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -388,7 +408,10 @@
           class="search-input-wrapper max-w-80"
           class:search-input-wrapper--open={machineState.searchOpen}
         >
-          <div class="search-input" id="machine-search-container">
+          <div
+            class="search-input"
+            id="machine-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -401,7 +424,8 @@
             />
             <button
               class="search-input__clear"
-              class:search-input__clear--visible={machineState.currentSearchQuery.length > 0}
+              class:search-input__clear--visible={machineState
+                .currentSearchQuery.length > 0}
               type="button"
               aria-label="Suche löschen"
               onclick={clearSearch}
@@ -409,9 +433,14 @@
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="search-input__results" id="machine-search-results">
+          <div
+            class="search-input__results"
+            id="machine-search-results"
+          >
             {#if machineState.currentSearchQuery && filteredMachines.length === 0}
-              <div class="search-input__no-results">{MESSAGES.SEARCH_NO_RESULTS}</div>
+              <div class="search-input__no-results">
+                {MESSAGES.SEARCH_NO_RESULTS}
+              </div>
             {:else if machineState.currentSearchQuery}
               {#each filteredMachines.slice(0, 5) as machine (machine.id)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -425,11 +454,17 @@
                   <div class="search-result__content">
                     <div class="search-result__name">
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                      {@html highlightMatch(machine.name, machineState.currentSearchQuery)}
+                      {@html highlightMatch(
+                        machine.name,
+                        machineState.currentSearchQuery,
+                      )}
                     </div>
                     <div class="search-result__details">
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                      {@html highlightMatch(machine.model ?? '', machineState.currentSearchQuery)}
+                      {@html highlightMatch(
+                        machine.model ?? '',
+                        machineState.currentSearchQuery,
+                      )}
                       {#if machine.manufacturer}
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                         · {@html highlightMatch(
@@ -455,19 +490,32 @@
     <div class="card__body">
       {#if machineState.error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{machineState.error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => invalidateAll()}
+          >
             {MESSAGES.BTN_RETRY}
           </button>
         </div>
       {:else if filteredMachines.length === 0}
-        <div id="machines-empty" class="empty-state">
+        <div
+          id="machines-empty"
+          class="empty-state"
+        >
           <div class="empty-state__icon"><i class="fas fa-cogs"></i></div>
           <h3 class="empty-state__title">{emptyStateTitle}</h3>
           <p class="empty-state__description">{emptyStateDescription}</p>
           {#if machineState.currentStatusFilter === 'all'}
-            <button type="button" class="btn btn-primary" onclick={openAddModal}>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={openAddModal}
+            >
               <i class="fas fa-plus"></i>
               {MESSAGES.BTN_ADD_MACHINE}
             </button>
@@ -476,7 +524,10 @@
       {:else}
         <div id="machines-table-content">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped" id="machines-table">
+            <table
+              class="data-table data-table--hover data-table--striped"
+              id="machines-table"
+            >
               <thead>
                 <tr>
                   <th scope="col">{MESSAGES.TH_ID}</th>
@@ -494,9 +545,13 @@
               </thead>
               <tbody>
                 {#each filteredMachines as machine (machine.id)}
-                  {@const maintenanceWarning = getMaintenanceWarningStatus(machine.nextMaintenance)}
+                  {@const maintenanceWarning = getMaintenanceWarningStatus(
+                    machine.nextMaintenance,
+                  )}
                   {@const areaBadge = getAreaBadgeData(machine.areaName)}
-                  {@const deptBadge = getDepartmentBadgeData(machine.departmentName)}
+                  {@const deptBadge = getDepartmentBadgeData(
+                    machine.departmentName,
+                  )}
                   {@const teamsBadge = getTeamsBadgeData(machine.teams)}
                   <tr>
                     <td><code class="text-muted">{machine.id}</code></td>
@@ -504,17 +559,26 @@
                     <td>{machine.model ?? '-'}</td>
                     <td>{machine.manufacturer ?? '-'}</td>
                     <td>
-                      <span class="badge {areaBadge.class}" title={areaBadge.tooltip}>
+                      <span
+                        class="badge {areaBadge.class}"
+                        title={areaBadge.tooltip}
+                      >
                         {areaBadge.text}
                       </span>
                     </td>
                     <td>
-                      <span class="badge {deptBadge.class}" title={deptBadge.tooltip}>
+                      <span
+                        class="badge {deptBadge.class}"
+                        title={deptBadge.tooltip}
+                      >
                         {deptBadge.text}
                       </span>
                     </td>
                     <td>
-                      <span class="badge {teamsBadge.class}" title={teamsBadge.tooltip}>
+                      <span
+                        class="badge {teamsBadge.class}"
+                        title={teamsBadge.tooltip}
+                      >
                         {teamsBadge.text}
                       </span>
                     </td>

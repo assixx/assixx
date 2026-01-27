@@ -1,5 +1,3 @@
-/* eslint-disable max-lines */
-/* eslint-disable max-lines-per-function */
 /**
  * Surveys Service
  *
@@ -307,14 +305,29 @@ export class SurveysService {
     const offset = (page - 1) * limit;
 
     // Step 1: Check unrestricted access (mirrors calendar.service.ts:277)
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
+      userId,
+      tenantId,
+      userRole,
+    );
 
     let surveys: DbSurvey[];
     if (hasUnrestrictedAccess) {
-      surveys = await this.getAllSurveysUnrestricted(tenantId, query.status, limit, offset);
+      surveys = await this.getAllSurveysUnrestricted(
+        tenantId,
+        query.status,
+        limit,
+        offset,
+      );
     } else if (query.manage === true) {
       // Management mode: only surveys user can manage (creator/lead)
-      surveys = await this.getAllSurveysManageable(tenantId, userId, query.status, limit, offset);
+      surveys = await this.getAllSurveysManageable(
+        tenantId,
+        userId,
+        query.status,
+        limit,
+        offset,
+      );
     } else {
       surveys = await this.getAllSurveysWithVisibility(
         tenantId,
@@ -368,7 +381,10 @@ export class SurveysService {
    * Returns SQL fragment: (s.created_by = $X OR EXISTS(...))
    * Expects `s` as the survey table alias.
    */
-  private buildVisibilityClause(tenantParam: string, userParam: string): string {
+  private buildVisibilityClause(
+    tenantParam: string,
+    userParam: string,
+  ): string {
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
@@ -420,7 +436,10 @@ export class SurveysService {
    *
    * Hierarchy inheritance: area lead → dept/team in area, dept lead → team in dept.
    */
-  private buildManagementVisibilityClause(tenantParam: string, userParam: string): string {
+  private buildManagementVisibilityClause(
+    tenantParam: string,
+    userParam: string,
+  ): string {
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
@@ -578,10 +597,15 @@ export class SurveysService {
   ): Promise<Set<number>> {
     if (surveyIds.length === 0) return new Set();
 
-    const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+    const placeholders = surveyIds
+      .map((_: number, idx: number) => `$${idx + 1}`)
+      .join(',');
     const tenantIdx = surveyIds.length + 1;
     const userIdx = surveyIds.length + 2;
-    const managementClause = this.buildManagementVisibilityClause(`$${tenantIdx}`, `$${userIdx}`);
+    const managementClause = this.buildManagementVisibilityClause(
+      `$${tenantIdx}`,
+      `$${userIdx}`,
+    );
 
     const rows = await this.db.query<{ id: number }>(
       `SELECT s.id FROM surveys s
@@ -592,13 +616,20 @@ export class SurveysService {
     return new Set(rows.map((r: { id: number }) => r.id));
   }
 
-  private async attachAssignmentsToSurveys(surveys: DbSurvey[], tenantId: number): Promise<void> {
+  private async attachAssignmentsToSurveys(
+    surveys: DbSurvey[],
+    tenantId: number,
+  ): Promise<void> {
     if (surveys.length === 0) return;
     const surveyIds = surveys.map((s: DbSurvey) => s.id);
-    const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+    const placeholders = surveyIds
+      .map((_: number, idx: number) => `$${idx + 1}`)
+      .join(',');
     const tenantParamIndex = surveyIds.length + 1;
 
-    const assignmentRows = await this.db.query<DbSurveyAssignment & { survey_id: number }>(
+    const assignmentRows = await this.db.query<
+      DbSurveyAssignment & { survey_id: number }
+    >(
       `SELECT sa.*,
          a.name AS area_name,
          d.name AS department_name,
@@ -623,8 +654,12 @@ export class SurveysService {
     }
   }
 
-  private transformSurveyWithMetadata(survey: DbSurvey): Record<string, unknown> {
-    const transformed = this.transformSurveyToApi(survey as unknown as Record<string, unknown>);
+  private transformSurveyWithMetadata(
+    survey: DbSurvey,
+  ): Record<string, unknown> {
+    const transformed = this.transformSurveyToApi(
+      survey as unknown as Record<string, unknown>,
+    );
     return {
       ...transformed,
       responseCount:
@@ -640,22 +675,34 @@ export class SurveysService {
     };
   }
 
-  private transformSurveyToApi(survey: Record<string, unknown>): Record<string, unknown> {
+  private transformSurveyToApi(
+    survey: Record<string, unknown>,
+  ): Record<string, unknown> {
     const apiSurvey = dbToApi(survey);
     const questions = survey['questions'];
-    if (questions !== undefined && questions !== null && Array.isArray(questions)) {
+    if (
+      questions !== undefined &&
+      questions !== null &&
+      Array.isArray(questions)
+    ) {
       apiSurvey['questions'] = (questions as Record<string, unknown>[]).map(
         (q: Record<string, unknown>) => {
           const transformedQuestion = dbToApi(q);
           const options = q['options'];
-          if (options !== null && options !== undefined && Array.isArray(options)) {
-            transformedQuestion['options'] = (options as unknown[]).map((opt: unknown) => {
-              if (typeof opt === 'string') return opt;
-              if (typeof opt === 'object' && opt !== null) {
-                return dbToApi(opt as Record<string, unknown>);
-              }
-              return opt;
-            });
+          if (
+            options !== null &&
+            options !== undefined &&
+            Array.isArray(options)
+          ) {
+            transformedQuestion['options'] = (options as unknown[]).map(
+              (opt: unknown) => {
+                if (typeof opt === 'string') return opt;
+                if (typeof opt === 'object' && opt !== null) {
+                  return dbToApi(opt as Record<string, unknown>);
+                }
+                return opt;
+              },
+            );
           }
           return {
             ...transformedQuestion,
@@ -665,7 +712,11 @@ export class SurveysService {
       );
     }
     const assignments = survey['assignments'];
-    if (assignments !== undefined && assignments !== null && Array.isArray(assignments)) {
+    if (
+      assignments !== undefined &&
+      assignments !== null &&
+      Array.isArray(assignments)
+    ) {
       apiSurvey['assignments'] = (assignments as Record<string, unknown>[]).map(
         (a: Record<string, unknown>) => dbToApi(a),
       );
@@ -691,14 +742,24 @@ export class SurveysService {
       throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
     }
     if (manage === true) {
-      await this.checkSurveyManagementAccess(survey.id, tenantId, userId, userRole);
+      await this.checkSurveyManagementAccess(
+        survey.id,
+        tenantId,
+        userId,
+        userRole,
+      );
     } else {
       await this.checkSurveyAccess(survey.id, tenantId, userId, userRole);
     }
-    return this.transformSurveyToApi(survey as unknown as Record<string, unknown>);
+    return this.transformSurveyToApi(
+      survey as unknown as Record<string, unknown>,
+    );
   }
 
-  private async getSurveyByNumericId(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
+  private async getSurveyByNumericId(
+    surveyId: number,
+    tenantId: number,
+  ): Promise<DbSurvey | null> {
     const surveyRows = await this.db.query<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.id = $1 AND s.tenant_id = $2`,
@@ -713,7 +774,10 @@ export class SurveysService {
     return survey;
   }
 
-  private async getSurveyByUUID(uuid: string, tenantId: number): Promise<DbSurvey | null> {
+  private async getSurveyByUUID(
+    uuid: string,
+    tenantId: number,
+  ): Promise<DbSurvey | null> {
     const surveyRows = await this.db.query<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.uuid = $1 AND s.tenant_id = $2`,
@@ -774,16 +838,19 @@ export class SurveysService {
     }
   }
 
-  private async loadSurveyQuestionsAndAssignments(
-    surveyId: number,
-  ): Promise<{ questions: DbSurveyQuestion[]; assignments: DbSurveyAssignment[] }> {
+  private async loadSurveyQuestionsAndAssignments(surveyId: number): Promise<{
+    questions: DbSurveyQuestion[];
+    assignments: DbSurveyAssignment[];
+  }> {
     const questions = await this.db.query<DbSurveyQuestion>(
       `SELECT * FROM survey_questions WHERE survey_id = $1 ORDER BY order_index`,
       [surveyId],
     );
     if (questions.length > 0) {
       const questionIds = questions.map((q: DbSurveyQuestion) => q.id);
-      const placeholders = questionIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+      const placeholders = questionIds
+        .map((_: number, idx: number) => `$${idx + 1}`)
+        .join(',');
       const optionRows = await this.db.query<DbSurveyQuestionOption>(
         `SELECT id, question_id, option_text, order_position FROM survey_question_options
          WHERE question_id IN (${placeholders}) ORDER BY question_id, order_position`,
@@ -805,7 +872,11 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<void> {
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
+      userId,
+      tenantId,
+      userRole,
+    );
     if (hasUnrestrictedAccess) return;
 
     // Single targeted query using the same visibility clause
@@ -831,7 +902,11 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<void> {
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
+      userId,
+      tenantId,
+      userRole,
+    );
     if (hasUnrestrictedAccess) return;
 
     const managementClause = this.buildManagementVisibilityClause('$2', '$3');
@@ -877,7 +952,8 @@ export class SurveysService {
     questionId: number,
     questionData: { question_type: string; options?: string[] },
   ): Promise<void> {
-    if (questionData.options === undefined || questionData.options.length === 0) return;
+    if (questionData.options === undefined || questionData.options.length === 0)
+      return;
     const qType = questionData.question_type;
     if (qType !== 'single_choice' && qType !== 'multiple_choice') return;
     for (const [optIndex, optionText] of questionData.options.entries()) {
@@ -931,11 +1007,19 @@ export class SurveysService {
   ): Promise<void> {
     if (assignments.length === 0) return;
 
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
+      userId,
+      tenantId,
+      userRole,
+    );
     if (hasUnrestrictedAccess) return;
 
     for (const raw of assignments) {
-      await this.validateSingleAssignment(raw as AssignmentInput, userId, tenantId);
+      await this.validateSingleAssignment(
+        raw as AssignmentInput,
+        userId,
+        tenantId,
+      );
     }
   }
 
@@ -951,7 +1035,12 @@ export class SurveysService {
           'Only users with full access can assign to the entire company',
         );
       case 'area':
-        await this.validateLeadershipPermission('area', assignment.areaId, userId, tenantId);
+        await this.validateLeadershipPermission(
+          'area',
+          assignment.areaId,
+          userId,
+          tenantId,
+        );
         break;
       case 'department':
         await this.validateLeadershipPermission(
@@ -962,7 +1051,12 @@ export class SurveysService {
         );
         break;
       case 'team':
-        await this.validateLeadershipPermission('team', assignment.teamId, userId, tenantId);
+        await this.validateLeadershipPermission(
+          'team',
+          assignment.teamId,
+          userId,
+          tenantId,
+        );
         break;
       default:
         break;
@@ -981,9 +1075,15 @@ export class SurveysService {
     const query = LEADERSHIP_QUERIES[entityType];
     if (query === undefined) return;
 
-    const rows = await this.db.query<{ id: number }>(query, [entityId, userId, tenantId]);
+    const rows = await this.db.query<{ id: number }>(query, [
+      entityId,
+      userId,
+      tenantId,
+    ]);
     if (rows.length === 0) {
-      throw new ForbiddenException(`No leadership permission for ${entityType} ${entityId}`);
+      throw new ForbiddenException(
+        `No leadership permission for ${entityType} ${entityId}`,
+      );
     }
   }
 
@@ -999,7 +1099,12 @@ export class SurveysService {
 
     // Validate assignment permissions before creating
     if (dto.assignments !== undefined && dto.assignments.length > 0) {
-      await this.validateAssignmentPermissions(userId, tenantId, userRole, dto.assignments);
+      await this.validateAssignmentPermissions(
+        userId,
+        tenantId,
+        userRole,
+        dto.assignments,
+      );
     }
 
     const surveyUuid = uuidv7();
@@ -1028,13 +1133,20 @@ export class SurveysService {
       await this.insertSurveyAssignments(tenantId, surveyId, dto.assignments);
     }
 
-    const createdSurvey = await this.getSurveyById(surveyId, tenantId, userId, 'admin');
+    const createdSurvey = await this.getSurveyById(
+      surveyId,
+      tenantId,
+      userId,
+      'admin',
+    );
 
     // Emit SSE event for real-time notifications
     eventBus.emitSurveyCreated(tenantId, {
       id: surveyId,
       title: dto.title,
-      ...(dto.endDate !== undefined && dto.endDate !== null ? { deadline: dto.endDate } : {}),
+      ...(dto.endDate !== undefined && dto.endDate !== null ?
+        { deadline: dto.endDate }
+      : {}),
     });
 
     // Create persistent notification for badge counts (ADR-004)
@@ -1081,10 +1193,12 @@ export class SurveysService {
   ): Promise<unknown> {
     this.logger.log(`Updating survey ${id}`);
     await this.checkSurveyManagementAccess(id, tenantId, userId, userRole);
-    const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
-      string,
-      unknown
-    >;
+    const existingSurvey = (await this.getSurveyById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    )) as Record<string, unknown>;
     const responseCount = existingSurvey['responseCount'];
     this.validateSurveyUpdate(
       userRole,
@@ -1111,22 +1225,38 @@ export class SurveysService {
     );
 
     if (dto.questions !== undefined) {
-      await this.db.query('DELETE FROM survey_questions WHERE survey_id = $1', [id]);
+      await this.db.query('DELETE FROM survey_questions WHERE survey_id = $1', [
+        id,
+      ]);
       await this.insertSurveyQuestions(tenantId, id, dto.questions);
     }
     if (dto.assignments !== undefined) {
       // Validate assignment permissions before replacing
       if (dto.assignments.length > 0) {
-        await this.validateAssignmentPermissions(userId, tenantId, userRole, dto.assignments);
+        await this.validateAssignmentPermissions(
+          userId,
+          tenantId,
+          userRole,
+          dto.assignments,
+        );
       }
-      await this.db.query('DELETE FROM survey_assignments WHERE survey_id = $1', [id]);
+      await this.db.query(
+        'DELETE FROM survey_assignments WHERE survey_id = $1',
+        [id],
+      );
       await this.insertSurveyAssignments(tenantId, id, dto.assignments);
     }
 
-    const updatedSurvey = await this.getSurveyById(id, tenantId, userId, userRole);
+    const updatedSurvey = await this.getSurveyById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
 
     // Emit SSE event for real-time notifications
-    const deadline = dto.endDate ?? (existingSurvey['endDate'] as string | undefined);
+    const deadline =
+      dto.endDate ?? (existingSurvey['endDate'] as string | undefined);
     eventBus.emitSurveyUpdated(tenantId, {
       id,
       title: dto.title ?? (existingSurvey['title'] as string),
@@ -1156,12 +1286,18 @@ export class SurveysService {
   }
 
   /** Validates update permissions and state */
-  private validateSurveyUpdate(userRole: string, status: string, responseCount: number): void {
+  private validateSurveyUpdate(
+    userRole: string,
+    status: string,
+    responseCount: number,
+  ): void {
     if (userRole === 'employee') {
       throw new ForbiddenException('Only admins can update surveys');
     }
     if (status === 'active' && responseCount > 0) {
-      throw new ConflictException('Cannot update survey with existing responses');
+      throw new ConflictException(
+        'Cannot update survey with existing responses',
+      );
     }
   }
 
@@ -1175,16 +1311,23 @@ export class SurveysService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting survey ${id}`);
     await this.checkSurveyManagementAccess(id, tenantId, userId, userRole);
-    const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
-      string,
-      unknown
-    >;
+    const existingSurvey = (await this.getSurveyById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    )) as Record<string, unknown>;
     const rawCount = existingSurvey['responseCount'];
     const responseCount = typeof rawCount === 'number' ? rawCount : 0;
     if (responseCount > 0) {
-      throw new ConflictException('Cannot delete survey with existing responses');
+      throw new ConflictException(
+        'Cannot delete survey with existing responses',
+      );
     }
-    await this.db.query('DELETE FROM surveys WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.query(
+      'DELETE FROM surveys WHERE id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
 
     // Log activity
     await this.activityLogger.logDelete(
@@ -1246,7 +1389,14 @@ export class SurveysService {
     if (templateData.questions !== undefined) {
       dto.questions = templateData.questions as CreateSurveyDto['questions'];
     }
-    return await this.createSurvey(dto, tenantId, userId, userRole, ipAddress, userAgent);
+    return await this.createSurvey(
+      dto,
+      tenantId,
+      userId,
+      userRole,
+      ipAddress,
+      userAgent,
+    );
   }
 
   /** Parses count value from DB (handles string or number) */
@@ -1277,7 +1427,11 @@ export class SurveysService {
       questionType: question.question_type,
     };
     const qType = question.question_type as string;
-    if (qType === 'single_choice' || qType === 'multiple_choice' || qType === 'yes_no') {
+    if (
+      qType === 'single_choice' ||
+      qType === 'multiple_choice' ||
+      qType === 'yes_no'
+    ) {
       stat.options = await this.getChoiceQuestionStats(question);
     } else if (qType === 'text') {
       stat.responses = await this.getTextQuestionResponses(question.id);
@@ -1295,11 +1449,21 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<SurveyStatisticsResponse> {
-    this.logger.debug(`Getting statistics for survey ${String(surveyIdOrUuid)}`);
+    this.logger.debug(
+      `Getting statistics for survey ${String(surveyIdOrUuid)}`,
+    );
 
-    const { survey, surveyId } = await this.resolveSurveyOrThrow(surveyIdOrUuid, tenantId);
+    const { survey, surveyId } = await this.resolveSurveyOrThrow(
+      surveyIdOrUuid,
+      tenantId,
+    );
 
-    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
+    await this.checkSurveyManagementAccess(
+      surveyId,
+      tenantId,
+      userId,
+      userRole,
+    );
 
     const statsRows = await this.db.query<{
       total_responses: number | string;
@@ -1323,13 +1487,21 @@ export class SurveysService {
       totalResponses,
       completedResponses,
       completionRate:
-        totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0,
+        totalResponses > 0 ?
+          Math.round((completedResponses / totalResponses) * 100)
+        : 0,
       questions: await this.buildQuestionStats(survey.questions ?? []),
     };
-    if (statsRow?.first_response !== null && statsRow?.first_response !== undefined) {
+    if (
+      statsRow?.first_response !== null &&
+      statsRow?.first_response !== undefined
+    ) {
       response.firstResponse = statsRow.first_response;
     }
-    if (statsRow?.last_response !== null && statsRow?.last_response !== undefined) {
+    if (
+      statsRow?.last_response !== null &&
+      statsRow?.last_response !== undefined
+    ) {
       response.lastResponse = statsRow.last_response;
     }
     return response;
@@ -1347,7 +1519,9 @@ export class SurveysService {
     } else {
       options = question.options ?? [];
     }
-    const answerRows = await this.db.query<{ answer_options: string | number[] }>(
+    const answerRows = await this.db.query<{
+      answer_options: string | number[];
+    }>(
       `SELECT sa.answer_options FROM survey_answers sa WHERE sa.question_id = $1 AND sa.answer_options IS NOT NULL`,
       [question.id],
     );
@@ -1436,14 +1610,20 @@ export class SurveysService {
   private async getDateQuestionStats(
     questionId: number,
   ): Promise<{ optionId: number; optionText: string; count: number }[]> {
-    const dateRows = await this.db.query<{ answer_date: Date | string; count: number | string }>(
+    const dateRows = await this.db.query<{
+      answer_date: Date | string;
+      count: number | string;
+    }>(
       `SELECT sa.answer_date, COUNT(*) as count FROM survey_answers sa
        WHERE sa.question_id = $1 AND sa.answer_date IS NOT NULL
        GROUP BY sa.answer_date ORDER BY count DESC, sa.answer_date DESC`,
       [questionId],
     );
     return dateRows.map(
-      (row: { answer_date: Date | string; count: number | string }, index: number) => {
+      (
+        row: { answer_date: Date | string; count: number | string },
+        index: number,
+      ) => {
         const dateText =
           row.answer_date instanceof Date ?
             row.answer_date.toISOString().split('T')[0]
@@ -1451,7 +1631,10 @@ export class SurveysService {
         return {
           optionId: index + 1,
           optionText: dateText ?? '',
-          count: typeof row.count === 'string' ? Number.parseInt(row.count, 10) : row.count,
+          count:
+            typeof row.count === 'string' ?
+              Number.parseInt(row.count, 10)
+            : row.count,
         };
       },
     );
@@ -1479,10 +1662,18 @@ export class SurveysService {
         `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, answer.answer_date, tenantId],
       );
-    } else if (answer.answer_options !== undefined && answer.answer_options.length > 0) {
+    } else if (
+      answer.answer_options !== undefined &&
+      answer.answer_options.length > 0
+    ) {
       await this.db.query(
         `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES ($1, $2, $3, $4)`,
-        [responseId, questionId, JSON.stringify(answer.answer_options), tenantId],
+        [
+          responseId,
+          questionId,
+          JSON.stringify(answer.answer_options),
+          tenantId,
+        ],
       );
     }
   }
@@ -1500,7 +1691,9 @@ export class SurveysService {
       [surveyId, userId, tenantId],
     );
     if (existingRows.length > 0) {
-      throw new BadRequestException('You have already participated in this survey');
+      throw new BadRequestException(
+        'You have already participated in this survey',
+      );
     }
   }
 
@@ -1520,9 +1713,15 @@ export class SurveysService {
       [surveyId, tenantId],
     );
     const survey = surveyRows[0];
-    if (survey === undefined) throw new NotFoundException('Survey not found or not active');
+    if (survey === undefined)
+      throw new NotFoundException('Survey not found or not active');
 
-    await this.checkDuplicateResponse(surveyId, userId, tenantId, survey.allow_multiple_responses);
+    await this.checkDuplicateResponse(
+      surveyId,
+      userId,
+      tenantId,
+      survey.allow_multiple_responses,
+    );
 
     const responseUuid = uuidv7();
     const responseRows = await this.db.query<{ id: number }>(
@@ -1536,7 +1735,12 @@ export class SurveysService {
       if (answer.question_id === undefined) {
         continue;
       }
-      await this.insertSingleAnswer(responseId, answer.question_id, tenantId, answer);
+      await this.insertSingleAnswer(
+        responseId,
+        answer.question_id,
+        tenantId,
+        answer,
+      );
     }
     return responseId;
   }
@@ -1549,7 +1753,12 @@ export class SurveysService {
     options: { page: number; limit: number },
   ): Promise<PaginatedResponsesResult> {
     this.logger.debug(`Getting all responses for survey ${surveyId}`);
-    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
+    await this.checkSurveyManagementAccess(
+      surveyId,
+      tenantId,
+      userId,
+      userRole,
+    );
     const surveyRows = await this.db.query<{ is_anonymous: boolean | number }>(
       `SELECT is_anonymous FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
@@ -1575,7 +1784,8 @@ export class SurveysService {
       isAnonymous ?
         'NULL as first_name, NULL as last_name, NULL as username'
       : 'u.first_name, u.last_name, u.username';
-    const userJoin = isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
+    const userJoin =
+      isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
     const responseRows = await this.db.query<DbSurveyResponse>(
       `SELECT sr.*, ${userFields} FROM survey_responses sr ${userJoin}
        WHERE sr.survey_id = $1 AND sr.tenant_id = $2 ORDER BY sr.completed_at DESC LIMIT $3 OFFSET $4`,
@@ -1606,12 +1816,17 @@ export class SurveysService {
     if (typeof dbResponse.started_at !== 'string') {
       baseResponse.startedAt = dbResponse.started_at.toISOString();
     }
-    if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
+    if (
+      dbResponse.completed_at !== null &&
+      typeof dbResponse.completed_at !== 'string'
+    ) {
       baseResponse.completedAt = dbResponse.completed_at.toISOString();
     }
     return {
       ...baseResponse,
-      answers: answerRows.map((a: DbSurveyAnswer) => this.transformSingleAnswer(a, optionTextMap)),
+      answers: answerRows.map((a: DbSurveyAnswer) =>
+        this.transformSingleAnswer(a, optionTextMap),
+      ),
     };
   }
 
@@ -1623,11 +1838,14 @@ export class SurveysService {
   }
 
   /** Batch-collects choice option IDs from answers and resolves them to display text via DB */
-  private async buildOptionTextMap(answerRows: DbSurveyAnswer[]): Promise<Map<number, string>> {
+  private async buildOptionTextMap(
+    answerRows: DbSurveyAnswer[],
+  ): Promise<Map<number, string>> {
     const allOptionIds: number[] = [];
     for (const a of answerRows) {
       if (
-        (a.question_type === 'single_choice' || a.question_type === 'multiple_choice') &&
+        (a.question_type === 'single_choice' ||
+          a.question_type === 'multiple_choice') &&
         a.answer_options !== null &&
         a.answer_options !== undefined
       ) {
@@ -1656,7 +1874,9 @@ export class SurveysService {
     answer: DbSurveyAnswer,
     optionTextMap: Map<number, string>,
   ): SurveyAnswer {
-    const transformed = dbToApi(answer as unknown as Record<string, unknown>) as SurveyAnswer;
+    const transformed = dbToApi(
+      answer as unknown as Record<string, unknown>,
+    ) as SurveyAnswer;
     if (answer.answer_date !== null && typeof answer.answer_date !== 'string') {
       transformed.answerDate = (answer.answer_date as Date).toISOString();
     }
@@ -1681,9 +1901,13 @@ export class SurveysService {
     optionTextMap: Map<number, string>,
   ): number[] {
     if (questionType === 'yes_no') {
-      return ids.map((id: number) => (id === 1 ? 'Ja' : 'Nein')) as unknown as number[];
+      return ids.map((id: number) =>
+        id === 1 ? 'Ja' : 'Nein',
+      ) as unknown as number[];
     }
-    return ids.map((id: number) => optionTextMap.get(id) ?? String(id)) as unknown as number[];
+    return ids.map(
+      (id: number) => optionTextMap.get(id) ?? String(id),
+    ) as unknown as number[];
   }
 
   async getMyResponse(
@@ -1727,7 +1951,11 @@ export class SurveysService {
     if (dbResponse === undefined) {
       throw new NotFoundException('Response not found');
     }
-    if (userRole !== 'root' && userRole !== 'admin' && dbResponse.user_id !== userId) {
+    if (
+      userRole !== 'root' &&
+      userRole !== 'admin' &&
+      dbResponse.user_id !== userId
+    ) {
       throw new ForbiddenException('No permission');
     }
     return await this.transformResponseWithAnswers(dbResponse, tenantId);
@@ -1741,7 +1969,10 @@ export class SurveysService {
     answers: SurveyAnswer[],
   ): Promise<{ message: string }> {
     this.logger.log(`Updating response ${responseId} for survey ${surveyId}`);
-    const resultRows = await this.db.query<{ id: number; allow_edit_responses: number }>(
+    const resultRows = await this.db.query<{
+      id: number;
+      allow_edit_responses: number;
+    }>(
       `SELECT sr.id, s.allow_edit_responses FROM survey_responses sr
        JOIN surveys s ON sr.survey_id = s.id WHERE sr.id = $1 AND sr.survey_id = $2 AND sr.user_id = $3 AND sr.tenant_id = $4`,
       [responseId, surveyId, userId, tenantId],
@@ -1756,14 +1987,19 @@ export class SurveysService {
     if (responseData.allow_edit_responses !== 1) {
       throw new ForbiddenException('Editing responses is not allowed');
     }
-    await this.db.query(`DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`, [
-      responseId,
-      tenantId,
-    ]);
+    await this.db.query(
+      `DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`,
+      [responseId, tenantId],
+    );
     const normalizedAnswers = normalizeAnswers(answers);
     for (const answer of normalizedAnswers) {
       if (answer.question_id === undefined) continue;
-      await this.insertSingleAnswer(responseId, answer.question_id, tenantId, answer);
+      await this.insertSingleAnswer(
+        responseId,
+        answer.question_id,
+        tenantId,
+        answer,
+      );
     }
     await this.db.query(
       `UPDATE survey_responses SET completed_at = NOW() WHERE id = $1 AND tenant_id = $2`,
@@ -1794,7 +2030,12 @@ export class SurveysService {
     format: 'csv' | 'excel',
   ): Promise<Buffer> {
     this.logger.log(`Exporting responses for survey ${surveyId} as ${format}`);
-    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
+    await this.checkSurveyManagementAccess(
+      surveyId,
+      tenantId,
+      userId,
+      userRole,
+    );
     const surveyCheckRows = await this.db.query<{ id: number }>(
       `SELECT id FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
@@ -1839,16 +2080,22 @@ export class SurveysService {
         answer_date: Date | string | null;
         answer_options: string | null;
       }) => {
-        const fullName = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
+        const fullName =
+          `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
         const userName = fullName !== '' ? fullName : (row.username ?? '');
-        const completed = row.completed_at !== null ? String(row.completed_at) : '';
+        const completed =
+          row.completed_at !== null ? String(row.completed_at) : '';
         return [
           String(row.response_id),
           userName,
           completed,
           row.question_text,
           String(
-            row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? '',
+            row.answer_text ??
+              row.answer_number ??
+              row.answer_date ??
+              row.answer_options ??
+              '',
           ),
         ];
       },
@@ -1863,13 +2110,16 @@ export class SurveysService {
   }
 
   parseIdParam(id: string): number | string {
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(id)) {
       return id;
     }
     const numericId = Number.parseInt(id, 10);
     if (Number.isNaN(numericId) || numericId <= 0) {
-      throw new BadRequestException('ID must be a positive integer or valid UUID');
+      throw new BadRequestException(
+        'ID must be a positive integer or valid UUID',
+      );
     }
     return numericId;
   }
@@ -1878,7 +2128,10 @@ export class SurveysService {
    * Resolves a UUID or numeric ID to a numeric survey ID.
    * If UUID is provided, looks up the survey and returns its numeric ID.
    */
-  async resolveToNumericId(idOrUuid: number | string, tenantId: number): Promise<number> {
+  async resolveToNumericId(
+    idOrUuid: number | string,
+    tenantId: number,
+  ): Promise<number> {
     if (typeof idOrUuid === 'number') {
       return idOrUuid;
     }
@@ -1899,8 +2152,13 @@ export class SurveysService {
    * Used for notification badge in sidebar.
    * Counts active surveys assigned to the user where no completed response exists.
    */
-  async getPendingSurveyCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    this.logger.debug(`Getting pending survey count for user ${userId}, tenant ${tenantId}`);
+  async getPendingSurveyCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    this.logger.debug(
+      `Getting pending survey count for user ${userId}, tenant ${tenantId}`,
+    );
 
     // Uses the same EXISTS-based visibility clause as listSurveys
     // $1 = tenantId, $2 = userId

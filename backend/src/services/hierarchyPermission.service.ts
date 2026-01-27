@@ -126,16 +126,28 @@ class HierarchyPermissionService {
       // Step 4: Check based on resource type
       switch (resourceType) {
         case 'area':
-          return await this.checkAreaAccess(userId, resourceId, permission, tenantId);
+          return await this.checkAreaAccess(
+            userId,
+            resourceId,
+            permission,
+            tenantId,
+          );
 
         case 'department':
-          return await this.checkDepartmentAccess(userId, resourceId, permission, tenantId);
+          return await this.checkDepartmentAccess(
+            userId,
+            resourceId,
+            permission,
+            tenantId,
+          );
 
         case 'team':
           return await this.checkTeamAccess(userId, resourceId, tenantId);
 
         default:
-          logger.warn(`[HierarchyPermission] Unknown resource type: ${String(resourceType)}`);
+          logger.warn(
+            `[HierarchyPermission] Unknown resource type: ${String(resourceType)}`,
+          );
           return false;
       }
     } catch (error: unknown) {
@@ -204,7 +216,12 @@ class HierarchyPermissionService {
     // 2. Check Area inheritance (only if department has area_id)
     const dept = await this.getDepartmentInfo(departmentId, tenantId);
     if (dept !== null && dept.area_id !== null) {
-      const hasAreaPerm = await this.checkAreaAccess(userId, dept.area_id, permission, tenantId);
+      const hasAreaPerm = await this.checkAreaAccess(
+        userId,
+        dept.area_id,
+        permission,
+        tenantId,
+      );
       if (hasAreaPerm) {
         return true;
       }
@@ -237,7 +254,12 @@ class HierarchyPermissionService {
     // 2. Check Department inheritance (if team has department_id)
     const team = await this.getTeamInfo(teamId, tenantId);
     if (team !== null && team.department_id !== null) {
-      return await this.checkDepartmentAccess(userId, team.department_id, 'read', tenantId);
+      return await this.checkDepartmentAccess(
+        userId,
+        team.department_id,
+        'read',
+        tenantId,
+      );
     }
 
     return false;
@@ -250,15 +272,19 @@ class HierarchyPermissionService {
   /**
    * Get all Area IDs user has access to
    */
-  async getAccessibleAreaIds(userId: number, tenantId: number): Promise<number[]> {
+  async getAccessibleAreaIds(
+    userId: number,
+    tenantId: number,
+  ): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
     // Root or full access = all areas
     if (user.role === 'root' || user.has_full_access) {
-      const [allAreas] = await execute<IdRow[]>(`SELECT id FROM areas WHERE tenant_id = $1`, [
-        tenantId,
-      ]);
+      const [allAreas] = await execute<IdRow[]>(
+        `SELECT id FROM areas WHERE tenant_id = $1`,
+        [tenantId],
+      );
       return allAreas.map((a: IdRow) => a.id);
     }
 
@@ -276,15 +302,19 @@ class HierarchyPermissionService {
    * Get all Department IDs user has access to
    * Includes direct permissions + inherited from Areas
    */
-  async getAccessibleDepartmentIds(userId: number, tenantId: number): Promise<number[]> {
+  async getAccessibleDepartmentIds(
+    userId: number,
+    tenantId: number,
+  ): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
     // Root or full access = all departments
     if (user.role === 'root' || user.has_full_access) {
-      const [allDepts] = await execute<IdRow[]>(`SELECT id FROM departments WHERE tenant_id = $1`, [
-        tenantId,
-      ]);
+      const [allDepts] = await execute<IdRow[]>(
+        `SELECT id FROM departments WHERE tenant_id = $1`,
+        [tenantId],
+      );
       return allDepts.map((d: IdRow) => d.id);
     }
 
@@ -295,12 +325,16 @@ class HierarchyPermissionService {
       [userId, tenantId],
     );
 
-    const deptSet = new Set<number>(directDepts.map((d: DepartmentIdRow) => d.department_id));
+    const deptSet = new Set<number>(
+      directDepts.map((d: DepartmentIdRow) => d.department_id),
+    );
 
     // Get departments inherited from areas
     const accessibleAreas = await this.getAccessibleAreaIds(userId, tenantId);
     if (accessibleAreas.length > 0) {
-      const placeholders = accessibleAreas.map((_: number, i: number) => `$${i + 2}`).join(',');
+      const placeholders = accessibleAreas
+        .map((_: number, i: number) => `$${i + 2}`)
+        .join(',');
       const [inheritedDepts] = await execute<IdRow[]>(
         `SELECT id FROM departments
          WHERE tenant_id = $1 AND area_id IN (${placeholders})`,
@@ -318,15 +352,19 @@ class HierarchyPermissionService {
    * Get all Team IDs user has access to
    * Includes membership + inherited from Departments
    */
-  async getAccessibleTeamIds(userId: number, tenantId: number): Promise<number[]> {
+  async getAccessibleTeamIds(
+    userId: number,
+    tenantId: number,
+  ): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
     // Root or full access = all teams
     if (user.role === 'root' || user.has_full_access) {
-      const [allTeams] = await execute<IdRow[]>(`SELECT id FROM teams WHERE tenant_id = $1`, [
-        tenantId,
-      ]);
+      const [allTeams] = await execute<IdRow[]>(
+        `SELECT id FROM teams WHERE tenant_id = $1`,
+        [tenantId],
+      );
       return allTeams.map((t: IdRow) => t.id);
     }
 
@@ -336,12 +374,19 @@ class HierarchyPermissionService {
       [userId],
     );
 
-    const teamSet = new Set<number>(memberTeams.map((t: TeamIdRow) => t.team_id));
+    const teamSet = new Set<number>(
+      memberTeams.map((t: TeamIdRow) => t.team_id),
+    );
 
     // Get teams inherited from departments
-    const accessibleDepts = await this.getAccessibleDepartmentIds(userId, tenantId);
+    const accessibleDepts = await this.getAccessibleDepartmentIds(
+      userId,
+      tenantId,
+    );
     if (accessibleDepts.length > 0) {
-      const placeholders = accessibleDepts.map((_: number, i: number) => `$${i + 2}`).join(',');
+      const placeholders = accessibleDepts
+        .map((_: number, i: number) => `$${i + 2}`)
+        .join(',');
       const [inheritedTeams] = await execute<IdRow[]>(
         `SELECT id FROM teams
          WHERE tenant_id = $1 AND department_id IN (${placeholders})`,
@@ -362,7 +407,10 @@ class HierarchyPermissionService {
   /**
    * Get user info for permission checks
    */
-  private async getUserInfo(userId: number, tenantId: number): Promise<UserInfoRow | null> {
+  private async getUserInfo(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserInfoRow | null> {
     const [rows] = await execute<UserInfoRow[]>(
       `SELECT id, role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
@@ -387,7 +435,10 @@ class HierarchyPermissionService {
   /**
    * Get team info for inheritance
    */
-  private async getTeamInfo(teamId: number, tenantId: number): Promise<TeamInfoRow | null> {
+  private async getTeamInfo(
+    teamId: number,
+    tenantId: number,
+  ): Promise<TeamInfoRow | null> {
     const [rows] = await execute<TeamInfoRow[]>(
       `SELECT id, department_id FROM teams WHERE id = $1 AND tenant_id = $2`,
       [teamId, tenantId],
@@ -398,7 +449,11 @@ class HierarchyPermissionService {
   /**
    * Check if user is team member
    */
-  private async isTeamMember(userId: number, teamId: number, _tenantId: number): Promise<boolean> {
+  private async isTeamMember(
+    userId: number,
+    teamId: number,
+    _tenantId: number,
+  ): Promise<boolean> {
     const [rows] = await execute<TeamMemberRow[]>(
       `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2`,
       [userId, teamId],
@@ -409,7 +464,10 @@ class HierarchyPermissionService {
   /**
    * Check if permission row has required level
    */
-  private hasPermissionLevel(perm: PermissionRow, level: PermissionLevel): boolean {
+  private hasPermissionLevel(
+    perm: PermissionRow,
+    level: PermissionLevel,
+  ): boolean {
     switch (level) {
       case 'read':
         return perm.can_read;

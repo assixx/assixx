@@ -217,7 +217,9 @@ export function sanitizeHtml(html: string | null | undefined): string {
  * @example
  * {@html sanitizeWithLineBreaks(entry.content)}
  */
-export function sanitizeWithLineBreaks(text: string | null | undefined): string {
+export function sanitizeWithLineBreaks(
+  text: string | null | undefined,
+): string {
   if (text === null || text === undefined || text === '') {
     return '';
   }
@@ -265,7 +267,9 @@ export function escapeHtml(text: string | null | undefined): string {
  * @param html - HTML content to check
  * @returns true if content was modified by sanitization
  */
-export function containsDangerousHtml(html: string | null | undefined): boolean {
+export function containsDangerousHtml(
+  html: string | null | undefined,
+): boolean {
   if (html === null || html === undefined || html === '') {
     return false;
   }

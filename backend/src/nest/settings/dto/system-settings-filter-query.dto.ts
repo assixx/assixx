@@ -8,11 +8,15 @@ import { z } from 'zod';
 
 import { SettingsFilterQuerySchema } from './settings-filter-query.dto.js';
 
-export const SystemSettingsFilterQuerySchema = SettingsFilterQuerySchema.extend({
-  is_public: z
-    .string()
-    .transform((val: string) => val === 'true')
-    .optional(),
-});
+export const SystemSettingsFilterQuerySchema = SettingsFilterQuerySchema.extend(
+  {
+    is_public: z
+      .string()
+      .transform((val: string) => val === 'true')
+      .optional(),
+  },
+);
 
-export class SystemSettingsFilterQueryDto extends createZodDto(SystemSettingsFilterQuerySchema) {}
+export class SystemSettingsFilterQueryDto extends createZodDto(
+  SystemSettingsFilterQuerySchema,
+) {}

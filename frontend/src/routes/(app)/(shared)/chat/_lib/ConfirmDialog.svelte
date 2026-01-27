@@ -8,9 +8,7 @@
     onconfirm: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  let { show, message, onclose, onconfirm }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { show, message, onclose, onconfirm }: Props = $props();
 </script>
 
 {#if show}

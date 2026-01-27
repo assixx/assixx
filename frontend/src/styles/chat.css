@@ -204,7 +204,11 @@
 }
 
 .conversation-item.unread:hover {
-  background: linear-gradient(90deg, rgb(33 150 243 / 15%) 0%, rgb(33 150 243 / 8%) 100%);
+  background: linear-gradient(
+    90deg,
+    rgb(33 150 243 / 15%) 0%,
+    rgb(33 150 243 / 8%) 100%
+  );
 }
 
 /* Unread count badge - Now uses Design System .badge .badge--count */

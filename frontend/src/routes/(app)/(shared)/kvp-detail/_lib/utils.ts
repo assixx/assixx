@@ -12,7 +12,13 @@ import {
   IMAGE_FILE_TYPES,
 } from './constants';
 
-import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel, Attachment } from './types';
+import type {
+  KvpSuggestion,
+  KvpStatus,
+  KvpPriority,
+  OrgLevel,
+  Attachment,
+} from './types';
 
 /**
  * Get status badge CSS class
@@ -52,7 +58,10 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
 /**
  * Get visibility info (icon + text) for suggestion
  */
-export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
+export function getVisibilityInfo(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
   // If not shared (private)
   if (!suggestion.isShared) {
     return { icon: 'fa-lock', text: 'Nur Team' };
@@ -63,7 +72,10 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; te
 
   // Use specific name if available (check for empty string)
   let text = info.text;
-  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
+  if (
+    suggestion.orgLevel === 'department' &&
+    suggestion.departmentName !== ''
+  ) {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -129,8 +141,10 @@ export function formatFileSize(bytes: number): string {
  * Check if suggestion has financial info
  */
 export function hasFinancialInfo(suggestion: KvpSuggestion): boolean {
-  const hasEstimatedCost = suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
-  const hasActualSavings = suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
+  const hasEstimatedCost =
+    suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
+  const hasActualSavings =
+    suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
   return hasEstimatedCost || hasActualSavings;
 }
 
@@ -156,7 +170,9 @@ export function isUserAdmin(role: string): boolean {
  * Check if attachment is an image
  */
 export function isImageAttachment(attachment: Attachment): boolean {
-  return IMAGE_FILE_TYPES.includes(attachment.fileType as (typeof IMAGE_FILE_TYPES)[number]);
+  return IMAGE_FILE_TYPES.includes(
+    attachment.fileType as (typeof IMAGE_FILE_TYPES)[number],
+  );
 }
 
 /**
@@ -176,8 +192,10 @@ export function splitAttachments(attachments: Attachment[]): {
  */
 export function getFileIconClass(fileType: string): string {
   if (fileType.includes('pdf')) return 'fa-file-pdf';
-  if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
-  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
+  if (fileType.includes('word') || fileType.includes('document'))
+    return 'fa-file-word';
+  if (fileType.includes('excel') || fileType.includes('spreadsheet'))
+    return 'fa-file-excel';
   if (fileType.includes('image')) return 'fa-file-image';
   return 'fa-file';
 }
@@ -192,9 +210,9 @@ export function getSharedByInfo(suggestion: KvpSuggestion): string {
     suggestion.sharedByName !== ''
   ) {
     const dateStr =
-      suggestion.sharedAt !== undefined && suggestion.sharedAt !== ''
-        ? ` am ${formatDate(suggestion.sharedAt)}`
-        : '';
+      suggestion.sharedAt !== undefined && suggestion.sharedAt !== '' ?
+        ` am ${formatDate(suggestion.sharedAt)}`
+      : '';
     return ` von ${suggestion.sharedByName}${dateStr}`;
   }
   return '';
@@ -210,8 +228,14 @@ export function canUpdateStatus(userRole: string): boolean {
 /**
  * Check if user can share suggestion
  */
-export function canShareSuggestion(suggestion: KvpSuggestion, userRole: string): boolean {
-  return (userRole === 'admin' || userRole === 'root') && suggestion.orgLevel !== 'company';
+export function canShareSuggestion(
+  suggestion: KvpSuggestion,
+  userRole: string,
+): boolean {
+  return (
+    (userRole === 'admin' || userRole === 'root') &&
+    suggestion.orgLevel !== 'company'
+  );
 }
 
 /**
@@ -231,20 +255,30 @@ export function canUnshareSuggestion(
   }
 
   // Admin/Root can always unshare, or the person who shared it
-  return userRole === 'admin' || userRole === 'root' || suggestion.sharedBy === userId;
+  return (
+    userRole === 'admin' ||
+    userRole === 'root' ||
+    suggestion.sharedBy === userId
+  );
 }
 
 /**
  * Check if user can archive suggestion (must be admin/root AND not already archived)
  */
-export function canArchiveSuggestion(userRole: string, status: string): boolean {
+export function canArchiveSuggestion(
+  userRole: string,
+  status: string,
+): boolean {
   return (userRole === 'admin' || userRole === 'root') && status !== 'archived';
 }
 
 /**
  * Check if user can unarchive (restore) suggestion (must be admin/root AND archived)
  */
-export function canUnarchiveSuggestion(userRole: string, status: string): boolean {
+export function canUnarchiveSuggestion(
+  userRole: string,
+  status: string,
+): boolean {
   return (userRole === 'admin' || userRole === 'root') && status === 'archived';
 }
 

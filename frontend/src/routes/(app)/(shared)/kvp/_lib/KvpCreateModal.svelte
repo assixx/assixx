@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import {
+    showWarningAlert,
+    showErrorAlert,
+    showSuccessAlert,
+  } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpCreateModal');
@@ -42,7 +46,11 @@
     activeDropdown = null;
   }
 
-  function handleFormCategorySelect(value: string, label: string, icon?: string) {
+  function handleFormCategorySelect(
+    value: string,
+    label: string,
+    icon?: string,
+  ) {
     formCategoryValue = value;
     formCategoryDisplay = icon !== undefined ? `${icon} ${label}` : label;
     closeAllDropdowns();
@@ -71,7 +79,9 @@
 
     for (const file of files) {
       if (selectedPhotos.length >= UPLOAD_CONFIG.MAX_FILES) {
-        showWarningAlert(`Sie koennen maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`);
+        showWarningAlert(
+          `Sie koennen maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`,
+        );
         break;
       }
 
@@ -117,13 +127,17 @@
 
   function determineOrgInfo(): OrgInfo {
     const isEmployee = kvpState.effectiveRole === 'employee';
-    const isAdminOrRoot = kvpState.effectiveRole === 'admin' || kvpState.effectiveRole === 'root';
+    const isAdminOrRoot =
+      kvpState.effectiveRole === 'admin' || kvpState.effectiveRole === 'root';
 
     if (isEmployee && currentTeamId !== null) {
       return { orgLevel: 'team', orgId: currentTeamId };
     }
     if (isAdminOrRoot) {
-      return { orgLevel: 'company', orgId: kvpState.currentUser?.tenantId ?? 0 };
+      return {
+        orgLevel: 'company',
+        orgId: kvpState.currentUser?.tenantId ?? 0,
+      };
     }
     return { orgLevel: 'team', orgId: 0 };
   }
@@ -134,7 +148,8 @@
     expectedBenefit: string,
   ): KvpFormData {
     const { orgLevel, orgId } = determineOrgInfo();
-    const categoryId = formCategoryValue !== '' ? parseInt(formCategoryValue, 10) : null;
+    const categoryId =
+      formCategoryValue !== '' ? parseInt(formCategoryValue, 10) : null;
 
     return {
       title: title.trim(),
@@ -154,7 +169,9 @@
     const uploadResult = await uploadPhotos(suggestionId, selectedPhotos);
     if (!uploadResult.success) {
       const errorMsg = uploadResult.error ?? 'Unbekannter Fehler';
-      showWarningAlert(`Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`);
+      showWarningAlert(
+        `Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`,
+      );
     }
   }
 
@@ -203,10 +220,19 @@
 <svelte:document onclick={handleDocumentClick} />
 
 <div class="modal-overlay modal-overlay--active">
-  <form class="ds-modal ds-modal--lg" bind:this={formElement} onsubmit={handleSubmit}>
+  <form
+    class="ds-modal ds-modal--lg"
+    bind:this={formElement}
+    onsubmit={handleSubmit}
+  >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">Neuer KVP-Vorschlag</h3>
-      <button type="button" class="ds-modal__close" aria-label="Schliessen" onclick={handleClose}>
+      <button
+        type="button"
+        class="ds-modal__close"
+        aria-label="Schliessen"
+        onclick={handleClose}
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -219,15 +245,19 @@
         <div class="alert__content">
           <strong class="alert__title">Wichtiger Hinweis:</strong>
           <p class="alert__message">
-            Nach dem Einreichen koennen Sie Ihren Vorschlag nicht mehr bearbeiten oder Löschen.
-            Bitte pruefen Sie alle Angaben sorgfaeltig, bevor Sie den Vorschlag absenden.
+            Nach dem Einreichen koennen Sie Ihren Vorschlag nicht mehr
+            bearbeiten oder Löschen. Bitte pruefen Sie alle Angaben sorgfaeltig,
+            bevor Sie den Vorschlag absenden.
           </p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="form-field">
-          <label class="form-field__label" for="kvpTitle">
+          <label
+            class="form-field__label"
+            for="kvpTitle"
+          >
             Titel
             <span class="text-red-500">*</span>
             <span class="form-field__hint">(3-255 Zeichen)</span>
@@ -245,7 +275,10 @@
         </div>
 
         <div class="form-field md:col-span-2">
-          <label class="form-field__label" for="kvpDescription">
+          <label
+            class="form-field__label"
+            for="kvpDescription"
+          >
             Beschreibung
             <span class="text-red-500">*</span>
             <span class="form-field__hint">(10-5000 Zeichen)</span>
@@ -263,11 +296,17 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="kvpCategoryValue">
+          <label
+            class="form-field__label"
+            for="kvpCategoryValue"
+          >
             Kategorie
             <span class="text-red-500">*</span>
           </label>
-          <div class="dropdown" data-dropdown="kvpCategory">
+          <div
+            class="dropdown"
+            data-dropdown="kvpCategory"
+          >
             <div
               class="dropdown__trigger"
               class:active={activeDropdown === 'kvpCategory'}
@@ -283,14 +322,21 @@
               <span>{formCategoryDisplay}</span>
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={activeDropdown === 'kvpCategory'}>
+            <div
+              class="dropdown__menu"
+              class:active={activeDropdown === 'kvpCategory'}
+            >
               {#each kvpState.categories as category (category.id)}
                 <div
                   class="dropdown__option"
                   role="button"
                   tabindex="0"
                   onclick={() => {
-                    handleFormCategorySelect(category.id.toString(), category.name, category.icon);
+                    handleFormCategorySelect(
+                      category.id.toString(),
+                      category.name,
+                      category.icon,
+                    );
                   }}
                   onkeydown={(e) => {
                     if (e.key === 'Enter') {
@@ -317,8 +363,14 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="kvpPriorityValue">Prioritaet</label>
-          <div class="dropdown" data-dropdown="kvpPriority">
+          <label
+            class="form-field__label"
+            for="kvpPriorityValue">Prioritaet</label
+          >
+          <div
+            class="dropdown"
+            data-dropdown="kvpPriority"
+          >
             <div
               class="dropdown__trigger"
               class:active={activeDropdown === 'kvpPriority'}
@@ -334,7 +386,10 @@
               <span>{formPriorityDisplay}</span>
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={activeDropdown === 'kvpPriority'}>
+            <div
+              class="dropdown__menu"
+              class:active={activeDropdown === 'kvpPriority'}
+            >
               {#each PRIORITY_OPTIONS as option (option.value)}
                 <div
                   class="dropdown__option"
@@ -344,19 +399,28 @@
                     handleFormPrioritySelect(option.value, option.label);
                   }}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter') handleFormPrioritySelect(option.value, option.label);
+                    if (e.key === 'Enter')
+                      handleFormPrioritySelect(option.value, option.label);
                   }}
                 >
                   {option.label}
                 </div>
               {/each}
             </div>
-            <input type="hidden" id="kvpPriorityValue" name="priority" value={formPriorityValue} />
+            <input
+              type="hidden"
+              id="kvpPriorityValue"
+              name="priority"
+              value={formPriorityValue}
+            />
           </div>
         </div>
 
         <div class="form-field md:col-span-2">
-          <label class="form-field__label" for="kvpBenefit">Erwarteter Nutzen</label>
+          <label
+            class="form-field__label"
+            for="kvpBenefit">Erwarteter Nutzen</label
+          >
           <textarea
             id="kvpBenefit"
             name="expected_benefit"
@@ -367,9 +431,14 @@
         </div>
 
         <div class="form-field md:col-span-2">
-          <label class="form-field__label" for="kvpPhotos">
+          <label
+            class="form-field__label"
+            for="kvpPhotos"
+          >
             Fotos hinzufuegen (optional)
-            <span class="form-field__hint">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span>
+            <span class="form-field__hint"
+              >Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span
+            >
           </label>
           <div class="mt-2">
             <input
@@ -393,12 +462,17 @@
             >
               <i class="fas fa-camera"></i>
               <p>Klicken Sie hier, um Fotos auszuwaehlen</p>
-              <p class="text-sm text-gray-400 mt-2">oder ziehen Sie Dateien hierher</p>
+              <p class="text-sm text-gray-400 mt-2">
+                oder ziehen Sie Dateien hierher
+              </p>
             </div>
             <div class="flex flex-wrap gap-2 mt-6">
               {#each photoPreviews as preview, index (index)}
                 <div class="photo-preview-item">
-                  <img src={preview} alt="Vorschau" />
+                  <img
+                    src={preview}
+                    alt="Vorschau"
+                  />
                   <button
                     type="button"
                     class="remove-photo"
@@ -417,8 +491,16 @@
     </div>
 
     <div class="ds-modal__footer ds-modal__footer--right">
-      <button type="button" class="btn btn-cancel" onclick={handleClose}>Abbrechen</button>
-      <button type="submit" class="btn btn-modal" disabled={kvpState.isSubmitting}>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={handleClose}>Abbrechen</button
+      >
+      <button
+        type="submit"
+        class="btn btn-modal"
+        disabled={kvpState.isSubmitting}
+      >
         {#if kvpState.isSubmitting}
           <i class="fas fa-spinner fa-spin"></i>
           Wird eingereicht...

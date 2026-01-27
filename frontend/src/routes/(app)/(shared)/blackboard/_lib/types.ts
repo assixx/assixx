@@ -11,7 +11,13 @@
 export type OrgLevel = 'company' | 'department' | 'team' | 'area';
 export type EntryStatus = 'active' | 'archived';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
-export type EntryColor = 'yellow' | 'blue' | 'green' | 'red' | 'orange' | 'pink';
+export type EntryColor =
+  | 'yellow'
+  | 'blue'
+  | 'green'
+  | 'red'
+  | 'orange'
+  | 'pink';
 export type FormMode = 'create' | 'edit';
 export type SortDir = 'ASC' | 'DESC';
 

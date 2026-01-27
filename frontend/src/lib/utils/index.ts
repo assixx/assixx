@@ -44,7 +44,12 @@ export {
 } from './auth';
 
 // JWT utilities
-export { parseJwt, isTokenExpired, getTokenExpiryTime, type JWTPayload } from './jwt-utils';
+export {
+  parseJwt,
+  isTokenExpired,
+  getTokenExpiryTime,
+  type JWTPayload,
+} from './jwt-utils';
 
 // Date helpers
 export {
@@ -57,7 +62,11 @@ export {
 } from './date-helpers';
 
 // Token manager (singleton)
-export { TokenManager, getTokenManager, type LogoutReason } from './token-manager';
+export {
+  TokenManager,
+  getTokenManager,
+  type LogoutReason,
+} from './token-manager';
 
 // HTML sanitization (XSS prevention)
 export {
@@ -88,7 +97,11 @@ export {
 export { SessionManager, getSessionManager } from './session-manager';
 
 // Avatar helpers (color assignment + initials)
-export { getAvatarColor, getAvatarColorClass, getInitials } from './avatar-helpers';
+export {
+  getAvatarColor,
+  getAvatarColorClass,
+  getInitials,
+} from './avatar-helpers';
 
 // Alert utilities (toast notifications + confirm dialogs)
 export {

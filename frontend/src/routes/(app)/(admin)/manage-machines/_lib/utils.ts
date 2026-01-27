@@ -4,7 +4,12 @@
 
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, MACHINE_TYPE_LABELS, MESSAGES } from './constants';
+import {
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
+  MACHINE_TYPE_LABELS,
+  MESSAGES,
+} from './constants';
 
 import type {
   Machine,
@@ -196,7 +201,9 @@ export function getEmptyStateTitle(statusFilter: MachineStatusFilter): string {
 /**
  * Get empty state description based on filter
  */
-export function getEmptyStateDescription(statusFilter: MachineStatusFilter): string {
+export function getEmptyStateDescription(
+  statusFilter: MachineStatusFilter,
+): string {
   if (statusFilter !== 'all') {
     return MESSAGES.EMPTY_FILTER_DESC;
   }

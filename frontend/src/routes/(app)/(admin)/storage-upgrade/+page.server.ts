@@ -52,7 +52,9 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    return 'success' in json && json.success ? (json.data ?? null) : (json as unknown as T);
+    return 'success' in json && json.success ?
+        (json.data ?? null)
+      : (json as unknown as T);
   } catch (err) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;

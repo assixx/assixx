@@ -1,7 +1,10 @@
 /**
  * Roles DTOs Barrel Export
  */
-export { CheckUserRoleDto, CheckUserRoleSchema } from './check-user-role.dto.js';
+export {
+  CheckUserRoleDto,
+  CheckUserRoleSchema,
+} from './check-user-role.dto.js';
 export {
   RoleEnumSchema,
   RoleIdParamDto,

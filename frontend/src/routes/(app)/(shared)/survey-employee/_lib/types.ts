@@ -6,7 +6,12 @@
 /**
  * Survey status
  */
-export type SurveyStatus = 'draft' | 'active' | 'paused' | 'completed' | 'archived';
+export type SurveyStatus =
+  | 'draft'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'archived';
 
 /**
  * Question type
@@ -50,7 +55,12 @@ export interface Question {
 /**
  * Assignment type
  */
-export type AssignmentType = 'all_users' | 'area' | 'department' | 'team' | 'user';
+export type AssignmentType =
+  | 'all_users'
+  | 'area'
+  | 'department'
+  | 'team'
+  | 'user';
 
 /**
  * Survey assignment (from backend, includes resolved names)

@@ -295,7 +295,8 @@ services:
       timeout: 10s
       retries: 3
     # Worker command - use tsx directly
-    command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
+    command:
+      ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
   # ===========================================================================
   # SvelteKit Frontend (Production)

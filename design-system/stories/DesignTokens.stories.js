@@ -227,7 +227,11 @@ export const Typography = {
     const sizes = [
       { name: 'XS', value: '--font-size-xs', text: '12px' },
       { name: 'SM', value: '--font-size-sm', text: '13px' },
-      { name: 'Base', value: '--font-size-base', text: '14px (Default for dashboards)' },
+      {
+        name: 'Base',
+        value: '--font-size-base',
+        text: '14px (Default for dashboards)',
+      },
       { name: 'LG', value: '--font-size-lg', text: '16px' },
       { name: 'XL', value: '--font-size-xl', text: '18px' },
     ];
@@ -353,19 +357,59 @@ export const FormFields = {
 
     const tokens = [
       { label: 'Text', token: '--form-field-text', preview: 'text' },
-      { label: 'Placeholder', token: '--form-field-placeholder', preview: 'text' },
+      {
+        label: 'Placeholder',
+        token: '--form-field-placeholder',
+        preview: 'text',
+      },
       { label: 'Helper Text', token: '--form-field-helper', preview: 'text' },
-      { label: 'Disabled Text', token: '--form-field-disabled-text', preview: 'text' },
+      {
+        label: 'Disabled Text',
+        token: '--form-field-disabled-text',
+        preview: 'text',
+      },
       { label: 'Background', token: '--form-field-bg', preview: 'background' },
-      { label: 'Hover Background', token: '--form-field-bg-hover', preview: 'background' },
-      { label: 'Focus Background', token: '--form-field-bg-focus', preview: 'background' },
-      { label: 'Disabled Background', token: '--form-field-bg-disabled', preview: 'background' },
+      {
+        label: 'Hover Background',
+        token: '--form-field-bg-hover',
+        preview: 'background',
+      },
+      {
+        label: 'Focus Background',
+        token: '--form-field-bg-focus',
+        preview: 'background',
+      },
+      {
+        label: 'Disabled Background',
+        token: '--form-field-bg-disabled',
+        preview: 'background',
+      },
       { label: 'Border', token: '--form-field-border', preview: 'border' },
-      { label: 'Hover Border', token: '--form-field-border-hover', preview: 'border' },
-      { label: 'Focus Border', token: '--form-field-border-focus', preview: 'border' },
-      { label: 'Error Border', token: '--form-field-border-error', preview: 'border' },
-      { label: 'Success Border', token: '--form-field-border-success', preview: 'border' },
-      { label: 'Focus Ring', token: '--form-field-focus-ring', preview: 'shadow' },
+      {
+        label: 'Hover Border',
+        token: '--form-field-border-hover',
+        preview: 'border',
+      },
+      {
+        label: 'Focus Border',
+        token: '--form-field-border-focus',
+        preview: 'border',
+      },
+      {
+        label: 'Error Border',
+        token: '--form-field-border-error',
+        preview: 'border',
+      },
+      {
+        label: 'Success Border',
+        token: '--form-field-border-success',
+        preview: 'border',
+      },
+      {
+        label: 'Focus Ring',
+        token: '--form-field-focus-ring',
+        preview: 'shadow',
+      },
       { label: 'Padding X', token: '--form-field-padding-x', preview: 'text' },
       { label: 'Padding Y', token: '--form-field-padding-y', preview: 'text' },
       { label: 'Radius', token: '--form-field-radius', preview: 'text' },

@@ -16,7 +16,11 @@
   // Survey-specific styles (migrated from legacy)
   import '../../../../styles/survey-employee.css';
 
-  import { loadSurveyById, fetchUserResponse, submitResponse } from './_lib/api';
+  import {
+    loadSurveyById,
+    fetchUserResponse,
+    submitResponse,
+  } from './_lib/api';
   import { surveyEmployeeState } from './_lib/state.svelte';
   import SurveyCard from './_lib/SurveyCard.svelte';
   import {
@@ -115,7 +119,11 @@
         return;
       }
 
-      if (responseData === null || !responseData.responded || responseData.response === undefined) {
+      if (
+        responseData === null ||
+        !responseData.responded ||
+        responseData.response === undefined
+      ) {
         showErrorAlert('Keine Antworten für diese Umfrage gefunden.');
         return;
       }
@@ -161,7 +169,11 @@
     });
   }
 
-  function handleMultipleChoiceChange(questionId: number, optionId: number, checked: boolean) {
+  function handleMultipleChoiceChange(
+    questionId: number,
+    optionId: number,
+    checked: boolean,
+  ) {
     const currentAnswer = surveyEmployeeState.answers[questionId];
     const currentOptions = currentAnswer?.selectedOptions ?? [];
 
@@ -200,9 +212,14 @@
     if (survey === null) return;
 
     // Validate required questions
-    const validation = validateRequiredQuestions(survey.questions, surveyEmployeeState.answers);
+    const validation = validateRequiredQuestions(
+      survey.questions,
+      surveyEmployeeState.answers,
+    );
     if (!validation.valid) {
-      showErrorAlert(`Bitte beantworten Sie alle Pflichtfragen: ${validation.missing.join(', ')}`);
+      showErrorAlert(
+        `Bitte beantworten Sie alle Pflichtfragen: ${validation.missing.join(', ')}`,
+      );
       return;
     }
 
@@ -249,7 +266,10 @@
     return answer?.answerNumber === value;
   }
 
-  function isMultipleOptionSelected(questionId: number, optionId: number): boolean {
+  function isMultipleOptionSelected(
+    questionId: number,
+    optionId: number,
+  ): boolean {
     const answer = surveyEmployeeState.answers[questionId];
     return answer?.selectedOptions?.includes(optionId) ?? false;
   }
@@ -265,8 +285,8 @@
       <div>
         <h2 class="card-title">Mitarbeiterumfragen</h2>
         <p class="text-secondary">
-          Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen
-          haben.
+          Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder
+          bereits teilgenommen haben.
         </p>
       </div>
     </div>
@@ -290,7 +310,11 @@
         {:else}
           <div class="surveys-grid">
             {#each pendingSurveys as survey (survey.id)}
-              <SurveyCard {survey} mode="pending" onclick={() => handleStartSurvey(survey.id)} />
+              <SurveyCard
+                {survey}
+                mode="pending"
+                onclick={() => handleStartSurvey(survey.id)}
+              />
             {/each}
           </div>
         {/if}
@@ -311,7 +335,9 @@
               <i class="fas fa-check-circle"></i>
             </div>
             <h3 class="empty-state__title">Keine abgeschlossenen Umfragen</h3>
-            <p class="empty-state__description">Sie haben noch an keinen Umfragen teilgenommen.</p>
+            <p class="empty-state__description">
+              Sie haben noch an keinen Umfragen teilgenommen.
+            </p>
           </div>
         {:else}
           <div class="surveys-grid">
@@ -337,7 +363,10 @@
 {#if surveyEmployeeState.showSurveyModal && surveyEmployeeState.currentSurvey !== null}
   {@const survey = surveyEmployeeState.currentSurvey}
   <div class="modal-overlay modal-overlay--active">
-    <form class="ds-modal ds-modal--lg" onsubmit={handleSubmit}>
+    <form
+      class="ds-modal ds-modal--lg"
+      onsubmit={handleSubmit}
+    >
       <div class="ds-modal__header flex-col items-stretch">
         <!-- Title Row: Title + Close Button -->
         <div class="flex justify-between items-center w-full">
@@ -367,7 +396,8 @@
             ></div>
           </div>
           <div class="progress-text mt-2 text-center text-secondary text-sm">
-            {surveyEmployeeState.answeredCount} von {surveyEmployeeState.totalQuestions} Fragen beantwortet
+            {surveyEmployeeState.answeredCount} von {surveyEmployeeState.totalQuestions}
+            Fragen beantwortet
           </div>
         </div>
       </div>
@@ -397,7 +427,10 @@
                       rows="4"
                       {required}
                       oninput={(e) => {
-                        handleTextChange(question.id, (e.target as HTMLTextAreaElement).value);
+                        handleTextChange(
+                          question.id,
+                          (e.target as HTMLTextAreaElement).value,
+                        );
                       }}
                     ></textarea>
                   </div>
@@ -435,7 +468,10 @@
                           type="checkbox"
                           class="choice-card__input"
                           value={optionId}
-                          checked={isMultipleOptionSelected(question.id, optionId)}
+                          checked={isMultipleOptionSelected(
+                            question.id,
+                            optionId,
+                          )}
                           onchange={(e) => {
                             handleMultipleChoiceChange(
                               question.id,
@@ -456,7 +492,10 @@
                       <button
                         type="button"
                         class="rating-button"
-                        class:rating-button--selected={isRatingSelected(question.id, value)}
+                        class:rating-button--selected={isRatingSelected(
+                          question.id,
+                          value,
+                        )}
                         aria-label="Bewertung {value} von 5"
                         onclick={() => {
                           handleRatingClick(question.id, value);
@@ -507,7 +546,10 @@
                       placeholder="Zahl eingeben..."
                       {required}
                       oninput={(e) => {
-                        handleNumberChange(question.id, (e.target as HTMLInputElement).value);
+                        handleNumberChange(
+                          question.id,
+                          (e.target as HTMLInputElement).value,
+                        );
                       }}
                     />
                   </div>
@@ -521,7 +563,10 @@
                       placeholder="Datum wählen..."
                       {required}
                       oninput={(e) => {
-                        handleDateChange(question.id, (e.target as HTMLInputElement).value);
+                        handleDateChange(
+                          question.id,
+                          (e.target as HTMLInputElement).value,
+                        );
                       }}
                     />
                   </div>
@@ -542,7 +587,11 @@
         >
           Abbrechen
         </button>
-        <button type="submit" class="btn btn-modal" disabled={surveyEmployeeState.isSubmitting}>
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={surveyEmployeeState.isSubmitting}
+        >
           {#if surveyEmployeeState.isSubmitting}
             <i class="fas fa-spinner fa-spin"></i>
           {:else}
@@ -578,7 +627,9 @@
         <div class="response-info">
           <p>
             <i class="fas fa-clock"></i>
-            Abgeschlossen am: {formatDateTimeGerman(responseModalData.response.completedAt)}
+            Abgeschlossen am: {formatDateTimeGerman(
+              responseModalData.response.completedAt,
+            )}
           </p>
         </div>
         <div class="response-answers">

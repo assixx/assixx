@@ -1,20 +1,15 @@
 {
-  "semi": true,
-  "trailingComma": "all",
   "singleQuote": true,
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
+  "printWidth": 80,
+  "endOfLine": "lf",
+  "experimentalTernaries": true,
   "plugins": ["prettier-plugin-svelte"],
   "overrides": [
     {
       "files": "*.svelte",
       "options": {
         "parser": "svelte",
-        "svelteIndentScriptAndStyle": true,
-        "svelteSortOrder": "options-scripts-markup-styles",
-        "svelteStrictMode": false,
-        "svelteAllowShorthand": true
+        "singleAttributePerLine": true
       }
     }
   ]

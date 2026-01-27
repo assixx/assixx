@@ -94,7 +94,10 @@
   // OUTSIDE CLICK HANDLER
   // =============================================================================
 
-  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
+  function isClickOutsideDropdown(
+    target: HTMLElement,
+    elementId: string,
+  ): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -141,11 +144,19 @@
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="availability-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="availability-modal-title"
+        >
           <i class="fas fa-calendar-alt mr-2"></i>
           Verfügbarkeit: {employeeName}
         </h3>
-        <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={onclose}
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -153,11 +164,17 @@
       <div class="ds-modal__body">
         <!-- Status - Custom Dropdown -->
         <div class="form-field">
-          <label class="form-field__label" for="availability-status">
+          <label
+            class="form-field__label"
+            for="availability-status"
+          >
             <i class="fas fa-user-clock mr-1"></i>
             Status
           </label>
-          <div class="dropdown" id="availability-status-dropdown">
+          <div
+            class="dropdown"
+            id="availability-status-dropdown"
+          >
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -171,7 +188,10 @@
               </span>
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={statusDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={statusDropdownOpen}
+            >
               {#each AVAILABILITY_STATUS_OPTIONS as option (option.value)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -191,7 +211,12 @@
 
         <!-- Date Range -->
         <div class="form-field">
-          <label class="form-field__label" for="availability-start"> Von Datum </label>
+          <label
+            class="form-field__label"
+            for="availability-start"
+          >
+            Von Datum
+          </label>
           <div class="date-picker">
             <i class="date-picker__icon fas fa-calendar"></i>
             <input
@@ -205,7 +230,12 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="availability-end"> Bis Datum </label>
+          <label
+            class="form-field__label"
+            for="availability-end"
+          >
+            Bis Datum
+          </label>
           <div class="date-picker">
             <i class="date-picker__icon fas fa-calendar"></i>
             <input
@@ -220,7 +250,12 @@
 
         <!-- Reason -->
         <div class="form-field">
-          <label class="form-field__label" for="availability-reason"> Grund (optional) </label>
+          <label
+            class="form-field__label"
+            for="availability-reason"
+          >
+            Grund (optional)
+          </label>
           <input
             type="text"
             id="availability-reason"
@@ -234,7 +269,12 @@
 
         <!-- Notes -->
         <div class="form-field">
-          <label class="form-field__label" for="availability-notes"> Notiz (optional) </label>
+          <label
+            class="form-field__label"
+            for="availability-notes"
+          >
+            Notiz (optional)
+          </label>
           <textarea
             id="availability-notes"
             name="availabilityNotes"
@@ -262,9 +302,18 @@
           <i class="fas fa-history mr-2"></i>Historie
         </button>
         <div class="flex gap-2">
-          <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-          <button type="submit" class="btn btn-modal" disabled={submitting}>
-            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={onclose}>Abbrechen</button
+          >
+          <button
+            type="submit"
+            class="btn btn-modal"
+            disabled={submitting}
+          >
+            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+              ></span>{/if}
             Speichern
           </button>
         </div>

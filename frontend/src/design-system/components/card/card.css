@@ -84,7 +84,11 @@
 .card-title::before {
   border-radius: 2px;
 
-  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+  background: linear-gradient(
+    180deg,
+    var(--color-primary),
+    var(--color-primary-light)
+  );
 
   width: 4px;
   height: 24px;

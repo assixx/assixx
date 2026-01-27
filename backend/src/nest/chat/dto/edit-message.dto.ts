@@ -10,7 +10,10 @@ export const EditMessageBodySchema = z.object({
   message: z
     .string()
     .min(1, 'Message cannot be empty')
-    .max(MAX_MESSAGE_LENGTH, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`),
+    .max(
+      MAX_MESSAGE_LENGTH,
+      `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    ),
 });
 
 export class EditMessageDto extends createZodDto(EditMessageBodySchema) {}

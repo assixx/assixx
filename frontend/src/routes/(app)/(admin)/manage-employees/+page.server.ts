@@ -64,8 +64,9 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     apiFetch<Team[]>('/teams', token, fetch),
   ]);
 
-  const employees = Array.isArray(employeesData)
-    ? employeesData.filter((u) => u.role === 'employee')
+  const employees =
+    Array.isArray(employeesData) ?
+      employeesData.filter((u) => u.role === 'employee')
     : [];
   const teams = Array.isArray(teamsData) ? teamsData : [];
 

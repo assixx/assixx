@@ -151,7 +151,8 @@
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error in modal action');
-      const errorMessage = err instanceof Error ? err.message : MESSAGES.genericError;
+      const errorMessage =
+        err instanceof Error ? err.message : MESSAGES.genericError;
       showToast(errorMessage, 'error');
       resetLoading();
     }
@@ -203,7 +204,9 @@
           <span class="process-info__item">
             <strong>30 Tage Grace Period</strong> nach Genehmigung
           </span>
-          <span class="process-info__item"> <strong>Backup</strong> vor Löschung </span>
+          <span class="process-info__item">
+            <strong>Backup</strong> vor Löschung
+          </span>
           <span class="process-info__item">
             <strong>Emergency Stop</strong> jederzeit möglich
           </span>
@@ -219,7 +222,9 @@
               <i class="fas fa-inbox"></i>
             </div>
             <h3 class="empty-state__title">{MESSAGES.noRequests}</h3>
-            <p class="empty-state__description">{MESSAGES.noRequestsDescription}</p>
+            <p class="empty-state__description">
+              {MESSAGES.noRequestsDescription}
+            </p>
           </div>
         {:else}
           <!-- Status Cards -->
@@ -234,14 +239,19 @@
                 <div class="tenant-info">
                   <h3>Tenant {item.tenantId}</h3>
                   <p>Tenant ID: {item.tenantId}</p>
-                  <p>Beantragt von: {getRequesterName(item)} (User ID: {item.requestedBy})</p>
+                  <p>
+                    Beantragt von: {getRequesterName(item)} (User ID: {item.requestedBy})
+                  </p>
                   <p>Beantragt am: {formatDate(new Date(item.requestedAt))}</p>
                   <p><strong>Aktueller User ID:</strong> {currentUserId}</p>
                   <p>
-                    <strong>Status Info:</strong> canApprove={item.canApprove}, canCancel={item.canCancel}
+                    <strong>Status Info:</strong> canApprove={item.canApprove},
+                    canCancel={item.canCancel}
                   </p>
                 </div>
-                <span class="badge badge--uppercase {getBadgeClass(item.status)}">
+                <span
+                  class="badge badge--uppercase {getBadgeClass(item.status)}"
+                >
                   {getStatusText(item.status)}
                 </span>
               </div>
@@ -251,15 +261,19 @@
                 <div class="info-box info-box--warning">
                   <i class="fas fa-info-circle"></i>
                   <div>
-                    <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br />
-                    Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
+                    <strong>Sie sind der Ersteller dieser Löschanfrage.</strong
+                    ><br />
+                    Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer
+                    die Löschung genehmigt.
                   </div>
                 </div>
               {:else if item.canApprove}
                 <div class="info-box info-box--success">
                   <i class="fas fa-user-shield"></i>
                   <div>
-                    <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br />
+                    <strong
+                      >Sie können diese Löschanfrage genehmigen oder ablehnen.</strong
+                    ><br />
                     Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
                   </div>
                 </div>
@@ -271,9 +285,11 @@
                   <i class="fas fa-clock"></i>
                   <div>
                     <strong>Cooling-off Periode aktiv</strong><br />
-                    Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br />
+                    Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung
+                    möglich<br />
                     <small class="text-muted"
-                      >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small
+                      >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt
+                      werden</small
                     >
                   </div>
                 </div>
@@ -290,14 +306,16 @@
                       {formatDateOnly(item.scheduledFor)}
                     </p>
                     <p class="mb-2">
-                      Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.
+                      Der Tenant kann innerhalb von 30 Tagen noch reaktiviert
+                      werden.
                     </p>
                     <p class="mb-2">
-                      Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche
-                      Löschung.
+                      Nach Ablauf der Grace Period erfolgt die automatische,
+                      unwiderrufliche Löschung.
                     </p>
                     <small class="text-muted"
-                      >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small
+                      >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen
+                      Grace Periods.</small
                     >
                   </div>
                 </div>
@@ -309,9 +327,9 @@
                 {#each timeline as timelineItem (timelineItem.title)}
                   <div class="timeline-item">
                     <div
-                      class="timeline-icon {timelineItem.completed
-                        ? 'timeline-icon--completed'
-                        : 'timeline-icon--pending'}"
+                      class="timeline-icon {timelineItem.completed ?
+                        'timeline-icon--completed'
+                      : 'timeline-icon--pending'}"
                     >
                       <i class="fas {timelineItem.icon}"></i>
                     </div>
@@ -337,7 +355,9 @@
                       <i class="fas fa-times mr-2"></i> Ablehnen
                     </button>
                     <a
-                      href={resolvePath(`/tenant-deletion-approve?queueId=${item.queueId}`)}
+                      href={resolvePath(
+                        `/tenant-deletion-approve?queueId=${item.queueId}`,
+                      )}
                       class="btn btn-success"
                       data-sveltekit-reload
                     >
@@ -345,7 +365,11 @@
                     </a>
                   {/if}
                   {#if item.canCancel}
-                    <button type="button" class="btn btn-cancel" onclick={openCancelModal}>
+                    <button
+                      type="button"
+                      class="btn btn-cancel"
+                      onclick={openCancelModal}
+                    >
                       <i class="fas fa-ban mr-2"></i> Abbrechen (als Ersteller)
                     </button>
                   {/if}
@@ -365,9 +389,9 @@
                     <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
                   </button>
                   <small class="text-muted block mt-2">
-                    {item.status === 'processing'
-                      ? 'Stoppt den laufenden Löschvorgang'
-                      : 'Stoppt die geplante Löschung sofort'}
+                    {item.status === 'processing' ?
+                      'Stoppt den laufenden Löschvorgang'
+                    : 'Stoppt die geplante Löschung sofort'}
                   </small>
                 </div>
               {/if}
@@ -396,7 +420,9 @@
           <i class="fas fa-question-circle"></i>
         </div>
         <h3 class="confirm-modal__title">Bestätigung</h3>
-        <p class="confirm-modal__message">Möchten Sie Ihre Löschanfrage wirklich abbrechen?</p>
+        <p class="confirm-modal__message">
+          Möchten Sie Ihre Löschanfrage wirklich abbrechen?
+        </p>
         <div class="confirm-modal__actions">
           <button
             type="button"
@@ -462,7 +488,9 @@
           <i class="fas fa-times-circle"></i>
         </div>
         <h3 class="confirm-modal__title">Löschanfrage ablehnen</h3>
-        <p class="confirm-modal__message">Bitte geben Sie einen Grund für die Ablehnung an:</p>
+        <p class="confirm-modal__message">
+          Bitte geben Sie einen Grund für die Ablehnung an:
+        </p>
         <div class="confirm-modal__input-group">
           <textarea
             class="confirm-modal__input"

@@ -21,7 +21,12 @@ const MachineTypeEnum = z.enum([
   'other',
 ]);
 
-const SortByEnum = z.enum(['created_at', 'updated_at', 'name', 'next_maintenance']);
+const SortByEnum = z.enum([
+  'created_at',
+  'updated_at',
+  'name',
+  'next_maintenance',
+]);
 const SortOrderEnum = z.enum(['asc', 'desc']);
 
 export const ListMachinesQuerySchema = z.object({
@@ -39,4 +44,6 @@ export const ListMachinesQuerySchema = z.object({
   sortOrder: SortOrderEnum.optional().default('desc'),
 });
 
-export class ListMachinesQueryDto extends createZodDto(ListMachinesQuerySchema) {}
+export class ListMachinesQueryDto extends createZodDto(
+  ListMachinesQuerySchema,
+) {}

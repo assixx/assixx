@@ -162,9 +162,13 @@ export async function loadMachines(): Promise<Machine[]> {
  * Fetch team members from /teams/:id/members endpoint
  * Returns array of member objects with id
  */
-export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]> {
+export async function fetchTeamMembers(
+  teamId: number,
+): Promise<{ id: number }[]> {
   try {
-    const result: unknown = await apiClient.get(API_ENDPOINTS.teamMembers(teamId));
+    const result: unknown = await apiClient.get(
+      API_ENDPOINTS.teamMembers(teamId),
+    );
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
     log.error({ err }, 'Error fetching team members');
@@ -176,9 +180,13 @@ export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]
  * Fetch team machines from /teams/:id/machines endpoint
  * Returns array of machine objects with id
  */
-export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[]> {
+export async function fetchTeamMachines(
+  teamId: number,
+): Promise<{ id: number }[]> {
   try {
-    const result: unknown = await apiClient.get(API_ENDPOINTS.teamMachines(teamId));
+    const result: unknown = await apiClient.get(
+      API_ENDPOINTS.teamMachines(teamId),
+    );
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
     log.error({ err }, 'Error fetching team machines');
@@ -190,10 +198,14 @@ export async function fetchTeamMachines(teamId: number): Promise<{ id: number }[
  * Save team (create or update)
  * @returns Team ID
  */
-export async function saveTeam(payload: TeamPayload, editId: number | null): Promise<number> {
+export async function saveTeam(
+  payload: TeamPayload,
+  editId: number | null,
+): Promise<number> {
   const isEdit = editId !== null;
-  const result: unknown = isEdit
-    ? await apiClient.put(API_ENDPOINTS.team(editId), payload)
+  const result: unknown =
+    isEdit ?
+      await apiClient.put(API_ENDPOINTS.team(editId), payload)
     : await apiClient.post(API_ENDPOINTS.TEAMS, payload);
 
   return editId ?? extractIdFromResponse(result) ?? 0;
@@ -202,7 +214,10 @@ export async function saveTeam(payload: TeamPayload, editId: number | null): Pro
 /**
  * Add member to team
  */
-export async function addTeamMember(teamId: number, userId: number): Promise<void> {
+export async function addTeamMember(
+  teamId: number,
+  userId: number,
+): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err) {
@@ -213,7 +228,10 @@ export async function addTeamMember(teamId: number, userId: number): Promise<voi
 /**
  * Remove member from team
  */
-export async function removeTeamMember(teamId: number, userId: number): Promise<void> {
+export async function removeTeamMember(
+  teamId: number,
+  userId: number,
+): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamMember(teamId, userId));
   } catch (err) {
@@ -224,7 +242,10 @@ export async function removeTeamMember(teamId: number, userId: number): Promise<
 /**
  * Add machine to team
  */
-export async function addTeamMachine(teamId: number, machineId: number): Promise<void> {
+export async function addTeamMachine(
+  teamId: number,
+  machineId: number,
+): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMachines(teamId), { machineId });
   } catch (err) {
@@ -235,7 +256,10 @@ export async function addTeamMachine(teamId: number, machineId: number): Promise
 /**
  * Remove machine from team
  */
-export async function removeTeamMachine(teamId: number, machineId: number): Promise<void> {
+export async function removeTeamMachine(
+  teamId: number,
+  machineId: number,
+): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamMachine(teamId, machineId));
   } catch (err) {
@@ -266,8 +290,12 @@ export async function updateTeamRelations(
   }
 
   // Update members
-  const membersToAdd = newMemberIds.filter((id) => !currentMembers.includes(id));
-  const membersToRemove = currentMembers.filter((id) => !newMemberIds.includes(id));
+  const membersToAdd = newMemberIds.filter(
+    (id) => !currentMembers.includes(id),
+  );
+  const membersToRemove = currentMembers.filter(
+    (id) => !newMemberIds.includes(id),
+  );
 
   for (const userId of membersToAdd) {
     await addTeamMember(teamId, userId);
@@ -277,8 +305,12 @@ export async function updateTeamRelations(
   }
 
   // Update machines
-  const machinesToAdd = newMachineIds.filter((id) => !currentMachines.includes(id));
-  const machinesToRemove = currentMachines.filter((id) => !newMachineIds.includes(id));
+  const machinesToAdd = newMachineIds.filter(
+    (id) => !currentMachines.includes(id),
+  );
+  const machinesToRemove = currentMachines.filter(
+    (id) => !newMachineIds.includes(id),
+  );
 
   for (const machineId of machinesToAdd) {
     await addTeamMachine(teamId, machineId);
@@ -351,7 +383,8 @@ export function buildTeamPayload(formData: {
 }): TeamPayload {
   return {
     name: formData.name,
-    description: formData.description.length > 0 ? formData.description : undefined,
+    description:
+      formData.description.length > 0 ? formData.description : undefined,
     departmentId: formData.departmentId ?? undefined,
     leaderId: formData.leaderId ?? undefined,
     isActive: formData.isActive,

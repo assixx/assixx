@@ -35,7 +35,14 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
+  import type {
+    QuestionType,
+    Survey,
+    SurveyTemplate,
+    Department,
+    Team,
+    Area,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -79,7 +86,13 @@
   let formSelectedDepartments = $state<number[]>([]);
   let formSelectedTeams = $state<number[]>([]);
   let formQuestions = $state<
-    { id: string; text: string; type: QuestionType; isOptional: boolean; options: string[] }[]
+    {
+      id: string;
+      text: string;
+      type: QuestionType;
+      isOptional: boolean;
+      options: string[];
+    }[]
   >([]);
 
   // =============================================================================
@@ -171,7 +184,13 @@
     const questionId = `question_${surveyAdminState.incrementQuestionCounter()}`;
     formQuestions = [
       ...formQuestions,
-      { id: questionId, text: '', type: 'text' as QuestionType, isOptional: false, options: [] },
+      {
+        id: questionId,
+        text: '',
+        type: 'text' as QuestionType,
+        isOptional: false,
+        options: [],
+      },
     ];
   }
 
@@ -179,7 +198,10 @@
     formQuestions = formQuestions.filter((q) => q.id !== questionId);
   }
 
-  function handleQuestionTypeChange(questionId: string, type: QuestionType): void {
+  function handleQuestionTypeChange(
+    questionId: string,
+    type: QuestionType,
+  ): void {
     formQuestions = formQuestions.map((q) => {
       if (q.id === questionId) {
         const needsOptions = questionTypeNeedsOptions(type);
@@ -187,7 +209,9 @@
           ...q,
           type,
           options:
-            needsOptions && q.options.length === 0 ? ['', ''] : needsOptions ? q.options : [],
+            needsOptions && q.options.length === 0 ? ['', '']
+            : needsOptions ? q.options
+            : [],
         };
       }
       return q;
@@ -209,7 +233,11 @@
     });
   }
 
-  function updateOptionText(questionId: string, optionIndex: number, text: string): void {
+  function updateOptionText(
+    questionId: string,
+    optionIndex: number,
+    text: string,
+  ): void {
     formQuestions = formQuestions.map((q) => {
       if (q.id === questionId) {
         const newOptions = [...q.options];
@@ -225,7 +253,12 @@
   // =============================================================================
 
   async function handleSaveSurvey(status: 'draft' | 'active'): Promise<void> {
-    await saveSurveyWithInvalidate(status, getFormState(), handleCloseModal, invalidateAll);
+    await saveSurveyWithInvalidate(
+      status,
+      getFormState(),
+      handleCloseModal,
+      invalidateAll,
+    );
   }
 
   // =============================================================================
@@ -269,7 +302,9 @@
     <div class="card__header flex justify-between items-center">
       <div>
         <h4 class="card-title">Umfrage-Verwaltung</h4>
-        <p class="text-secondary">Erstellen und verwalten Sie Mitarbeiterumfragen</p>
+        <p class="text-secondary">
+          Erstellen und verwalten Sie Mitarbeiterumfragen
+        </p>
       </div>
     </div>
 
@@ -277,21 +312,30 @@
       <h4>Aktive Umfragen</h4>
       {#if activeSurveys.length === 0}
         <div class="empty-state">
-          <div class="empty-state__icon"><i class="fas fa-clipboard-list"></i></div>
+          <div class="empty-state__icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
           <h3 class="empty-state__title">Keine aktiven Umfragen</h3>
           <p class="empty-state__description">
-            Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue oder aktivieren Sie
-            einen Entwurf.
+            Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue oder
+            aktivieren Sie einen Entwurf.
           </p>
         </div>
       {:else}
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8">
+        <div
+          class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+        >
           {#each activeSurveys as survey (getSurveyId(survey))}
             <ActiveSurveyCard
               {survey}
               surveyId={getSurveyId(survey)}
               canManage={survey.canManage ?? false}
-              assignmentBadges={getAssignmentBadges(survey, departments, teams, areas)}
+              assignmentBadges={getAssignmentBadges(
+                survey,
+                departments,
+                teams,
+                areas,
+              )}
               onedit={handleEditSurvey}
               onviewresults={handleViewResults}
               ondelete={(id: number | string) =>
@@ -304,23 +348,34 @@
       {/if}
 
       <div class="completed-section">
-        <div class="completed-header"><h4 class="completed-title">Beendete Umfragen</h4></div>
+        <div class="completed-header">
+          <h4 class="completed-title">Beendete Umfragen</h4>
+        </div>
         {#if completedSurveys.length === 0}
           <div class="empty-state">
-            <div class="empty-state__icon"><i class="fas fa-check-circle"></i></div>
+            <div class="empty-state__icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
             <h3 class="empty-state__title">Keine beendeten Umfragen</h3>
             <p class="empty-state__description">
               Beendete und archivierte Umfragen werden hier angezeigt.
             </p>
           </div>
         {:else}
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8">
+          <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+          >
             {#each completedSurveys as survey (getSurveyId(survey))}
               <CompletedSurveyCard
                 {survey}
                 surveyId={getSurveyId(survey)}
                 canManage={survey.canManage ?? false}
-                assignmentBadges={getAssignmentBadges(survey, departments, teams, areas)}
+                assignmentBadges={getAssignmentBadges(
+                  survey,
+                  departments,
+                  teams,
+                  areas,
+                )}
                 onviewresults={handleViewResults}
                 ondelete={(id: number | string) =>
                   handleDeleteSurveyWithInvalidate(id, invalidateAll)}
@@ -337,12 +392,14 @@
             <div class="empty-state__icon"><i class="fas fa-file-alt"></i></div>
             <h3 class="empty-state__title">Keine Entwürfe</h3>
             <p class="empty-state__description">
-              Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und speichern Sie sie als
-              Entwurf.
+              Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und
+              speichern Sie sie als Entwurf.
             </p>
           </div>
         {:else}
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8">
+          <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+          >
             {#each draftSurveys as survey (getSurveyId(survey))}
               <DraftSurveyCard
                 {survey}
@@ -358,17 +415,24 @@
       </div>
 
       <div class="templates-section">
-        <div class="templates-header"><h4 class="templates-title">Vorlagen</h4></div>
+        <div class="templates-header">
+          <h4 class="templates-title">Vorlagen</h4>
+        </div>
         {#if templates.length === 0}
           <div class="empty-state">
-            <div class="empty-state__icon"><i class="fas fa-folder-open"></i></div>
+            <div class="empty-state__icon">
+              <i class="fas fa-folder-open"></i>
+            </div>
             <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
             <p class="empty-state__description">
-              Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden automatisch erstellt.
+              Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden
+              automatisch erstellt.
             </p>
           </div>
         {:else}
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8">
+          <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+          >
             {#each templates as template (template.id)}
               <div
                 class="card card--clickable"
@@ -382,7 +446,9 @@
                 }}
               >
                 <h4 class="mb-2 font-semibold text-primary">{template.name}</h4>
-                <p class="text-sm leading-normal text-secondary">{template.description}</p>
+                <p class="text-sm leading-normal text-secondary">
+                  {template.description}
+                </p>
               </div>
             {/each}
           </div>

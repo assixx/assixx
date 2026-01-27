@@ -92,15 +92,23 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Parallel fetch: upcoming events + organization data
   // Note: /users only for admin/root (employees get 403)
-  const [upcomingEventsData, recentlyAddedData, departmentsData, teamsData, areasData, usersData] =
-    await Promise.all([
-      apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
-      apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Team[]>('/teams', token, fetch),
-      apiFetch<Area[]>('/areas', token, fetch),
-      canFetchUsers ? apiFetch<User[]>('/users', token, fetch) : Promise.resolve(null),
-    ]);
+  const [
+    upcomingEventsData,
+    recentlyAddedData,
+    departmentsData,
+    teamsData,
+    areasData,
+    usersData,
+  ] = await Promise.all([
+    apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
+    apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Team[]>('/teams', token, fetch),
+    apiFetch<Area[]>('/areas', token, fetch),
+    canFetchUsers ?
+      apiFetch<User[]>('/users', token, fetch)
+    : Promise.resolve(null),
+  ]);
 
   return {
     upcomingEvents: toArray(upcomingEventsData),

@@ -55,7 +55,11 @@ const TOKEN_CONFIG = {
  */
 function getJwtSecrets(): { access: string; refresh: string } {
   const accessSecret = process.env['JWT_SECRET'];
-  if (accessSecret === undefined || accessSecret === '' || accessSecret.length < 32) {
+  if (
+    accessSecret === undefined ||
+    accessSecret === '' ||
+    accessSecret.length < 32
+  ) {
     throw new Error(
       'SECURITY ERROR: JWT_SECRET must be set and at least 32 characters. ' +
         "Generate one with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
@@ -65,7 +69,11 @@ function getJwtSecrets(): { access: string; refresh: string } {
   // JWT_REFRESH_SECRET MUST be different from JWT_SECRET for security
   // SECURITY: No fallback - must be explicitly set
   const refreshSecret = process.env['JWT_REFRESH_SECRET'];
-  if (refreshSecret === undefined || refreshSecret === '' || refreshSecret.length < 32) {
+  if (
+    refreshSecret === undefined ||
+    refreshSecret === '' ||
+    refreshSecret.length < 32
+  ) {
     throw new Error(
       'SECURITY ERROR: JWT_REFRESH_SECRET must be set and at least 32 characters. ' +
         'It MUST be different from JWT_SECRET for proper token isolation. ' +
@@ -145,7 +153,11 @@ export class AuthService {
   /**
    * Authenticate user with email and password
    */
-  async login(dto: LoginDto, ipAddress?: string, userAgent?: string): Promise<LoginResponse> {
+  async login(
+    dto: LoginDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
     const { email, password } = dto;
 
     // Find user by email
@@ -243,7 +255,9 @@ export class AuthService {
   ): Promise<{ tokensRevoked: number }> {
     const revokedCount = await this.revokeAllUserTokens(user.id, user.tenantId);
 
-    this.logger.log(`Logout: Revoked ${revokedCount} refresh tokens for user ${user.id}`);
+    this.logger.log(
+      `Logout: Revoked ${revokedCount} refresh tokens for user ${user.id}`,
+    );
 
     // Log logout for audit trail
     await this.logLogoutAudit(user, ipAddress, userAgent);
@@ -254,7 +268,11 @@ export class AuthService {
   /**
    * Refresh access token with rotation
    */
-  async refresh(dto: RefreshDto, ipAddress?: string, userAgent?: string): Promise<RefreshResponse> {
+  async refresh(
+    dto: RefreshDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<RefreshResponse> {
     const { refreshToken } = dto;
 
     // Step 1: Verify JWT signature and type
@@ -271,7 +289,13 @@ export class AuthService {
 
     // Step 3: Validate token in DB and perform rotation
     const storedToken = await this.findValidRefreshToken(tokenHash);
-    return await this.performTokenRotation(decoded, tokenHash, storedToken, ipAddress, userAgent);
+    return await this.performTokenRotation(
+      decoded,
+      tokenHash,
+      storedToken,
+      ipAddress,
+      userAgent,
+    );
   }
 
   /**
@@ -289,7 +313,10 @@ export class AuthService {
   /**
    * Verify token is valid (for /verify endpoint)
    */
-  verifyToken(user: NestAuthUser): { valid: boolean; user: Partial<NestAuthUser> } {
+  verifyToken(user: NestAuthUser): {
+    valid: boolean;
+    user: Partial<NestAuthUser>;
+  } {
     return {
       valid: true,
       user: {
@@ -353,7 +380,9 @@ export class AuthService {
 
     // Store token hash in DB
     const tokenHash = this.hashToken(refreshToken);
-    const expiresAt = new Date(Date.now() + TOKEN_CONFIG.refreshExpirySeconds * 1000);
+    const expiresAt = new Date(
+      Date.now() + TOKEN_CONFIG.refreshExpirySeconds * 1000,
+    );
 
     await this.storeRefreshToken(
       tokenHash,
@@ -387,7 +416,8 @@ export class AuthService {
         throw error;
       }
 
-      const isExpired = error instanceof Error && error.name === 'TokenExpiredError';
+      const isExpired =
+        error instanceof Error && error.name === 'TokenExpiredError';
       throw new UnauthorizedException(
         isExpired ? 'Refresh token has expired' : 'Invalid refresh token',
       );
@@ -408,7 +438,9 @@ export class AuthService {
     const family = storedToken !== null ? decoded.family : undefined;
 
     if (storedToken === null) {
-      this.logger.warn(`Token not found in DB for user ${decoded.id} - may be pre-rotation token`);
+      this.logger.warn(
+        `Token not found in DB for user ${decoded.id} - may be pre-rotation token`,
+      );
     }
 
     const tokens = await this.generateTokensWithRotation(
@@ -460,7 +492,10 @@ export class AuthService {
   /**
    * Find user by ID
    */
-  private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
+  private async findUserById(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
               is_active, last_login, created_at
@@ -512,7 +547,10 @@ export class AuthService {
   /**
    * Update last login timestamp
    */
-  private async updateLastLogin(userId: number, tenantId: number): Promise<void> {
+  private async updateLastLogin(
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
     await this.databaseService.query(
       `UPDATE users SET last_login = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
@@ -535,16 +573,28 @@ export class AuthService {
       `INSERT INTO refresh_tokens
        (token_hash, user_id, tenant_id, token_family, expires_at, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [tokenHash, userId, tenantId, tokenFamily, expiresAt, ipAddress ?? null, userAgent ?? null],
+      [
+        tokenHash,
+        userId,
+        tenantId,
+        tokenFamily,
+        expiresAt,
+        ipAddress ?? null,
+        userAgent ?? null,
+      ],
     );
 
-    this.logger.debug(`Stored new token for user ${userId} in family ${tokenFamily}`);
+    this.logger.debug(
+      `Stored new token for user ${userId} in family ${tokenFamily}`,
+    );
   }
 
   /**
    * Find valid refresh token by hash
    */
-  private async findValidRefreshToken(tokenHash: string): Promise<RefreshTokenRow | null> {
+  private async findValidRefreshToken(
+    tokenHash: string,
+  ): Promise<RefreshTokenRow | null> {
     const rows = await this.databaseService.query<RefreshTokenRow>(
       `SELECT id, user_id, tenant_id, token_hash, token_family, expires_at, is_revoked, used_at, replaced_by_hash
        FROM refresh_tokens
@@ -558,7 +608,10 @@ export class AuthService {
   /**
    * Check if token was already used (reuse detection)
    */
-  private async isTokenAlreadyUsed(tokenHash: string, decoded: JwtPayload): Promise<boolean> {
+  private async isTokenAlreadyUsed(
+    tokenHash: string,
+    decoded: JwtPayload,
+  ): Promise<boolean> {
     const rows = await this.databaseService.query<{ used_at: Date | null }>(
       `SELECT used_at FROM refresh_tokens WHERE token_hash = $1`,
       [tokenHash],
@@ -588,7 +641,10 @@ export class AuthService {
   /**
    * Mark token as used and link to replacement
    */
-  private async markTokenAsUsed(tokenHash: string, replacementHash: string): Promise<void> {
+  private async markTokenAsUsed(
+    tokenHash: string,
+    replacementHash: string,
+  ): Promise<void> {
     await this.databaseService.query(
       `UPDATE refresh_tokens
        SET used_at = NOW(), replaced_by_hash = $2
@@ -596,7 +652,9 @@ export class AuthService {
       [tokenHash, replacementHash],
     );
 
-    this.logger.debug(`Marked token as used, replaced by ${replacementHash.slice(0, 8)}...`);
+    this.logger.debug(
+      `Marked token as used, replaced by ${replacementHash.slice(0, 8)}...`,
+    );
   }
 
   /**
@@ -612,14 +670,19 @@ export class AuthService {
     );
 
     const count = Number.parseInt(result[0]?.count ?? '0', 10);
-    this.logger.warn(`SECURITY: Revoked ${count} tokens in family ${tokenFamily}`);
+    this.logger.warn(
+      `SECURITY: Revoked ${count} tokens in family ${tokenFamily}`,
+    );
     return count;
   }
 
   /**
    * Revoke all tokens for a user
    */
-  private async revokeAllUserTokens(userId: number, tenantId: number): Promise<number> {
+  private async revokeAllUserTokens(
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.databaseService.query<{ count: string }>(
       `WITH updated AS (
          UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1 AND tenant_id = $2 RETURNING 1

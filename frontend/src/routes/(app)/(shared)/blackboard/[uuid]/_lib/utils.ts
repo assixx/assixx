@@ -6,7 +6,11 @@
 import type { DetailEntry, Attachment } from './types';
 
 // Re-export shared utilities from parent
-export { formatDateShort, formatFileSize, getFileIconClass } from '../../_lib/utils';
+export {
+  formatDateShort,
+  formatFileSize,
+  getFileIconClass,
+} from '../../_lib/utils';
 
 // ============================================================================
 // Date Formatting
@@ -95,7 +99,10 @@ const ORG_LEVEL_FALLBACKS: Partial<Record<string, string>> = {
 /**
  * Get org level text with entry context
  */
-export function getOrgLevelText(orgLevel: string, entry: DetailEntry | null): string {
+export function getOrgLevelText(
+  orgLevel: string,
+  entry: DetailEntry | null,
+): string {
   if (orgLevel === 'company') return 'Firmenweit';
 
   const dynamicNames: Record<string, string | undefined> = {
@@ -131,14 +138,17 @@ export function getFileIcon(mimeType: string): string {
   if (mimeType.startsWith('image/')) return 'fas fa-image';
   if (mimeType === 'application/pdf') return 'fas fa-file-pdf';
   if (mimeType.includes('word')) return 'fas fa-file-word';
-  if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'fas fa-file-excel';
+  if (mimeType.includes('excel') || mimeType.includes('spreadsheet'))
+    return 'fas fa-file-excel';
   return 'fas fa-file';
 }
 
 /**
  * Get preview file type
  */
-export function getPreviewFileType(mimeType: string): 'pdf' | 'image' | 'other' {
+export function getPreviewFileType(
+  mimeType: string,
+): 'pdf' | 'image' | 'other' {
   if (mimeType === 'application/pdf') return 'pdf';
   if (mimeType.startsWith('image/')) return 'image';
   return 'other';
@@ -159,7 +169,13 @@ export function getAvatarColor(id: number): number {
 // Photo/Attachment Filtering
 // ============================================================================
 
-const PHOTO_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
 
 /**
  * Filter photos from attachments

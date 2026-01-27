@@ -29,7 +29,12 @@
 /* Hover State - Brighten the gradient */
 .btn-warning:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-warning-hover, 0 4px 12px rgb(255 152 0 / 40%));
-  background: linear-gradient(145deg, rgb(255 183 77 / 18%), rgb(255 111 0 / 25%)); /* Intensiver */
+  background: linear-gradient(
+    145deg,
+    rgb(255 183 77 / 18%),
+    rgb(255 111 0 / 25%)
+  ); /* Intensiver */
+
   color: var(--color-white);
 }
 

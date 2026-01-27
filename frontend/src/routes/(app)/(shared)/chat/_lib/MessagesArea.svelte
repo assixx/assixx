@@ -38,8 +38,7 @@
     onimageclick: (file: PreviewAttachment) => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     messages,
     scheduledMessages,
     currentUserId,
@@ -49,7 +48,6 @@
     oncancelscheduled,
     onimageclick,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   let containerRef: HTMLDivElement | null = $state(null);
 
@@ -92,8 +90,11 @@
         linkifiedContent: linkify(message.content),
         isOwn: message.senderId === currentUserId,
         showDateSeparator,
-        dateSeparatorText: showDateSeparator ? formatDateSeparator(message.createdAt) : '',
-        hasAttachments: Boolean(message.attachments && message.attachments.length > 0),
+        dateSeparatorText:
+          showDateSeparator ? formatDateSeparator(message.createdAt) : '',
+        hasAttachments: Boolean(
+          message.attachments && message.attachments.length > 0,
+        ),
       };
     });
 
@@ -112,28 +113,33 @@
    * Messages with search highlighting applied
    * Only recomputes when searchQuery changes
    */
-  const searchHighlightedMessages = $derived.by<SvelteMap<number, string>>(() => {
-    if (!searchQuery.trim()) return new SvelteMap();
+  const searchHighlightedMessages = $derived.by<SvelteMap<number, string>>(
+    () => {
+      if (!searchQuery.trim()) return new SvelteMap();
 
-    const startTime = performance.now();
-    const highlights = new SvelteMap<number, string>();
+      const startTime = performance.now();
+      const highlights = new SvelteMap<number, string>();
 
-    for (const msg of processedMessages) {
-      if (messageMatchesQuery(msg.content, searchQuery)) {
-        highlights.set(msg.id, highlightSearchInMessage(msg.content, searchQuery));
+      for (const msg of processedMessages) {
+        if (messageMatchesQuery(msg.content, searchQuery)) {
+          highlights.set(
+            msg.id,
+            highlightSearchInMessage(msg.content, searchQuery),
+          );
+        }
       }
-    }
 
-    const duration = performance.now() - startTime;
-    if (duration > 5) {
-      log.warn(
-        { matchCount: highlights.size, durationMs: duration.toFixed(2) },
-        'Slow search highlighting',
-      );
-    }
+      const duration = performance.now() - startTime;
+      if (duration > 5) {
+        log.warn(
+          { matchCount: highlights.size, durationMs: duration.toFixed(2) },
+          'Slow search highlighting',
+        );
+      }
 
-    return highlights;
-  });
+      return highlights;
+    },
+  );
 
   export function scrollToBottom(): void {
     if (containerRef) {
@@ -146,7 +152,11 @@
   }
 </script>
 
-<div class="messages-container" class:loaded={!isLoading} bind:this={containerRef}>
+<div
+  class="messages-container"
+  class:loaded={!isLoading}
+  bind:this={containerRef}
+>
   {#if isLoading}
     <div class="loading-spinner">
       <i class="fas fa-spinner fa-spin"></i>
@@ -164,7 +174,10 @@
     {#each scheduledMessages as scheduled (scheduled.id)}
       {@const att = scheduled.attachment}
       {@const isImage = att?.type.startsWith('image/') === true}
-      <div class="message own message--scheduled" data-scheduled-id={scheduled.id}>
+      <div
+        class="message own message--scheduled"
+        data-scheduled-id={scheduled.id}
+      >
         <div class="message-bubble">
           <div class="message-content">
             {#if scheduled.content}
@@ -228,7 +241,11 @@
         </div>
       {/if}
 
-      <div class="message" class:own={message.isOwn} data-message-id={message.id}>
+      <div
+        class="message"
+        class:own={message.isOwn}
+        data-message-id={message.id}
+      >
         <div class="message-bubble">
           <div class="message-content">
             <!-- eslint-disable svelte/no-at-html-tags -- Content from API is trusted -->
@@ -248,21 +265,33 @@
                 {@const isPdf = att.mimeType === 'application/pdf'}
                 {@const canPreview = isImage || isPdf}
                 {@const inlineSrc =
-                  att.downloadUrl ?? `/api/v2/documents/uuid/${att.fileUuid}/download?inline=true`}
-                {@const previewSrc = isPdf
-                  ? `/api/v2/documents/uuid/${att.fileUuid}/preview`
+                  att.downloadUrl ??
+                  `/api/v2/documents/uuid/${att.fileUuid}/download?inline=true`}
+                {@const previewSrc =
+                  isPdf ?
+                    `/api/v2/documents/uuid/${att.fileUuid}/preview`
                   : inlineSrc}
                 {#if canPreview}
                   <button
                     type="button"
-                    class="attachment {isImage ? 'image-attachment' : 'file-attachment'}"
+                    class="attachment {isImage ? 'image-attachment' : (
+                      'file-attachment'
+                    )}"
                     onclick={() => {
-                      onimageclick({ src: previewSrc, alt: att.fileName, mimeType: att.mimeType });
+                      onimageclick({
+                        src: previewSrc,
+                        alt: att.fileName,
+                        mimeType: att.mimeType,
+                      });
                     }}
                   >
                     {#if isImage}
                       <div class="attachment-image-wrapper">
-                        <img src={inlineSrc} alt={att.fileName} loading="lazy" />
+                        <img
+                          src={inlineSrc}
+                          alt={att.fileName}
+                          loading="lazy"
+                        />
                         <div class="attachment-overlay">
                           <i class="fas fa-search-plus"></i>
                         </div>
@@ -271,10 +300,15 @@
                       <i class="fas fa-file-pdf"></i>
                       <div class="file-info">
                         <span class="file-name">{att.fileName}</span>
-                        <span class="file-size">{formatFileSize(att.fileSize)}</span>
+                        <span class="file-size"
+                          >{formatFileSize(att.fileSize)}</span
+                        >
                       </div>
                       <div class="attachment-actions">
-                        <span class="btn btn-icon btn-sm" aria-label="Vorschau">
+                        <span
+                          class="btn btn-icon btn-sm"
+                          aria-label="Vorschau"
+                        >
                           <i class="fas fa-eye"></i>
                         </span>
                       </div>
@@ -283,14 +317,17 @@
                 {:else}
                   <a
                     class="attachment file-attachment"
-                    href={att.downloadUrl ?? `/api/v2/chat/attachments/${att.fileUuid}/download`}
+                    href={att.downloadUrl ??
+                      `/api/v2/chat/attachments/${att.fileUuid}/download`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <i class="fas {getFileIcon(att.mimeType)}"></i>
                     <div class="file-info">
                       <span class="file-name">{att.fileName}</span>
-                      <span class="file-size">{formatFileSize(att.fileSize)}</span>
+                      <span class="file-size"
+                        >{formatFileSize(att.fileSize)}</span
+                      >
                     </div>
                     <div class="attachment-actions">
                       <button
@@ -308,22 +345,27 @@
 
             <!-- Legacy attachment support -->
             {#if message.attachment}
-              {@const isLegacyImage = message.attachment.mimeType.startsWith('image/')}
-              {@const isLegacyPdf = message.attachment.mimeType === 'application/pdf'}
+              {@const isLegacyImage =
+                message.attachment.mimeType.startsWith('image/')}
+              {@const isLegacyPdf =
+                message.attachment.mimeType === 'application/pdf'}
               {@const canPreview = isLegacyImage || isLegacyPdf}
               {@const legacyInlineSrc = `${message.attachment.url}?inline=true`}
               {@const legacyUuidMatch = /attachments\/([^/]+)\/download/.exec(
                 message.attachment.url,
               )}
-              {@const legacyUuid = legacyUuidMatch !== null ? legacyUuidMatch[1] : null}
+              {@const legacyUuid =
+                legacyUuidMatch !== null ? legacyUuidMatch[1] : null}
               {@const legacyPreviewSrc =
-                isLegacyPdf && legacyUuid !== null
-                  ? `/api/v2/documents/uuid/${legacyUuid}/preview`
-                  : legacyInlineSrc}
+                isLegacyPdf && legacyUuid !== null ?
+                  `/api/v2/documents/uuid/${legacyUuid}/preview`
+                : legacyInlineSrc}
               {#if canPreview}
                 <button
                   type="button"
-                  class="attachment {isLegacyImage ? 'image-attachment' : 'file-attachment'}"
+                  class="attachment {isLegacyImage ? 'image-attachment' : (
+                    'file-attachment'
+                  )}"
                   onclick={() => {
                     onimageclick({
                       src: legacyPreviewSrc,
@@ -334,7 +376,11 @@
                 >
                   {#if isLegacyImage}
                     <div class="attachment-image-wrapper">
-                      <img src={legacyInlineSrc} alt={message.attachment.filename} loading="lazy" />
+                      <img
+                        src={legacyInlineSrc}
+                        alt={message.attachment.filename}
+                        loading="lazy"
+                      />
                       <div class="attachment-overlay">
                         <i class="fas fa-search-plus"></i>
                       </div>
@@ -342,11 +388,18 @@
                   {:else}
                     <i class="fas fa-file-pdf"></i>
                     <div class="file-info">
-                      <span class="file-name">{message.attachment.filename}</span>
-                      <span class="file-size">{formatFileSize(message.attachment.size)}</span>
+                      <span class="file-name"
+                        >{message.attachment.filename}</span
+                      >
+                      <span class="file-size"
+                        >{formatFileSize(message.attachment.size)}</span
+                      >
                     </div>
                     <div class="attachment-actions">
-                      <span class="btn btn-icon btn-sm" aria-label="Vorschau">
+                      <span
+                        class="btn btn-icon btn-sm"
+                        aria-label="Vorschau"
+                      >
                         <i class="fas fa-eye"></i>
                       </span>
                     </div>
@@ -362,7 +415,9 @@
                   <i class="fas {getFileIcon(message.attachment.mimeType)}"></i>
                   <div class="file-info">
                     <span class="file-name">{message.attachment.filename}</span>
-                    <span class="file-size">{formatFileSize(message.attachment.size)}</span>
+                    <span class="file-size"
+                      >{formatFileSize(message.attachment.size)}</span
+                    >
                   </div>
                 </a>
               {/if}
@@ -372,7 +427,10 @@
             <div class="message-time">
               {message.formattedTime}
               {#if message.isOwn}
-                <span class="read-indicator" class:read={message.isRead}>
+                <span
+                  class="read-indicator"
+                  class:read={message.isRead}
+                >
                   {#if message.isRead}✓✓{:else}✓{/if}
                 </span>
               {/if}

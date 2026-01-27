@@ -30,8 +30,7 @@
     onselectconversation: (conversation: Conversation) => void;
   }
 
-  /* eslint-disable prefer-const */
-  // $bindable() required for two-way binding in Svelte 5
+  /* eslint-disable prefer-const -- Svelte $bindable() requires let */
   let {
     conversations,
     activeConversationId,
@@ -103,7 +102,10 @@
         <div class="search-input__spinner"></div>
       </div>
       {#if userSearchResults.length > 0}
-        <div class="search-input__results" id="chatUserSearchResults">
+        <div
+          class="search-input__results"
+          id="chatUserSearchResults"
+        >
           {#each userSearchResults as user (user.id)}
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <div
@@ -115,19 +117,28 @@
             >
               <div class="flex items-center gap-3 w-full">
                 <div
-                  class="avatar avatar--sm {user.profileImageUrl !== undefined &&
-                  user.profileImageUrl !== ''
-                    ? ''
-                    : getAvatarColorClass(user.id)}"
+                  class="avatar avatar--sm {(
+                    user.profileImageUrl !== undefined &&
+                    user.profileImageUrl !== ''
+                  ) ?
+                    ''
+                  : getAvatarColorClass(user.id)}"
                 >
                   {#if user.profileImageUrl}
-                    <img src={user.profileImageUrl} alt={user.username} class="avatar__image" />
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user.username}
+                      class="avatar__image"
+                    />
                   {:else}
                     <span class="avatar__initials">
                       {getInitials(user.firstName, user.lastName)}
                     </span>
                   {/if}
-                  <span class="avatar__status avatar__status--{user.status ?? 'offline'}"></span>
+                  <span
+                    class="avatar__status avatar__status--{user.status ??
+                      'offline'}"
+                  ></span>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="user-name">
@@ -144,7 +155,9 @@
                   </div>
                   <div class="user-meta">
                     {#if user.role}
-                      <span class="badge {getRoleBadgeClass(user.role)} badge--xs">
+                      <span
+                        class="badge {getRoleBadgeClass(user.role)} badge--xs"
+                      >
                         {getRoleLabel(user.role)}
                       </span>
                     {/if}
@@ -182,19 +195,26 @@
           }}
         >
           <div
-            class="avatar {getConversationAvatar(conv, currentUserId) !== null
-              ? ''
-              : getAvatarColorClass(partner?.id)}"
+            class="avatar {getConversationAvatar(conv, currentUserId) !== null ?
+              ''
+            : getAvatarColorClass(partner?.id)}"
           >
             {#if getConversationAvatar(conv, currentUserId)}
-              <img src={getConversationAvatar(conv, currentUserId)} alt="" class="avatar__image" />
+              <img
+                src={getConversationAvatar(conv, currentUserId)}
+                alt=""
+                class="avatar__image"
+              />
             {:else}
               <span class="avatar__initials">
                 {getInitials(partner?.firstName, partner?.lastName)}
               </span>
             {/if}
             {#if !conv.isGroup && partner}
-              <span class="avatar__status avatar__status--{partner.status ?? 'offline'}"></span>
+              <span
+                class="avatar__status avatar__status--{partner.status ??
+                  'offline'}"
+              ></span>
             {/if}
           </div>
           <div class="conversation-info">

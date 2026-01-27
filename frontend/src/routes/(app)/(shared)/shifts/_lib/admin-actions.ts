@@ -16,7 +16,14 @@ import { SHIFT_TIMES } from './constants';
 import { buildShiftSaveData } from './data-loader';
 import { formatDate, getWeekStart, getWeekNumber } from './utils';
 
-import type { SelectedContext, Team, Area, Department, Machine, ShiftFavorite } from './types';
+import type {
+  SelectedContext,
+  Team,
+  Area,
+  Department,
+  Machine,
+  ShiftFavorite,
+} from './types';
 
 // =============================================================================
 // SAVE SCHEDULE
@@ -37,13 +44,23 @@ export interface SaveScheduleResult {
   error?: string;
 }
 
-export async function saveSchedule(params: SaveScheduleParams): Promise<SaveScheduleResult> {
-  const { weeklyShifts, weeklyNotes, currentWeek, currentPlanId, selectedContext, teams } = params;
+export async function saveSchedule(
+  params: SaveScheduleParams,
+): Promise<SaveScheduleResult> {
+  const {
+    weeklyShifts,
+    weeklyNotes,
+    currentWeek,
+    currentPlanId,
+    selectedContext,
+    teams,
+  } = params;
 
   const shifts = buildShiftSaveData(weeklyShifts, SHIFT_TIMES);
   const weekStart = getWeekStart(currentWeek);
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-  const teamName = teams.find((t) => t.id === selectedContext.teamId)?.name ?? 'Team';
+  const teamName =
+    teams.find((t) => t.id === selectedContext.teamId)?.name ?? 'Team';
 
   const planData = {
     teamId: selectedContext.teamId ?? 0,
@@ -58,9 +75,9 @@ export async function saveSchedule(params: SaveScheduleParams): Promise<SaveSche
   };
 
   const result =
-    currentPlanId !== null
-      ? await updateShiftPlan(currentPlanId, planData)
-      : await createShiftPlan(planData);
+    currentPlanId !== null ?
+      await updateShiftPlan(currentPlanId, planData)
+    : await createShiftPlan(planData);
 
   return { success: true, planId: result.planId };
 }
@@ -81,7 +98,9 @@ export interface DiscardWeekResult {
   error?: string;
 }
 
-export async function discardWeek(params: DiscardWeekParams): Promise<DiscardWeekResult> {
+export async function discardWeek(
+  params: DiscardWeekParams,
+): Promise<DiscardWeekResult> {
   const { teamId, currentWeek } = params;
 
   const weekStart = getWeekStart(currentWeek);
@@ -212,7 +231,9 @@ interface FavoriteEntities {
  * Finds and validates all required entities for a favorite
  * Returns null if required IDs are missing or entities not found
  */
-function findFavoriteEntities(params: AddFavoriteParams): FavoriteEntities | null {
+function findFavoriteEntities(
+  params: AddFavoriteParams,
+): FavoriteEntities | null {
   const { selectedContext, areas, departments, machines, teams } = params;
   const { areaId, departmentId, machineId, teamId } = selectedContext;
 
@@ -228,15 +249,19 @@ function findFavoriteEntities(params: AddFavoriteParams): FavoriteEntities | nul
     return null;
   }
 
-  const machine = machineId !== null ? machines.find((m) => m.id === machineId) : undefined;
+  const machine =
+    machineId !== null ? machines.find((m) => m.id === machineId) : undefined;
   return { area, dept, machine, team, areaId, departmentId, machineId, teamId };
 }
 
-export async function addToFavorites(params: AddFavoriteParams): Promise<ShiftFavorite | null> {
+export async function addToFavorites(
+  params: AddFavoriteParams,
+): Promise<ShiftFavorite | null> {
   const entities = findFavoriteEntities(params);
   if (entities === null) return null;
 
-  const { area, dept, machine, team, areaId, departmentId, machineId, teamId } = entities;
+  const { area, dept, machine, team, areaId, departmentId, machineId, teamId } =
+    entities;
 
   return await apiSaveFavorite({
     name: team.name,

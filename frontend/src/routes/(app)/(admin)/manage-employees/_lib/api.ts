@@ -167,7 +167,10 @@ export async function saveEmployee(
  * @param userId - Employee user ID
  * @param teamId - Team ID
  */
-export async function assignTeamMember(userId: number, teamId: number): Promise<void> {
+export async function assignTeamMember(
+  userId: number,
+  teamId: number,
+): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err) {
@@ -184,7 +187,10 @@ export async function assignTeamMember(userId: number, teamId: number): Promise<
  * @param userId - Employee user ID
  * @param teamId - Team ID
  */
-export async function removeTeamMember(userId: number, teamId: number): Promise<void> {
+export async function removeTeamMember(
+  userId: number,
+  teamId: number,
+): Promise<void> {
   try {
     await apiClient.delete(`${API_ENDPOINTS.teamMembers(teamId)}/${userId}`);
   } catch (err) {
@@ -250,7 +256,9 @@ export async function syncTeamMemberships(
 
   // Remove old team memberships (only in edit mode)
   if (isEditMode) {
-    const teamsToRemove = originalTeamIds.filter((id) => !newTeamIds.includes(id));
+    const teamsToRemove = originalTeamIds.filter(
+      (id) => !newTeamIds.includes(id),
+    );
     for (const teamId of teamsToRemove) {
       await removeTeamMember(userId, teamId);
     }
@@ -283,13 +291,17 @@ export function buildEmployeePayload(
     position: toOptional(formData.position),
     phone: toOptional(formData.phone),
     dateOfBirth: toOptional(formData.dateOfBirth),
-    employeeNumber: formData.employeeNumber !== '' ? formData.employeeNumber : `EMP${Date.now()}`,
+    employeeNumber:
+      formData.employeeNumber !== '' ?
+        formData.employeeNumber
+      : `EMP${Date.now()}`,
     isActive: formData.isActive,
     role: 'employee',
   };
 
   // Add password: new employee requires it, edit only if valid new password provided
-  const hasValidPassword = formData.password !== '' && formData.password.length >= 8;
+  const hasValidPassword =
+    formData.password !== '' && formData.password.length >= 8;
   if (!isEdit || hasValidPassword) {
     payload.password = toOptional(formData.password);
   }

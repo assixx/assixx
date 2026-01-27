@@ -7,7 +7,12 @@
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
-import type { RotationPattern, Employee, RotationHistoryEntryAPI, ShiftType } from './types';
+import type {
+  RotationPattern,
+  Employee,
+  RotationHistoryEntryAPI,
+  ShiftType,
+} from './types';
 
 const log = createLogger('ShiftsRotation');
 const apiClient = getApiClient();
@@ -57,7 +62,9 @@ export interface ShiftGroups {
 /**
  * Check if rotation pattern exists for a team
  */
-export async function checkRotationPatternExists(teamId: number | null): Promise<boolean> {
+export async function checkRotationPatternExists(
+  teamId: number | null,
+): Promise<boolean> {
   if (teamId === null || teamId === 0) return false;
 
   try {
@@ -74,7 +81,9 @@ export async function checkRotationPatternExists(teamId: number | null): Promise
 /**
  * Load existing pattern for a team
  */
-export async function loadExistingPattern(teamId: number): Promise<RotationPattern | null> {
+export async function loadExistingPattern(
+  teamId: number,
+): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
       `/shifts/rotation/patterns?team_id=${teamId}&active=true`,
@@ -89,7 +98,9 @@ export async function loadExistingPattern(teamId: number): Promise<RotationPatte
 /**
  * Load a specific pattern by ID
  */
-export async function loadPatternById(patternId: number): Promise<RotationPattern | null> {
+export async function loadPatternById(
+  patternId: number,
+): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ pattern?: RotationPattern }>(
       `/shifts/rotation/patterns/${patternId}`,
@@ -115,7 +126,9 @@ export async function loadRotationHistory(
       url += `&team_id=${teamId}`;
     }
 
-    const response = await apiClient.get<{ history?: RotationHistoryEntryAPI[] }>(url);
+    const response = await apiClient.get<{
+      history?: RotationHistoryEntryAPI[];
+    }>(url);
     return response.history ?? [];
   } catch (err) {
     log.error({ err }, 'Error loading rotation history');
@@ -130,7 +143,9 @@ export async function loadRotationHistory(
 /**
  * Map pattern type to API value
  */
-export function mapPatternTypeToAPI(selectValue: string): 'alternate_fs' | 'fixed_n' {
+export function mapPatternTypeToAPI(
+  selectValue: string,
+): 'alternate_fs' | 'fixed_n' {
   const patternTypeMap = new Map<string, 'alternate_fs' | 'fixed_n'>([
     ['weekly', 'alternate_fs'],
     ['biweekly', 'fixed_n'],
@@ -193,7 +208,10 @@ export function convertShiftTypeToAPI(frontendType: string): ShiftGroup {
 export function getNextMonday(date: Date): Date {
   const result = new Date(date);
   const dayOfWeek = result.getDay();
-  const daysUntilMonday = dayOfWeek === 1 ? 7 : dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+  const daysUntilMonday =
+    dayOfWeek === 1 ? 7
+    : dayOfWeek === 0 ? 1
+    : 8 - dayOfWeek;
   result.setDate(result.getDate() + daysUntilMonday);
   return result;
 }
@@ -213,7 +231,10 @@ export function getSecondFridayAfter(date: Date): Date {
 /**
  * Calculate default end date by adding weeks to start date
  */
-export function calculateDefaultEndDate(startDate: string, weeks: number): string {
+export function calculateDefaultEndDate(
+  startDate: string,
+  weeks: number,
+): string {
   const start = new Date(startDate);
   start.setDate(start.getDate() + weeks * 7);
   return start.toISOString().split('T')[0] ?? startDate;

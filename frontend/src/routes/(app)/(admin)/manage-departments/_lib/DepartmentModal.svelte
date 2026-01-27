@@ -26,10 +26,10 @@
     onsubmit: (e: Event) => void;
   }
 
-  /* eslint-disable */
+  /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
   let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formIsActive = $bindable(), allAreas, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
-  /* eslint-enable */
+  /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
   let areaDropdownOpen = $state(false);
@@ -38,7 +38,9 @@
 
   // Derived dropdown display names
   const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
-  const selectedLeadName = $derived(getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads));
+  const selectedLeadName = $derived(
+    getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads),
+  );
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -87,14 +89,18 @@
   /**
    * Checks if click target is outside the specified element
    */
-  function isClickOutsideElement(target: HTMLElement, elementId: string): boolean {
+  function isClickOutsideElement(
+    target: HTMLElement,
+    elementId: string,
+  ): boolean {
     const el = document.getElementById(elementId);
     return el?.contains(target) !== true;
   }
 
   // Close dropdowns on outside click
   $effect(() => {
-    const anyDropdownOpen = areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
+    const anyDropdownOpen =
+      areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
     if (!anyDropdownOpen) return;
 
     const handleClick = (e: MouseEvent): void => {
@@ -105,7 +111,10 @@
       if (leadDropdownOpen && isClickOutsideElement(target, 'lead-dropdown')) {
         leadDropdownOpen = false;
       }
-      if (statusDropdownOpen && isClickOutsideElement(target, 'status-dropdown')) {
+      if (
+        statusDropdownOpen &&
+        isClickOutsideElement(target, 'status-dropdown')
+      ) {
         statusDropdownOpen = false;
       }
     };
@@ -140,14 +149,27 @@
       {onsubmit}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="department-modal-title">{modalTitle}</h3>
-        <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
+        <h3
+          class="ds-modal__title"
+          id="department-modal-title"
+        >
+          {modalTitle}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={onclose}
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="ds-modal__body">
         <div class="form-field">
-          <label class="form-field__label" for="department-name">
+          <label
+            class="form-field__label"
+            for="department-name"
+          >
             {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
@@ -161,8 +183,9 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="department-description"
-            >{MESSAGES.LABEL_DESCRIPTION}</label
+          <label
+            class="form-field__label"
+            for="department-description">{MESSAGES.LABEL_DESCRIPTION}</label
           >
           <textarea
             id="department-description"
@@ -174,9 +197,19 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="area-hidden">{MESSAGES.LABEL_AREA}</label>
-          <input type="hidden" id="area-hidden" value={formAreaId ?? ''} />
-          <div class="dropdown" id="area-dropdown">
+          <label
+            class="form-field__label"
+            for="area-hidden">{MESSAGES.LABEL_AREA}</label
+          >
+          <input
+            type="hidden"
+            id="area-hidden"
+            value={formAreaId ?? ''}
+          />
+          <div
+            class="dropdown"
+            id="area-dropdown"
+          >
             <button
               type="button"
               class="dropdown__trigger"
@@ -186,7 +219,10 @@
               <span>{selectedAreaName}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div class="dropdown__menu" class:active={areaDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={areaDropdownOpen}
+            >
               <button
                 type="button"
                 class="dropdown__option"
@@ -212,12 +248,22 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="lead-hidden">
+          <label
+            class="form-field__label"
+            for="lead-hidden"
+          >
             <i class="fas fa-user-tie mr-1"></i>
             {MESSAGES.LABEL_DEPARTMENT_LEAD}
           </label>
-          <input type="hidden" id="lead-hidden" value={formDepartmentLeadId ?? ''} />
-          <div class="dropdown" id="lead-dropdown">
+          <input
+            type="hidden"
+            id="lead-hidden"
+            value={formDepartmentLeadId ?? ''}
+          />
+          <div
+            class="dropdown"
+            id="lead-dropdown"
+          >
             <button
               type="button"
               class="dropdown__trigger"
@@ -227,7 +273,10 @@
               <span>{selectedLeadName}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div class="dropdown__menu" class:active={leadDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={leadDropdownOpen}
+            >
               <button
                 type="button"
                 class="dropdown__option"
@@ -258,12 +307,25 @@
         </div>
 
         {#if isEditMode}
-          <div class="form-field" id="status-field-group">
-            <label class="form-field__label" for="status-hidden">
+          <div
+            class="form-field"
+            id="status-field-group"
+          >
+            <label
+              class="form-field__label"
+              for="status-hidden"
+            >
               {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
-            <input type="hidden" id="status-hidden" value={formIsActive} />
-            <div class="dropdown" id="status-dropdown">
+            <input
+              type="hidden"
+              id="status-hidden"
+              value={formIsActive}
+            />
+            <div
+              class="dropdown"
+              id="status-dropdown"
+            >
               <button
                 type="button"
                 class="dropdown__trigger"
@@ -275,7 +337,10 @@
                 >
                 <i class="fas fa-chevron-down"></i>
               </button>
-              <div class="dropdown__menu" class:active={statusDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={statusDropdownOpen}
+              >
                 <button
                   type="button"
                   class="dropdown__option"
@@ -305,7 +370,9 @@
                 </button>
               </div>
             </div>
-            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+            >
               {MESSAGES.STATUS_HINT}
             </span>
           </div>
@@ -313,10 +380,18 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
         >
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           {MESSAGES.BTN_SAVE}
         </button>
       </div>

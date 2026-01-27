@@ -54,7 +54,10 @@
       }}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="delete-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="delete-modal-title"
+        >
           <i class="fas fa-trash-alt text-red-500 mr-2"></i>
           {MESSAGES.DELETE_TITLE}
         </h3>
@@ -68,11 +71,21 @@
         </button>
       </div>
       <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">{MESSAGES.DELETE_CONFIRM}</p>
+        <p class="text-[var(--color-text-secondary)]">
+          {MESSAGES.DELETE_CONFIRM}
+        </p>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onCloseDelete}>Abbrechen</button>
-        <button type="button" class="btn btn-danger" onclick={onProceedToConfirm}>Löschen</button>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onCloseDelete}>Abbrechen</button
+        >
+        <button
+          type="button"
+          class="btn btn-danger"
+          onclick={onProceedToConfirm}>Löschen</button
+        >
       </div>
     </div>
   </div>
@@ -102,7 +115,12 @@
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h3 class="confirm-modal__title" id="delete-confirm-title">{MESSAGES.DELETE_FINAL_TITLE}</h3>
+      <h3
+        class="confirm-modal__title"
+        id="delete-confirm-title"
+      >
+        {MESSAGES.DELETE_FINAL_TITLE}
+      </h3>
       <p class="confirm-modal__message">
         <strong>ACHTUNG:</strong>
         {MESSAGES.DELETE_FINAL_WARNING}

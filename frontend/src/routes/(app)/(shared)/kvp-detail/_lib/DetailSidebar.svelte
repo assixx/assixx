@@ -60,7 +60,9 @@
         <i class="fas fa-check-circle text-success"></i>
         <span>Bereits als gelesen markiert</span>
         {#if suggestion.confirmedAt}
-          <span class="text-muted text-sm">{formatDateTime(suggestion.confirmedAt)}</span>
+          <span class="text-muted text-sm"
+            >{formatDateTime(suggestion.confirmedAt)}</span
+          >
         {/if}
       </div>
       <button
@@ -110,13 +112,16 @@
               kvpDetailState.openPreviewModal(attachment);
             }}
             onkeydown={(e) => {
-              if (e.key === 'Enter') kvpDetailState.openPreviewModal(attachment);
+              if (e.key === 'Enter')
+                kvpDetailState.openPreviewModal(attachment);
             }}
           >
             <i class="fas {getFileIconClass(attachment.fileType)}"></i>
             <div class="flex-1 truncate">
               <div class="truncate">{attachment.fileName}</div>
-              <div class="text-xs text-gray-400">{formatFileSize(attachment.fileSize)}</div>
+              <div class="text-xs text-gray-400">
+                {formatFileSize(attachment.fileSize)}
+              </div>
             </div>
           </div>
         {/each}
@@ -133,25 +138,41 @@
       </h3>
       <div class="action-buttons">
         {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole)}
-          <button type="button" class="btn btn-edit" onclick={onopensharemodal}>
+          <button
+            type="button"
+            class="btn btn-edit"
+            onclick={onopensharemodal}
+          >
             <i class="fas fa-share-alt"></i>
             Teilen
           </button>
         {/if}
         {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id)}
-          <button type="button" class="btn btn-secondary" onclick={onunshare}>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={onunshare}
+          >
             <i class="fas fa-undo"></i>
             Teilen rückgängig
           </button>
         {/if}
         {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
-          <button type="button" class="btn btn-light" onclick={onarchive}>
+          <button
+            type="button"
+            class="btn btn-light"
+            onclick={onarchive}
+          >
             <i class="fas fa-archive"></i>
             Archivieren
           </button>
         {/if}
         {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
-          <button type="button" class="btn btn-success" onclick={onunarchive}>
+          <button
+            type="button"
+            class="btn btn-success"
+            onclick={onunarchive}
+          >
             <i class="fas fa-undo-alt"></i>
             Wiederherstellen
           </button>

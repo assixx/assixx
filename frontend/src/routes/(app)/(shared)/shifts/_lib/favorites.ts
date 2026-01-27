@@ -6,9 +6,19 @@
 
 import { createLogger } from '$lib/utils/logger';
 
-import { saveFavorite as apiSaveFavorite, deleteFavorite as apiDeleteFavorite } from './api';
+import {
+  saveFavorite as apiSaveFavorite,
+  deleteFavorite as apiDeleteFavorite,
+} from './api';
 
-import type { ShiftFavorite, SelectedContext, Area, Department, Machine, Team } from './types';
+import type {
+  ShiftFavorite,
+  SelectedContext,
+  Area,
+  Department,
+  Machine,
+  Team,
+} from './types';
 
 const log = createLogger('ShiftsFavorites');
 
@@ -19,7 +29,9 @@ const log = createLogger('ShiftsFavorites');
 /**
  * Check if context is complete for creating a favorite
  */
-export function isContextCompleteForFavorite(context: SelectedContext): boolean {
+export function isContextCompleteForFavorite(
+  context: SelectedContext,
+): boolean {
   return (
     context.areaId !== null &&
     context.areaId !== 0 &&
@@ -35,7 +47,10 @@ export function isContextCompleteForFavorite(context: SelectedContext): boolean 
 /**
  * Check if a team is already in favorites
  */
-export function isTeamAlreadyFavorited(favorites: ShiftFavorite[], teamId: number | null): boolean {
+export function isTeamAlreadyFavorited(
+  favorites: ShiftFavorite[],
+  teamId: number | null,
+): boolean {
   if (teamId === null) return false;
   return favorites.some((fav) => fav.teamId === teamId);
 }
@@ -135,12 +150,16 @@ function validateAddToFavorites(
   if (!isContextCompleteForFavorite(context)) {
     return {
       valid: false,
-      error: 'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
+      error:
+        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
     };
   }
 
   if (isCombinationFavorited(favorites, context)) {
-    return { valid: false, error: 'Diese Kombination existiert bereits als Favorit!' };
+    return {
+      valid: false,
+      error: 'Diese Kombination existiert bereits als Favorit!',
+    };
   }
 
   const names = getContextNames(context, areas, departments, machines, teams);
@@ -197,16 +216,27 @@ export async function addToFavorites(
     });
 
     if (savedFavorite === null) {
-      return { success: false, favorites, error: 'Fehler beim Speichern des Favoriten' };
+      return {
+        success: false,
+        favorites,
+        error: 'Fehler beim Speichern des Favoriten',
+      };
     }
 
-    return { success: true, favorites: [...favorites, savedFavorite], favorite: savedFavorite };
+    return {
+      success: true,
+      favorites: [...favorites, savedFavorite],
+      favorite: savedFavorite,
+    };
   } catch (err) {
     log.error({ err }, 'Error saving favorite');
     return {
       success: false,
       favorites,
-      error: err instanceof Error ? err.message : 'Fehler beim Speichern des Favoriten',
+      error:
+        err instanceof Error ?
+          err.message
+        : 'Fehler beim Speichern des Favoriten',
     };
   }
 }
@@ -218,7 +248,9 @@ export async function removeFavorite(
   favoriteId: string | number,
   favorites: ShiftFavorite[],
 ): Promise<{ success: boolean; favorites: ShiftFavorite[]; error?: string }> {
-  const favoriteToRemove = favorites.find((f) => String(f.id) === String(favoriteId));
+  const favoriteToRemove = favorites.find(
+    (f) => String(f.id) === String(favoriteId),
+  );
 
   // Check if favorite exists before attempting delete
   if (favoriteToRemove === undefined) {
@@ -233,7 +265,9 @@ export async function removeFavorite(
     await apiDeleteFavorite(favoriteId);
 
     // Update local favorites list
-    const updatedFavorites = favorites.filter((f) => String(f.id) !== String(favoriteId));
+    const updatedFavorites = favorites.filter(
+      (f) => String(f.id) !== String(favoriteId),
+    );
 
     return {
       success: true,
@@ -244,7 +278,10 @@ export async function removeFavorite(
     return {
       success: false,
       favorites,
-      error: err instanceof Error ? err.message : 'Fehler beim Löschen des Favoriten',
+      error:
+        err instanceof Error ?
+          err.message
+        : 'Fehler beim Löschen des Favoriten',
     };
   }
 }
@@ -263,7 +300,10 @@ export function getFavoriteTooltip(favorite: ShiftFavorite): string {
 /**
  * Check if a favorite is currently active
  */
-export function isFavoriteActive(favorite: ShiftFavorite, context: SelectedContext): boolean {
+export function isFavoriteActive(
+  favorite: ShiftFavorite,
+  context: SelectedContext,
+): boolean {
   return (
     favorite.areaId === context.areaId &&
     favorite.departmentId === context.departmentId &&

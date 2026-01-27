@@ -110,7 +110,11 @@
     // Check localStorage for activeRole
     if (typeof localStorage !== 'undefined') {
       const activeRole = localStorage.getItem('activeRole');
-      if (activeRole !== null && activeRole !== '' && activeRole !== currentUser.role) {
+      if (
+        activeRole !== null &&
+        activeRole !== '' &&
+        activeRole !== currentUser.role
+      ) {
         return activeRole;
       }
     }
@@ -185,7 +189,8 @@
 
   async function handleAddComment() {
     if (commentsSectionRef === undefined) return;
-    const textarea: HTMLTextAreaElement | undefined = commentsSectionRef.getCommentInput();
+    const textarea: HTMLTextAreaElement | undefined =
+      commentsSectionRef.getCommentInput();
     if (textarea === undefined) return;
     const comment = textarea.value.trim();
     if (comment === '') return;
@@ -249,7 +254,11 @@
   async function performStatusUpdate(newStatus: KvpStatus, reason?: string) {
     kvpDetailState.setUpdatingStatus(true);
 
-    const result = await updateSuggestionStatus(suggestion.uuid, newStatus, reason);
+    const result = await updateSuggestionStatus(
+      suggestion.uuid,
+      newStatus,
+      reason,
+    );
     if (result.success) {
       showSuccessAlert(`Status geaendert zu: ${getStatusText(newStatus)}`);
       await invalidateAll();
@@ -292,7 +301,9 @@
 
     const result = await shareSuggestion(suggestion.uuid, level, orgId);
     if (result.success) {
-      showSuccessAlert(`Vorschlag wurde auf ${getShareLevelText(level)} geteilt`);
+      showSuccessAlert(
+        `Vorschlag wurde auf ${getShareLevelText(level)} geteilt`,
+      );
       await invalidateAll();
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Teilen');
@@ -302,7 +313,9 @@
   }
 
   async function handleUnshare() {
-    const confirmed = await showConfirm('Moechten Sie das Teilen wirklich rückgängig machen?');
+    const confirmed = await showConfirm(
+      'Moechten Sie das Teilen wirklich rückgängig machen?',
+    );
     if (!confirmed) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
@@ -345,7 +358,9 @@
   // ==========================================================================
 
   async function handleArchive() {
-    const confirmed = await showConfirm('Moechten Sie diesen Vorschlag wirklich archivieren?');
+    const confirmed = await showConfirm(
+      'Moechten Sie diesen Vorschlag wirklich archivieren?',
+    );
     if (!confirmed) return;
 
     const result = await archiveSuggestion(suggestion.uuid);
@@ -362,7 +377,9 @@
   // ==========================================================================
 
   async function handleUnarchive() {
-    const confirmed = await showConfirm('Moechten Sie diesen Vorschlag wirklich wiederherstellen?');
+    const confirmed = await showConfirm(
+      'Moechten Sie diesen Vorschlag wirklich wiederherstellen?',
+    );
     if (!confirmed) return;
 
     const result = await unarchiveSuggestion(suggestion.uuid);
@@ -484,7 +501,10 @@
             <span class="data-list__label">Status</span>
             {#if canUpdateStatus(effectiveRole)}
               <!-- Admin Status Dropdown -->
-              <div class="dropdown" data-dropdown="status">
+              <div
+                class="dropdown"
+                data-dropdown="status"
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -512,7 +532,9 @@
                 </div>
               </div>
             {:else}
-              <span class="data-list__value">{getStatusText(suggestion.status)}</span>
+              <span class="data-list__value"
+                >{getStatusText(suggestion.status)}</span
+              >
             {/if}
           </div>
           {#if suggestion.assignedToName !== undefined}
@@ -524,7 +546,8 @@
           {#if hasImplementationDate(suggestion)}
             <div class="data-list__item">
               <span class="data-list__label">Umsetzung</span>
-              <span class="data-list__value">{formatDate(suggestion.implementationDate ?? '')}</span
+              <span class="data-list__value"
+                >{formatDate(suggestion.implementationDate ?? '')}</span
               >
             </div>
           {/if}
@@ -579,7 +602,10 @@
               >
                 <!-- authReady dependency forces re-render after hydration when token is available -->
                 {#if authReady}
-                  <img src={getAttachmentPreviewUrl(photo.fileUuid)} alt={photo.fileName} />
+                  <img
+                    src={getAttachmentPreviewUrl(photo.fileUuid)}
+                    alt={photo.fileName}
+                  />
                 {:else}
                   <div class="photo-placeholder">
                     <i class="fas fa-image"></i>
@@ -602,13 +628,17 @@
             {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
               <div class="data-list__item">
                 <span class="data-list__label">Geschaetzte Kosten</span>
-                <span class="data-list__value">{formatCurrency(suggestion.estimatedCost)}</span>
+                <span class="data-list__value"
+                  >{formatCurrency(suggestion.estimatedCost)}</span
+                >
               </div>
             {/if}
             {#if suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0}
               <div class="data-list__item">
                 <span class="data-list__label">Tatsaechliche Einsparungen</span>
-                <span class="data-list__value">{formatCurrency(suggestion.actualSavings)}</span>
+                <span class="data-list__value"
+                  >{formatCurrency(suggestion.actualSavings)}</span
+                >
               </div>
             {/if}
           </div>
@@ -616,7 +646,10 @@
       {/if}
 
       <!-- Comments Section -->
-      <CommentsSection bind:this={commentsSectionRef} onaddcomment={handleAddComment} />
+      <CommentsSection
+        bind:this={commentsSectionRef}
+        onaddcomment={handleAddComment}
+      />
     </div>
 
     <!-- Sidebar -->
@@ -643,7 +676,10 @@
       if (e.key === 'Escape') handleCloseLightbox();
     }}
   >
-    <img src={lightboxUrl} alt="Vorschau" />
+    <img
+      src={lightboxUrl}
+      alt="Vorschau"
+    />
     <button
       type="button"
       class="lightbox-close"

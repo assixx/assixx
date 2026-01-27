@@ -2,7 +2,12 @@
 // DOCUMENTS EXPLORER - CONSTANTS
 // =============================================================================
 
-import type { DocumentCategory, SortOption, CategoryMapping, AccessScope } from './types';
+import type {
+  DocumentCategory,
+  SortOption,
+  CategoryMapping,
+  AccessScope,
+} from './types';
 
 /**
  * Folder definitions with icons (SVG)
@@ -214,11 +219,14 @@ export const MESSAGES = {
   UPLOAD_NO_FILE: 'Bitte wählen Sie eine Datei aus!',
   UPLOAD_NO_CATEGORY: 'Bitte wählen Sie eine Kategorie aus!',
   UPLOAD_FILE_TOO_LARGE: 'Datei ist zu groß! Maximale Größe: 5 MB',
-  UPLOAD_INVALID_TYPE: 'Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!',
-  UPLOAD_NO_TEAM: 'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
+  UPLOAD_INVALID_TYPE:
+    'Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!',
+  UPLOAD_NO_TEAM:
+    'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
   UPLOAD_NO_DEPARTMENT:
     'Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!',
-  UPLOAD_SELECT_PAYROLL_PERIOD: 'Bitte wählen Sie Jahr und Monat für die Gehaltsabrechnung!',
+  UPLOAD_SELECT_PAYROLL_PERIOD:
+    'Bitte wählen Sie Jahr und Monat für die Gehaltsabrechnung!',
 
   // Preview modal
   PREVIEW_TITLE: 'Vorschau',
@@ -253,7 +261,8 @@ export const MESSAGES = {
 
   // Auth
   AUTH_NOT_LOGGED_IN: 'Nicht angemeldet',
-  AUTH_REDIRECT_MESSAGE: 'Sie werden in 3 Sekunden zur Login-Seite weitergeleitet...',
+  AUTH_REDIRECT_MESSAGE:
+    'Sie werden in 3 Sekunden zur Login-Seite weitergeleitet...',
 } as const;
 
 /**

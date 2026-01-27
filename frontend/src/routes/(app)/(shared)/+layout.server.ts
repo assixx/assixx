@@ -21,7 +21,10 @@ export const load: LayoutServerLoad = async ({ parent, url }) => {
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defense-in-depth: parent guarantees user, but security checks must not rely on upstream alone
   if (user === null || user === undefined) {
-    log.warn({ pathname: url.pathname }, 'RBAC(shared): No user data, redirecting to login');
+    log.warn(
+      { pathname: url.pathname },
+      'RBAC(shared): No user data, redirecting to login',
+    );
     redirect(302, '/login');
   }
 

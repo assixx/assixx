@@ -13,7 +13,9 @@ import { z } from 'zod';
  * Connection ticket request body schema
  */
 export const ConnectionTicketSchema = z.object({
-  purpose: z.enum(['websocket', 'sse']).describe('The intended use of the connection ticket'),
+  purpose: z
+    .enum(['websocket', 'sse'])
+    .describe('The intended use of the connection ticket'),
 });
 
 /**

@@ -107,7 +107,9 @@ export class KvpController {
    * Get dashboard statistics
    */
   @Get('dashboard/stats')
-  async getDashboardStats(@TenantId() tenantId: number): Promise<DashboardStats> {
+  async getDashboardStats(
+    @TenantId() tenantId: number,
+  ): Promise<DashboardStats> {
     return await this.kvpService.getDashboardStats(tenantId);
   }
 
@@ -187,7 +189,12 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.getSuggestionById(suggestionId, tenantId, user.id, user.role);
+    return await this.kvpService.getSuggestionById(
+      suggestionId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -202,7 +209,12 @@ export class KvpController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
-    return await this.kvpService.createSuggestion(dto, tenantId, user.id, user.role);
+    return await this.kvpService.createSuggestion(
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -217,7 +229,13 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.updateSuggestion(suggestionId, dto, tenantId, user.id, user.role);
+    return await this.kvpService.updateSuggestion(
+      suggestionId,
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -231,7 +249,12 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.deleteSuggestion(suggestionId, tenantId, user.id, user.role);
+    return await this.kvpService.deleteSuggestion(
+      suggestionId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -248,7 +271,13 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.shareSuggestion(suggestionId, dto, tenantId, user.id, user.role);
+    return await this.kvpService.shareSuggestion(
+      suggestionId,
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -264,7 +293,12 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.unshareSuggestion(suggestionId, tenantId, user.id, user.role);
+    return await this.kvpService.unshareSuggestion(
+      suggestionId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -281,7 +315,11 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.archiveSuggestion(suggestionId, tenantId, user.id);
+    return await this.kvpService.archiveSuggestion(
+      suggestionId,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -298,7 +336,11 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.unarchiveSuggestion(suggestionId, tenantId, user.id);
+    return await this.kvpService.unarchiveSuggestion(
+      suggestionId,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -312,7 +354,12 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPComment[]> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.getComments(suggestionId, tenantId, user.id, user.role);
+    return await this.kvpService.getComments(
+      suggestionId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -352,7 +399,12 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPAttachment[]> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.getAttachments(suggestionId, tenantId, user.id, user.role);
+    return await this.kvpService.getAttachments(
+      suggestionId,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -379,7 +431,10 @@ export class KvpController {
     for (const file of files) {
       const fileUuid = uuidv7();
       const extension = path.extname(file.originalname).toLowerCase();
-      const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+      const checksum = crypto
+        .createHash('sha256')
+        .update(file.buffer)
+        .digest('hex');
 
       // Build storage path
       const storagePath = path.join(
@@ -430,10 +485,18 @@ export class KvpController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const attachment = await this.kvpService.getAttachment(fileUuid, tenantId, user.id, user.role);
+    const attachment = await this.kvpService.getAttachment(
+      fileUuid,
+      tenantId,
+      user.id,
+      user.role,
+    );
     await reply
       .header('Content-Type', 'application/octet-stream')
-      .header('Content-Disposition', `attachment; filename="${attachment.fileName}"`)
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${attachment.fileName}"`,
+      )
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath from DB, validated at upload time
       .send(createReadStream(attachment.filePath));
   }
@@ -448,7 +511,8 @@ export class KvpController {
    */
   private parseIdParam(id: string): number | string {
     // Check UUID pattern first
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(id)) {
       return id;
     }

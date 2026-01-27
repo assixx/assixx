@@ -62,14 +62,18 @@
 
   const isConfirmationValid = $derived(confirmationInput === 'LÖSCHEN');
   const isPasswordValid = $derived(passwordInput.length > 0);
-  const canSubmit = $derived(isConfirmationValid && isPasswordValid && !submitting);
+  const canSubmit = $derived(
+    isConfirmationValid && isPasswordValid && !submitting,
+  );
 
   // =============================================================================
   // API FUNCTIONS
   // =============================================================================
 
   async function approveDeletion(id: number, password: string): Promise<void> {
-    await apiClient.post(`/root/deletion-approvals/${String(id)}/approve`, { password });
+    await apiClient.post(`/root/deletion-approvals/${String(id)}/approve`, {
+      password,
+    });
   }
 
   // =============================================================================
@@ -95,7 +99,8 @@
       }, 2000);
     } catch (err) {
       log.error({ err }, 'Error approving');
-      errorMessage = err instanceof Error ? err.message : 'Fehler bei der Genehmigung';
+      errorMessage =
+        err instanceof Error ? err.message : 'Fehler bei der Genehmigung';
       submitting = false;
     }
   }
@@ -106,7 +111,9 @@
     {#if loading}
       <!-- Loading State -->
       <div class="py-8">
-        <i class="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
+        <i
+          class="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"
+        ></i>
         <p class="text-[var(--color-text-secondary)]">Lade Löschanfrage...</p>
       </div>
     {:else if errorMessage !== null && queueData === null}
@@ -117,7 +124,9 @@
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">Fehler</h1>
+      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">
+        Fehler
+      </h1>
       <div class="alert alert--danger mb-6">
         <div class="alert__content">
           <p class="alert__message">{errorMessage}</p>
@@ -167,9 +176,11 @@
         Tenant-Löschung genehmigen
       </h1>
 
-      <p class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-6">
-        Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu genehmigen. Nach der
-        Genehmigung beginnt die
+      <p
+        class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-6"
+      >
+        Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu
+        genehmigen. Nach der Genehmigung beginnt die
         <strong>30-tägige Grace Period</strong>.
       </p>
 
@@ -177,20 +188,30 @@
       <div
         class="p-4 mb-6 border border-[rgb(33_150_243/20%)] rounded-[var(--radius-lg)] bg-[rgb(33_150_243/5%)]"
       >
-        <div class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]">
-          <span class="text-sm text-[var(--color-text-secondary)]">Queue ID:</span>
+        <div
+          class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]"
+        >
+          <span class="text-sm text-[var(--color-text-secondary)]"
+            >Queue ID:</span
+          >
           <span class="text-sm font-semibold text-[var(--color-text-primary)]">
             {queueData.queueId}
           </span>
         </div>
-        <div class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]">
-          <span class="text-sm text-[var(--color-text-secondary)]">Tenant ID:</span>
+        <div
+          class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]"
+        >
+          <span class="text-sm text-[var(--color-text-secondary)]"
+            >Tenant ID:</span
+          >
           <span class="text-sm font-semibold text-[var(--color-text-primary)]">
             {queueData.tenantId}
           </span>
         </div>
         <div class="flex justify-between py-2">
-          <span class="text-sm text-[var(--color-text-secondary)]">Angefordert von:</span>
+          <span class="text-sm text-[var(--color-text-secondary)]"
+            >Angefordert von:</span
+          >
           <span class="text-sm font-semibold text-[var(--color-text-primary)]">
             {queueData.requestedByName ?? `User ${queueData.requestedBy}`}
           </span>
@@ -205,17 +226,26 @@
         <div class="alert__content">
           <p class="alert__title">LETZTE WARNUNG!</p>
           <p class="alert__message">
-            Nach der Genehmigung werden nach 30 Tagen ALLE Daten unwiderruflich gelöscht!
+            Nach der Genehmigung werden nach 30 Tagen ALLE Daten unwiderruflich
+            gelöscht!
           </p>
         </div>
       </div>
 
       <!-- Approval Form -->
-      <form onsubmit={handleSubmit} class="text-left">
+      <form
+        onsubmit={handleSubmit}
+        class="text-left"
+      >
         <!-- Confirmation Input -->
         <div class="form-field mb-4">
-          <label class="form-field__label" for="confirmationInput">
-            Geben Sie zur Bestätigung <strong class="text-red-500">LÖSCHEN</strong> ein:
+          <label
+            class="form-field__label"
+            for="confirmationInput"
+          >
+            Geben Sie zur Bestätigung <strong class="text-red-500"
+              >LÖSCHEN</strong
+            > ein:
           </label>
           <input
             type="text"
@@ -230,7 +260,10 @@
 
         <!-- Password Input -->
         <div class="form-field mb-6">
-          <label for="passwordInput" class="form-field__label">
+          <label
+            for="passwordInput"
+            class="form-field__label"
+          >
             Ihr Root-Passwort zur Verifizierung:
           </label>
           <input
@@ -263,7 +296,11 @@
             <i class="fas fa-arrow-left mr-2"></i>
             Abbrechen
           </a>
-          <button type="submit" class="btn btn-danger flex-1" disabled={!canSubmit}>
+          <button
+            type="submit"
+            class="btn btn-danger flex-1"
+            disabled={!canSubmit}
+          >
             {#if submitting}
               <i class="fas fa-spinner fa-spin mr-2"></i>
               Wird genehmigt...

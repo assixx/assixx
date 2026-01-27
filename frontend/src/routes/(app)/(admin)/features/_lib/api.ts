@@ -5,7 +5,13 @@
 
 import { getApiClient } from '$lib/utils/api-client';
 
-import type { Plan, TenantAddons, FeatureCategory, AddonInfo, TenantFeature } from './types';
+import type {
+  Plan,
+  TenantAddons,
+  FeatureCategory,
+  AddonInfo,
+  TenantFeature,
+} from './types';
 
 const apiClient = getApiClient();
 
@@ -97,11 +103,10 @@ function parseAddons(addonsInfo: AddonInfo[]): TenantAddons {
 export async function loadPlans(): Promise<Record<string, Plan>> {
   const result = await apiClient.get<PlansApiResponse | Plan[]>('/plans');
 
-  const plansArray: Plan[] = Array.isArray(result)
-    ? result
-    : Array.isArray(result.data)
-      ? result.data
-      : [];
+  const plansArray: Plan[] =
+    Array.isArray(result) ? result
+    : Array.isArray(result.data) ? result.data
+    : [];
 
   const loadedPlans: Record<string, Plan> = {};
   plansArray.forEach((plan) => {
@@ -121,7 +126,8 @@ export async function loadCurrentPlan(): Promise<{
 }> {
   const result = await apiClient.get<CurrentPlanApiResponse>('/plans/current');
 
-  const planInfo: CurrentPlanInfo | undefined = result.data?.plan ?? result.plan;
+  const planInfo: CurrentPlanInfo | undefined =
+    result.data?.plan ?? result.plan;
   const addonsInfo: AddonInfo[] = result.data?.addons ?? result.addons ?? [];
 
   return {
@@ -135,10 +141,14 @@ export async function loadCurrentPlan(): Promise<{
  * @returns Array of feature codes with their availability
  */
 export async function loadTenantFeatures(): Promise<TenantFeature[]> {
-  const result = await apiClient.get<TenantFeaturesApiResponse | TenantFeature[]>(
-    '/features/my-features',
+  const result = await apiClient.get<
+    TenantFeaturesApiResponse | TenantFeature[]
+  >('/features/my-features');
+  return (
+    Array.isArray(result) ? result
+    : Array.isArray(result.data) ? result.data
+    : []
   );
-  return Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : [];
 }
 
 /**
@@ -170,7 +180,10 @@ export function applyTenantFeaturesToCategories(
  * @param tenantId - Tenant ID
  * @param newPlanCode - New plan code to switch to
  */
-export async function changePlan(tenantId: number | null, newPlanCode: string): Promise<void> {
+export async function changePlan(
+  tenantId: number | null,
+  newPlanCode: string,
+): Promise<void> {
   await apiClient.post('/plans/change', { tenantId, newPlanCode });
 }
 

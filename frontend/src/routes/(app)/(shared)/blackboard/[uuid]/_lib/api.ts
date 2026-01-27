@@ -35,11 +35,15 @@ function isNotFoundError(err: unknown): boolean {
 /**
  * Fetch full entry with comments and attachments
  */
-export async function fetchFullEntry(
-  uuid: string,
-): Promise<{ entry: DetailEntry; comments: Comment[]; attachments: Attachment[] } | null> {
+export async function fetchFullEntry(uuid: string): Promise<{
+  entry: DetailEntry;
+  comments: Comment[];
+  attachments: Attachment[];
+} | null> {
   try {
-    const result = await apiClient.get<FullEntryResponse>(`/blackboard/entries/${uuid}/full`);
+    const result = await apiClient.get<FullEntryResponse>(
+      `/blackboard/entries/${uuid}/full`,
+    );
 
     if (!result.success) {
       throw new Error(result.error?.message ?? 'Fehler beim Laden');
@@ -105,9 +109,14 @@ export async function unconfirmEntry(uuid: string): Promise<boolean> {
 /**
  * Add comment to entry
  */
-export async function addComment(uuid: string, comment: string): Promise<boolean> {
+export async function addComment(
+  uuid: string,
+  comment: string,
+): Promise<boolean> {
   try {
-    await apiClient.post(`/blackboard/entries/${uuid}/comments`, { comment: comment.trim() });
+    await apiClient.post(`/blackboard/entries/${uuid}/comments`, {
+      comment: comment.trim(),
+    });
     return true;
   } catch {
     return false;
@@ -156,7 +165,8 @@ export async function deleteEntry(
     await apiClient.delete(`/blackboard/entries/${uuid}`);
     return { success: true };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
+    const errorMessage =
+      err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
     return { success: false, error: errorMessage };
   }
 }

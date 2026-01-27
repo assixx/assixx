@@ -1,7 +1,14 @@
 <script lang="ts">
   import { POSITION_OPTIONS, MESSAGES, STATUS_OPTIONS } from './constants';
-  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from './filters';
-  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
+  import {
+    filterAvailableDepartments,
+    filterDepartmentIdsByAreas,
+  } from './filters';
+  import {
+    getStatusBadgeClass,
+    getStatusLabel,
+    calculatePasswordStrength,
+  } from './utils';
 
   import type { Area, Department, FormIsActiveStatus } from './types';
 
@@ -35,10 +42,10 @@
     onsubmit: (e: Event) => void;
   }
 
-  /* eslint-disable */
+  /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
   let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit }: Props = $props();
-  /* eslint-enable */
+  /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
   // LOCAL STATE
@@ -59,7 +66,11 @@
   // =============================================================================
 
   const availableDepartments = $derived.by(() => {
-    return filterAvailableDepartments(allDepartments, formAreaIds, formHasFullAccess);
+    return filterAvailableDepartments(
+      allDepartments,
+      formAreaIds,
+      formHasFullAccess,
+    );
   });
 
   // =============================================================================
@@ -94,21 +105,31 @@
 
   function handleAreaChange(e: Event) {
     const select = e.target as HTMLSelectElement;
-    formAreaIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
-    formDepartmentIds = filterDepartmentIdsByAreas(formDepartmentIds, allDepartments, formAreaIds);
+    formAreaIds = Array.from(select.selectedOptions).map((opt) =>
+      parseInt(opt.value, 10),
+    );
+    formDepartmentIds = filterDepartmentIdsByAreas(
+      formDepartmentIds,
+      allDepartments,
+      formAreaIds,
+    );
   }
 
   function handleDepartmentChange(e: Event) {
     const select = e.target as HTMLSelectElement;
-    formDepartmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
+    formDepartmentIds = Array.from(select.selectedOptions).map((opt) =>
+      parseInt(opt.value, 10),
+    );
   }
 
   function validateEmails() {
-    emailError = formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
+    emailError =
+      formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
   }
 
   function validatePasswords() {
-    passwordError = formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
+    passwordError =
+      formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
   }
 
   function updatePasswordStrength() {
@@ -169,14 +190,27 @@
       {onsubmit}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="admin-modal-title">{modalTitle}</h3>
-        <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
+        <h3
+          class="ds-modal__title"
+          id="admin-modal-title"
+        >
+          {modalTitle}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={onclose}
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="ds-modal__body">
         <div class="form-field">
-          <label class="form-field__label" for="admin-first-name">
+          <label
+            class="form-field__label"
+            for="admin-first-name"
+          >
             {MESSAGES.LABEL_FIRST_NAME} <span class="text-red-500">*</span>
           </label>
           <input
@@ -190,7 +224,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="admin-last-name">
+          <label
+            class="form-field__label"
+            for="admin-last-name"
+          >
             {MESSAGES.LABEL_LAST_NAME} <span class="text-red-500">*</span>
           </label>
           <input
@@ -204,7 +241,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="admin-email">
+          <label
+            class="form-field__label"
+            for="admin-email"
+          >
             {MESSAGES.LABEL_EMAIL} <span class="text-red-500">*</span>
           </label>
           <input
@@ -219,8 +259,14 @@
           />
         </div>
 
-        <div class="form-field" id="email-confirm-group">
-          <label class="form-field__label" for="admin-email-confirm">
+        <div
+          class="form-field"
+          id="email-confirm-group"
+        >
+          <label
+            class="form-field__label"
+            for="admin-email-confirm"
+          >
             {MESSAGES.LABEL_EMAIL_CONFIRM} <span class="text-red-500">*</span>
           </label>
           <input
@@ -240,12 +286,19 @@
           {/if}
         </div>
 
-        <div class="form-field" id="password-group">
-          <label class="form-field__label" for="admin-password">
+        <div
+          class="form-field"
+          id="password-group"
+        >
+          <label
+            class="form-field__label"
+            for="admin-password"
+          >
             {MESSAGES.LABEL_PASSWORD}
             {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
@@ -274,13 +327,23 @@
               aria-label="Passwort anzeigen"
               onclick={() => (showPassword = !showPassword)}
             >
-              <i class="fas" class:fa-eye={!showPassword} class:fa-eye-slash={showPassword}></i>
+              <i
+                class="fas"
+                class:fa-eye={!showPassword}
+                class:fa-eye-slash={showPassword}
+              ></i>
             </button>
           </div>
         </div>
 
-        <div class="form-field" id="password-confirm-group">
-          <label class="form-field__label" for="admin-password-confirm">
+        <div
+          class="form-field"
+          id="password-confirm-group"
+        >
+          <label
+            class="form-field__label"
+            for="admin-password-confirm"
+          >
             {MESSAGES.LABEL_PASSWORD_CONFIRM}
             {#if !isEditMode}<span class="text-red-500">*</span>{/if}
           </label>
@@ -316,9 +379,15 @@
         </div>
 
         {#if formPassword}
-          <div class="password-strength-container" id="admin-password-strength-container">
+          <div
+            class="password-strength-container"
+            id="admin-password-strength-container"
+          >
             <div class="password-strength-meter">
-              <div class="password-strength-bar" data-score={passwordScore}></div>
+              <div
+                class="password-strength-bar"
+                data-score={passwordScore}
+              ></div>
             </div>
             <div class="password-strength-info">
               <span class="password-strength-label">{passwordLabel}</span>
@@ -328,7 +397,10 @@
         {/if}
 
         <div class="form-field">
-          <label class="form-field__label" for="admin-employee-number">
+          <label
+            class="form-field__label"
+            for="admin-employee-number"
+          >
             {MESSAGES.LABEL_EMPLOYEE_NUMBER} <span class="text-red-500">*</span>
           </label>
           <input
@@ -348,10 +420,16 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="admin-position">
+          <label
+            class="form-field__label"
+            for="admin-position"
+          >
             {MESSAGES.LABEL_POSITION} <span class="text-red-500">*</span>
           </label>
-          <div class="dropdown" id="position-dropdown">
+          <div
+            class="dropdown"
+            id="position-dropdown"
+          >
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -359,10 +437,15 @@
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span>
+              <span
+                >{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span
+              >
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={positionDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={positionDropdownOpen}
+            >
               {#each POSITION_OPTIONS as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -380,7 +463,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="admin-notes">{MESSAGES.LABEL_NOTES}</label>
+          <label
+            class="form-field__label"
+            for="admin-notes">{MESSAGES.LABEL_NOTES}</label
+          >
           <textarea
             id="admin-notes"
             name="notes"
@@ -411,7 +497,9 @@
                 {MESSAGES.FULL_ACCESS_LABEL}
               </span>
             </label>
-            <span class="form-field__message text-[var(--color-danger)] mt-2 block">
+            <span
+              class="form-field__message text-[var(--color-danger)] mt-2 block"
+            >
               <i class="fas fa-exclamation-triangle mr-1"></i>
               {MESSAGES.FULL_ACCESS_WARNING}
             </span>
@@ -422,7 +510,10 @@
             id="admin-area-select-container"
             class:opacity-50={formHasFullAccess}
           >
-            <label class="form-field__label" for="admin-areas">
+            <label
+              class="form-field__label"
+              for="admin-areas"
+            >
               <i class="fas fa-layer-group mr-1"></i>
               {MESSAGES.LABEL_AREAS}
             </label>
@@ -435,14 +526,22 @@
               onchange={handleAreaChange}
             >
               {#each allAreas as area (area.id)}
-                <option value={area.id} selected={formAreaIds.includes(area.id)}>
-                  {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
-                    ? ` (${area.departmentCount} Abt.)`
-                    : ''}
+                <option
+                  value={area.id}
+                  selected={formAreaIds.includes(area.id)}
+                >
+                  {area.name}{(
+                    area.departmentCount !== undefined &&
+                    area.departmentCount > 0
+                  ) ?
+                    ` (${area.departmentCount} Abt.)`
+                  : ''}
                 </option>
               {/each}
             </select>
-            <span class="form-field__message text-[var(--color-text-secondary)]">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)]"
+            >
               <i class="fas fa-info-circle mr-1"></i>
               {MESSAGES.HINT_MULTISELECT}
               {MESSAGES.HINT_AREAS}
@@ -454,7 +553,10 @@
             id="admin-department-select-container"
             class:opacity-50={formHasFullAccess}
           >
-            <label class="form-field__label" for="admin-departments">
+            <label
+              class="form-field__label"
+              for="admin-departments"
+            >
               <i class="fas fa-sitemap mr-1"></i>
               {MESSAGES.LABEL_DEPARTMENTS}
             </label>
@@ -467,14 +569,21 @@
               onchange={handleDepartmentChange}
             >
               {#each availableDepartments as dept (dept.id)}
-                <option value={dept.id} selected={formDepartmentIds.includes(dept.id)}>
-                  {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
-                    ? ` (${dept.areaName})`
-                    : ''}
+                <option
+                  value={dept.id}
+                  selected={formDepartmentIds.includes(dept.id)}
+                >
+                  {dept.name}{(
+                    dept.areaName !== undefined && dept.areaName !== ''
+                  ) ?
+                    ` (${dept.areaName})`
+                  : ''}
                 </option>
               {/each}
             </select>
-            <span class="form-field__message text-[var(--color-text-secondary)]">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)]"
+            >
               <i class="fas fa-info-circle mr-1"></i>
               {MESSAGES.HINT_MULTISELECT}
               {MESSAGES.HINT_DEPARTMENTS}
@@ -482,7 +591,10 @@
           </div>
 
           <!-- svelte-ignore a11y_label_has_associated_control -->
-          <div class="form-field" id="admin-team-info-container">
+          <div
+            class="form-field"
+            id="admin-team-info-container"
+          >
             <label class="form-field__label">
               <i class="fas fa-users mr-1"></i>
               {MESSAGES.LABEL_TEAMS}
@@ -499,11 +611,20 @@
         </div>
 
         {#if isEditMode}
-          <div class="form-field" id="active-status-group">
-            <label class="form-field__label" for="admin-status">
+          <div
+            class="form-field"
+            id="active-status-group"
+          >
+            <label
+              class="form-field__label"
+              for="admin-status"
+            >
               {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
-            <div class="dropdown" id="status-dropdown">
+            <div
+              class="dropdown"
+              id="status-dropdown"
+            >
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -516,7 +637,10 @@
                 >
                 <i class="fas fa-chevron-down"></i>
               </div>
-              <div class="dropdown__menu" class:active={statusDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={statusDropdownOpen}
+              >
                 {#each STATUS_OPTIONS as opt (opt.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -531,7 +655,9 @@
                 {/each}
               </div>
             </div>
-            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+            <span
+              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+            >
               {MESSAGES.HINT_STATUS}
             </span>
           </div>
@@ -539,10 +665,18 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
         >
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           {MESSAGES.BTN_SAVE}
         </button>
       </div>

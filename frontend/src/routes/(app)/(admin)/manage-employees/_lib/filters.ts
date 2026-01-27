@@ -10,7 +10,10 @@ import type { Employee, StatusFilter } from './types';
  * @param status - Status filter value
  * @returns Filtered employees array
  */
-export function filterByStatus(employees: Employee[], status: StatusFilter): Employee[] {
+export function filterByStatus(
+  employees: Employee[],
+  status: StatusFilter,
+): Employee[] {
   switch (status) {
     case 'active':
       return employees.filter((e) => e.isActive === 1);
@@ -32,7 +35,10 @@ export function filterByStatus(employees: Employee[], status: StatusFilter): Emp
  * @param query - Search query string
  * @returns Filtered employees array
  */
-export function filterBySearch(employees: Employee[], query: string): Employee[] {
+export function filterBySearch(
+  employees: Employee[],
+  query: string,
+): Employee[] {
   const term = query.toLowerCase().trim();
   if (term === '') return employees;
 

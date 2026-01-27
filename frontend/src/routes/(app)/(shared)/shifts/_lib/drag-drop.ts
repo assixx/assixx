@@ -46,7 +46,9 @@ export function setDragData(
 /**
  * Get employee ID from drag event
  */
-export function getEmployeeIdFromDrag(dataTransfer: DataTransfer | null): number | null {
+export function getEmployeeIdFromDrag(
+  dataTransfer: DataTransfer | null,
+): number | null {
   if (dataTransfer === null) return null;
 
   // Try to get employee ID from different data types
@@ -79,7 +81,8 @@ export function getEmployeeDataFromDrag(
 
   return {
     employeeId,
-    employeeName: employeeName !== '' ? employeeName : `Mitarbeiter ${employeeId}`,
+    employeeName:
+      employeeName !== '' ? employeeName : `Mitarbeiter ${employeeId}`,
   };
 }
 
@@ -113,7 +116,9 @@ export function isValidDropTarget(element: HTMLElement | null): boolean {
 /**
  * Get the shift cell from a target element (handles nested elements)
  */
-export function getShiftCellFromTarget(target: HTMLElement): HTMLElement | null {
+export function getShiftCellFromTarget(
+  target: HTMLElement,
+): HTMLElement | null {
   // If target itself is a shift cell
   if (target.classList.contains('shift-cell')) {
     return target;
@@ -148,7 +153,9 @@ export function createDragStartHandler(
 /**
  * Create drag end handler for employee items
  */
-export function createDragEndHandler(onDragEnd?: () => void): (e: DragEvent) => void {
+export function createDragEndHandler(
+  onDragEnd?: () => void,
+): (e: DragEvent) => void {
   return (e: DragEvent) => {
     const target = e.target as HTMLElement;
     target.classList.remove('dragging');
@@ -159,7 +166,9 @@ export function createDragEndHandler(onDragEnd?: () => void): (e: DragEvent) => 
 /**
  * Create dragover handler for drop targets
  */
-export function createDragOverHandler(allowDrop: boolean = true): (e: DragEvent) => void {
+export function createDragOverHandler(
+  allowDrop: boolean = true,
+): (e: DragEvent) => void {
   return (e: DragEvent) => {
     if (!allowDrop) return;
 

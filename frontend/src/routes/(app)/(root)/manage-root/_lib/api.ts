@@ -44,7 +44,8 @@ export function buildRootUserPayload(
 
   if (!isEditMode) {
     payload.password = formData.password;
-    payload.username = formData.email.split('@')[0]?.replace(/[^\w-]/g, '_') ?? formData.email;
+    payload.username =
+      formData.email.split('@')[0]?.replace(/[^\w-]/g, '_') ?? formData.email;
   } else if (formData.password !== '' && formData.password.length >= 8) {
     payload.password = formData.password;
   }

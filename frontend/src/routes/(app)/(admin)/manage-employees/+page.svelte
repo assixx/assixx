@@ -121,7 +121,9 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+  );
 
   // Derived: Filtered employees based on current filter/search state
   const filteredEmployees = $derived(
@@ -130,9 +132,9 @@
 
   // Derived: Current employee for availability modal
   const availabilityEmployee = $derived(
-    availabilityEmployeeId !== null
-      ? (allEmployees.find((e) => e.id === availabilityEmployeeId) ?? null)
-      : null,
+    availabilityEmployeeId !== null ?
+      (allEmployees.find((e) => e.id === availabilityEmployeeId) ?? null)
+    : null,
   );
 
   // =============================================================================
@@ -175,15 +177,24 @@
       );
 
       const userId = await apiSaveEmployee(payload, currentEditId);
-      await syncTeamMemberships(userId, formTeamIds, originalTeamIds, isEditMode);
+      await syncTeamMemberships(
+        userId,
+        formTeamIds,
+        originalTeamIds,
+        isEditMode,
+      );
 
       closeEmployeeModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
+      showSuccessAlert(
+        isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
+      );
     } catch (err) {
       log.error({ err }, 'Error saving employee');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVING);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
+      );
     } finally {
       submitting = false;
     }
@@ -327,7 +338,9 @@
     } catch (err) {
       log.error({ err }, 'Error updating availability');
       const message =
-        err instanceof ApiError ? err.message : 'Fehler beim Speichern der Verfügbarkeit';
+        err instanceof ApiError ?
+          err.message
+        : 'Fehler beim Speichern der Verfügbarkeit';
       showErrorAlert(message);
     } finally {
       availabilitySubmitting = false;
@@ -440,11 +453,16 @@
         <i class="fas fa-users mr-2"></i>
         Mitarbeiterverwaltung
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">Mitarbeiter erstellen und verwalten</p>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        Mitarbeiter erstellen und verwalten
+      </p>
 
       <div class="flex gap-4 items-center justify-between mt-6">
         <!-- Status Toggle Group -->
-        <div class="toggle-group" id="employee-status-toggle">
+        <div
+          class="toggle-group"
+          id="employee-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -496,8 +514,14 @@
         </div>
 
         <!-- Search Input -->
-        <div class="search-input-wrapper max-w-80" class:search-input-wrapper--open={searchOpen}>
-          <div class="search-input" id="employee-search-container">
+        <div
+          class="search-input-wrapper max-w-80"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="employee-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -530,20 +554,35 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => invalidateAll()}
+          >
             Erneut versuchen
           </button>
         </div>
       {:else if filteredEmployees.length === 0}
-        <div id="employees-empty" class="empty-state">
+        <div
+          id="employees-empty"
+          class="empty-state"
+        >
           <div class="empty-state__icon">
             <i class="fas fa-users"></i>
           </div>
           <h3 class="empty-state__title">{MESSAGES.NO_EMPLOYEES_FOUND}</h3>
-          <p class="empty-state__description">{MESSAGES.CREATE_FIRST_EMPLOYEE}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}>
+          <p class="empty-state__description">
+            {MESSAGES.CREATE_FIRST_EMPLOYEE}
+          </p>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
+          >
             <i class="fas fa-plus"></i>
             Mitarbeiter hinzufügen
           </button>
@@ -551,7 +590,10 @@
       {:else}
         <div id="employees-table-content">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped" id="employees-table">
+            <table
+              class="data-table data-table--hover data-table--striped"
+              id="employees-table"
+            >
               <thead>
                 <tr>
                   <th scope="col">ID</th>

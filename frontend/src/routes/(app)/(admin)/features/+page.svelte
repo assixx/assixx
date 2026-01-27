@@ -64,7 +64,10 @@
 
   // Derived: Feature categories with tenant data applied
   const featureCategories: Record<string, FeatureCategory> = $derived(
-    applyTenantFeaturesToCategories(cloneFeatureCategories(FEATURE_CATEGORIES), tenantFeatures),
+    applyTenantFeaturesToCategories(
+      cloneFeatureCategories(FEATURE_CATEGORIES),
+      tenantFeatures,
+    ),
   );
 
   // =============================================================================
@@ -86,8 +89,12 @@
 
   const currentPlanData = $derived(plans[currentPlan]);
   const currentPlanName = $derived(currentPlanData?.name ?? currentPlan);
-  const activeFeatureCount = $derived(countActiveFeatures(featureCategories, currentPlan));
-  const totalCost = $derived(calculateTotalCost(currentPlanData, pendingAddons));
+  const activeFeatureCount = $derived(
+    countActiveFeatures(featureCategories, currentPlan),
+  );
+  const totalCost = $derived(
+    calculateTotalCost(currentPlanData, pendingAddons),
+  );
 
   // =============================================================================
   // FILTER LOGIC
@@ -119,7 +126,8 @@
     const planData = plans[newPlanCode];
     if (!planData) return;
 
-    if (!confirm(`Möchten Sie wirklich zum ${planData.name} Plan wechseln?`)) return;
+    if (!confirm(`Möchten Sie wirklich zum ${planData.name} Plan wechseln?`))
+      return;
 
     try {
       await apiChangePlan(currentTenantId, newPlanCode);
@@ -131,7 +139,10 @@
     }
   }
 
-  async function toggleFeature(featureCode: string, activate: boolean): Promise<void> {
+  async function toggleFeature(
+    featureCode: string,
+    activate: boolean,
+  ): Promise<void> {
     try {
       await apiToggleFeature(currentTenantId, featureCode, activate);
       // Level 3: Trigger SSR refetch
@@ -145,14 +156,23 @@
   /**
    * Adjust pending addon values (local state, not saved yet)
    */
-  function adjustAddon(type: 'employees' | 'admins' | 'storage', change: number): void {
+  function adjustAddon(
+    type: 'employees' | 'admins' | 'storage',
+    change: number,
+  ): void {
     if (type === 'employees') {
-      pendingAddons.employees = Math.max(0, (pendingAddons.employees ?? 0) + change);
+      pendingAddons.employees = Math.max(
+        0,
+        (pendingAddons.employees ?? 0) + change,
+      );
     } else if (type === 'admins') {
       pendingAddons.admins = Math.max(0, (pendingAddons.admins ?? 0) + change);
     } else {
       // type === 'storage'
-      pendingAddons.storage_gb = Math.max(0, (pendingAddons.storage_gb ?? 0) + change);
+      pendingAddons.storage_gb = Math.max(
+        0,
+        (pendingAddons.storage_gb ?? 0) + change,
+      );
     }
     pendingAddons = { ...pendingAddons };
   }
@@ -208,7 +228,10 @@
           <strong>{tenantName}</strong>
         </p>
       </div>
-      <div class="plan-badge" class:enterprise={currentPlan === 'enterprise'}>
+      <div
+        class="plan-badge"
+        class:enterprise={currentPlan === 'enterprise'}
+      >
         <i class="fas fa-crown"></i>
         <span>{currentPlanName} Plan</span>
       </div>
@@ -227,13 +250,19 @@
       </p>
     </div>
     <div class="card__body">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plans-container">
+      <div
+        class="grid grid-cols-1 md:grid-cols-3 gap-6"
+        id="plans-container"
+      >
         {#each ['basic', 'professional', 'enterprise'] as planCode (planCode)}
           {@const plan = plans[planCode]}
           {#if plan}
             {@const isCurrent = planCode === currentPlan}
             {@const isRecommended = planCode === 'professional'}
-            <label class="choice-card plan-card" class:plan-card--recommended={isRecommended}>
+            <label
+              class="choice-card plan-card"
+              class:plan-card--recommended={isRecommended}
+            >
               <input
                 type="radio"
                 class="choice-card__input"
@@ -245,12 +274,20 @@
               <div class="plan-card__content">
                 <div class="plan-card__header">
                   <h4 class="plan-card__title">{plan.name}</h4>
-                  <span class="plan-card__price">{plan.basePrice.toFixed(0)}/Monat</span>
+                  <span class="plan-card__price"
+                    >{plan.basePrice.toFixed(0)}/Monat</span
+                  >
                 </div>
-                <p class="plan-card__description">Für kleine bis mittlere Teams</p>
+                <p class="plan-card__description">
+                  Für kleine bis mittlere Teams
+                </p>
                 <ul class="plan-card__features">
-                  <li class="plan-card__feature">{plan.maxEmployees ?? ''} Mitarbeiter</li>
-                  <li class="plan-card__feature">{plan.maxAdmins ?? ''} Admins</li>
+                  <li class="plan-card__feature">
+                    {plan.maxEmployees ?? ''} Mitarbeiter
+                  </li>
+                  <li class="plan-card__feature">
+                    {plan.maxAdmins ?? ''} Admins
+                  </li>
                   <li class="plan-card__feature">Alle Basis-Features</li>
                 </ul>
               </div>
@@ -275,7 +312,10 @@
       </div>
 
       <!-- Toggle Group Filter -->
-      <div class="toggle-group" id="feature-status-toggle">
+      <div
+        class="toggle-group"
+        id="feature-status-toggle"
+      >
         <button
           type="button"
           class="toggle-group__btn"
@@ -332,7 +372,9 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
           <button
             type="button"
@@ -347,30 +389,50 @@
       {:else}
         <div id="features-container">
           {#each Object.entries(featureCategories) as [categoryName, categoryData] (categoryName)}
-            {@const visibleFeatures = categoryData.features.filter(isFeatureVisible)}
+            {@const visibleFeatures =
+              categoryData.features.filter(isFeatureVisible)}
             {#if visibleFeatures.length > 0}
-              <div class="feature-category mb-8" data-category={categoryName}>
+              <div
+                class="feature-category mb-8"
+                data-category={categoryName}
+              >
                 <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
                   <span class="text-2xl">{categoryData.icon}</span>
                   {categoryName}
                 </h3>
                 <div class="features-grid">
                   {#each visibleFeatures as feature (feature.code)}
-                    {@const canActivate = canActivateFeature(currentPlan, feature.minPlan)}
-                    {@const statusClass = getFeatureStatusClass(feature.active, canActivate)}
-                    {@const statusText = getFeatureStatusText(feature.active, canActivate)}
+                    {@const canActivate = canActivateFeature(
+                      currentPlan,
+                      feature.minPlan,
+                    )}
+                    {@const statusClass = getFeatureStatusClass(
+                      feature.active,
+                      canActivate,
+                    )}
+                    {@const statusText = getFeatureStatusText(
+                      feature.active,
+                      canActivate,
+                    )}
                     <div
                       class={getFeatureCardClasses(feature, currentPlan)}
                       data-feature={feature.code}
                       data-min-plan={feature.minPlan}
                     >
-                      <span class="feature-status {statusClass}">{statusText}</span>
+                      <span class="feature-status {statusClass}"
+                        >{statusText}</span
+                      >
                       <h4 class="feature-name">{feature.name}</h4>
                       <p class="feature-description">{feature.description}</p>
-                      <div class="feature-plan-badge">{getPlanBadge(feature.minPlan)}</div>
+                      <div class="feature-plan-badge">
+                        {getPlanBadge(feature.minPlan)}
+                      </div>
                       <div class="feature-actions">
                         {#if !canActivate}
-                          <a href="#plans-container" class="btn btn-primary">Plan upgraden</a>
+                          <a
+                            href="#plans-container"
+                            class="btn btn-primary">Plan upgraden</a
+                          >
                         {:else if feature.active}
                           <button
                             type="button"
@@ -529,7 +591,9 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">Aktive Features</span>
-        <span class="summary-value">{activeFeatureCount.active} / {activeFeatureCount.total}</span>
+        <span class="summary-value"
+          >{activeFeatureCount.active} / {activeFeatureCount.total}</span
+        >
       </div>
       <div class="summary-item">
         <span class="summary-label">Monatliche Kosten</span>
@@ -537,7 +601,11 @@
       </div>
     </div>
     <div class="summary-actions">
-      <button type="button" class="btn-save" onclick={saveChanges}>
+      <button
+        type="button"
+        class="btn-save"
+        onclick={saveChanges}
+      >
         <i class="fas fa-save mr-2"></i>
         Änderungen speichern
       </button>

@@ -25,7 +25,8 @@ function createDerivedState() {
 
   const canEditShifts = $derived.by(() => {
     if (userState.effectiveRole === 'root') return true;
-    if (userState.effectiveRole === 'admin' && userState.hasFullAccess) return true;
+    if (userState.effectiveRole === 'admin' && userState.hasFullAccess)
+      return true;
     const ctx = contextState.selectedContext;
     if (
       ctx.teamLeaderId !== null &&
@@ -166,7 +167,12 @@ export const shiftsState = {
   getShiftEmployees: shiftDataState.getShiftEmployees,
   addShiftAssignment: shiftDataState.addShiftAssignment,
   removeShiftAssignment: shiftDataState.removeShiftAssignment,
-  addShiftDetail(date: string, shiftType: string, employeeId: number, employee: Employee) {
+  addShiftDetail(
+    date: string,
+    shiftType: string,
+    employeeId: number,
+    employee: Employee,
+  ) {
     shiftDataState.addShiftDetail(date, shiftType, employeeId, employee);
   },
 
@@ -248,7 +254,8 @@ export const shiftsState = {
   setRotationConfig: rotationState.setRotationConfig,
   setStandardRotationEnabled: rotationState.setStandardRotationEnabled,
   setCustomRotationEnabled: rotationState.setCustomRotationEnabled,
-  setStandardRotationEnabledDirect: rotationState.setStandardRotationEnabledDirect,
+  setStandardRotationEnabledDirect:
+    rotationState.setStandardRotationEnabledDirect,
   setCustomRotationEnabledDirect: rotationState.setCustomRotationEnabledDirect,
   setShowRotationSetupModal: rotationState.setShowRotationSetupModal,
   setShowCustomRotationModal: rotationState.setShowCustomRotationModal,

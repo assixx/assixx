@@ -1,6 +1,10 @@
 <script lang="ts">
   import { POSITION_OPTIONS, MESSAGES } from './constants';
-  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
+  import {
+    getStatusBadgeClass,
+    getStatusLabel,
+    calculatePasswordStrength,
+  } from './utils';
 
   import type { FormIsActiveStatus } from './types';
 
@@ -28,10 +32,10 @@
     onValidatePasswords: () => void;
   }
 
-  /* eslint-disable */
+  /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
   let { show, isEditMode, modalTitle, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
-  /* eslint-enable */
+  /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown and visibility state
   let positionDropdownOpen = $state(false);
@@ -113,7 +117,12 @@
       {onsubmit}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="root-modal-title">{modalTitle}</h3>
+        <h3
+          class="ds-modal__title"
+          id="root-modal-title"
+        >
+          {modalTitle}
+        </h3>
         <button
           type="button"
           class="ds-modal__close"
@@ -126,7 +135,9 @@
 
       <div class="ds-modal__body">
         <div class="form-field">
-          <label class="form-field__label" for="root-first-name"
+          <label
+            class="form-field__label"
+            for="root-first-name"
             >Vorname <span class="text-red-500">*</span></label
           >
           <input
@@ -139,7 +150,9 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-last-name"
+          <label
+            class="form-field__label"
+            for="root-last-name"
             >Nachname <span class="text-red-500">*</span></label
           >
           <input
@@ -152,8 +165,9 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-email"
-            >E-Mail <span class="text-red-500">*</span></label
+          <label
+            class="form-field__label"
+            for="root-email">E-Mail <span class="text-red-500">*</span></label
           >
           <input
             type="email"
@@ -170,7 +184,9 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-email-confirm"
+          <label
+            class="form-field__label"
+            for="root-email-confirm"
             >E-Mail wiederholen <span class="text-red-500">*</span></label
           >
           <input
@@ -190,7 +206,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-employee-number">Personalnummer</label>
+          <label
+            class="form-field__label"
+            for="root-employee-number">Personalnummer</label
+          >
           <input
             type="text"
             id="root-employee-number"
@@ -202,15 +221,20 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-password">
+          <label
+            class="form-field__label"
+            for="root-password"
+          >
             Passwort {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
               >
-                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen, Sonderzeichen
+                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen,
+                Sonderzeichen
               </span>
             </span>
           </label>
@@ -227,17 +251,28 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+              aria-label={showPassword ? 'Passwort verbergen' : (
+                'Passwort anzeigen'
+              )}
               onclick={() => (showPassword = !showPassword)}
             >
-              <i class="fas" class:fa-eye={!showPassword} class:fa-eye-slash={showPassword}></i>
+              <i
+                class="fas"
+                class:fa-eye={!showPassword}
+                class:fa-eye-slash={showPassword}
+              ></i>
             </button>
           </div>
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-password-confirm">
-            Passwort wiederholen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
+          <label
+            class="form-field__label"
+            for="root-password-confirm"
+          >
+            Passwort wiederholen {#if !isEditMode}<span class="text-red-500"
+                >*</span
+              >{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -252,7 +287,9 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPasswordConfirm ? 'Passwort verbergen' : 'Passwort anzeigen'}
+              aria-label={showPasswordConfirm ? 'Passwort verbergen' : (
+                'Passwort anzeigen'
+              )}
               onclick={() => (showPasswordConfirm = !showPasswordConfirm)}
             >
               <i
@@ -272,11 +309,17 @@
         {#if password}
           <div class="password-strength-container">
             <div class="password-strength-meter">
-              <div class="password-strength-bar" data-score={passwordStrength.score}></div>
+              <div
+                class="password-strength-bar"
+                data-score={passwordStrength.score}
+              ></div>
             </div>
             <div class="password-strength-info">
-              <span class="password-strength-label">{passwordStrength.label}</span>
-              <span class="password-strength-time">{passwordStrength.time}</span>
+              <span class="password-strength-label"
+                >{passwordStrength.label}</span
+              >
+              <span class="password-strength-time">{passwordStrength.time}</span
+              >
             </div>
           </div>
         {/if}
@@ -292,21 +335,35 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="position-hidden"
+          <label
+            class="form-field__label"
+            for="position-hidden"
             >Position <span class="text-red-500">*</span></label
           >
-          <input type="hidden" id="position-hidden" value={position} />
-          <div class="dropdown" id="position-dropdown">
+          <input
+            type="hidden"
+            id="position-hidden"
+            value={position}
+          />
+          <div
+            class="dropdown"
+            id="position-dropdown"
+          >
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <div
               class="dropdown__trigger"
               class:active={positionDropdownOpen}
               onclick={togglePositionDropdown}
             >
-              <span>{position !== '' ? position : MESSAGES.SELECT_POSITION}</span>
+              <span
+                >{position !== '' ? position : MESSAGES.SELECT_POSITION}</span
+              >
               <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="dropdown__menu" class:active={positionDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={positionDropdownOpen}
+            >
               {#each POSITION_OPTIONS as pos (pos)}
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
@@ -323,29 +380,49 @@
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="root-notes">Notizen</label>
-          <textarea id="root-notes" class="form-field__control" rows="3" bind:value={notes}
+          <label
+            class="form-field__label"
+            for="root-notes">Notizen</label
+          >
+          <textarea
+            id="root-notes"
+            class="form-field__control"
+            rows="3"
+            bind:value={notes}
           ></textarea>
         </div>
 
         {#if isEditMode}
           <div class="form-field">
-            <label class="form-field__label" for="status-hidden"
+            <label
+              class="form-field__label"
+              for="status-hidden"
               >Status <span class="text-red-500">*</span></label
             >
-            <input type="hidden" id="status-hidden" value={isActive} />
-            <div class="dropdown" id="status-dropdown">
+            <input
+              type="hidden"
+              id="status-hidden"
+              value={isActive}
+            />
+            <div
+              class="dropdown"
+              id="status-dropdown"
+            >
               <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
               <div
                 class="dropdown__trigger"
                 class:active={statusDropdownOpen}
                 onclick={toggleStatusDropdown}
               >
-                <span class="badge {getStatusBadgeClass(isActive)}">{getStatusLabel(isActive)}</span
+                <span class="badge {getStatusBadgeClass(isActive)}"
+                  >{getStatusLabel(isActive)}</span
                 >
                 <i class="fas fa-chevron-down"></i>
               </div>
-              <div class="dropdown__menu" class:active={statusDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={statusDropdownOpen}
+              >
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
                   class="dropdown__option"
@@ -375,7 +452,8 @@
                 </div>
               </div>
             </div>
-            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+            <span
+              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
               >{MESSAGES.INACTIVE_HINT}</span
             >
           </div>
@@ -383,9 +461,18 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-        <button type="submit" class="btn btn-modal" disabled={submitting}>
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}>Abbrechen</button
+        >
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={submitting}
+        >
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           Speichern
         </button>
       </div>
