@@ -2,7 +2,7 @@
   <img src="frontend/static/images/logo.png" alt="Assixx Logo" width="200">
 </p>
 
-# Assixx
+# Was ist Assixx?
 
 **Multi-Tenant SaaS Platform für Industrieunternehmen**
 
