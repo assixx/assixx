@@ -11,7 +11,7 @@ import { IdSchema } from '../../../schemas/common.schema.js';
 /**
  * Survey status enum
  */
-const SurveyStatusSchema = z.enum(['draft', 'active', 'closed'], {
+const SurveyStatusSchema = z.enum(['draft', 'active', 'paused', 'completed', 'archived'], {
   message: 'Invalid status',
 });
 

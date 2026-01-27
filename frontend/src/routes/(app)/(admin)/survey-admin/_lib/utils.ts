@@ -5,7 +5,7 @@
 
 import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP } from './constants';
 
-import type { BufferData, QuestionType } from './types';
+import type { Area, BufferData, Department, QuestionType, Team, UserRole } from './types';
 
 /**
  * Convert Buffer to string
@@ -57,8 +57,8 @@ export function toBool(value: unknown): boolean {
 /**
  * Format date for display
  */
-export function formatSurveyDate(dateStr: string | Date | undefined): string {
-  if (dateStr === undefined || dateStr === '') return '';
+export function formatSurveyDate(dateStr: string | Date | null | undefined): string {
+  if (dateStr === undefined || dateStr === null || dateStr === '') return '';
 
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';
@@ -74,9 +74,9 @@ export function formatSurveyDate(dateStr: string | Date | undefined): string {
  * Format date for input field (YYYY-MM-DD)
  */
 export function formatDateForInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -164,4 +164,75 @@ export function validateEndDateInFuture(endDate: string): boolean {
   if (endDate === '') return true;
   const end = new Date(endDate);
   return end > new Date();
+}
+
+// =============================================================================
+// PERMISSION-BASED ORG DATA FILTERING
+// =============================================================================
+
+/**
+ * User context needed for permission filtering
+ */
+export interface CurrentUserContext {
+  userId: number;
+  role: UserRole;
+  hasFullAccess: boolean;
+}
+
+/**
+ * Result of filtering org data by user permissions
+ */
+export interface FilteredOrgData {
+  canAssignCompanyWide: boolean;
+  areas: Area[];
+  departments: Department[];
+  teams: Team[];
+}
+
+/**
+ * Filter areas/departments/teams based on user's leadership permissions.
+ *
+ * Rules:
+ * - root or hasFullAccess → everything visible, can assign company-wide
+ * - Areas: only where user is area_lead_id
+ * - Departments: where user is department_lead_id OR dept's area is led by user
+ * - Teams: where team's department is in the user's manageable departments
+ */
+export function filterOrgDataByPermissions(
+  user: CurrentUserContext,
+  areas: Area[],
+  departments: Department[],
+  teams: Team[],
+): FilteredOrgData {
+  if (user.role === 'root' || user.hasFullAccess) {
+    return { canAssignCompanyWide: true, areas, departments, teams };
+  }
+
+  const ledAreaIds = new Set(areas.filter((a) => a.areaLeadId === user.userId).map((a) => a.id));
+
+  const filteredAreas = areas.filter((a) => ledAreaIds.has(a.id));
+
+  const managedDeptIds = new Set(
+    departments
+      .filter(
+        (d) =>
+          d.departmentLeadId === user.userId ||
+          (d.areaId !== undefined && ledAreaIds.has(d.areaId)),
+      )
+      .map((d) => d.id),
+  );
+
+  const filteredDepartments = departments.filter((d) => managedDeptIds.has(d.id));
+
+  const filteredTeams = teams.filter(
+    (t) =>
+      t.departmentId !== undefined && t.departmentId !== null && managedDeptIds.has(t.departmentId),
+  );
+
+  return {
+    canAssignCompanyWide: false,
+    areas: filteredAreas,
+    departments: filteredDepartments,
+    teams: filteredTeams,
+  };
 }

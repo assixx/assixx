@@ -8,16 +8,17 @@
   import { invalidateAll } from '$app/navigation';
 
   import '../../../../styles/survey-admin.css';
-  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert } from '$lib/utils';
 
   // Extracted Components
   import ActiveSurveyCard from './_lib/ActiveSurveyCard.svelte';
+  import CompletedSurveyCard from './_lib/CompletedSurveyCard.svelte';
   import DraftSurveyCard from './_lib/DraftSurveyCard.svelte';
   import {
     getSurveyId,
-    getAssignmentInfoWithData,
+    getAssignmentBadges,
     getOptionsFromQuestion,
+    handleCompleteSurveyWithInvalidate,
     handleDeleteSurveyWithInvalidate,
     handleViewResults,
     loadSurveyForEdit,
@@ -26,7 +27,12 @@
   } from './_lib/handlers';
   import { surveyAdminState } from './_lib/state.svelte';
   import SurveyFormModal from './_lib/SurveyFormModal.svelte';
-  import { questionTypeNeedsOptions, getTextFromBuffer, toBool } from './_lib/utils';
+  import {
+    questionTypeNeedsOptions,
+    getTextFromBuffer,
+    toBool,
+    filterOrgDataByPermissions,
+  } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
@@ -44,22 +50,17 @@
   const teams = $derived<Team[]>(data.teams);
   const areas = $derived<Area[]>(data.areas);
 
+  // Permission-filtered org data for the assignment form
+  const filteredOrgData = $derived(
+    filterOrgDataByPermissions(data.currentUser, areas, departments, teams),
+  );
+
   // Derived computed values
   const activeSurveys = $derived(surveys.filter((s) => s.status === 'active'));
+  const completedSurveys = $derived(
+    surveys.filter((s) => s.status === 'completed' || s.status === 'archived'),
+  );
   const draftSurveys = $derived(surveys.filter((s) => s.status === 'draft'));
-
-  // =============================================================================
-  // MARK NOTIFICATIONS AS READ (ADR-004)
-  // =============================================================================
-
-  // Mark Survey notifications as read when page is visited
-  let surveyReadMarked = $state(false);
-  $effect(() => {
-    if (!surveyReadMarked) {
-      surveyReadMarked = true;
-      void notificationStore.markTypeAsRead('survey');
-    }
-  });
 
   // =============================================================================
   // UI STATE - Form and Modal state (client-side only)
@@ -73,14 +74,13 @@
   let formStartTime = $state('00:00');
   let formEndDate = $state('');
   let formEndTime = $state('23:59');
-  let formAssignmentType = $state('all_users');
+  let formCompanyWide = $state(false);
   let formSelectedAreas = $state<number[]>([]);
   let formSelectedDepartments = $state<number[]>([]);
   let formSelectedTeams = $state<number[]>([]);
   let formQuestions = $state<
     { id: string; text: string; type: QuestionType; isOptional: boolean; options: string[] }[]
   >([]);
-  let assignmentDisplayText = $state('Ganze Firma');
 
   // =============================================================================
   // FORM STATE HELPERS
@@ -96,12 +96,11 @@
       formStartTime,
       formEndDate,
       formEndTime,
-      formAssignmentType,
+      formCompanyWide,
       formSelectedAreas,
       formSelectedDepartments,
       formSelectedTeams,
       formQuestions,
-      assignmentDisplayText,
     };
   }
 
@@ -114,12 +113,11 @@
     formStartTime = state.formStartTime;
     formEndDate = state.formEndDate;
     formEndTime = state.formEndTime;
-    formAssignmentType = state.formAssignmentType;
+    formCompanyWide = state.formCompanyWide;
     formSelectedAreas = state.formSelectedAreas;
     formSelectedDepartments = state.formSelectedDepartments;
     formSelectedTeams = state.formSelectedTeams;
     formQuestions = state.formQuestions;
-    assignmentDisplayText = state.assignmentDisplayText;
   }
 
   function resetForm(): void {
@@ -131,8 +129,7 @@
     formStartTime = '00:00';
     formEndDate = '';
     formEndTime = '23:59';
-    formAssignmentType = 'all_users';
-    assignmentDisplayText = 'Ganze Firma';
+    formCompanyWide = false;
     formSelectedAreas = [];
     formSelectedDepartments = [];
     formSelectedTeams = [];
@@ -152,7 +149,13 @@
 
   async function handleEditSurvey(surveyId: number | string): Promise<void> {
     const formState = await loadSurveyForEdit(surveyId);
-    if (formState !== null) applyFormState(formState);
+    if (formState !== null) {
+      // Reset company-wide if user lacks permission (UX guard, backend enforces too)
+      if (!filteredOrgData.canAssignCompanyWide && formState.formCompanyWide) {
+        formState.formCompanyWide = false;
+      }
+      applyFormState(formState);
+    }
   }
 
   function handleCloseModal(): void {
@@ -221,11 +224,6 @@
   // ASSIGNMENT & SAVE HANDLERS
   // =============================================================================
 
-  function handleAssignmentSelect(value: string, label: string): void {
-    formAssignmentType = value;
-    assignmentDisplayText = label;
-  }
-
   async function handleSaveSurvey(status: 'draft' | 'active'): Promise<void> {
     await saveSurveyWithInvalidate(status, getFormState(), handleCloseModal, invalidateAll);
   }
@@ -292,15 +290,45 @@
             <ActiveSurveyCard
               {survey}
               surveyId={getSurveyId(survey)}
-              assignmentInfo={getAssignmentInfoWithData(survey, departments, teams, areas)}
+              canManage={survey.canManage ?? false}
+              assignmentBadges={getAssignmentBadges(survey, departments, teams, areas)}
               onedit={handleEditSurvey}
               onviewresults={handleViewResults}
               ondelete={(id: number | string) =>
                 handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+              oncomplete={(id: number | string) =>
+                handleCompleteSurveyWithInvalidate(id, invalidateAll)}
             />
           {/each}
         </div>
       {/if}
+
+      <div class="completed-section">
+        <div class="completed-header"><h4 class="completed-title">Beendete Umfragen</h4></div>
+        {#if completedSurveys.length === 0}
+          <div class="empty-state">
+            <div class="empty-state__icon"><i class="fas fa-check-circle"></i></div>
+            <h3 class="empty-state__title">Keine beendeten Umfragen</h3>
+            <p class="empty-state__description">
+              Beendete und archivierte Umfragen werden hier angezeigt.
+            </p>
+          </div>
+        {:else}
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8">
+            {#each completedSurveys as survey (getSurveyId(survey))}
+              <CompletedSurveyCard
+                {survey}
+                surveyId={getSurveyId(survey)}
+                canManage={survey.canManage ?? false}
+                assignmentBadges={getAssignmentBadges(survey, departments, teams, areas)}
+                onviewresults={handleViewResults}
+                ondelete={(id: number | string) =>
+                  handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+              />
+            {/each}
+          </div>
+        {/if}
+      </div>
 
       <div class="drafts-section">
         <div class="drafts-header"><h4 class="drafts-title">Entwürfe</h4></div>
@@ -319,6 +347,7 @@
               <DraftSurveyCard
                 {survey}
                 surveyId={getSurveyId(survey)}
+                canManage={survey.canManage ?? false}
                 onedit={handleEditSurvey}
                 ondelete={(id: number | string) =>
                   handleDeleteSurveyWithInvalidate(id, invalidateAll)}
@@ -333,7 +362,7 @@
         {#if templates.length === 0}
           <div class="empty-state">
             <div class="empty-state__icon"><i class="fas fa-folder-open"></i></div>
-            <h3 class="empty-state__title">Keine Vorlagen verfuegbar</h3>
+            <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
             <p class="empty-state__description">
               Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden automatisch erstellt.
             </p>
@@ -381,12 +410,15 @@
   bind:formStartTime
   bind:formEndDate
   bind:formEndTime
-  bind:formAssignmentType
+  bind:formCompanyWide
   bind:formSelectedAreas
   bind:formSelectedDepartments
   bind:formSelectedTeams
   bind:formQuestions
-  {assignmentDisplayText}
+  departments={filteredOrgData.departments}
+  teams={filteredOrgData.teams}
+  areas={filteredOrgData.areas}
+  canAssignCompanyWide={filteredOrgData.canAssignCompanyWide}
   onclose={handleCloseModal}
   onsavedraft={() => handleSaveSurvey('draft')}
   onsaveactive={() => handleSaveSurvey('active')}
@@ -396,7 +428,6 @@
   onaddoption={addOption}
   onremoveoption={removeOption}
   onupdateoption={updateOptionText}
-  onassignmentselect={handleAssignmentSelect}
 />
 
 <!-- No component-specific styles needed - using global styles -->

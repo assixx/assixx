@@ -20,6 +20,11 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+/** Ensures API data is a safe array (guards against null/unexpected shapes) */
+function toSafeArray<T>(data: T[] | null): T[] {
+  return Array.isArray(data) ? data : [];
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -52,11 +57,14 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
+
+  // Get user data from parent layout (no extra fetch needed)
+  const { user } = await parent();
 
   // Parallel fetch: surveys + templates + org data
   const [surveysData, templatesData, departmentsData, teamsData, areasData] = await Promise.all([
@@ -68,11 +76,11 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   ]);
 
   // Safe fallbacks
-  const surveys = Array.isArray(surveysData) ? surveysData : [];
-  const templates = Array.isArray(templatesData) ? templatesData : [];
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
-  const teams = Array.isArray(teamsData) ? teamsData : [];
-  const areas = Array.isArray(areasData) ? areasData : [];
+  const surveys = toSafeArray(surveysData);
+  const templates = toSafeArray(templatesData);
+  const departments = toSafeArray(departmentsData);
+  const teams = toSafeArray(teamsData);
+  const areas = toSafeArray(areasData);
 
   return {
     surveys,
@@ -80,5 +88,10 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     departments,
     teams,
     areas,
+    currentUser: {
+      userId: user?.id ?? 0,
+      role: (user?.role ?? 'employee'),
+      hasFullAccess: user?.hasFullAccess ?? false,
+    },
   };
 };

@@ -30,6 +30,20 @@ import type { UpdateSurveyDto } from './dto/update-survey.dto.js';
 
 const MSG_SURVEY_NOT_FOUND = 'Survey not found';
 
+/** SQL queries to verify leadership permissions per assignment entity type */
+const LEADERSHIP_QUERIES: Record<string, string> = {
+  area: `SELECT id FROM areas WHERE id = $1 AND area_lead_id = $2 AND tenant_id = $3`,
+  department: `SELECT d.id FROM departments d
+    LEFT JOIN areas a ON d.area_id = a.id
+    WHERE d.id = $1 AND d.tenant_id = $3
+      AND (d.department_lead_id = $2 OR a.area_lead_id = $2)`,
+  team: `SELECT t.id FROM teams t
+    LEFT JOIN departments d ON t.department_id = d.id
+    LEFT JOIN areas a ON d.area_id = a.id
+    WHERE t.id = $1 AND t.tenant_id = $3
+      AND (d.department_lead_id = $2 OR a.area_lead_id = $2)`,
+};
+
 // ============================================
 // TYPE DEFINITIONS
 // ============================================
@@ -86,8 +100,11 @@ interface DbSurveyAssignment {
   survey_id: number;
   assignment_type: 'all_users' | 'area' | 'department' | 'team' | 'user';
   area_id?: number | null;
+  area_name?: string | null;
   department_id?: number | null;
+  department_name?: string | null;
   team_id?: number | null;
+  team_name?: string | null;
   user_id?: number | null;
 }
 
@@ -269,6 +286,10 @@ export class SurveysService {
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
+  // ==========================================================================
+  // SURVEY LISTING - Visibility mirrors calendar (ADR-010)
+  // ==========================================================================
+
   async listSurveys(
     tenantId: number,
     userId: number,
@@ -277,6 +298,7 @@ export class SurveysService {
       status?: string | undefined;
       page?: number | undefined;
       limit?: number | undefined;
+      manage?: boolean | undefined;
     },
   ): Promise<unknown[]> {
     this.logger.debug(`Listing surveys for tenant ${tenantId}, user ${userId}`);
@@ -284,19 +306,156 @@ export class SurveysService {
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
 
+    // Step 1: Check unrestricted access (mirrors calendar.service.ts:277)
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+
     let surveys: DbSurvey[];
-    if (userRole === 'root') {
-      surveys = await this.getAllByTenant(tenantId, query.status, limit, offset);
-    } else if (userRole === 'admin') {
-      surveys = await this.getAllByTenantForAdmin(tenantId, userId, query.status, limit, offset);
+    if (hasUnrestrictedAccess) {
+      surveys = await this.getAllSurveysUnrestricted(tenantId, query.status, limit, offset);
+    } else if (query.manage === true) {
+      // Management mode: only surveys user can manage (creator/lead)
+      surveys = await this.getAllSurveysManageable(tenantId, userId, query.status, limit, offset);
     } else {
-      surveys = await this.getAllByTenantForEmployee(tenantId, userId, query.status, limit, offset);
+      surveys = await this.getAllSurveysWithVisibility(
+        tenantId,
+        userId,
+        query.status,
+        limit,
+        offset,
+      );
     }
     await this.attachAssignmentsToSurveys(surveys, tenantId);
-    return surveys.map((s: DbSurvey) => this.transformSurveyWithMetadata(s));
+
+    // Compute canManage flag for each survey
+    let manageableIds: Set<number>;
+    if (hasUnrestrictedAccess || query.manage === true) {
+      // Unrestricted users can manage all; manage=true already filtered to manageable only
+      manageableIds = new Set(surveys.map((s: DbSurvey) => s.id));
+    } else {
+      manageableIds = await this.getManageableSurveyIds(
+        surveys.map((s: DbSurvey) => s.id),
+        tenantId,
+        userId,
+      );
+    }
+
+    return surveys.map((s: DbSurvey) => ({
+      ...this.transformSurveyWithMetadata(s),
+      canManage: manageableIds.has(s.id),
+    }));
   }
 
-  private async getAllByTenant(
+  /**
+   * Check if user has unrestricted access (root OR has_full_access=true).
+   * Mirrors calendar.service.ts: `userRole.has_full_access || userRole.role === 'root'`
+   */
+  private async checkUnrestrictedAccess(
+    userId: number,
+    tenantId: number,
+    userRole: string,
+  ): Promise<boolean> {
+    if (userRole === 'root') return true;
+    const rows = await this.db.query<{ has_full_access: boolean }>(
+      `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
+      [userId, tenantId],
+    );
+    return rows[0]?.has_full_access === true;
+  }
+
+  /**
+   * Build the visibility WHERE clause for surveys.
+   * Mirrors calendar's buildVisibilityClause().
+   * Returns SQL fragment: (s.created_by = $X OR EXISTS(...))
+   * Expects `s` as the survey table alias.
+   */
+  private buildVisibilityClause(tenantParam: string, userParam: string): string {
+    return `(
+      s.created_by = ${userParam}
+      OR EXISTS (
+        SELECT 1 FROM survey_assignments sa WHERE sa.survey_id = s.id AND (
+          sa.assignment_type = 'all_users'
+          OR (sa.assignment_type = 'area' AND (
+            EXISTS (SELECT 1 FROM admin_area_permissions aap
+                    WHERE aap.admin_user_id = ${userParam} AND aap.area_id = sa.area_id AND aap.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM areas a
+                       WHERE a.id = sa.area_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM user_departments ud
+                       JOIN departments d ON ud.department_id = d.id
+                       WHERE ud.user_id = ${userParam} AND ud.tenant_id = ${tenantParam} AND d.area_id = sa.area_id)
+          ))
+          OR (sa.assignment_type = 'department' AND (
+            EXISTS (SELECT 1 FROM admin_department_permissions adp
+                    WHERE adp.admin_user_id = ${userParam} AND adp.department_id = sa.department_id AND adp.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM departments d
+                       WHERE d.id = sa.department_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM user_departments ud
+                       WHERE ud.user_id = ${userParam} AND ud.department_id = sa.department_id AND ud.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM departments d
+                       JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                       WHERE d.id = sa.department_id AND aap.admin_user_id = ${userParam} AND aap.tenant_id = ${tenantParam})
+          ))
+          OR (sa.assignment_type = 'team' AND (
+            EXISTS (SELECT 1 FROM user_teams ut
+                    WHERE ut.user_id = ${userParam} AND ut.team_id = sa.team_id AND ut.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM teams t
+                       WHERE t.id = sa.team_id AND t.team_lead_id = ${userParam} AND t.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM teams t
+                       JOIN admin_department_permissions adp ON adp.department_id = t.department_id
+                       WHERE t.id = sa.team_id AND adp.admin_user_id = ${userParam} AND adp.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM teams t
+                       JOIN departments d ON t.department_id = d.id
+                       JOIN admin_area_permissions aap ON aap.area_id = d.area_id
+                       WHERE t.id = sa.team_id AND aap.admin_user_id = ${userParam} AND aap.tenant_id = ${tenantParam})
+          ))
+          OR (sa.assignment_type = 'user' AND sa.user_id = ${userParam})
+        )
+      )
+    )`;
+  }
+
+  /**
+   * Build the management visibility WHERE clause for surveys.
+   * Stricter than buildVisibilityClause(): only creator OR lead of assigned org unit.
+   * Used for admin management operations (list/view/edit/delete in survey-admin).
+   *
+   * Hierarchy inheritance: area lead → dept/team in area, dept lead → team in dept.
+   */
+  private buildManagementVisibilityClause(tenantParam: string, userParam: string): string {
+    return `(
+      s.created_by = ${userParam}
+      OR EXISTS (
+        SELECT 1 FROM survey_assignments sa WHERE sa.survey_id = s.id AND (
+          (sa.assignment_type = 'area' AND EXISTS (
+            SELECT 1 FROM areas a
+            WHERE a.id = sa.area_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam}
+          ))
+          OR (sa.assignment_type = 'department' AND (
+            EXISTS (SELECT 1 FROM departments d
+                    WHERE d.id = sa.department_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM departments d
+                       JOIN areas a ON d.area_id = a.id
+                       WHERE d.id = sa.department_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+          ))
+          OR (sa.assignment_type = 'team' AND (
+            EXISTS (SELECT 1 FROM teams t
+                    WHERE t.id = sa.team_id AND t.team_lead_id = ${userParam} AND t.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM teams t
+                       JOIN departments d ON t.department_id = d.id
+                       WHERE t.id = sa.team_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+            OR EXISTS (SELECT 1 FROM teams t
+                       JOIN departments d ON t.department_id = d.id
+                       JOIN areas a ON d.area_id = a.id
+                       WHERE t.id = sa.team_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+          ))
+        )
+      )
+    )`;
+  }
+
+  /**
+   * Unrestricted: root or has_full_access=true sees ALL surveys in tenant.
+   */
+  private async getAllSurveysUnrestricted(
     tenantId: number,
     status: string | undefined,
     limit: number,
@@ -308,8 +467,8 @@ export class SurveysService {
       statusClause = ' AND s.status = $2';
       params.push(status);
     }
-    const limitParamIndex = params.length + 1;
-    const offsetParamIndex = params.length + 2;
+    const limitIdx = params.length + 1;
+    const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
     return await this.db.query<DbSurvey>(
@@ -318,111 +477,119 @@ export class SurveysService {
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id
        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-       WHERE s.tenant_id = $1${statusClause} GROUP BY s.id
-       ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+       WHERE s.tenant_id = $1${statusClause}
+       GROUP BY s.id
+       ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,
     );
   }
 
-  private async getAllByTenantForAdmin(
+  /**
+   * Permission-based visibility for admins (without full access) AND employees.
+   * Unified query using EXISTS subqueries — mirrors calendar buildVisibilityClause().
+   *
+   * Access paths per assignment_type:
+   *  all_users  → everyone
+   *  area       → admin_area_permissions | area_lead | user_departments membership
+   *  department → admin_dept_perms | dept_lead | user_departments | area perm inheritance
+   *  team       → user_teams | team_lead | dept perm inheritance | area perm inheritance
+   *  user       → direct user assignment
+   *  creator    → always sees own surveys
+   */
+  private async getAllSurveysWithVisibility(
     tenantId: number,
-    adminUserId: number,
+    userId: number,
     status: string | undefined,
     limit: number,
     offset: number,
   ): Promise<DbSurvey[]> {
-    const params: unknown[] = [adminUserId, tenantId, adminUserId];
+    const params: unknown[] = [tenantId, userId];
     let statusClause = '';
     if (status !== undefined) {
       statusClause = ` AND s.status = $${params.length + 1}`;
       params.push(status);
     }
-    const limitParamIndex = params.length + 1;
-    const offsetParamIndex = params.length + 2;
+    const limitIdx = params.length + 1;
+    const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
+    // $1 = tenantId, $2 = userId
+    const visibilityClause = this.buildVisibilityClause('$1', '$2');
     return await this.db.query<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
-       FROM surveys s LEFT JOIN users u ON s.created_by = u.id
+       FROM surveys s
+       LEFT JOIN users u ON s.created_by = u.id
        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-       LEFT JOIN survey_assignments sa ON s.id = sa.survey_id
-       LEFT JOIN admin_department_permissions adp ON adp.admin_user_id = $1 AND adp.tenant_id = s.tenant_id
-       WHERE s.tenant_id = $2 AND (sa.assignment_type = 'all_users' OR sa.assignment_type = 'area'
-       OR (sa.assignment_type = 'department' AND sa.department_id = adp.department_id AND adp.can_read = true)
-       OR s.created_by = $3)${statusClause} GROUP BY s.id
-       ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+       WHERE s.tenant_id = $1
+       AND ${visibilityClause}${statusClause}
+       GROUP BY s.id
+       ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,
     );
   }
 
-  /** Builds team SQL condition and returns teamIds to append to params */
-  private buildTeamCondition(
-    teamIds: number[],
-    startIndex: number,
-  ): { condition: string; ids: number[] } {
-    if (teamIds.length === 0)
-      return { condition: `(sa.assignment_type = 'team' AND 1=0)`, ids: [] };
-    const placeholders = teamIds.map((_: number, idx: number) => `$${startIndex + idx}`).join(',');
-    return {
-      condition: `(sa.assignment_type = 'team' AND sa.team_id IN (${placeholders}))`,
-      ids: teamIds,
-    };
-  }
-
-  private async getAllByTenantForEmployee(
+  /**
+   * Management-level visibility: only surveys the admin can manage.
+   * Creator OR lead of assigned org unit (with hierarchy inheritance).
+   */
+  private async getAllSurveysManageable(
     tenantId: number,
-    employeeUserId: number,
+    userId: number,
     status: string | undefined,
     limit: number,
     offset: number,
   ): Promise<DbSurvey[]> {
-    const userInfoRows = await this.db.query<{
-      department_id: number | null;
-      area_id: number | null;
-    }>(
-      `SELECT ud.department_id, d.area_id FROM users u
-       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       LEFT JOIN departments d ON ud.department_id = d.id WHERE u.id = $1 AND u.tenant_id = $2`,
-      [employeeUserId, tenantId],
-    );
-    const userInfo = userInfoRows[0];
-    if (userInfo === undefined) return [];
-    const { department_id: departmentId, area_id: areaId } = userInfo;
-
-    const teamsRows = await this.db.query<{ team_id: number }>(
-      `SELECT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2`,
-      [employeeUserId, tenantId],
-    );
-    const teamIds = teamsRows.map((t: { team_id: number }) => t.team_id);
-
-    const params: unknown[] = [tenantId, areaId, departmentId];
-    const { condition: teamCondition, ids } = this.buildTeamCondition(teamIds, 4);
-    params.push(...ids);
-    const userIdParamIndex = params.length + 1;
-    params.push(employeeUserId);
-
+    const params: unknown[] = [tenantId, userId];
     let statusClause = '';
     if (status !== undefined) {
       statusClause = ` AND s.status = $${params.length + 1}`;
       params.push(status);
     }
-    const limitParamIndex = params.length + 1;
-    const offsetParamIndex = params.length + 2;
+    const limitIdx = params.length + 1;
+    const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
+    const managementClause = this.buildManagementVisibilityClause('$1', '$2');
     return await this.db.query<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
-       FROM surveys s LEFT JOIN users u ON s.created_by = u.id LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-       INNER JOIN survey_assignments sa ON s.id = sa.survey_id WHERE s.tenant_id = $1 AND (sa.assignment_type = 'all_users'
-       OR (sa.assignment_type = 'area' AND sa.area_id = $2) OR (sa.assignment_type = 'department' AND sa.department_id = $3)
-       OR ${teamCondition} OR (sa.assignment_type = 'user' AND sa.user_id = $${userIdParamIndex}))${statusClause}
-       GROUP BY s.id ORDER BY s.created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+       FROM surveys s
+       LEFT JOIN users u ON s.created_by = u.id
+       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+       WHERE s.tenant_id = $1
+       AND ${managementClause}${statusClause}
+       GROUP BY s.id
+       ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,
     );
+  }
+
+  /**
+   * Get the set of survey IDs the user can manage within a given set.
+   * Used to compute the canManage flag for list responses.
+   */
+  private async getManageableSurveyIds(
+    surveyIds: number[],
+    tenantId: number,
+    userId: number,
+  ): Promise<Set<number>> {
+    if (surveyIds.length === 0) return new Set();
+
+    const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
+    const tenantIdx = surveyIds.length + 1;
+    const userIdx = surveyIds.length + 2;
+    const managementClause = this.buildManagementVisibilityClause(`$${tenantIdx}`, `$${userIdx}`);
+
+    const rows = await this.db.query<{ id: number }>(
+      `SELECT s.id FROM surveys s
+       WHERE s.id IN (${placeholders}) AND s.tenant_id = $${tenantIdx}
+       AND ${managementClause}`,
+      [...surveyIds, tenantId, userId],
+    );
+    return new Set(rows.map((r: { id: number }) => r.id));
   }
 
   private async attachAssignmentsToSurveys(surveys: DbSurvey[], tenantId: number): Promise<void> {
@@ -432,8 +599,16 @@ export class SurveysService {
     const tenantParamIndex = surveyIds.length + 1;
 
     const assignmentRows = await this.db.query<DbSurveyAssignment & { survey_id: number }>(
-      `SELECT * FROM survey_assignments WHERE survey_id IN (${placeholders}) AND tenant_id = $${tenantParamIndex}
-       ORDER BY survey_id, id`,
+      `SELECT sa.*,
+         a.name AS area_name,
+         d.name AS department_name,
+         t.name AS team_name
+       FROM survey_assignments sa
+       LEFT JOIN areas a ON sa.area_id = a.id
+       LEFT JOIN departments d ON sa.department_id = d.id
+       LEFT JOIN teams t ON sa.team_id = t.id
+       WHERE sa.survey_id IN (${placeholders}) AND sa.tenant_id = $${tenantParamIndex}
+       ORDER BY sa.survey_id, sa.id`,
       [...surveyIds, tenantId],
     );
     const assignmentsBySurveyId = new Map<number, DbSurveyAssignment[]>();
@@ -448,7 +623,7 @@ export class SurveysService {
     }
   }
 
-  private transformSurveyWithMetadata(survey: DbSurvey): unknown {
+  private transformSurveyWithMetadata(survey: DbSurvey): Record<string, unknown> {
     const transformed = this.transformSurveyToApi(survey as unknown as Record<string, unknown>);
     return {
       ...transformed,
@@ -503,6 +678,7 @@ export class SurveysService {
     tenantId: number,
     userId: number,
     userRole: string,
+    manage?: boolean,
   ): Promise<unknown> {
     this.logger.debug(`Getting survey ${String(id)} for tenant ${tenantId}`);
     let survey: DbSurvey | null;
@@ -514,7 +690,11 @@ export class SurveysService {
     if (survey === null) {
       throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
     }
-    await this.checkSurveyAccess(survey.id, tenantId, userId, userRole);
+    if (manage === true) {
+      await this.checkSurveyManagementAccess(survey.id, tenantId, userId, userRole);
+    } else {
+      await this.checkSurveyAccess(survey.id, tenantId, userId, userRole);
+    }
     return this.transformSurveyToApi(survey as unknown as Record<string, unknown>);
   }
 
@@ -625,21 +805,44 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<void> {
-    if (userRole === 'root') return;
-    if (userRole === 'employee') {
-      const surveys = await this.getAllByTenantForEmployee(tenantId, userId, undefined, 1000, 0);
-      const hasAccess = surveys.some((s: DbSurvey) => s.id === surveyId);
-      if (!hasAccess) {
-        throw new ForbiddenException("You don't have access to this survey");
-      }
-      return;
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    if (hasUnrestrictedAccess) return;
+
+    // Single targeted query using the same visibility clause
+    const visibilityClause = this.buildVisibilityClause('$2', '$3');
+    const rows = await this.db.query<{ id: number }>(
+      `SELECT s.id FROM surveys s
+       WHERE s.id = $1 AND s.tenant_id = $2
+       AND ${visibilityClause}`,
+      [surveyId, tenantId, userId],
+    );
+    if (rows.length === 0) {
+      throw new ForbiddenException("You don't have access to this survey");
     }
-    if (userRole === 'admin') {
-      const surveys = await this.getAllByTenantForAdmin(tenantId, userId, undefined, 1000, 0);
-      const hasAccess = surveys.some((s: DbSurvey) => s.id === surveyId);
-      if (!hasAccess) {
-        throw new ForbiddenException("You don't have access to this survey");
-      }
+  }
+
+  /**
+   * Management-level access check: creator OR lead of assigned org unit.
+   * Used for admin operations (edit, delete, view in admin panel).
+   */
+  private async checkSurveyManagementAccess(
+    surveyId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<void> {
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    if (hasUnrestrictedAccess) return;
+
+    const managementClause = this.buildManagementVisibilityClause('$2', '$3');
+    const rows = await this.db.query<{ id: number }>(
+      `SELECT s.id FROM surveys s
+       WHERE s.id = $1 AND s.tenant_id = $2
+       AND ${managementClause}`,
+      [surveyId, tenantId, userId],
+    );
+    if (rows.length === 0) {
+      throw new ForbiddenException('No management permission for this survey');
     }
   }
 
@@ -709,14 +912,96 @@ export class SurveysService {
     }
   }
 
+  /**
+   * Validates that the user has leadership permissions for all requested assignments.
+   * Frontend filtering is UX only — this enforces server-side.
+   *
+   * Rules:
+   * - root / has_full_access → skip
+   * - all_users → forbidden (only unrestricted users can assign company-wide)
+   * - area → user must be area_lead_id
+   * - department → user must be department_lead_id OR lead of the parent area
+   * - team → team's department must be manageable (dept lead or area lead inheritance)
+   */
+  private async validateAssignmentPermissions(
+    userId: number,
+    tenantId: number,
+    userRole: string,
+    assignments: unknown[],
+  ): Promise<void> {
+    if (assignments.length === 0) return;
+
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
+    if (hasUnrestrictedAccess) return;
+
+    for (const raw of assignments) {
+      await this.validateSingleAssignment(raw as AssignmentInput, userId, tenantId);
+    }
+  }
+
+  /** Validates a single assignment against the user's leadership permissions */
+  private async validateSingleAssignment(
+    assignment: AssignmentInput,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    switch (assignment.type) {
+      case 'all_users':
+        throw new ForbiddenException(
+          'Only users with full access can assign to the entire company',
+        );
+      case 'area':
+        await this.validateLeadershipPermission('area', assignment.areaId, userId, tenantId);
+        break;
+      case 'department':
+        await this.validateLeadershipPermission(
+          'department',
+          assignment.departmentId,
+          userId,
+          tenantId,
+        );
+        break;
+      case 'team':
+        await this.validateLeadershipPermission('team', assignment.teamId, userId, tenantId);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /** Verifies user is a lead of the given organizational entity via DB lookup */
+  private async validateLeadershipPermission(
+    entityType: string,
+    entityId: number | undefined,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    if (entityId === undefined) return;
+
+    const query = LEADERSHIP_QUERIES[entityType];
+    if (query === undefined) return;
+
+    const rows = await this.db.query<{ id: number }>(query, [entityId, userId, tenantId]);
+    if (rows.length === 0) {
+      throw new ForbiddenException(`No leadership permission for ${entityType} ${entityId}`);
+    }
+  }
+
   async createSurvey(
     dto: CreateSurveyDto,
     tenantId: number,
     userId: number,
+    userRole: string,
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<unknown> {
     this.logger.log(`Creating survey: ${dto.title}`);
+
+    // Validate assignment permissions before creating
+    if (dto.assignments !== undefined && dto.assignments.length > 0) {
+      await this.validateAssignmentPermissions(userId, tenantId, userRole, dto.assignments);
+    }
+
     const surveyUuid = uuidv7();
     const surveyRows = await this.db.query<{ id: number }>(
       `INSERT INTO surveys (tenant_id, title, description, created_by, status, is_anonymous, is_mandatory, start_date, end_date, uuid)
@@ -795,6 +1080,7 @@ export class SurveysService {
     _userAgent?: string,
   ): Promise<unknown> {
     this.logger.log(`Updating survey ${id}`);
+    await this.checkSurveyManagementAccess(id, tenantId, userId, userRole);
     const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
       string,
       unknown
@@ -829,6 +1115,10 @@ export class SurveysService {
       await this.insertSurveyQuestions(tenantId, id, dto.questions);
     }
     if (dto.assignments !== undefined) {
+      // Validate assignment permissions before replacing
+      if (dto.assignments.length > 0) {
+        await this.validateAssignmentPermissions(userId, tenantId, userRole, dto.assignments);
+      }
       await this.db.query('DELETE FROM survey_assignments WHERE survey_id = $1', [id]);
       await this.insertSurveyAssignments(tenantId, id, dto.assignments);
     }
@@ -884,15 +1174,13 @@ export class SurveysService {
     _userAgent?: string,
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting survey ${id}`);
+    await this.checkSurveyManagementAccess(id, tenantId, userId, userRole);
     const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
       string,
       unknown
     >;
     const rawCount = existingSurvey['responseCount'];
     const responseCount = typeof rawCount === 'number' ? rawCount : 0;
-    if (userRole === 'employee') {
-      throw new ForbiddenException('Only admins can delete surveys');
-    }
     if (responseCount > 0) {
       throw new ConflictException('Cannot delete survey with existing responses');
     }
@@ -930,6 +1218,7 @@ export class SurveysService {
     templateId: number,
     tenantId: number,
     userId: number,
+    userRole: string,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<unknown> {
@@ -957,7 +1246,7 @@ export class SurveysService {
     if (templateData.questions !== undefined) {
       dto.questions = templateData.questions as CreateSurveyDto['questions'];
     }
-    return await this.createSurvey(dto, tenantId, userId, ipAddress, userAgent);
+    return await this.createSurvey(dto, tenantId, userId, userRole, ipAddress, userAgent);
   }
 
   /** Parses count value from DB (handles string or number) */
@@ -1010,10 +1299,7 @@ export class SurveysService {
 
     const { survey, surveyId } = await this.resolveSurveyOrThrow(surveyIdOrUuid, tenantId);
 
-    await this.checkSurveyAccess(surveyId, tenantId, userId, userRole);
-    if (userRole === 'employee') {
-      throw new ForbiddenException('Only admins can view survey statistics');
-    }
+    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
 
     const statsRows = await this.db.query<{
       total_responses: number | string;
@@ -1259,13 +1545,11 @@ export class SurveysService {
     surveyId: number,
     tenantId: number,
     userRole: string,
-    _userId: number,
+    userId: number,
     options: { page: number; limit: number },
   ): Promise<PaginatedResponsesResult> {
     this.logger.debug(`Getting all responses for survey ${surveyId}`);
-    if (userRole !== 'root' && userRole !== 'admin') {
-      throw new ForbiddenException('No permission');
-    }
+    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
     const surveyRows = await this.db.query<{ is_anonymous: boolean | number }>(
       `SELECT is_anonymous FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
@@ -1313,6 +1597,9 @@ export class SurveysService {
        JOIN survey_questions sq ON sa.question_id = sq.id WHERE sa.response_id = $1 AND sa.tenant_id = $2`,
       [dbResponse.id, tenantId],
     );
+
+    const optionTextMap = await this.buildOptionTextMap(answerRows);
+
     const baseResponse = dbToApi(
       dbResponse as unknown as Record<string, unknown>,
     ) as unknown as SurveyResponse;
@@ -1324,14 +1611,79 @@ export class SurveysService {
     }
     return {
       ...baseResponse,
-      answers: answerRows.map((a: DbSurveyAnswer) => {
-        const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
-        if (a.answer_date !== null && typeof a.answer_date !== 'string') {
-          transformed.answerDate = (a.answer_date as Date).toISOString();
-        }
-        return transformed;
-      }),
+      answers: answerRows.map((a: DbSurveyAnswer) => this.transformSingleAnswer(a, optionTextMap)),
     };
+  }
+
+  /** Parses answer_options from JSON string or returns the array as-is */
+  private parseOptionIds(answerOptions: string | number[]): number[] {
+    return typeof answerOptions === 'string' ?
+        (JSON.parse(answerOptions) as number[])
+      : answerOptions;
+  }
+
+  /** Batch-collects choice option IDs from answers and resolves them to display text via DB */
+  private async buildOptionTextMap(answerRows: DbSurveyAnswer[]): Promise<Map<number, string>> {
+    const allOptionIds: number[] = [];
+    for (const a of answerRows) {
+      if (
+        (a.question_type === 'single_choice' || a.question_type === 'multiple_choice') &&
+        a.answer_options !== null &&
+        a.answer_options !== undefined
+      ) {
+        allOptionIds.push(...this.parseOptionIds(a.answer_options));
+      }
+    }
+
+    const optionTextMap = new Map<number, string>();
+    if (allOptionIds.length === 0) {
+      return optionTextMap;
+    }
+
+    const uniqueIds = [...new Set(allOptionIds)];
+    const optionRows = await this.db.query<{ id: number; option_text: string }>(
+      `SELECT id, option_text FROM survey_question_options WHERE id = ANY($1)`,
+      [uniqueIds],
+    );
+    for (const row of optionRows) {
+      optionTextMap.set(row.id, row.option_text);
+    }
+    return optionTextMap;
+  }
+
+  /** Transforms a single DB answer row to API format with resolved option display text */
+  private transformSingleAnswer(
+    answer: DbSurveyAnswer,
+    optionTextMap: Map<number, string>,
+  ): SurveyAnswer {
+    const transformed = dbToApi(answer as unknown as Record<string, unknown>) as SurveyAnswer;
+    if (answer.answer_date !== null && typeof answer.answer_date !== 'string') {
+      transformed.answerDate = (answer.answer_date as Date).toISOString();
+    }
+    if (answer.answer_number !== null && answer.answer_number !== undefined) {
+      transformed.answerNumber = answer.answer_number;
+    }
+    if (answer.answer_options !== null && answer.answer_options !== undefined) {
+      const ids = this.parseOptionIds(answer.answer_options);
+      transformed.answerOptions = this.resolveOptionDisplay(
+        ids,
+        answer.question_type,
+        optionTextMap,
+      );
+    }
+    return transformed;
+  }
+
+  /** Maps option IDs to human-readable display strings based on question type */
+  private resolveOptionDisplay(
+    ids: number[],
+    questionType: string | undefined,
+    optionTextMap: Map<number, string>,
+  ): number[] {
+    if (questionType === 'yes_no') {
+      return ids.map((id: number) => (id === 1 ? 'Ja' : 'Nein')) as unknown as number[];
+    }
+    return ids.map((id: number) => optionTextMap.get(id) ?? String(id)) as unknown as number[];
   }
 
   async getMyResponse(
@@ -1438,13 +1790,11 @@ export class SurveysService {
     surveyId: number,
     tenantId: number,
     userRole: string,
-    _userId: number,
+    userId: number,
     format: 'csv' | 'excel',
   ): Promise<Buffer> {
     this.logger.log(`Exporting responses for survey ${surveyId} as ${format}`);
-    if (userRole !== 'root' && userRole !== 'admin') {
-      throw new ForbiddenException('No permission');
-    }
+    await this.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
     const surveyCheckRows = await this.db.query<{ id: number }>(
       `SELECT id FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
@@ -1538,5 +1888,35 @@ export class SurveysService {
       throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
     }
     return survey.id;
+  }
+
+  // ==========================================================================
+  // NOTIFICATION COUNT METHODS
+  // ==========================================================================
+
+  /**
+   * Get count of pending (unanswered) surveys for a user.
+   * Used for notification badge in sidebar.
+   * Counts active surveys assigned to the user where no completed response exists.
+   */
+  async getPendingSurveyCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    this.logger.debug(`Getting pending survey count for user ${userId}, tenant ${tenantId}`);
+
+    // Uses the same EXISTS-based visibility clause as listSurveys
+    // $1 = tenantId, $2 = userId
+    const visibilityClause = this.buildVisibilityClause('$1', '$2');
+    const rows = await this.db.query<{ count: number }>(
+      `SELECT COUNT(DISTINCT s.id)::integer as count
+       FROM surveys s
+       LEFT JOIN survey_responses sr
+         ON s.id = sr.survey_id AND sr.user_id = $2 AND sr.tenant_id = s.tenant_id AND sr.status = 'completed'
+       WHERE s.tenant_id = $1
+         AND s.status = 'active'
+         AND sr.id IS NULL
+         AND ${visibilityClause}`,
+      [tenantId, userId],
+    );
+
+    return { count: rows[0]?.count ?? 0 };
   }
 }

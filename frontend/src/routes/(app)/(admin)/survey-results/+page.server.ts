@@ -25,6 +25,17 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+/** Extract typed data from the standard API response envelope */
+function parseApiResponse<T>(json: ApiResponse<T>): T | null {
+  if ('success' in json && json.success === true) {
+    return json.data ?? null;
+  }
+  if ('data' in json && json.data !== undefined) {
+    return json.data;
+  }
+  return json as unknown as T;
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -45,17 +56,39 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
+    return parseApiResponse(json);
   } catch (err) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
+}
+
+/** Fetch survey with management permission check, throws on 403/404 */
+async function fetchSurveyWithPermission(
+  surveyId: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<Survey> {
+  const response = await fetchFn(`${API_BASE}/surveys/${surveyId}?manage=true`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+
+  if (response.status === 403) {
+    error(403, 'Keine Berechtigung für diese Umfrage-Ergebnisse');
+  }
+
+  if (!response.ok) {
+    error(404, 'Umfrage nicht gefunden');
+  }
+
+  const json = (await response.json()) as ApiResponse<Survey>;
+  const surveyData = parseApiResponse(json);
+
+  if (surveyData === null) {
+    error(404, 'Umfrage nicht gefunden');
+  }
+
+  return surveyData;
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
@@ -64,27 +97,28 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
     redirect(302, '/login');
   }
 
-  // Get surveyId from URL search params
   const surveyId = url.searchParams.get('surveyId');
   if (surveyId === null || surveyId === '') {
     error(400, 'Keine Umfrage-ID angegeben');
   }
 
-  // Parallel fetch: survey details + questions + statistics + responses
-  const [surveyData, questionsData, statisticsData, responsesData] = await Promise.all([
-    apiFetch<Survey>(`/surveys/${surveyId}`, token, fetch),
+  // Step 1: Fetch survey with management permission check
+  const surveyData = await fetchSurveyWithPermission(surveyId, token, fetch);
+
+  // Step 2: Parallel fetch remaining data (statistics, questions, responses)
+  const [questionsData, statisticsData, responsesData] = await Promise.all([
     apiFetch<SurveyQuestion[]>(`/surveys/${surveyId}/questions`, token, fetch),
     apiFetch<SurveyStatistics>(`/surveys/${surveyId}/statistics`, token, fetch),
-    apiFetch<SurveyResponseWithUser[]>(`/surveys/${surveyId}/responses`, token, fetch),
+    apiFetch<{ responses: SurveyResponseWithUser[]; total: number }>(
+      `/surveys/${surveyId}/responses`,
+      token,
+      fetch,
+    ),
   ]);
-
-  if (!surveyData) {
-    error(404, 'Umfrage nicht gefunden');
-  }
 
   // Safe fallbacks
   const questions = Array.isArray(questionsData) ? questionsData : [];
-  const responses = Array.isArray(responsesData) ? responsesData : [];
+  const responses = Array.isArray(responsesData?.responses) ? responsesData.responses : [];
 
   return {
     surveyId,

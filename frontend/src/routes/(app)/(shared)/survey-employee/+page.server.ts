@@ -60,9 +60,10 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // First, load all surveys
+  // Load all surveys, filter to only active/completed (employees don't see draft/paused/archived)
   const surveysData = await apiFetch<Survey[]>('/surveys', token, fetch);
-  const surveys = Array.isArray(surveysData) ? surveysData : [];
+  const allSurveys = Array.isArray(surveysData) ? surveysData : [];
+  const surveys = allSurveys.filter((s) => s.status === 'active' || s.status === 'completed');
 
   // Then check response status for each survey in parallel
   const surveysWithStatus: SurveyWithStatus[] = await Promise.all(

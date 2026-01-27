@@ -5,29 +5,23 @@
     getStatusBadgeClass,
     toBool,
     formatSurveyDate,
-    getAssignmentInfo,
+    getAssignmentBadges,
   } from './utils';
 
   import type { SurveyWithStatus } from './types';
 
   interface Props {
     survey: SurveyWithStatus;
-    mode: 'pending' | 'completed';
+    /** pending = can participate, responded = already answered, ended = survey closed without response */
+    mode: 'pending' | 'responded' | 'ended';
     onclick: () => void;
   }
 
   const { survey, mode, onclick }: Props = $props();
 
-  const isPending = $derived(mode === 'pending');
-
-  function getDateRangeText(): string {
-    const startDate = formatSurveyDate(survey.startDate);
-    const endDate = formatSurveyDate(survey.endDate);
-    return startDate !== '' && endDate !== '' ? `${startDate} - ${endDate}` : '';
-  }
-
-  const dateRange = $derived(getDateRangeText());
-  const assignmentInfo = $derived(getAssignmentInfo());
+  const startDate = $derived(formatSurveyDate(survey.startDate));
+  const endDate = $derived(formatSurveyDate(survey.endDate));
+  const assignmentBadges = $derived(getAssignmentBadges(survey.assignments));
 </script>
 
 <div
@@ -68,30 +62,43 @@
       : 'Keine Beschreibung'}
   </p>
 
-  {#if dateRange !== ''}
-    <div class="mb-4 text-sm text-secondary flex items-center gap-2">
-      <i class="fas fa-calendar-alt"></i>
-      <span>{dateRange}</span>
-    </div>
-  {/if}
+  <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+    <i class="fas fa-calendar-alt"></i>
+    {#if startDate !== '' && endDate !== ''}
+      <span>{startDate} - {endDate}</span>
+    {:else if startDate !== ''}
+      <span>Ab {startDate}, laufend</span>
+    {:else}
+      <span>Laufend</span>
+    {/if}
+  </div>
 
-  {#if assignmentInfo !== ''}
-    <div class="mb-4 text-sm text-secondary flex items-center gap-2">
-      <i class="fas fa-users-cog"></i>
-      <span>{assignmentInfo}</span>
+  {#if assignmentBadges.length > 0}
+    <div class="mb-4 flex items-center gap-2 flex-wrap">
+      {#each assignmentBadges as badge (badge.text)}
+        <span class="badge {badge.badgeClass}">
+          <i class="fas {badge.icon}"></i>
+          <span>{badge.text}</span>
+        </span>
+      {/each}
     </div>
   {/if}
 
   <div class="survey-actions">
-    {#if isPending}
+    {#if mode === 'pending'}
       <button type="button" class="btn btn-upload">
         <i class="fas fa-arrow-right"></i>
         Teilnehmen
       </button>
+    {:else if mode === 'responded'}
+      <button type="button" class="btn btn-secondary">
+        <i class="fas fa-eye"></i>
+        Antworten ansehen
+      </button>
     {:else}
-      <button type="button" class="btn btn-upload" disabled>
-        <i class="fas fa-check"></i>
-        Abgeschlossen
+      <button type="button" class="btn btn-secondary" disabled>
+        <i class="fas fa-ban"></i>
+        Nicht teilgenommen
       </button>
     {/if}
   </div>

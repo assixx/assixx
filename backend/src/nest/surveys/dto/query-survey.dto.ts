@@ -11,7 +11,7 @@ import { PaginationSchema } from '../../../schemas/common.schema.js';
 /**
  * Survey status enum
  */
-const SurveyStatusSchema = z.enum(['draft', 'active', 'closed'], {
+const SurveyStatusSchema = z.enum(['draft', 'active', 'paused', 'completed', 'archived'], {
   message: 'Invalid status',
 });
 
@@ -20,6 +20,7 @@ const SurveyStatusSchema = z.enum(['draft', 'active', 'closed'], {
  */
 export const ListSurveysQuerySchema = PaginationSchema.extend({
   status: SurveyStatusSchema.optional(),
+  manage: z.coerce.boolean().optional(),
 });
 
 /**

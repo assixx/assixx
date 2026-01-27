@@ -81,6 +81,7 @@ export class SurveysController {
       status: query.status,
       page: query.page,
       limit: query.limit,
+      manage: query.manage,
     });
   }
 
@@ -113,6 +114,7 @@ export class SurveysController {
       numericTemplateId,
       tenantId,
       user.id,
+      user.role,
       ipAddress,
       userAgent,
     );
@@ -120,16 +122,25 @@ export class SurveysController {
 
   /**
    * GET /surveys/:id
-   * Get survey by ID (numeric or UUID)
+   * Get survey by ID (numeric or UUID).
+   * Pass ?manage=true from admin panel to enforce management-level access.
    */
   @Get(':id')
   async getSurveyById(
     @Param('id') id: string,
+    @Query('manage') manage: string | undefined,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<unknown> {
     const surveyId = this.surveysService.parseIdParam(id);
-    return await this.surveysService.getSurveyById(surveyId, tenantId, user.id, user.role);
+    const isManageMode = manage === 'true';
+    return await this.surveysService.getSurveyById(
+      surveyId,
+      tenantId,
+      user.id,
+      user.role,
+      isManageMode,
+    );
   }
 
   /**
@@ -147,7 +158,14 @@ export class SurveysController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ): Promise<unknown> {
-    return await this.surveysService.createSurvey(dto, tenantId, user.id, ipAddress, userAgent);
+    return await this.surveysService.createSurvey(
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+      ipAddress,
+      userAgent,
+    );
   }
 
   /**

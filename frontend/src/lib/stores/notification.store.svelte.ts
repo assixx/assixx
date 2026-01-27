@@ -155,6 +155,8 @@ interface DashboardCountsResponse {
     documents: { count: number };
     /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
     kvp: { count: number };
+    /** Pending surveys count (active surveys not yet responded to by user) */
+    surveys: { count: number };
     fetchedAt: string;
   };
 }
@@ -182,8 +184,7 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
 
     // Extract counts from combined response
     const chatCount = data.chat.totalUnread;
-    const byType = data.notifications.byType as Partial<Record<string, number>>;
-    const surveyCount = byType.survey ?? 0;
+    const surveyCount = data.surveys.count;
     // KVP uses Pattern 2 (Individual read tracking) - separate count field
     const kvpCount = data.kvp.count;
     const blackboardCount = data.blackboard.count;
@@ -238,13 +239,14 @@ interface SSRCounts {
   documents: { count: number };
   /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
   kvp: { count: number };
+  /** Pending surveys count (active surveys not yet responded to by user) */
+  surveys: { count: number };
 }
 
 /** Initialize counts from SSR data (no HTTP request needed) */
 function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const chatCount = counts.chat.totalUnread;
-  const byType = counts.notifications.byType as Partial<Record<string, number>>;
-  const surveyCount = byType.survey ?? 0;
+  const surveyCount = counts.surveys.count;
   // KVP uses Pattern 2 (Individual read tracking) - separate count field
   const kvpCount = counts.kvp.count;
   const blackboardCount = counts.blackboard.count;

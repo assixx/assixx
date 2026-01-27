@@ -64,6 +64,8 @@ interface DashboardCounts {
   documents: { count: number };
   /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
   kvp: { count: number };
+  /** Pending surveys count (active surveys not yet responded to by user) */
+  surveys: { count: number };
   fetchedAt: string;
 }
 

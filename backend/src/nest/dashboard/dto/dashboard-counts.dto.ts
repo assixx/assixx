@@ -49,6 +49,8 @@ export const DashboardCountsSchema = z.object({
   documents: CountItemSchema,
   /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
   kvp: CountItemSchema,
+  /** Pending surveys count (active surveys not yet responded to by user) */
+  surveys: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });
