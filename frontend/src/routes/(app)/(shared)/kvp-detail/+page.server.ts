@@ -9,7 +9,14 @@ import { redirect, error } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { KvpSuggestion, Comment, Attachment, Department, Team, Area } from './_lib/types';
+import type {
+  KvpSuggestion,
+  Comment,
+  Attachment,
+  Department,
+  Team,
+  Area,
+} from './_lib/types';
 
 const log = createLogger('KvpDetail');
 
@@ -79,20 +86,25 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const parentData = await parent();
 
   // First fetch the suggestion to check if it exists
-  const suggestion = await apiFetch<KvpSuggestion>(`/kvp/${idOrUuid}`, token, fetch);
+  const suggestion = await apiFetch<KvpSuggestion>(
+    `/kvp/${idOrUuid}`,
+    token,
+    fetch,
+  );
 
   if (!suggestion) {
     error(404, 'Vorschlag nicht gefunden');
   }
 
   // Parallel fetch: comments, attachments, and org data (for share modal)
-  const [commentsData, attachmentsData, departmentsData, teamsData, areasData] = await Promise.all([
-    apiFetch<Comment[]>(`/kvp/${idOrUuid}/comments`, token, fetch),
-    apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-  ]);
+  const [commentsData, attachmentsData, departmentsData, teamsData, areasData] =
+    await Promise.all([
+      apiFetch<Comment[]>(`/kvp/${idOrUuid}/comments`, token, fetch),
+      apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+    ]);
 
   // Safe fallbacks for array responses
   const comments = ensureArray(commentsData);

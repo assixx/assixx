@@ -27,7 +27,10 @@ function handleApiError(response: Response, uuid: string): never {
   if (response.status === 404) {
     error(404, 'Eintrag nicht gefunden');
   }
-  log.error({ status: response.status, uuid }, 'API error for blackboard entry');
+  log.error(
+    { status: response.status, uuid },
+    'API error for blackboard entry',
+  );
   error(response.status, 'Fehler beim Laden des Eintrags');
 }
 
@@ -42,7 +45,12 @@ function mapCurrentUser(user: ParentUser | null | undefined) {
   };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
+export const load: PageServerLoad = async ({
+  cookies,
+  fetch,
+  params,
+  parent,
+}) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -76,6 +84,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     entry: result.data.entry,
     comments: result.data.comments ?? [],
     attachments: result.data.attachments ?? [],
-    currentUser: mapCurrentUser(parentData.user as ParentUser | null | undefined),
+    currentUser: mapCurrentUser(
+      parentData.user as ParentUser | null | undefined,
+    ),
   };
 };

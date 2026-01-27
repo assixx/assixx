@@ -28,7 +28,8 @@ const MS_HOUR = 3_600_000;
           host: redisHost,
           port: redisPort,
           // SECURITY: Redis authentication - only include password if configured
-          ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+          ...(redisPassword !== undefined &&
+            redisPassword !== '' && { password: redisPassword }),
           keyPrefix: 'throttle:',
           lazyConnect: true,
           maxRetriesPerRequest: 3,

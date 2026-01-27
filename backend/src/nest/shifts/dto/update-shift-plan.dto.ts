@@ -29,8 +29,16 @@ export const UpdateShiftPlanSchema = z.object({
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
   machineId: z.number().int().positive().optional(),
-  name: z.string().trim().max(200, 'Name cannot exceed 200 characters').optional(),
-  shiftNotes: z.string().trim().max(2000, 'Notes cannot exceed 2000 characters').optional(),
+  name: z
+    .string()
+    .trim()
+    .max(200, 'Name cannot exceed 200 characters')
+    .optional(),
+  shiftNotes: z
+    .string()
+    .trim()
+    .max(2000, 'Notes cannot exceed 2000 characters')
+    .optional(),
   shifts: z.array(ShiftPlanUpdateItemSchema).optional(),
 });
 

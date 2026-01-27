@@ -149,7 +149,8 @@ export const MESSAGES = {
   SAVE_ERROR: 'Fehler beim Speichern',
   DELETE_ERROR: 'Fehler beim Löschen',
   MULTI_SELECT_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl',
-  COMPANY_WIDE_WARNING: 'Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Eintrag',
+  COMPANY_WIDE_WARNING:
+    'Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Eintrag',
 } as const;
 
 // ============================================================================
@@ -160,5 +161,10 @@ export const FILE_UPLOAD_CONFIG = {
   MAX_FILES: 5,
   MAX_SIZE_MB: 10,
   ACCEPTED_TYPES: '.pdf,.jpg,.jpeg,.png,.gif',
-  ACCEPTED_MIME_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],
+  ACCEPTED_MIME_TYPES: [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+  ],
 } as const;

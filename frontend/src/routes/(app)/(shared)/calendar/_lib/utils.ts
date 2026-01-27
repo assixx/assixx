@@ -32,7 +32,9 @@ export function escapeHtml(text: string | null | undefined): string {
 /**
  * Get event level info for UI display
  */
-export function getEventLevelInfo(orgLevel: OrgLevel | undefined): EventLevelInfo {
+export function getEventLevelInfo(
+  orgLevel: OrgLevel | undefined,
+): EventLevelInfo {
   if (orgLevel === undefined) {
     return EVENT_LEVEL_INFO.personal;
   }
@@ -75,7 +77,10 @@ export function getUserDisplayName(user: User | undefined): string {
 /**
  * Format date for display
  */
-export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions): string {
+export function formatDate(
+  dateStr: string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
   const date = new Date(dateStr);
   const defaultOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',
@@ -91,7 +96,10 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
  */
 export function formatTime(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**

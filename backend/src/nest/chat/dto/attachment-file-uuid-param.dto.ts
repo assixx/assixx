@@ -8,7 +8,11 @@ export const AttachmentFileUuidParamSchema = z.object({
   fileUuid: z.uuid({ message: 'Invalid file UUID format' }),
 });
 
-export class AttachmentFileUuidParamDto extends createZodDto(AttachmentFileUuidParamSchema) {}
+export class AttachmentFileUuidParamDto extends createZodDto(
+  AttachmentFileUuidParamSchema,
+) {}
 
 // Type export
-export type AttachmentFileUuidParam = z.infer<typeof AttachmentFileUuidParamSchema>;
+export type AttachmentFileUuidParam = z.infer<
+  typeof AttachmentFileUuidParamSchema
+>;

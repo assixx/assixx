@@ -39,7 +39,13 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { KvpCategory, Department, KvpSuggestion, KvpStats, CurrentUser } from './_lib/types';
+  import type {
+    KvpCategory,
+    Department,
+    KvpSuggestion,
+    KvpStats,
+    CurrentUser,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -248,8 +254,8 @@
       <div class="alert__content">
         <strong class="alert__title">Tipp für Admins:</strong>
         <p class="alert__message">
-          Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen. Als Admin koennen Sie
-          Vorschläge verwalten und firmenweit teilen.
+          Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen.
+          Als Admin koennen Sie Vorschläge verwalten und firmenweit teilen.
         </p>
       </div>
     </div>
@@ -281,7 +287,9 @@
           <i class="fas fa-check-circle"></i>
         </div>
         <div class="card-stat__content">
-          <div class="card-stat__value">{kvpState.formattedStats.implemented}</div>
+          <div class="card-stat__value">
+            {kvpState.formattedStats.implemented}
+          </div>
           <div class="card-stat__label">Umgesetzt</div>
         </div>
       </div>
@@ -303,7 +311,8 @@
       <div>
         <h2 class="card-title">KVP-Vorschläge</h2>
         <p class="text-secondary">
-          Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere Ablaeufe
+          Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere
+          Ablaeufe
         </p>
       </div>
     </div>
@@ -321,7 +330,10 @@
             <!-- Ansichts-Filter -->
             <div class="form-field">
               <span class="form-field__label">Ansicht</span>
-              <div class="toggle-group mt-2" id="kvpFilter">
+              <div
+                class="toggle-group mt-2"
+                id="kvpFilter"
+              >
                 {#each FILTER_OPTIONS as option (option.value)}
                   <button
                     type="button"
@@ -343,7 +355,10 @@
             <!-- Status Filter -->
             <div class="form-field">
               <span class="form-field__label">Status</span>
-              <div class="dropdown mt-2" data-dropdown="status">
+              <div
+                class="dropdown mt-2"
+                data-dropdown="status"
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -355,7 +370,10 @@
                   <span>{statusDisplayText}</span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
-                <div class="dropdown__menu" class:active={activeDropdown === 'status'}>
+                <div
+                  class="dropdown__menu"
+                  class:active={activeDropdown === 'status'}
+                >
                   {#each STATUS_FILTER_OPTIONS as option (option.value)}
                     <button
                       type="button"
@@ -376,7 +394,10 @@
             <!-- Category Filter -->
             <div class="form-field">
               <span class="form-field__label">Kategorie</span>
-              <div class="dropdown mt-2" data-dropdown="category">
+              <div
+                class="dropdown mt-2"
+                data-dropdown="category"
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -388,7 +409,10 @@
                   <span>{categoryDisplayText}</span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
-                <div class="dropdown__menu" class:active={activeDropdown === 'category'}>
+                <div
+                  class="dropdown__menu"
+                  class:active={activeDropdown === 'category'}
+                >
                   <button
                     type="button"
                     class="dropdown__option"
@@ -407,7 +431,10 @@
                       data-action="select-category"
                       data-value={category.id.toString()}
                       onclick={() => {
-                        handleCategorySelect(category.id.toString(), category.name);
+                        handleCategorySelect(
+                          category.id.toString(),
+                          category.name,
+                        );
                       }}
                     >
                       {category.name}
@@ -420,7 +447,10 @@
             <!-- Department Filter -->
             <div class="form-field">
               <span class="form-field__label">Abteilung</span>
-              <div class="dropdown mt-2" data-dropdown="department">
+              <div
+                class="dropdown mt-2"
+                data-dropdown="department"
+              >
                 <button
                   type="button"
                   class="dropdown__trigger"
@@ -432,7 +462,10 @@
                   <span>{departmentDisplayText}</span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
-                <div class="dropdown__menu" class:active={activeDropdown === 'department'}>
+                <div
+                  class="dropdown__menu"
+                  class:active={activeDropdown === 'department'}
+                >
                   <button
                     type="button"
                     class="dropdown__option"
@@ -491,11 +524,15 @@
           </p>
         </div>
       {:else}
-        <div class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6">
+        <div
+          class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6"
+        >
           {#each kvpState.suggestions as suggestion (suggestion.id)}
             {@const visibilityInfo = getVisibilityInfo(suggestion)}
             {@const isRead = suggestion.isConfirmed === true}
-            {@const isNew = suggestion.firstSeenAt === null || suggestion.firstSeenAt === undefined}
+            {@const isNew =
+              suggestion.firstSeenAt === null ||
+              suggestion.firstSeenAt === undefined}
             <div
               class="glass-card kvp-card text-left w-full cursor-pointer"
               role="button"
@@ -550,9 +587,13 @@
                 </div>
                 <div class="share-info">
                   <i class="fas fa-share-alt"></i>
-                  <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
+                  <span
+                    class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
+                  >
                     <i class="fas {visibilityInfo.icon}"></i>
-                    <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
+                    <span
+                      >{visibilityInfo.text}{getSharedByInfo(suggestion)}</span
+                    >
                   </span>
                 </div>
               </div>
@@ -561,7 +602,9 @@
 
               <div class="suggestion-footer">
                 <div class="flex gap-2 flex-wrap">
-                  <span class="badge {getPriorityBadgeClass(suggestion.priority)}">
+                  <span
+                    class="badge {getPriorityBadgeClass(suggestion.priority)}"
+                  >
                     {getPriorityText(suggestion.priority)}
                   </span>
                   <div
@@ -597,5 +640,9 @@
 
 <!-- Create KVP Modal -->
 {#if kvpState.showCreateModal}
-  <KvpCreateModal {currentTeamId} onclose={handleCloseCreateModal} onsuccess={handleModalSuccess} />
+  <KvpCreateModal
+    {currentTeamId}
+    onclose={handleCloseCreateModal}
+    onsuccess={handleModalSuccess}
+  />
 {/if}

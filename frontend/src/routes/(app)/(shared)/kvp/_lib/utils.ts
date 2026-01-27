@@ -53,7 +53,10 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
  * Get visibility info (icon + text) for suggestion
  * Shows "Privat" for non-shared, org-level name for shared
  */
-export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
+export function getVisibilityInfo(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
   // If not shared (private)
   if (!suggestion.isShared) {
     return { icon: 'fa-lock', text: 'Nur Team' };
@@ -64,7 +67,10 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; te
 
   // Use specific name if available (check for empty string)
   let text = info.text;
-  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
+  if (
+    suggestion.orgLevel === 'department' &&
+    suggestion.departmentName !== ''
+  ) {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -120,7 +126,10 @@ export function truncateText(text: string, maxLength: number): string {
 /**
  * Validate photo file
  */
-export function validatePhotoFile(file: File): { valid: boolean; error?: string } {
+export function validatePhotoFile(file: File): {
+  valid: boolean;
+  error?: string;
+} {
   const allowedTypes: readonly string[] = UPLOAD_CONFIG.ALLOWED_TYPES;
   if (!allowedTypes.includes(file.type)) {
     return { valid: false, error: 'Nur JPG und PNG Dateien sind erlaubt' };
@@ -176,9 +185,13 @@ export function debounce<T extends (...args: unknown[]) => void>(
 /**
  * Check if user can share suggestion (admin only, department level)
  */
-export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: string): boolean {
+export function canShareSuggestion(
+  suggestion: KvpSuggestion,
+  effectiveRole: string,
+): boolean {
   return (
-    (effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department'
+    (effectiveRole === 'admin' || effectiveRole === 'root') &&
+    suggestion.orgLevel === 'department'
   );
 }
 
@@ -200,7 +213,9 @@ export function canUnshareSuggestion(
 
   // Admin/Root can always unshare, or the person who shared it
   return (
-    effectiveRole === 'admin' || effectiveRole === 'root' || suggestion.sharedBy === currentUserId
+    effectiveRole === 'admin' ||
+    effectiveRole === 'root' ||
+    suggestion.sharedBy === currentUserId
   );
 }
 

@@ -59,7 +59,12 @@ export type MachineType =
 /**
  * Machine status options
  */
-export type MachineStatus = 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
+export type MachineStatus =
+  | 'operational'
+  | 'maintenance'
+  | 'repair'
+  | 'standby'
+  | 'decommissioned';
 
 /**
  * Department entity
@@ -100,7 +105,11 @@ export interface MachineFormData {
 /**
  * Machine status filter types
  */
-export type MachineStatusFilter = 'all' | 'operational' | 'maintenance' | 'repair';
+export type MachineStatusFilter =
+  | 'all'
+  | 'operational'
+  | 'maintenance'
+  | 'repair';
 
 /**
  * Generic API response wrapper

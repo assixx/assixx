@@ -36,7 +36,11 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { ApprovalItem, PasswordStrengthResult, UserProfile } from './_lib/types';
+  import type {
+    ApprovalItem,
+    PasswordStrengthResult,
+    UserProfile,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -99,9 +103,13 @@
 
   const avatarColorClass = $derived(getAvatarColorClass(user.id));
   const initials = $derived(getInitials(user.firstName, user.lastName));
-  const hasProfilePicture = $derived(profilePicture !== null && profilePicture !== '');
+  const hasProfilePicture = $derived(
+    profilePicture !== null && profilePicture !== '',
+  );
   const hasPendingApprovals = $derived(pendingApprovals.length > 0);
-  const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
+  const passwordsMatch = $derived(
+    doPasswordsMatch(newPassword, confirmPassword),
+  );
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
 
   // =============================================================================
@@ -125,12 +133,19 @@
     profileSaving = true;
 
     try {
-      await apiSaveProfile({ email: formEmail, firstName: formFirstName, lastName: formLastName });
+      await apiSaveProfile({
+        email: formEmail,
+        firstName: formFirstName,
+        lastName: formLastName,
+      });
       showToast(MESSAGES.profileSaved, 'success');
       // Level 3: Trigger SSR refetch - $derived(user) updates automatically
       await invalidateAll();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : MESSAGES.profileSaveError, 'error');
+      showToast(
+        err instanceof Error ? err.message : MESSAGES.profileSaveError,
+        'error',
+      );
     } finally {
       profileSaving = false;
     }
@@ -179,7 +194,9 @@
 
     try {
       // Convert blob to File for upload
-      const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
+      const file = new File([blob], 'profile-picture.jpg', {
+        type: 'image/jpeg',
+      });
       const newUrl = await uploadProfilePicture(file);
       if (newUrl !== null) {
         profilePicture = newUrl;
@@ -190,7 +207,8 @@
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'INVALID_TYPE') showToast(MESSAGES.invalidImageType, 'error');
-      else if (msg === 'FILE_TOO_LARGE') showToast(MESSAGES.fileTooLarge, 'error');
+      else if (msg === 'FILE_TOO_LARGE')
+        showToast(MESSAGES.fileTooLarge, 'error');
       else showToast(MESSAGES.pictureUploadError, 'error');
     } finally {
       pictureUploading = false;
@@ -270,7 +288,10 @@
     const newPwd = newPassword;
 
     try {
-      await apiChangePassword({ currentPassword: currentPwd, newPassword: newPwd });
+      await apiChangePassword({
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+      });
       resetPasswordForm();
       showToast(MESSAGES.passwordChanged, 'success');
     } catch (err) {
@@ -288,7 +309,9 @@
 
     strengthLoading = true;
     try {
-      const userInputs = [formEmail, formFirstName, formLastName].filter(Boolean);
+      const userInputs = [formEmail, formFirstName, formLastName].filter(
+        Boolean,
+      );
       passwordStrength = await analyzePassword(newPassword, userInputs);
     } catch {
       // Ignore strength check errors
@@ -338,7 +361,9 @@
   // UI HELPERS
   // =============================================================================
 
-  function togglePasswordVisibility(field: 'current' | 'new' | 'confirm'): void {
+  function togglePasswordVisibility(
+    field: 'current' | 'new' | 'confirm',
+  ): void {
     if (field === 'current') showCurrentPassword = !showCurrentPassword;
     if (field === 'new') showNewPassword = !showNewPassword;
     if (field === 'confirm') showConfirmPassword = !showConfirmPassword;
@@ -363,7 +388,9 @@
               <div class="approval-item-header">
                 <div class="approval-item-info">
                   <strong>{approval.tenantName}</strong>
-                  <span class="approval-status pending">{MESSAGES.pendingStatus}</span>
+                  <span class="approval-status pending"
+                    >{MESSAGES.pendingStatus}</span
+                  >
                   <p>Angefragt von: {approval.requestedBy}</p>
                   <p>Datum: {formatDate(approval.requestedAt)}</p>
                 </div>
@@ -389,7 +416,11 @@
               {#if !approval.coolingOffComplete && approval.coolingOffEndsAt}
                 <div class="cooling-off-warning">
                   <i class="fas fa-clock"></i>
-                  <span>Wartezeit endet am: {formatDate(approval.coolingOffEndsAt)}</span>
+                  <span
+                    >Wartezeit endet am: {formatDate(
+                      approval.coolingOffEndsAt,
+                    )}</span
+                  >
                 </div>
               {/if}
             </div>
@@ -404,7 +435,11 @@
       <div class="profile-picture-section">
         {#if hasProfilePicture}
           <div class="avatar avatar--xxl">
-            <img src={profilePicture} alt="Profilbild" class="avatar__image" />
+            <img
+              src={profilePicture}
+              alt="Profilbild"
+              class="avatar__image"
+            />
           </div>
         {:else}
           <div class="avatar avatar--xxl {avatarColorClass}">
@@ -428,9 +463,8 @@
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-                class="fas fa-camera"
-              ></i>{/if}
+            {#if pictureUploading}<i class="fas fa-spinner fa-spin"
+              ></i>{:else}<i class="fas fa-camera"></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -458,10 +492,16 @@
     <!-- Personal Information Card -->
     <div class="profile-card">
       <h2 class="card-title">Persönliche Informationen</h2>
-      <form id="profile-form" onsubmit={saveProfile}>
+      <form
+        id="profile-form"
+        onsubmit={saveProfile}
+      >
         <div class="form-grid">
           <div class="form-field">
-            <label class="form-field__label" for="email">E-Mail</label>
+            <label
+              class="form-field__label"
+              for="email">E-Mail</label
+            >
             <input
               type="email"
               id="email"
@@ -472,7 +512,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="first_name">Vorname</label>
+            <label
+              class="form-field__label"
+              for="first_name">Vorname</label
+            >
             <input
               type="text"
               id="first_name"
@@ -482,7 +525,10 @@
             />
           </div>
           <div class="form-field">
-            <label class="form-field__label" for="last_name">Nachname</label>
+            <label
+              class="form-field__label"
+              for="last_name">Nachname</label
+            >
             <input
               type="text"
               id="last_name"
@@ -492,8 +538,13 @@
             />
           </div>
         </div>
-        <button type="submit" class="btn btn-modal" disabled={profileSaving}>
-          {#if profileSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i class="fas fa-save"
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={profileSaving}
+        >
+          {#if profileSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
+              class="fas fa-save"
             ></i>{/if}
           Änderungen speichern
         </button>
@@ -503,10 +554,17 @@
     <!-- Password Change Card -->
     <div class="profile-card">
       <h2 class="card-title">Passwort ändern</h2>
-      <form id="password-form" autocomplete="off" onsubmit={changePassword}>
+      <form
+        id="password-form"
+        autocomplete="off"
+        onsubmit={changePassword}
+      >
         <!-- Current Password -->
         <div class="form-field">
-          <label class="form-field__label" for="current_password">Aktuelles Passwort</label>
+          <label
+            class="form-field__label"
+            for="current_password">Aktuelles Passwort</label
+          >
           <div class="form-field__password-wrapper">
             <input
               type={showCurrentPassword ? 'text' : 'password'}
@@ -526,7 +584,8 @@
                 togglePasswordVisibility('current');
               }}
             >
-              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
+              ></i>
             </button>
           </div>
           {#if currentPasswordError}
@@ -538,10 +597,14 @@
 
         <!-- New Password -->
         <div class="form-field">
-          <label class="form-field__label" for="new_password">
+          <label
+            class="form-field__label"
+            for="new_password"
+          >
             Neues Passwort
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip">{PASSWORD_TOOLTIP}</span
@@ -575,14 +638,24 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div class="password-strength-container" class:is-loading={strengthLoading}>
+            <div
+              class="password-strength-container"
+              class:is-loading={strengthLoading}
+            >
               <div class="password-strength-meter">
-                <div class="password-strength-bar" data-score={passwordStrength?.score ?? -1}></div>
+                <div
+                  class="password-strength-bar"
+                  data-score={passwordStrength?.score ?? -1}
+                ></div>
               </div>
               {#if passwordStrength}
                 <div class="password-strength-info">
-                  <span class="password-strength-label">{passwordStrength.label}</span>
-                  <span class="password-strength-time">{passwordStrength.crackTime}</span>
+                  <span class="password-strength-label"
+                    >{passwordStrength.label}</span
+                  >
+                  <span class="password-strength-time"
+                    >{passwordStrength.crackTime}</span
+                  >
                 </div>
               {/if}
             </div>
@@ -597,7 +670,9 @@
           {#if (passwordStrength?.feedback.warning !== undefined && passwordStrength.feedback.warning !== '') || (passwordStrength?.feedback.suggestions !== undefined && passwordStrength.feedback.suggestions.length > 0)}
             <div class="password-feedback">
               {#if passwordStrength.feedback.warning !== ''}
-                <span class="password-feedback-warning">{passwordStrength.feedback.warning}</span>
+                <span class="password-feedback-warning"
+                  >{passwordStrength.feedback.warning}</span
+                >
               {/if}
               {#if passwordStrength.feedback.suggestions.length > 0}
                 <ul class="password-feedback-suggestions">
@@ -612,7 +687,10 @@
 
         <!-- Confirm Password -->
         <div class="form-field">
-          <label class="form-field__label" for="confirm_password">Neues Passwort bestätigen</label>
+          <label
+            class="form-field__label"
+            for="confirm_password">Neues Passwort bestätigen</label
+          >
           <div class="form-field__password-wrapper">
             <input
               type={showConfirmPassword ? 'text' : 'password'}
@@ -635,7 +713,8 @@
                 togglePasswordVisibility('confirm');
               }}
             >
-              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"
+              ></i>
             </button>
           </div>
           {#if passwordMismatchError}
@@ -645,8 +724,13 @@
           {/if}
         </div>
 
-        <button type="submit" class="btn btn-modal" disabled={passwordSaving}>
-          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i class="fas fa-key"
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={passwordSaving}
+        >
+          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
+              class="fas fa-key"
             ></i>{/if}
           Passwort ändern
         </button>

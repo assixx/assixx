@@ -50,4 +50,6 @@ export const ListSuggestionsQuerySchema = PaginationSchema.extend({
 /**
  * List Suggestions Query DTO class
  */
-export class ListSuggestionsQueryDto extends createZodDto(ListSuggestionsQuerySchema) {}
+export class ListSuggestionsQueryDto extends createZodDto(
+  ListSuggestionsQuerySchema,
+) {}

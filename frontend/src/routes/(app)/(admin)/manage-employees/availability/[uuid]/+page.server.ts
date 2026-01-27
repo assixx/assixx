@@ -26,7 +26,13 @@ interface AvailabilityEntry {
 }
 
 interface ApiResponseData {
-  employee?: { id: number; uuid: string; firstName: string; lastName: string; email: string };
+  employee?: {
+    id: number;
+    uuid: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   entries?: AvailabilityEntry[];
 }
 
@@ -36,7 +42,11 @@ interface ApiResponse {
 }
 
 /** Build API URL with optional year/month filters */
-function buildApiUrl(uuid: string, year: string | null, month: string | null): string {
+function buildApiUrl(
+  uuid: string,
+  year: string | null,
+  month: string | null,
+): string {
   const params = new URLSearchParams();
   if (year !== null && year !== '') params.set('year', year);
   if (month !== null && month !== '') params.set('month', month);
@@ -45,8 +55,18 @@ function buildApiUrl(uuid: string, year: string | null, month: string | null): s
 }
 
 /** Create error response object */
-function errorResponse(error: string, year: string | null, month: string | null) {
-  return { employee: null, entries: [], error, currentYear: year, currentMonth: month };
+function errorResponse(
+  error: string,
+  year: string | null,
+  month: string | null,
+) {
+  return {
+    employee: null,
+    entries: [],
+    error,
+    currentYear: year,
+    currentMonth: month,
+  };
 }
 
 /** Map entry to plain serializable object */
@@ -76,17 +96,30 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, url }) => {
 
   try {
     const response = await fetch(buildApiUrl(uuid, year, month), {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
-      log.error({ status: response.status }, 'Failed to fetch availability history');
-      return errorResponse('Fehler beim Laden der Verfügbarkeitshistorie', year, month);
+      log.error(
+        { status: response.status },
+        'Failed to fetch availability history',
+      );
+      return errorResponse(
+        'Fehler beim Laden der Verfügbarkeitshistorie',
+        year,
+        month,
+      );
     }
 
     const json = (await response.json()) as ApiResponse;
     const { data } = json;
-    log.info({ count: data.entries?.length ?? 0 }, 'Availability history loaded');
+    log.info(
+      { count: data.entries?.length ?? 0 },
+      'Availability history loaded',
+    );
 
     return {
       employee: data.employee ?? null,

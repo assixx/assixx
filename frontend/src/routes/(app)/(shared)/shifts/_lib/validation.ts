@@ -72,7 +72,10 @@ export function validateMachineSelection(
     return { valid: false, message: 'Ungültige Maschinen-Auswahl' };
   }
   if (machine.departmentId !== selectedDepartmentId) {
-    return { valid: false, message: 'Maschine gehört nicht zur ausgewählten Abteilung' };
+    return {
+      valid: false,
+      message: 'Maschine gehört nicht zur ausgewählten Abteilung',
+    };
   }
   return null;
 }
@@ -95,7 +98,10 @@ export function validateTeamSelection(
     return { valid: false, message: 'Ungültige Team-Auswahl' };
   }
   if (team.departmentId !== selectedDepartmentId) {
-    return { valid: false, message: 'Team gehört nicht zur ausgewählten Abteilung' };
+    return {
+      valid: false,
+      message: 'Team gehört nicht zur ausgewählten Abteilung',
+    };
   }
   return null;
 }
@@ -119,7 +125,10 @@ export function validateDepartmentBelongsToArea(
     department.areaId !== 0 &&
     department.areaId !== selectedAreaId
   ) {
-    return { valid: false, message: 'Abteilung gehört nicht zum ausgewählten Bereich' };
+    return {
+      valid: false,
+      message: 'Abteilung gehört nicht zum ausgewählten Bereich',
+    };
   }
   return null;
 }
@@ -139,7 +148,11 @@ export function validateHierarchy(
     validateDepartmentSelection(context.departmentId),
     validateMachineSelection(machines, context.machineId, context.departmentId),
     validateTeamSelection(teams, context.teamId, context.departmentId),
-    validateDepartmentBelongsToArea(departments, context.departmentId, context.areaId),
+    validateDepartmentBelongsToArea(
+      departments,
+      context.departmentId,
+      context.areaId,
+    ),
   ];
 
   for (const result of validations) {
@@ -163,11 +176,17 @@ export function validateSavePrerequisites(
   selectedDepartmentId: number | null,
 ): ValidationResult {
   if (!isAdmin) {
-    return { valid: false, message: 'Nur Administratoren können Schichtpläne speichern' };
+    return {
+      valid: false,
+      message: 'Nur Administratoren können Schichtpläne speichern',
+    };
   }
 
   if (selectedDepartmentId === null || selectedDepartmentId === 0) {
-    return { valid: false, message: 'Bitte wählen Sie zuerst eine Abteilung aus' };
+    return {
+      valid: false,
+      message: 'Bitte wählen Sie zuerst eine Abteilung aus',
+    };
   }
 
   return { valid: true };
@@ -180,8 +199,16 @@ export function validateSavePrerequisites(
 /**
  * Validate shift assignment data
  */
-export function validateShiftData(date: string | undefined, shift: string | undefined): boolean {
-  if (date === undefined || date === '' || shift === undefined || shift === '') {
+export function validateShiftData(
+  date: string | undefined,
+  shift: string | undefined,
+): boolean {
+  if (
+    date === undefined ||
+    date === '' ||
+    shift === undefined ||
+    shift === ''
+  ) {
     return false;
   }
 
@@ -215,7 +242,10 @@ export function validateRotationInput(formValues: {
   cycleLengthWeeks: number;
 }): ValidationResult {
   if (formValues.patternName.trim() === '') {
-    return { valid: false, message: 'Bitte geben Sie einen Namen für das Muster ein' };
+    return {
+      valid: false,
+      message: 'Bitte geben Sie einen Namen für das Muster ein',
+    };
   }
 
   if (formValues.patternType === '') {
@@ -227,7 +257,10 @@ export function validateRotationInput(formValues: {
   }
 
   if (formValues.cycleLengthWeeks < 1 || formValues.cycleLengthWeeks > 52) {
-    return { valid: false, message: 'Die Zykluslänge muss zwischen 1 und 52 Wochen liegen' };
+    return {
+      valid: false,
+      message: 'Die Zykluslänge muss zwischen 1 und 52 Wochen liegen',
+    };
   }
 
   return { valid: true };
@@ -236,12 +269,18 @@ export function validateRotationInput(formValues: {
 /**
  * Validate date range for rotation
  */
-export function validateDateRange(startDate: string, endDate: string): ValidationResult {
+export function validateDateRange(
+  startDate: string,
+  endDate: string,
+): ValidationResult {
   if (endDate !== '') {
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (end < start) {
-      return { valid: false, message: 'Das Enddatum muss nach dem Startdatum liegen' };
+      return {
+        valid: false,
+        message: 'Das Enddatum muss nach dem Startdatum liegen',
+      };
     }
   }
   return { valid: true };
@@ -358,7 +397,11 @@ function parseOptionalDate(dateStr: string | undefined): Date | null {
  * Check if a date falls within a date range [start, end] inclusive
  * Null boundaries are treated as unbounded (infinity)
  */
-function isDateInRange(checkDate: Date, start: Date | null, end: Date | null): boolean {
+function isDateInRange(
+  checkDate: Date,
+  start: Date | null,
+  end: Date | null,
+): boolean {
   const afterStart = start === null || checkDate >= start;
   const beforeEnd = end === null || checkDate <= end;
   return afterStart && beforeEnd;
@@ -370,7 +413,10 @@ function isDateInRange(checkDate: Date, start: Date | null, end: Date | null): b
  *
  * IMPORTANT: Uses date-only comparison to avoid timezone issues
  */
-export function isEmployeeAvailableOnDate(employee: Employee, dateString: string): boolean {
+export function isEmployeeAvailableOnDate(
+  employee: Employee,
+  dateString: string,
+): boolean {
   const rawStatus = employee.availabilityStatus ?? 'available';
 
   // If status is available, no need to check dates
@@ -397,9 +443,13 @@ export function isEmployeeAvailableOnDate(employee: Employee, dateString: string
 /**
  * Validate employee availability for shift assignment
  */
-export function validateEmployeeAvailability(employee: Employee, date: string): ValidationResult {
+export function validateEmployeeAvailability(
+  employee: Employee,
+  date: string,
+): ValidationResult {
   if (!isEmployeeAvailableOnDate(employee, date)) {
-    const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+    const fullName =
+      `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const employeeName = fullName !== '' ? fullName : employee.username;
     const status = employee.availabilityStatus ?? 'nicht verfügbar';
 
@@ -459,7 +509,8 @@ function doPeriodsOverlap(
   periodBStart: Date,
   periodBEnd: Date,
 ): boolean {
-  const aStartsBeforeBEnds = periodAStart === null || periodAStart <= periodBEnd;
+  const aStartsBeforeBEnds =
+    periodAStart === null || periodAStart <= periodBEnd;
   const aEndsAfterBStarts = periodAEnd === null || periodAEnd >= periodBStart;
   return aStartsBeforeBEnds && aEndsAfterBStarts;
 }
@@ -500,7 +551,12 @@ export function getEffectiveAvailabilityForWeekValidation(
   weekEndNorm.setHours(23, 59, 59, 999);
 
   // Check if unavailability period overlaps with the week
-  const hasOverlap = doPeriodsOverlap(unavailStart, unavailEnd, weekStartNorm, weekEndNorm);
+  const hasOverlap = doPeriodsOverlap(
+    unavailStart,
+    unavailEnd,
+    weekStartNorm,
+    weekEndNorm,
+  );
 
   return hasOverlap ? rawStatus : 'available';
 }
@@ -509,8 +565,14 @@ export function getEffectiveAvailabilityForWeekValidation(
  * Check if employee has any unavailability during the given week
  * @returns true if unavailable during any part of the week
  */
-export function isEmployeeUnavailableInWeek(employee: Employee, weekDates: Date[]): boolean {
-  return getEffectiveAvailabilityForWeekValidation(employee, weekDates) !== 'available';
+export function isEmployeeUnavailableInWeek(
+  employee: Employee,
+  weekDates: Date[],
+): boolean {
+  return (
+    getEffectiveAvailabilityForWeekValidation(employee, weekDates) !==
+    'available'
+  );
 }
 
 // =============================================================================
@@ -549,7 +611,8 @@ export function checkDuplicateShiftAssignment(
 
     const employees = getShiftEmployees(date, shiftType);
     if (employees.includes(employee.id)) {
-      const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+      const fullName =
+        `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
       const employeeName = fullName !== '' ? fullName : employee.username;
       const shiftName = getShiftNameGerman(shiftType);
 

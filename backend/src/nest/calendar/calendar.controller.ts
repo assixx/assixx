@@ -29,7 +29,10 @@ import type { FastifyReply } from 'fastify';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import type { CalendarEventResponse, PaginatedEventsResult } from './calendar.service.js';
+import type {
+  CalendarEventResponse,
+  PaginatedEventsResult,
+} from './calendar.service.js';
 import { CalendarService } from './calendar.service.js';
 import {
   CreateEventDto,
@@ -89,7 +92,11 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CalendarEventResponse[]> {
-    return await this.calendarService.getDashboardEvents(tenantId, user.id, query.limit ?? 10);
+    return await this.calendarService.getDashboardEvents(
+      tenantId,
+      user.id,
+      query.limit ?? 10,
+    );
   }
 
   /**
@@ -102,7 +109,11 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CalendarEventResponse[]> {
-    return await this.calendarService.getRecentlyAddedEvents(tenantId, user.id, query.limit ?? 3);
+    return await this.calendarService.getRecentlyAddedEvents(
+      tenantId,
+      user.id,
+      query.limit ?? 3,
+    );
   }
 
   /**
@@ -201,7 +212,13 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CalendarEventResponse> {
-    return await this.calendarService.updateEventByUuid(uuid, dto, tenantId, user.id, user.role);
+    return await this.calendarService.updateEventByUuid(
+      uuid,
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -216,7 +233,13 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CalendarEventResponse> {
-    return await this.calendarService.updateEvent(id, dto, tenantId, user.id, user.role);
+    return await this.calendarService.updateEvent(
+      id,
+      dto,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -229,7 +252,12 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.calendarService.deleteEventByUuid(uuid, tenantId, user.id, user.role);
+    return await this.calendarService.deleteEventByUuid(
+      uuid,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 
   /**
@@ -243,6 +271,11 @@ export class CalendarController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.calendarService.deleteEvent(id, tenantId, user.id, user.role);
+    return await this.calendarService.deleteEvent(
+      id,
+      tenantId,
+      user.id,
+      user.role,
+    );
   }
 }

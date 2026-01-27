@@ -58,7 +58,11 @@ interface ApiResponse<T> {
 /** Dashboard counts from /dashboard/counts endpoint */
 interface DashboardCounts {
   chat: { totalUnread: number };
-  notifications: { total: number; unread: number; byType: Record<string, number> };
+  notifications: {
+    total: number;
+    unread: number;
+    byType: Record<string, number>;
+  };
   blackboard: { count: number };
   calendar: { count: number };
   documents: { count: number };
@@ -108,14 +112,18 @@ function extractUserData(json: ApiResponse<UserData>): UserData | undefined {
 }
 
 /** Parse dashboard counts from response (graceful fallback to null) */
-async function parseDashboardCounts(response: Response | null): Promise<DashboardCounts | null> {
+async function parseDashboardCounts(
+  response: Response | null,
+): Promise<DashboardCounts | null> {
   if (response?.ok !== true) return null;
   const json = (await response.json()) as ApiResponse<DashboardCounts>;
   return json.data ?? null;
 }
 
 /** Clear auth cookies and redirect to login */
-function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies']): never {
+function clearAuthAndRedirect(
+  cookies: Parameters<LayoutServerLoad>[0]['cookies'],
+): never {
   cookies.delete('accessToken', { path: '/' });
   cookies.delete('refreshToken', { path: '/api/v2/auth' });
   redirect(302, '/login');
@@ -130,7 +138,10 @@ const UNAUTHENTICATED_RESPONSE = {
 } as const;
 
 /** Build authenticated response from user data and counts */
-async function buildAuthenticatedResponse(userData: UserData, countsResponse: Response | null) {
+async function buildAuthenticatedResponse(
+  userData: UserData,
+  countsResponse: Response | null,
+) {
   return {
     user: mapUserData(userData),
     tenant: userData.tenant ?? null,
@@ -144,7 +155,9 @@ async function fetchDashboardCountsOnly(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<Response | null> {
-  return await fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null);
+  return await fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(
+    () => null,
+  );
 }
 
 /** Fetch user data and dashboard counts in parallel */
@@ -170,7 +183,12 @@ async function fetchUserAndCounts(
  * - RBAC hook already fetches /users/me for role-protected routes
  * - Saves ~50-80ms by avoiding duplicate fetch
  */
-export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) => {
+export const load: LayoutServerLoad = async ({
+  cookies,
+  fetch,
+  url,
+  locals,
+}) => {
   const startTime = performance.now();
   const token = cookies.get('accessToken');
   const hasToken = token !== undefined && token !== '';
@@ -208,8 +226,17 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
   }
 
   // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
-  log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
-  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname);
+  log.warn(
+    { pathname: url.pathname },
+    '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts',
+  );
+  return await loadUserWithFetch(
+    cookies,
+    fetch,
+    headers,
+    startTime,
+    url.pathname,
+  );
 };
 
 /** Load user via API fetch (slow path when RBAC user not available) */
@@ -221,7 +248,10 @@ async function loadUserWithFetch(
   pathname: string,
 ) {
   const fetchStart = performance.now();
-  const { userResponse, countsResponse } = await fetchUserAndCounts(fetchFn, headers);
+  const { userResponse, countsResponse } = await fetchUserAndCounts(
+    fetchFn,
+    headers,
+  );
   const fetchTime = Math.round(performance.now() - fetchStart);
 
   if (!userResponse.ok) {

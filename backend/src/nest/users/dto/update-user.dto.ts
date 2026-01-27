@@ -26,7 +26,10 @@ const PhoneSchema = z
  */
 const EmployeeNumberSchema = z
   .string()
-  .regex(/^[-0-9A-Za-z]{1,10}$/, 'Employee number: max 10 characters (letters, numbers, hyphen)')
+  .regex(
+    /^[-0-9A-Za-z]{1,10}$/,
+    'Employee number: max 10 characters (letters, numbers, hyphen)',
+  )
   .optional();
 
 /**
@@ -68,7 +71,11 @@ export const UpdateUserSchema = z.object({
     .trim()
     .max(255, 'Reason must not exceed 255 characters')
     .optional(),
-  availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
+  availabilityNotes: z
+    .string()
+    .trim()
+    .max(500, 'Notes must not exceed 500 characters')
+    .optional(),
 });
 
 /**

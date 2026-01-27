@@ -23,4 +23,6 @@ export const ExportEventsQuerySchema = z.object({
 /**
  * Export Events Query DTO class
  */
-export class ExportEventsQueryDto extends createZodDto(ExportEventsQuerySchema) {}
+export class ExportEventsQueryDto extends createZodDto(
+  ExportEventsQuerySchema,
+) {}

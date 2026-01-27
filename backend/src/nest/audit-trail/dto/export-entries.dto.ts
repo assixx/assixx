@@ -27,4 +27,6 @@ export const ExportEntriesQuerySchema = z.object({
 /**
  * DTO for export entries query parameters
  */
-export class ExportEntriesQueryDto extends createZodDto(ExportEntriesQuerySchema) {}
+export class ExportEntriesQueryDto extends createZodDto(
+  ExportEntriesQuerySchema,
+) {}

@@ -4,8 +4,16 @@
 .welcome-hero-custom {
   background: var(--glass-bg);
   background-image:
-    radial-gradient(circle at 20% 80%, rgb(255 255 255 / 10%) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgb(39 72 89) 0%, rgb(35 84 114 / 63%) 50%);
+    radial-gradient(
+      circle at 20% 80%,
+      rgb(255 255 255 / 10%) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgb(39 72 89) 0%,
+      rgb(35 84 114 / 63%) 50%
+    );
 }
 
 /* Welcome Stat Card
@@ -83,7 +91,12 @@
   border-radius: 80% 0 55% 50% / 55% 0 80% 50%;
 
   /* Sakura gradient: deeper pink base → white tip */
-  background: linear-gradient(to top right, #ff85a2 0%, #ffb7c5 45%, #fff0f3 100%);
+  background: linear-gradient(
+    to top right,
+    #ff85a2 0%,
+    #ffb7c5 45%,
+    #fff0f3 100%
+  );
 
   /* Petal shape: teardrop with pointed tip */
   width: 12px;

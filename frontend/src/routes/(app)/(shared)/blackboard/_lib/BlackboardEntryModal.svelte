@@ -1,10 +1,25 @@
 <script lang="ts">
-  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from '$lib/utils';
+  import {
+    filterAvailableDepartments,
+    filterDepartmentIdsByAreas,
+  } from '$lib/utils';
 
-  import { COLOR_OPTIONS, PRIORITY_OPTIONS, MESSAGES, FILE_UPLOAD_CONFIG } from './constants';
+  import {
+    COLOR_OPTIONS,
+    PRIORITY_OPTIONS,
+    MESSAGES,
+    FILE_UPLOAD_CONFIG,
+  } from './constants';
   import { getPriorityLabel } from './utils';
 
-  import type { Priority, EntryColor, Department, Team, Area, FormMode } from './types';
+  import type {
+    Priority,
+    EntryColor,
+    Department,
+    Team,
+    Area,
+    FormMode,
+  } from './types';
 
   interface Props {
     mode: FormMode;
@@ -80,7 +95,11 @@
   function handleAreaChange(newAreaIds: number[]): void {
     onareaschange(newAreaIds);
     // Remove departments that are now covered by selected areas
-    const filteredDeptIds = filterDepartmentIdsByAreas(departmentIds, departments, newAreaIds);
+    const filteredDeptIds = filterDepartmentIdsByAreas(
+      departmentIds,
+      departments,
+      newAreaIds,
+    );
     if (filteredDeptIds.length !== departmentIds.length) {
       ondepartmentschange(filteredDeptIds);
     }
@@ -99,7 +118,8 @@
 
   function handleClickOutside(e: MouseEvent): void {
     const target = e.target as HTMLElement;
-    if (!target.closest('#entry-priority-dropdown')) priorityDropdownOpen = false;
+    if (!target.closest('#entry-priority-dropdown'))
+      priorityDropdownOpen = false;
   }
 
   function handleKeyDown(e: KeyboardEvent): void {
@@ -110,7 +130,10 @@
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeyDown} />
+<svelte:window
+  onclick={handleClickOutside}
+  onkeydown={handleKeyDown}
+/>
 
 <div
   class="modal-overlay modal-overlay--active"
@@ -135,15 +158,25 @@
   >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">
-        {mode === 'edit' ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_CREATE}
+        {mode === 'edit' ?
+          MESSAGES.MODAL_TITLE_EDIT
+        : MESSAGES.MODAL_TITLE_CREATE}
       </h3>
-      <button type="button" class="ds-modal__close" onclick={onclose} aria-label="Schließen">
+      <button
+        type="button"
+        class="ds-modal__close"
+        onclick={onclose}
+        aria-label="Schließen"
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="ds-modal__body">
       <div class="form-field">
-        <label for="entryTitle" class="form-field__label">Titel</label>
+        <label
+          for="entryTitle"
+          class="form-field__label">Titel</label
+        >
         <input
           type="text"
           class="form-field__control"
@@ -157,7 +190,10 @@
         />
       </div>
       <div class="form-field">
-        <label for="entryContent" class="form-field__label">Inhalt</label>
+        <label
+          for="entryContent"
+          class="form-field__label">Inhalt</label
+        >
         <textarea
           class="form-field__control"
           id="entryContent"
@@ -187,16 +223,22 @@
             }}
           />
           <span class="toggle-switch__slider"></span>
-          <span class="toggle-switch__label"><i class="fas fa-building mr-2"></i>Ganze Firma</span>
+          <span class="toggle-switch__label"
+            ><i class="fas fa-building mr-2"></i>Ganze Firma</span
+          >
         </label>
         <span class="form-field__message form-field__message--warning">
-          <i class="fas fa-exclamation-triangle mr-1"></i>{MESSAGES.COMPANY_WIDE_WARNING}
+          <i class="fas fa-exclamation-triangle mr-1"
+          ></i>{MESSAGES.COMPANY_WIDE_WARNING}
         </span>
       </div>
 
       {#if !companyWide}
         <div class="form-field">
-          <label for="entry-area-select" class="form-field__label">
+          <label
+            for="entry-area-select"
+            class="form-field__label"
+          >
             <i class="fas fa-layer-group mr-1"></i>Bereiche (Areas)
           </label>
           <select
@@ -206,24 +248,32 @@
             value={areaIds}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              handleAreaChange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+              handleAreaChange(
+                Array.from(select.selectedOptions).map((o) => Number(o.value)),
+              );
             }}
           >
             {#each areas as area (area.id)}
               <option value={area.id}>
-                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
-                  ? ` (${area.departmentCount} Abt.)`
-                  : ''}
+                {area.name}{(
+                  area.departmentCount !== undefined && area.departmentCount > 0
+                ) ?
+                  ` (${area.departmentCount} Abt.)`
+                : ''}
               </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige
+            Abteilungen.
           </span>
         </div>
         <div class="form-field">
-          <label for="entry-department-select" class="form-field__label">
+          <label
+            for="entry-department-select"
+            class="form-field__label"
+          >
             <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
           </label>
           <select
@@ -233,25 +283,32 @@
             value={departmentIds}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              ondepartmentschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+              ondepartmentschange(
+                Array.from(select.selectedOptions).map((o) => Number(o.value)),
+              );
             }}
           >
             {#each availableDepartments as dept (dept.id)}
               <option value={dept.id}>
-                {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
-                  ? ` (${dept.areaName})`
-                  : ''}
+                {dept.name}{(
+                  dept.areaName !== undefined && dept.areaName !== ''
+                ) ?
+                  ` (${dept.areaName})`
+                : ''}
               </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
-            sind.
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
+            durch Bereiche abgedeckt sind.
           </span>
         </div>
         <div class="form-field">
-          <label for="entry-team-select" class="form-field__label">
+          <label
+            for="entry-team-select"
+            class="form-field__label"
+          >
             <i class="fas fa-users mr-1"></i>Teams
           </label>
           <select
@@ -261,7 +318,9 @@
             value={teamIds}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              onteamschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
+              onteamschange(
+                Array.from(select.selectedOptions).map((o) => Number(o.value)),
+              );
             }}
           >
             {#each teams as team (team.id)}
@@ -270,7 +329,8 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet zugehoerige Teams.
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet
+            zugehoerige Teams.
           </span>
         </div>
       {/if}
@@ -278,14 +338,19 @@
       <!-- Priority -->
       <div class="form-field">
         <span class="form-field__label">Priorität</span>
-        <div class="dropdown" id="entry-priority-dropdown" role="listbox">
+        <div
+          class="dropdown"
+          id="entry-priority-dropdown"
+          role="listbox"
+        >
           <div
             class="dropdown__trigger"
             onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
             role="button"
             tabindex="0"
             onkeydown={(e) => {
-              if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
+              if (e.key === 'Enter')
+                priorityDropdownOpen = !priorityDropdownOpen;
             }}
           >
             <span>{priorityLabel}</span>
@@ -316,7 +381,10 @@
 
       <!-- Expires -->
       <div class="form-field">
-        <label for="entryExpiresAt" class="form-field__label">Gültig bis (optional)</label>
+        <label
+          for="entryExpiresAt"
+          class="form-field__label">Gültig bis (optional)</label
+        >
         <input
           type="date"
           class="form-field__control"
@@ -330,8 +398,13 @@
 
       <!-- Color Picker -->
       <div class="form-field">
-        <span class="form-field__label"><i class="fas fa-palette mr-2"></i>Farbe</span>
-        <div class="color-picker" role="radiogroup">
+        <span class="form-field__label"
+          ><i class="fas fa-palette mr-2"></i>Farbe</span
+        >
+        <div
+          class="color-picker"
+          role="radiogroup"
+        >
           {#each COLOR_OPTIONS as opt (opt.value)}
             <button
               type="button"
@@ -366,8 +439,13 @@
               onfileschange(files !== null ? Array.from(files) : null);
             }}
           />
-          <label for="attachmentInput" class="file-upload-zone__label">
-            <div class="file-upload-zone__icon"><i class="fas fa-cloud-upload-alt"></i></div>
+          <label
+            for="attachmentInput"
+            class="file-upload-zone__label"
+          >
+            <div class="file-upload-zone__icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
             <div class="file-upload-zone__text">
               <p class="file-upload-zone__title">Dateien hierher ziehen</p>
             </div>
@@ -379,7 +457,8 @@
               <div class="file-upload-list__item">
                 <i class="fas fa-file file-upload-list__icon"></i>
                 <span class="file-upload-list__name">{file.name}</span>
-                <span class="file-upload-list__size">{(file.size / 1024 / 1024).toFixed(2)} MB</span
+                <span class="file-upload-list__size"
+                  >{(file.size / 1024 / 1024).toFixed(2)} MB</span
                 >
                 <button
                   type="button"
@@ -398,8 +477,15 @@
       </div>
     </div>
     <div class="ds-modal__footer ds-modal__footer--right">
-      <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-      <button type="submit" class="btn btn-modal">Speichern</button>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={onclose}>Abbrechen</button
+      >
+      <button
+        type="submit"
+        class="btn btn-modal">Speichern</button
+      >
     </div>
   </form>
 </div>

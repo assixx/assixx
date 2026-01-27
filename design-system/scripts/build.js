@@ -71,7 +71,10 @@ module.exports = {
 };
 `;
 
-fs.writeFileSync(path.join(buildDir, 'web', 'tailwind', 'index.js'), tailwindConfig);
+fs.writeFileSync(
+  path.join(buildDir, 'web', 'tailwind', 'index.js'),
+  tailwindConfig,
+);
 
 console.log('✅ Build complete!');
 console.log('\n📁 Output locations:');

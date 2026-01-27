@@ -28,7 +28,9 @@ interface ConnectionTicketResponse {
  * @param purpose - 'websocket' or 'sse'
  * @returns ticket string or null on error
  */
-export async function getConnectionTicket(purpose: TicketPurpose): Promise<string | null> {
+export async function getConnectionTicket(
+  purpose: TicketPurpose,
+): Promise<string | null> {
   if (!browser) {
     logger.error('getConnectionTicket called outside browser context');
     return null;
@@ -46,7 +48,9 @@ export async function getConnectionTicket(purpose: TicketPurpose): Promise<strin
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`Failed to get connection ticket: ${response.status} - ${errorText}`);
+      logger.error(
+        `Failed to get connection ticket: ${response.status} - ${errorText}`,
+      );
       return null;
     }
 

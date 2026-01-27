@@ -10,7 +10,13 @@
     toggleIdInArray,
   } from './utils';
 
-  import type { Department, Admin, TeamMember, Machine, FormIsActiveStatus } from './types';
+  import type {
+    Department,
+    Admin,
+    TeamMember,
+    Machine,
+    FormIsActiveStatus,
+  } from './types';
 
   interface Props {
     isEditMode: boolean;
@@ -165,7 +171,11 @@
   }
 
   /** Close dropdown if click is outside its container */
-  function closeDropdownIfOutside(target: HTMLElement, isOpen: boolean, selector: string): boolean {
+  function closeDropdownIfOutside(
+    target: HTMLElement,
+    isOpen: boolean,
+    selector: string,
+  ): boolean {
     return isOpen && !target.closest(selector) ? false : isOpen;
   }
 
@@ -176,7 +186,11 @@
       departmentDropdownOpen,
       '#department-dropdown',
     );
-    leaderDropdownOpen = closeDropdownIfOutside(target, leaderDropdownOpen, '#team-lead-dropdown');
+    leaderDropdownOpen = closeDropdownIfOutside(
+      target,
+      leaderDropdownOpen,
+      '#team-lead-dropdown',
+    );
     membersDropdownOpen = closeDropdownIfOutside(
       target,
       membersDropdownOpen,
@@ -187,7 +201,11 @@
       machinesDropdownOpen,
       '#team-machines-dropdown',
     );
-    statusDropdownOpen = closeDropdownIfOutside(target, statusDropdownOpen, '#status-dropdown');
+    statusDropdownOpen = closeDropdownIfOutside(
+      target,
+      statusDropdownOpen,
+      '#status-dropdown',
+    );
   }
 </script>
 
@@ -216,14 +234,27 @@
     onsubmit={handleFormSubmit}
   >
     <div class="ds-modal__header">
-      <h3 class="ds-modal__title" id="team-modal-title">{modalTitle}</h3>
-      <button type="button" class="ds-modal__close" aria-label="Schließen" onclick={onclose}>
+      <h3
+        class="ds-modal__title"
+        id="team-modal-title"
+      >
+        {modalTitle}
+      </h3>
+      <button
+        type="button"
+        class="ds-modal__close"
+        aria-label="Schließen"
+        onclick={onclose}
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="ds-modal__body">
       <div class="form-field">
-        <label class="form-field__label" for="team-name">
+        <label
+          class="form-field__label"
+          for="team-name"
+        >
           Name <span class="text-red-500">*</span>
         </label>
         <input
@@ -237,7 +268,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="team-description">Beschreibung</label>
+        <label
+          class="form-field__label"
+          for="team-description">Beschreibung</label
+        >
         <textarea
           id="team-description"
           name="description"
@@ -248,18 +282,32 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="team-department">Abteilung</label>
-        <div class="dropdown" id="department-dropdown">
+        <label
+          class="form-field__label"
+          for="team-department">Abteilung</label
+        >
+        <div
+          class="dropdown"
+          id="department-dropdown"
+        >
           <button
             type="button"
             class="dropdown__trigger"
             class:active={departmentDropdownOpen}
             onclick={toggleDepartmentDropdown}
           >
-            <span>{getDepartmentDisplayText(localDepartmentId, allDepartments)}</span>
+            <span
+              >{getDepartmentDisplayText(
+                localDepartmentId,
+                allDepartments,
+              )}</span
+            >
             <i class="fas fa-chevron-down"></i>
           </button>
-          <div class="dropdown__menu" class:active={departmentDropdownOpen}>
+          <div
+            class="dropdown__menu"
+            class:active={departmentDropdownOpen}
+          >
             <button
               type="button"
               class="dropdown__option"
@@ -285,8 +333,14 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="team-lead">Team-Leiter (Admin)</label>
-        <div class="dropdown" id="team-lead-dropdown">
+        <label
+          class="form-field__label"
+          for="team-lead">Team-Leiter (Admin)</label
+        >
+        <div
+          class="dropdown"
+          id="team-lead-dropdown"
+        >
           <button
             type="button"
             class="dropdown__trigger"
@@ -296,7 +350,10 @@
             <span>{getLeaderDisplayText(localLeaderId, allAdmins)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
-          <div class="dropdown__menu" class:active={leaderDropdownOpen}>
+          <div
+            class="dropdown__menu"
+            class:active={leaderDropdownOpen}
+          >
             <button
               type="button"
               class="dropdown__option"
@@ -323,8 +380,14 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="team-members">Team-Mitglieder</label>
-        <div class="dropdown" id="team-members-dropdown">
+        <label
+          class="form-field__label"
+          for="team-members">Team-Mitglieder</label
+        >
+        <div
+          class="dropdown"
+          id="team-members-dropdown"
+        >
           <button
             type="button"
             class="dropdown__trigger"
@@ -334,7 +397,10 @@
             <span>{getMembersDisplayText(localMemberIds, allEmployees)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
-          <div class="dropdown__menu dropdown__menu--scrollable" class:active={membersDropdownOpen}>
+          <div
+            class="dropdown__menu dropdown__menu--scrollable"
+            class:active={membersDropdownOpen}
+          >
             {#each allEmployees as employee (employee.id)}
               <button
                 type="button"
@@ -368,8 +434,14 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="team-machines">Zugewiesene Maschinen</label>
-        <div class="dropdown" id="team-machines-dropdown">
+        <label
+          class="form-field__label"
+          for="team-machines">Zugewiesene Maschinen</label
+        >
+        <div
+          class="dropdown"
+          id="team-machines-dropdown"
+        >
           <button
             type="button"
             class="dropdown__trigger"
@@ -416,10 +488,16 @@
 
       {#if isEditMode}
         <div class="form-field mt-6">
-          <label class="form-field__label" for="team-is-active">
+          <label
+            class="form-field__label"
+            for="team-is-active"
+          >
             Status <span class="text-red-500">*</span>
           </label>
-          <div class="dropdown" id="status-dropdown">
+          <div
+            class="dropdown"
+            id="status-dropdown"
+          >
             <button
               type="button"
               class="dropdown__trigger"
@@ -431,7 +509,10 @@
               >
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div class="dropdown__menu" class:active={statusDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={statusDropdownOpen}
+            >
               <button
                 type="button"
                 class="dropdown__option"
@@ -469,9 +550,18 @@
     </div>
 
     <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={onclose}>Abbrechen</button>
-      <button type="submit" class="btn btn-modal" disabled={submitting}>
-        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={onclose}>Abbrechen</button
+      >
+      <button
+        type="submit"
+        class="btn btn-modal"
+        disabled={submitting}
+      >
+        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
+          ></span>{/if}
         Speichern
       </button>
     </div>

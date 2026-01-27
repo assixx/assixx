@@ -35,7 +35,10 @@ interface PerfEntry {
 }
 
 /** Active timers waiting to be ended */
-const activeTimers = new Map<string, { start: number; metadata?: Record<string, unknown> }>();
+const activeTimers = new Map<
+  string,
+  { start: number; metadata?: Record<string, unknown> }
+>();
 
 /** Completed performance entries for analysis */
 const completedEntries: PerfEntry[] = [];
@@ -180,7 +183,11 @@ export const perf = {
    * @example
    * const result = perf.timeSync('parse-json', () => JSON.parse(data));
    */
-  timeSync<T>(name: string, fn: () => T, metadata?: Record<string, unknown>): T {
+  timeSync<T>(
+    name: string,
+    fn: () => T,
+    metadata?: Record<string, unknown>,
+  ): T {
     const end = this.start(name, metadata);
     try {
       return fn();
@@ -215,12 +222,19 @@ export const perf = {
   /**
    * Get summary statistics
    */
-  getSummary(): { total: number; slow: number; avgDuration: number; entries: PerfEntry[] } {
+  getSummary(): {
+    total: number;
+    slow: number;
+    avgDuration: number;
+    entries: PerfEntry[];
+  } {
     const entries = [...completedEntries];
     const total = entries.length;
     const slow = entries.filter((e) => (e.duration ?? 0) > 500).length;
     const avgDuration =
-      total > 0 ? entries.reduce((sum, e) => sum + (e.duration ?? 0), 0) / total : 0;
+      total > 0 ?
+        entries.reduce((sum, e) => sum + (e.duration ?? 0), 0) / total
+      : 0;
 
     return { total, slow, avgDuration, entries };
   },
@@ -243,7 +257,10 @@ export const perf = {
         .filter((e) => (e.duration ?? 0) > 500)
         .sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
         .forEach((e) => {
-          console.log(`${e.name}: ${formatDuration(e.duration ?? 0)}`, e.metadata ?? '');
+          console.log(
+            `${e.name}: ${formatDuration(e.duration ?? 0)}`,
+            e.metadata ?? '',
+          );
         });
       console.groupEnd();
     }
@@ -267,7 +284,11 @@ export function perfMark(name: string): void {
 /**
  * Measure time between two marks
  */
-export function perfMeasure(name: string, startMark: string, endMark?: string): number {
+export function perfMeasure(
+  name: string,
+  startMark: string,
+  endMark?: string,
+): number {
   if (browser && typeof performance !== 'undefined') {
     try {
       const measure = performance.measure(name, startMark, endMark);
@@ -306,7 +327,9 @@ export function logPageLoadTiming(): void {
   }
 
   // Use modern Navigation Timing API Level 2
-  const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+  const navEntries = performance.getEntriesByType(
+    'navigation',
+  ) as PerformanceNavigationTiming[];
   if (navEntries.length === 0) return;
   const nav = navEntries[0];
 
@@ -335,13 +358,17 @@ export function logPageLoadTiming(): void {
 export function logResourceTiming(filter?: string | RegExp): void {
   if (!browser || !isDev) return;
 
-  const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+  const resources = performance.getEntriesByType(
+    'resource',
+  ) as PerformanceResourceTiming[];
   const filtered =
-    filter !== undefined
-      ? resources.filter((r) =>
-          typeof filter === 'string' ? r.name.includes(filter) : filter.test(r.name),
-        )
-      : resources;
+    filter !== undefined ?
+      resources.filter((r) =>
+        typeof filter === 'string' ?
+          r.name.includes(filter)
+        : filter.test(r.name),
+      )
+    : resources;
 
   console.group(`📦 Resource Timing (${filtered.length} resources)`);
 

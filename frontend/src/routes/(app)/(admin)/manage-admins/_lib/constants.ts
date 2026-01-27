@@ -69,7 +69,11 @@ export const STATUS_LABELS: Record<IsActiveStatus, string> = {
 /**
  * Status options for dropdown (excludes deleted)
  */
-export const STATUS_OPTIONS: { value: FormIsActiveStatus; label: string; class: string }[] = [
+export const STATUS_OPTIONS: {
+  value: FormIsActiveStatus;
+  label: string;
+  class: string;
+}[] = [
   { value: 1, label: 'Aktiv', class: 'badge--success' },
   { value: 0, label: 'Inaktiv', class: 'badge--warning' },
   { value: 3, label: 'Archiviert', class: 'badge--secondary' },
@@ -89,7 +93,13 @@ export const PASSWORD_STRENGTH_LABELS = [
 /**
  * Password crack time labels (German)
  */
-export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Jahre'] as const;
+export const PASSWORD_CRACK_TIMES = [
+  'sofort',
+  'Minuten',
+  'Stunden',
+  'Tage',
+  'Jahre',
+] as const;
 
 /**
  * UI Messages (German) - Prepared for i18n
@@ -142,7 +152,8 @@ export const MESSAGES = {
 
   // Empty state
   EMPTY_TITLE: 'Keine Administratoren gefunden',
-  EMPTY_DESCRIPTION: 'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
+  EMPTY_DESCRIPTION:
+    'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
 
   // Loading
   LOADING_ADMINS: 'Administratoren werden geladen...',
@@ -166,8 +177,10 @@ export const MESSAGES = {
   HINT_EMPLOYEE_NUMBER: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   HINT_MULTISELECT: 'Strg/Cmd + Klick für Mehrfachauswahl',
   HINT_AREAS: 'Bereiche vererben Zugriff auf zugehörige Abteilungen.',
-  HINT_DEPARTMENTS: 'Nur Abteilungen die nicht bereits durch Bereiche abgedeckt sind.',
-  HINT_STATUS: 'Inaktive/Archivierte Administratoren können sich nicht anmelden',
+  HINT_DEPARTMENTS:
+    'Nur Abteilungen die nicht bereits durch Bereiche abgedeckt sind.',
+  HINT_STATUS:
+    'Inaktive/Archivierte Administratoren können sich nicht anmelden',
   HINT_TEAMS:
     'Teams werden automatisch vererbt: Admin mit Bereich-/Abteilungs-Berechtigung sieht alle zugehörigen Teams.',
 
@@ -178,8 +191,10 @@ export const MESSAGES = {
 
   // Delete confirmation
   DELETE_CONFIRM_MESSAGE: 'Möchten Sie diesen Administrator wirklich löschen?',
-  DELETE_FINAL_WARNING: 'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_INFO: 'Der Administrator wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_WARNING:
+    'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
+  DELETE_FINAL_INFO:
+    'Der Administrator wird unwiderruflich aus dem System entfernt.',
 
   // Organization badges
   BADGE_ALL: 'Alle',

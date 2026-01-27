@@ -17,7 +17,10 @@
   const { searchQuery, employees, onresultclick }: Props = $props();
 </script>
 
-<div class="search-input__results" id="employee-search-results">
+<div
+  class="search-input__results"
+  id="employee-search-results"
+>
   {#if searchQuery !== '' && employees.length === 0}
     <div class="search-input__no-results">
       {MESSAGES.SEARCH_NO_RESULTS} "{searchQuery}"
@@ -34,21 +37,26 @@
       >
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <div style="font-weight: 500; color: var(--color-text-primary);">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html highlightMatch(`${employee.firstName} ${employee.lastName}`, searchQuery)}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
+            {@html highlightMatch(
+              `${employee.firstName} ${employee.lastName}`,
+              searchQuery,
+            )}
           </div>
           <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
             {@html highlightMatch(employee.email, searchQuery)}
           </div>
-          <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;">
+          <div
+            style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
+          >
             <span>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
               {@html highlightMatch(employee.position ?? '', searchQuery)}
             </span>
             {#if employee.employeeNumber}
               <span>
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
                 • {@html highlightMatch(employee.employeeNumber, searchQuery)}
               </span>
             {/if}

@@ -8,7 +8,11 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import {
+    showWarningAlert,
+    showErrorAlert,
+    showSuccessAlert,
+  } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../../../styles/root-dashboard.css';
@@ -115,13 +119,17 @@
       </div>
       <div class="ds-modal__body">
         <p class="mb-4 text-[var(--color-text-secondary)]">
-          Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu {EMPLOYEE_NUMBER.maxLength} Zeichen
-          lang sein und Buchstaben, Zahlen sowie Bindestriche enthalten.
+          Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu {EMPLOYEE_NUMBER.maxLength}
+          Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche enthalten.
         </p>
-        <form id="employeeNumberForm" onsubmit={handleEmployeeNumberSubmit}>
+        <form
+          id="employeeNumberForm"
+          onsubmit={handleEmployeeNumberSubmit}
+        >
           <div class="form-field">
-            <label class="form-field__label form-field__label--required" for="employeeNumberInput"
-              >Personalnummer</label
+            <label
+              class="form-field__label form-field__label--required"
+              for="employeeNumberInput">Personalnummer</label
             >
             <input
               type="text"
@@ -136,7 +144,8 @@
               disabled={employeeNumberSaving}
             />
             <span class="form-field__message"
-              >Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. {EMPLOYEE_NUMBER.maxLength} Zeichen</span
+              >Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. {EMPLOYEE_NUMBER.maxLength}
+              Zeichen</span
             >
           </div>
         </form>
@@ -191,14 +200,20 @@
         <i class="fas fa-history mr-2"></i>
         Aktivitätsverlauf
       </h2>
-      <a href={resolvePath('/logs')} class="btn btn-link">
+      <a
+        href={resolvePath('/logs')}
+        class="btn btn-link"
+      >
         <i class="fas fa-external-link-alt mr-1.5"></i>
         Alle Logs anzeigen
       </a>
     </div>
     <div class="card__body">
       <div class="table-responsive">
-        <table class="data-table data-table--hover data-table--striped" id="activity-logs-table">
+        <table
+          class="data-table data-table--hover data-table--striped"
+          id="activity-logs-table"
+        >
           <thead>
             <tr>
               <th scope="col">ID</th>
@@ -210,7 +225,11 @@
           <tbody id="activity-logs">
             {#if activityLogs.length === 0}
               <tr>
-                <td colspan="4" class="text-center text-gray-400 py-8">{MESSAGES.noActivities}</td>
+                <td
+                  colspan="4"
+                  class="text-center text-gray-400 py-8"
+                  >{MESSAGES.noActivities}</td
+                >
               </tr>
             {:else}
               {#each activityLogs as log (log.id)}
@@ -219,8 +238,10 @@
                   <td>
                     <div class="user-info">
                       <span class="user-name">{getDisplayName(log)}</span>
-                      <span class="badge badge--sm badge--{getRoleBadgeClass(log.userRole ?? '')}"
-                        >{getRoleLabel(log.userRole ?? '')}</span
+                      <span
+                        class="badge badge--sm badge--{getRoleBadgeClass(
+                          log.userRole ?? '',
+                        )}">{getRoleLabel(log.userRole ?? '')}</span
                       >
                     </div>
                   </td>

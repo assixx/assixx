@@ -7,7 +7,10 @@
 import { browser } from '$app/environment';
 
 import { createLogger } from '$lib/utils/logger';
-import { type NotificationEvent, getNotificationSSE } from '$lib/utils/notification-sse';
+import {
+  type NotificationEvent,
+  getNotificationSSE,
+} from '$lib/utils/notification-sse';
 import { perf } from '$lib/utils/perf-logger';
 
 const log = createLogger('NotificationStore');
@@ -40,7 +43,15 @@ type CountType = keyof Omit<NotificationCounts, 'total'>;
 // ============================================
 
 function createInitialCounts(): NotificationCounts {
-  return { total: 0, surveys: 0, documents: 0, kvp: 0, chat: 0, blackboard: 0, calendar: 0 };
+  return {
+    total: 0,
+    surveys: 0,
+    documents: 0,
+    kvp: 0,
+    chat: 0,
+    blackboard: 0,
+    calendar: 0,
+  };
 }
 
 function incrementCount(state: NotificationState, type: CountType): void {
@@ -49,7 +60,10 @@ function incrementCount(state: NotificationState, type: CountType): void {
   state.lastUpdate = new Date();
 }
 
-function handleSSEEvent(state: NotificationState, event: NotificationEvent): void {
+function handleSSEEvent(
+  state: NotificationState,
+  event: NotificationEvent,
+): void {
   switch (event.type) {
     case 'CONNECTED':
       state.isConnected = true;
@@ -85,7 +99,10 @@ function resetCountMut(state: NotificationState, type: CountType): void {
   state.counts[type] = 0;
 }
 
-function setCountsMut(state: NotificationState, counts: Partial<NotificationCounts>): void {
+function setCountsMut(
+  state: NotificationState,
+  counts: Partial<NotificationCounts>,
+): void {
   state.counts = {
     total: counts.total ?? 0,
     surveys: counts.surveys ?? 0,
@@ -108,7 +125,11 @@ const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
 };
 
 /** Rollback count after failed API call */
-function rollbackCount(state: NotificationState, countKey: CountType, previousCount: number): void {
+function rollbackCount(
+  state: NotificationState,
+  countKey: CountType,
+  previousCount: number,
+): void {
   state.counts[countKey] = previousCount;
   state.counts.total += previousCount;
 }
@@ -128,10 +149,13 @@ async function markFeatureTypeAsRead(
   resetCountMut(state, countKey);
 
   try {
-    const response = await fetch(`/api/v2/notifications/mark-read/${featureType}`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `/api/v2/notifications/mark-read/${featureType}`,
+      {
+        method: 'POST',
+        credentials: 'include',
+      },
+    );
 
     if (!response.ok) {
       rollbackCount(state, countKey, previousCount);
@@ -149,7 +173,11 @@ interface DashboardCountsResponse {
   success: boolean;
   data: {
     chat: { totalUnread: number };
-    notifications: { total: number; unread: number; byType: Record<string, number> };
+    notifications: {
+      total: number;
+      unread: number;
+      byType: Record<string, number>;
+    };
     blackboard: { count: number };
     calendar: { count: number };
     documents: { count: number };
@@ -171,8 +199,9 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
   try {
     log.debug({}, '📡 Fetching dashboard counts (single optimized request)...');
 
-    const response = await perf.time('notifications:fetch:dashboard-counts', () =>
-      fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
+    const response = await perf.time(
+      'notifications:fetch:dashboard-counts',
+      () => fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
     );
 
     if (!response.ok) {
@@ -199,12 +228,23 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
     state.counts.blackboard = blackboardCount;
     state.counts.calendar = calendarCount;
     state.counts.total =
-      chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
+      chatCount +
+      surveyCount +
+      documentsCount +
+      kvpCount +
+      blackboardCount +
+      calendarCount;
     state.lastUpdate = new Date();
 
-    log.debug({ counts: state.counts }, `✅ Initial counts loaded: total=${state.counts.total}`);
+    log.debug(
+      { counts: state.counts },
+      `✅ Initial counts loaded: total=${state.counts.total}`,
+    );
   } catch (err) {
-    log.warn({ err }, 'Failed to fetch dashboard counts - SSE will update when connected');
+    log.warn(
+      { err },
+      'Failed to fetch dashboard counts - SSE will update when connected',
+    );
   } finally {
     endTotal();
   }
@@ -260,10 +300,18 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   state.counts.blackboard = blackboardCount;
   state.counts.calendar = calendarCount;
   state.counts.total =
-    chatCount + surveyCount + documentsCount + kvpCount + blackboardCount + calendarCount;
+    chatCount +
+    surveyCount +
+    documentsCount +
+    kvpCount +
+    blackboardCount +
+    calendarCount;
   state.lastUpdate = new Date();
 
-  log.debug({ counts: state.counts }, '✅ Counts initialized from SSR (0ms fetch!)');
+  log.debug(
+    { counts: state.counts },
+    '✅ Counts initialized from SSR (0ms fetch!)',
+  );
 }
 
 /** Disconnect from SSE */

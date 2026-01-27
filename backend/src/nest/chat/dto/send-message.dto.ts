@@ -9,7 +9,10 @@ const MAX_MESSAGE_LENGTH = 5000;
 export const SendMessageBodySchema = z.object({
   message: z
     .string()
-    .max(MAX_MESSAGE_LENGTH, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`)
+    .max(
+      MAX_MESSAGE_LENGTH,
+      `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    )
     .optional(),
 });
 

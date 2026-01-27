@@ -59,12 +59,13 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   // Parallel fetch: machines + reference data
-  const [machinesData, departmentsData, areasData, teamsData] = await Promise.all([
-    apiFetch<Machine[]>('/machines', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-  ]);
+  const [machinesData, departmentsData, areasData, teamsData] =
+    await Promise.all([
+      apiFetch<Machine[]>('/machines', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+    ]);
 
   const machines = Array.isArray(machinesData) ? machinesData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];

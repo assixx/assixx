@@ -9,7 +9,13 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { Team, Department, Admin, TeamMember, Machine } from './_lib/types';
+import type {
+  Team,
+  Department,
+  Admin,
+  TeamMember,
+  Machine,
+} from './_lib/types';
 
 const log = createLogger('ManageTeams');
 
@@ -59,13 +65,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   // Parallel fetch: teams + all reference data
-  const [teamsData, departmentsData, adminsData, employeesData, machinesData] = await Promise.all([
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Admin[]>('/users?role=admin', token, fetch),
-    apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
-    apiFetch<Machine[]>('/machines', token, fetch),
-  ]);
+  const [teamsData, departmentsData, adminsData, employeesData, machinesData] =
+    await Promise.all([
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Admin[]>('/users?role=admin', token, fetch),
+      apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
+      apiFetch<Machine[]>('/machines', token, fetch),
+    ]);
 
   const teams = Array.isArray(teamsData) ? teamsData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];

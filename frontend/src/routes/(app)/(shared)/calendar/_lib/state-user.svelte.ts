@@ -18,7 +18,11 @@ function createUserState() {
   let hasFullAccess = $state(false);
   let userRole = $state<string | null>(null);
 
-  function setUser(user: { id: number; role?: string; hasFullAccess?: boolean }) {
+  function setUser(user: {
+    id: number;
+    role?: string;
+    hasFullAccess?: boolean;
+  }) {
     currentUserId = user.id;
     userRole = user.role ?? null;
     isRoot = user.role === 'root';

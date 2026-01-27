@@ -5,7 +5,14 @@
 
 import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP } from './constants';
 
-import type { Area, BufferData, Department, QuestionType, Team, UserRole } from './types';
+import type {
+  Area,
+  BufferData,
+  Department,
+  QuestionType,
+  Team,
+  UserRole,
+} from './types';
 
 /**
  * Convert Buffer to string
@@ -57,7 +64,9 @@ export function toBool(value: unknown): boolean {
 /**
  * Format date for display
  */
-export function formatSurveyDate(dateStr: string | Date | null | undefined): string {
+export function formatSurveyDate(
+  dateStr: string | Date | null | undefined,
+): string {
   if (dateStr === undefined || dateStr === null || dateStr === '') return '';
 
   const date = new Date(dateStr);
@@ -116,7 +125,10 @@ export function questionTypeNeedsOptions(type: QuestionType): boolean {
 /**
  * Calculate response rate
  */
-export function calculateResponseRate(responseCount: number, completedCount: number): number {
+export function calculateResponseRate(
+  responseCount: number,
+  completedCount: number,
+): number {
   if (responseCount === 0) return 0;
   return Math.round((completedCount / responseCount) * 100);
 }
@@ -208,7 +220,9 @@ export function filterOrgDataByPermissions(
     return { canAssignCompanyWide: true, areas, departments, teams };
   }
 
-  const ledAreaIds = new Set(areas.filter((a) => a.areaLeadId === user.userId).map((a) => a.id));
+  const ledAreaIds = new Set(
+    areas.filter((a) => a.areaLeadId === user.userId).map((a) => a.id),
+  );
 
   const filteredAreas = areas.filter((a) => ledAreaIds.has(a.id));
 
@@ -222,11 +236,15 @@ export function filterOrgDataByPermissions(
       .map((d) => d.id),
   );
 
-  const filteredDepartments = departments.filter((d) => managedDeptIds.has(d.id));
+  const filteredDepartments = departments.filter((d) =>
+    managedDeptIds.has(d.id),
+  );
 
   const filteredTeams = teams.filter(
     (t) =>
-      t.departmentId !== undefined && t.departmentId !== null && managedDeptIds.has(t.departmentId),
+      t.departmentId !== undefined &&
+      t.departmentId !== null &&
+      managedDeptIds.has(t.departmentId),
   );
 
   return {

@@ -72,7 +72,10 @@ export class RotationController {
   ): Promise<SuccessResponse<{ patterns: RotationPatternResponse[] }>> {
     this.logger.debug(`Getting rotation patterns for tenant ${user.tenantId}`);
     const isActiveOnly = activeOnly !== 'false';
-    const patterns = await this.rotationService.getRotationPatterns(user.tenantId, isActiveOnly);
+    const patterns = await this.rotationService.getRotationPatterns(
+      user.tenantId,
+      isActiveOnly,
+    );
     return { success: true, data: { patterns } };
   }
 
@@ -86,7 +89,10 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
     this.logger.debug(`Getting rotation pattern by UUID ${uuid}`);
-    const pattern = await this.rotationService.getRotationPatternByUuid(uuid, user.tenantId);
+    const pattern = await this.rotationService.getRotationPatternByUuid(
+      uuid,
+      user.tenantId,
+    );
     return { success: true, data: { pattern } };
   }
 
@@ -101,7 +107,10 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<{ pattern: RotationPatternResponse }>> {
     this.logger.debug(`Getting rotation pattern ${id}`);
-    const pattern = await this.rotationService.getRotationPattern(id, user.tenantId);
+    const pattern = await this.rotationService.getRotationPattern(
+      id,
+      user.tenantId,
+    );
     return { success: true, data: { pattern } };
   }
 
@@ -180,7 +189,11 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<null>> {
     this.logger.debug(`Deleting rotation pattern by UUID ${uuid}`);
-    await this.rotationService.deleteRotationPatternByUuid(uuid, user.tenantId, user.role);
+    await this.rotationService.deleteRotationPatternByUuid(
+      uuid,
+      user.tenantId,
+      user.role,
+    );
     return { success: true, data: null };
   }
 
@@ -196,7 +209,11 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<null>> {
     this.logger.debug(`Deleting rotation pattern ${id}`);
-    await this.rotationService.deleteRotationPattern(id, user.tenantId, user.role);
+    await this.rotationService.deleteRotationPattern(
+      id,
+      user.tenantId,
+      user.role,
+    );
     return { success: true, data: null };
   }
 
@@ -254,7 +271,9 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationFromConfigDto,
   ): Promise<SuccessResponse<Record<string, unknown>>> {
-    this.logger.debug(`Generating rotation from config for tenant ${user.tenantId}`);
+    this.logger.debug(
+      `Generating rotation from config for tenant ${user.tenantId}`,
+    );
     const result = await this.rotationService.generateRotationFromConfig(
       dto,
       user.tenantId,
@@ -286,7 +305,10 @@ export class RotationController {
       status: query.status,
     };
 
-    const history = await this.rotationService.getRotationHistory(user.tenantId, filters);
+    const history = await this.rotationService.getRotationHistory(
+      user.tenantId,
+      filters,
+    );
     return { success: true, data: { history } };
   }
 
@@ -301,7 +323,12 @@ export class RotationController {
   async deleteRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryDto,
-  ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
+  ): Promise<
+    SuccessResponse<{
+      message: string;
+      deletedCounts: DeleteHistoryCountsResponse;
+    }>
+  > {
     const { teamId, patternId } = query;
     const hasPatternId = patternId !== undefined;
     this.logger.debug(
@@ -334,17 +361,23 @@ export class RotationController {
   async deleteRotationHistoryByDateRange(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryByDateRangeDto,
-  ): Promise<SuccessResponse<{ message: string; deletedCounts: DeleteHistoryCountsResponse }>> {
+  ): Promise<
+    SuccessResponse<{
+      message: string;
+      deletedCounts: DeleteHistoryCountsResponse;
+    }>
+  > {
     this.logger.debug(
       `Deleting rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
     );
-    const deletedCounts = await this.rotationService.deleteRotationHistoryByDateRange(
-      user.tenantId,
-      query.teamId,
-      query.startDate,
-      query.endDate,
-      user.role,
-    );
+    const deletedCounts =
+      await this.rotationService.deleteRotationHistoryByDateRange(
+        user.tenantId,
+        query.teamId,
+        query.startDate,
+        query.endDate,
+        user.role,
+      );
     return {
       success: true,
       data: {
@@ -365,7 +398,11 @@ export class RotationController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<{ message: string }>> {
     this.logger.debug(`Deleting rotation history entry ${id}`);
-    await this.rotationService.deleteRotationHistoryEntry(id, user.tenantId, user.role);
+    await this.rotationService.deleteRotationHistoryEntry(
+      id,
+      user.tenantId,
+      user.role,
+    );
     return { success: true, data: { message: 'Entry deleted successfully' } };
   }
 }

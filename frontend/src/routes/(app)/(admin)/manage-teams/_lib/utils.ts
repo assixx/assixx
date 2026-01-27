@@ -4,7 +4,12 @@
 
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
-import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './constants';
+import {
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
+  MESSAGES,
+  FORM_DEFAULTS,
+} from './constants';
 
 import type {
   Team,
@@ -51,7 +56,10 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
  * @param allDepartments - All available departments with area info
  * @returns Badge info with class, text, and title
  */
-export function getDepartmentBadge(team: Team, allDepartments: Department[]): BadgeInfo {
+export function getDepartmentBadge(
+  team: Team,
+  allDepartments: Department[],
+): BadgeInfo {
   if (team.departmentId === undefined) {
     return {
       class: 'badge--secondary',
@@ -188,7 +196,10 @@ export function highlightMatch(text: string, query: string): string {
  * @param allEmployees - All available employees
  * @returns Display text for the dropdown trigger
  */
-export function getMembersDisplayText(memberIds: number[], allEmployees: TeamMember[]): string {
+export function getMembersDisplayText(
+  memberIds: number[],
+  allEmployees: TeamMember[],
+): string {
   if (memberIds.length === 0) return MESSAGES.NO_MEMBERS;
 
   const names = memberIds
@@ -208,7 +219,10 @@ export function getMembersDisplayText(memberIds: number[], allEmployees: TeamMem
  * @param allMachines - All available machines
  * @returns Display text for the dropdown trigger
  */
-export function getMachinesDisplayText(machineIds: number[], allMachines: Machine[]): string {
+export function getMachinesDisplayText(
+  machineIds: number[],
+  allMachines: Machine[],
+): string {
   if (machineIds.length === 0) return MESSAGES.NO_MACHINES;
 
   const names = machineIds
@@ -243,7 +257,10 @@ export function getDepartmentDisplayText(
  * @param allAdmins - All available admins
  * @returns Leader name or default text
  */
-export function getLeaderDisplayText(leaderId: number | null, allAdmins: Admin[]): string {
+export function getLeaderDisplayText(
+  leaderId: number | null,
+  allAdmins: Admin[],
+): string {
   if (leaderId === null) return MESSAGES.NO_LEADER;
   const admin = allAdmins.find((a) => a.id === leaderId);
   return admin ? `${admin.firstName} ${admin.lastName}` : MESSAGES.NO_LEADER;

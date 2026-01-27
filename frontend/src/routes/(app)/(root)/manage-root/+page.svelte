@@ -40,7 +40,11 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { RootUser, StatusFilter, FormIsActiveStatus } from './_lib/types';
+  import type {
+    RootUser,
+    StatusFilter,
+    FormIsActiveStatus,
+  } from './_lib/types';
 
   import '../../../../styles/manage-root.css';
   import '../../../../styles/password-strength.css';
@@ -98,7 +102,9 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+  );
 
   // Derived: Filtered users based on current filter/search state
   const filteredUsers = $derived(
@@ -139,7 +145,10 @@
       return false;
     }
     const needsPasswordValidation = !isEditMode || formPassword !== '';
-    if (needsPasswordValidation && !validatePasswordMatch(formPassword, formPasswordConfirm)) {
+    if (
+      needsPasswordValidation &&
+      !validatePasswordMatch(formPassword, formPasswordConfirm)
+    ) {
       passwordError = true;
       return false;
     }
@@ -337,11 +346,18 @@
 <div class="container">
   <div class="card">
     <div class="card__header">
-      <h2 class="card__title"><i class="fas fa-shield-alt mr-2"></i>{MESSAGES.PAGE_HEADING}</h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">{MESSAGES.PAGE_DESCRIPTION}</p>
+      <h2 class="card__title">
+        <i class="fas fa-shield-alt mr-2"></i>{MESSAGES.PAGE_HEADING}
+      </h2>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        {MESSAGES.PAGE_DESCRIPTION}
+      </p>
 
       <div class="flex items-center justify-between gap-4 mt-6">
-        <div class="toggle-group" id="root-status-toggle">
+        <div
+          class="toggle-group"
+          id="root-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -384,8 +400,14 @@
           </button>
         </div>
 
-        <div class="search-input-wrapper max-w-80" class:search-input-wrapper--open={searchOpen}>
-          <div class="search-input" id="root-search-container">
+        <div
+          class="search-input-wrapper max-w-80"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="root-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -440,7 +462,10 @@
                       {#if user.employeeNumber}
                         <span>
                           <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes -->
-                          • {@html highlightMatch(user.employeeNumber, currentSearchQuery)}
+                          • {@html highlightMatch(
+                            user.employeeNumber,
+                            currentSearchQuery,
+                          )}
                         </span>
                       {/if}
                     </div>
@@ -469,10 +494,14 @@
 
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
-            >Erneut versuchen</button
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => invalidateAll()}>Erneut versuchen</button
           >
         </div>
       {:else if filteredUsers.length === 0}
@@ -480,7 +509,10 @@
           <div class="empty-state__icon"><i class="fas fa-shield-alt"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_USERS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_USER}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
             ><i class="fas fa-plus"></i> Root-Benutzer hinzufügen</button
           >
         </div>
@@ -489,9 +521,10 @@
           <table class="data-table data-table--hover data-table--striped">
             <thead>
               <tr
-                ><th>ID</th><th>Name</th><th>E-Mail</th><th>Personalnummer</th><th>Position</th><th
-                  >Status</th
-                ><th>Erstellt am</th><th>Aktionen</th></tr
+                ><th>ID</th><th>Name</th><th>E-Mail</th><th>Personalnummer</th
+                ><th>Position</th><th>Status</th><th>Erstellt am</th><th
+                  >Aktionen</th
+                ></tr
               >
             </thead>
             <tbody>
@@ -500,8 +533,16 @@
                   <td>{user.id}</td>
                   <td>
                     <div class="flex items-center gap-2">
-                      <div class="avatar avatar--sm avatar--color-{getAvatarColor(user.id)}">
-                        <span>{user.firstName.charAt(0)}{user.lastName.charAt(0)}</span>
+                      <div
+                        class="avatar avatar--sm avatar--color-{getAvatarColor(
+                          user.id,
+                        )}"
+                      >
+                        <span
+                          >{user.firstName.charAt(0)}{user.lastName.charAt(
+                            0,
+                          )}</span
+                        >
                       </div>
                       <span>{user.firstName} {user.lastName}</span>
                     </div>
@@ -545,7 +586,9 @@
           <div class="alert__content">
             <div class="alert__message">
               {MESSAGES.PROFILE_INFO}
-              <a href={resolvePath('/root-profile')} class="text-blue-500 hover:underline"
+              <a
+                href={resolvePath('/root-profile')}
+                class="text-blue-500 hover:underline"
                 >{MESSAGES.PROFILE_LINK_TEXT}</a
               >.
             </div>
@@ -556,7 +599,11 @@
   </div>
 </div>
 
-<button type="button" class="btn-float" onclick={openAddModal} aria-label="Root-Benutzer hinzufügen"
+<button
+  type="button"
+  class="btn-float"
+  onclick={openAddModal}
+  aria-label="Root-Benutzer hinzufügen"
   ><i class="fas fa-user-shield"></i></button
 >
 

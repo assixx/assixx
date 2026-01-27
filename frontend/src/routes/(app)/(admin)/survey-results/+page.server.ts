@@ -69,9 +69,15 @@ async function fetchSurveyWithPermission(
   token: string,
   fetchFn: typeof fetch,
 ): Promise<Survey> {
-  const response = await fetchFn(`${API_BASE}/surveys/${surveyId}?manage=true`, {
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-  });
+  const response = await fetchFn(
+    `${API_BASE}/surveys/${surveyId}?manage=true`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    },
+  );
 
   if (response.status === 403) {
     error(403, 'Keine Berechtigung für diese Umfrage-Ergebnisse');
@@ -118,7 +124,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 
   // Safe fallbacks
   const questions = Array.isArray(questionsData) ? questionsData : [];
-  const responses = Array.isArray(responsesData?.responses) ? responsesData.responses : [];
+  const responses =
+    Array.isArray(responsesData?.responses) ? responsesData.responses : [];
 
   return {
     surveyId,

@@ -90,9 +90,13 @@ export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
  * Check if user has already responded to a survey
  * API returns SurveyResponse directly (or null if not responded)
  */
-export async function checkUserResponse(surveyId: number): Promise<ResponseCheck> {
+export async function checkUserResponse(
+  surveyId: number,
+): Promise<ResponseCheck> {
   try {
-    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.myResponse(surveyId));
+    const result = await apiClient.get<SurveyResponse | null>(
+      API_ENDPOINTS.myResponse(surveyId),
+    );
 
     // API returns SurveyResponse directly, not ResponseCheck wrapper
     // If result has 'id' property, user has responded
@@ -112,9 +116,13 @@ export async function checkUserResponse(surveyId: number): Promise<ResponseCheck
  * Fetch user's response to a survey
  * API returns SurveyResponse directly (or null if not responded)
  */
-export async function fetchUserResponse(surveyId: number): Promise<ResponseCheck | null> {
+export async function fetchUserResponse(
+  surveyId: number,
+): Promise<ResponseCheck | null> {
   try {
-    const result = await apiClient.get<SurveyResponse | null>(API_ENDPOINTS.myResponse(surveyId));
+    const result = await apiClient.get<SurveyResponse | null>(
+      API_ENDPOINTS.myResponse(surveyId),
+    );
 
     // API returns SurveyResponse directly, not ResponseCheck wrapper
     if (result !== null && typeof result === 'object' && 'id' in result) {
@@ -142,7 +150,8 @@ export async function submitResponse(
   } catch (err) {
     log.error({ err, surveyId }, 'Error submitting survey');
     checkSessionExpired(err);
-    const message = err instanceof Error ? err.message : 'Fehler beim Absenden der Antworten';
+    const message =
+      err instanceof Error ? err.message : 'Fehler beim Absenden der Antworten';
     return { success: false, error: message };
   }
 }

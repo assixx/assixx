@@ -7,7 +7,11 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import {
+    showWarningAlert,
+    showErrorAlert,
+    showSuccessAlert,
+  } from '$lib/stores/toast';
 
   import {
     buildDepartmentPayload,
@@ -94,7 +98,9 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+  );
 
   // Derived: Filtered departments based on current filter/search state
   const filteredDepartments = $derived(
@@ -124,7 +130,9 @@
       closeDepartmentModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(isEditMode ? 'Abteilung aktualisiert' : 'Abteilung erstellt');
+      showSuccessAlert(
+        isEditMode ? 'Abteilung aktualisiert' : 'Abteilung erstellt',
+      );
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -143,7 +151,10 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Abteilung wurde gelöscht');
-    } else if (result.hasDependencies === true && result.dependencyDetails !== undefined) {
+    } else if (
+      result.hasDependencies === true &&
+      result.dependencyDetails !== undefined
+    ) {
       showForceDeleteWarning(result.dependencyDetails);
     } else if (result.error !== null) {
       showErrorAlert(result.error);
@@ -323,11 +334,16 @@
         <i class="fas fa-building mr-2"></i>
         {MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">{MESSAGES.PAGE_DESCRIPTION}</p>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        {MESSAGES.PAGE_DESCRIPTION}
+      </p>
 
       <div class="flex gap-4 items-center justify-between mt-6">
         <!-- Status Toggle Group -->
-        <div class="toggle-group" id="department-status-toggle">
+        <div
+          class="toggle-group"
+          id="department-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -379,8 +395,14 @@
         </div>
 
         <!-- Search Input -->
-        <div class="search-input-wrapper max-w-80" class:search-input-wrapper--open={searchOpen}>
-          <div class="search-input" id="department-search-container">
+        <div
+          class="search-input-wrapper max-w-80"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="department-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -401,7 +423,10 @@
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="search-input__results" id="department-search-results">
+          <div
+            class="search-input__results"
+            id="department-search-results"
+          >
             {#if currentSearchQuery && filteredDepartments.length === 0}
               <div class="search-input__no-results">
                 {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
@@ -420,7 +445,9 @@
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes input -->
                       {@html highlightMatch(dept.name, currentSearchQuery)}
                     </div>
-                    <div class="search-result-item__email">{getAreaDisplay(dept.areaName)}</div>
+                    <div class="search-result-item__email">
+                      {getAreaDisplay(dept.areaName)}
+                    </div>
                     <div class="search-result-item__meta">
                       {dept.employeeCount ?? 0} Mitarbeiter
                     </div>
@@ -441,18 +468,31 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
-            >{MESSAGES.BTN_RETRY}</button
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => invalidateAll()}>{MESSAGES.BTN_RETRY}</button
           >
         </div>
       {:else if filteredDepartments.length === 0}
-        <div id="departments-empty" class="empty-state">
+        <div
+          id="departments-empty"
+          class="empty-state"
+        >
           <div class="empty-state__icon"><i class="fas fa-building"></i></div>
           <h3 class="empty-state__title">{MESSAGES.NO_DEPARTMENTS_FOUND}</h3>
-          <p class="empty-state__description">{MESSAGES.CREATE_FIRST_DEPARTMENT}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}>
+          <p class="empty-state__description">
+            {MESSAGES.CREATE_FIRST_DEPARTMENT}
+          </p>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
+          >
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_DEPARTMENT}
           </button>
@@ -460,7 +500,10 @@
       {:else}
         <div id="departments-table-content">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped" id="departments-table">
+            <table
+              class="data-table data-table--hover data-table--striped"
+              id="departments-table"
+            >
               <thead>
                 <tr>
                   <th scope="col">{MESSAGES.TH_NAME}</th>
@@ -476,7 +519,9 @@
                 {#each filteredDepartments as dept (dept.id)}
                   <tr>
                     <td>
-                      <div class="font-medium text-[var(--color-text-primary)]">{dept.name}</div>
+                      <div class="font-medium text-[var(--color-text-primary)]">
+                        {dept.name}
+                      </div>
                     </td>
                     <td>
                       <div class="text-[var(--color-text-secondary)] text-sm">
@@ -490,11 +535,13 @@
                     </td>
                     <td>
                       <span
-                        class="badge {dept.areaName !== null &&
-                        dept.areaName !== undefined &&
-                        dept.areaName !== ''
-                          ? 'badge--info'
-                          : 'badge--secondary'}"
+                        class="badge {(
+                          dept.areaName !== null &&
+                          dept.areaName !== undefined &&
+                          dept.areaName !== ''
+                        ) ?
+                          'badge--info'
+                        : 'badge--secondary'}"
                         title={dept.areaName ?? 'Kein Bereich zugewiesen'}
                       >
                         {getAreaDisplay(dept.areaName)}
@@ -507,9 +554,9 @@
                     </td>
                     <td>
                       <span
-                        class="badge {(dept.teamCount ?? 0) > 0
-                          ? 'badge--info'
-                          : 'badge--secondary'}"
+                        class="badge {(dept.teamCount ?? 0) > 0 ?
+                          'badge--info'
+                        : 'badge--secondary'}"
                         title={dept.teamNames ?? 'Keine Teams zugewiesen'}
                       >
                         {getTeamCountText(dept.teamCount ?? 0)}
@@ -553,7 +600,12 @@
 </div>
 
 <!-- Floating Action Button -->
-<button type="button" class="btn-float" onclick={openAddModal} aria-label="Abteilung hinzufügen">
+<button
+  type="button"
+  class="btn-float"
+  onclick={openAddModal}
+  aria-label="Abteilung hinzufügen"
+>
   <i class="fas fa-plus"></i>
 </button>
 

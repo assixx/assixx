@@ -93,7 +93,11 @@
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button type="button" class="btn btn-light" onclick={goBack}>
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={goBack}
+    >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
     </button>
   </div>
@@ -114,7 +118,9 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
         </div>
       {:else if entries.length === 0}
@@ -123,8 +129,14 @@
             <i class="fas fa-archive"></i>
           </div>
           <h3 class="empty-state__title">Keine archivierten Einträge</h3>
-          <p class="empty-state__description">Es wurden noch keine Einträge archiviert.</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={goBack}>
+          <p class="empty-state__description">
+            Es wurden noch keine Einträge archiviert.
+          </p>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={goBack}
+          >
             <i class="fas fa-arrow-left mr-2"></i>
             Zurück zum Schwarzen Brett
           </button>
@@ -156,14 +168,18 @@
                   }}
                 >
                   <td>
-                    <div class="font-medium">{truncateText(entry.title, 50)}</div>
+                    <div class="font-medium">
+                      {truncateText(entry.title, 50)}
+                    </div>
                     <div class="text-sm text-[var(--color-text-secondary)]">
                       {truncateText(entry.content.replace(/<[^>]*>/g, ''), 60)}
                     </div>
                   </td>
                   <td>{entry.authorFullName ?? entry.authorName ?? '-'}</td>
                   <td>
-                    <span class="badge badge--secondary">{getOrgLevelText(entry.orgLevel)}</span>
+                    <span class="badge badge--secondary"
+                      >{getOrgLevelText(entry.orgLevel)}</span
+                    >
                   </td>
                   <td>
                     <span class="badge {getPriorityClass(entry.priority)}">

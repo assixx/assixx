@@ -73,16 +73,26 @@ async function apiFetch<T>(
 }
 
 /** Build calendar date range for event fetching */
-function buildCalendarDateRange(): { startISO: string; endISO: string; today: Date } {
+function buildCalendarDateRange(): {
+  startISO: string;
+  endISO: string;
+  today: Date;
+} {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const futureDate = new Date(today);
   futureDate.setMonth(futureDate.getMonth() + CALENDAR_MONTHS_AHEAD);
-  return { startISO: today.toISOString(), endISO: futureDate.toISOString(), today };
+  return {
+    startISO: today.toISOString(),
+    endISO: futureDate.toISOString(),
+    today,
+  };
 }
 
 /** Extract documents array from various API response shapes */
-function extractDocuments(data: { documents?: Document[] } | Document[] | null): Document[] {
+function extractDocuments(
+  data: { documents?: Document[] } | Document[] | null,
+): Document[] {
   if (!data) return [];
   if ('documents' in data) return data.documents ?? [];
   return Array.isArray(data) ? data : [];
@@ -98,7 +108,10 @@ function extractEvents(
 }
 
 /** Filter, sort, and limit upcoming events */
-function filterUpcomingEvents(events: CalendarEvent[], today: Date): CalendarEvent[] {
+function filterUpcomingEvents(
+  events: CalendarEvent[],
+  today: Date,
+): CalendarEvent[] {
   return events
     .filter((event) => {
       if (!event.startTime) return false;
@@ -109,7 +122,10 @@ function filterUpcomingEvents(events: CalendarEvent[], today: Date): CalendarEve
         return false;
       }
     })
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+    )
     .slice(0, LIST_LIMITS.upcomingEvents);
 }
 
@@ -126,23 +142,33 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const { startISO, endISO, today } = buildCalendarDateRange();
 
   // Fetch ALL data in PARALLEL (single Promise.all = single network round-trip)
-  const [usersData, documentsData, departmentsData, teamsData, eventsData, blackboardData] =
-    await Promise.all([
-      apiFetch<User[]>('/users?role=employee', token, fetch),
-      apiFetch<{ documents?: Document[] } | Document[]>('/documents', token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Team[]>('/teams', token, fetch),
-      apiFetch<{ events?: CalendarEvent[] } | CalendarEvent[]>(
-        `/calendar/events?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&filter=all&limit=10`,
-        token,
-        fetch,
-      ),
-      apiFetch<BlackboardEntry[]>(
-        `/blackboard/dashboard?limit=${LIST_LIMITS.blackboardEntries}`,
-        token,
-        fetch,
-      ),
-    ]);
+  const [
+    usersData,
+    documentsData,
+    departmentsData,
+    teamsData,
+    eventsData,
+    blackboardData,
+  ] = await Promise.all([
+    apiFetch<User[]>('/users?role=employee', token, fetch),
+    apiFetch<{ documents?: Document[] } | Document[]>(
+      '/documents',
+      token,
+      fetch,
+    ),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Team[]>('/teams', token, fetch),
+    apiFetch<{ events?: CalendarEvent[] } | CalendarEvent[]>(
+      `/calendar/events?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&filter=all&limit=10`,
+      token,
+      fetch,
+    ),
+    apiFetch<BlackboardEntry[]>(
+      `/blackboard/dashboard?limit=${LIST_LIMITS.blackboardEntries}`,
+      token,
+      fetch,
+    ),
+  ]);
 
   // Process responses with safe fallbacks
   const employees = Array.isArray(usersData) ? usersData : [];

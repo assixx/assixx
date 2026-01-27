@@ -27,7 +27,10 @@ export function parseJwt(token: string): JwtPayload | null {
  * @param currentPlan - Current subscription plan code
  * @param minPlan - Minimum required plan for the feature
  */
-export function canActivateFeature(currentPlan: string, minPlan: string): boolean {
+export function canActivateFeature(
+  currentPlan: string,
+  minPlan: string,
+): boolean {
   return (
     PLAN_ORDER.indexOf(currentPlan as (typeof PLAN_ORDER)[number]) >=
     PLAN_ORDER.indexOf(minPlan as (typeof PLAN_ORDER)[number])
@@ -67,7 +70,10 @@ export function getPlanBadge(minPlan: string): string {
  * @param isActive - Whether feature is active
  * @param canActivate - Whether feature can be activated
  */
-export function getFeatureStatusText(isActive: boolean, canActivate: boolean): string {
+export function getFeatureStatusText(
+  isActive: boolean,
+  canActivate: boolean,
+): string {
   if (isActive) return 'Aktiv';
   if (!canActivate) return 'Gesperrt';
   return 'Inaktiv';
@@ -78,7 +84,10 @@ export function getFeatureStatusText(isActive: boolean, canActivate: boolean): s
  * @param isActive - Whether feature is active
  * @param canActivate - Whether feature can be activated
  */
-export function getFeatureStatusClass(isActive: boolean, canActivate: boolean): string {
+export function getFeatureStatusClass(
+  isActive: boolean,
+  canActivate: boolean,
+): string {
   if (isActive) return 'status-active';
   if (!canActivate) return 'status-locked';
   return 'status-inactive';
@@ -89,7 +98,10 @@ export function getFeatureStatusClass(isActive: boolean, canActivate: boolean): 
  * @param feature - Feature object
  * @param currentPlan - Current subscription plan
  */
-export function getFeatureCardClasses(feature: Feature, currentPlan: string): string {
+export function getFeatureCardClasses(
+  feature: Feature,
+  currentPlan: string,
+): string {
   const canActivate = canActivateFeature(currentPlan, feature.minPlan);
   let classes = 'feature-card';
   if (!canActivate) classes += ' feature-card--premium';
@@ -103,11 +115,15 @@ export function getFeatureCardClasses(feature: Feature, currentPlan: string): st
  * @param planData - Current plan data
  * @param addons - Tenant addons
  */
-export function calculateTotalCost(planData: Plan | undefined, addons: TenantAddons): number {
+export function calculateTotalCost(
+  planData: Plan | undefined,
+  addons: TenantAddons,
+): number {
   const baseCost = planData?.basePrice ?? 0;
   const employeeCost = (addons.employees ?? 0) * ADDON_PRICING.employees;
   const adminCost = (addons.admins ?? 0) * ADDON_PRICING.admins;
-  const storageCost = ((addons.storage_gb ?? 0) / 100) * ADDON_PRICING.storage_per_100gb;
+  const storageCost =
+    ((addons.storage_gb ?? 0) / 100) * ADDON_PRICING.storage_per_100gb;
   return baseCost + employeeCost + adminCost + storageCost;
 }
 

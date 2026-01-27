@@ -24,10 +24,16 @@ class DeletionWorker {
       logger.error({ err: error }, 'Uncaught exception in deletion worker');
       void this.shutdown('uncaughtException');
     });
-    process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-      logger.error({ reason, promise }, 'Unhandled rejection in deletion worker');
-      void this.shutdown('unhandledRejection');
-    });
+    process.on(
+      'unhandledRejection',
+      (reason: unknown, promise: Promise<unknown>) => {
+        logger.error(
+          { reason, promise },
+          'Unhandled rejection in deletion worker',
+        );
+        void this.shutdown('unhandledRejection');
+      },
+    );
   }
 
   async start(): Promise<void> {
@@ -46,7 +52,9 @@ class DeletionWorker {
       this.startHealthCheck();
 
       logger.info('✅ Deletion Worker ready and running');
-      logger.info(` Checking for queued deletions every ${this.processingInterval / 1000} seconds`);
+      logger.info(
+        ` Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
+      );
 
       // Main processing loop
       while (this.isRunning) {
@@ -83,23 +91,25 @@ class DeletionWorker {
     // Simple HTTP server for health checks
     const healthPort = process.env['DELETION_WORKER_HEALTH_PORT'] ?? 3001;
 
-    const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-      if (req.url === '/health') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            status: 'healthy',
-            uptime: process.uptime(),
-            timestamp: new Date().toISOString(),
-            isProcessing: this.isProcessing,
-            pid: process.pid,
-          }),
-        );
-      } else {
-        res.writeHead(404);
-        res.end('Not found');
-      }
-    });
+    const server = http.createServer(
+      (req: IncomingMessage, res: ServerResponse) => {
+        if (req.url === '/health') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              status: 'healthy',
+              uptime: process.uptime(),
+              timestamp: new Date().toISOString(),
+              isProcessing: this.isProcessing,
+              pid: process.pid,
+            }),
+          );
+        } else {
+          res.writeHead(404);
+          res.end('Not found');
+        }
+      },
+    );
 
     server.listen(healthPort, () => {
       logger.info(`📡 Health check endpoint listening on port ${healthPort}`);
@@ -107,11 +117,15 @@ class DeletionWorker {
   }
 
   private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, ms));
+    await new Promise((resolve: (value: unknown) => void) =>
+      setTimeout(resolve, ms),
+    );
   }
 
   private async shutdown(signal: string): Promise<void> {
-    logger.info(`⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`);
+    logger.info(
+      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`,
+    );
 
     this.isRunning = false;
 

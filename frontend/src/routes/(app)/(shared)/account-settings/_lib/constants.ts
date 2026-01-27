@@ -35,12 +35,16 @@ export const MESSAGES = {
 
   // Root User Check
   notEnoughRootUsers: (count: number): string => {
-    const userText = count === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer';
+    const userText =
+      count === 1 ?
+        'Es gibt nur 1 Root-Benutzer'
+      : 'Es gibt keine Root-Benutzer';
     return `Tenant-Löschung nicht möglich: ${userText}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`;
   },
 
   // Form
-  reasonTooShort: (length: number): string => `Mindestens 10 Zeichen erforderlich (${length}/10)`,
+  reasonTooShort: (length: number): string =>
+    `Mindestens 10 Zeichen erforderlich (${length}/10)`,
   characterCount: (length: number): string => `${length} Zeichen`,
 } as const;
 

@@ -14,7 +14,10 @@ function determineEffectiveRole(user: User | null): string {
   // Check sessionStorage for role switch
   if (typeof sessionStorage !== 'undefined') {
     const roleSwitch = sessionStorage.getItem('roleSwitch');
-    if ((user.role === 'admin' || user.role === 'root') && roleSwitch === 'employee') {
+    if (
+      (user.role === 'admin' || user.role === 'root') &&
+      roleSwitch === 'employee'
+    ) {
       return 'employee';
     }
   }

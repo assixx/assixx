@@ -11,7 +11,10 @@ import { Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 
 import { CurrentUser, Roles } from '../common/index.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import type { RoleSwitchResult, RoleSwitchStatus } from './role-switch.service.js';
+import type {
+  RoleSwitchResult,
+  RoleSwitchStatus,
+} from './role-switch.service.js';
 import { RoleSwitchService } from './role-switch.service.js';
 
 @Controller('role-switch')
@@ -29,8 +32,13 @@ export class RoleSwitchController {
   @Post('to-employee')
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.OK)
-  async switchToEmployee(@CurrentUser() user: NestAuthUser): Promise<RoleSwitchResult> {
-    return await this.roleSwitchService.switchToEmployee(user.id, user.tenantId);
+  async switchToEmployee(
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<RoleSwitchResult> {
+    return await this.roleSwitchService.switchToEmployee(
+      user.id,
+      user.tenantId,
+    );
   }
 
   /**
@@ -44,8 +52,13 @@ export class RoleSwitchController {
    */
   @Post('to-original')
   @HttpCode(HttpStatus.OK)
-  async switchToOriginal(@CurrentUser() user: NestAuthUser): Promise<RoleSwitchResult> {
-    return await this.roleSwitchService.switchToOriginal(user.id, user.tenantId);
+  async switchToOriginal(
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<RoleSwitchResult> {
+    return await this.roleSwitchService.switchToOriginal(
+      user.id,
+      user.tenantId,
+    );
   }
 
   /**
@@ -59,7 +72,9 @@ export class RoleSwitchController {
   @Post('root-to-admin')
   @Roles('root')
   @HttpCode(HttpStatus.OK)
-  async rootToAdmin(@CurrentUser() user: NestAuthUser): Promise<RoleSwitchResult> {
+  async rootToAdmin(
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<RoleSwitchResult> {
     return await this.roleSwitchService.rootToAdmin(user.id, user.tenantId);
   }
 

@@ -4,7 +4,12 @@
  * Transforms controller responses into standardized API format.
  * Wraps data in success: true, data: ... structure.
  */
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -33,8 +38,14 @@ interface PaginatedData<T> {
 }
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessResponse<T>> {
-  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<SuccessResponse<T>> {
+export class ResponseInterceptor<T> implements NestInterceptor<
+  T,
+  SuccessResponse<T>
+> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler<T>,
+  ): Observable<SuccessResponse<T>> {
     return next.handle().pipe(
       map((data: T) => {
         // Skip wrapping for raw responses (strings, Buffers)
@@ -49,7 +60,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessRespons
         const rawContentType = response.getHeader('content-type');
         // getHeader returns string | number | string[] | undefined
         // We only care about string values for Content-Type
-        const contentType = typeof rawContentType === 'string' ? rawContentType : '';
+        const contentType =
+          typeof rawContentType === 'string' ? rawContentType : '';
         if (contentType !== '' && !contentType.includes('application/json')) {
           return data as unknown as SuccessResponse<T>;
         }
@@ -94,7 +106,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessRespons
     // Support 'items', 'entries', and 'data' as array property names
     const dataObj = data as Record<string, unknown>;
     const hasItems = 'items' in dataObj && Array.isArray(dataObj['items']);
-    const hasEntries = 'entries' in dataObj && Array.isArray(dataObj['entries']);
+    const hasEntries =
+      'entries' in dataObj && Array.isArray(dataObj['entries']);
     const hasData = 'data' in dataObj && Array.isArray(dataObj['data']);
     // Normalize all array properties to 'items' for consistent handling
     if (hasEntries && !hasItems) {

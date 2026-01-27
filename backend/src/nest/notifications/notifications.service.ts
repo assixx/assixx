@@ -6,7 +6,12 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -144,7 +149,10 @@ export interface NotificationPreferencesResponse {
   emailNotifications: boolean;
   pushNotifications: boolean;
   smsNotifications: boolean;
-  notificationTypes: Record<string, { email: boolean; push: boolean; sms: boolean }>;
+  notificationTypes: Record<
+    string,
+    { email: boolean; push: boolean; sms: boolean }
+  >;
 }
 
 /**
@@ -200,13 +208,19 @@ export class NotificationsService {
     tenantId: number,
     filters: NotificationFilters,
   ): Promise<PaginatedNotificationsResult> {
-    this.logger.debug(`Listing notifications for user ${userId} in tenant ${tenantId}`);
+    this.logger.debug(
+      `Listing notifications for user ${userId} in tenant ${tenantId}`,
+    );
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const offset = (page - 1) * limit;
 
-    const { conditions, params } = this.buildNotificationConditions(userId, tenantId, filters);
+    const { conditions, params } = this.buildNotificationConditions(
+      userId,
+      tenantId,
+      filters,
+    );
 
     // Build main query with dynamic parameter indices
     const userIdParamIndex = params.length + 1;
@@ -226,7 +240,12 @@ export class NotificationsService {
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `;
 
-    const rows = await this.db.query<DbNotificationRow>(query, [...params, userId, limit, offset]);
+    const rows = await this.db.query<DbNotificationRow>(query, [
+      ...params,
+      userId,
+      limit,
+      offset,
+    ]);
 
     const { total, unreadCount } = await this.getNotificationCounts(
       userId,
@@ -237,7 +256,9 @@ export class NotificationsService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      notifications: rows.map((row: DbNotificationRow) => this.mapNotificationToApi(row)),
+      notifications: rows.map((row: DbNotificationRow) =>
+        this.mapNotificationToApi(row),
+      ),
       total,
       page,
       totalPages,
@@ -310,8 +331,14 @@ export class NotificationsService {
   /**
    * Mark notification as read
    */
-  async markAsRead(notificationId: number, userId: number, tenantId: number): Promise<void> {
-    this.logger.log(`Marking notification ${notificationId} as read for user ${userId}`);
+  async markAsRead(
+    notificationId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    this.logger.log(
+      `Marking notification ${notificationId} as read for user ${userId}`,
+    );
 
     // Check if notification exists and user has access
     const rows = await this.db.query<DbNotificationRow>(
@@ -345,7 +372,10 @@ export class NotificationsService {
   /**
    * Mark all notifications as read
    */
-  async markAllAsRead(userId: number, tenantId: number): Promise<{ updated: number }> {
+  async markAllAsRead(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ updated: number }> {
     this.logger.log(`Marking all notifications as read for user ${userId}`);
 
     // Get all unread notifications for user
@@ -415,7 +445,8 @@ export class NotificationsService {
     if (
       userRole !== 'admin' &&
       userRole !== 'root' &&
-      (notification.recipient_type !== 'user' || notification.recipient_id !== userId)
+      (notification.recipient_type !== 'user' ||
+        notification.recipient_id !== userId)
     ) {
       throw new NotFoundException({
         code: ERROR_CODES.NOT_FOUND,
@@ -424,10 +455,10 @@ export class NotificationsService {
     }
 
     // Delete notification
-    await this.db.query(`DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`, [
-      notificationId,
-      tenantId,
-    ]);
+    await this.db.query(
+      `DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`,
+      [notificationId, tenantId],
+    );
 
     // Audit log
     await this.createAuditLog(
@@ -449,7 +480,10 @@ export class NotificationsService {
   /**
    * Get notification preferences
    */
-  async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
+  async getPreferences(
+    userId: number,
+    tenantId: number,
+  ): Promise<NotificationPreferencesResponse> {
     this.logger.debug(`Getting preferences for user ${userId}`);
 
     const rows = await this.db.query<DbNotificationPreferencesRow>(
@@ -464,7 +498,10 @@ export class NotificationsService {
       return this.getDefaultPreferences();
     }
 
-    let notificationTypes: Record<string, { email: boolean; push: boolean; sms: boolean }> = {};
+    let notificationTypes: Record<
+      string,
+      { email: boolean; push: boolean; sms: boolean }
+    > = {};
     if (prefs.preferences !== null) {
       try {
         notificationTypes =
@@ -473,7 +510,10 @@ export class NotificationsService {
               string,
               { email: boolean; push: boolean; sms: boolean }
             >)
-          : (prefs.preferences as Record<string, { email: boolean; push: boolean; sms: boolean }>);
+          : (prefs.preferences as Record<
+              string,
+              { email: boolean; push: boolean; sms: boolean }
+            >);
       } catch {
         this.logger.warn('Failed to parse notification preferences JSON');
         notificationTypes = {};
@@ -585,7 +625,9 @@ export class NotificationsService {
   /**
    * Get notification statistics (admin only)
    */
-  async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
+  async getStatistics(
+    tenantId: number,
+  ): Promise<NotificationStatisticsResponse> {
     this.logger.debug(`Getting statistics for tenant ${tenantId}`);
 
     // Total count (PostgreSQL returns bigint as string)
@@ -607,7 +649,10 @@ export class NotificationsService {
       `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY priority`,
       [tenantId],
     );
-    const byPriority = this.rowsToRecord(byPriorityRows, (r: DbPriorityCountRow) => r.priority);
+    const byPriority = this.rowsToRecord(
+      byPriorityRows,
+      (r: DbPriorityCountRow) => r.priority,
+    );
 
     // Read rate
     const readRateRows = await this.db.query<DbReadRateRow>(
@@ -619,9 +664,16 @@ export class NotificationsService {
       [tenantId],
     );
     const readRateData = readRateRows[0];
-    const totalNotifications = Number.parseInt(readRateData?.total_notifications ?? '0', 10);
-    const readNotifications = Number.parseInt(readRateData?.read_notifications ?? '0', 10);
-    const readRate = totalNotifications > 0 ? readNotifications / totalNotifications : 0;
+    const totalNotifications = Number.parseInt(
+      readRateData?.total_notifications ?? '0',
+      10,
+    );
+    const readNotifications = Number.parseInt(
+      readRateData?.read_notifications ?? '0',
+      10,
+    );
+    const readRate =
+      totalNotifications > 0 ? readNotifications / totalNotifications : 0;
 
     // Trends (last 30 days)
     const trendsRows = await this.db.query<DbDateCountRow>(
@@ -648,7 +700,10 @@ export class NotificationsService {
   /**
    * Get personal notification statistics
    */
-  async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
+  async getPersonalStats(
+    userId: number,
+    tenantId: number,
+  ): Promise<PersonalStatsResponse> {
     // Total notifications for user
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications n
@@ -752,7 +807,9 @@ export class NotificationsService {
       this.logger.log(`Created ${type} notification for feature ${featureId}`);
     } catch (error) {
       // Log but don't fail - notification is secondary to feature creation
-      this.logger.error(`Failed to create ${type} notification: ${String(error)}`);
+      this.logger.error(
+        `Failed to create ${type} notification: ${String(error)}`,
+      );
     }
   }
 
@@ -770,7 +827,9 @@ export class NotificationsService {
     userId: number,
     tenantId: number,
   ): Promise<number> {
-    this.logger.log(`Marking all ${type} notifications as read for user ${userId}`);
+    this.logger.log(
+      `Marking all ${type} notifications as read for user ${userId}`,
+    );
 
     const result = await this.db.query<{ id: number }>(
       `WITH unread_notifications AS (
@@ -824,7 +883,11 @@ export class NotificationsService {
    * Unsubscribe from push notifications
    * Note: This is a placeholder - actual implementation pending
    */
-  unsubscribe(_userId: number, _tenantId: number, _subscriptionId: string): void {
+  unsubscribe(
+    _userId: number,
+    _tenantId: number,
+    _subscriptionId: string,
+  ): void {
     this.logger.log('Push notification unsubscription (placeholder)');
   }
 
@@ -912,7 +975,10 @@ export class NotificationsService {
       WHERE ${conditions.join(' AND ')}
       ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
     `;
-    const countRows = await this.db.query<DbCountRow>(countQuery, [...params, userId]);
+    const countRows = await this.db.query<DbCountRow>(countQuery, [
+      ...params,
+      userId,
+    ]);
     const total = Number.parseInt(countRows[0]?.total ?? '0', 10);
 
     // Unread count
@@ -922,7 +988,10 @@ export class NotificationsService {
       LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $${userIdParamIndex}
       WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
     `;
-    const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [...params, userId]);
+    const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [
+      ...params,
+      userId,
+    ]);
     const unreadCount = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     return { total, unreadCount };
@@ -961,7 +1030,10 @@ export class NotificationsService {
       tenantId: row.tenant_id,
       createdAt: row.created_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
-      readAt: row.read_at !== null && row.read_at !== undefined ? row.read_at.toISOString() : null,
+      readAt:
+        row.read_at !== null && row.read_at !== undefined ?
+          row.read_at.toISOString()
+        : null,
       isRead: row.is_read ?? false,
     };
   }
@@ -1038,7 +1110,10 @@ export class NotificationsService {
   /**
    * Resolve notification UUID to internal ID
    */
-  private async resolveNotificationIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolveNotificationIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.db.query<{ id: number }>(
       `SELECT id FROM notifications WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -1052,8 +1127,15 @@ export class NotificationsService {
   /**
    * Mark notification as read by UUID
    */
-  async markAsReadByUuid(uuid: string, userId: number, tenantId: number): Promise<void> {
-    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
+  async markAsReadByUuid(
+    uuid: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const notificationId = await this.resolveNotificationIdByUuid(
+      uuid,
+      tenantId,
+    );
     await this.markAsRead(notificationId, userId, tenantId);
   }
 
@@ -1068,7 +1150,17 @@ export class NotificationsService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
-    await this.deleteNotification(notificationId, userId, tenantId, userRole, ipAddress, userAgent);
+    const notificationId = await this.resolveNotificationIdByUuid(
+      uuid,
+      tenantId,
+    );
+    await this.deleteNotification(
+      notificationId,
+      userId,
+      tenantId,
+      userRole,
+      ipAddress,
+      userAgent,
+    );
   }
 }

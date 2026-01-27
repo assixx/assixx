@@ -4,7 +4,12 @@
  * Business logic for role switching with strict security checks.
  * Allows admin/root users to temporarily view the app as employee.
  */
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import type { RowDataPacket } from '../../utils/db.js';
@@ -61,14 +66,19 @@ export class RoleSwitchService {
    * Verify user belongs to tenant and return user data
    * SECURITY: Only allows ACTIVE users (is_active = 1) to perform role switches
    */
-  private async verifyUserTenant(userId: number, tenantId: number): Promise<UserRow> {
+  private async verifyUserTenant(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserRow> {
     const [rows] = await execute<UserRow[]>(
       'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new NotFoundException('User not found, inactive, or tenant mismatch');
+      throw new NotFoundException(
+        'User not found, inactive, or tenant mismatch',
+      );
     }
 
     const user = rows[0];
@@ -87,7 +97,11 @@ export class RoleSwitchService {
   /**
    * Generate JWT token with role switch information
    */
-  private generateToken(user: UserRow, activeRole: string, isRoleSwitched: boolean): string {
+  private generateToken(
+    user: UserRow,
+    activeRole: string,
+    isRoleSwitched: boolean,
+  ): string {
     return this.jwtService.sign({
       // User identity - NEVER changes
       id: user.id,
@@ -132,26 +146,39 @@ export class RoleSwitchService {
       );
     } catch (error: unknown) {
       // Don't fail the operation if audit logging fails
-      this.logger.warn(`Failed to log role switch: ${(error as Error).message}`);
+      this.logger.warn(
+        `Failed to log role switch: ${(error as Error).message}`,
+      );
     }
   }
 
   /**
    * Switch to employee view (admin/root only)
    */
-  async switchToEmployee(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async switchToEmployee(
+    userId: number,
+    tenantId: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`User ${userId} switching to employee view`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
 
     // PERMISSION: Only admin and root can switch
     if (user.role !== 'admin' && user.role !== 'root') {
-      throw new ForbiddenException('Only admins and root users can switch roles');
+      throw new ForbiddenException(
+        'Only admins and root users can switch roles',
+      );
     }
 
     const token = this.generateToken(user, 'employee', true);
 
-    await this.logRoleSwitch(tenantId, userId, user.role, 'employee', 'role_switch_to_employee');
+    await this.logRoleSwitch(
+      tenantId,
+      userId,
+      user.role,
+      'employee',
+      'role_switch_to_employee',
+    );
 
     return {
       token,
@@ -171,14 +198,19 @@ export class RoleSwitchService {
   /**
    * Switch back to original role
    */
-  async switchToOriginal(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async switchToOriginal(
+    userId: number,
+    tenantId: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`User ${userId} switching back to original role`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
 
     // PERMISSION: Only admin and root can use this
     if (user.role !== 'admin' && user.role !== 'root') {
-      throw new ForbiddenException('Only admins and root users can switch roles');
+      throw new ForbiddenException(
+        'Only admins and root users can switch roles',
+      );
     }
 
     const token = this.generateToken(user, user.role, false);
@@ -209,7 +241,10 @@ export class RoleSwitchService {
   /**
    * Root user switches to admin view
    */
-  async rootToAdmin(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async rootToAdmin(
+    userId: number,
+    tenantId: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`Root user ${userId} switching to admin view`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
@@ -221,7 +256,13 @@ export class RoleSwitchService {
 
     const token = this.generateToken(user, 'admin', true);
 
-    await this.logRoleSwitch(tenantId, userId, 'root', 'admin', 'role_switch_root_to_admin');
+    await this.logRoleSwitch(
+      tenantId,
+      userId,
+      'root',
+      'admin',
+      'role_switch_root_to_admin',
+    );
 
     return {
       token,

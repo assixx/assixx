@@ -106,7 +106,9 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+  );
 
   // Derived: Filtered teams based on current filter/search state
   const filteredTeams = $derived(
@@ -140,7 +142,12 @@
       const teamId = await apiSaveTeam(payload, currentEditId);
 
       if (teamId) {
-        await updateTeamRelations(teamId, formData.memberIds, formData.machineIds, isEditMode);
+        await updateTeamRelations(
+          teamId,
+          formData.memberIds,
+          formData.machineIds,
+          isEditMode,
+        );
       }
 
       closeTeamModal();
@@ -148,7 +155,9 @@
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error saving team');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVING);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
+      );
     } finally {
       submitting = false;
     }
@@ -228,7 +237,10 @@
     formDescription = team.description ?? '';
     formDepartmentId = team.departmentId ?? null;
     formLeaderId = team.leaderId ?? null;
-    formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
+    formIsActive = (
+      team.isActive === 4 ?
+        0
+      : team.isActive) as FormIsActiveStatus;
 
     // Set member and machine IDs from fetched data
     formMemberIds = members.map((m) => m.id);
@@ -358,11 +370,16 @@
         <i class="fas fa-users-cog mr-2"></i>
         Teamübersicht
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">Alle Teams verwalten und bearbeiten</p>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        Alle Teams verwalten und bearbeiten
+      </p>
 
       <div class="flex gap-4 items-center justify-between mt-6">
         <!-- Status Toggle Group -->
-        <div class="toggle-group" id="team-status-toggle">
+        <div
+          class="toggle-group"
+          id="team-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -414,8 +431,14 @@
         </div>
 
         <!-- Search Input -->
-        <div class="search-input-wrapper max-w-80" class:search-input-wrapper--open={searchOpen}>
-          <div class="search-input" id="team-search-container">
+        <div
+          class="search-input-wrapper max-w-80"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="team-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -436,7 +459,10 @@
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="search-input__results" id="team-search-results">
+          <div
+            class="search-input__results"
+            id="team-search-results"
+          >
             {#if currentSearchQuery && filteredTeams.length === 0}
               <div class="search-input__no-results">
                 {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
@@ -452,9 +478,12 @@
                 >
                   <i class="fas fa-users-cog text-blue-500"></i>
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  <span>{@html highlightMatch(team.name, currentSearchQuery)}</span>
+                  <span
+                    >{@html highlightMatch(team.name, currentSearchQuery)}</span
+                  >
                   {#if team.departmentName}
-                    <span class="text-[var(--color-text-secondary)] text-sm ml-2"
+                    <span
+                      class="text-[var(--color-text-secondary)] text-sm ml-2"
                       >&rarr; {team.departmentName}</span
                     >
                   {/if}
@@ -469,20 +498,31 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => void invalidateAll()}
-            >Erneut versuchen</button
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => void invalidateAll()}>Erneut versuchen</button
           >
         </div>
       {:else if filteredTeams.length === 0}
-        <div id="teams-empty" class="empty-state">
+        <div
+          id="teams-empty"
+          class="empty-state"
+        >
           <div class="empty-state__icon">
             <i class="fas fa-users-cog"></i>
           </div>
           <h3 class="empty-state__title">{MESSAGES.NO_TEAMS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_TEAM}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
+          >
             <i class="fas fa-plus"></i>
             Team hinzufügen
           </button>
@@ -490,7 +530,10 @@
       {:else}
         <div id="teams-table-content">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped" id="teams-table">
+            <table
+              class="data-table data-table--hover data-table--striped"
+              id="teams-table"
+            >
               <thead>
                 <tr>
                   <th scope="col">Name</th>
@@ -516,20 +559,29 @@
                       </div>
                     </td>
                     <td>
-                      <span class="badge {deptBadge.class}" title={deptBadge.title}>
+                      <span
+                        class="badge {deptBadge.class}"
+                        title={deptBadge.title}
+                      >
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html deptBadge.text}
                       </span>
                     </td>
                     <td>{team.leaderName ?? '-'}</td>
                     <td>
-                      <span class="badge {membersBadge.class}" title={membersBadge.title}>
+                      <span
+                        class="badge {membersBadge.class}"
+                        title={membersBadge.title}
+                      >
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html membersBadge.text}
                       </span>
                     </td>
                     <td>
-                      <span class="badge {machinesBadge.class}" title={machinesBadge.title}>
+                      <span
+                        class="badge {machinesBadge.class}"
+                        title={machinesBadge.title}
+                      >
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                         {@html machinesBadge.text}
                       </span>
@@ -576,7 +628,12 @@
 </div>
 
 <!-- Floating Action Button -->
-<button type="button" class="btn-float" onclick={openAddModal} aria-label="Team hinzufügen">
+<button
+  type="button"
+  class="btn-float"
+  onclick={openAddModal}
+  aria-label="Team hinzufügen"
+>
   <i class="fas fa-plus"></i>
 </button>
 

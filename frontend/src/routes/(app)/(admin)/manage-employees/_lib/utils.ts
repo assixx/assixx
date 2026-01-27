@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 // =============================================================================
 // MANAGE EMPLOYEES - UTILITY FUNCTIONS
 // =============================================================================
@@ -231,7 +230,10 @@ export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   }
 
   // For non-available statuses, check if date range is currently active
-  const isActive = isDateRangeActive(employee.availabilityStart, employee.availabilityEnd);
+  const isActive = isDateRangeActive(
+    employee.availabilityStart,
+    employee.availabilityEnd,
+  );
 
   if (isActive) {
     // Date range is active → show the actual status
@@ -293,7 +295,9 @@ export function highlightMatch(text: string, query: string): string {
  * @param password - Password to evaluate
  * @returns PasswordStrengthResult object
  */
-export function calculatePasswordStrength(password: string): PasswordStrengthResult {
+export function calculatePasswordStrength(
+  password: string,
+): PasswordStrengthResult {
   if (password === '') {
     return { score: -1, label: '', time: '' };
   }
@@ -433,7 +437,10 @@ export function getDefaultFormValues(): {
  * @param emailConfirm - Confirmation email
  * @returns True if emails match or confirmation is empty
  */
-export function validateEmailMatch(email: string, emailConfirm: string): boolean {
+export function validateEmailMatch(
+  email: string,
+  emailConfirm: string,
+): boolean {
   if (emailConfirm === '') return true;
   return email === emailConfirm;
 }
@@ -444,7 +451,10 @@ export function validateEmailMatch(email: string, emailConfirm: string): boolean
  * @param passwordConfirm - Confirmation password
  * @returns True if passwords match or confirmation is empty
  */
-export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
+export function validatePasswordMatch(
+  password: string,
+  passwordConfirm: string,
+): boolean {
   if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }
@@ -477,7 +487,10 @@ export function validateSaveEmployeeForm(
 
   // Password validation: required for new employees, optional for edit (only if provided)
   const needsPasswordValidation = !isEditMode || password !== '';
-  if (needsPasswordValidation && !validatePasswordMatch(password, passwordConfirm)) {
+  if (
+    needsPasswordValidation &&
+    !validatePasswordMatch(password, passwordConfirm)
+  ) {
     return 'password';
   }
 
@@ -498,7 +511,10 @@ function checkEmployeeFullAccess(employee: Employee): boolean {
 /**
  * Check if employee has team assignments (array or legacy single)
  */
-function hasTeamAssignments(employee: Employee): { hasTeams: boolean; hasArray: boolean } {
+function hasTeamAssignments(employee: Employee): {
+  hasTeams: boolean;
+  hasArray: boolean;
+} {
   const hasTeamsArray = (employee.teams?.length ?? 0) > 0;
   const hasTeamIdsArray = (employee.teamIds?.length ?? 0) > 0;
   const hasLegacy = (employee.teamId ?? 0) > 0;
@@ -581,11 +597,16 @@ export function getAreasBadge(employee: Employee): BadgeInfo {
 /**
  * Build area badge showing inherited area name from team chain
  */
-function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
+function buildAreaInheritedBadge(
+  employee: Employee,
+  hasArray: boolean,
+): BadgeInfo {
   const { teamAreaName, teamDepartmentName } = employee;
   // Derive teamName from teamNames array if available, else use legacy teamName
   const teamName =
-    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
+    (employee.teamNames?.length ?? 0) > 0 ?
+      employee.teamNames?.[0]
+    : employee.teamName;
 
   if (teamAreaName !== undefined && teamAreaName !== '') {
     const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
@@ -602,7 +623,9 @@ function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeIn
 // =============================================================================
 
 /** Build badge for direct department assignments */
-function buildDirectDeptsBadge(departments: Employee['departments']): BadgeInfo | null {
+function buildDirectDeptsBadge(
+  departments: Employee['departments'],
+): BadgeInfo | null {
   if (!hasItems(departments)) return null;
 
   const count = departments.length;
@@ -616,7 +639,9 @@ function buildDirectDeptsBadge(departments: Employee['departments']): BadgeInfo 
 }
 
 /** Build badge for legacy departmentName */
-function buildLegacyDeptBadge(departmentName: string | undefined): BadgeInfo | null {
+function buildLegacyDeptBadge(
+  departmentName: string | undefined,
+): BadgeInfo | null {
   if (!isNonEmpty(departmentName)) return null;
 
   return {
@@ -662,11 +687,16 @@ export function getDepartmentsBadge(employee: Employee): BadgeInfo {
 /**
  * Build department badge showing inherited dept name from team
  */
-function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
+function buildDeptInheritedBadge(
+  employee: Employee,
+  hasArray: boolean,
+): BadgeInfo {
   const { teamDepartmentName } = employee;
   // Derive teamName from teamNames array if available, else use legacy teamName
   const teamName =
-    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
+    (employee.teamNames?.length ?? 0) > 0 ?
+      employee.teamNames?.[0]
+    : employee.teamName;
 
   if (teamDepartmentName !== undefined && teamDepartmentName !== '') {
     const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
@@ -748,14 +778,19 @@ export interface AvailabilityFormData {
 }
 
 /** Availability validation error types */
-export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
+export type AvailabilityValidationError =
+  | 'dates_required'
+  | 'end_before_start'
+  | null;
 
 /**
  * Validate availability form data
  * @param data - Form data to validate
  * @returns Validation error type or null if valid
  */
-export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
+export function validateAvailabilityForm(
+  data: AvailabilityFormData,
+): AvailabilityValidationError {
   // Dates required for non-available status
   if (data.status !== 'available' && (data.start === '' || data.end === '')) {
     return 'dates_required';
@@ -784,7 +819,9 @@ export interface AvailabilityPayload {
  * @param data - Form data
  * @returns API payload
  */
-export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
+export function buildAvailabilityPayload(
+  data: AvailabilityFormData,
+): AvailabilityPayload {
   return {
     availabilityStatus: data.status,
     availabilityStart: data.start !== '' ? data.start : undefined,

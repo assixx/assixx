@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable max-lines -- Complex page with filters, table, delete modal, and export section */
   /**
    * Logs Page - System Activity Logs
    * SSR: Initial data loaded in +page.server.ts

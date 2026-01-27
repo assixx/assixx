@@ -49,23 +49,36 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
   try {
     // Fetch archived entries (isActive=3)
-    const response = await fetch(`${API_BASE}/blackboard/entries?isActive=3&limit=100`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${API_BASE}/blackboard/entries?isActive=3&limit=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
 
     if (!response.ok) {
-      log.error({ status: response.status }, 'Failed to fetch archived entries');
-      return { entries: [], error: 'Fehler beim Laden der archivierten Einträge' };
+      log.error(
+        { status: response.status },
+        'Failed to fetch archived entries',
+      );
+      return {
+        entries: [],
+        error: 'Fehler beim Laden der archivierten Einträge',
+      };
     }
 
     const json = (await response.json()) as ApiResponse;
 
     log.info({ count: json.data?.length ?? 0 }, 'API response received');
 
-    if (json.success === true && json.data !== undefined && Array.isArray(json.data)) {
+    if (
+      json.success === true &&
+      json.data !== undefined &&
+      Array.isArray(json.data)
+    ) {
       log.info({ count: json.data.length }, 'Entries found');
       // Ensure plain serializable objects (SvelteKit requires JSON-serializable data)
       const entries = json.data.map((entry) => ({

@@ -10,7 +10,10 @@ import type { Machine, MachineStatusFilter } from './types';
  * @param status - Status filter to apply
  * @returns Filtered machine list
  */
-export function filterByStatus(machines: Machine[], status: MachineStatusFilter): Machine[] {
+export function filterByStatus(
+  machines: Machine[],
+  status: MachineStatusFilter,
+): Machine[] {
   if (status === 'all') {
     return machines;
   }

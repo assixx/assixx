@@ -50,7 +50,10 @@
   const surveyId = $derived(data.surveyId);
   const survey = $derived.by<Survey>(() => ({
     ...data.survey,
-    questions: data.questions.length > 0 ? data.questions : (data.survey.questions ?? []),
+    questions:
+      data.questions.length > 0 ?
+        data.questions
+      : (data.survey.questions ?? []),
   }));
   const statistics = $derived(data.statistics);
   const responses = $derived(data.responses);
@@ -90,7 +93,8 @@
       }
     } catch (error) {
       log.error({ err: error }, 'Export error');
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      const message =
+        error instanceof Error ? error.message : 'Unbekannter Fehler';
       showErrorAlert(`Fehler beim Exportieren: ${message}`);
     } finally {
       isExporting = false;
@@ -123,7 +127,9 @@
   // ==========================================================================
 
   function getTextResponseCount(question: SurveyQuestion): number {
-    return question.responses?.filter((r) => r.answerText.trim() !== '').length ?? 0;
+    return (
+      question.responses?.filter((r) => r.answerText.trim() !== '').length ?? 0
+    );
   }
 
   /**
@@ -162,7 +168,11 @@
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button type="button" class="btn btn-light" onclick={handleNavigateBack}>
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={handleNavigateBack}
+    >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
     </button>
   </div>
@@ -175,7 +185,10 @@
       </div>
     </div>
 
-    <div class="card-body" id="content-area">
+    <div
+      class="card-body"
+      id="content-area"
+    >
       <!-- Results View - SSR: Data instantly available, no loading state needed -->
       {#if hasData}
         <!-- Survey Header -->
@@ -183,13 +196,16 @@
           <h2 class="survey-title">{survey.title}</h2>
           <div class="survey-meta">
             <span
-              ><i class="fas fa-calendar"></i> Erstellt: {formatGermanDate(survey.createdAt)}</span
+              ><i class="fas fa-calendar"></i> Erstellt: {formatGermanDate(
+                survey.createdAt,
+              )}</span
             >
             <span
-              ><i class="fas fa-calendar-check"></i> Endet: {survey.endDate !== undefined &&
-              survey.endDate !== ''
-                ? formatGermanDate(survey.endDate)
-                : 'Laufend'}</span
+              ><i class="fas fa-calendar-check"></i> Endet: {(
+                survey.endDate !== undefined && survey.endDate !== ''
+              ) ?
+                formatGermanDate(survey.endDate)
+              : 'Laufend'}</span
             >
             <span>
               <i class="fas fa-user-shield"></i>
@@ -214,10 +230,19 @@
             {/if}
             Excel Export
           </button>
-          <button type="button" class="btn btn-upload" id="export-pdf" onclick={handleExportPDF}>
+          <button
+            type="button"
+            class="btn btn-upload"
+            id="export-pdf"
+            onclick={handleExportPDF}
+          >
             <i class="fas fa-file-pdf"></i> PDF Export
           </button>
-          <button type="button" class="btn btn-upload" onclick={handlePrint}>
+          <button
+            type="button"
+            class="btn btn-upload"
+            onclick={handlePrint}
+          >
             <i class="fas fa-print"></i> Drucken
           </button>
         </div>
@@ -244,7 +269,9 @@
           </div>
           <div class="card-stat">
             <h3 class="text-3xl font-bold text-blue-500 mb-1">
-              {survey.status === 'active' ? 'Aktiv' : getStatusText(survey.status)}
+              {survey.status === 'active' ?
+                'Aktiv'
+              : getStatusText(survey.status)}
             </h3>
             <p class="text-sm text-gray-400">Status</p>
           </div>
@@ -262,7 +289,9 @@
               <div class="card">
                 <div class="question-header">
                   <h3 class="question-text">{question.questionText}</h3>
-                  <p class="question-type">Typ: {getQuestionTypeLabel(question.questionType)}</p>
+                  <p class="question-type">
+                    Typ: {getQuestionTypeLabel(question.questionType)}
+                  </p>
                 </div>
                 <div class="question-body">
                   <!-- Choice Questions (single_choice, multiple_choice, yes_no) -->
@@ -270,10 +299,14 @@
                     {#if question.options === undefined || question.options.length === 0}
                       <p>Keine Optionen verfügbar</p>
                     {:else}
-                      {@const totalResponses = calculateTotalResponses(question)}
+                      {@const totalResponses =
+                        calculateTotalResponses(question)}
                       {#each question.options as option (option.optionId ?? option.optionText)}
                         {@const count = option.count ?? 0}
-                        {@const percentage = calculateOptionPercentage(count, totalResponses)}
+                        {@const percentage = calculateOptionPercentage(
+                          count,
+                          totalResponses,
+                        )}
                         <div class="option-result">
                           <div class="option-header">
                             <span class="option-text">{option.optionText}</span>
@@ -281,7 +314,9 @@
                           </div>
                           <div class="progress progress--lg">
                             <div
-                              class="progress__bar {percentage === 0 ? 'progress__bar--empty' : ''}"
+                              class="progress__bar {percentage === 0 ?
+                                'progress__bar--empty'
+                              : ''}"
                               style="width: {percentage}%"
                             >
                               {percentage}%
@@ -299,7 +334,9 @@
                     {@const max = getStatisticsMax(question)}
                     <div class="u-text-center">
                       <h4 class="rating-average">{average.toFixed(1)}</h4>
-                      <p class="rating-meta">von 5 Sternen ({count} Bewertungen)</p>
+                      <p class="rating-meta">
+                        von 5 Sternen ({count} Bewertungen)
+                      </p>
                       <div class="rating-stars">{renderStars(average, 5)}</div>
                       <div class="rating-range">Min: {min} | Max: {max}</div>
                     </div>
@@ -311,8 +348,8 @@
                       <p class="text-info-message">
                         <i class="fas fa-info-circle"></i>
                         {#if responseCount > 0}
-                          {responseCount} Textantwort{responseCount > 1 ? 'en' : ''} - siehe unten bei
-                          "Individuelle Antworten"
+                          {responseCount} Textantwort{responseCount > 1 ? 'en'
+                          : ''} - siehe unten bei "Individuelle Antworten"
                         {:else}
                           Keine Textantworten vorhanden
                         {/if}
@@ -327,7 +364,9 @@
                     {@const max = getStatisticsMax(question)}
                     <div class="u-text-center">
                       <h4 class="number-average">{average.toFixed(2)}</h4>
-                      <p class="number-meta">Durchschnittswert ({count} Antworten)</p>
+                      <p class="number-meta">
+                        Durchschnittswert ({count} Antworten)
+                      </p>
                       <div class="number-range">
                         <strong>Min:</strong>
                         {min} | <strong>Max:</strong>
@@ -350,15 +389,18 @@
           {#if hasResponses && responsesData !== null}
             <div class="card responses-section">
               <h3>
-                <i class="fas fa-users"></i> Individuelle Antworten ({responsesData.responses
-                  .length})
+                <i class="fas fa-users"></i> Individuelle Antworten ({responsesData
+                  .responses.length})
               </h3>
               <div class="accordion accordion--compact">
                 {#each responsesData.responses as response, index (response.id)}
                   {@const respondentName = getRespondentName(response, index)}
                   {@const completedDate = getCompletedDate(response)}
                   {@const isExpanded = isResponseExpanded(index)}
-                  <div class="accordion__item" class:accordion__item--active={isExpanded}>
+                  <div
+                    class="accordion__item"
+                    class:accordion__item--active={isExpanded}
+                  >
                     <button
                       type="button"
                       class="accordion__header"
@@ -370,9 +412,12 @@
                         {respondentName} &#8226; <i class="fas fa-clock"></i>
                         {completedDate}
                         {#if response.status === 'completed'}
-                          <span class="badge badge--success">Abgeschlossen</span>
+                          <span class="badge badge--success">Abgeschlossen</span
+                          >
                         {:else}
-                          <span class="badge badge--warning">In Bearbeitung</span>
+                          <span class="badge badge--warning"
+                            >In Bearbeitung</span
+                          >
                         {/if}
                       </span>
                       <i class="fas fa-chevron-down accordion__icon"></i>
@@ -382,9 +427,13 @@
                         {#if statistics?.questions !== undefined}
                           {#each statistics.questions as question (question.id)}
                             {@const answer = response.answers?.find(
-                              (a: ResponseAnswer) => a.questionId === question.id,
+                              (a: ResponseAnswer) =>
+                                a.questionId === question.id,
                             )}
-                            {@const answerText = getAnswerDisplayText(question, answer)}
+                            {@const answerText = getAnswerDisplayText(
+                              question,
+                              answer,
+                            )}
                             <div class="answer-item">
                               <strong>{question.questionText}:</strong>
                               <span>{answerText}</span>
@@ -404,7 +453,11 @@
         <div class="empty-state">
           <div class="empty-icon">&#128202;</div>
           <p>Keine Umfrage-Daten verfügbar</p>
-          <button type="button" class="btn btn-cancel" onclick={handleNavigateBack}>
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={handleNavigateBack}
+          >
             Zurück zur Übersicht
           </button>
         </div>

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Rotation Service
  *
@@ -206,7 +205,10 @@ interface PatternConfig {
   shiftSequence?: ('early' | 'late' | 'night')[];
   specialRules?: unknown[];
   pattern?: { week: number; shift: 'F' | 'S' | 'N' }[];
-  customPattern?: { week1: Record<string, unknown>; week2: Record<string, unknown> };
+  customPattern?: {
+    week1: Record<string, unknown>;
+    week2: Record<string, unknown>;
+  };
 }
 
 // ============================================================
@@ -226,7 +228,9 @@ export class RotationService {
   /**
    * Parse pattern config from database (JSON string or object)
    */
-  private parsePatternConfig(config: Record<string, unknown> | string): Record<string, unknown> {
+  private parsePatternConfig(
+    config: Record<string, unknown> | string,
+  ): Record<string, unknown> {
     if (typeof config === 'string') {
       return JSON.parse(config) as Record<string, unknown>;
     }
@@ -294,8 +298,13 @@ export class RotationService {
   /**
    * Get single rotation pattern by ID
    */
-  async getRotationPattern(patternId: number, tenantId: number): Promise<RotationPatternResponse> {
-    this.logger.debug(`Getting rotation pattern ${patternId} for tenant ${tenantId}`);
+  async getRotationPattern(
+    patternId: number,
+    tenantId: number,
+  ): Promise<RotationPatternResponse> {
+    this.logger.debug(
+      `Getting rotation pattern ${patternId} for tenant ${tenantId}`,
+    );
 
     const query = `
       SELECT
@@ -306,7 +315,10 @@ export class RotationService {
       WHERE p.id = $1 AND p.tenant_id = $2
     `;
 
-    const rows = await this.databaseService.query<DbPatternRow>(query, [patternId, tenantId]);
+    const rows = await this.databaseService.query<DbPatternRow>(query, [
+      patternId,
+      tenantId,
+    ]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new NotFoundException(`Rotation pattern ${patternId} not found`);
@@ -355,23 +367,28 @@ export class RotationService {
       RETURNING id
     `;
 
-    const result = await this.databaseService.query<{ id: number }>(insertQuery, [
-      tenantId,
-      dto.teamId ?? null,
-      dto.name,
-      dto.description ?? null,
-      dto.patternType,
-      JSON.stringify(dto.patternConfig),
-      dto.cycleLengthWeeks,
-      dto.startsAt,
-      dto.endsAt ?? null,
-      isActiveValue,
-      userId,
-      patternUuid,
-    ]);
+    const result = await this.databaseService.query<{ id: number }>(
+      insertQuery,
+      [
+        tenantId,
+        dto.teamId ?? null,
+        dto.name,
+        dto.description ?? null,
+        dto.patternType,
+        JSON.stringify(dto.patternConfig),
+        dto.cycleLengthWeeks,
+        dto.startsAt,
+        dto.endsAt ?? null,
+        isActiveValue,
+        userId,
+        patternUuid,
+      ],
+    );
 
     if (result[0] === undefined) {
-      throw new InternalServerErrorException('Failed to create rotation pattern');
+      throw new InternalServerErrorException(
+        'Failed to create rotation pattern',
+      );
     }
 
     return await this.getRotationPattern(result[0].id, tenantId);
@@ -386,7 +403,9 @@ export class RotationService {
     tenantId: number,
     userRole: string,
   ): Promise<RotationPatternResponse> {
-    this.logger.debug(`Updating rotation pattern ${patternId} for tenant ${tenantId}`);
+    this.logger.debug(
+      `Updating rotation pattern ${patternId} for tenant ${tenantId}`,
+    );
 
     if (userRole !== 'admin' && userRole !== 'root') {
       throw new ForbiddenException('Only admins can update rotation patterns');
@@ -443,7 +462,9 @@ export class RotationService {
     tenantId: number,
     userRole: string,
   ): Promise<void> {
-    this.logger.debug(`Deleting rotation pattern ${patternId} for tenant ${tenantId}`);
+    this.logger.debug(
+      `Deleting rotation pattern ${patternId} for tenant ${tenantId}`,
+    );
 
     if (userRole !== 'admin' && userRole !== 'root') {
       throw new ForbiddenException('Only admins can delete rotation patterns');
@@ -480,7 +501,9 @@ export class RotationService {
 
     return rows.map(
       (row: DbAssignmentRow) =>
-        dbToApi(row as unknown as Record<string, unknown>) as RotationAssignmentResponse,
+        dbToApi(
+          row as unknown as Record<string, unknown>,
+        ) as RotationAssignmentResponse,
     );
   }
 
@@ -558,7 +581,10 @@ export class RotationService {
   /**
    * Determine alternating shift type for F/S with night shift ignored
    */
-  private determineAlternatingShiftType(shiftGroup: string, cycleWeek: number): 'F' | 'S' | 'N' {
+  private determineAlternatingShiftType(
+    shiftGroup: string,
+    cycleWeek: number,
+  ): 'F' | 'S' | 'N' {
     if (shiftGroup === 'F') {
       return cycleWeek === 0 ? 'F' : 'S';
     }
@@ -578,7 +604,8 @@ export class RotationService {
     config: PatternConfig,
     weeksSinceStart: number,
   ): 'F' | 'S' | 'N' {
-    const nightShiftStatic = config.nightShiftStatic ?? config.ignoreNightShift ?? false;
+    const nightShiftStatic =
+      config.nightShiftStatic ?? config.ignoreNightShift ?? false;
 
     // Fixed night shift pattern
     if (patternType === 'fixed_n') {
@@ -587,7 +614,8 @@ export class RotationService {
 
     // Weekly rotation
     const isWeeklyRotation =
-      patternType === 'alternate_fs' || (patternType === 'custom' && config.cycleWeeks === 1);
+      patternType === 'alternate_fs' ||
+      (patternType === 'custom' && config.cycleWeeks === 1);
 
     if (!isWeeklyRotation) {
       return shiftGroup as 'F' | 'S' | 'N';
@@ -626,14 +654,20 @@ export class RotationService {
     const skipSaturday = config.skipSaturday ?? config.skipWeekends ?? false;
     const skipSunday = config.skipSunday ?? config.skipWeekends ?? false;
 
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    for (
+      let date = new Date(start);
+      date <= end;
+      date.setDate(date.getDate() + 1)
+    ) {
       const dayOfWeek = date.getDay();
 
       // Skip weekends if configured
       if (skipSaturday && dayOfWeek === 6) continue;
       if (skipSunday && dayOfWeek === 0) continue;
 
-      const weeksSinceStart = Math.floor((date.getTime() - patternStart.getTime()) / msPerWeek);
+      const weeksSinceStart = Math.floor(
+        (date.getTime() - patternStart.getTime()) / msPerWeek,
+      );
       const shiftType = this.determineShiftType(
         assignment.shift_group,
         pattern.patternType,
@@ -660,7 +694,10 @@ export class RotationService {
   private getWeekNumber(date: Date): number {
     const yearStart = new Date(date.getFullYear(), 0, 1);
     return Math.ceil(
-      ((date.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7,
+      ((date.getTime() - yearStart.getTime()) / 86400000 +
+        yearStart.getDay() +
+        1) /
+        7,
     );
   }
 
@@ -704,7 +741,12 @@ export class RotationService {
 
     // If not preview mode, save shifts
     if (!dto.preview && generatedShifts.length > 0) {
-      await this.saveGeneratedShifts(generatedShifts, pattern.id, assignments, tenantId);
+      await this.saveGeneratedShifts(
+        generatedShifts,
+        pattern.id,
+        assignments,
+        tenantId,
+      );
     }
 
     return { shifts: generatedShifts };
@@ -774,7 +816,9 @@ export class RotationService {
   /**
    * Map shift type to group enum
    */
-  private mapShiftTypeToGroup(shiftType: 'early' | 'late' | 'night'): 'F' | 'S' | 'N' {
+  private mapShiftTypeToGroup(
+    shiftType: 'early' | 'late' | 'night',
+  ): 'F' | 'S' | 'N' {
     switch (shiftType) {
       case 'early':
         return 'F';
@@ -864,7 +908,9 @@ export class RotationService {
       [teamId, tenantId],
     );
     if (teamResult.length === 0) {
-      throw new BadRequestException(`Team with ID ${teamId} does not exist or is not active`);
+      throw new BadRequestException(
+        `Team with ID ${teamId} does not exist or is not active`,
+      );
     }
   }
 
@@ -880,7 +926,9 @@ export class RotationService {
       [userIds, tenantId],
     );
     const validUserIds = new Set(userResult.map((r: { id: number }) => r.id));
-    const invalidUserIds = userIds.filter((id: number) => !validUserIds.has(id));
+    const invalidUserIds = userIds.filter(
+      (id: number) => !validUserIds.has(id),
+    );
     if (invalidUserIds.length > 0) {
       throw new BadRequestException(
         `Invalid user IDs in assignments: ${invalidUserIds.join(', ')}. Users must exist and be active.`,
@@ -904,8 +952,13 @@ export class RotationService {
       shiftSequence: config.shiftSequence,
       specialRules: config.specialRules,
     });
-    const cycleWeeks = Math.ceil((config.shiftBlockLength + config.freeDays) / 7);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const cycleWeeks = Math.ceil(
+      (config.shiftBlockLength + config.freeDays) / 7,
+    );
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-')
+      .slice(0, 19);
     const patternName = `Custom-Rotation ${timestamp}`;
     const patternUuid = uuidv7();
     const patternResult = await this.databaseService.query<{ id: number }>(
@@ -984,12 +1037,26 @@ export class RotationService {
     totalDays: number;
     tenantId: number;
   }): Promise<number> {
-    const { config, start, totalDays, tenantId, patternId, teamId, assignmentId, userId } = params;
+    const {
+      config,
+      start,
+      totalDays,
+      tenantId,
+      patternId,
+      teamId,
+      assignmentId,
+      userId,
+    } = params;
     const { shiftBlockLength, freeDays, shiftSequence, specialRules } = config;
     const cycleLength = shiftBlockLength + freeDays;
-    const typedRules = specialRules as { type: string; weekday: number; n: number }[] | undefined;
+    const typedRules = specialRules as
+      | { type: string; weekday: number; n: number }[]
+      | undefined;
 
-    let currentShiftIndex = this.getGroupStartIndex(params.startGroup, shiftSequence);
+    let currentShiftIndex = this.getGroupStartIndex(
+      params.startGroup,
+      shiftSequence,
+    );
     let dayInCycle = 0;
     let shiftCount = 0;
 
@@ -1000,7 +1067,8 @@ export class RotationService {
       const shouldSkip = this.shouldSkipBySpecialRules(currentDate, typedRules);
 
       if (isWorkDay && !shouldSkip) {
-        const shiftType = shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
+        const shiftType =
+          shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
         await this.insertHistoryEntry({
           tenantId,
           patternId,
@@ -1085,7 +1153,8 @@ export class RotationService {
     const { config, assignments, startDate, endDate, teamId } = dto;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalDays =
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     await this.validateTeamExists(teamId, tenantId);
     await this.validateAssignmentUserIds(assignments, tenantId);
@@ -1124,7 +1193,9 @@ export class RotationService {
     } catch (error) {
       await this.databaseService.query('ROLLBACK', []);
       this.logger.error('Failed to generate rotation from config', error);
-      throw new InternalServerErrorException('Failed to generate rotation shifts');
+      throw new InternalServerErrorException(
+        'Failed to generate rotation shifts',
+      );
     }
   }
 
@@ -1197,13 +1268,21 @@ export class RotationService {
     const rows = await this.databaseService.query<DbHistoryRow>(query, params);
     return rows.map(
       (row: DbHistoryRow) =>
-        dbToApi(row as unknown as Record<string, unknown>) as RotationHistoryResponse,
+        dbToApi(
+          row as unknown as Record<string, unknown>,
+        ) as RotationHistoryResponse,
     );
   }
 
   /** Helper: Execute DELETE query and return count */
-  private async executeDeleteWithCount(query: string, params: unknown[]): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(query, params);
+  private async executeDeleteWithCount(
+    query: string,
+    params: unknown[],
+  ): Promise<number> {
+    const result = await this.databaseService.query<{ count: string }>(
+      query,
+      params,
+    );
     return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
@@ -1242,7 +1321,8 @@ export class RotationService {
     await this.databaseService.query('BEGIN', []);
 
     try {
-      const params = hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
+      const params =
+        hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
       const patternCond = hasPatternId ? 'AND pattern_id = $3' : '';
 
       // Delete in order: shifts → history → assignments → patterns → plans
@@ -1328,10 +1408,14 @@ export class RotationService {
     tenantId: number,
     userRole: string,
   ): Promise<void> {
-    this.logger.debug(`Deleting rotation history entry ${historyId} for tenant ${tenantId}`);
+    this.logger.debug(
+      `Deleting rotation history entry ${historyId} for tenant ${tenantId}`,
+    );
 
     if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException('Only admins can delete rotation history entries');
+      throw new ForbiddenException(
+        'Only admins can delete rotation history entries',
+      );
     }
 
     const result = await this.databaseService.query<{ count: string }>(
@@ -1344,7 +1428,9 @@ export class RotationService {
     const deletedCount = Number.parseInt(result[0]?.count ?? '0', 10);
 
     if (deletedCount === 0) {
-      throw new NotFoundException(`Rotation history entry ${historyId} not found`);
+      throw new NotFoundException(
+        `Rotation history entry ${historyId} not found`,
+      );
     }
   }
 
@@ -1355,13 +1441,18 @@ export class RotationService {
   /**
    * Resolve pattern UUID to internal ID
    */
-  private async resolvePatternIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolvePatternIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM shift_rotation_patterns WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
     if (result[0] === undefined) {
-      throw new NotFoundException(`Rotation pattern with UUID ${uuid} not found`);
+      throw new NotFoundException(
+        `Rotation pattern with UUID ${uuid} not found`,
+      );
     }
     return result[0].id;
   }
@@ -1369,7 +1460,10 @@ export class RotationService {
   /**
    * Get rotation pattern by UUID
    */
-  async getRotationPatternByUuid(uuid: string, tenantId: number): Promise<RotationPatternResponse> {
+  async getRotationPatternByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<RotationPatternResponse> {
     const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
     return await this.getRotationPattern(patternId, tenantId);
   }

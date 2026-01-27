@@ -94,7 +94,8 @@ export const MESSAGES = {
   NO_DEPARTMENT_LEAD: 'Kein Abteilungsleiter',
 
   // Form hints
-  DEPARTMENT_LEAD_HINT: 'Nur Administratoren können als Abteilungsleiter zugewiesen werden.',
+  DEPARTMENT_LEAD_HINT:
+    'Nur Administratoren können als Abteilungsleiter zugewiesen werden.',
   STATUS_HINT: 'Inaktive/Archivierte Abteilungen werden nicht angezeigt',
 
   // Table headers

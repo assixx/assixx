@@ -24,7 +24,8 @@
   border-radius: 12px;
 
   background:
-    linear-gradient(45deg, #ffffff57 3%, #9a070700 0), linear-gradient(-45deg, #fff0 3% 0),
+    linear-gradient(45deg, #ffffff57 3%, #9a070700 0),
+    linear-gradient(-45deg, #fff0 3% 0),
     linear-gradient(45deg, #ffffffb2 3%, #fff0 0),
     linear-gradient(-45deg, #ffffff3d 3%, #84848400 0);
   background-position:

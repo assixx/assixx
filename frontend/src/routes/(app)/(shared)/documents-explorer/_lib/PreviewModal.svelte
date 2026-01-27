@@ -28,7 +28,11 @@
 {#if show && document}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div id="preview-modal" class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
+  <div
+    id="preview-modal"
+    class="modal-overlay modal-overlay--active"
+    onclick={handleOverlayClick}
+  >
     <div
       class="ds-modal ds-modal--xl"
       onclick={(e) => {
@@ -85,15 +89,24 @@
 
         <div class="p-4 bg-surface-2 border-t border-border-subtle">
           <div class="flex items-center gap-6 text-sm text-content-secondary">
-            <span id="preview-size" class="flex items-center gap-2">
+            <span
+              id="preview-size"
+              class="flex items-center gap-2"
+            >
               <i class="fas fa-file-archive"></i>
               <span>{formatFileSize(document.size)}</span>
             </span>
-            <span id="preview-date" class="flex items-center gap-2">
+            <span
+              id="preview-date"
+              class="flex items-center gap-2"
+            >
               <i class="fas fa-calendar-alt"></i>
               <span>{formatDateTime(document.uploadedAt)}</span>
             </span>
-            <span id="preview-uploader" class="flex items-center gap-2">
+            <span
+              id="preview-uploader"
+              class="flex items-center gap-2"
+            >
               <i class="fas fa-user"></i>
               <span>{document.uploaderName}</span>
             </span>
@@ -101,7 +114,12 @@
         </div>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" id="preview-cancel" onclick={onclose}>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          id="preview-cancel"
+          onclick={onclose}
+        >
           <i class="fas fa-times mr-2"></i>
           {MESSAGES.PREVIEW_CLOSE}
         </button>

@@ -133,7 +133,8 @@ interface TeamMemberRow extends RowDataPacket {
 /**
  * SQL query for finding a team by ID
  */
-const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id = $2';
+const FIND_TEAM_BY_ID_QUERY =
+  'SELECT * FROM teams WHERE id = $1 AND tenant_id = $2';
 
 /**
  * SQL query for team members with date range availability
@@ -222,15 +223,22 @@ export class TeamsService {
   /**
    * List all teams for a tenant
    */
-  async listTeams(tenantId: number, filters?: TeamFilters): Promise<TeamResponse[]> {
+  async listTeams(
+    tenantId: number,
+    filters?: TeamFilters,
+  ): Promise<TeamResponse[]> {
     this.logger.debug(`Fetching teams for tenant ${tenantId}`);
 
-    const [rows] = await execute<TeamRow[]>(this.FIND_ALL_TEAMS_QUERY, [tenantId]);
+    const [rows] = await execute<TeamRow[]>(this.FIND_ALL_TEAMS_QUERY, [
+      tenantId,
+    ]);
 
     let teams = rows.map((team: TeamRow) => this.mapToResponse(team));
 
     if (filters?.departmentId !== undefined) {
-      teams = teams.filter((team: TeamResponse) => team.departmentId === filters.departmentId);
+      teams = teams.filter(
+        (team: TeamResponse) => team.departmentId === filters.departmentId,
+      );
     }
 
     if (filters?.search !== undefined && filters.search !== '') {
@@ -354,22 +362,27 @@ export class TeamsService {
       );
 
       if (existing.length > 0) {
-        await execute('UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3', [
-          'lead',
-          leaderId,
-          teamId,
-        ]);
-        this.logger.log(`Updated existing member ${leaderId} to lead role in team ${teamId}`);
+        await execute(
+          'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
+          ['lead', leaderId, teamId],
+        );
+        this.logger.log(
+          `Updated existing member ${leaderId} to lead role in team ${teamId}`,
+        );
       } else {
         await execute(
           `INSERT INTO user_teams (tenant_id, user_id, team_id, role, joined_at)
            VALUES ($1, $2, $3, $4, NOW())`,
           [tenantId, leaderId, teamId, 'lead'],
         );
-        this.logger.log(`Added leader ${leaderId} to team ${teamId} with lead role`);
+        this.logger.log(
+          `Added leader ${leaderId} to team ${teamId} with lead role`,
+        );
       }
     } catch (error: unknown) {
-      this.logger.error(`Error ensuring leader in team: ${(error as Error).message}`);
+      this.logger.error(
+        `Error ensuring leader in team: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -392,7 +405,14 @@ export class TeamsService {
       `INSERT INTO teams (name, description, department_id, team_lead_id, is_active, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, 1, $5, $6, NOW())
        RETURNING id`,
-      [dto.name, dto.description, dto.departmentId, dto.leaderId, tenantId, teamUuid],
+      [
+        dto.name,
+        dto.description,
+        dto.departmentId,
+        dto.leaderId,
+        tenantId,
+        teamUuid,
+      ],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
@@ -427,7 +447,10 @@ export class TeamsService {
   /**
    * Build update fields from DTO
    */
-  private buildUpdateFields(dto: UpdateTeamDto): { fields: string[]; values: unknown[] } {
+  private buildUpdateFields(dto: UpdateTeamDto): {
+    fields: string[];
+    values: unknown[];
+  } {
     const fields: string[] = [];
     const values: unknown[] = [];
 
@@ -461,11 +484,10 @@ export class TeamsService {
   ): Promise<void> {
     if (dto.leaderId === undefined || dto.leaderId === null) return;
     if (currentLeaderId !== null && currentLeaderId !== dto.leaderId) {
-      await execute('UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3', [
-        'member',
-        currentLeaderId,
-        teamId,
-      ]);
+      await execute(
+        'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
+        ['member', currentLeaderId, teamId],
+      );
     }
     await this.ensureLeaderInTeam(dto.leaderId, teamId, tenantId);
   }
@@ -481,7 +503,10 @@ export class TeamsService {
   ): Promise<TeamResponse> {
     this.logger.log(`Updating team ${id}`);
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
+    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+      id,
+      tenantId,
+    ]);
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
@@ -497,12 +522,16 @@ export class TeamsService {
 
     await this.validateDepartment(dto.departmentId, tenantId);
     await this.validateLeader(dto.leaderId, tenantId);
-    if (dto.name !== undefined) await this.checkDuplicateName(dto.name, tenantId, id);
+    if (dto.name !== undefined)
+      await this.checkDuplicateName(dto.name, tenantId, id);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       values.push(id);
-      await execute(`UPDATE teams SET ${fields.join(', ')} WHERE id = $${values.length}`, values);
+      await execute(
+        `UPDATE teams SET ${fields.join(', ')} WHERE id = $${values.length}`,
+        values,
+      );
     }
 
     await this.handleLeaderChange(dto, currentTeam.team_lead_id, id, tenantId);
@@ -540,7 +569,10 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting team ${id}, force: ${force}`);
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
+    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+      id,
+      tenantId,
+    ]);
 
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -594,17 +626,29 @@ export class TeamsService {
     startDate?: string,
     endDate?: string,
   ): Promise<TeamMember[]> {
-    const dateRangeStr = startDate !== undefined ? `${startDate} - ${endDate ?? 'none'}` : 'none';
-    this.logger.debug(`Fetching members for team ${id}, dateRange: ${dateRangeStr}`);
+    const dateRangeStr =
+      startDate !== undefined ? `${startDate} - ${endDate ?? 'none'}` : 'none';
+    this.logger.debug(
+      `Fetching members for team ${id}, dateRange: ${dateRangeStr}`,
+    );
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
+    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+      id,
+      tenantId,
+    ]);
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
     const hasDateRange =
-      startDate !== undefined && startDate !== '' && endDate !== undefined && endDate !== '';
-    const query = hasDateRange ? TEAM_MEMBERS_DATE_RANGE_QUERY : TEAM_MEMBERS_CURRENT_DATE_QUERY;
+      startDate !== undefined &&
+      startDate !== '' &&
+      endDate !== undefined &&
+      endDate !== '';
+    const query =
+      hasDateRange ?
+        TEAM_MEMBERS_DATE_RANGE_QUERY
+      : TEAM_MEMBERS_CURRENT_DATE_QUERY;
     const params = hasDateRange ? [id, endDate, startDate] : [id];
 
     const [members] = await execute<TeamMemberRow[]>(query, params);
@@ -635,7 +679,10 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Adding user ${userId} to team ${teamId}`);
 
-    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [teamId, tenantId]);
+    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+      teamId,
+      tenantId,
+    ]);
 
     if (teamRows.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -678,7 +725,10 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Removing user ${userId} from team ${teamId}`);
 
-    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [teamId, tenantId]);
+    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+      teamId,
+      tenantId,
+    ]);
 
     if (teamRows.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -693,7 +743,10 @@ export class TeamsService {
       throw new BadRequestException('User is not a member of this team');
     }
 
-    await execute('DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2', [userId, teamId]);
+    await execute(
+      'DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2',
+      [userId, teamId],
+    );
 
     return { message: 'Team member removed successfully' };
   }
@@ -701,7 +754,10 @@ export class TeamsService {
   /**
    * Get team machines
    */
-  async getTeamMachines(teamId: number, tenantId: number): Promise<TeamMachine[]> {
+  async getTeamMachines(
+    teamId: number,
+    tenantId: number,
+  ): Promise<TeamMachine[]> {
     this.logger.debug(`Fetching machines for team ${teamId}`);
 
     interface MachineRow extends RowDataPacket {

@@ -44,22 +44,33 @@
 
   <!-- Survey properties badges -->
   <div class="mb-4 flex items-center gap-2 flex-wrap">
-    <span class="badge badge--sm {toBool(survey.isAnonymous) ? 'badge--info' : 'badge--secondary'}">
-      <i class="fas {toBool(survey.isAnonymous) ? 'fa-user-secret' : 'fa-user'}"></i>
+    <span
+      class="badge badge--sm {toBool(survey.isAnonymous) ? 'badge--info' : (
+        'badge--secondary'
+      )}"
+    >
+      <i class="fas {toBool(survey.isAnonymous) ? 'fa-user-secret' : 'fa-user'}"
+      ></i>
       {toBool(survey.isAnonymous) ? 'Anonym' : 'Nicht anonym'}
     </span>
     <span
-      class="badge badge--sm {toBool(survey.isMandatory) ? 'badge--warning' : 'badge--success'}"
+      class="badge badge--sm {toBool(survey.isMandatory) ? 'badge--warning' : (
+        'badge--success'
+      )}"
     >
-      <i class="fas {toBool(survey.isMandatory) ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+      <i
+        class="fas {toBool(survey.isMandatory) ?
+          'fa-exclamation-circle'
+        : 'fa-check-circle'}"
+      ></i>
       {toBool(survey.isMandatory) ? 'Verpflichtend' : 'Freiwillig'}
     </span>
   </div>
 
   <p class="mb-4 text-sm leading-relaxed text-secondary">
-    {getTextFromBuffer(survey.description) !== ''
-      ? getTextFromBuffer(survey.description)
-      : 'Keine Beschreibung'}
+    {getTextFromBuffer(survey.description) !== '' ?
+      getTextFromBuffer(survey.description)
+    : 'Keine Beschreibung'}
   </p>
 
   <div class="mb-4 text-sm text-secondary flex items-center gap-2">
@@ -86,17 +97,27 @@
 
   <div class="survey-actions">
     {#if mode === 'pending'}
-      <button type="button" class="btn btn-upload">
+      <button
+        type="button"
+        class="btn btn-upload"
+      >
         <i class="fas fa-arrow-right"></i>
         Teilnehmen
       </button>
     {:else if mode === 'responded'}
-      <button type="button" class="btn btn-secondary">
+      <button
+        type="button"
+        class="btn btn-secondary"
+      >
         <i class="fas fa-eye"></i>
         Antworten ansehen
       </button>
     {:else}
-      <button type="button" class="btn btn-secondary" disabled>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        disabled
+      >
         <i class="fas fa-ban"></i>
         Nicht teilgenommen
       </button>

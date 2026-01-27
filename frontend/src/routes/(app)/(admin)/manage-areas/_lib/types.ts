@@ -21,7 +21,13 @@ export type StatusFilter = 'all' | 'active' | 'inactive' | 'archived';
 /**
  * Area type values
  */
-export type AreaType = 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
+export type AreaType =
+  | 'building'
+  | 'warehouse'
+  | 'office'
+  | 'production'
+  | 'outdoor'
+  | 'other';
 
 /**
  * Area entity from API (camelCase to match NestJS response)

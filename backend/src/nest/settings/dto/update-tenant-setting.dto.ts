@@ -4,7 +4,11 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { CategoryEnum, SettingValueSchema, ValueTypeEnum } from './setting-schemas.js';
+import {
+  CategoryEnum,
+  SettingValueSchema,
+  ValueTypeEnum,
+} from './setting-schemas.js';
 
 export const UpdateTenantSettingSchema = z.object({
   setting_value: SettingValueSchema,
@@ -12,4 +16,6 @@ export const UpdateTenantSettingSchema = z.object({
   category: CategoryEnum.optional(),
 });
 
-export class UpdateTenantSettingDto extends createZodDto(UpdateTenantSettingSchema) {}
+export class UpdateTenantSettingDto extends createZodDto(
+  UpdateTenantSettingSchema,
+) {}

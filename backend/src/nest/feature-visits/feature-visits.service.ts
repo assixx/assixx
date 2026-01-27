@@ -32,7 +32,11 @@ export class FeatureVisitsService {
    * @param userId - User ID
    * @param feature - Feature name ('calendar', 'kvp', 'surveys')
    */
-  async markVisited(tenantId: number, userId: number, feature: Feature): Promise<void> {
+  async markVisited(
+    tenantId: number,
+    userId: number,
+    feature: Feature,
+  ): Promise<void> {
     this.logger.debug(`Marking ${feature} as visited for user ${userId}`);
 
     await this.db.query(
@@ -52,7 +56,11 @@ export class FeatureVisitsService {
    * @param feature - Feature name
    * @returns Last visited timestamp or null if never visited
    */
-  async getLastVisited(tenantId: number, userId: number, feature: Feature): Promise<Date | null> {
+  async getLastVisited(
+    tenantId: number,
+    userId: number,
+    feature: Feature,
+  ): Promise<Date | null> {
     const result = await this.db.queryOne<FeatureVisitRow>(
       `SELECT last_visited_at FROM feature_visits
        WHERE tenant_id = $1 AND user_id = $2 AND feature = $3`,
@@ -69,7 +77,10 @@ export class FeatureVisitsService {
    * @param userId - User ID
    * @returns Map of feature name to last visited timestamp
    */
-  async getAllVisits(tenantId: number, userId: number): Promise<Map<Feature, Date>> {
+  async getAllVisits(
+    tenantId: number,
+    userId: number,
+  ): Promise<Map<Feature, Date>> {
     const rows = await this.db.query<FeatureVisitRow>(
       `SELECT feature, last_visited_at FROM feature_visits
        WHERE tenant_id = $1 AND user_id = $2`,

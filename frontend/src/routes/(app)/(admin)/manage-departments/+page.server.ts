@@ -59,12 +59,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   // Parallel fetch: departments + areas + admins (for leads) + roots (for leads)
-  const [departmentsData, areasData, adminsData, rootsData] = await Promise.all([
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-    apiFetch<AdminUser[]>('/users?role=admin', token, fetch),
-    apiFetch<AdminUser[]>('/users?role=root', token, fetch),
-  ]);
+  const [departmentsData, areasData, adminsData, rootsData] = await Promise.all(
+    [
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+      apiFetch<AdminUser[]>('/users?role=admin', token, fetch),
+      apiFetch<AdminUser[]>('/users?role=root', token, fetch),
+    ],
+  );
 
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];

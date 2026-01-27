@@ -44,11 +44,18 @@ interface LokiTarget {
 /**
  * Get Grafana Cloud auth from environment
  */
-function getGrafanaCloudAuth(): { username: string; password: string } | undefined {
+function getGrafanaCloudAuth():
+  | { username: string; password: string }
+  | undefined {
   if (browser) return undefined;
   const userId = process.env.GRAFANA_CLOUD_USER;
   const apiKey = process.env.GRAFANA_CLOUD_API_KEY;
-  if (userId !== undefined && userId !== '' && apiKey !== undefined && apiKey !== '') {
+  if (
+    userId !== undefined &&
+    userId !== '' &&
+    apiKey !== undefined &&
+    apiKey !== ''
+  ) {
     return { username: userId, password: apiKey };
   }
   return undefined;
@@ -100,7 +107,10 @@ function buildLokiTransports(level: string): TransportMultiOptions['targets'] {
 /**
  * Build SSR transport configuration
  */
-function buildSSRTransport(): TransportSingleOptions | TransportMultiOptions | undefined {
+function buildSSRTransport():
+  | TransportSingleOptions
+  | TransportMultiOptions
+  | undefined {
   const lokiTargets = getLokiTargets();
   const hasLoki = lokiTargets.length > 0;
 
@@ -111,7 +121,11 @@ function buildSSRTransport(): TransportSingleOptions | TransportMultiOptions | u
         targets: [
           {
             target: 'pino-pretty',
-            options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+            options: {
+              colorize: true,
+              translateTime: 'SYS:standard',
+              ignore: 'pid,hostname',
+            },
             level: 'debug',
           },
           ...buildLokiTransports('debug'),
@@ -120,7 +134,11 @@ function buildSSRTransport(): TransportSingleOptions | TransportMultiOptions | u
     }
     return {
       target: 'pino-pretty',
-      options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+      },
     };
   }
 
@@ -192,7 +210,10 @@ function createBrowserConfig(): pino.LoggerOptions['browser'] | undefined {
 function buildLoggerOptions(): pino.LoggerOptions {
   const baseOptions: pino.LoggerOptions = {
     level: getLogLevel(),
-    base: { service: 'assixx-frontend', env: import.meta.env.DEV ? 'development' : 'production' },
+    base: {
+      service: 'assixx-frontend',
+      env: import.meta.env.DEV ? 'development' : 'production',
+    },
   };
 
   // Browser: custom console output

@@ -1,6 +1,14 @@
 <script lang="ts">
-  import { UPLOAD_CATEGORY_OPTIONS, CATEGORY_MAPPINGS, MESSAGES } from './constants';
-  import { formatFileSize, validateFile, getFileTypeDisplayInfo } from './utils';
+  import {
+    UPLOAD_CATEGORY_OPTIONS,
+    CATEGORY_MAPPINGS,
+    MESSAGES,
+  } from './constants';
+  import {
+    formatFileSize,
+    validateFile,
+    getFileTypeDisplayInfo,
+  } from './utils';
 
   import type { UploadData } from './types';
 
@@ -116,7 +124,11 @@
 {#if show}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div id="upload-modal" class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
+  <div
+    id="upload-modal"
+    class="modal-overlay modal-overlay--active"
+    onclick={handleOverlayClick}
+  >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="upload-form"
@@ -131,7 +143,12 @@
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">{MESSAGES.UPLOAD_TITLE}</h3>
-        <button type="button" class="ds-modal__close" onclick={handleClose} aria-label="Schließen">
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={handleClose}
+          aria-label="Schließen"
+        >
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -148,7 +165,9 @@
             }}
             ondrop={handleFileDrop}
             onclick={() => document.getElementById('file-input')?.click()}
-            onkeydown={(e) => e.key === 'Enter' && document.getElementById('file-input')?.click()}
+            onkeydown={(e) =>
+              e.key === 'Enter' &&
+              document.getElementById('file-input')?.click()}
           >
             <input
               type="file"
@@ -157,13 +176,20 @@
               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png"
               onchange={handleFileInputChange}
             />
-            <label for="file-input" class="file-upload-zone__label">
+            <label
+              for="file-input"
+              class="file-upload-zone__label"
+            >
               <div class="file-upload-zone__icon">
                 <i class="fas fa-cloud-upload-alt"></i>
               </div>
               <div class="file-upload-zone__text">
-                <p class="file-upload-zone__title">Datei hier ablegen oder klicken zum Auswählen</p>
-                <p class="file-upload-zone__subtitle">PDF, Word, Excel, JPG, PNG</p>
+                <p class="file-upload-zone__title">
+                  Datei hier ablegen oder klicken zum Auswählen
+                </p>
+                <p class="file-upload-zone__subtitle">
+                  PDF, Word, Excel, JPG, PNG
+                </p>
               </div>
             </label>
             <p class="file-upload-zone__helper">
@@ -173,16 +199,37 @@
 
           <!-- Selected File Display -->
           {#if uploadFile}
-            {@const extension = uploadFile.name.split('.').pop()?.toLowerCase() ?? ''}
-            {@const displayInfo = getFileTypeDisplayInfo(uploadFile.type, extension)}
-            <div id="selected-file" class="file-upload-list file-upload-list--compact">
+            {@const extension =
+              uploadFile.name.split('.').pop()?.toLowerCase() ?? ''}
+            {@const displayInfo = getFileTypeDisplayInfo(
+              uploadFile.type,
+              extension,
+            )}
+            <div
+              id="selected-file"
+              class="file-upload-list file-upload-list--compact"
+            >
               <div class="file-upload-item">
-                <div id="file-preview" class="file-upload-item__preview {displayInfo.cssClass}">
-                  <i id="file-icon" class={displayInfo.iconClass}></i>
+                <div
+                  id="file-preview"
+                  class="file-upload-item__preview {displayInfo.cssClass}"
+                >
+                  <i
+                    id="file-icon"
+                    class={displayInfo.iconClass}
+                  ></i>
                 </div>
                 <div class="file-upload-item__info">
-                  <div id="file-name" class="file-upload-item__name">{uploadFile.name}</div>
-                  <div id="file-size" class="file-upload-item__meta">
+                  <div
+                    id="file-name"
+                    class="file-upload-item__name"
+                  >
+                    {uploadFile.name}
+                  </div>
+                  <div
+                    id="file-size"
+                    class="file-upload-item__meta"
+                  >
                     {formatFileSize(uploadFile.size)}
                   </div>
                 </div>
@@ -206,13 +253,21 @@
               class="p-4 bg-[var(--background-secondary)] rounded-lg border border-[var(--color-border)]"
             >
               <div class="flex items-center justify-between mb-2">
-                <span class="text-[var(--color-text-primary)] text-sm">Hochladen...</span>
-                <span id="progress-text" class="text-[var(--color-text-secondary)] text-sm"
+                <span class="text-[var(--color-text-primary)] text-sm"
+                  >Hochladen...</span
+                >
+                <span
+                  id="progress-text"
+                  class="text-[var(--color-text-secondary)] text-sm"
                   >{uploadProgress}%</span
                 >
               </div>
               <div class="progress h-2">
-                <div id="progress-bar" class="progress__bar" style="width: {uploadProgress}%"></div>
+                <div
+                  id="progress-bar"
+                  class="progress__bar"
+                  style="width: {uploadProgress}%"
+                ></div>
               </div>
             </div>
           {/if}
@@ -220,8 +275,13 @@
           <!-- Category Selection -->
           <div class="form-field">
             <!-- svelte-ignore a11y_label_has_associated_control -->
-            <label class="form-field__label form-field__label--required">Kategorie</label>
-            <div class="dropdown w-full" id="upload-category-dropdown">
+            <label class="form-field__label form-field__label--required"
+              >Kategorie</label
+            >
+            <div
+              class="dropdown w-full"
+              id="upload-category-dropdown"
+            >
               <button
                 type="button"
                 class="dropdown__trigger w-full gap-2"
@@ -234,8 +294,9 @@
                   <i class="fas fa-folder"></i>
                   <span>
                     {#if uploadCategory}
-                      {UPLOAD_CATEGORY_OPTIONS.find((o) => o.value === uploadCategory)?.label ??
-                        MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
+                      {UPLOAD_CATEGORY_OPTIONS.find(
+                        (o) => o.value === uploadCategory,
+                      )?.label ?? MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
                     {:else}
                       {MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
                     {/if}
@@ -243,7 +304,10 @@
                 </span>
                 <i class="fas fa-chevron-down"></i>
               </button>
-              <div class="dropdown__menu" class:active={categoryDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={categoryDropdownOpen}
+              >
                 {#each UPLOAD_CATEGORY_OPTIONS as opt (opt.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -259,13 +323,19 @@
                 {/each}
               </div>
             </div>
-            <input type="hidden" name="category" value={uploadCategory} required />
+            <input
+              type="hidden"
+              name="category"
+              value={uploadCategory}
+              required
+            />
           </div>
 
           <!-- Document Name -->
           <div class="form-field">
-            <label class="form-field__label form-field__label--required" for="doc-name"
-              >Dokumentname</label
+            <label
+              class="form-field__label form-field__label--required"
+              for="doc-name">Dokumentname</label
             >
             <input
               type="text"
@@ -276,13 +346,17 @@
               bind:value={uploadDocName}
               required
             />
-            <small class="form-field__message">Der Name wird in der Dokumentenliste angezeigt</small
+            <small class="form-field__message"
+              >Der Name wird in der Dokumentenliste angezeigt</small
             >
           </div>
 
           <!-- Description -->
           <div class="form-field">
-            <label class="form-field__label" for="doc-description">Beschreibung</label>
+            <label
+              class="form-field__label"
+              for="doc-description">Beschreibung</label
+            >
             <textarea
               id="doc-description"
               name="description"
@@ -295,14 +369,20 @@
 
           <!-- Payroll Fields -->
           {#if requiresPayrollPeriod}
-            <div class="form-field" id="payroll-fields">
+            <div
+              class="form-field"
+              id="payroll-fields"
+            >
               <!-- svelte-ignore a11y_label_has_associated_control -->
               <label class="form-field__label form-field__label--required"
                 >Zeitraum für Gehaltsabrechnung</label
               >
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="form-field__label text-sm" for="salary-year">Jahr</label>
+                  <label
+                    class="form-field__label text-sm"
+                    for="salary-year">Jahr</label
+                  >
                   <select
                     id="salary-year"
                     name="salary_year"
@@ -315,7 +395,10 @@
                   </select>
                 </div>
                 <div>
-                  <label class="form-field__label text-sm" for="salary-month">Monat</label>
+                  <label
+                    class="form-field__label text-sm"
+                    for="salary-month">Monat</label
+                  >
                   <select
                     id="salary-month"
                     name="salary_month"
@@ -337,13 +420,18 @@
                   </select>
                 </div>
               </div>
-              <small class="form-field__message">Wird nur für Gehaltsabrechnungen benötigt</small>
+              <small class="form-field__message"
+                >Wird nur für Gehaltsabrechnungen benötigt</small
+              >
             </div>
           {/if}
 
           <!-- Tags -->
           <div class="form-field">
-            <label class="form-field__label" for="doc-tags">Tags</label>
+            <label
+              class="form-field__label"
+              for="doc-tags">Tags</label
+            >
             <input
               type="text"
               id="doc-tags"
@@ -352,15 +440,23 @@
               placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
               bind:value={uploadTags}
             />
-            <small class="form-field__message">Tags helfen beim späteren Suchen und Filtern</small>
+            <small class="form-field__message"
+              >Tags helfen beim späteren Suchen und Filtern</small
+            >
           </div>
         </div>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={handleClose}
-          >{MESSAGES.UPLOAD_CANCEL}</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={handleClose}>{MESSAGES.UPLOAD_CANCEL}</button
         >
-        <button type="submit" class="btn btn-modal" disabled={uploadSubmitting}>
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={uploadSubmitting}
+        >
           <i class="fas fa-cloud-upload-alt mr-2"></i>
           Hochladen
         </button>

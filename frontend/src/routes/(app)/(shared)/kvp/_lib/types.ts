@@ -33,7 +33,14 @@ export type OrgLevel = 'company' | 'department' | 'area' | 'team';
 /**
  * Filter types for KVP list
  */
-export type KvpFilter = 'all' | 'mine' | 'team' | 'department' | 'company' | 'manage' | 'archived';
+export type KvpFilter =
+  | 'all'
+  | 'mine'
+  | 'team'
+  | 'department'
+  | 'company'
+  | 'manage'
+  | 'archived';
 
 /**
  * Current user

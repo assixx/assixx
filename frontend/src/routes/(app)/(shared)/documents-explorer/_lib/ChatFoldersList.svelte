@@ -10,15 +10,25 @@
     onbackToAll?: () => void;
   }
 
-  const { folders, showBackToAll = false, onfolderClick, onbackToAll }: Props = $props();
+  const {
+    folders,
+    showBackToAll = false,
+    onfolderClick,
+    onbackToAll,
+  }: Props = $props();
 
   const placeholderRowCount = $derived(
-    Math.max(0, MIN_LIST_ROWS - folders.length - (folders.length === 0 ? 1 : 0)),
+    Math.max(
+      0,
+      MIN_LIST_ROWS - folders.length - (folders.length === 0 ? 1 : 0),
+    ),
   );
 </script>
 
 <div class="overflow-x-auto">
-  <table class="data-table data-table--striped data-table--hover data-table--bordered">
+  <table
+    class="data-table data-table--striped data-table--hover data-table--bordered"
+  >
     <thead>
       <tr>
         <th>{MESSAGES.TH_NAME}</th>
@@ -54,11 +64,13 @@
         </tr>
       {/if}
       {#each folders as folder (folder.conversationId)}
-        {@const displayName = folder.isGroup
-          ? (folder.groupName ?? 'Gruppenname')
+        {@const displayName =
+          folder.isGroup ?
+            (folder.groupName ?? 'Gruppenname')
           : folder.participantName}
-        {@const icon = folder.isGroup
-          ? '<i class="fas fa-users" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'
+        {@const icon =
+          folder.isGroup ?
+            '<i class="fas fa-users" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'
           : '<i class="fas fa-user" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'}
         <tr
           class="chat-folder-row cursor-pointer hover:bg-surface-2"
@@ -82,8 +94,11 @@
                 ></path>
               </svg>
               <div class="flex items-center gap-2 min-w-0">
-                <span class="font-medium" title={displayName}>{displayName}</span>
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                <span
+                  class="font-medium"
+                  title={displayName}>{displayName}</span
+                >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: icon from hardcoded folder config -->
                 {@html icon}
               </div>
             </div>
@@ -98,7 +113,10 @@
 
       {#if folders.length === 0}
         <tr>
-          <td colspan="6" class="text-center text-content-secondary py-8">
+          <td
+            colspan="6"
+            class="text-center text-content-secondary py-8"
+          >
             {MESSAGES.EMPTY_DESCRIPTION}
           </td>
         </tr>

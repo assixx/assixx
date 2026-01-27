@@ -67,7 +67,10 @@ class NotificationEventBus extends EventEmitter {
     this.emit('survey.updated', { tenantId, survey });
   }
 
-  emitDocumentUploaded(tenantId: number, document: DocumentEvent['document']): void {
+  emitDocumentUploaded(
+    tenantId: number,
+    document: DocumentEvent['document'],
+  ): void {
     logger.info(`[EventBus] Emitting document.uploaded for tenant ${tenantId}`);
     this.emit('document.uploaded', { tenantId, document });
   }

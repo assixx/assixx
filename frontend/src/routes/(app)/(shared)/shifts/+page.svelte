@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable max-lines */
   // SHIFTS PAGE - Svelte 5 + SSR
   import '../../../../styles/shifts.css';
 
@@ -79,7 +78,12 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
-  import type { ShiftFavorite, ShiftType, Employee, CustomRotationConfig } from './_lib/types';
+  import type {
+    ShiftFavorite,
+    ShiftType,
+    Employee,
+    CustomRotationConfig,
+  } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -112,7 +116,9 @@
         machineId: null,
         teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
-      shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
+      shiftsState.setEmployees(
+        convertSSRTeamMembersToEmployees(ssrTeamMembers),
+      );
       shiftsState.setShowPlanningUI(true);
     }
     // Note: favorites now use ssrFavorites directly via $derived + invalidateAll()
@@ -141,7 +147,11 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside);
-    if (ssrIsEmployee && ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
+    if (
+      ssrIsEmployee &&
+      ssrEmployeeTeamInfo !== null &&
+      ssrEmployeeTeamInfo.teamId !== 0
+    ) {
       void loadShiftPlan();
     }
     return () => {
@@ -218,11 +228,13 @@
     try {
       // Reload team members with new date range to update availability status
       const teamId = shiftsState.selectedContext.teamId;
-      const [members, { planResponse, rotationHistory, planData, rotationData }] =
-        await Promise.all([
-          fetchTeamMembers(teamId, startDate, endDate),
-          fetchAndProcessShiftData(startDate, endDate),
-        ]);
+      const [
+        members,
+        { planResponse, rotationHistory, planData, rotationData },
+      ] = await Promise.all([
+        fetchTeamMembers(teamId, startDate, endDate),
+        fetchAndProcessShiftData(startDate, endDate),
+      ]);
 
       // Update employees with fresh availability data for this week
       shiftsState.setEmployees(convertTeamMembersToEmployees(members));
@@ -254,7 +266,11 @@
         areaId: shiftsState.selectedContext.areaId,
         machineId: shiftsState.selectedContext.machineId,
       }),
-      fetchRotationHistory(startDate, endDate, shiftsState.selectedContext.teamId),
+      fetchRotationHistory(
+        startDate,
+        endDate,
+        shiftsState.selectedContext.teamId,
+      ),
     ]);
 
     const planData = processShiftPlanResponse(planResponse);
@@ -302,7 +318,8 @@
 
     // Standard toggle ON wenn: hasShiftData UND (patternType === 'alternate_fs' || patternType === 'fixed_n')
     const isStandard =
-      hasShiftData && (patternType === 'alternate_fs' || patternType === 'fixed_n');
+      hasShiftData &&
+      (patternType === 'alternate_fs' || patternType === 'fixed_n');
     // Custom toggle ON wenn: hasShiftData UND patternType === 'custom'
     const isCustom = hasShiftData && patternType === 'custom';
 
@@ -326,7 +343,8 @@
     shiftsState.setMachines(machs);
     shiftsState.setTeams(tms);
 
-    const teamLeaderId = tms.find((t) => t.id === favorite.teamId)?.leaderId ?? null;
+    const teamLeaderId =
+      tms.find((t) => t.id === favorite.teamId)?.leaderId ?? null;
     shiftsState.setSelectedContext({
       areaId: favorite.areaId,
       departmentId: favorite.departmentId,
@@ -345,7 +363,8 @@
     handleDragStartEvent(
       event,
       employeeId,
-      !shiftsState.canEditShifts || (shiftsState.currentPlanId !== null && !shiftsState.isEditMode),
+      !shiftsState.canEditShifts ||
+        (shiftsState.currentPlanId !== null && !shiftsState.isEditMode),
       () => {
         shiftsState.setIsDragging(true);
       },
@@ -400,7 +419,11 @@
     shiftsState.setShiftDetails(newDetails);
   }
 
-  function handleDrop(event: DragEvent, dateKey: string, shiftType: string): void {
+  function handleDrop(
+    event: DragEvent,
+    dateKey: string,
+    shiftType: string,
+  ): void {
     event.preventDefault();
     shiftsState.setIsDragging(false);
 
@@ -440,7 +463,13 @@
 
     const dayName = shiftCell?.dataset.day;
     if (dayName !== undefined && shiftsState.autofillConfig.enabled) {
-      executeAutofill(employeeId, employee, dayName, shiftType as ShiftType, shiftLabel);
+      executeAutofill(
+        employeeId,
+        employee,
+        dayName,
+        shiftType as ShiftType,
+        shiftLabel,
+      );
     }
   }
 
@@ -471,7 +500,10 @@
       if (emp !== undefined) {
         // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Immutable copy for state update
         const details = new Map(shiftsState.shiftDetails);
-        details.set(`${date}_${shift}_${empId}`, buildShiftDetail(emp, date, shift));
+        details.set(
+          `${date}_${shift}_${empId}`,
+          buildShiftDetail(emp, date, shift),
+        );
         shiftsState.setShiftDetails(details);
       }
     };
@@ -497,17 +529,27 @@
     }
   }
 
-  function removeEmployeeFromShift(dateKey: string, shiftType: string, employeeId: number) {
+  function removeEmployeeFromShift(
+    dateKey: string,
+    shiftType: string,
+    employeeId: number,
+  ) {
     shiftsState.removeShiftAssignment(dateKey, shiftType, employeeId);
     showSuccessAlert('Schicht-Zuweisung entfernt');
   }
 
   const weekDates = $derived(getWeekDates(shiftsState.currentWeek));
-  const weekRangeText = $derived(formatWeekRange(getWeekStart(shiftsState.currentWeek)));
+  const weekRangeText = $derived(
+    formatWeekRange(getWeekStart(shiftsState.currentWeek)),
+  );
 
   // Pre-computed week dates for modals (formatted as YYYY-MM-DD)
-  const currentWeekStart = $derived(formatDate(getWeekStart(shiftsState.currentWeek)));
-  const currentWeekEnd = $derived(formatDate(getWeekEnd(shiftsState.currentWeek)));
+  const currentWeekStart = $derived(
+    formatDate(getWeekStart(shiftsState.currentWeek)),
+  );
+  const currentWeekEnd = $derived(
+    formatDate(getWeekEnd(shiftsState.currentWeek)),
+  );
 
   function getShiftEmployees(dateKey: string, shiftType: string): number[] {
     const dayShifts = shiftsState.weeklyShifts.get(dateKey);
@@ -548,12 +590,15 @@
         (error as unknown as { code: string }).code === 'VALIDATION_ERROR' &&
         Array.isArray((error as unknown as { details: unknown }).details)
       ) {
-        const details = (error as unknown as { details: { message: string }[] }).details;
+        const details = (error as unknown as { details: { message: string }[] })
+          .details;
         const messages = details.map((d) => d.message).join(', ');
         showErrorAlert(messages);
       } else {
         const message =
-          error instanceof Error ? error.message : 'Fehler beim Speichern des Schichtplans.';
+          error instanceof Error ?
+            error.message
+          : 'Fehler beim Speichern des Schichtplans.';
         showErrorAlert(message);
       }
     } finally {
@@ -652,7 +697,8 @@
 
   async function handleDeleteFavorite(favoriteId: number, event: MouseEvent) {
     event.stopPropagation();
-    if (!(await showConfirm('Möchten Sie diesen Favoriten wirklich löschen?'))) return;
+    if (!(await showConfirm('Möchten Sie diesen Favoriten wirklich löschen?')))
+      return;
     try {
       await deleteFavoriteById(favoriteId);
       await invalidateAll(); // Refresh SSR data
@@ -665,7 +711,9 @@
   async function handleAddToFavorites() {
     const { areaId, departmentId, teamId } = shiftsState.selectedContext;
     if (areaId === null || departmentId === null || teamId === null) {
-      showWarningAlert('Bitte wählen Sie zuerst einen Bereich, eine Abteilung und ein Team aus.');
+      showWarningAlert(
+        'Bitte wählen Sie zuerst einen Bereich, eine Abteilung und ein Team aus.',
+      );
       return;
     }
     try {
@@ -700,9 +748,14 @@
 
   /** Build algorithm config from custom rotation config */
   function buildAlgorithmConfig(config: CustomRotationConfig) {
-    const sequenceArray = config.shiftSequence.split('-') as ('early' | 'late' | 'night')[];
-    const specialRules = config.nthWeekdayFree
-      ? [
+    const sequenceArray = config.shiftSequence.split('-') as (
+      | 'early'
+      | 'late'
+      | 'night'
+    )[];
+    const specialRules =
+      config.nthWeekdayFree ?
+        [
           {
             type: 'nth_weekday_free' as const,
             name: `Jeder ${String(config.nthValue)}. ${WEEKDAY_NAMES[config.weekdayValue] ?? 'Tag'} frei`,
@@ -756,7 +809,9 @@
       const assignments = buildRotationAssignments(config.employeeAssignments);
 
       if (assignments.length === 0) {
-        showErrorAlert('Bitte weisen Sie mindestens einem Mitarbeiter eine Schichtgruppe zu.');
+        showErrorAlert(
+          'Bitte weisen Sie mindestens einem Mitarbeiter eine Schichtgruppe zu.',
+        );
         return;
       }
 
@@ -770,12 +825,18 @@
       });
 
       shiftsState.setShowCustomRotationModal(false);
-      showSuccessAlert(`Custom Rotation erstellt! ${result.shiftsCreated} Schichten generiert.`);
+      showSuccessAlert(
+        `Custom Rotation erstellt! ${result.shiftsCreated} Schichten generiert.`,
+      );
       navigateToWeekContainingDate(config.startDate);
       void loadShiftPlan();
     } catch (error) {
       log.error({ err: error }, 'Custom rotation error');
-      showErrorAlert(error instanceof Error ? error.message : 'Fehler bei der Custom Rotation');
+      showErrorAlert(
+        error instanceof Error ?
+          error.message
+        : 'Fehler bei der Custom Rotation',
+      );
     }
   }
 </script>
@@ -790,7 +851,9 @@
       <h2 class="card__title">
         <i class="fas fa-calendar-alt mr-2"></i>Schichtplanung
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">Schichten planen und verwalten</p>
+      <p class="mt-2 text-[var(--color-text-secondary)]">
+        Schichten planen und verwalten
+      </p>
 
       <!-- Loading Overlay (Design System) - ONLY during initial load, NOT during week changes -->
       {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
@@ -808,14 +871,24 @@
           role="status"
         >
           <i class="fas fa-users text-[var(--color-text-secondary)]"></i>
-          <span class="font-medium text-[var(--color-text-secondary)]">Dein Team:</span>
-          <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.teamName}</span>
-          <span class="font-medium text-[var(--color-text-secondary)]">Abteilung:</span>
+          <span class="font-medium text-[var(--color-text-secondary)]"
+            >Dein Team:</span
+          >
+          <span class="font-semibold text-blue-400"
+            >{shiftsState.employeeTeamInfo.teamName}</span
+          >
+          <span class="font-medium text-[var(--color-text-secondary)]"
+            >Abteilung:</span
+          >
           <span class="font-semibold text-blue-400"
             >{shiftsState.employeeTeamInfo.departmentName}</span
           >
-          <span class="font-medium text-[var(--color-text-secondary)]">Bereich:</span>
-          <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.areaName}</span>
+          <span class="font-medium text-[var(--color-text-secondary)]"
+            >Bereich:</span
+          >
+          <span class="font-semibold text-blue-400"
+            >{shiftsState.employeeTeamInfo.areaName}</span
+          >
         </div>
       {/if}
 
@@ -863,9 +936,14 @@
       <!-- Employee without Team - Error Notice -->
       {#if ssrIsEmployee && !ssrEmployeeTeamInfo}
         <div class="department-notice">
-          <div class="notice-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="notice-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
           <h3>Kein Team zugewiesen</h3>
-          <p>Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen Administrator.</p>
+          <p>
+            Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen
+            Administrator.
+          </p>
         </div>
       {/if}
 
@@ -875,8 +953,8 @@
           <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
           <h3>Team auswählen</h3>
           <p>
-            Bitte wählen Sie einen Bereich, eine Abteilung und ein Team aus, um den Schichtplan
-            anzuzeigen.
+            Bitte wählen Sie einen Bereich, eine Abteilung und ein Team aus, um
+            den Schichtplan anzuzeigen.
           </p>
         </div>
       {/if}
@@ -884,7 +962,10 @@
       <!-- Main Planning UI -->
       {#if shiftsState.showPlanningUI}
         <!-- Week Navigation -->
-        <WeekNavigation {weekRangeText} onnavigateWeek={navigateWeek} />
+        <WeekNavigation
+          {weekRangeText}
+          onnavigateWeek={navigateWeek}
+        />
 
         <!-- Shift Control Toggles (Admin Only) -->
         {#if shiftsState.isAdmin}
@@ -917,7 +998,8 @@
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
-            hasRotationShift={(key: string) => shiftsState.rotationHistoryMap.has(key)}
+            hasRotationShift={(key: string) =>
+              shiftsState.rotationHistoryMap.has(key)}
             ondragover={handleDragOver}
             ondragenter={handleDragEnter}
             ondragleave={handleDragLeave}

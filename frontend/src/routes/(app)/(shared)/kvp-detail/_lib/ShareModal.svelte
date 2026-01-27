@@ -26,7 +26,8 @@
       </div>
       <div class="ds-modal__body">
         <p class="mb-6">
-          Waehlen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag teilen moechten:
+          Waehlen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
+          teilen moechten:
         </p>
 
         <div class="choice-group">
@@ -44,7 +45,9 @@
             />
             <span class="choice-card__text">
               Abteilung
-              <span class="choice-card__description">Für Ihre gesamte Abteilung sichtbar</span>
+              <span class="choice-card__description"
+                >Für Ihre gesamte Abteilung sichtbar</span
+              >
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'department'}
@@ -67,11 +70,11 @@
                   }}
                 >
                   <span>
-                    {kvpDetailState.selectedOrgId !== null
-                      ? (kvpDetailState.departments.find(
-                          (d) => d.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? 'Abteilung auswaehlen...')
-                      : 'Abteilung auswaehlen...'}
+                    {kvpDetailState.selectedOrgId !== null ?
+                      (kvpDetailState.departments.find(
+                        (d) => d.id === kvpDetailState.selectedOrgId,
+                      )?.name ?? 'Abteilung auswaehlen...')
+                    : 'Abteilung auswaehlen...'}
                   </span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
@@ -111,7 +114,9 @@
             />
             <span class="choice-card__text">
               Bereich
-              <span class="choice-card__description">Für alle im gleichen Bereich sichtbar</span>
+              <span class="choice-card__description"
+                >Für alle im gleichen Bereich sichtbar</span
+              >
             </span>
             <!-- Dropdown inside label like Legacy -->
             {#if kvpDetailState.selectedShareLevel === 'area'}
@@ -134,10 +139,11 @@
                   }}
                 >
                   <span>
-                    {kvpDetailState.selectedOrgId !== null
-                      ? (kvpDetailState.areas.find((a) => a.id === kvpDetailState.selectedOrgId)
-                          ?.name ?? 'Bereich auswaehlen...')
-                      : 'Bereich auswaehlen...'}
+                    {kvpDetailState.selectedOrgId !== null ?
+                      (kvpDetailState.areas.find(
+                        (a) => a.id === kvpDetailState.selectedOrgId,
+                      )?.name ?? 'Bereich auswaehlen...')
+                    : 'Bereich auswaehlen...'}
                   </span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
@@ -177,7 +183,9 @@
             />
             <span class="choice-card__text">
               Firma
-              <span class="choice-card__description">Für die gesamte Firma sichtbar</span>
+              <span class="choice-card__description"
+                >Für die gesamte Firma sichtbar</span
+              >
             </span>
           </label>
         </div>

@@ -55,7 +55,8 @@ export const MESSAGES = {
 
   // Empty states
   NO_USERS_FOUND: 'Keine Root-Benutzer gefunden',
-  CREATE_FIRST_USER: 'Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.',
+  CREATE_FIRST_USER:
+    'Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.',
 
   // Modal titles
   MODAL_TITLE_ADD: 'Root-Benutzer hinzufügen',
@@ -66,7 +67,8 @@ export const MESSAGES = {
   DELETE_CONFIRM: 'Möchten Sie diesen Root-Benutzer wirklich löschen?',
   DELETE_FINAL_TITLE: 'Endgültig löschen?',
   DELETE_FINAL_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_MESSAGE: 'Der Root-Benutzer wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_MESSAGE:
+    'Der Root-Benutzer wird unwiderruflich aus dem System entfernt.',
 
   // Search
   SEARCH_PLACEHOLDER: 'Root-Benutzer suchen...',
@@ -85,7 +87,8 @@ export const MESSAGES = {
     'Root-User haben automatisch Zugriff auf alle Abteilungen und Bereiche des Tenants.',
 
   // Profile info
-  PROFILE_INFO: 'Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über',
+  PROFILE_INFO:
+    'Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über',
   PROFILE_LINK_TEXT: 'Mein Profil',
 
   // Validation
@@ -120,7 +123,13 @@ export const PASSWORD_STRENGTH_LABELS = [
 /**
  * Password crack time estimates
  */
-export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Jahre'] as const;
+export const PASSWORD_CRACK_TIMES = [
+  'sofort',
+  'Minuten',
+  'Stunden',
+  'Tage',
+  'Jahre',
+] as const;
 
 /**
  * API Endpoints

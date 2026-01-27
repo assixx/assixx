@@ -15,7 +15,8 @@
  * formatDate('2025-11-08T10:00:00Z') // '08.11.2025'
  */
 export function formatDate(dateString: string | Date): string {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
@@ -33,7 +34,8 @@ export function formatDate(dateString: string | Date): string {
  * formatDateTime('2025-11-08T10:30:00Z') // '08.11.2025 10:30'
  */
 export function formatDateTime(dateString: string | Date): string {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
@@ -53,7 +55,8 @@ export function formatDateTime(dateString: string | Date): string {
  * formatTime('2025-11-08T10:30:00Z') // '10:30'
  */
 export function formatTime(dateString: string | Date): string {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   return date.toLocaleTimeString('de-DE', {
     hour: '2-digit',
     minute: '2-digit',
@@ -92,12 +95,20 @@ function formatTimeDifference(
 
   // Handle minutes
   if (diffMin < 60) {
-    return getPluralizedTimeUnit({ value: diffMin, singular: 'Minute', plural: 'Minuten' });
+    return getPluralizedTimeUnit({
+      value: diffMin,
+      singular: 'Minute',
+      plural: 'Minuten',
+    });
   }
 
   // Handle hours
   if (diffHour < 24) {
-    return getPluralizedTimeUnit({ value: diffHour, singular: 'Stunde', plural: 'Stunden' });
+    return getPluralizedTimeUnit({
+      value: diffHour,
+      singular: 'Stunde',
+      plural: 'Stunden',
+    });
   }
 
   // Handle days
@@ -121,18 +132,30 @@ function formatDayDifference(diffDay: number): string {
   // Weeks (less than a month)
   if (diffDay < 30) {
     const weeks = Math.floor(diffDay / 7);
-    return getPluralizedTimeUnit({ value: weeks, singular: 'Woche', plural: 'Wochen' });
+    return getPluralizedTimeUnit({
+      value: weeks,
+      singular: 'Woche',
+      plural: 'Wochen',
+    });
   }
 
   // Months (less than a year)
   if (diffDay < 365) {
     const months = Math.floor(diffDay / 30);
-    return getPluralizedTimeUnit({ value: months, singular: 'Monat', plural: 'Monaten' });
+    return getPluralizedTimeUnit({
+      value: months,
+      singular: 'Monat',
+      plural: 'Monaten',
+    });
   }
 
   // Years
   const years = Math.floor(diffDay / 365);
-  return getPluralizedTimeUnit({ value: years, singular: 'Jahr', plural: 'Jahren' });
+  return getPluralizedTimeUnit({
+    value: years,
+    singular: 'Jahr',
+    plural: 'Jahren',
+  });
 }
 
 /**
@@ -145,7 +168,8 @@ function formatDayDifference(diffDay: number): string {
  * formatRelativeDate(new Date(Date.now() - 3600000)) // 'vor 1 Stunde'
  */
 export function formatRelativeDate(dateString: string | Date): string {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
 
@@ -165,7 +189,8 @@ export function formatRelativeDate(dateString: string | Date): string {
  * @returns True if date is today
  */
 export function isToday(dateString: string | Date): boolean {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   const today = new Date();
   return (
     date.getDate() === today.getDate() &&
@@ -182,7 +207,8 @@ export function isToday(dateString: string | Date): boolean {
  * @returns True if date is within last N days
  */
 export function isWithinDays(dateString: string | Date, days: number): boolean {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

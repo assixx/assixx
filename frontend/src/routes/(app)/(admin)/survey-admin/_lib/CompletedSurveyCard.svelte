@@ -24,8 +24,14 @@
     ondelete: (surveyId: number | string) => void;
   }
 
-  const { survey, surveyId, canManage, assignmentBadges, onviewresults, ondelete }: Props =
-    $props();
+  const {
+    survey,
+    surveyId,
+    canManage,
+    assignmentBadges,
+    onviewresults,
+    ondelete,
+  }: Props = $props();
 
   // =============================================================================
   // DERIVED
@@ -33,13 +39,18 @@
 
   const responseCount = $derived(survey.responseCount ?? 0);
   const completedCount = $derived(survey.completedCount ?? 0);
-  const responseRate = $derived(calculateResponseRate(responseCount, completedCount));
+  const responseRate = $derived(
+    calculateResponseRate(responseCount, completedCount),
+  );
   const startDate = $derived(formatSurveyDate(survey.startDate));
   const endDate = $derived(formatSurveyDate(survey.endDate));
   const title = $derived(getTextFromBuffer(survey.title));
   const description = $derived(getTextFromBuffer(survey.description));
   const isAnonymous = $derived(toBool(survey.isAnonymous));
   const status = $derived(survey.status ?? 'completed');
+  const creatorName = $derived(
+    [survey.creatorFirstName, survey.creatorLastName].filter(Boolean).join(' '),
+  );
 </script>
 
 {#snippet cardContent()}
@@ -51,7 +62,9 @@
   </div>
 
   <div class="mb-4 flex items-center gap-2 flex-wrap">
-    <span class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}">
+    <span
+      class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}"
+    >
       <i class="fas {isAnonymous ? 'fa-user-secret' : 'fa-user'}"></i>
       {isAnonymous ? 'Anonym' : 'Nicht anonym'}
     </span>
@@ -71,6 +84,13 @@
       <span>Kein Zeitraum</span>
     {/if}
   </div>
+
+  {#if creatorName !== ''}
+    <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+      <i class="fas fa-user-pen"></i>
+      <span>Erstellt von {creatorName}</span>
+    </div>
+  {/if}
 
   {#if assignmentBadges.length > 0}
     <div class="mb-4 flex items-center gap-2 flex-wrap">
@@ -134,13 +154,13 @@
       if (e.key === 'Enter') onviewresults(surveyId);
     }}
   >
-    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
+    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
     {@render cardContent()}
     <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
   </div>
 {:else}
   <div class="card">
-    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
+    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
     {@render cardContent()}
     <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
   </div>

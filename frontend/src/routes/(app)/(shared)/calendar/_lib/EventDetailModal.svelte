@@ -20,8 +20,7 @@
     ondelete: (eventId: number) => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     event,
     canEdit,
     canDelete,
@@ -32,17 +31,22 @@
     onedit,
     ondelete,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   const levelText = $derived(getEventLevelText(event));
 
   // Lookup names for assignments
   const areaName = $derived(areas.find((a) => a.id === event.areaId)?.name);
-  const departmentName = $derived(departments.find((d) => d.id === event.departmentId)?.name);
+  const departmentName = $derived(
+    departments.find((d) => d.id === event.departmentId)?.name,
+  );
   const teamName = $derived(teams.find((t) => t.id === event.teamId)?.name);
 </script>
 
-<div class="modal-overlay modal-overlay--active" role="presentation" onclick={onclose}>
+<div
+  class="modal-overlay modal-overlay--active"
+  role="presentation"
+  onclick={onclose}
+>
   <div
     class="ds-modal"
     role="presentation"
@@ -55,14 +59,26 @@
         <i class="fas fa-calendar-alt"></i>
         Termin Details
       </h3>
-      <button type="button" class="ds-modal__close" aria-label="Schliessen" onclick={onclose}>
+      <button
+        type="button"
+        class="ds-modal__close"
+        aria-label="Schliessen"
+        onclick={onclose}
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="ds-modal__body">
-      <div id="eventDetailContent" class="fade-in">
+      <div
+        id="eventDetailContent"
+        class="fade-in"
+      >
         <h3>
-          <i class="fas" class:fa-calendar-day={event.allDay} class:fa-clock={!event.allDay}></i>
+          <i
+            class="fas"
+            class:fa-calendar-day={event.allDay}
+            class:fa-clock={!event.allDay}
+          ></i>
           {event.title || 'Unbenannter Termin'}
         </h3>
 
@@ -73,11 +89,17 @@
         <div class="event-details-grid">
           <div class="detail-item">
             <i class="fas fa-calendar"></i>
-            <span><strong>Beginn:</strong> {formatDateTime(event.startTime, event.allDay)}</span>
+            <span
+              ><strong>Beginn:</strong>
+              {formatDateTime(event.startTime, event.allDay)}</span
+            >
           </div>
           <div class="detail-item">
             <i class="fas fa-calendar-check"></i>
-            <span><strong>Ende:</strong> {formatDateTime(event.endTime, event.allDay)}</span>
+            <span
+              ><strong>Ende:</strong>
+              {formatDateTime(event.endTime, event.allDay)}</span
+            >
           </div>
           {#if event.location}
             <div class="detail-item">
@@ -112,7 +134,10 @@
 
           <div class="detail-item">
             <i class="fas fa-user"></i>
-            <span><strong>Erstellt von:</strong> {event.creatorName ?? 'Unbekannt'}</span>
+            <span
+              ><strong>Erstellt von:</strong>
+              {event.creatorName ?? 'Unbekannt'}</span
+            >
           </div>
         </div>
 
@@ -120,12 +145,18 @@
           <h4>Teilnehmer ({event.attendees.length})</h4>
           <div class="attendee-list">
             {#each event.attendees as attendee (attendee.userId)}
-              {@const fullName = `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
-              {@const name = fullName !== '' ? fullName : (attendee.username ?? 'Unbekannt')}
+              {@const fullName =
+                `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+              {@const name =
+                fullName !== '' ? fullName : (attendee.username ?? 'Unbekannt')}
               <div class="attendee-item">
                 <span>{name}</span>
-                <span class="attendee-status" title={getResponseText(attendee.responseStatus)}>
-                  <i class="fas {getResponseIconClass(attendee.responseStatus)}"></i>
+                <span
+                  class="attendee-status"
+                  title={getResponseText(attendee.responseStatus)}
+                >
+                  <i class="fas {getResponseIconClass(attendee.responseStatus)}"
+                  ></i>
                 </span>
               </div>
             {/each}
@@ -155,7 +186,11 @@
               <i class="fas fa-trash"></i> Löschen
             </button>
           {/if}
-          <button type="button" class="btn btn-cancel" onclick={onclose}>
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={onclose}
+          >
             <i class="fas fa-times"></i> Schliessen
           </button>
         </div>

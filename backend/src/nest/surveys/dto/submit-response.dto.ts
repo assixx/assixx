@@ -20,7 +20,8 @@ export const AnswerSchema = z
     // Answer fields - camelCase
     answerText: z.string().trim().optional(),
     answerNumber: z.preprocess(
-      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+      (val: unknown) =>
+        typeof val === 'string' ? Number.parseFloat(val) : val,
       z.number().optional(),
     ),
     answerDate: DateSchema.optional(),
@@ -28,14 +29,18 @@ export const AnswerSchema = z
     // Answer fields - snake_case (for backwards compatibility)
     answer_text: z.string().trim().optional(),
     answer_number: z.preprocess(
-      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+      (val: unknown) =>
+        typeof val === 'string' ? Number.parseFloat(val) : val,
       z.number().optional(),
     ),
     answer_date: DateSchema.optional(),
     answer_options: z.array(IdSchema).optional(),
   })
   .refine(
-    (data: { question_id?: number | undefined; questionId?: number | undefined }): boolean =>
+    (data: {
+      question_id?: number | undefined;
+      questionId?: number | undefined;
+    }): boolean =>
       data.question_id !== undefined || data.questionId !== undefined,
     {
       message: 'Either question_id or questionId is required',

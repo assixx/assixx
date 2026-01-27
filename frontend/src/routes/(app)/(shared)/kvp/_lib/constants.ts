@@ -86,9 +86,27 @@ export const FILTER_OPTIONS: {
   title: string;
   showBadge: boolean;
 }[] = [
-  { value: 'all', label: 'Alle', icon: 'fa-list', title: 'Alle Vorschläge', showBadge: true },
-  { value: 'mine', label: 'Meine', icon: 'fa-user', title: 'Meine Vorschläge', showBadge: true },
-  { value: 'team', label: 'Team', icon: 'fa-users', title: 'Team Vorschläge', showBadge: true },
+  {
+    value: 'all',
+    label: 'Alle',
+    icon: 'fa-list',
+    title: 'Alle Vorschläge',
+    showBadge: true,
+  },
+  {
+    value: 'mine',
+    label: 'Meine',
+    icon: 'fa-user',
+    title: 'Meine Vorschläge',
+    showBadge: true,
+  },
+  {
+    value: 'team',
+    label: 'Team',
+    icon: 'fa-users',
+    title: 'Team Vorschläge',
+    showBadge: true,
+  },
   {
     value: 'department',
     label: 'Abteilung',
@@ -103,7 +121,13 @@ export const FILTER_OPTIONS: {
     title: 'Firmenweite Vorschläge',
     showBadge: true,
   },
-  { value: 'manage', label: 'Verwalten', icon: 'fa-tasks', title: 'Verwaltung', showBadge: false },
+  {
+    value: 'manage',
+    label: 'Verwalten',
+    icon: 'fa-tasks',
+    title: 'Verwaltung',
+    showBadge: false,
+  },
   {
     value: 'archived',
     label: 'Archiv',
@@ -139,12 +163,13 @@ export const PRIORITY_OPTIONS = [
 /**
  * Visibility info by org level
  */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> = {
-  company: { icon: 'fa-globe', text: 'Firmenweit' },
-  department: { icon: 'fa-building', text: 'Abteilung' },
-  area: { icon: 'fa-sitemap', text: 'Bereich' },
-  team: { icon: 'fa-users', text: 'Team' },
-} as const;
+export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
+  {
+    company: { icon: 'fa-globe', text: 'Firmenweit' },
+    department: { icon: 'fa-building', text: 'Abteilung' },
+    area: { icon: 'fa-sitemap', text: 'Bereich' },
+    team: { icon: 'fa-users', text: 'Team' },
+  } as const;
 
 /**
  * Max file upload settings

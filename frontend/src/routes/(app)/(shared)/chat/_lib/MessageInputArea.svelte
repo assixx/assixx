@@ -17,8 +17,7 @@
     onclearschedule: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  // $bindable() required for two-way binding in Svelte 5
+  /* eslint-disable prefer-const -- Svelte $bindable() requires let */
   let {
     messageInput = $bindable(''),
     selectedFiles,
@@ -34,7 +33,9 @@
   /* eslint-enable prefer-const */
 
   const hasSchedule = $derived(scheduledFor !== null);
-  const canSend = $derived(messageInput.trim() !== '' || selectedFiles.length > 0);
+  const canSend = $derived(
+    messageInput.trim() !== '' || selectedFiles.length > 0,
+  );
 </script>
 
 <div class="message-input-container">
@@ -42,10 +43,16 @@
   {#if selectedFiles.length > 0}
     <div class="file-preview">
       {#each selectedFiles as item, i (i)}
-        <div class="file-preview-item" class:uploading={item.status === 'uploading'}>
+        <div
+          class="file-preview-item"
+          class:uploading={item.status === 'uploading'}
+        >
           <div class="file-icon">
             {#if item.isImage && item.previewUrl}
-              <img src={item.previewUrl} alt="" />
+              <img
+                src={item.previewUrl}
+                alt=""
+              />
             {:else}
               <i class="fas {getFileIcon(item.file.type)}"></i>
             {/if}
@@ -67,7 +74,10 @@
           </button>
           {#if item.status === 'uploading'}
             <div class="upload-progress">
-              <div class="progress-bar" style="width: {item.progress}%"></div>
+              <div
+                class="progress-bar"
+                style="width: {item.progress}%"
+              ></div>
             </div>
           {/if}
         </div>
@@ -89,7 +99,9 @@
       {#if hasSchedule && scheduledFor}
         <div class="schedule-badge">
           <i class="far fa-clock"></i>
-          <span class="schedule-badge__time">{formatScheduleTime(scheduledFor)}</span>
+          <span class="schedule-badge__time"
+            >{formatScheduleTime(scheduledFor)}</span
+          >
           <button
             type="button"
             class="schedule-badge__clear"

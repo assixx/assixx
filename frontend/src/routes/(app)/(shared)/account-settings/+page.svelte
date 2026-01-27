@@ -35,7 +35,9 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const pendingDeletion = $derived<DeletionStatusData | null>(data.pendingDeletion ?? null);
+  const pendingDeletion = $derived<DeletionStatusData | null>(
+    data.pendingDeletion ?? null,
+  );
   const hasPendingDeletion = $derived(pendingDeletion !== null);
 
   // =============================================================================
@@ -52,7 +54,9 @@
   // DERIVED STATE
   // =============================================================================
 
-  const isDeleteConfirmationValid = $derived(deleteConfirmation === DELETE_CONFIRMATION_TEXT);
+  const isDeleteConfirmationValid = $derived(
+    deleteConfirmation === DELETE_CONFIRMATION_TEXT,
+  );
   const isReasonValid = $derived(deleteReason.length >= MIN_REASON_LENGTH);
   const canDelete = $derived(isDeleteConfirmationValid && isReasonValid);
 
@@ -104,7 +108,8 @@
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error deleting tenant');
-      const message = err instanceof Error ? err.message : MESSAGES.deletionError;
+      const message =
+        err instanceof Error ? err.message : MESSAGES.deletionError;
       showToast(message, 'error');
     }
 
@@ -165,11 +170,15 @@
           <div class="alert__content flex-1">
             <p class="alert__title">Löschanfrage aktiv</p>
             <p class="alert__message">
-              <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue #{pendingDeletion.queueId}
+              <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue
+              #{pendingDeletion.queueId}
               · Tenant #{pendingDeletion.tenantId} · Angefordert von {pendingDeletion.requestedByName ??
                 'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
             </p>
-            <a href={resolve('/tenant-deletion-status', {})} class="btn btn-warning mt-4">
+            <a
+              href={resolve('/tenant-deletion-status', {})}
+              class="btn btn-warning mt-4"
+            >
               <i class="fas fa-external-link-alt mr-2"></i>
               Details anzeigen
             </a>
@@ -183,9 +192,12 @@
           <i class="fas fa-exclamation-triangle"></i>
         </div>
         <div class="alert__content">
-          <p class="alert__title">Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+          <p class="alert__title">
+            Achtung: Diese Aktion kann nicht rückgängig gemacht werden!
+          </p>
           <p class="alert__message">
-            Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich gelöscht:
+            Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich
+            gelöscht:
           </p>
           <ul class="pl-5 mt-4 space-y-1 text-sm">
             <li>Alle Administratoren und Mitarbeiter</li>
@@ -200,7 +212,11 @@
       <!-- Action Button -->
       {#if !hasPendingDeletion}
         <div class="flex gap-3">
-          <button type="button" class="btn btn-danger" onclick={handleShowDeleteModal}>
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick={handleShowDeleteModal}
+          >
             <i class="fas fa-trash-alt"></i>
             Tenant komplett löschen
           </button>
@@ -259,17 +275,20 @@
           <div class="flex items-start gap-3">
             <i class="fas fa-shield-alt text-blue-500 mt-1"></i>
             <div>
-              <p class="font-semibold mb-2">Zwei-Personen-Prinzip (4-Augen-Prinzip)</p>
+              <p class="font-semibold mb-2">
+                Zwei-Personen-Prinzip (4-Augen-Prinzip)
+              </p>
               <p class="mb-2">
-                Die Löschung wird <strong>nicht sofort</strong> durchgeführt, sondern muss zuerst
-                von einem zweiten Root-Benutzer genehmigt werden. Nach der Genehmigung beginnt eine
-                <strong>30-tägige Nachfrist</strong>, in der die Löschung noch widerrufen werden
-                kann.
+                Die Löschung wird <strong>nicht sofort</strong> durchgeführt,
+                sondern muss zuerst von einem zweiten Root-Benutzer genehmigt
+                werden. Nach der Genehmigung beginnt eine
+                <strong>30-tägige Nachfrist</strong>, in der die Löschung noch
+                widerrufen werden kann.
               </p>
               <p class="text-sm">
                 <i class="fas fa-info-circle mr-1"></i>
-                Die tatsächliche Löschung erfolgt erst 30 Tage nach der Genehmigung durch den zweiten
-                Root-Benutzer.
+                Die tatsächliche Löschung erfolgt erst 30 Tage nach der Genehmigung
+                durch den zweiten Root-Benutzer.
               </p>
             </div>
           </div>
@@ -277,7 +296,10 @@
 
         <!-- Confirmation Input -->
         <div class="form-field mb-6">
-          <label class="form-field__label" for="deleteConfirmation">
+          <label
+            class="form-field__label"
+            for="deleteConfirmation"
+          >
             Geben Sie zur Bestätigung <strong class="text-red-500"
               >{DELETE_CONFIRMATION_TEXT}</strong
             > ein:
@@ -293,13 +315,17 @@
 
         <!-- Delete Reason -->
         <div class="form-field">
-          <label for="deleteReason" class="form-field__label">
+          <label
+            for="deleteReason"
+            class="form-field__label"
+          >
             Grund für die Löschung (min. {MIN_REASON_LENGTH} Zeichen):
           </label>
           <textarea
             id="deleteReason"
             class="form-field__control"
-            class:form-field__control--error={deleteReason.length > 0 && !isReasonValid}
+            class:form-field__control--error={deleteReason.length > 0 &&
+              !isReasonValid}
             rows="3"
             placeholder="Bitte geben Sie einen Grund an (min. {MIN_REASON_LENGTH} Zeichen)..."
             minlength={MIN_REASON_LENGTH}
@@ -318,7 +344,11 @@
       </div>
 
       <div class="ds-modal__footer ds-modal__footer--end">
-        <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeDeleteModal}
+        >
           <i class="fas fa-times"></i>
           Abbrechen
         </button>

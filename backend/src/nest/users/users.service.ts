@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Users Service
  *
@@ -163,7 +162,13 @@ const ERROR_MESSAGES = {
 /**
  * Valid sort fields for user queries
  */
-const VALID_SORT_FIELDS = new Set(['firstName', 'lastName', 'email', 'createdAt', 'lastLogin']);
+const VALID_SORT_FIELDS = new Set([
+  'firstName',
+  'lastName',
+  'email',
+  'createdAt',
+  'lastLogin',
+]);
 
 @Injectable()
 export class UsersService {
@@ -190,7 +195,10 @@ export class UsersService {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause using helper
-    const { whereClause, params, paramIndex } = this.buildUserListWhereClause(tenantId, query);
+    const { whereClause, params, paramIndex } = this.buildUserListWhereClause(
+      tenantId,
+      query,
+    );
 
     // Get total count
     const countResult = await this.databaseService.query<{ count: string }>(
@@ -218,7 +226,9 @@ export class UsersService {
     );
 
     // Convert to responses
-    const responses = users.map((user: UserRow) => this.toSafeUserResponse(user));
+    const responses = users.map((user: UserRow) =>
+      this.toSafeUserResponse(user),
+    );
 
     // Fetch team assignments and availability in batch (single query each for all users)
     const userIds = users.map((u: UserRow) => u.id);
@@ -231,7 +241,10 @@ export class UsersService {
     for (const response of responses) {
       const teams = teamsByUser.get(response.id) ?? [];
       this.addTeamInfo(response, teams);
-      this.availabilityService.addAvailabilityInfo(response, availabilityByUser.get(response.id));
+      this.availabilityService.addAvailabilityInfo(
+        response,
+        availabilityByUser.get(response.id),
+      );
     }
 
     return {
@@ -248,7 +261,10 @@ export class UsersService {
   /**
    * Get user by ID
    */
-  async getUserById(userId: number, tenantId: number): Promise<SafeUserResponse> {
+  async getUserById(
+    userId: number,
+    tenantId: number,
+  ): Promise<SafeUserResponse> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -265,7 +281,10 @@ export class UsersService {
     const response = this.toSafeUserResponse(user);
     this.addDepartmentInfo(response, departments);
     this.addTeamInfo(response, teams);
-    this.availabilityService.addAvailabilityInfo(response, availability ?? undefined);
+    this.availabilityService.addAvailabilityInfo(
+      response,
+      availability ?? undefined,
+    );
 
     // Add tenant info if available
     if (tenantInfo !== null) {
@@ -291,7 +310,11 @@ export class UsersService {
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
     void teamIds;
 
-    const userId = await this.insertUserRecord(userData, hasFullAccess, tenantId);
+    const userId = await this.insertUserRecord(
+      userData,
+      hasFullAccess,
+      tenantId,
+    );
     if (Array.isArray(departmentIds) && departmentIds.length > 0) {
       await this.assignUserDepartments(userId, departmentIds, tenantId);
     }
@@ -334,11 +357,15 @@ export class UsersService {
    * NOTE: Availability fields removed - now managed via employee_availability table
    */
   private async insertUserRecord(
-    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess'>,
+    userData: Omit<
+      CreateUserDto,
+      'departmentIds' | 'teamIds' | 'hasFullAccess'
+    >,
     hasFullAccess: boolean | undefined,
     tenantId: number,
   ): Promise<number> {
-    const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
+    const employeeNumber =
+      userData.employeeNumber ?? `EMP${String(Date.now())}`;
     const hashedPassword = await bcryptjs.hash(userData.password, 12);
     const userUuid = uuidv7();
 
@@ -410,10 +437,17 @@ export class UsersService {
 
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
-    const { departmentIds, teamIds, hasFullAccess, password, ...updateData } = dto;
+    const { departmentIds, teamIds, hasFullAccess, password, ...updateData } =
+      dto;
     void teamIds; // Reserved for future use
 
-    await this.executeUserUpdate(userId, tenantId, updateData, hasFullAccess, password);
+    await this.executeUserUpdate(
+      userId,
+      tenantId,
+      updateData,
+      hasFullAccess,
+      password,
+    );
     await this.updateDepartmentAssignments(userId, tenantId, departmentIds);
 
     // Insert into availability history if availability fields were updated
@@ -475,7 +509,10 @@ export class UsersService {
     hasFullAccess: boolean | undefined,
     password: string | undefined,
   ): Promise<void> {
-    const { updates, params, paramIndex } = this.buildUpdateFields(updateData, hasFullAccess);
+    const { updates, params, paramIndex } = this.buildUpdateFields(
+      updateData,
+      hasFullAccess,
+    );
 
     let currentIndex = paramIndex;
     if (password !== undefined && password !== '') {
@@ -508,13 +545,19 @@ export class UsersService {
   /**
    * Check if error is a PostgreSQL unique constraint violation for a specific field
    */
-  private isUniqueConstraintViolation(error: unknown, fieldName: string): boolean {
+  private isUniqueConstraintViolation(
+    error: unknown,
+    fieldName: string,
+  ): boolean {
     if (typeof error !== 'object' || error === null) return false;
     const pgError = error as { code?: string; constraint?: string };
     // PostgreSQL unique violation code is 23505
     if (pgError.code !== '23505') return false;
     // Check if constraint name contains the field name
-    return pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ?? false;
+    return (
+      pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ??
+      false
+    );
   }
 
   /**
@@ -673,7 +716,10 @@ export class UsersService {
     newPassword: string,
   ): Promise<{ message: string }> {
     // SECURITY: Get password hash for ACTIVE users only (is_active = 1)
-    const passwordHash = await this.userRepository.getPasswordHash(userId, tenantId);
+    const passwordHash = await this.userRepository.getPasswordHash(
+      userId,
+      tenantId,
+    );
 
     if (passwordHash === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -739,7 +785,10 @@ export class UsersService {
   /**
    * Archive user (is_active = 3)
    */
-  async archiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
+  async archiveUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -756,7 +805,10 @@ export class UsersService {
   /**
    * Unarchive user (is_active = 1)
    */
-  async unarchiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
+  async unarchiveUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -818,7 +870,10 @@ export class UsersService {
    * SECURITY: Only returns ACTIVE users (is_active = 1)
    * NOTE: Availability fields removed - now from employee_availability table
    */
-  private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
+  private async findUserById(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
@@ -837,7 +892,10 @@ export class UsersService {
    * Find user by email
    * SECURITY: Only returns ACTIVE users (is_active = 1)
    */
-  private async findUserByEmail(email: string, tenantId: number): Promise<UserRow | null> {
+  private async findUserByEmail(
+    email: string,
+    tenantId: number,
+  ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = 1`,
       [email.toLowerCase(), tenantId],
@@ -849,7 +907,10 @@ export class UsersService {
   /**
    * Get user department assignments
    */
-  private async getUserDepartments(userId: number, tenantId: number): Promise<UserDepartmentRow[]> {
+  private async getUserDepartments(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserDepartmentRow[]> {
     return await this.databaseService.query<UserDepartmentRow>(
       `SELECT ud.user_id, ud.department_id, d.name as department_name, ud.is_primary
        FROM user_departments ud
@@ -863,7 +924,10 @@ export class UsersService {
    * Get user team assignments
    * INHERITANCE-FIX: Includes department and area info from team chain
    */
-  private async getUserTeams(userId: number, tenantId: number): Promise<UserTeamRow[]> {
+  private async getUserTeams(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserTeamRow[]> {
     return await this.databaseService.query<UserTeamRow>(
       `SELECT
          ut.user_id,
@@ -896,7 +960,9 @@ export class UsersService {
 
     // Build parameterized query for user IDs
     // INHERITANCE-FIX: JOIN departments and areas for inheritance chain
-    const placeholders = userIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+    const placeholders = userIds
+      .map((_: number, i: number) => `$${i + 2}`)
+      .join(', ');
     const rows = await this.databaseService.query<UserTeamRow>(
       `SELECT
          ut.user_id,
@@ -929,10 +995,10 @@ export class UsersService {
    * Get tenant info by ID
    */
   private async getTenantInfo(tenantId: number): Promise<TenantInfo | null> {
-    const rows = await this.databaseService.query<{ company_name: string; subdomain: string }>(
-      `SELECT company_name, subdomain FROM tenants WHERE id = $1`,
-      [tenantId],
-    );
+    const rows = await this.databaseService.query<{
+      company_name: string;
+      subdomain: string;
+    }>(`SELECT company_name, subdomain FROM tenants WHERE id = $1`, [tenantId]);
 
     const tenant = rows[0];
     if (tenant === undefined) {
@@ -968,7 +1034,10 @@ export class UsersService {
   /**
    * Remove all user department assignments
    */
-  private async removeUserDepartments(userId: number, tenantId: number): Promise<void> {
+  private async removeUserDepartments(
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
     await this.databaseService.query(
       `DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`,
       [userId, tenantId],
@@ -982,15 +1051,24 @@ export class UsersService {
   private toSafeUserResponse(user: UserRow): SafeUserResponse {
     const { password, ...safeUser } = user;
     void password;
-    return fieldMapper.dbToApi(safeUser as unknown as Record<string, unknown>) as SafeUserResponse;
+    return fieldMapper.dbToApi(
+      safeUser as unknown as Record<string, unknown>,
+    ) as SafeUserResponse;
   }
 
   /**
    * Add department info to response
    */
-  private addDepartmentInfo(response: SafeUserResponse, departments: UserDepartmentRow[]): void {
-    response.departmentIds = departments.map((d: UserDepartmentRow) => d.department_id);
-    response.departmentNames = departments.map((d: UserDepartmentRow) => d.department_name);
+  private addDepartmentInfo(
+    response: SafeUserResponse,
+    departments: UserDepartmentRow[],
+  ): void {
+    response.departmentIds = departments.map(
+      (d: UserDepartmentRow) => d.department_id,
+    );
+    response.departmentNames = departments.map(
+      (d: UserDepartmentRow) => d.department_name,
+    );
   }
 
   /**
@@ -1045,7 +1123,10 @@ export class UsersService {
   /**
    * Get profile picture path
    */
-  async getProfilePicturePath(userId: number, tenantId: number): Promise<string> {
+  async getProfilePicturePath(
+    userId: number,
+    tenantId: number,
+  ): Promise<string> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -1100,7 +1181,10 @@ export class UsersService {
   /**
    * Delete profile picture
    */
-  async deleteProfilePicture(userId: number, tenantId: number): Promise<{ message: string }> {
+  async deleteProfilePicture(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -1145,7 +1229,10 @@ export class UsersService {
    * SECURITY: Only resolves ACTIVE users (is_active = 1)
    * @throws NotFoundException if user not found or deleted
    */
-  private async resolveUserIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolveUserIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const userId = await this.userRepository.resolveUuidToId(uuid, tenantId);
     if (userId === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -1156,7 +1243,10 @@ export class UsersService {
   /**
    * Get user by UUID (wrapper for UUID-based API)
    */
-  async getUserByUuid(uuid: string, tenantId: number): Promise<SafeUserResponse> {
+  async getUserByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.getUserById(userId, tenantId);
   }
@@ -1189,7 +1279,10 @@ export class UsersService {
   /**
    * Archive user by UUID (wrapper for UUID-based API)
    */
-  async archiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
+  async archiveUserByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.archiveUser(userId, tenantId);
   }
@@ -1197,7 +1290,10 @@ export class UsersService {
   /**
    * Unarchive user by UUID (wrapper for UUID-based API)
    */
-  async unarchiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
+  async unarchiveUserByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.unarchiveUser(userId, tenantId);
   }

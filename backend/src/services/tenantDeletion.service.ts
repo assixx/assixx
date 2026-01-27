@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * DYNAMIC TENANT DELETION SERVICE - Best Practice Implementation
  * Automatically finds and deletes ALL tables with tenant_id
@@ -16,7 +15,10 @@ import {
   query,
   transaction,
 } from '../utils/db.js';
-import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
+import {
+  ConnectionWrapper as DbConnectionWrapper,
+  wrapConnection,
+} from '../utils/dbWrapper.js';
 import emailService from '../utils/emailService.js';
 import { logger } from '../utils/logger.js';
 
@@ -26,7 +28,8 @@ import { logger } from '../utils/logger.js';
  * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
  */
 const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
-const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
+const GRACE_PERIOD_MINUTES: number =
+  parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
 
 type ConnectionWrapper = DbConnectionWrapper;
 
@@ -121,7 +124,9 @@ export class TenantDeletionService {
    */
   private validateTenantId(tenantId: number): void {
     if (tenantId <= 0 || !Number.isInteger(tenantId)) {
-      throw new Error(`INVALID TENANT_ID: ${tenantId} - must be positive integer`);
+      throw new Error(
+        `INVALID TENANT_ID: ${tenantId} - must be positive integer`,
+      );
     }
   }
 
@@ -129,7 +134,9 @@ export class TenantDeletionService {
    * Get all tables with tenant_id column
    * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
-  private async getTablesWithTenantId(conn: ConnectionWrapper): Promise<TableNameRow[]> {
+  private async getTablesWithTenantId(
+    conn: ConnectionWrapper,
+  ): Promise<TableNameRow[]> {
     return await conn.query<TableNameRow[]>(`
       SELECT DISTINCT table_name AS "TABLE_NAME"
       FROM information_schema.columns
@@ -144,11 +151,13 @@ export class TenantDeletionService {
    * Get user-related tables (with user_id FK)
    * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
    */
-  private async getUserRelatedTables(conn: ConnectionWrapper): Promise<TableNameRow[]> {
+  private async getUserRelatedTables(
+    conn: ConnectionWrapper,
+  ): Promise<TableNameRow[]> {
     // PostgreSQL: Generate sequential $1, $2, $3... for each table name
-    const placeholders = this.CRITICAL_TABLES.map((_: string, idx: number) => `$${idx + 1}`).join(
-      ',',
-    );
+    const placeholders = this.CRITICAL_TABLES.map(
+      (_: string, idx: number) => `$${idx + 1}`,
+    ).join(',');
     return await conn.query<TableNameRow[]>(
       `SELECT DISTINCT table_name AS "TABLE_NAME"
       FROM information_schema.columns
@@ -162,7 +171,10 @@ export class TenantDeletionService {
   /**
    * Check for legal holds
    */
-  private async checkLegalHolds(tenantId: number, conn: ConnectionWrapper): Promise<void> {
+  private async checkLegalHolds(
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<void> {
     const holds = await conn.query<LegalHoldRow[]>(
       'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
@@ -173,7 +185,9 @@ export class TenantDeletionService {
       if (!firstHold) {
         throw new Error('Tenant has active legal hold: No reason specified');
       }
-      throw new Error(`Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`);
+      throw new Error(
+        `Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`,
+      );
     }
   }
 
@@ -192,10 +206,15 @@ export class TenantDeletionService {
   /**
    * Generate SQL INSERT statement for a single row
    */
-  private generateInsertStatement(tableName: string, row: Record<string, unknown>): string {
+  private generateInsertStatement(
+    tableName: string,
+    row: Record<string, unknown>,
+  ): string {
     const entries = Object.entries(row);
     const columns = entries.map(([col]: [string, unknown]) => `"${col}"`);
-    const values = entries.map(([, val]: [string, unknown]) => this.formatSqlValue(val));
+    const values = entries.map(([, val]: [string, unknown]) =>
+      this.formatSqlValue(val),
+    );
     return `INSERT INTO "${tableName}" (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
   }
 
@@ -209,14 +228,15 @@ export class TenantDeletionService {
     if (val instanceof Date) return `'${val.toISOString()}'`;
     if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
     // Objects/Arrays → JSON string
-    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+    if (typeof val === 'object')
+      return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
     return 'NULL';
   }
 
   /**
    * Create SQL backup file with INSERT statements for all tenant data
    */
-  // eslint-disable-next-line sonarjs/cognitive-complexity
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- SQL backup iterates all tenant tables with per-table error handling
   private async createSqlBackup(
     tenantId: number,
     companyName: string,
@@ -232,13 +252,17 @@ export class TenantDeletionService {
 
     for (const tableName of tableNames) {
       try {
-        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
-          tenantId,
-        ]);
+        const data = await conn.query(
+          `SELECT * FROM "${tableName}" WHERE tenant_id = $1`,
+          [tenantId],
+        );
         if (data.length > 0) {
           sqlContent += `-- Table: ${tableName} (${data.length} rows)\n`;
           for (const row of data) {
-            sqlContent += this.generateInsertStatement(tableName, row as Record<string, unknown>);
+            sqlContent += this.generateInsertStatement(
+              tableName,
+              row as Record<string, unknown>,
+            );
           }
           sqlContent += '\n';
         }
@@ -266,9 +290,10 @@ export class TenantDeletionService {
     for (const tableRow of tables) {
       const tableName = tableRow.TABLE_NAME;
       try {
-        const data = await conn.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
-          tenantId,
-        ]);
+        const data = await conn.query(
+          `SELECT * FROM "${tableName}" WHERE tenant_id = $1`,
+          [tenantId],
+        );
         if (data.length > 0) {
           const jsonPath = path.join(dataDir, `${tableName}.json`);
           // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated, tableName from DB schema
@@ -290,7 +315,10 @@ export class TenantDeletionService {
    * Create complete tenant backup before deletion
    * Includes: SQL dump + JSON exports + metadata
    */
-  private async createTenantDataExport(tenantId: number, conn: ConnectionWrapper): Promise<string> {
+  private async createTenantDataExport(
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<string> {
     // 1. Get tenant info
     const tenantInfo = await conn.query<TenantInfoRow[]>(
       'SELECT company_name, subdomain, email, created_at FROM tenants WHERE id = $1',
@@ -301,7 +329,10 @@ export class TenantDeletionService {
 
     // 2. Setup backup directories
     const sanitizedName = this.sanitizeCompanyName(companyName);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-')
+      .substring(0, 19);
     const backupDirName = `${sanitizedName}_${tenantId}_${timestamp}`;
     const backupDir = `/backups/tenant_deletions/${backupDirName}`;
     const dataDir = `${backupDir}/data`;
@@ -311,10 +342,19 @@ export class TenantDeletionService {
     logger.info(`📦 Creating tenant backup in ${backupDir}`);
 
     // 3. Create SQL backup
-    await this.createSqlBackup(tenantId, companyName, `${backupDir}/backup.sql`, conn);
+    await this.createSqlBackup(
+      tenantId,
+      companyName,
+      `${backupDir}/backup.sql`,
+      conn,
+    );
 
     // 4. Export JSON files
-    const { tables, totalRecords } = await this.exportTablesToJson(tenantId, dataDir, conn);
+    const { tables, totalRecords } = await this.exportTablesToJson(
+      tenantId,
+      dataDir,
+      conn,
+    );
 
     // 5. Create metadata
     const metadata = {
@@ -330,7 +370,10 @@ export class TenantDeletionService {
       version: '1.0',
     };
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
-    await fs.writeFile(`${backupDir}/metadata.json`, JSON.stringify(metadata, null, 2));
+    await fs.writeFile(
+      `${backupDir}/metadata.json`,
+      JSON.stringify(metadata, null, 2),
+    );
 
     // 6. Create archive and store in DB
     const archivePath = `${backupDir}.tar.gz`;
@@ -351,7 +394,9 @@ export class TenantDeletionService {
       [tenantId, archivePath, archiveStats.size],
     );
 
-    logger.info(`📦 Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`);
+    logger.info(
+      `📦 Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`,
+    );
     return archivePath;
   }
 
@@ -369,9 +414,10 @@ export class TenantDeletionService {
     try {
       await conn.query(`SAVEPOINT ${savepointName}`);
 
-      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE tenant_id = $1`, [
-        tenantId,
-      ])) as unknown as ResultSetHeader;
+      const result = (await conn.query(
+        `DELETE FROM "${tableName}" WHERE tenant_id = $1`,
+        [tenantId],
+      )) as unknown as ResultSetHeader;
 
       await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
 
@@ -387,7 +433,9 @@ export class TenantDeletionService {
       } catch {
         // Savepoint might not exist, ignore
       }
-      logger.warn(`⚠️ Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`);
+      logger.warn(
+        `⚠️ Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
       return null;
     }
   }
@@ -395,14 +443,19 @@ export class TenantDeletionService {
   /**
    * Send notification emails
    */
-  private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
+  private async sendDeletionWarningEmails(
+    tenantId: number,
+    scheduledDate: Date,
+  ): Promise<void> {
     const [admins] = await query<DeletionWarningUser[]>(
       "SELECT email, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
     for (const admin of admins) {
-      const nameParts = [admin.first_name, admin.last_name].filter(Boolean).join(' ');
+      const nameParts = [admin.first_name, admin.last_name]
+        .filter(Boolean)
+        .join(' ');
       const displayName = nameParts !== '' ? nameParts : 'Nutzer';
       await emailService.sendEmail({
         to: admin.email,
@@ -509,11 +562,17 @@ export class TenantDeletionService {
       .map((t: TableNameRow) => t.TABLE_NAME)
       .filter(
         (name: string) =>
-          !this.CRITICAL_TABLES.includes(name) && name !== 'users' && name !== 'tenants',
+          !this.CRITICAL_TABLES.includes(name) &&
+          name !== 'users' &&
+          name !== 'tenants',
       );
 
     // Phase 2: Multi-pass deletion of regular tables
-    const regularResults = await this.multiPassDelete(regularTables, tenantId, conn);
+    const regularResults = await this.multiPassDelete(
+      regularTables,
+      tenantId,
+      conn,
+    );
     deletionLog.push(...regularResults.deleted);
 
     if (regularResults.stuck.length > 0) {
@@ -524,8 +583,14 @@ export class TenantDeletionService {
 
     // Phase 3: Delete user-related tables (tables with user_id FK)
     const userRelatedTables = await this.getUserRelatedTables(conn);
-    const userTableNames = userRelatedTables.map((t: TableNameRow) => t.TABLE_NAME);
-    const userResults = await this.multiPassDeleteUserRelated(userTableNames, tenantId, conn);
+    const userTableNames = userRelatedTables.map(
+      (t: TableNameRow) => t.TABLE_NAME,
+    );
+    const userResults = await this.multiPassDeleteUserRelated(
+      userTableNames,
+      tenantId,
+      conn,
+    );
     deletionLog.push(...userResults.deleted);
 
     // Phase 4: Clear FK references in critical tables before deleting users
@@ -533,13 +598,22 @@ export class TenantDeletionService {
     await this.clearCriticalTableUserReferences(tenantId, conn);
 
     // Phase 5: Delete users
-    const usersResult = await this.deleteFromTableDirect('users', tenantId, conn);
+    const usersResult = await this.deleteFromTableDirect(
+      'users',
+      tenantId,
+      conn,
+    );
     if (usersResult) {
       deletionLog.push(usersResult);
     }
 
     // Phase 6: Delete tenant record
-    const tenantResult = await this.deleteFromTableDirect('tenants', tenantId, conn, 'id');
+    const tenantResult = await this.deleteFromTableDirect(
+      'tenants',
+      tenantId,
+      conn,
+      'id',
+    );
     if (tenantResult) {
       deletionLog.push(tenantResult);
     }
@@ -551,7 +625,7 @@ export class TenantDeletionService {
    * Multi-pass deletion for tables with tenant_id
    * Keeps retrying failed tables until all succeed or no progress
    */
-  // eslint-disable-next-line sonarjs/cognitive-complexity
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Multi-pass retry loop with FK dependency resolution
   private async multiPassDelete(
     tableNames: string[],
     tenantId: number,
@@ -560,7 +634,11 @@ export class TenantDeletionService {
     const deletionLog: DeletionLog[] = [];
     let pendingTables = [...tableNames];
 
-    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+    for (
+      let pass = 1;
+      pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0;
+      pass++
+    ) {
       logger.info(
         `🔄 Deletion pass ${pass}/${this.MAX_DELETION_PASSES}: ${pendingTables.length} tables remaining`,
       );
@@ -588,7 +666,9 @@ export class TenantDeletionService {
       // Check for progress
       if (deletedCount === 0 && failedTables.length > 0) {
         // No progress this pass - likely circular dependency or unresolvable FK
-        logger.warn(`⚠️ No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`);
+        logger.warn(
+          `⚠️ No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`,
+        );
         return { deleted: deletionLog, stuck: failedTables };
       }
 
@@ -608,7 +688,11 @@ export class TenantDeletionService {
     conn: ConnectionWrapper,
     deletionLog: DeletionLog[],
   ): Promise<boolean> {
-    const result = await this.deleteFromUserRelatedTable(tableName, tenantId, conn);
+    const result = await this.deleteFromUserRelatedTable(
+      tableName,
+      tenantId,
+      conn,
+    );
 
     if (result === null) {
       return false;
@@ -638,11 +722,20 @@ export class TenantDeletionService {
     const deletionLog: DeletionLog[] = [];
     let pendingTables = [...tableNames];
 
-    for (let pass = 1; pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
+    for (
+      let pass = 1;
+      pass <= this.MAX_DELETION_PASSES && pendingTables.length > 0;
+      pass++
+    ) {
       const failedTables: string[] = [];
 
       for (const tableName of pendingTables) {
-        const success = await this.processUserRelatedTable(tableName, tenantId, conn, deletionLog);
+        const success = await this.processUserRelatedTable(
+          tableName,
+          tenantId,
+          conn,
+          deletionLog,
+        );
         if (!success) {
           failedTables.push(tableName);
         }
@@ -680,7 +773,10 @@ export class TenantDeletionService {
 
       await conn.query(`RELEASE SAVEPOINT ${savepointName}`);
 
-      return { table: `${tableName} (via users)`, deleted: result.affectedRows };
+      return {
+        table: `${tableName} (via users)`,
+        deleted: result.affectedRows,
+      };
     } catch {
       try {
         await conn.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
@@ -763,16 +859,20 @@ export class TenantDeletionService {
     idColumn: string = 'tenant_id',
   ): Promise<DeletionLog | null> {
     try {
-      const result = (await conn.query(`DELETE FROM "${tableName}" WHERE ${idColumn} = $1`, [
-        tenantId,
-      ])) as unknown as ResultSetHeader;
+      const result = (await conn.query(
+        `DELETE FROM "${tableName}" WHERE ${idColumn} = $1`,
+        [tenantId],
+      )) as unknown as ResultSetHeader;
 
       if (result.affectedRows > 0) {
         logger.info(`✅ Deleted ${result.affectedRows} rows from ${tableName}`);
       }
       return { table: tableName, deleted: result.affectedRows };
     } catch (error) {
-      logger.error({ err: error, tableName }, `Failed to delete from ${tableName}`);
+      logger.error(
+        { err: error, tableName },
+        `Failed to delete from ${tableName}`,
+      );
       throw error; // Re-throw for final tables - these must succeed
     }
   }
@@ -795,9 +895,18 @@ export class TenantDeletionService {
 
       try {
         await this.checkLegalHolds(tenantId, wrappedConn);
-        const exportPath = await this.createTenantDataExport(tenantId, wrappedConn);
+        const exportPath = await this.createTenantDataExport(
+          tenantId,
+          wrappedConn,
+        );
         logger.info(`GDPR export created: ${exportPath}`);
-        await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress, wrappedConn);
+        await this.createDeletionAuditTrail(
+          tenantId,
+          requestedBy,
+          reason,
+          ipAddress,
+          wrappedConn,
+        );
 
         // Delete all tenant data (uses SAVEPOINT to handle FK constraint violations gracefully)
         const deletionLog = await this.executeDeletions(tenantId, wrappedConn);
@@ -811,13 +920,20 @@ export class TenantDeletionService {
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error) {
         // Log the ORIGINAL error before trying any recovery
-        logger.error({ err: error, tenantId }, `DELETION FAILED for tenant ${tenantId}`);
+        logger.error(
+          { err: error, tenantId },
+          `DELETION FAILED for tenant ${tenantId}`,
+        );
 
         // Try to update queue status, but this may fail if transaction is aborted
         try {
           await wrappedConn.query(
             'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
-            ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
+            [
+              'failed',
+              error instanceof Error ? error.message : 'Unknown error',
+              queueId,
+            ],
           );
         } catch (updateError) {
           // Queue update failed (transaction aborted), original error already logged above
@@ -838,7 +954,8 @@ export class TenantDeletionService {
         host: process.env['REDIS_HOST'] ?? 'redis',
         port: Number.parseInt(process.env['REDIS_PORT'] ?? '6379', 10),
         // SECURITY: Redis authentication - only include password if configured
-        ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+        ...(redisPassword !== undefined &&
+          redisPassword !== '' && { password: redisPassword }),
         keyPrefix: 'tenant-deletion:',
         lazyConnect: true,
         maxRetriesPerRequest: 3,
@@ -921,13 +1038,20 @@ export class TenantDeletionService {
 
       const firstResult: CountResult | undefined = countResult[0];
       if (firstResult !== undefined && Number(firstResult.count) > 0) {
-        remainingData.push(`${tableName}: ${String(firstResult.count)} rows remaining`);
+        remainingData.push(
+          `${tableName}: ${String(firstResult.count)} rows remaining`,
+        );
       }
     }
 
     if (remainingData.length > 0) {
-      logger.error({ tenantId, remainingData }, 'INCOMPLETE DELETION - Data remains');
-      throw new Error(`Deletion incomplete: ${remainingData.length} tables still contain data`);
+      logger.error(
+        { tenantId, remainingData },
+        'INCOMPLETE DELETION - Data remains',
+      );
+      throw new Error(
+        `Deletion incomplete: ${remainingData.length} tables still contain data`,
+      );
     }
 
     logger.info('✅ Deletion verified - all data removed successfully');
@@ -967,7 +1091,9 @@ export class TenantDeletionService {
 
     // Create queue entry
     const scheduledDate = new Date();
-    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
+    scheduledDate.setTime(
+      scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000,
+    ); // Configurable grace period
 
     const [rows] = await execute<{ id: number }[]>(
       `INSERT INTO tenant_deletion_queue
@@ -989,7 +1115,12 @@ export class TenantDeletionService {
     await this.sendDeletionWarningEmails(tenantId, scheduledDate);
 
     // Create audit trail
-    await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress);
+    await this.createDeletionAuditTrail(
+      tenantId,
+      requestedBy,
+      reason,
+      ipAddress,
+    );
 
     logger.info(`Tenant deletion requested: ${tenantId}, Queue ID: ${queueId}`);
 
@@ -1014,7 +1145,9 @@ export class TenantDeletionService {
     );
 
     if (queue.length === 0) {
-      throw new Error('No active deletion found (must be pending_approval or queued)');
+      throw new Error(
+        'No active deletion found (must be pending_approval or queued)',
+      );
     }
 
     const firstQueueItem = queue[0];
@@ -1034,17 +1167,23 @@ export class TenantDeletionService {
          WHERE id = $2`,
         [cancelledBy, firstQueueItem.id],
       );
-      logger.warn(`EMERGENCY STOP: Tenant ${tenantId} deletion stopped by user ${cancelledBy}`);
+      logger.warn(
+        `EMERGENCY STOP: Tenant ${tenantId} deletion stopped by user ${cancelledBy}`,
+      );
     } else {
       // Normal cancel
       await execute(
         "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
         [firstQueueItem.id],
       );
-      logger.info(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
+      logger.info(
+        `Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`,
+      );
     }
 
-    await execute('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
+    await execute('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [
+      tenantId,
+    ]);
   }
 
   /**
@@ -1171,9 +1310,16 @@ export class TenantDeletionService {
     reason?: string,
     ipAddress?: string,
   ): Promise<{ queueId: number; scheduledDate: Date }> {
-    const queueId = await this.requestDeletion(tenantId, requestedBy, reason, ipAddress);
+    const queueId = await this.requestDeletion(
+      tenantId,
+      requestedBy,
+      reason,
+      ipAddress,
+    );
     const scheduledDate = new Date();
-    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000); // Configurable grace period
+    scheduledDate.setTime(
+      scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000,
+    ); // Configurable grace period
     return { queueId, scheduledDate };
   }
 
@@ -1181,7 +1327,11 @@ export class TenantDeletionService {
    * Approve a deletion request (process it immediately)
    * NOTE: approved_by column does not exist in DB schema - using second_approver_id instead
    */
-  async approveDeletion(queueId: number, approvedBy: number, _comment?: string): Promise<void> {
+  async approveDeletion(
+    queueId: number,
+    approvedBy: number,
+    _comment?: string,
+  ): Promise<void> {
     // Update approval status
     // Using second_approver_id since approved_by column doesn't exist in current schema
     await execute(
@@ -1201,7 +1351,11 @@ export class TenantDeletionService {
   /**
    * Reject a deletion request
    */
-  async rejectDeletion(queueId: number, rejectedBy: number, _reason?: string): Promise<void> {
+  async rejectDeletion(
+    queueId: number,
+    rejectedBy: number,
+    _reason?: string,
+  ): Promise<void> {
     const [queueRows] = await query<QueueRow[]>(
       'SELECT tenant_id FROM tenant_deletion_queue WHERE id = $1',
       [queueId],
@@ -1227,7 +1381,10 @@ export class TenantDeletionService {
   /**
    * Trigger emergency stop (alias)
    */
-  async triggerEmergencyStop(tenantId: number, stoppedBy: number): Promise<void> {
+  async triggerEmergencyStop(
+    tenantId: number,
+    stoppedBy: number,
+  ): Promise<void> {
     await this.emergencyStop(tenantId, stoppedBy);
   }
 

@@ -8,7 +8,10 @@ const MAX_SEARCH_LENGTH = 200;
 const MAX_PAGE_LIMIT = 100;
 
 const BooleanQuerySchema = z
-  .union([z.boolean(), z.string().transform((val: string): boolean => val === 'true')])
+  .union([
+    z.boolean(),
+    z.string().transform((val: string): boolean => val === 'true'),
+  ])
   .optional();
 
 export const GetMessagesQuerySchema = z.object({

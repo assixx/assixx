@@ -164,7 +164,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 /** Extract documents array from object with 'documents' key */
-function extractFromDocumentsKey(obj: Record<string, unknown>): Record<string, unknown>[] | null {
+function extractFromDocumentsKey(
+  obj: Record<string, unknown>,
+): Record<string, unknown>[] | null {
   if ('documents' in obj && Array.isArray(obj.documents)) {
     return obj.documents as Record<string, unknown>[];
   }
@@ -172,7 +174,9 @@ function extractFromDocumentsKey(obj: Record<string, unknown>): Record<string, u
 }
 
 /** Extract documents array from object with 'data' key */
-function extractFromDataKey(obj: Record<string, unknown>): Record<string, unknown>[] | null {
+function extractFromDataKey(
+  obj: Record<string, unknown>,
+): Record<string, unknown>[] | null {
   if (!('data' in obj)) return null;
 
   // { data: [...] }
@@ -192,7 +196,9 @@ function extractFromDataKey(obj: Record<string, unknown>): Record<string, unknow
  * Extract documents array from various API response structures
  * Handles: [...], { documents: [...] }, { data: { documents: [...] } }, { data: [...] }
  */
-function extractDocumentsFromResponse(result: unknown): Record<string, unknown>[] {
+function extractDocumentsFromResponse(
+  result: unknown,
+): Record<string, unknown>[] {
   if (Array.isArray(result)) {
     return result as Record<string, unknown>[];
   }
@@ -204,9 +210,13 @@ function extractDocumentsFromResponse(result: unknown): Record<string, unknown>[
   return extractFromDocumentsKey(result) ?? extractFromDataKey(result) ?? [];
 }
 
-export async function fetchChatAttachments(conversationId: number): Promise<Document[]> {
+export async function fetchChatAttachments(
+  conversationId: number,
+): Promise<Document[]> {
   try {
-    const result = await apiClient.get(`/chat/conversations/${conversationId}/attachments`);
+    const result = await apiClient.get(
+      `/chat/conversations/${conversationId}/attachments`,
+    );
     const rawDocs = extractDocumentsFromResponse(result);
     return rawDocs.map(mapApiDocument);
   } catch (err) {
@@ -277,7 +287,9 @@ export async function uploadDocument(
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
-          const response = JSON.parse(xhr.responseText) as ApiResponse<Document>;
+          const response = JSON.parse(
+            xhr.responseText,
+          ) as ApiResponse<Document>;
           resolve(response.data ?? (response as unknown as Document));
         } catch {
           reject(new Error('Invalid response format'));

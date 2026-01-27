@@ -2,7 +2,12 @@
 // MANAGE AREAS - CONSTANTS
 // =============================================================================
 
-import type { IsActiveStatus, AreaType, TypeOption, FormIsActiveStatus } from './types';
+import type {
+  IsActiveStatus,
+  AreaType,
+  TypeOption,
+  FormIsActiveStatus,
+} from './types';
 
 /**
  * Area type labels for display
@@ -71,7 +76,8 @@ export const MESSAGES = {
   DELETE_TITLE: 'Bereich löschen',
   DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
   DELETE_CONFIRM_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_CONFIRM_MESSAGE: 'Der Bereich wird unwiderruflich aus dem System entfernt.',
+  DELETE_CONFIRM_MESSAGE:
+    'Der Bereich wird unwiderruflich aus dem System entfernt.',
 
   // Force delete
   FORCE_DELETE_TITLE: 'Bereich hat Abhängigkeiten',
@@ -101,7 +107,8 @@ export const MESSAGES = {
 
   // Area lead
   NO_AREA_LEAD: 'Kein Bereichsleiter',
-  AREA_LEAD_HINT: 'Nur Administratoren können als Bereichsleiter zugewiesen werden.',
+  AREA_LEAD_HINT:
+    'Nur Administratoren können als Bereichsleiter zugewiesen werden.',
 
   // Departments
   DEPARTMENTS_HINT:

@@ -4,9 +4,12 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-const TenantStatusSchema = z.enum(['active', 'inactive', 'suspended', 'deleted'], {
-  message: 'Invalid tenant status',
-});
+const TenantStatusSchema = z.enum(
+  ['active', 'inactive', 'suspended', 'deleted'],
+  {
+    message: 'Invalid tenant status',
+  },
+);
 
 /**
  * Root API filters

@@ -100,13 +100,16 @@ export class ChatWebSocketServer {
     const redisHost = process.env['REDIS_HOST'] ?? 'redis';
     const redisPortEnv = process.env['REDIS_PORT'];
     const redisPort =
-      redisPortEnv !== undefined && redisPortEnv !== '' ? Number(redisPortEnv) : 6379;
+      redisPortEnv !== undefined && redisPortEnv !== '' ?
+        Number(redisPortEnv)
+      : 6379;
     const redisPassword = process.env['REDIS_PASSWORD'];
 
     this.redis = new Redis({
       host: redisHost,
       port: redisPort,
-      ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
+      ...(redisPassword !== undefined &&
+        redisPassword !== '' && { password: redisPassword }),
       lazyConnect: true,
       maxRetriesPerRequest: 3,
       connectTimeout: 5000,
@@ -124,17 +127,20 @@ export class ChatWebSocketServer {
   }
 
   private init(): void {
-    this.wss.on('connection', (ws: ExtendedWebSocket, request: IncomingMessage) => {
-      // Extract only the properties we need from IncomingMessage to satisfy exactOptionalPropertyTypes
-      const sanitizedRequest = {
-        url: request.url,
-        headers: {
-          host: request.headers.host,
-          authorization: request.headers.authorization,
-        },
-      };
-      void this.handleConnection(ws, sanitizedRequest);
-    });
+    this.wss.on(
+      'connection',
+      (ws: ExtendedWebSocket, request: IncomingMessage) => {
+        // Extract only the properties we need from IncomingMessage to satisfy exactOptionalPropertyTypes
+        const sanitizedRequest = {
+          url: request.url,
+          headers: {
+            host: request.headers.host,
+            authorization: request.headers.authorization,
+          },
+        };
+        void this.handleConnection(ws, sanitizedRequest);
+      },
+    );
   }
 
   /** Extract connection ticket from request URL query parameter */
@@ -142,7 +148,10 @@ export class ChatWebSocketServer {
     url: string | undefined;
     headers: { host: string | undefined; authorization: string | undefined };
   }): string | null {
-    const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+    const url = new URL(
+      request.url ?? '/',
+      `http://${request.headers.host ?? 'localhost'}`,
+    );
     const ticket = url.searchParams.get('ticket');
     return ticket !== null && ticket !== '' ? ticket : null;
   }
@@ -151,7 +160,9 @@ export class ChatWebSocketServer {
    * Consume a connection ticket from Redis (atomic GET + DELETE)
    * Returns null if ticket is invalid/expired/already used
    */
-  private async consumeTicket(ticket: string): Promise<ConnectionTicketData | null> {
+  private async consumeTicket(
+    ticket: string,
+  ): Promise<ConnectionTicketData | null> {
     try {
       // Use shared constant to ensure consistency with ConnectionTicketService
       const key = `${CONNECTION_TICKET_PREFIX}${ticket}`;
@@ -165,7 +176,10 @@ export class ChatWebSocketServer {
 
       // Verify purpose is websocket
       if (data.purpose !== 'websocket') {
-        logger.warn({ purpose: data.purpose }, 'WebSocket: Ticket has wrong purpose');
+        logger.warn(
+          { purpose: data.purpose },
+          'WebSocket: Ticket has wrong purpose',
+        );
         return null;
       }
 
@@ -177,7 +191,10 @@ export class ChatWebSocketServer {
   }
 
   /** Check if user is active in database (is_active = 1) */
-  private async isUserActive(userId: number, tenantId: number): Promise<boolean> {
+  private async isUserActive(
+    userId: number,
+    tenantId: number,
+  ): Promise<boolean> {
     interface UserActiveResult extends RowDataPacket {
       is_active: number;
     }
@@ -201,7 +218,10 @@ export class ChatWebSocketServer {
     ws.isAlive = true;
     this.clients.set(userId, ws);
 
-    ws.on('message', (data: WebSocketData) => void this.handleMessage(ws, data));
+    ws.on(
+      'message',
+      (data: WebSocketData) => void this.handleMessage(ws, data),
+    );
     ws.on('close', () => void this.handleDisconnection(ws));
     ws.on('error', (error: Error) => {
       this.handleError(ws, error);
@@ -237,29 +257,54 @@ export class ChatWebSocketServer {
 
       // SECURITY: Check if user is still active (is_active = 1)
       if (!(await this.isUserActive(ticketData.userId, ticketData.tenantId))) {
-        logger.warn({ userId: ticketData.userId }, 'WebSocket: Rejected inactive/deleted user');
+        logger.warn(
+          { userId: ticketData.userId },
+          'WebSocket: Rejected inactive/deleted user',
+        );
         ws.close(1008, 'User account inactive');
         return;
       }
 
       // Use activeRole if available, otherwise fall back to role
-      const effectiveRole = ticketData.activeRole !== '' ? ticketData.activeRole : ticketData.role;
-      this.setupWebSocketClient(ws, ticketData.userId, ticketData.tenantId, effectiveRole);
+      const effectiveRole =
+        ticketData.activeRole !== '' ? ticketData.activeRole : ticketData.role;
+      this.setupWebSocketClient(
+        ws,
+        ticketData.userId,
+        ticketData.tenantId,
+        effectiveRole,
+      );
 
       this.sendMessage(ws, {
         type: 'connection_established',
-        data: { userId: ticketData.userId, timestamp: new Date().toISOString() },
+        data: {
+          userId: ticketData.userId,
+          timestamp: new Date().toISOString(),
+        },
       });
 
-      await this.broadcastUserStatus(ticketData.userId, ticketData.tenantId, 'online');
-      logger.info({ userId: ticketData.userId }, 'WebSocket: Connection established via ticket');
+      await this.broadcastUserStatus(
+        ticketData.userId,
+        ticketData.tenantId,
+        'online',
+      );
+      logger.info(
+        { userId: ticketData.userId },
+        'WebSocket: Connection established via ticket',
+      );
     } catch (error: unknown) {
-      logger.error({ err: error }, 'WebSocket Authentifizierung fehlgeschlagen');
+      logger.error(
+        { err: error },
+        'WebSocket Authentifizierung fehlgeschlagen',
+      );
       ws.close(1008, 'Authentifizierung fehlgeschlagen');
     }
   }
 
-  private async handleMessage(ws: ExtendedWebSocket, data: WebSocketData): Promise<void> {
+  private async handleMessage(
+    ws: ExtendedWebSocket,
+    data: WebSocketData,
+  ): Promise<void> {
     try {
       const dataString =
         typeof data === 'string' ? data
@@ -281,7 +326,10 @@ export class ChatWebSocketServer {
           await this.handleMarkRead(ws, message.data as MarkReadData);
           break;
         case 'join_conversation':
-          await this.handleJoinConversation(ws, message.data as JoinConversationData);
+          await this.handleJoinConversation(
+            ws,
+            message.data as JoinConversationData,
+          );
           break;
         case 'ping':
           this.sendMessage(ws, {
@@ -293,7 +341,10 @@ export class ChatWebSocketServer {
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
     } catch (error: unknown) {
-      logger.error({ err: error }, 'Fehler beim Verarbeiten der WebSocket Nachricht');
+      logger.error(
+        { err: error },
+        'Fehler beim Verarbeiten der WebSocket Nachricht',
+      );
       this.sendMessage(ws, {
         type: 'error',
         data: { message: 'Fehler beim Verarbeiten der Nachricht' },
@@ -313,11 +364,10 @@ export class ChatWebSocketServer {
       AND c.tenant_id = $2
       AND cp.tenant_id = $3
     `;
-    const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
-      conversationId,
-      tenantId,
-      tenantId,
-    ]);
+    const [participants] = await query<ConversationParticipantResult[]>(
+      participantQuery,
+      [conversationId, tenantId, tenantId],
+    );
 
     return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
@@ -364,7 +414,9 @@ export class ChatWebSocketServer {
     if (attachmentIds.length === 0) return;
 
     // Update documents to link them to this message
-    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
+    const placeholders = attachmentIds
+      .map((_: number, i: number) => `$${i + 3}`)
+      .join(', ');
     const updateQuery = `
       UPDATE documents
       SET message_id = $1
@@ -373,7 +425,9 @@ export class ChatWebSocketServer {
       AND message_id IS NULL
     `;
     await execute(updateQuery, [messageId, tenantId, ...attachmentIds]);
-    logger.info(`Linked ${attachmentIds.length} attachments to message ${messageId}`);
+    logger.info(
+      `Linked ${attachmentIds.length} attachments to message ${messageId}`,
+    );
   }
 
   /**
@@ -395,7 +449,9 @@ export class ChatWebSocketServer {
   > {
     if (attachmentIds.length === 0) return [];
 
-    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+    const placeholders = attachmentIds
+      .map((_: number, i: number) => `$${i + 2}`)
+      .join(', ');
     const attachmentQuery = `
       SELECT id, file_uuid, filename, original_name, file_size, mime_type
       FROM documents
@@ -410,7 +466,10 @@ export class ChatWebSocketServer {
       file_size: number;
       mime_type: string;
     }
-    const [rows] = await query<AttachmentRow[]>(attachmentQuery, [tenantId, ...attachmentIds]);
+    const [rows] = await query<AttachmentRow[]>(attachmentQuery, [
+      tenantId,
+      ...attachmentIds,
+    ]);
 
     return rows.map((row: AttachmentRow) => ({
       id: row.id,
@@ -440,7 +499,10 @@ export class ChatWebSocketServer {
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
       FROM users WHERE id = $1 AND tenant_id = $2
     `;
-    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId, tenantId]);
+    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [
+      userId,
+      tenantId,
+    ]);
     return senderInfo[0] as
       | {
           id: number;
@@ -457,7 +519,11 @@ export class ChatWebSocketServer {
    */
   private getSenderDisplayName(
     sender:
-      | { first_name?: string | null; last_name?: string | null; username?: string | null }
+      | {
+          first_name?: string | null;
+          last_name?: string | null;
+          username?: string | null;
+        }
       | null
       | undefined,
     fallback: string,
@@ -472,7 +538,11 @@ export class ChatWebSocketServer {
       .join(' ');
     if (fullName !== '') return fullName;
 
-    if (sender.username !== undefined && sender.username !== null && sender.username !== '') {
+    if (
+      sender.username !== undefined &&
+      sender.username !== null &&
+      sender.username !== ''
+    ) {
       return sender.username;
     }
 
@@ -484,7 +554,8 @@ export class ChatWebSocketServer {
     conversationId: number,
     content: string,
     senderId: number,
-    sender: ReturnType<typeof this.getSenderInfo> extends Promise<infer T> ? T : never,
+    sender: ReturnType<typeof this.getSenderInfo> extends Promise<infer T> ? T
+    : never,
     attachments: unknown[],
   ): unknown {
     const UNKNOWN_USER = 'Unbekannter Benutzer';
@@ -509,7 +580,11 @@ export class ChatWebSocketServer {
   /**
    * Broadcast message to all participants in a conversation
    */
-  private broadcastToParticipants(participantIds: number[], type: string, data: unknown): void {
+  private broadcastToParticipants(
+    participantIds: number[],
+    type: string,
+    data: unknown,
+  ): void {
     for (const participantId of participantIds) {
       const clientWs = this.clients.get(participantId);
       if (clientWs?.readyState === WebSocket.OPEN) {
@@ -521,12 +596,18 @@ export class ChatWebSocketServer {
   /**
    * Check if user has permission to send to conversation
    */
-  private checkUserInParticipants(userId: number, participantIds: number[]): boolean {
+  private checkUserInParticipants(
+    userId: number,
+    participantIds: number[],
+  ): boolean {
     const participantIdsStr = participantIds.map((id: number) => String(id));
     return participantIdsStr.includes(String(userId));
   }
 
-  private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
+  private async handleSendMessage(
+    ws: ExtendedWebSocket,
+    data: SendMessageData,
+  ): Promise<void> {
     const { conversationId, content, attachments: attachmentIds = [] } = data;
 
     // DEBUG: Log incoming data to verify attachments are received
@@ -535,12 +616,18 @@ export class ChatWebSocketServer {
     );
 
     if (ws.userId === undefined || ws.tenantId === undefined) {
-      this.sendMessage(ws, { type: 'error', data: { message: 'Not authenticated' } });
+      this.sendMessage(ws, {
+        type: 'error',
+        data: { message: 'Not authenticated' },
+      });
       return;
     }
 
     try {
-      const participantIds = await this.verifyConversationAccess(conversationId, ws.tenantId);
+      const participantIds = await this.verifyConversationAccess(
+        conversationId,
+        ws.tenantId,
+      );
 
       if (!this.checkUserInParticipants(ws.userId, participantIds)) {
         this.sendMessage(ws, {
@@ -551,15 +638,27 @@ export class ChatWebSocketServer {
       }
 
       // Save message
-      const messageId = await this.saveMessage(conversationId, ws.userId, content, ws.tenantId);
+      const messageId = await this.saveMessage(
+        conversationId,
+        ws.userId,
+        content,
+        ws.tenantId,
+      );
 
       // Link attachments to message (updates documents.message_id)
       if (attachmentIds.length > 0) {
-        await this.linkAttachmentsToMessage(messageId, attachmentIds, ws.tenantId);
+        await this.linkAttachmentsToMessage(
+          messageId,
+          attachmentIds,
+          ws.tenantId,
+        );
       }
 
       // Get attachment details for broadcast
-      const attachments = await this.getMessageAttachments(attachmentIds, ws.tenantId);
+      const attachments = await this.getMessageAttachments(
+        attachmentIds,
+        ws.tenantId,
+      );
 
       const sender = await this.getSenderInfo(ws.userId, ws.tenantId);
       const messageData = this.buildMessageData(
@@ -603,12 +702,10 @@ export class ChatWebSocketServer {
         AND cp.tenant_id = $3
         AND cp.user_id != $4
       `;
-      const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
-        conversationId,
-        ws.tenantId,
-        ws.tenantId,
-        ws.userId,
-      ]);
+      const [participants] = await query<ConversationParticipantResult[]>(
+        participantQuery,
+        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
+      );
 
       // Typing-Event an andere Teilnehmer senden
       for (const participant of participants) {
@@ -630,7 +727,10 @@ export class ChatWebSocketServer {
     }
   }
 
-  private async handleMarkRead(ws: ExtendedWebSocket, data: MarkReadData): Promise<void> {
+  private async handleMarkRead(
+    ws: ExtendedWebSocket,
+    data: MarkReadData,
+  ): Promise<void> {
     const { messageId } = data;
 
     try {
@@ -654,7 +754,9 @@ export class ChatWebSocketServer {
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = $1
       `;
-      const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [messageId]);
+      const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [
+        messageId,
+      ]);
 
       if (messageInfo.length > 0 && messageInfo[0] !== undefined) {
         const senderId = messageInfo[0].sender_id;
@@ -697,12 +799,10 @@ export class ChatWebSocketServer {
         AND cp.tenant_id = $3
         AND cp.user_id != $4
       `;
-      const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
-        conversationId,
-        ws.tenantId,
-        ws.tenantId,
-        ws.userId,
-      ]);
+      const [participants] = await query<ConversationParticipantResult[]>(
+        participantQuery,
+        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
+      );
 
       for (const participant of participants) {
         const userId = participant.user_id;
@@ -753,11 +853,10 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp1.conversation_id = c.id
         WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3
       `;
-      const [relatedUsers] = await query<ConversationParticipantResult[]>(conversationsQuery, [
-        userId,
-        tenantId,
-        userId,
-      ]);
+      const [relatedUsers] = await query<ConversationParticipantResult[]>(
+        conversationsQuery,
+        [userId, tenantId, userId],
+      );
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {

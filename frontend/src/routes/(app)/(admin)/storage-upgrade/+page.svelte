@@ -6,7 +6,11 @@
   Displays storage plans and allows upgrades
 -->
 <script lang="ts">
-  import { showSuccessAlert, showErrorAlert, showConfirmWarning } from '$lib/utils/alerts';
+  import {
+    showSuccessAlert,
+    showErrorAlert,
+    showConfirmWarning,
+  } from '$lib/utils/alerts';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -52,11 +56,9 @@
 
   // Progress bar color based on usage
   const progressBarColor = $derived(
-    storagePercentage >= 90
-      ? 'var(--error-color)'
-      : storagePercentage >= 70
-        ? 'var(--warning-color)'
-        : 'var(--success-color)',
+    storagePercentage >= 90 ? 'var(--error-color)'
+    : storagePercentage >= 70 ? 'var(--warning-color)'
+    : 'var(--success-color)',
   );
 
   // =============================================================================
@@ -186,11 +188,15 @@
       const apiClient = getApiClient();
       await apiClient.put('/plans/upgrade', { planId });
 
-      showSuccessAlert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
+      showSuccessAlert(
+        'Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.',
+      );
       await loadStorageInfo();
     } catch (err) {
       log.error({ err }, 'Error upgrading plan');
-      showErrorAlert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
+      showErrorAlert(
+        'Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.',
+      );
     } finally {
       isLoading = false;
     }
@@ -200,7 +206,8 @@
    * Open email to contact sales
    */
   function contactSales(): void {
-    window.location.href = 'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
+    window.location.href =
+      'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
   }
 </script>
 
@@ -237,7 +244,10 @@
 
   <div class="storage-plans-grid">
     <!-- Basic Plan -->
-    <div class="storage-plan-card" class:current={isPlanCurrent('basic')}>
+    <div
+      class="storage-plan-card"
+      class:current={isPlanCurrent('basic')}
+    >
       <h3>Basic</h3>
       <div class="storage-size">5 GB</div>
       <div class="storage-price">
@@ -250,13 +260,20 @@
         <li>Chat-Dateianhänge</li>
         <li>Grundlegende Backups</li>
       </ul>
-      <button type="button" class="btn btn-secondary" disabled={isPlanCurrent('basic')}>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        disabled={isPlanCurrent('basic')}
+      >
         {isPlanCurrent('basic') ? 'Aktueller Plan' : 'Downgrade auf 5 GB'}
       </button>
     </div>
 
     <!-- Professional Plan -->
-    <div class="storage-plan-card" class:current={isPlanCurrent('professional')}>
+    <div
+      class="storage-plan-card"
+      class:current={isPlanCurrent('professional')}
+    >
       <h3>Professional</h3>
       <div class="storage-size">25 GB</div>
       <div class="storage-price">
@@ -271,7 +288,11 @@
         <li>Priorisierter Support</li>
       </ul>
       {#if isPlanCurrent('professional')}
-        <button type="button" class="btn btn-secondary" disabled>Aktueller Plan</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          disabled>Aktueller Plan</button
+        >
       {:else}
         <button
           type="button"
@@ -285,7 +306,10 @@
     </div>
 
     <!-- Enterprise Plan -->
-    <div class="storage-plan-card" class:current={isPlanCurrent('enterprise')}>
+    <div
+      class="storage-plan-card"
+      class:current={isPlanCurrent('enterprise')}
+    >
       <h3>Enterprise</h3>
       <div class="storage-size">100 GB</div>
       <div class="storage-price">
@@ -301,7 +325,11 @@
         <li>Dedizierter Account Manager</li>
       </ul>
       {#if isPlanCurrent('enterprise')}
-        <button type="button" class="btn btn-secondary" disabled>Aktueller Plan</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          disabled>Aktueller Plan</button
+        >
       {:else}
         <button
           type="button"
@@ -322,10 +350,14 @@
     </div>
     <div class="custom-storage-content">
       <p class="custom-storage-description">
-        Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles
-        Angebot.
+        Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für
+        ein individuelles Angebot.
       </p>
-      <button type="button" class="btn btn-primary" onclick={contactSales}>
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick={contactSales}
+      >
         <i class="fas fa-phone"></i>
         Vertrieb kontaktieren
       </button>
@@ -337,27 +369,33 @@
     <h2 class="text-center mb-6">Häufig gestellte Fragen</h2>
 
     <div class="faq-item">
-      <div class="faq-question">Was passiert, wenn ich meinen Speicherplatz überschreite?</div>
+      <div class="faq-question">
+        Was passiert, wenn ich meinen Speicherplatz überschreite?
+      </div>
       <div class="faq-answer">
-        Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres Speichers erreichen. Bei
-        Überschreitung können keine neuen Dateien hochgeladen werden, bis Sie entweder Speicher
-        freigeben oder upgraden.
+        Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres
+        Speichers erreichen. Bei Überschreitung können keine neuen Dateien
+        hochgeladen werden, bis Sie entweder Speicher freigeben oder upgraden.
       </div>
     </div>
 
     <div class="faq-item">
-      <div class="faq-question">Kann ich meinen Speicherplan jederzeit ändern?</div>
+      <div class="faq-question">
+        Kann ich meinen Speicherplan jederzeit ändern?
+      </div>
       <div class="faq-answer">
-        Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden. Downgrades sind zum Ende
-        des Abrechnungszeitraums möglich.
+        Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden.
+        Downgrades sind zum Ende des Abrechnungszeitraums möglich.
       </div>
     </div>
 
     <div class="faq-item">
-      <div class="faq-question">Werden meine Daten beim Upgrade beeinflusst?</div>
+      <div class="faq-question">
+        Werden meine Daten beim Upgrade beeinflusst?
+      </div>
       <div class="faq-answer">
-        Nein, alle Ihre Daten bleiben beim Upgrade unverändert. Der zusätzliche Speicher wird sofort
-        nach der Bestätigung verfügbar.
+        Nein, alle Ihre Daten bleiben beim Upgrade unverändert. Der zusätzliche
+        Speicher wird sofort nach der Bestätigung verfügbar.
       </div>
     </div>
   </div>

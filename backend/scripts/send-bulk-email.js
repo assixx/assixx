@@ -44,13 +44,19 @@ async function sendBulkEmails() {
     const departmentId = args.department || null;
     const template = args.template || 'notification';
     const subject = args.subject || 'Wichtige Mitteilung von Assixx';
-    const message = args.message || 'Dies ist eine wichtige Mitteilung für alle Mitarbeiter.';
+    const message =
+      args.message || 'Dies ist eine wichtige Mitteilung für alle Mitarbeiter.';
     const tenantId = args.tenant || 1;
 
     // Feature-Prüfung
-    const hasEmailFeature = await Feature.checkTenantAccess(tenantId, 'email_notifications');
+    const hasEmailFeature = await Feature.checkTenantAccess(
+      tenantId,
+      'email_notifications',
+    );
     if (!hasEmailFeature) {
-      logger.error(`Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`);
+      logger.error(
+        `Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`,
+      );
       process.exit(1);
     }
 
@@ -70,7 +76,9 @@ async function sendBulkEmails() {
     logger.info(`${users.length} Benutzer gefunden für E-Mail-Versand`);
 
     if (users.length === 0) {
-      logger.warn('Keine Benutzer gefunden, die den Filterkriterien entsprechen');
+      logger.warn(
+        'Keine Benutzer gefunden, die den Filterkriterien entsprechen',
+      );
       process.exit(0);
     }
 
@@ -90,7 +98,10 @@ async function sendBulkEmails() {
     };
 
     // E-Mails senden
-    const result = await emailService.sendBulkNotification(users, messageOptions);
+    const result = await emailService.sendBulkNotification(
+      users,
+      messageOptions,
+    );
 
     if (result.success) {
       logger.info(result.message);

@@ -91,7 +91,9 @@
   });
 
   const isAdmin = $derived.by(
-    () => currentUser !== null && (currentUser.role === 'admin' || currentUser.role === 'root'),
+    () =>
+      currentUser !== null &&
+      (currentUser.role === 'admin' || currentUser.role === 'root'),
   );
   const isConfirmed = $derived(entry.isConfirmed === true);
   /** Entry is archived (is_active = 3) - hide edit/delete/archive actions */
@@ -169,7 +171,9 @@
   }
 
   async function archiveEntry(): Promise<void> {
-    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wirklich archivieren?');
+    const confirmed = await showConfirm(
+      'Möchten Sie diesen Eintrag wirklich archivieren?',
+    );
     if (!confirmed) return;
     const success = await archiveApi(uuid);
     if (success) {
@@ -181,7 +185,9 @@
   }
 
   async function restoreEntry(): Promise<void> {
-    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wiederherstellen?');
+    const confirmed = await showConfirm(
+      'Möchten Sie diesen Eintrag wiederherstellen?',
+    );
     if (!confirmed) return;
     const success = await unarchiveApi(uuid);
     if (success) {
@@ -257,9 +263,14 @@
    * Returns empty string if profile picture exists, otherwise returns color class.
    * Uses userId for consistent color per user (same user = same color everywhere).
    */
-  function getAvatarColorClass(profilePicture: string | null | undefined, userId: number): string {
+  function getAvatarColorClass(
+    profilePicture: string | null | undefined,
+    userId: number,
+  ): string {
     const hasProfilePic =
-      profilePicture !== null && profilePicture !== undefined && profilePicture !== '';
+      profilePicture !== null &&
+      profilePicture !== undefined &&
+      profilePicture !== '';
     return hasProfilePic ? '' : `avatar--color-${getAvatarColor(userId)}`;
   }
 
@@ -267,7 +278,9 @@
    * Type-safe check for non-empty string value.
    * Handles null, undefined, and empty string cases explicitly.
    */
-  function hasProfilePicture(value: string | null | undefined): value is string {
+  function hasProfilePicture(
+    value: string | null | undefined,
+  ): value is string {
     return value !== null && value !== undefined && value !== '';
   }
 </script>
@@ -281,7 +294,11 @@
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
-    <button type="button" class="btn btn-light" onclick={goBack}>
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={goBack}
+    >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
     </button>
   </div>
@@ -298,7 +315,10 @@
               ><i class="fas fa-user"></i>
               {entry.authorFullName ?? entry.authorName ?? 'Unbekannt'}</span
             >
-            <span><i class="fas fa-calendar"></i> {formatDate(entry.createdAt)}</span>
+            <span
+              ><i class="fas fa-calendar"></i>
+              {formatDate(entry.createdAt)}</span
+            >
             {#if entry.expiresAt}
               <span
                 class="detail-meta__expires"
@@ -320,7 +340,9 @@
 
       <!-- Details Section -->
       <div class="content-section">
-        <h3 class="section-title"><i class="fas fa-info-circle"></i> Details</h3>
+        <h3 class="section-title">
+          <i class="fas fa-info-circle"></i> Details
+        </h3>
         <div class="data-list data-list--grid">
           <div class="data-list__item">
             <span class="data-list__label">Sichtbarkeit</span>
@@ -332,7 +354,8 @@
             <div class="data-list__item">
               <span class="data-list__label">Tags</span>
               <span class="data-list__value">
-                {#each entry.tags as tag (tag)}<span class="badge badge--tag mr-1">{tag}</span
+                {#each entry.tags as tag (tag)}<span
+                    class="badge badge--tag mr-1">{tag}</span
                   >{/each}
               </span>
             </div>
@@ -344,7 +367,9 @@
       <div class="content-section">
         <h3 class="section-title"><i class="fas fa-align-left"></i> Inhalt</h3>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -- Sanitized via DOMPurify -->
-        <div class="section-content">{@html sanitizeWithLineBreaks(entry.content)}</div>
+        <div class="section-content">
+          {@html sanitizeWithLineBreaks(entry.content)}
+        </div>
       </div>
 
       <!-- Photo Gallery -->
@@ -371,7 +396,9 @@
                     loading="lazy"
                   />
                 {:else}
-                  <div class="photo-placeholder"><i class="fas fa-image"></i></div>
+                  <div class="photo-placeholder">
+                    <i class="fas fa-image"></i>
+                  </div>
                 {/if}
                 {#if index === 0 && photos.length > 1}<span class="photo-count"
                     >{photos.length} Fotos</span
@@ -391,7 +418,10 @@
 
         <!-- Comment Form - Hidden for archived entries -->
         {#if !isArchived}
-          <form class="flex gap-4 mb-6" onsubmit={handleAddComment}>
+          <form
+            class="flex gap-4 mb-6"
+            onsubmit={handleAddComment}
+          >
             <div class="form-field flex-1">
               <textarea
                 class="form-field__control"
@@ -402,8 +432,13 @@
               ></textarea>
             </div>
             <div class="flex items-start">
-              <button type="submit" class="btn btn-primary" disabled={submittingComment}>
-                {#if submittingComment}<span class="spinner-ring spinner-ring--sm mr-2"
+              <button
+                type="submit"
+                class="btn btn-primary"
+                disabled={submittingComment}
+              >
+                {#if submittingComment}<span
+                    class="spinner-ring spinner-ring--sm mr-2"
                   ></span>{:else}<i class="fas fa-paper-plane mr-2"></i>{/if}
                 Senden
               </button>
@@ -417,7 +452,10 @@
             <p class="text-muted">Keine Kommentare vorhanden.</p>
           {:else}
             {#each comments as comment (comment.id)}
-              <div class="comment-item" class:comment-internal={comment.isInternal}>
+              <div
+                class="comment-item"
+                class:comment-internal={comment.isInternal}
+              >
                 <div class="comment-header">
                   <div class="comment-author">
                     <div
@@ -441,11 +479,18 @@
                       {/if}
                     </div>
                     <div>
-                      <strong>{comment.firstName ?? 'Unbekannt'} {comment.lastName ?? ''}</strong>
-                      {#if comment.isInternal}<span class="internal-badge">Intern</span>{/if}
+                      <strong
+                        >{comment.firstName ?? 'Unbekannt'}
+                        {comment.lastName ?? ''}</strong
+                      >
+                      {#if comment.isInternal}<span class="internal-badge"
+                          >Intern</span
+                        >{/if}
                     </div>
                   </div>
-                  <span class="comment-date">{formatDateTime(comment.createdAt)}</span>
+                  <span class="comment-date"
+                    >{formatDateTime(comment.createdAt)}</span
+                  >
                 </div>
                 <div class="comment-content">{comment.comment}</div>
               </div>
@@ -460,7 +505,9 @@
       <!-- Confirmation Status - Hidden for archived entries -->
       {#if !isArchived}
         <div class="sidebar-card">
-          <h3 class="section-title"><i class="fas fa-check-circle"></i> Lesebestätigung</h3>
+          <h3 class="section-title">
+            <i class="fas fa-check-circle"></i> Lesebestätigung
+          </h3>
           {#if isConfirmed}
             <div class="confirmation-done mb-4">
               <i class="fas fa-check-circle text-success"></i>
@@ -475,9 +522,8 @@
               onclick={unconfirmEntry}
               disabled={confirming}
             >
-              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
-                  class="fas fa-undo mr-2"
-                ></i>{/if}
+              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"
+                ></span>{:else}<i class="fas fa-undo mr-2"></i>{/if}
               Als ungelesen markieren
             </button>
           {:else}
@@ -487,9 +533,8 @@
               onclick={confirmEntry}
               disabled={confirming}
             >
-              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
-                  class="fas fa-check mr-2"
-                ></i>{/if}
+              {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"
+                ></span>{:else}<i class="fas fa-check mr-2"></i>{/if}
               Als gelesen markieren
             </button>
           {/if}
@@ -499,7 +544,9 @@
       <!-- Attachments (non-photo files) -->
       {#if otherFiles.length > 0}
         <div class="sidebar-card">
-          <h3 class="section-title"><i class="fas fa-paperclip"></i> Anhänge</h3>
+          <h3 class="section-title">
+            <i class="fas fa-paperclip"></i> Anhänge
+          </h3>
           <div class="attachment-list">
             {#each otherFiles as file (file.fileUuid)}
               <div
@@ -535,7 +582,8 @@
               <button
                 type="button"
                 class="btn btn-light w-full mb-2"
-                onclick={goToBlackboardForEdit}><i class="fas fa-edit mr-2"></i>Bearbeiten</button
+                onclick={goToBlackboardForEdit}
+                ><i class="fas fa-edit mr-2"></i>Bearbeiten</button
               >
               <button
                 type="button"
@@ -545,7 +593,10 @@
               >
             {/if}
             {#if isAdmin}
-              <button type="button" class="btn btn-light w-full" onclick={archiveEntry}
+              <button
+                type="button"
+                class="btn btn-light w-full"
+                onclick={archiveEntry}
                 ><i class="fas fa-archive mr-2"></i>Archivieren</button
               >
             {/if}
@@ -554,9 +605,16 @@
       {:else if isArchived}
         <div class="sidebar-card">
           <div class="text-center p-4">
-            <i class="fas fa-archive text-3xl text-[var(--color-warning)] mb-2"></i>
-            <p class="text-[var(--color-text-secondary)] mb-4">Dieser Eintrag ist archiviert</p>
-            <button type="button" class="btn btn-light w-full" onclick={restoreEntry}>
+            <i class="fas fa-archive text-3xl text-[var(--color-warning)] mb-2"
+            ></i>
+            <p class="text-[var(--color-text-secondary)] mb-4">
+              Dieser Eintrag ist archiviert
+            </p>
+            <button
+              type="button"
+              class="btn btn-light w-full"
+              onclick={restoreEntry}
+            >
               <i class="fas fa-undo mr-2"></i>Wiederherstellen
             </button>
           </div>
@@ -600,14 +658,19 @@
           {:else}<i class="fas fa-file mr-2"></i>{/if}
           {previewAttachment.filename}
         </h3>
-        <button type="button" class="ds-modal__close" onclick={closePreview} aria-label="Schließen"
-          ><i class="fas fa-times"></i></button
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closePreview}
+          aria-label="Schließen"><i class="fas fa-times"></i></button
         >
       </div>
       <div class="ds-modal__body p-0">
         {#if getPreviewFileType(previewAttachment.mimeType) === 'pdf'}
           <iframe
-            src={buildDownloadUrl(previewAttachment.previewUrl ?? previewAttachment.downloadUrl)}
+            src={buildDownloadUrl(
+              previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
+            )}
             title="PDF Vorschau"
             class="block w-full h-[70vh] min-h-[600px] border-none"
           ></iframe>
@@ -616,7 +679,9 @@
             class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-[var(--surface-1)]"
           >
             <img
-              src={buildDownloadUrl(previewAttachment.previewUrl ?? previewAttachment.downloadUrl)}
+              src={buildDownloadUrl(
+                previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
+              )}
               alt={previewAttachment.filename}
               class="max-w-full max-h-full object-contain"
             />
@@ -632,23 +697,34 @@
             </div>
           </div>
         {/if}
-        <div class="p-4 bg-[var(--surface-2)] border-t border-[var(--border-subtle)]">
-          <div class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]">
+        <div
+          class="p-4 bg-[var(--surface-2)] border-t border-[var(--border-subtle)]"
+        >
+          <div
+            class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]"
+          >
             <span class="flex items-center gap-2"
               ><i class="fas fa-file-archive"></i>
               {formatFileSize(previewAttachment.fileSize)}</span
             >
             <span class="flex items-center gap-2"
-              ><i class="fas fa-user"></i> {previewAttachment.uploadedByName}</span
+              ><i class="fas fa-user"></i>
+              {previewAttachment.uploadedByName}</span
             >
           </div>
         </div>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={closePreview}
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closePreview}
           ><i class="fas fa-times mr-2"></i>Schließen</button
         >
-        <button type="button" class="btn btn-modal" onclick={downloadAttachment}
+        <button
+          type="button"
+          class="btn btn-modal"
+          onclick={downloadAttachment}
           ><i class="fas fa-download mr-2"></i>Herunterladen</button
         >
       </div>
@@ -679,11 +755,13 @@
       }}
       role="document"
     >
-      <div class="confirm-modal__icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="confirm-modal__icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
       <h3 class="confirm-modal__title">Eintrag löschen?</h3>
       <p class="confirm-modal__message">
-        Möchten Sie diesen Eintrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
-        werden.
+        Möchten Sie diesen Eintrag wirklich löschen? Diese Aktion kann nicht
+        rückgängig gemacht werden.
       </p>
       <div class="confirm-modal__actions">
         <button
@@ -698,7 +776,8 @@
           onclick={handleDeleteEntry}
           disabled={deleting}
         >
-          {#if deleting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
+          {#if deleting}<span class="spinner-ring spinner-ring--sm mr-2"
+            ></span>{/if}
           Endgültig löschen
         </button>
       </div>

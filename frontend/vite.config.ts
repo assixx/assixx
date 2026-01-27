@@ -62,7 +62,12 @@ export default defineConfig(({ mode }) => ({
     watch: {
       usePolling: true,
       interval: 100, // 100ms like legacy frontend
-      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/.svelte-kit/**'],
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/dist/**',
+        '**/.svelte-kit/**',
+      ],
     },
   },
 

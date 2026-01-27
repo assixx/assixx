@@ -19,7 +19,10 @@
 {#if show && document}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={handleOverlayClick}
+  >
     <div
       class="confirm-modal confirm-modal--danger"
       onclick={(e) => {
@@ -31,7 +34,8 @@
       </div>
       <h3 class="confirm-modal__title">Dokument löschen?</h3>
       <p class="confirm-modal__message">
-        <strong>ACHTUNG:</strong> Diese Aktion kann nicht rückgängig gemacht werden!
+        <strong>ACHTUNG:</strong> Diese Aktion kann nicht rückgängig gemacht
+        werden!
         <br /><br />
         Das Dokument <strong>"{document.filename}"</strong> wird unwiderruflich gelöscht.
       </p>

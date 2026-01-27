@@ -105,7 +105,11 @@
   border-radius: 50%;
 
   /* Glass Thumb */
-  background: linear-gradient(135deg, rgb(255 255 255 / 80%), rgb(255 255 255 / 60%));
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 80%),
+    rgb(255 255 255 / 60%)
+  );
 
   width: 24px;
   height: 24px;
@@ -123,7 +127,11 @@
   border-color: var(--color-primary);
 
   /* Glass Track - ON State (Primary Blue) */
-  background: linear-gradient(135deg, var(--color-primary), var(--color-blue-600));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-blue-600)
+  );
 }
 
 .toggle-switch__input:checked + .toggle-switch__slider::before {
@@ -131,7 +139,11 @@
   transform: translateX(20px);
 
   /* Brighter thumb when ON */
-  background: linear-gradient(135deg, rgb(255 255 255 / 100%), rgb(255 255 255 / 90%));
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 100%),
+    rgb(255 255 255 / 90%)
+  );
 }
 
 /* ============================================================
@@ -182,7 +194,8 @@
 }
 
 /* Remove hover effects when disabled */
-.toggle-switch:has(.toggle-switch__input:disabled):hover .toggle-switch__slider {
+.toggle-switch:has(.toggle-switch__input:disabled):hover
+  .toggle-switch__slider {
   box-shadow: none;
 }
 
@@ -221,7 +234,9 @@
   height: 20px;
 }
 
-.toggle-switch--sm .toggle-switch__input:checked + .toggle-switch__slider::before {
+.toggle-switch--sm
+  .toggle-switch__input:checked
+  + .toggle-switch__slider::before {
   transform: translateX(16px);
 }
 
@@ -241,7 +256,9 @@
   height: 28px;
 }
 
-.toggle-switch--lg .toggle-switch__input:checked + .toggle-switch__slider::before {
+.toggle-switch--lg
+  .toggle-switch__input:checked
+  + .toggle-switch__slider::before {
   transform: translateX(24px);
 }
 
@@ -259,7 +276,11 @@
     var(--shadow-glass),
     0 0 12px rgb(76 175 80 / 40%);
   border-color: var(--color-success);
-  background: linear-gradient(135deg, var(--color-success), var(--color-green-600));
+  background: linear-gradient(
+    135deg,
+    var(--color-success),
+    var(--color-green-600)
+  );
 }
 
 .toggle-switch--success .toggle-switch__input:checked ~ .toggle-switch__label {
@@ -272,7 +293,11 @@
     var(--shadow-glass),
     0 0 12px rgb(244 67 54 / 40%);
   border-color: var(--color-danger);
-  background: linear-gradient(135deg, var(--color-danger), var(--color-red-600));
+  background: linear-gradient(
+    135deg,
+    var(--color-danger),
+    var(--color-red-600)
+  );
 }
 
 .toggle-switch--danger .toggle-switch__input:checked ~ .toggle-switch__label {
@@ -285,7 +310,11 @@
     var(--shadow-glass),
     0 0 12px rgb(255 152 0 / 40%);
   border-color: var(--color-warning);
-  background: linear-gradient(135deg, var(--color-warning), var(--color-orange-600));
+  background: linear-gradient(
+    135deg,
+    var(--color-warning),
+    var(--color-orange-600)
+  );
 }
 
 .toggle-switch--warning .toggle-switch__input:checked ~ .toggle-switch__label {

@@ -44,7 +44,12 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { BlackboardEntry, Priority, EntryColor, FormMode } from './_lib/types';
+  import type {
+    BlackboardEntry,
+    Priority,
+    EntryColor,
+    FormMode,
+  } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - All via $derived (Level 3: Single Source of Truth)
@@ -67,9 +72,13 @@
   // =============================================================================
 
   // Read current filter state from URL
-  const currentPage = $derived(Number($page.url.searchParams.get('page') ?? '1'));
+  const currentPage = $derived(
+    Number($page.url.searchParams.get('page') ?? '1'),
+  );
   const sortBy = $derived($page.url.searchParams.get('sortBy') ?? 'created_at');
-  const sortDir = $derived(($page.url.searchParams.get('sortDir') ?? 'DESC') as 'ASC' | 'DESC');
+  const sortDir = $derived(
+    ($page.url.searchParams.get('sortDir') ?? 'DESC') as 'ASC' | 'DESC',
+  );
   const levelFilter = $derived(
     ($page.url.searchParams.get('filter') ?? 'all') as
       | 'all'
@@ -135,7 +144,9 @@
   // URL NAVIGATION HELPERS (Level 3: goto() instead of fetchEntries())
   // =============================================================================
 
-  function buildUrl(params: Record<string, string | number | undefined>): string {
+  function buildUrl(
+    params: Record<string, string | number | undefined>,
+  ): string {
     const url = new URL($page.url);
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== '' && value !== 'all') {
@@ -147,7 +158,9 @@
     return url.pathname + url.search;
   }
 
-  async function navigateWithParams(params: Record<string, string | number | undefined>) {
+  async function navigateWithParams(
+    params: Record<string, string | number | undefined>,
+  ) {
     await goto(buildUrl(params), { replaceState: true, noScroll: true });
   }
 
@@ -210,9 +223,14 @@
   }
 
   function buildEntryPayload(): Record<string, unknown> {
-    const orgIds = formCompanyWide
-      ? { departmentIds: [], teamIds: [], areaIds: [] }
-      : { departmentIds: formDepartmentIds, teamIds: formTeamIds, areaIds: formAreaIds };
+    const orgIds =
+      formCompanyWide ?
+        { departmentIds: [], teamIds: [], areaIds: [] }
+      : {
+          departmentIds: formDepartmentIds,
+          teamIds: formTeamIds,
+          areaIds: formAreaIds,
+        };
 
     return {
       title: formTitle,
@@ -251,10 +269,10 @@
         entryId = editingEntryId;
         showSuccessAlert('Eintrag aktualisiert');
       } else {
-        const response = await apiClient.post<{ data?: { id: number }; id?: number }>(
-          '/blackboard/entries',
-          payload,
-        );
+        const response = await apiClient.post<{
+          data?: { id: number };
+          id?: number;
+        }>('/blackboard/entries', payload);
         entryId = response.data?.id ?? response.id ?? null;
         showSuccessAlert('Eintrag erstellt');
       }
@@ -289,7 +307,9 @@
       await invalidateAll(); // Level 3: Server refetches data
     } catch (err) {
       log.error({ err }, 'Error deleting entry');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.DELETE_ERROR);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.DELETE_ERROR,
+      );
     } finally {
       loading = false;
     }
@@ -347,7 +367,10 @@
     if (editUuid !== '') {
       const url = new URL($page.url);
       url.searchParams.delete('edit');
-      void goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+      void goto(url.pathname + url.search, {
+        replaceState: true,
+        noScroll: true,
+      });
     }
   }
 
@@ -404,7 +427,8 @@
   $effect(() => {
     if (!mounted) {
       mounted = true;
-      userRole = localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
+      userRole =
+        localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
     }
   });
 
@@ -423,7 +447,10 @@
             // Clear edit parameter
             const url = new URL($page.url);
             url.searchParams.delete('edit');
-            void goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+            void goto(url.pathname + url.search, {
+              replaceState: true,
+              noScroll: true,
+            });
           }
         })
         .catch((err: unknown) => {
@@ -454,7 +481,10 @@
   <title>Schwarzes Brett - Assixx</title>
 </svelte:head>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeyDown} />
+<svelte:window
+  onclick={handleClickOutside}
+  onkeydown={handleKeyDown}
+/>
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
 <div class="container">
@@ -470,7 +500,9 @@
       }}
     >
       <div class="flex items-center justify-between">
-        <h3 class="card__title m-0"><i class="fas fa-filter mr-2"></i>Filter & Suche</h3>
+        <h3 class="card__title m-0">
+          <i class="fas fa-filter mr-2"></i>Filter & Suche
+        </h3>
         <i
           class="fas fa-chevron-down transition-transform duration-200"
           class:rotate-180={filterExpanded}
@@ -482,7 +514,10 @@
         <div class="flex flex-wrap gap-4 items-end">
           <!-- Search Bar -->
           <div class="form-field">
-            <label class="form-field__label" for="searchInput">Suche</label>
+            <label
+              class="form-field__label"
+              for="searchInput">Suche</label
+            >
             <div class="relative">
               <input
                 type="text"
@@ -492,22 +527,35 @@
                 bind:value={searchInput}
                 onkeydown={(e) => e.key === 'Enter' && handleSearch()}
               />
-              <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <i
+                class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              ></i>
             </div>
           </div>
 
           <!-- Level Filter -->
           <div class="form-field">
-            <span class="form-field__label" id="levelFilterLabel">Organisationsebene</span>
-            <div class="toggle-group mt-2" role="group" aria-labelledby="levelFilterLabel">
+            <span
+              class="form-field__label"
+              id="levelFilterLabel">Organisationsebene</span
+            >
+            <div
+              class="toggle-group mt-2"
+              role="group"
+              aria-labelledby="levelFilterLabel"
+            >
               {#each [{ value: 'all', label: 'Alle', icon: 'fa-globe' }, { value: 'company', label: 'Firma', icon: 'fa-building' }, { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' }, { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' }, { value: 'team', label: 'Team', icon: 'fa-users' }] as opt (opt.value)}
                 <button
                   type="button"
                   class="toggle-group__btn"
                   class:active={levelFilter === opt.value}
-                  onclick={() => setLevelFilter(opt.value as typeof levelFilter)}
+                  onclick={() =>
+                    setLevelFilter(opt.value as typeof levelFilter)}
                 >
-                  <i class="fas {opt.icon}" aria-hidden="true"></i>
+                  <i
+                    class="fas {opt.icon}"
+                    aria-hidden="true"
+                  ></i>
                   {opt.label}
                 </button>
               {/each}
@@ -516,8 +564,15 @@
 
           <!-- Sort Filter -->
           <div class="form-field">
-            <label class="form-field__label" for="sortFilter">Sortierung</label>
-            <div class="dropdown" id="sort-dropdown" role="listbox">
+            <label
+              class="form-field__label"
+              for="sortFilter">Sortierung</label
+            >
+            <div
+              class="dropdown"
+              id="sort-dropdown"
+              role="listbox"
+            >
               <div
                 class="dropdown__trigger"
                 onclick={() => (sortDropdownOpen = !sortDropdownOpen)}
@@ -559,8 +614,11 @@
   <div class="flex justify-between mb-6">
     <div class="controls-flex">
       <div class="zoom-controls zoom-controls-inline">
-        <button type="button" class="btn btn-icon btn-secondary" title="Vergrößern" onclick={zoomIn}
-          ><i class="fas fa-plus"></i></button
+        <button
+          type="button"
+          class="btn btn-icon btn-secondary"
+          title="Vergrößern"
+          onclick={zoomIn}><i class="fas fa-plus"></i></button
         >
         <span class="zoom-level">{zoomLevel}%</span>
         <button
@@ -577,7 +635,11 @@
         >
       </div>
       {#if isAdmin}
-        <button type="button" class="btn btn-primary" onclick={openCreateModal} disabled={loading}
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={openCreateModal}
+          disabled={loading}
           ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
         >
       {/if}
@@ -585,36 +647,53 @@
   </div>
 
   <!-- Blackboard Container -->
-  <div class="blackboard-container" id="blackboardContainer">
+  <div
+    class="blackboard-container"
+    id="blackboardContainer"
+  >
     {#if loading}
       <div class="text-center p-5">
         <div class="spinner-ring spinner-ring--md"></div>
-        <p class="mt-4 text-[var(--color-text-secondary)]">{MESSAGES.LOADING}</p>
+        <p class="mt-4 text-[var(--color-text-secondary)]">
+          {MESSAGES.LOADING}
+        </p>
       </div>
     {:else if error}
       <div class="text-center p-5">
-        <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+        <i
+          class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+        ></i>
         <p class="text-[var(--color-text-secondary)]">{error}</p>
-        <button type="button" class="btn btn-primary mt-4" onclick={() => void invalidateAll()}
-          >{MESSAGES.RETRY}</button
+        <button
+          type="button"
+          class="btn btn-primary mt-4"
+          onclick={() => void invalidateAll()}>{MESSAGES.RETRY}</button
         >
       </div>
     {:else if entries.length === 0}
       <div class="text-center p-5">
-        <i class="fas fa-clipboard-list text-4xl text-[var(--color-text-secondary)] mb-4 opacity-50"
+        <i
+          class="fas fa-clipboard-list text-4xl text-[var(--color-text-secondary)] mb-4 opacity-50"
         ></i>
         <p class="text-[var(--color-text-secondary)]">{MESSAGES.NO_ENTRIES}</p>
         {#if isAdmin}
-          <button type="button" class="btn btn-primary mt-4" onclick={openCreateModal}
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={openCreateModal}
             ><i class="fas fa-plus mr-2"></i>{MESSAGES.CREATE_FIRST}</button
           >
         {/if}
       </div>
     {:else}
-      <div class="pinboard-grid" style="--zoom-level: {zoomLevel / 100};">
+      <div
+        class="pinboard-grid"
+        style="--zoom-level: {zoomLevel / 100};"
+      >
         {#each entries as entry (entry.id)}
           {@const isRead = entry.isConfirmed === true}
-          {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
+          {@const isNew =
+            entry.firstSeenAt === null || entry.firstSeenAt === undefined}
           <div
             class="pinboard-item"
             onclick={() => {
@@ -626,61 +705,89 @@
               if (e.key === 'Enter') goToDetail(entry.uuid, isRead);
             }}
           >
-            <div class="sticky-note sticky-note--{entry.color} sticky-note--large">
+            <div
+              class="sticky-note sticky-note--{entry.color} sticky-note--large"
+            >
               <div class="sticky-note__pin"></div>
               <div class="sticky-note__header">
                 <div class="sticky-note__title">
                   {entry.title}
-                  {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
+                  {#if isNew}<span class="badge badge--sm badge--success ml-2"
+                      >Neu</span
+                    >{/if}
                 </div>
                 {#if entry.expiresAt}
                   <span
                     class="sticky-note__expires"
-                    class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
-                    title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
+                    class:sticky-note__expires--expired={isExpired(
+                      entry.expiresAt,
+                    )}
+                    title={isExpired(entry.expiresAt) ? 'Abgelaufen' : (
+                      'Gültig bis'
+                    )}
                   >
                     <i class="fas fa-clock"></i>
                     {formatDateShort(entry.expiresAt)}
                   </span>
                 {/if}
               </div>
-              <div class="sticky-note__content">{truncateText(entry.content)}</div>
+              <div class="sticky-note__content">
+                {truncateText(entry.content)}
+              </div>
               <div class="sticky-note__indicators">
                 {#if (entry.commentCount ?? 0) > 0}
-                  <span class="sticky-note__comments" title="Kommentare"
+                  <span
+                    class="sticky-note__comments"
+                    title="Kommentare"
                     ><i class="fas fa-comments"></i> {entry.commentCount}</span
                   >
                 {/if}
                 {#if (entry.attachmentCount ?? 0) > 0}
-                  <span class="sticky-note__attachments" title="Anhänge"
-                    ><i class="fas fa-paperclip"></i> {entry.attachmentCount}</span
+                  <span
+                    class="sticky-note__attachments"
+                    title="Anhänge"
+                    ><i class="fas fa-paperclip"></i>
+                    {entry.attachmentCount}</span
                   >
                 {/if}
                 <span
                   class="sticky-note__read-status"
-                  class:sticky-note__read-status--read={entry.isConfirmed === true}
-                  class:sticky-note__read-status--unread={entry.isConfirmed !== true}
+                  class:sticky-note__read-status--read={entry.isConfirmed ===
+                    true}
+                  class:sticky-note__read-status--unread={entry.isConfirmed !==
+                    true}
                   title={entry.isConfirmed === true ? 'Gelesen' : 'Ungelesen'}
                 >
-                  <i class="fas {entry.isConfirmed === true ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                  <i
+                    class="fas {entry.isConfirmed === true ?
+                      'fa-eye'
+                    : 'fa-eye-slash'}"
+                  ></i>
                 </span>
               </div>
               <div class="sticky-note__footer">
                 <div class="sticky-note__badges">
-                  <span class="sticky-note__badge {getPriorityClass(entry.priority)}"
-                    >{getPriorityLabel(entry.priority)}</span
+                  <span
+                    class="sticky-note__badge {getPriorityClass(
+                      entry.priority,
+                    )}">{getPriorityLabel(entry.priority)}</span
                   >
-                  <span class="sticky-note__badge {getOrgLevelClass(entry.orgLevel)}"
-                    >{getOrgLevelLabel(entry.orgLevel)}</span
+                  <span
+                    class="sticky-note__badge {getOrgLevelClass(
+                      entry.orgLevel,
+                    )}">{getOrgLevelLabel(entry.orgLevel)}</span
                   >
                 </div>
                 <div class="sticky-note__footer-row">
                   <span class="sticky-note__author"
                     ><i class="fas fa-user"></i>
-                    {entry.authorFullName ?? entry.authorName ?? 'Unbekannt'}</span
+                    {entry.authorFullName ??
+                      entry.authorName ??
+                      'Unbekannt'}</span
                   >
                   <span class="sticky-note__date"
-                    ><i class="fas fa-calendar"></i> {formatDateShort(entry.createdAt)}</span
+                    ><i class="fas fa-calendar"></i>
+                    {formatDateShort(entry.createdAt)}</span
                   >
                 </div>
               </div>
@@ -700,7 +807,8 @@
           class="pagination__btn"
           disabled={currentPage === 1}
           onclick={() => goToPage(currentPage - 1)}
-          aria-label="Vorherige Seite"><i class="fas fa-chevron-left"></i></button
+          aria-label="Vorherige Seite"
+          ><i class="fas fa-chevron-left"></i></button
         >
         {#each Array(totalPages) as _, i (i)}
           <button
@@ -715,7 +823,8 @@
           class="pagination__btn"
           disabled={currentPage === totalPages}
           onclick={() => goToPage(currentPage + 1)}
-          aria-label="Nächste Seite"><i class="fas fa-chevron-right"></i></button
+          aria-label="Nächste Seite"
+          ><i class="fas fa-chevron-right"></i></button
         >
       </div>
     </div>
@@ -779,7 +888,8 @@
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
-          <i class="fas fa-trash-alt text-red-500 mr-2"></i>{MESSAGES.DELETE_CONFIRM_TITLE}
+          <i class="fas fa-trash-alt text-red-500 mr-2"
+          ></i>{MESSAGES.DELETE_CONFIRM_TITLE}
         </h3>
         <button
           type="button"
@@ -789,13 +899,20 @@
         >
       </div>
       <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">{MESSAGES.DELETE_CONFIRM_MESSAGE}</p>
+        <p class="text-[var(--color-text-secondary)]">
+          {MESSAGES.DELETE_CONFIRM_MESSAGE}
+        </p>
       </div>
       <div class="ds-modal__footer ds-modal__footer--right">
-        <button type="button" class="btn btn-cancel" onclick={() => (showDeleteModal = false)}
-          >Abbrechen</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={() => (showDeleteModal = false)}>Abbrechen</button
         >
-        <button type="button" class="btn btn-danger" onclick={proceedDelete}
+        <button
+          type="button"
+          class="btn btn-danger"
+          onclick={proceedDelete}
           ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
         >
       </div>
@@ -826,7 +943,9 @@
       }}
       role="document"
     >
-      <div class="confirm-modal__icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="confirm-modal__icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
       <h3 class="confirm-modal__title">{MESSAGES.DELETE_FINAL_TITLE}</h3>
       <p class="confirm-modal__message">
         <strong>ACHTUNG:</strong>

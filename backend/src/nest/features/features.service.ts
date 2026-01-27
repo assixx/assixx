@@ -222,7 +222,9 @@ export class FeaturesService {
   /**
    * Parse custom config JSON safely
    */
-  private parseCustomConfig(config: unknown): Record<string, unknown> | undefined {
+  private parseCustomConfig(
+    config: unknown,
+  ): Record<string, unknown> | undefined {
     if (config === null || typeof config !== 'string') {
       return undefined;
     }
@@ -241,7 +243,8 @@ export class FeaturesService {
     let status: FeatureStatus = 'disabled';
 
     if (isActive) {
-      const isExpired = row.expires_at !== null && new Date(row.expires_at) < new Date();
+      const isExpired =
+        row.expires_at !== null && new Date(row.expires_at) < new Date();
       status = isExpired ? 'expired' : 'active';
     }
 
@@ -279,7 +282,9 @@ export class FeaturesService {
   /**
    * Map feature with tenant status row
    */
-  private mapFeatureWithTenantStatusRow(row: DbFeatureWithTenantStatusRow): FeatureWithTenantInfo {
+  private mapFeatureWithTenantStatusRow(
+    row: DbFeatureWithTenantStatusRow,
+  ): FeatureWithTenantInfo {
     const feature = this.mapDbFeatureToApi(row);
 
     const result: FeatureWithTenantInfo = { ...feature };
@@ -291,11 +296,15 @@ export class FeaturesService {
       };
 
       if (row.activated_at !== null) {
-        result.tenantFeature.validFrom = new Date(row.activated_at).toISOString();
+        result.tenantFeature.validFrom = new Date(
+          row.activated_at,
+        ).toISOString();
       }
 
       if (row.expires_at !== null) {
-        result.tenantFeature.validUntil = new Date(row.expires_at).toISOString();
+        result.tenantFeature.validUntil = new Date(
+          row.expires_at,
+        ).toISOString();
       }
     }
 
@@ -306,7 +315,9 @@ export class FeaturesService {
    * Get all available features
    */
   async getAllFeatures(includeInactive: boolean = false): Promise<Feature[]> {
-    this.logger.debug(`Getting all features (includeInactive: ${includeInactive})`);
+    this.logger.debug(
+      `Getting all features (includeInactive: ${includeInactive})`,
+    );
 
     const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
     const rows = await this.db.query<DbFeatureRow>(
@@ -319,23 +330,30 @@ export class FeaturesService {
   /**
    * Get features grouped by category
    */
-  async getFeaturesByCategory(includeInactive: boolean = false): Promise<FeatureCategory[]> {
+  async getFeaturesByCategory(
+    includeInactive: boolean = false,
+  ): Promise<FeatureCategory[]> {
     this.logger.debug('Getting features by category');
 
     const features = await this.getAllFeatures(includeInactive);
 
-    return features.reduce<FeatureCategory[]>((acc: FeatureCategory[], feature: Feature) => {
-      const category = acc.find((c: FeatureCategory) => c.category === feature.category);
-      if (category !== undefined) {
-        category.features.push(feature);
-      } else {
-        acc.push({
-          category: feature.category,
-          features: [feature],
-        });
-      }
-      return acc;
-    }, []);
+    return features.reduce<FeatureCategory[]>(
+      (acc: FeatureCategory[], feature: Feature) => {
+        const category = acc.find(
+          (c: FeatureCategory) => c.category === feature.category,
+        );
+        if (category !== undefined) {
+          category.features.push(feature);
+        } else {
+          acc.push({
+            category: feature.category,
+            features: [feature],
+          });
+        }
+        return acc;
+      },
+      [],
+    );
   }
 
   /**
@@ -344,9 +362,10 @@ export class FeaturesService {
   async getFeatureByCode(code: string): Promise<Feature | null> {
     this.logger.debug(`Getting feature by code: ${code}`);
 
-    const row = await this.db.queryOne<DbFeatureRow>('SELECT * FROM features WHERE code = $1', [
-      code,
-    ]);
+    const row = await this.db.queryOne<DbFeatureRow>(
+      'SELECT * FROM features WHERE code = $1',
+      [code],
+    );
 
     if (row === null) {
       return null;
@@ -383,8 +402,12 @@ export class FeaturesService {
   /**
    * Get all features with tenant-specific info
    */
-  async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
-    this.logger.debug(`Getting features with tenant info for tenant ${tenantId}`);
+  async getFeaturesWithTenantInfo(
+    tenantId: number,
+  ): Promise<FeatureWithTenantInfo[]> {
+    this.logger.debug(
+      `Getting features with tenant info for tenant ${tenantId}`,
+    );
 
     const rows = await this.db.query<DbFeatureWithTenantStatusRow>(
       `
@@ -407,13 +430,17 @@ export class FeaturesService {
       [tenantId],
     );
 
-    return rows.map((row: DbFeatureWithTenantStatusRow) => this.mapFeatureWithTenantStatusRow(row));
+    return rows.map((row: DbFeatureWithTenantStatusRow) =>
+      this.mapFeatureWithTenantStatusRow(row),
+    );
   }
 
   /**
    * Get tenant features summary
    */
-  async getTenantFeaturesSummary(tenantId: number): Promise<TenantFeaturesSummary> {
+  async getTenantFeaturesSummary(
+    tenantId: number,
+  ): Promise<TenantFeaturesSummary> {
     this.logger.debug(`Getting tenant features summary for tenant ${tenantId}`);
 
     const features = await this.getTenantFeatures(tenantId);
@@ -448,8 +475,13 @@ export class FeaturesService {
   /**
    * Activate feature for tenant
    */
-  async activateFeature(request: FeatureActivationRequest, activatedBy: number): Promise<void> {
-    this.logger.log(`Activating feature ${request.featureCode} for tenant ${request.tenantId}`);
+  async activateFeature(
+    request: FeatureActivationRequest,
+    activatedBy: number,
+  ): Promise<void> {
+    this.logger.log(
+      `Activating feature ${request.featureCode} for tenant ${request.tenantId}`,
+    );
 
     const feature = await this.getFeatureByCode(request.featureCode);
     if (feature === null) {
@@ -483,11 +515,20 @@ export class FeaturesService {
         `INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at, expires_at,
          activated_by, custom_config, created_at, updated_at)
          VALUES ($1, $2, $3, NOW(), $4, $5, $6, NOW(), NOW())`,
-        [request.tenantId, feature.id, true, expiresAt, activatedBy, customConfig],
+        [
+          request.tenantId,
+          feature.id,
+          true,
+          expiresAt,
+          activatedBy,
+          customConfig,
+        ],
       );
     }
 
-    this.logger.log(`Feature ${request.featureCode} activated for tenant ${request.tenantId}`);
+    this.logger.log(
+      `Feature ${request.featureCode} activated for tenant ${request.tenantId}`,
+    );
   }
 
   /**
@@ -498,7 +539,9 @@ export class FeaturesService {
     featureCode: string,
     _deactivatedBy: number,
   ): Promise<void> {
-    this.logger.log(`Deactivating feature ${featureCode} for tenant ${tenantId}`);
+    this.logger.log(
+      `Deactivating feature ${featureCode} for tenant ${tenantId}`,
+    );
 
     const feature = await this.getFeatureByCode(featureCode);
     if (feature === null) {
@@ -514,10 +557,14 @@ export class FeaturesService {
     );
 
     if (rows.length === 0) {
-      throw new NotFoundException(`Feature ${featureCode} not found for tenant`);
+      throw new NotFoundException(
+        `Feature ${featureCode} not found for tenant`,
+      );
     }
 
-    this.logger.log(`Feature ${featureCode} deactivated for tenant ${tenantId}`);
+    this.logger.log(
+      `Feature ${featureCode} deactivated for tenant ${tenantId}`,
+    );
   }
 
   /**
@@ -566,7 +613,10 @@ export class FeaturesService {
   /**
    * Check if tenant has access to feature
    */
-  async checkTenantAccess(tenantId: number, featureCode: string): Promise<boolean> {
+  async checkTenantAccess(
+    tenantId: number,
+    featureCode: string,
+  ): Promise<boolean> {
     this.logger.log(`Checking tenant access to feature ${featureCode}`);
 
     const row = await this.db.queryOne(

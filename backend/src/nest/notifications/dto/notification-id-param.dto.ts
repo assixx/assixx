@@ -16,4 +16,6 @@ export const NotificationIdParamSchema = z.object({
 /**
  * Notification ID Param DTO class
  */
-export class NotificationIdParamDto extends createZodDto(NotificationIdParamSchema) {}
+export class NotificationIdParamDto extends createZodDto(
+  NotificationIdParamSchema,
+) {}

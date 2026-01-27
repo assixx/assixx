@@ -16,7 +16,8 @@ export const API_ENDPOINTS = {
   kvpArchive: (id: string) => `/kvp/${id}/archive`,
   kvpUnarchive: (id: string) => `/kvp/${id}/unarchive`,
   kvpConfirm: (uuid: string) => `/kvp/${uuid}/confirm`,
-  attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
+  attachmentDownload: (fileUuid: string) =>
+    `/kvp/attachments/${fileUuid}/download`,
   departments: '/departments',
   teams: '/teams',
   areas: '/areas',
@@ -82,12 +83,13 @@ export const VISIBILITY_BADGE_CLASSES: Record<OrgLevel, string> = {
 /**
  * Visibility info by org level
  */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> = {
-  company: { icon: 'fa-globe', text: 'Firmenweit' },
-  department: { icon: 'fa-building', text: 'Abteilung' },
-  area: { icon: 'fa-sitemap', text: 'Bereich' },
-  team: { icon: 'fa-users', text: 'Team' },
-} as const;
+export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
+  {
+    company: { icon: 'fa-globe', text: 'Firmenweit' },
+    department: { icon: 'fa-building', text: 'Abteilung' },
+    area: { icon: 'fa-sitemap', text: 'Bereich' },
+    team: { icon: 'fa-users', text: 'Team' },
+  } as const;
 
 /**
  * Share level text (German)
@@ -113,4 +115,8 @@ export const STATUS_OPTIONS: { value: KvpStatus; label: string }[] = [
 /**
  * Image file types for photo gallery
  */
-export const IMAGE_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
+export const IMAGE_FILE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+] as const;

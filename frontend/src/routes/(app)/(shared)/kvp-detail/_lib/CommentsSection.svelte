@@ -42,7 +42,8 @@
   <h3 class="section-title">
     <i class="fas fa-comments"></i>
     Kommentare
-    <span class="badge badge--count ml-2">{kvpDetailState.comments.length}</span>
+    <span class="badge badge--count ml-2">{kvpDetailState.comments.length}</span
+    >
   </h3>
 
   <!-- Comment Form (Admin only) -->
@@ -64,7 +65,11 @@
         ></textarea>
       </div>
       <div class="flex items-start">
-        <button type="submit" class="btn btn-primary" disabled={kvpDetailState.isAddingComment}>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={kvpDetailState.isAddingComment}
+        >
           {#if kvpDetailState.isAddingComment}
             <i class="fas fa-spinner fa-spin"></i>
           {:else}
@@ -79,13 +84,18 @@
   <!-- Comment List -->
   <div class="comment-list">
     {#each kvpDetailState.comments as comment (comment.id)}
-      <div class="comment-item" class:comment-internal={comment.isInternal}>
+      <div
+        class="comment-item"
+        class:comment-internal={comment.isInternal}
+      >
         <div class="comment-header">
           <div class="comment-author">
             <div
-              class="avatar avatar--sm {hasProfilePicture(comment.profilePicture)
-                ? ''
-                : getAvatarColorClass(comment.createdBy)}"
+              class="avatar avatar--sm {(
+                hasProfilePicture(comment.profilePicture)
+              ) ?
+                ''
+              : getAvatarColorClass(comment.createdBy)}"
             >
               {#if hasProfilePicture(comment.profilePicture)}
                 <img
@@ -95,7 +105,10 @@
                 />
               {:else}
                 <span class="avatar__initials">
-                  {getInitials(comment.createdByName, comment.createdByLastname)}
+                  {getInitials(
+                    comment.createdByName,
+                    comment.createdByLastname,
+                  )}
                 </span>
               {/if}
             </div>
@@ -105,7 +118,9 @@
             {#if comment.isInternal}
               <span class="internal-badge">Intern</span>
             {/if}
-            <span class="text-sm text-gray-400">{formatDate(comment.createdAt)}</span>
+            <span class="text-sm text-gray-400"
+              >{formatDate(comment.createdAt)}</span
+            >
           </div>
         </div>
         <div class="mt-2">{comment.comment}</div>

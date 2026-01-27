@@ -61,16 +61,22 @@ async function apiFetch<T>(
 /**
  * Possible API response formats for suggestions endpoint
  */
-type SuggestionsApiResponse = KvpSuggestion[] | { data: KvpSuggestion[] } | SuggestionsResponse;
+type SuggestionsApiResponse =
+  | KvpSuggestion[]
+  | { data: KvpSuggestion[] }
+  | SuggestionsResponse;
 
 /**
  * Parses suggestions from various API response formats
  */
-function parseSuggestionsResponse(data: SuggestionsApiResponse | null): KvpSuggestion[] {
+function parseSuggestionsResponse(
+  data: SuggestionsApiResponse | null,
+): KvpSuggestion[] {
   if (data === null) return [];
   if (Array.isArray(data)) return data;
   if ('data' in data && Array.isArray(data.data)) return data.data;
-  if ('suggestions' in data && Array.isArray(data.suggestions)) return data.suggestions;
+  if ('suggestions' in data && Array.isArray(data.suggestions))
+    return data.suggestions;
   return [];
 }
 
@@ -103,7 +109,11 @@ function mapParentUserToCurrentUser(parentUser: ParentUser | null) {
 /**
  * Fetches all KVP data in parallel
  */
-async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boolean) {
+async function fetchKvpData(
+  token: string,
+  fetchFn: typeof fetch,
+  isAdmin: boolean,
+) {
   const fetchPromises: Promise<
     KvpCategory[] | Department[] | SuggestionsApiResponse | KvpStats | null
   >[] = [
@@ -113,7 +123,9 @@ async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boole
   ];
 
   if (isAdmin) {
-    fetchPromises.push(apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn));
+    fetchPromises.push(
+      apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn),
+    );
   }
 
   const results = await Promise.all(fetchPromises);
@@ -138,12 +150,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
-  const isAdmin = parentData.user?.role === 'admin' || parentData.user?.role === 'root';
+  const isAdmin =
+    parentData.user?.role === 'admin' || parentData.user?.role === 'root';
 
   const kvpData = await fetchKvpData(token, fetch, isAdmin);
 
   return {
     ...kvpData,
-    currentUser: mapParentUserToCurrentUser(parentData.user as ParentUser | null),
+    currentUser: mapParentUserToCurrentUser(
+      parentData.user as ParentUser | null,
+    ),
   };
 };

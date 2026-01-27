@@ -9,7 +9,13 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { BlackboardEntry, Department, Team, Area, PaginationMeta } from './_lib/types';
+import type {
+  BlackboardEntry,
+  Department,
+  Team,
+  Area,
+  PaginationMeta,
+} from './_lib/types';
 
 const log = createLogger('Blackboard');
 
@@ -118,16 +124,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   const apiParams = buildApiParams(url);
 
   // Parallel fetch: entries with filters + organization data for dropdowns
-  const [entriesResult, departmentsData, teamsData, areasData] = await Promise.all([
-    apiFetch<EntriesResponse | BlackboardEntry[]>(
-      `/blackboard/entries?${apiParams.toString()}`,
-      token,
-      fetch,
-    ),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-  ]);
+  const [entriesResult, departmentsData, teamsData, areasData] =
+    await Promise.all([
+      apiFetch<EntriesResponse | BlackboardEntry[]>(
+        `/blackboard/entries?${apiParams.toString()}`,
+        token,
+        fetch,
+      ),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+    ]);
 
   const { entries, totalPages } = processEntriesResponse(entriesResult);
 

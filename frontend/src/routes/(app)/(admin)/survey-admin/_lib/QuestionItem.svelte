@@ -27,8 +27,7 @@
     onupdateoption: (optionIndex: number, text: string) => void;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     question,
     questionIndex,
     isMandatory,
@@ -40,7 +39,6 @@
     onremoveoption,
     onupdateoption,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   // =============================================================================
   // DERIVED
@@ -51,11 +49,24 @@
   const needsOptions = $derived(questionTypeNeedsOptions(question.type));
 </script>
 
-<div class="question-item" id={question.id}>
+<div
+  class="question-item"
+  id={question.id}
+>
   <div class="question-header">
     <span class="question-number">{questionIndex + 1}</span>
-    <button type="button" class="remove-question" aria-label="Frage entfernen" onclick={onremove}>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <button
+      type="button"
+      class="remove-question"
+      aria-label="Frage entfernen"
+      onclick={onremove}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 14 14"
+        fill="none"
+      >
         <path
           d="M1 1L13 13M13 1L1 13"
           stroke="currentColor"
@@ -78,7 +89,10 @@
 
   <div class="question-controls mb-4">
     <!-- Question Type Dropdown -->
-    <div class="dropdown" data-dropdown={dropdownId}>
+    <div
+      class="dropdown"
+      data-dropdown={dropdownId}
+    >
       <button
         type="button"
         class="dropdown__trigger"
@@ -90,7 +104,10 @@
         <span>{getQuestionTypeLabel(question.type)}</span>
         <i class="fas fa-chevron-down"></i>
       </button>
-      <div class="dropdown__menu" class:active={isDropdownActive}>
+      <div
+        class="dropdown__menu"
+        class:active={isDropdownActive}
+      >
         {#each QUESTION_TYPE_OPTIONS as option (option.value)}
           <button
             type="button"
@@ -114,7 +131,10 @@
           class="w-5 h-5 cursor-pointer"
           bind:checked={question.isOptional}
         />
-        <label for="{question.id}_required" class="cursor-pointer">Optionale Frage</label>
+        <label
+          for="{question.id}_required"
+          class="cursor-pointer">Optionale Frage</label
+        >
       </div>
     {/if}
   </div>
@@ -124,7 +144,11 @@
     <div class="mt-4">
       <div class="options-header flex justify-between items-center mb-2">
         <span class="form-field__label">Antwortoptionen</span>
-        <button type="button" class="add-option-btn" onclick={onaddoption}>
+        <button
+          type="button"
+          class="add-option-btn"
+          onclick={onaddoption}
+        >
           <i class="fas fa-plus"></i> Option hinzufuegen
         </button>
       </div>

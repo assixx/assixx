@@ -90,14 +90,22 @@
   // =============================================================================
 
   const isEditMode = $derived(editingAreaId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
-  const deletingAreaName = $derived(areas.find((a) => a.id === deletingAreaId)?.name ?? '');
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+  );
+  const deletingAreaName = $derived(
+    areas.find((a) => a.id === deletingAreaId)?.name ?? '',
+  );
 
   // Filter areas by status
-  const statusFilteredAreas = $derived.by(() => filterByStatus(areas, statusFilter));
+  const statusFilteredAreas = $derived.by(() =>
+    filterByStatus(areas, statusFilter),
+  );
 
   // Filter by search query
-  const filteredAreas = $derived.by(() => filterBySearch(statusFilteredAreas, searchQuery));
+  const filteredAreas = $derived.by(() =>
+    filterBySearch(statusFilteredAreas, searchQuery),
+  );
 
   // Search results (max 5)
   const searchResults = $derived(filteredAreas.slice(0, 5));
@@ -199,7 +207,9 @@
       const result = await saveArea(payload, editingAreaId);
 
       if (result.success) {
-        showSuccessAlert(isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED);
+        showSuccessAlert(
+          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        );
         closeAreaModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
@@ -223,7 +233,8 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } else if (result.hasDependencies === true) {
-      forceDeleteMessage = result.dependencyMessage ?? MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE;
+      forceDeleteMessage =
+        result.dependencyMessage ?? MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE;
       showDeleteConfirmModal = false;
       showForceDeleteModal = true;
     } else if (result.error !== null) {
@@ -307,7 +318,9 @@
         <i class="fas fa-map-marked-alt mr-2"></i>
         {MESSAGES.PAGE_TITLE}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">{MESSAGES.PAGE_DESCRIPTION}</p>
+      <p class="text-[var(--color-text-secondary)] mt-2">
+        {MESSAGES.PAGE_DESCRIPTION}
+      </p>
 
       <!-- Controls Section -->
       <div class="flex gap-4 items-center justify-between mt-6 flex-wrap">
@@ -440,10 +453,16 @@
       {#if filteredAreas.length === 0}
         <!-- Empty State -->
         <div class="empty-state">
-          <div class="empty-state__icon"><i class="fas fa-map-marked-alt"></i></div>
+          <div class="empty-state__icon">
+            <i class="fas fa-map-marked-alt"></i>
+          </div>
           <h3 class="empty-state__title">{MESSAGES.NO_AREAS_FOUND}</h3>
           <p class="empty-state__description">{MESSAGES.CREATE_FIRST_AREA}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
+          >
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_AREA}
           </button>
@@ -469,7 +488,9 @@
               {#each filteredAreas as area (area.id)}
                 <tr data-area-id={area.id}>
                   <td>
-                    <div class="font-medium text-[var(--color-text-primary)]">{area.name}</div>
+                    <div class="font-medium text-[var(--color-text-primary)]">
+                      {area.name}
+                    </div>
                   </td>
                   <td>
                     <div class="text-[var(--color-text-secondary)] text-sm">
@@ -477,10 +498,14 @@
                     </div>
                   </td>
                   <td>
-                    <div class="text-[var(--color-text-secondary)]">{area.areaLeadName ?? '-'}</div>
+                    <div class="text-[var(--color-text-secondary)]">
+                      {area.areaLeadName ?? '-'}
+                    </div>
                   </td>
                   <td>
-                    <span class="badge badge--info">{getTypeLabel(area.type)}</span>
+                    <span class="badge badge--info"
+                      >{getTypeLabel(area.type)}</span
+                    >
                   </td>
                   <td class="text-center">{area.capacity ?? '-'}</td>
                   <td>
@@ -488,14 +513,21 @@
                   </td>
                   <td>
                     {#if Number(area.departmentCount ?? 0) === 0}
-                      <span class="badge badge--secondary" title="Keine Abteilungen zugeordnet"
+                      <span
+                        class="badge badge--secondary"
+                        title="Keine Abteilungen zugeordnet"
                         >{MESSAGES.NO_DEPARTMENTS}</span
                       >
                     {:else}
-                      <span class="badge badge--info" title={area.departmentNames ?? ''}>
-                        {Number(area.departmentCount) === 1
-                          ? MESSAGES.ONE_DEPARTMENT
-                          : MESSAGES.multipleDepartments(Number(area.departmentCount ?? 0))}
+                      <span
+                        class="badge badge--info"
+                        title={area.departmentNames ?? ''}
+                      >
+                        {Number(area.departmentCount) === 1 ?
+                          MESSAGES.ONE_DEPARTMENT
+                        : MESSAGES.multipleDepartments(
+                            Number(area.departmentCount ?? 0),
+                          )}
                       </span>
                     {/if}
                   </td>
@@ -541,7 +573,12 @@
 </div>
 
 <!-- Floating Action Button -->
-<button type="button" class="btn-float" onclick={openAddModal} aria-label="Bereich hinzufügen">
+<button
+  type="button"
+  class="btn-float"
+  onclick={openAddModal}
+  aria-label="Bereich hinzufügen"
+>
   <i class="fas fa-plus"></i>
 </button>
 

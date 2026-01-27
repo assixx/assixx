@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 // =============================================================================
 // CHAT - EVENT HANDLERS
 // =============================================================================
@@ -22,8 +21,17 @@ import {
   findExistingConversation,
   buildNewConversation,
 } from './api';
-import { WEBSOCKET_CONFIG, SCHEDULE_CONSTRAINTS, MESSAGES, WS_MESSAGE_TYPES } from './constants';
-import { isImageFile, validateScheduleTime, getMinScheduleDateTime } from './utils';
+import {
+  WEBSOCKET_CONFIG,
+  SCHEDULE_CONSTRAINTS,
+  MESSAGES,
+  WS_MESSAGE_TYPES,
+} from './constants';
+import {
+  isImageFile,
+  validateScheduleTime,
+  getMinScheduleDateTime,
+} from './utils';
 import {
   buildWebSocketUrl,
   transformRawMessage,
@@ -92,7 +100,9 @@ export interface ChatHandlers {
   getDefaultScheduleDateTime: () => { date: string; time: string };
 
   // WebSocket
-  connectWebSocket: (callbacks: WebSocketCallbacks) => Promise<WebSocket | null>;
+  connectWebSocket: (
+    callbacks: WebSocketCallbacks,
+  ) => Promise<WebSocket | null>;
   handleWebSocketMessage: (
     message: { type: string; data: unknown },
     callbacks: WebSocketCallbacks,
@@ -217,7 +227,9 @@ export async function persistPendingConversation(
   };
 }
 
-export async function deleteConversation(conversationId: number): Promise<void> {
+export async function deleteConversation(
+  conversationId: number,
+): Promise<void> {
   await apiDeleteConversation(conversationId);
 }
 
@@ -245,16 +257,21 @@ export async function sendScheduledMessage(
   // For now, only support single attachment (first one)
   const firstAttachment = attachments.length > 0 ? attachments[0] : undefined;
   const attachmentInfo =
-    firstAttachment !== undefined
-      ? {
-          path: firstAttachment.path,
-          name: firstAttachment.name,
-          type: firstAttachment.type,
-          size: firstAttachment.size,
-        }
-      : undefined;
+    firstAttachment !== undefined ?
+      {
+        path: firstAttachment.path,
+        name: firstAttachment.name,
+        type: firstAttachment.type,
+        size: firstAttachment.size,
+      }
+    : undefined;
 
-  await createScheduledMessage(conversationId, content, scheduledFor.toISOString(), attachmentInfo);
+  await createScheduledMessage(
+    conversationId,
+    content,
+    scheduledFor.toISOString(),
+    attachmentInfo,
+  );
   return await apiLoadScheduledMessages(conversationId);
 }
 
@@ -349,7 +366,9 @@ let typingTimeoutId: number | undefined;
  * SECURITY: Fetches short-lived ticket instead of using JWT to prevent token leakage in logs
  * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
  */
-export async function connectWebSocket(callbacks: WebSocketCallbacks): Promise<WebSocket | null> {
+export async function connectWebSocket(
+  callbacks: WebSocketCallbacks,
+): Promise<WebSocket | null> {
   if (!browser) return null;
 
   // Close existing connection before async operation
@@ -382,7 +401,10 @@ export async function connectWebSocket(callbacks: WebSocketCallbacks): Promise<W
         // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
         const rawData: unknown = event.data;
         if (typeof rawData !== 'string') {
-          log.error({ rawDataType: typeof rawData }, 'Unexpected WebSocket message type');
+          log.error(
+            { rawDataType: typeof rawData },
+            'Unexpected WebSocket message type',
+          );
           return;
         }
         const message = JSON.parse(rawData) as { type: string; data: unknown };
@@ -413,7 +435,10 @@ export async function connectWebSocket(callbacks: WebSocketCallbacks): Promise<W
 // Individual message handlers to reduce complexity
 type MessageHandler = (data: unknown, callbacks: WebSocketCallbacks) => void;
 
-function handleConnectionEstablished(_data: unknown, callbacks: WebSocketCallbacks): void {
+function handleConnectionEstablished(
+  _data: unknown,
+  callbacks: WebSocketCallbacks,
+): void {
   callbacks.getConversations().forEach((conv) => {
     sendWebSocketMessage(buildJoinMessage(conv.id));
   });
@@ -470,7 +495,10 @@ const messageHandlers: Record<string, MessageHandler> = {
 };
 
 // No-op types (acknowledged but no action needed)
-const noopMessageTypes = new Set<string>([WS_MESSAGE_TYPES.PONG, WS_MESSAGE_TYPES.MESSAGE_SENT]);
+const noopMessageTypes = new Set<string>([
+  WS_MESSAGE_TYPES.PONG,
+  WS_MESSAGE_TYPES.MESSAGE_SENT,
+]);
 
 export function handleWebSocketMessage(
   message: { type: string; data: unknown },
@@ -487,7 +515,10 @@ export function handleWebSocketMessage(
   }
 }
 
-export function sendWebSocketMessage(message: { type: string; data: unknown }): boolean {
+export function sendWebSocketMessage(message: {
+  type: string;
+  data: unknown;
+}): boolean {
   if (ws?.readyState !== WebSocket.OPEN) {
     return false;
   }

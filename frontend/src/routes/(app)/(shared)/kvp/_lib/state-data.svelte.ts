@@ -2,10 +2,19 @@
 // KVP - DATA STATE (Svelte 5 Runes)
 // =============================================================================
 
-import type { KvpSuggestion, KvpCategory, Department, KvpStats, StatusCounts } from './types';
+import type {
+  KvpSuggestion,
+  KvpCategory,
+  Department,
+  KvpStats,
+  StatusCounts,
+} from './types';
 
 /** Currency formatter for EUR */
-const eurFormatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+const eurFormatter = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+});
 
 /** Extract company stats with safe defaults */
 function getCompanyStats(stats: KvpStats | null) {

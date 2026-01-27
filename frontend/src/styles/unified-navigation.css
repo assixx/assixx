@@ -443,7 +443,10 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 /* Hover nur bei NICHT active */
-.sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
+.sidebar.collapsed
+  .sidebar-item:not(.active)
+  .sidebar-link:hover
+  .icon::before {
   position: absolute;
   z-index: -1;
   inset: -0.525rem;
@@ -541,8 +544,16 @@ body:has(.sidebar.collapsed) .header .logo {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgb(255 255 255 / 6%) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 6%) 0%, transparent 50%);
+    radial-gradient(
+      circle at 20% 80%,
+      rgb(255 255 255 / 6%) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgb(255 255 255 / 6%) 0%,
+      transparent 50%
+    );
   content: '';
 }
 

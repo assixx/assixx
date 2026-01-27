@@ -42,7 +42,9 @@
   <td>{employee.id}</td>
   <td>
     <div class="flex items-center gap-2">
-      <div class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}">
+      <div
+        class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}"
+      >
         <span>{employee.firstName.charAt(0)}{employee.lastName.charAt(0)}</span>
       </div>
       <span>{employee.firstName} {employee.lastName}</span>
@@ -57,25 +59,35 @@
     >
   </td>
   <td>
-    <span class="badge {areasBadge.class}" title={areasBadge.title}>
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    <span
+      class="badge {areasBadge.class}"
+      title={areasBadge.title}
+    >
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge text, no user input -->
       {@html areasBadge.text}
     </span>
   </td>
   <td>
-    <span class="badge {departmentsBadge.class}" title={departmentsBadge.title}>
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    <span
+      class="badge {departmentsBadge.class}"
+      title={departmentsBadge.title}
+    >
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge text, no user input -->
       {@html departmentsBadge.text}
     </span>
   </td>
   <td>
-    <span class="badge {teamsBadge.class}" title={teamsBadge.title}>
+    <span
+      class="badge {teamsBadge.class}"
+      title={teamsBadge.title}
+    >
       {teamsBadge.text}
     </span>
   </td>
   <td>
     <span class="badge {availabilityBadge.class}">
-      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"></i>{/if}
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"
+        ></i>{/if}
       {availabilityBadge.text}
     </span>
   </td>

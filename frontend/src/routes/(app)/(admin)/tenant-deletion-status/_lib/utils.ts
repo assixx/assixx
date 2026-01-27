@@ -3,9 +3,19 @@
  * @module tenant-deletion-status/_lib/utils
  */
 
-import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS, TIMELINE_ICONS, MESSAGES } from './constants';
+import {
+  STATUS_TEXT_MAP,
+  STATUS_BADGE_CLASS,
+  TIMELINE_ICONS,
+  MESSAGES,
+} from './constants';
 
-import type { DeletionStatus, DeletionStatusItem, TimelineItem, ToastType } from './types';
+import type {
+  DeletionStatus,
+  DeletionStatusItem,
+  TimelineItem,
+  ToastType,
+} from './types';
 
 /**
  * Get status text in German
@@ -132,7 +142,8 @@ export function buildTimeline(item: DeletionStatusItem): TimelineItem[] {
  * @param item - Deletion status item
  */
 export function shouldShowCoolingOff(item: DeletionStatusItem): boolean {
-  const isPending = item.status === 'pending' || item.status === 'pending_approval';
+  const isPending =
+    item.status === 'pending' || item.status === 'pending_approval';
   return isPending && calculateCoolingOff(item) > 0;
 }
 
@@ -149,7 +160,11 @@ export function shouldShowGracePeriod(item: DeletionStatusItem): boolean {
  * @param item - Deletion status item
  */
 export function shouldShowEmergencyStop(item: DeletionStatusItem): boolean {
-  return item.status === 'queued' || item.status === 'approved' || item.status === 'processing';
+  return (
+    item.status === 'queued' ||
+    item.status === 'approved' ||
+    item.status === 'processing'
+  );
 }
 
 /**

@@ -5,7 +5,14 @@
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
-import type { Machine, Department, Area, Team, MachineTeam, MachineFormData } from './types';
+import type {
+  Machine,
+  Department,
+  Area,
+  Team,
+  MachineTeam,
+  MachineFormData,
+} from './types';
 
 const log = createLogger('ManageMachinesApi');
 const apiClient = getApiClient();
@@ -41,7 +48,10 @@ function extractArrayFromResponse<T>(result: unknown): T[] {
  * Load all machines from API
  * Supports filtering by status and search term
  */
-export async function loadMachines(statusFilter?: string, searchTerm?: string): Promise<Machine[]> {
+export async function loadMachines(
+  statusFilter?: string,
+  searchTerm?: string,
+): Promise<Machine[]> {
   const params = new URLSearchParams();
 
   if (statusFilter !== undefined && statusFilter !== 'all') {
@@ -53,7 +63,8 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
   }
 
   const queryString = params.toString();
-  const endpoint = queryString.length > 0 ? `/machines?${queryString}` : '/machines';
+  const endpoint =
+    queryString.length > 0 ? `/machines?${queryString}` : '/machines';
 
   const result: unknown = await apiClient.get(endpoint);
   return extractArrayFromResponse<Machine>(result);
@@ -62,7 +73,9 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
 /**
  * Load single machine by ID
  */
-export async function getMachineById(machineId: number): Promise<Machine | null> {
+export async function getMachineById(
+  machineId: number,
+): Promise<Machine | null> {
   try {
     return await apiClient.get(`/machines/${machineId}`);
   } catch (err) {
@@ -98,7 +111,9 @@ export async function loadTeams(): Promise<Team[]> {
 /**
  * Get teams assigned to a machine
  */
-export async function getMachineTeams(machineId: number): Promise<MachineTeam[]> {
+export async function getMachineTeams(
+  machineId: number,
+): Promise<MachineTeam[]> {
   try {
     const result: unknown = await apiClient.get(`/machines/${machineId}/teams`);
     return extractArrayFromResponse<MachineTeam>(result);
@@ -115,7 +130,9 @@ export async function setMachineTeams(
   machineId: number,
   teamIds: number[],
 ): Promise<MachineTeam[]> {
-  const result: unknown = await apiClient.put(`/machines/${machineId}/teams`, { teamIds });
+  const result: unknown = await apiClient.put(`/machines/${machineId}/teams`, {
+    teamIds,
+  });
   return extractArrayFromResponse<MachineTeam>(result);
 }
 
@@ -126,7 +143,9 @@ export async function setMachineTeams(
 /**
  * Create a new machine
  */
-export async function createMachine(machineData: MachineFormData): Promise<Machine> {
+export async function createMachine(
+  machineData: MachineFormData,
+): Promise<Machine> {
   return await apiClient.post('/machines', machineData);
 }
 

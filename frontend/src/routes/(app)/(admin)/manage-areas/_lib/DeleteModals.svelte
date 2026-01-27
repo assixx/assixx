@@ -64,7 +64,10 @@
       }}
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="delete-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="delete-modal-title"
+        >
           <i class="fas fa-trash-alt text-red-500 mr-2"></i>
           {MESSAGES.DELETE_TITLE}
         </h3>
@@ -83,11 +86,15 @@
         </p>
       </div>
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onCloseDelete}
-          >{MESSAGES.BTN_CANCEL}</button
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onCloseDelete}>{MESSAGES.BTN_CANCEL}</button
         >
-        <button type="button" class="btn btn-danger" onclick={onProceedToConfirm}
-          >{MESSAGES.BTN_DELETE}</button
+        <button
+          type="button"
+          class="btn btn-danger"
+          onclick={onProceedToConfirm}>{MESSAGES.BTN_DELETE}</button
         >
       </div>
     </div>
@@ -118,7 +125,10 @@
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h3 class="confirm-modal__title" id="delete-confirm-title">
+      <h3
+        class="confirm-modal__title"
+        id="delete-confirm-title"
+      >
         {MESSAGES.DELETE_CONFIRM_TITLE}
       </h3>
       <p class="confirm-modal__message">
@@ -171,7 +181,12 @@
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h3 class="confirm-modal__title" id="force-delete-title">{MESSAGES.FORCE_DELETE_TITLE}</h3>
+      <h3
+        class="confirm-modal__title"
+        id="force-delete-title"
+      >
+        {MESSAGES.FORCE_DELETE_TITLE}
+      </h3>
       <p class="confirm-modal__message">
         {forceDeleteMessage || MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE}
       </p>

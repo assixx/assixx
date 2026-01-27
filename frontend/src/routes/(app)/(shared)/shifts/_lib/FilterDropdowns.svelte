@@ -8,7 +8,14 @@
   import { DROPDOWN_PLACEHOLDERS } from './constants';
   import { shouldShowAddFavoriteButton } from './favorites';
 
-  import type { Area, Department, Machine, Team, ShiftFavorite, SelectedContext } from './types';
+  import type {
+    Area,
+    Department,
+    Machine,
+    Team,
+    ShiftFavorite,
+    SelectedContext,
+  } from './types';
 
   /**
    * Props interface for FilterDropdowns
@@ -75,12 +82,17 @@
   // Helper to get selected name
   function getSelectedAreaName(): string {
     if (selectedContext.areaId === null) return DROPDOWN_PLACEHOLDERS.AREA;
-    return areas.find((a) => a.id === selectedContext.areaId)?.name ?? DROPDOWN_PLACEHOLDERS.AREA;
+    return (
+      areas.find((a) => a.id === selectedContext.areaId)?.name ??
+      DROPDOWN_PLACEHOLDERS.AREA
+    );
   }
 
   function getSelectedDepartmentName(): string {
-    if (selectedContext.areaId === null) return DROPDOWN_PLACEHOLDERS.AWAIT_AREA;
-    if (selectedContext.departmentId === null) return DROPDOWN_PLACEHOLDERS.DEPARTMENT;
+    if (selectedContext.areaId === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_AREA;
+    if (selectedContext.departmentId === null)
+      return DROPDOWN_PLACEHOLDERS.DEPARTMENT;
     return (
       departments.find((d) => d.id === selectedContext.departmentId)?.name ??
       DROPDOWN_PLACEHOLDERS.DEPARTMENT
@@ -88,8 +100,10 @@
   }
 
   function getSelectedMachineName(): string {
-    if (selectedContext.departmentId === null) return DROPDOWN_PLACEHOLDERS.AWAIT_DEPARTMENT;
-    if (selectedContext.machineId === null) return DROPDOWN_PLACEHOLDERS.MACHINE;
+    if (selectedContext.departmentId === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_DEPARTMENT;
+    if (selectedContext.machineId === null)
+      return DROPDOWN_PLACEHOLDERS.MACHINE;
     return (
       machines.find((m) => m.id === selectedContext.machineId)?.name ??
       DROPDOWN_PLACEHOLDERS.MACHINE
@@ -98,17 +112,27 @@
 
   function getSelectedTeamName(): string {
     // Team requires Machine to be selected first (hierarchical filter)
-    if (selectedContext.machineId === null) return DROPDOWN_PLACEHOLDERS.AWAIT_MACHINE;
+    if (selectedContext.machineId === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_MACHINE;
     if (selectedContext.teamId === null) return DROPDOWN_PLACEHOLDERS.TEAM;
-    return teams.find((t) => t.id === selectedContext.teamId)?.name ?? DROPDOWN_PLACEHOLDERS.TEAM;
+    return (
+      teams.find((t) => t.id === selectedContext.teamId)?.name ??
+      DROPDOWN_PLACEHOLDERS.TEAM
+    );
   }
 </script>
 
-<div id="admin-filter-controls" class="mt-6 shift-info-row">
+<div
+  id="admin-filter-controls"
+  class="mt-6 shift-info-row"
+>
   <!-- Area Dropdown -->
   <div class="info-item">
     <div class="info-label">Bereich</div>
-    <div class="dropdown" data-dropdown="area">
+    <div
+      class="dropdown"
+      data-dropdown="area"
+    >
       <div
         class="dropdown__trigger"
         class:active={areaDropdownOpen}
@@ -122,7 +146,10 @@
         <span>{getSelectedAreaName()}</span>
         <i class="fas fa-chevron-down"></i>
       </div>
-      <div class="dropdown__menu" class:active={areaDropdownOpen}>
+      <div
+        class="dropdown__menu"
+        class:active={areaDropdownOpen}
+      >
         {#each areas as area (area.id)}
           <div
             class="dropdown__option"
@@ -163,16 +190,22 @@
           if (selectedContext.areaId !== null) ontoggleDepartmentDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.areaId !== null) ontoggleDepartmentDropdown();
+          if (e.key === 'Enter' && selectedContext.areaId !== null)
+            ontoggleDepartmentDropdown();
         }}
         role="button"
         tabindex={selectedContext.areaId === null ? -1 : 0}
-        style={selectedContext.areaId === null ? 'pointer-events: none; opacity: 0.5;' : ''}
+        style={selectedContext.areaId === null ?
+          'pointer-events: none; opacity: 0.5;'
+        : ''}
       >
         <span>{getSelectedDepartmentName()}</span>
         <i class="fas fa-chevron-down"></i>
       </div>
-      <div class="dropdown__menu" class:active={departmentDropdownOpen}>
+      <div
+        class="dropdown__menu"
+        class:active={departmentDropdownOpen}
+      >
         {#each departments as dept (dept.id)}
           <div
             class="dropdown__option"
@@ -213,16 +246,22 @@
           if (selectedContext.departmentId !== null) ontoggleMachineDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.departmentId !== null) ontoggleMachineDropdown();
+          if (e.key === 'Enter' && selectedContext.departmentId !== null)
+            ontoggleMachineDropdown();
         }}
         role="button"
         tabindex={selectedContext.departmentId === null ? -1 : 0}
-        style={selectedContext.departmentId === null ? 'pointer-events: none; opacity: 0.5;' : ''}
+        style={selectedContext.departmentId === null ?
+          'pointer-events: none; opacity: 0.5;'
+        : ''}
       >
         <span>{getSelectedMachineName()}</span>
         <i class="fas fa-chevron-down"></i>
       </div>
-      <div class="dropdown__menu" class:active={machineDropdownOpen}>
+      <div
+        class="dropdown__menu"
+        class:active={machineDropdownOpen}
+      >
         {#each machines as machine (machine.id)}
           <div
             class="dropdown__option"
@@ -263,16 +302,22 @@
           if (selectedContext.machineId !== null) ontoggleTeamDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.machineId !== null) ontoggleTeamDropdown();
+          if (e.key === 'Enter' && selectedContext.machineId !== null)
+            ontoggleTeamDropdown();
         }}
         role="button"
         tabindex={selectedContext.machineId === null ? -1 : 0}
-        style={selectedContext.machineId === null ? 'pointer-events: none; opacity: 0.5;' : ''}
+        style={selectedContext.machineId === null ?
+          'pointer-events: none; opacity: 0.5;'
+        : ''}
       >
         <span>{getSelectedTeamName()}</span>
         <i class="fas fa-chevron-down"></i>
       </div>
-      <div class="dropdown__menu" class:active={teamDropdownOpen}>
+      <div
+        class="dropdown__menu"
+        class:active={teamDropdownOpen}
+      >
         {#each teams as team (team.id)}
           <div
             class="dropdown__option"
@@ -300,10 +345,16 @@
 </div>
 
 <!-- Favorites Container -->
-<div class="favorites-container" id="favoritesContainer">
+<div
+  class="favorites-container"
+  id="favoritesContainer"
+>
   <div class="favorites-header">
     <span class="favorites-label">&#11088; Favoriten:</span>
-    <div class="favorites-list" id="favoritesList">
+    <div
+      class="favorites-list"
+      id="favoritesList"
+    >
       {#if favorites.length === 0}
         <div class="favorites-empty">Keine Favoriten gespeichert</div>
       {:else}

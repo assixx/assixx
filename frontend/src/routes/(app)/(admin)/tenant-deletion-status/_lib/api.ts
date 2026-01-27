@@ -37,7 +37,10 @@ function parseApiResponse(result: unknown): DeletionStatusItem[] {
 
   // Handle wrapped response { data: [...] }
   const unwrapped = result as { data?: unknown };
-  const data = 'data' in unwrapped && unwrapped.data !== undefined ? unwrapped.data : result;
+  const data =
+    'data' in unwrapped && unwrapped.data !== undefined ?
+      unwrapped.data
+    : result;
 
   if (Array.isArray(data)) {
     return data as DeletionStatusItem[];
@@ -88,8 +91,13 @@ export async function loadDeletionStatus(): Promise<{
  * @param queueId - Queue ID to reject
  * @param reason - Rejection reason
  */
-export async function rejectDeletion(queueId: number, reason: string): Promise<void> {
-  await apiClient.post(`/root/deletion-approvals/${queueId}/reject`, { reason });
+export async function rejectDeletion(
+  queueId: number,
+  reason: string,
+): Promise<void> {
+  await apiClient.post(`/root/deletion-approvals/${queueId}/reject`, {
+    reason,
+  });
 }
 
 /**
@@ -104,7 +112,10 @@ export async function cancelDeletion(): Promise<void> {
  * @param queueId - Queue ID to stop
  * @param reason - Optional reason (defaults to standard message)
  */
-export async function emergencyStop(queueId: number, reason?: string): Promise<void> {
+export async function emergencyStop(
+  queueId: number,
+  reason?: string,
+): Promise<void> {
   await apiClient.post(`/root/deletion-queue/${queueId}/emergency-stop`, {
     reason: reason ?? 'Emergency Stop durch Root-User aktiviert',
   });
@@ -121,7 +132,9 @@ interface JwtPayload {
  * @param token - JWT token string
  * @returns User ID and role, or null if invalid
  */
-export function parseJwtToken(token: string): { id: number; role: string } | null {
+export function parseJwtToken(
+  token: string,
+): { id: number; role: string } | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {

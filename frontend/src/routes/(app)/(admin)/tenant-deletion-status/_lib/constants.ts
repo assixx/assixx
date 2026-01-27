@@ -47,7 +47,8 @@ export const TIMELINE_ICONS = {
 /** UI Messages (German) */
 export const MESSAGES = {
   noRequests: 'Keine Löschanfragen vorhanden',
-  noRequestsDescription: 'Es gibt derzeit keine ausstehenden Tenant-Löschanfragen.',
+  noRequestsDescription:
+    'Es gibt derzeit keine ausstehenden Tenant-Löschanfragen.',
   loadError: 'Fehler beim Laden des Status',
   rejected: 'Löschung abgelehnt!',
   cancelled: 'Löschanfrage abgebrochen!',

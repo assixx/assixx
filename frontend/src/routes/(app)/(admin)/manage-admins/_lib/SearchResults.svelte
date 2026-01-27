@@ -33,21 +33,29 @@
     >
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="font-weight: 500; color: var(--color-text-primary);">
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-          {@html highlightMatch(`${admin.firstName} ${admin.lastName}`, searchQuery)}
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
+          {@html highlightMatch(
+            `${admin.firstName} ${admin.lastName}`,
+            searchQuery,
+          )}
         </div>
         <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
           {@html highlightMatch(admin.email, searchQuery)}
         </div>
-        <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;">
+        <div
+          style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
+        >
           <span>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html highlightMatch(getPositionDisplay(admin.position ?? ''), searchQuery)}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
+            {@html highlightMatch(
+              getPositionDisplay(admin.position ?? ''),
+              searchQuery,
+            )}
           </span>
           {#if admin.employeeNumber}
             <span>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
               • {@html highlightMatch(admin.employeeNumber, searchQuery)}
             </span>
           {/if}

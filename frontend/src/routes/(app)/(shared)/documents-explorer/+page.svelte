@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable max-lines -- SSR page with modals, breadcrumb, document management */
   /**
    * Documents Explorer - Page Component
    * SSR: Data loaded in +page.server.ts
@@ -10,7 +9,11 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
+  import {
+    showSuccessAlert,
+    showErrorAlert,
+    showWarningAlert,
+  } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('DocumentsExplorerPage');
@@ -42,7 +45,11 @@
   import DocumentGridView from './_lib/DocumentGridView.svelte';
   import DocumentListView from './_lib/DocumentListView.svelte';
   import EditModal from './_lib/EditModal.svelte';
-  import { applyAllFilters, calculateCategoryCounts, calculateStats } from './_lib/filters';
+  import {
+    applyAllFilters,
+    calculateCategoryCounts,
+    calculateStats,
+  } from './_lib/filters';
   import FolderSidebar from './_lib/FolderSidebar.svelte';
   import PreviewModal from './_lib/PreviewModal.svelte';
   import UploadModal from './_lib/UploadModal.svelte';
@@ -146,13 +153,22 @@
   );
   const selectedChatFolderName = $derived.by(() => {
     if (selectedConversationId === null) return null;
-    const folder = chatFolders.find((f) => f.conversationId === selectedConversationId);
+    const folder = chatFolders.find(
+      (f) => f.conversationId === selectedConversationId,
+    );
     if (folder === undefined) return null;
-    return folder.isGroup && folder.groupName !== null ? folder.groupName : folder.participantName;
+    return folder.isGroup && folder.groupName !== null ?
+        folder.groupName
+      : folder.participantName;
   });
 
   function applyFilters() {
-    filteredDocuments = applyAllFilters(allDocuments, currentCategory, searchQuery, sortOption);
+    filteredDocuments = applyAllFilters(
+      allDocuments,
+      currentCategory,
+      searchQuery,
+      sortOption,
+    );
   }
 
   // API FUNCTIONS
@@ -184,14 +200,17 @@
   }
 
   async function loadChatAttachments(conversationId: number) {
-    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
+    const previousPath = buildBreadcrumbPath(
+      currentCategory,
+      selectedConversationId,
+    );
     const folder = chatFolders.find((f) => f.conversationId === conversationId);
     const folderName =
-      folder !== undefined
-        ? folder.isGroup && folder.groupName !== null
-          ? folder.groupName
-          : folder.participantName
-        : `Conversation#${conversationId}`;
+      folder !== undefined ?
+        folder.isGroup && folder.groupName !== null ?
+          folder.groupName
+        : folder.participantName
+      : `Conversation#${conversationId}`;
 
     loading = true;
     selectedConversationId = conversationId;
@@ -247,17 +266,24 @@
   function navigateToCategory(category: DocumentCategory) {
     const previousCategory = currentCategory;
     const previousConversationId = selectedConversationId;
-    const previousPath = buildBreadcrumbPath(previousCategory, previousConversationId);
+    const previousPath = buildBreadcrumbPath(
+      previousCategory,
+      previousConversationId,
+    );
 
     if (currentCategory === category && selectedConversationId === null) {
-      log.debug({ category, path: previousPath }, '[NAV] Category unchanged, ignoring click');
+      log.debug(
+        { category, path: previousPath },
+        '[NAV] Category unchanged, ignoring click',
+      );
       return;
     }
 
     // CRITICAL: If leaving chat category OR leaving a chat conversation,
     // restore allDocuments from SSR data because loadChatAttachments()
     // replaced allDocuments with only chat attachments
-    const leavingChatCategory = previousCategory === 'chat' && category !== 'chat';
+    const leavingChatCategory =
+      previousCategory === 'chat' && category !== 'chat';
     const wasInChatConversation = previousConversationId !== null;
     if (leavingChatCategory || wasInChatConversation) {
       log.debug(
@@ -301,22 +327,28 @@
   }
 
   /** Build breadcrumb path string for logging */
-  function buildBreadcrumbPath(category: DocumentCategory, conversationId: number | null): string {
+  function buildBreadcrumbPath(
+    category: DocumentCategory,
+    conversationId: number | null,
+  ): string {
     if (category === 'all') return '/Alle Dokumente';
     const categoryLabel = CATEGORY_LABELS[category];
     if (conversationId === null) return `/Alle Dokumente/${categoryLabel}`;
     const folder = chatFolders.find((f) => f.conversationId === conversationId);
     const folderName =
-      folder !== undefined
-        ? folder.isGroup && folder.groupName !== null
-          ? folder.groupName
-          : folder.participantName
-        : `Conversation#${conversationId}`;
+      folder !== undefined ?
+        folder.isGroup && folder.groupName !== null ?
+          folder.groupName
+        : folder.participantName
+      : `Conversation#${conversationId}`;
     return `/Alle Dokumente/${categoryLabel}/${folderName}`;
   }
 
   function backToFolders() {
-    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
+    const previousPath = buildBreadcrumbPath(
+      currentCategory,
+      selectedConversationId,
+    );
     const newPath = buildBreadcrumbPath(currentCategory, null);
 
     log.debug(
@@ -399,7 +431,9 @@
   function handleDeleteDocument(doc: Document, e: MouseEvent) {
     e.stopPropagation();
     if (!canDeleteDocument(doc, currentUser)) {
-      showWarningAlert('Sie haben keine Berechtigung, dieses Dokument zu löschen');
+      showWarningAlert(
+        'Sie haben keine Berechtigung, dieses Dokument zu löschen',
+      );
       return;
     }
     deletingDocument = doc;
@@ -423,7 +457,9 @@
       applyFilters();
     } catch (err) {
       log.error({ err }, 'Delete failed');
-      showErrorAlert(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
+      showErrorAlert(
+        err instanceof Error ? err.message : 'Löschen fehlgeschlagen',
+      );
     } finally {
       deleteSubmitting = false;
     }
@@ -432,7 +468,9 @@
   function openEditModal(doc: Document, e: MouseEvent) {
     e.stopPropagation();
     if (!canEditDocument(doc, currentUser)) {
-      showWarningAlert('Sie haben keine Berechtigung, dieses Dokument zu bearbeiten');
+      showWarningAlert(
+        'Sie haben keine Berechtigung, dieses Dokument zu bearbeiten',
+      );
       return;
     }
     editingDocument = doc;
@@ -459,7 +497,9 @@
       await loadDocuments();
     } catch (err) {
       log.error({ err }, 'Update failed');
-      showErrorAlert(err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen');
+      showErrorAlert(
+        err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen',
+      );
     } finally {
       editSubmitting = false;
     }
@@ -489,15 +529,26 @@
     | { valid: true; data: ValidatedUploadData };
 
   /** Validate upload data before submission */
-  function validateUploadData(data: UploadData, user: CurrentUser | null): UploadValidationResult {
+  function validateUploadData(
+    data: UploadData,
+    user: CurrentUser | null,
+  ): UploadValidationResult {
     if (data.file === null) {
       return { valid: false, error: MESSAGES.UPLOAD_NO_FILE, type: 'warning' };
     }
     if (data.category === '') {
-      return { valid: false, error: MESSAGES.UPLOAD_NO_CATEGORY, type: 'warning' };
+      return {
+        valid: false,
+        error: MESSAGES.UPLOAD_NO_CATEGORY,
+        type: 'warning',
+      };
     }
     if (user === null) {
-      return { valid: false, error: 'Benutzerdaten nicht geladen', type: 'error' };
+      return {
+        valid: false,
+        error: 'Benutzerdaten nicht geladen',
+        type: 'error',
+      };
     }
 
     const mapping = CATEGORY_MAPPINGS[data.category];
@@ -509,7 +560,11 @@
       mapping.requiresPayrollPeriod === true &&
       (data.salaryYear === 0 || data.salaryMonth === 0)
     ) {
-      return { valid: false, error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD, type: 'warning' };
+      return {
+        valid: false,
+        error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD,
+        type: 'warning',
+      };
     }
 
     return {
@@ -559,7 +614,9 @@
       await loadDocuments();
     } catch (err) {
       log.error({ err }, 'Upload failed');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED,
+      );
     }
   }
 
@@ -610,7 +667,9 @@
           <i class="fas fa-folder-open mr-2"></i>
           Dokumente Explorer
         </h2>
-        <p class="text-[var(--color-text-secondary)] mt-2">Dokumente hochladen und verwalten</p>
+        <p class="text-[var(--color-text-secondary)] mt-2">
+          Dokumente hochladen und verwalten
+        </p>
       </div>
 
       <!-- Toolbar -->
@@ -679,7 +738,10 @@
               </button>
             </div>
 
-            <div class="dropdown" id="sort-dropdown">
+            <div
+              class="dropdown"
+              id="sort-dropdown"
+            >
               <div
                 class="dropdown__trigger gap-2"
                 role="button"
@@ -688,12 +750,16 @@
                   e.stopPropagation();
                   sortDropdownOpen = !sortDropdownOpen;
                 }}
-                onkeydown={(e) => e.key === 'Enter' && (sortDropdownOpen = !sortDropdownOpen)}
+                onkeydown={(e) =>
+                  e.key === 'Enter' && (sortDropdownOpen = !sortDropdownOpen)}
               >
                 <span>{currentSortLabel}</span>
                 <i class="fas fa-chevron-down"></i>
               </div>
-              <div class="dropdown__menu" class:active={sortDropdownOpen}>
+              <div
+                class="dropdown__menu"
+                class:active={sortDropdownOpen}
+              >
                 {#each SORT_OPTIONS as option (option.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -728,11 +794,15 @@
                   01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               ></path>
             </svg>
-            <span class="text-sm text-content-secondary">{stats.total} Dokumente</span>
+            <span class="text-sm text-content-secondary"
+              >{stats.total} Dokumente</span
+            >
           </div>
           {#if stats.unread > 0}
             <div class="flex items-center gap-2">
-              <span class="text-sm text-warning-500">{stats.unread} Ungelesen</span>
+              <span class="text-sm text-warning-500"
+                >{stats.unread} Ungelesen</span
+              >
             </div>
           {/if}
         </div>
@@ -742,10 +812,19 @@
     <!-- Card Body -->
     <div class="card__body">
       <!-- Breadcrumb Navigation -->
-      <nav class="breadcrumb mb-2" aria-label="Ordnerpfad">
+      <nav
+        class="breadcrumb mb-2"
+        aria-label="Ordnerpfad"
+      >
         {#if currentCategory === 'all'}
-          <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
-            <i class="fas fa-folder breadcrumb__icon" aria-hidden="true"></i>
+          <span
+            class="breadcrumb__item breadcrumb__item--active"
+            aria-current="page"
+          >
+            <i
+              class="fas fa-folder breadcrumb__icon"
+              aria-hidden="true"
+            ></i>
             {CATEGORY_LABELS.all}
           </span>
         {:else}
@@ -756,25 +835,47 @@
               navigateToCategory('all');
             }}
           >
-            <i class="fas fa-folder breadcrumb__icon" aria-hidden="true"></i>
+            <i
+              class="fas fa-folder breadcrumb__icon"
+              aria-hidden="true"
+            ></i>
             {CATEGORY_LABELS.all}
           </button>
-          <span class="breadcrumb__separator" aria-hidden="true">
+          <span
+            class="breadcrumb__separator"
+            aria-hidden="true"
+          >
             <i class="fas fa-chevron-right"></i>
           </span>
           {#if selectedConversationId !== null && selectedChatFolderName !== null}
-            <button type="button" class="breadcrumb__item" onclick={backToFolders}>
+            <button
+              type="button"
+              class="breadcrumb__item"
+              onclick={backToFolders}
+            >
               {CATEGORY_LABELS[currentCategory]}
             </button>
-            <span class="breadcrumb__separator" aria-hidden="true">
+            <span
+              class="breadcrumb__separator"
+              aria-hidden="true"
+            >
               <i class="fas fa-chevron-right"></i>
             </span>
-            <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
-              <i class="fas fa-comments breadcrumb__icon" aria-hidden="true"></i>
+            <span
+              class="breadcrumb__item breadcrumb__item--active"
+              aria-current="page"
+            >
+              <i
+                class="fas fa-comments breadcrumb__icon"
+                aria-hidden="true"
+              ></i>
               {selectedChatFolderName}
             </span>
           {:else}
-            <span class="breadcrumb__item breadcrumb__item--active" aria-current="page">
+            <span
+              class="breadcrumb__item breadcrumb__item--active"
+              aria-current="page"
+            >
               {CATEGORY_LABELS[currentCategory]}
             </span>
           {/if}
@@ -800,10 +901,14 @@
             {:else if error}
               <div class="flex items-center justify-center h-full">
                 <div class="text-center">
-                  <i class="fas fa-exclamation-triangle text-4xl text-error-500 mb-4"></i>
+                  <i
+                    class="fas fa-exclamation-triangle text-4xl text-error-500 mb-4"
+                  ></i>
                   <p class="text-content-secondary mb-4">{error}</p>
-                  <button type="button" class="btn btn-primary" onclick={() => loadDocuments()}
-                    >{MESSAGES.BTN_RETRY}</button
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick={() => loadDocuments()}>{MESSAGES.BTN_RETRY}</button
                   >
                 </div>
               </div>
@@ -859,7 +964,11 @@
   ondownload={downloadDocument}
 />
 
-<UploadModal show={showUploadModal} onclose={closeUploadModal} onsubmit={handleUploadSubmit} />
+<UploadModal
+  show={showUploadModal}
+  onclose={closeUploadModal}
+  onsubmit={handleUploadSubmit}
+/>
 
 <EditModal
   show={showEditModal}

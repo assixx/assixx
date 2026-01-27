@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 // =============================================================================
 // SHIFTS - API FUNCTIONS
 // Based on: frontend/src/scripts/shifts/api.ts
@@ -128,14 +127,18 @@ export async function fetchAreas(): Promise<Area[]> {
 /**
  * Fetch departments, optionally filtered by area
  */
-export async function fetchDepartments(areaId?: number | null): Promise<Department[]> {
+export async function fetchDepartments(
+  areaId?: number | null,
+): Promise<Department[]> {
   try {
     let url = API_ENDPOINTS.DEPARTMENTS;
     if (areaId !== null && areaId !== undefined && areaId !== 0) {
       url += `?areaId=${areaId}`;
     }
 
-    const response = await apiClient.get<Department[] | { data: Department[] }>(url);
+    const response = await apiClient.get<Department[] | { data: Department[] }>(
+      url,
+    );
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
     log.error({ err }, 'Error loading departments');
@@ -152,7 +155,11 @@ export async function fetchMachines(
 ): Promise<Machine[]> {
   try {
     const params = new URLSearchParams();
-    if (departmentId !== null && departmentId !== undefined && departmentId !== 0) {
+    if (
+      departmentId !== null &&
+      departmentId !== undefined &&
+      departmentId !== 0
+    ) {
       params.append('departmentId', String(departmentId));
     }
     if (areaId !== null && areaId !== undefined && areaId !== 0) {
@@ -161,7 +168,9 @@ export async function fetchMachines(
 
     const queryString = params.toString();
     const url =
-      queryString !== '' ? `${API_ENDPOINTS.MACHINES}?${queryString}` : API_ENDPOINTS.MACHINES;
+      queryString !== '' ?
+        `${API_ENDPOINTS.MACHINES}?${queryString}`
+      : API_ENDPOINTS.MACHINES;
 
     const response = await apiClient.get<Machine[] | { data: Machine[] }>(url);
     return Array.isArray(response) ? response : response.data;
@@ -174,10 +183,16 @@ export async function fetchMachines(
 /**
  * Fetch teams, optionally filtered by department
  */
-export async function fetchTeams(departmentId?: number | null): Promise<Team[]> {
+export async function fetchTeams(
+  departmentId?: number | null,
+): Promise<Team[]> {
   try {
     let url = API_ENDPOINTS.TEAMS;
-    if (departmentId !== null && departmentId !== undefined && departmentId !== 0) {
+    if (
+      departmentId !== null &&
+      departmentId !== undefined &&
+      departmentId !== 0
+    ) {
       url += `?departmentId=${departmentId}`;
     }
 
@@ -216,7 +231,9 @@ const VALID_AVAILABILITY_STATUSES: readonly AvailabilityStatus[] = [
  * Type guard: safely convert API string to AvailabilityStatus
  * Returns undefined for invalid/missing values
  */
-function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | undefined {
+function toAvailabilityStatus(
+  status: string | undefined,
+): AvailabilityStatus | undefined {
   if (status === undefined || status === '') {
     return undefined;
   }
@@ -288,7 +305,11 @@ export async function fetchEmployees(
 ): Promise<Employee[]> {
   try {
     const params: string[] = [];
-    if (departmentId !== null && departmentId !== undefined && departmentId !== 0) {
+    if (
+      departmentId !== null &&
+      departmentId !== undefined &&
+      departmentId !== 0
+    ) {
       params.push(`departmentId=${departmentId}`);
     }
     if (teamId !== null && teamId !== undefined && teamId !== 0) {
@@ -431,7 +452,10 @@ export async function saveFavorite(favoriteData: {
 }): Promise<ShiftFavorite | null> {
   try {
     // apiClient.post extracts response.data automatically via handleV2Response
-    return await apiClient.post<ShiftFavorite>(API_ENDPOINTS.FAVORITES, favoriteData);
+    return await apiClient.post<ShiftFavorite>(
+      API_ENDPOINTS.FAVORITES,
+      favoriteData,
+    );
   } catch (err) {
     log.error({ err }, 'Error saving favorite');
     throw err;
@@ -441,7 +465,9 @@ export async function saveFavorite(favoriteData: {
 /**
  * Delete a favorite
  */
-export async function deleteFavorite(favoriteId: number | string): Promise<void> {
+export async function deleteFavorite(
+  favoriteId: number | string,
+): Promise<void> {
   await apiClient.delete(`${API_ENDPOINTS.FAVORITES}/${favoriteId}`);
 }
 
@@ -463,7 +489,9 @@ export async function fetchRotationHistory(
       url += `&teamId=${teamId}`;
     }
 
-    const response = await apiClient.get<{ history?: RotationHistoryEntryAPI[] }>(url);
+    const response = await apiClient.get<{
+      history?: RotationHistoryEntryAPI[];
+    }>(url);
     return response.history ?? [];
   } catch (err) {
     log.error({ err }, 'Error loading rotation history');
@@ -474,7 +502,9 @@ export async function fetchRotationHistory(
 /**
  * Fetch active rotation patterns
  */
-export async function fetchActiveRotationPatterns(): Promise<RotationPattern[]> {
+export async function fetchActiveRotationPatterns(): Promise<
+  RotationPattern[]
+> {
   try {
     const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
       `${API_ENDPOINTS.ROTATION_PATTERNS}?active=true`,
@@ -490,7 +520,9 @@ export async function fetchActiveRotationPatterns(): Promise<RotationPattern[]> 
  * Fetch a single rotation pattern by ID
  * Used to get patternType after loading rotation history
  */
-export async function fetchRotationPatternById(patternId: number): Promise<RotationPattern | null> {
+export async function fetchRotationPatternById(
+  patternId: number,
+): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ pattern?: RotationPattern }>(
       `${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`,
@@ -538,7 +570,10 @@ export async function updateRotationPattern(
     isActive: boolean;
   }>,
 ): Promise<void> {
-  await apiClient.put(`${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`, patternData);
+  await apiClient.put(
+    `${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`,
+    patternData,
+  );
 }
 
 /**
@@ -578,7 +613,9 @@ export async function deleteRotationHistoryByWeek(
   endDate: string,
 ): Promise<{ historyDeleted: number }> {
   // apiClient.delete unwraps { success, data } → returns data directly
-  const response = await apiClient.delete<{ deletedCounts: { historyDeleted: number } }>(
+  const response = await apiClient.delete<{
+    deletedCounts: { historyDeleted: number };
+  }>(
     `${API_ENDPOINTS.ROTATION_HISTORY}/week?teamId=${teamId}&startDate=${startDate}&endDate=${endDate}`,
   );
   return response.deletedCounts;
@@ -607,9 +644,9 @@ export async function deleteRotationHistoryByTeam(
 ): Promise<DeleteRotationHistoryResponse> {
   // Build URL with optional patternId
   const url =
-    patternId !== undefined
-      ? `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`
-      : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`;
+    patternId !== undefined ?
+      `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`
+    : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`;
 
   // apiClient.delete unwraps { success, data } → returns data directly
   const response = await apiClient.delete<{
@@ -648,7 +685,9 @@ export async function deleteShiftsByWeek(
 /**
  * Delete ALL shifts for a team (no date range)
  */
-export async function deleteShiftsByTeam(teamId: number): Promise<{ shiftsDeleted: number }> {
+export async function deleteShiftsByTeam(
+  teamId: number,
+): Promise<{ shiftsDeleted: number }> {
   return await apiClient.delete<{ shiftsDeleted: number }>(
     `${API_ENDPOINTS.SHIFTS}/team?teamId=${teamId}`,
   );

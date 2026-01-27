@@ -62,11 +62,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   const currentUserId = locals.user?.id ?? null;
 
   // Fetch root users
-  const rootUsersData = await apiFetch<RootUser[]>('/users?role=root', token, fetch);
+  const rootUsersData = await apiFetch<RootUser[]>(
+    '/users?role=root',
+    token,
+    fetch,
+  );
   const allRootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
 
   // Exclude current user - they edit themselves on /root-profile
-  const rootUsers = allRootUsers.filter((u: RootUser): boolean => u.id !== currentUserId);
+  const rootUsers = allRootUsers.filter(
+    (u: RootUser): boolean => u.id !== currentUserId,
+  );
 
   log.debug(
     {

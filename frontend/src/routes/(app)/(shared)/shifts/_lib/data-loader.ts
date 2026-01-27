@@ -20,7 +20,9 @@ import type {
 /**
  * Convert team members to employees format (filters to employees only)
  */
-export function convertTeamMembersToEmployees(members: TeamMember[]): Employee[] {
+export function convertTeamMembersToEmployees(
+  members: TeamMember[],
+): Employee[] {
   return members
     .filter((member) => member.userRole === 'employee')
     .map((member) => ({
@@ -62,14 +64,21 @@ const VALID_AVAILABILITY_STATUSES: AvailabilityStatus[] = [
 ];
 
 /** Type guard for AvailabilityStatus */
-function isValidAvailabilityStatus(value: string | undefined): value is AvailabilityStatus {
-  return value !== undefined && VALID_AVAILABILITY_STATUSES.includes(value as AvailabilityStatus);
+function isValidAvailabilityStatus(
+  value: string | undefined,
+): value is AvailabilityStatus {
+  return (
+    value !== undefined &&
+    VALID_AVAILABILITY_STATUSES.includes(value as AvailabilityStatus)
+  );
 }
 
 /**
  * Convert SSR team members to employees format (no role filtering - SSR already filtered)
  */
-export function convertSSRTeamMembersToEmployees(members: SSRTeamMember[]): Employee[] {
+export function convertSSRTeamMembersToEmployees(
+  members: SSRTeamMember[],
+): Employee[] {
   return members.map((m) => ({
     id: m.id,
     username: m.username,
@@ -81,8 +90,9 @@ export function convertSSRTeamMembersToEmployees(members: SSRTeamMember[]): Empl
     isActive: 1 as const,
     createdAt: '',
     updatedAt: '',
-    availabilityStatus: isValidAvailabilityStatus(m.availabilityStatus)
-      ? m.availabilityStatus
+    availabilityStatus:
+      isValidAvailabilityStatus(m.availabilityStatus) ?
+        m.availabilityStatus
       : undefined,
     availabilityStart: m.availabilityStart,
     availabilityEnd: m.availabilityEnd,
@@ -286,7 +296,10 @@ export function processRotationHistory(
 
     // Add to shiftDetails for employee display info
     const detailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
-    shiftDetails.set(detailKey, createShiftDetail(employeeId, dateKey, shiftType, employees));
+    shiftDetails.set(
+      detailKey,
+      createShiftDetail(employeeId, dateKey, shiftType, employees),
+    );
   }
 
   return {
@@ -388,7 +401,9 @@ export interface PatternInfo {
  */
 export async function loadPatternFromHistory(
   rotationHistory: RotationHistoryEntry[],
-  fetchPatternById: (id: number) => Promise<{ id: number; patternType: string } | null>,
+  fetchPatternById: (
+    id: number,
+  ) => Promise<{ id: number; patternType: string } | null>,
 ): Promise<PatternInfo> {
   if (rotationHistory.length === 0) {
     return { patternId: null, patternType: null };

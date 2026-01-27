@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Token Manager - Central JWT Token Lifecycle Management
  *
@@ -81,7 +80,9 @@ export class TokenManager {
     this.loadTokensFromStorage();
     this.startTimer();
     this.setupVisibilityListener();
-    this.logDebug('🚀 TokenManager initialized with 1s Timer + Page Visibility API');
+    this.logDebug(
+      '🚀 TokenManager initialized with 1s Timer + Page Visibility API',
+    );
   }
 
   static getInstance(): TokenManager {
@@ -109,7 +110,9 @@ export class TokenManager {
     const oldRefreshToken = localStorage.getItem('refreshToken');
     if (oldRefreshToken !== null) {
       localStorage.removeItem('refreshToken');
-      log.info('Migrated: Removed refreshToken from localStorage (now HttpOnly cookie)');
+      log.info(
+        'Migrated: Removed refreshToken from localStorage (now HttpOnly cookie)',
+      );
     }
 
     const receivedAtStr = localStorage.getItem('tokenReceivedAt');
@@ -264,7 +267,10 @@ export class TokenManager {
     });
 
     if (exp <= now) {
-      log.error({ exp, now }, 'CRITICAL: Server returned ALREADY EXPIRED token!');
+      log.error(
+        { exp, now },
+        'CRITICAL: Server returned ALREADY EXPIRED token!',
+      );
       return false;
     }
 
@@ -330,12 +336,15 @@ export class TokenManager {
     this.isRefreshing = true;
 
     try {
-      const response = await fetch(`${window.location.origin}/api/v2/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // CRITICAL: Send HttpOnly cookie!
-        body: JSON.stringify({}), // Empty body, refresh token is in cookie
-      });
+      const response = await fetch(
+        `${window.location.origin}/api/v2/auth/refresh`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // CRITICAL: Send HttpOnly cookie!
+          body: JSON.stringify({}), // Empty body, refresh token is in cookie
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Token refresh failed with status ${response.status}`);
@@ -410,7 +419,9 @@ export class TokenManager {
   // Returns unsubscribe function to prevent memory leaks
   // ========================================
 
-  public onTimerUpdate(callback: (remainingSeconds: number) => void): () => void {
+  public onTimerUpdate(
+    callback: (remainingSeconds: number) => void,
+  ): () => void {
     this.callbacks.onTimerUpdate.push(callback);
     callback(this.getRemainingTime());
 
@@ -552,7 +563,8 @@ export class TokenManager {
         break;
     }
 
-    const url = params.toString() !== '' ? `/login?${params.toString()}` : '/login';
+    const url =
+      params.toString() !== '' ? `/login?${params.toString()}` : '/login';
 
     log.warn({ reason, url }, 'Redirecting to login');
     window.location.replace(url);
@@ -641,5 +653,6 @@ export type { LogoutReason } from './auth-types';
 // CRITICAL: Use import.meta.env.DEV (build-time check) NOT hostname (runtime check)
 // hostname check would expose tokenManager in production on localhost (Docker/Nginx)
 if (import.meta.env.DEV && typeof window !== 'undefined') {
-  (window as unknown as { tokenManager: TokenManager }).tokenManager = TokenManager.getInstance();
+  (window as unknown as { tokenManager: TokenManager }).tokenManager =
+    TokenManager.getInstance();
 }

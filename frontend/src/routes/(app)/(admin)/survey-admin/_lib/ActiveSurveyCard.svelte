@@ -43,7 +43,9 @@
 
   const responseCount = $derived(survey.responseCount ?? 0);
   const completedCount = $derived(survey.completedCount ?? 0);
-  const responseRate = $derived(calculateResponseRate(responseCount, completedCount));
+  const responseRate = $derived(
+    calculateResponseRate(responseCount, completedCount),
+  );
   const startDate = $derived(formatSurveyDate(survey.startDate));
   const endDate = $derived(formatSurveyDate(survey.endDate));
   const title = $derived(getTextFromBuffer(survey.title));
@@ -51,24 +53,38 @@
   const isAnonymous = $derived(toBool(survey.isAnonymous));
   const isMandatory = $derived(toBool(survey.isMandatory));
   const hasNoEndDate = $derived(endDate === '');
+  const creatorName = $derived(
+    [survey.creatorFirstName, survey.creatorLastName].filter(Boolean).join(' '),
+  );
 </script>
 
 {#snippet cardContent()}
   <div class="flex justify-between items-start mb-4">
     <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>
-    <span class="badge {getStatusBadgeClass(survey.status ?? 'active')} badge--uppercase">
+    <span
+      class="badge {getStatusBadgeClass(
+        survey.status ?? 'active',
+      )} badge--uppercase"
+    >
       {getStatusText(survey.status ?? 'active')}
     </span>
   </div>
 
   <!-- Survey properties badges -->
   <div class="mb-4 flex items-center gap-2 flex-wrap">
-    <span class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}">
+    <span
+      class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}"
+    >
       <i class="fas {isAnonymous ? 'fa-user-secret' : 'fa-user'}"></i>
       {isAnonymous ? 'Anonym' : 'Nicht anonym'}
     </span>
-    <span class="badge badge--sm {isMandatory ? 'badge--warning' : 'badge--success'}">
-      <i class="fas {isMandatory ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+    <span
+      class="badge badge--sm {isMandatory ? 'badge--warning' : (
+        'badge--success'
+      )}"
+    >
+      <i class="fas {isMandatory ? 'fa-exclamation-circle' : 'fa-check-circle'}"
+      ></i>
       {isMandatory ? 'Verpflichtend' : 'Freiwillig'}
     </span>
   </div>
@@ -87,6 +103,13 @@
       <span>Laufend, bis beendet wird</span>
     {/if}
   </div>
+
+  {#if creatorName !== ''}
+    <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+      <i class="fas fa-user-pen"></i>
+      <span>Erstellt von {creatorName}</span>
+    </div>
+  {/if}
 
   {#if assignmentBadges.length > 0}
     <div class="mb-4 flex items-center gap-2 flex-wrap">
@@ -178,13 +201,13 @@
       if (e.key === 'Enter') onviewresults(surveyId);
     }}
   >
-    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
+    p <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
     {@render cardContent()}
     <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
   </div>
 {:else}
   <div class="card">
-    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
+    <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
     {@render cardContent()}
     <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
   </div>

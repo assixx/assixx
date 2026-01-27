@@ -23,8 +23,7 @@
     ondelete: () => void;
   }
 
-  /* eslint-disable prefer-const */
-  // $bindable() required for two-way binding in Svelte 5
+  /* eslint-disable prefer-const -- Svelte $bindable() requires let */
   let {
     conversation,
     partner,
@@ -48,9 +47,11 @@
 <div class="chat-header">
   <div class="chat-header-info">
     <div
-      class="avatar {getConversationAvatar(conversation, currentUserId) !== null
-        ? ''
-        : getAvatarColorClass(partner?.id)}"
+      class="avatar {(
+        getConversationAvatar(conversation, currentUserId) !== null
+      ) ?
+        ''
+      : getAvatarColorClass(partner?.id)}"
     >
       {#if getConversationAvatar(conversation, currentUserId)}
         <img

@@ -120,7 +120,10 @@ export class ShiftsController {
     @Query() query: QuerySwapRequestsDto,
   ): Promise<SuccessResponse<SwapRequestResponse[]>> {
     this.logger.debug(`Listing swap requests for tenant ${user.tenantId}`);
-    const requests = await this.shiftsService.listSwapRequests(user.tenantId, query);
+    const requests = await this.shiftsService.listSwapRequests(
+      user.tenantId,
+      query,
+    );
     return { success: true, data: requests };
   }
 
@@ -187,7 +190,10 @@ export class ShiftsController {
       startDate: query.startDate,
       endDate: query.endDate,
     };
-    const report = await this.shiftsService.getOvertimeReport(filters, user.tenantId);
+    const report = await this.shiftsService.getOvertimeReport(
+      filters,
+      user.tenantId,
+    );
     return { success: true, data: report };
   }
 
@@ -200,7 +206,10 @@ export class ShiftsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<FavoriteResponse[]>> {
     this.logger.debug(`Listing favorites for user ${user.id}`);
-    const favorites = await this.shiftsService.listFavorites(user.tenantId, user.id);
+    const favorites = await this.shiftsService.listFavorites(
+      user.tenantId,
+      user.id,
+    );
     return { success: true, data: favorites };
   }
 
@@ -215,8 +224,16 @@ export class ShiftsController {
     @Body() dto: CreateFavoriteDto,
   ): Promise<SuccessResponse<FavoriteResponse>> {
     this.logger.debug(`Creating favorite for user ${user.id}`);
-    const favorite = await this.shiftsService.createFavorite(dto, user.tenantId, user.id);
-    return { success: true, data: favorite, message: 'Favorite created successfully' };
+    const favorite = await this.shiftsService.createFavorite(
+      dto,
+      user.tenantId,
+      user.id,
+    );
+    return {
+      success: true,
+      data: favorite,
+      message: 'Favorite created successfully',
+    };
   }
 
   /**
@@ -249,7 +266,11 @@ export class ShiftsController {
       query.startDate,
       query.endDate,
     );
-    return { success: true, data: shifts, message: 'User shifts retrieved successfully' };
+    return {
+      success: true,
+      data: shifts,
+      message: 'User shifts retrieved successfully',
+    };
   }
 
   /**
@@ -294,10 +315,16 @@ export class ShiftsController {
   async getShiftPlan(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryShiftPlanDto,
-  ): Promise<SuccessResponse<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }>> {
+  ): Promise<
+    SuccessResponse<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }>
+  > {
     this.logger.debug(`Getting shift plan for tenant ${user.tenantId}`);
     const result = await this.shiftsService.getShiftPlan(query, user.tenantId);
-    return { success: true, data: result, message: 'Shift plan retrieved successfully' };
+    return {
+      success: true,
+      data: result,
+      message: 'Shift plan retrieved successfully',
+    };
   }
 
   /**
@@ -312,7 +339,11 @@ export class ShiftsController {
     @Body() dto: CreateShiftPlanDto,
   ): Promise<SuccessResponse<ShiftPlanResponse>> {
     this.logger.debug(`Creating shift plan for tenant ${user.tenantId}`);
-    const result = await this.shiftsService.createShiftPlan(dto, user.tenantId, user.id);
+    const result = await this.shiftsService.createShiftPlan(
+      dto,
+      user.tenantId,
+      user.id,
+    );
     return { success: true, data: result };
   }
 
@@ -333,7 +364,11 @@ export class ShiftsController {
       user.tenantId,
       user.id,
     );
-    return { success: true, data: result, message: 'Shift plan updated successfully' };
+    return {
+      success: true,
+      data: result,
+      message: 'Shift plan updated successfully',
+    };
   }
 
   /**
@@ -348,8 +383,17 @@ export class ShiftsController {
     @Body() dto: UpdateShiftPlanDto,
   ): Promise<SuccessResponse<ShiftPlanResponse>> {
     this.logger.debug(`Updating shift plan ${id}`);
-    const result = await this.shiftsService.updateShiftPlan(id, dto, user.tenantId, user.id);
-    return { success: true, data: result, message: 'Shift plan updated successfully' };
+    const result = await this.shiftsService.updateShiftPlan(
+      id,
+      dto,
+      user.tenantId,
+      user.id,
+    );
+    return {
+      success: true,
+      data: result,
+      message: 'Shift plan updated successfully',
+    };
   }
 
   /**
@@ -411,7 +455,13 @@ export class ShiftsController {
     @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<ShiftResponse>> {
     this.logger.debug(`Creating shift for tenant ${user.tenantId}`);
-    const shift = await this.shiftsService.createShift(dto, user.tenantId, user.id, ip, userAgent);
+    const shift = await this.shiftsService.createShift(
+      dto,
+      user.tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
     return { success: true, data: shift };
   }
 
@@ -452,7 +502,9 @@ export class ShiftsController {
     @Query('endDate') endDate: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
-    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
+    this.logger.debug(
+      `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
+    );
     const result = await this.shiftsService.deleteShiftsByWeek(
       teamId,
       startDate,
@@ -473,7 +525,10 @@ export class ShiftsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
     this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
-    const result = await this.shiftsService.deleteShiftsByTeam(teamId, user.tenantId);
+    const result = await this.shiftsService.deleteShiftsByTeam(
+      teamId,
+      user.tenantId,
+    );
     return { success: true, data: result };
   }
 
@@ -490,7 +545,13 @@ export class ShiftsController {
     @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<{ message: string }>> {
     this.logger.debug(`Deleting shift ${id}`);
-    const result = await this.shiftsService.deleteShift(id, user.tenantId, user.id, ip, userAgent);
+    const result = await this.shiftsService.deleteShift(
+      id,
+      user.tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
     return { success: true, data: result };
   }
 }

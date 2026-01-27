@@ -1,9 +1,18 @@
 <script lang="ts">
-  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from '$lib/utils';
+  import {
+    filterAvailableDepartments,
+    filterDepartmentIdsByAreas,
+  } from '$lib/utils';
 
   import { RECURRENCE_OPTIONS, RECURRENCE_END_OPTIONS } from './constants';
 
-  import type { EventFormData, CalendarEvent, Department, Team, Area } from './types';
+  import type {
+    EventFormData,
+    CalendarEvent,
+    Department,
+    Team,
+    Area,
+  } from './types';
 
   interface Props {
     formData: EventFormData;
@@ -16,10 +25,10 @@
     onsave: () => void;
   }
 
-  /* eslint-disable */
+  /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
   let { formData = $bindable(), editingEvent, isAdmin, departments, teams, areas, onclose, onsave }: Props = $props();
-  /* eslint-enable */
+  /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Dropdown states
   let recurrenceDropdownOpen = $state(false);
@@ -27,10 +36,12 @@
 
   // Get display text for current selection
   const selectedRecurrenceText = $derived(
-    RECURRENCE_OPTIONS.find((o) => o.value === formData.recurrence)?.label ?? 'Keine Wiederholung',
+    RECURRENCE_OPTIONS.find((o) => o.value === formData.recurrence)?.label ??
+      'Keine Wiederholung',
   );
   const selectedRecurrenceEndText = $derived(
-    RECURRENCE_END_OPTIONS.find((o) => o.value === formData.recurrenceEndType)?.label ?? 'Nie',
+    RECURRENCE_END_OPTIONS.find((o) => o.value === formData.recurrenceEndType)
+      ?.label ?? 'Nie',
   );
 
   // Derived: Is company-wide event selected?
@@ -38,7 +49,11 @@
 
   // Filter departments based on selected areas (inheritance logic)
   const availableDepartments = $derived.by(() => {
-    return filterAvailableDepartments(departments, formData.areaIds, isCompanyWide);
+    return filterAvailableDepartments(
+      departments,
+      formData.areaIds,
+      isCompanyWide,
+    );
   });
 
   /**
@@ -47,7 +62,9 @@
    */
   function handleAreaChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const newAreaIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
+    const newAreaIds = Array.from(select.selectedOptions).map((o) =>
+      Number(o.value),
+    );
     formData.areaIds = newAreaIds;
     // Remove departments that are now covered by selected areas
     formData.departmentIds = filterDepartmentIdsByAreas(
@@ -82,7 +99,11 @@
   });
 </script>
 
-<div class="modal-overlay modal-overlay--active" role="presentation" onclick={onclose}>
+<div
+  class="modal-overlay modal-overlay--active"
+  role="presentation"
+  onclick={onclose}
+>
   <form
     class="ds-modal ds-modal--lg"
     role="presentation"
@@ -98,14 +119,22 @@
       <h3 class="ds-modal__title">
         {editingEvent !== null ? 'Termin bearbeiten' : 'Neuer Termin'}
       </h3>
-      <button type="button" class="ds-modal__close" aria-label="Schliessen" onclick={onclose}>
+      <button
+        type="button"
+        class="ds-modal__close"
+        aria-label="Schliessen"
+        onclick={onclose}
+      >
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="ds-modal__body">
       <!-- Title -->
       <div class="form-field">
-        <label class="form-field__label" for="eventTitle">
+        <label
+          class="form-field__label"
+          for="eventTitle"
+        >
           Titel <span class="text-red-500">*</span>
         </label>
         <input
@@ -120,7 +149,10 @@
 
       <!-- Description -->
       <div class="form-field">
-        <label class="form-field__label" for="eventDescription">Beschreibung</label>
+        <label
+          class="form-field__label"
+          for="eventDescription">Beschreibung</label
+        >
         <textarea
           class="form-field__control"
           id="eventDescription"
@@ -136,7 +168,10 @@
       <!-- Date/Time -->
       <div class="grid grid-cols-2 gap-4">
         <div class="form-field">
-          <label class="form-field__label" for="eventStart">
+          <label
+            class="form-field__label"
+            for="eventStart"
+          >
             Beginn <span class="text-red-500">*</span>
           </label>
           <input
@@ -148,7 +183,10 @@
           />
         </div>
         <div class="form-field">
-          <label class="form-field__label" for="eventEnd">
+          <label
+            class="form-field__label"
+            for="eventEnd"
+          >
             Ende <span class="text-red-500">*</span>
           </label>
           <input
@@ -164,7 +202,11 @@
       <!-- All Day -->
       <div class="form-field">
         <label class="toggle-switch toggle-switch--sm">
-          <input type="checkbox" class="toggle-switch__input" bind:checked={formData.allDay} />
+          <input
+            type="checkbox"
+            class="toggle-switch__input"
+            bind:checked={formData.allDay}
+          />
           <span class="toggle-switch__slider"></span>
           <span class="toggle-switch__label">Ganztaegiger Termin</span>
         </label>
@@ -172,7 +214,10 @@
 
       <!-- Location -->
       <div class="form-field">
-        <label class="form-field__label" for="eventLocation">Ort</label>
+        <label
+          class="form-field__label"
+          for="eventLocation">Ort</label
+        >
         <input
           type="text"
           class="form-field__control"
@@ -191,8 +236,8 @@
             Sichtbarkeit
           </span>
           <p class="text-sm text-[var(--color-text-secondary)] mb-2">
-            Waehlen Sie keine Organisation für firmenweite Events oder eine/mehrere spezifische
-            Organisationen.
+            Waehlen Sie keine Organisation für firmenweite Events oder
+            eine/mehrere spezifische Organisationen.
           </p>
         </div>
 
@@ -204,7 +249,10 @@
               class="toggle-switch__input"
               checked={formData.orgLevel === 'company'}
               onchange={(e) => {
-                formData.orgLevel = (e.target as HTMLInputElement).checked ? 'company' : 'personal';
+                formData.orgLevel =
+                  (e.target as HTMLInputElement).checked ?
+                    'company'
+                  : 'personal';
               }}
             />
             <span class="toggle-switch__slider"></span>
@@ -220,8 +268,14 @@
         </div>
 
         <!-- Area Selection -->
-        <div class="form-field" class:opacity-50={isCompanyWide}>
-          <label class="form-field__label" for="event-area-select">
+        <div
+          class="form-field"
+          class:opacity-50={isCompanyWide}
+        >
+          <label
+            class="form-field__label"
+            for="event-area-select"
+          >
             <i class="fas fa-layer-group mr-1"></i> Bereiche (Areas)
           </label>
           <select
@@ -233,22 +287,34 @@
             onchange={handleAreaChange}
           >
             {#each areas as area (area.id)}
-              <option value={area.id} selected={formData.areaIds.includes(area.id)}>
-                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0
-                  ? ` (${area.departmentCount} Abt.)`
-                  : ''}
+              <option
+                value={area.id}
+                selected={formData.areaIds.includes(area.id)}
+              >
+                {area.name}{(
+                  area.departmentCount !== undefined && area.departmentCount > 0
+                ) ?
+                  ` (${area.departmentCount} Abt.)`
+                : ''}
               </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige Abteilungen.
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige
+            Abteilungen.
           </span>
         </div>
 
         <!-- Department Selection -->
-        <div class="form-field" class:opacity-50={isCompanyWide}>
-          <label class="form-field__label" for="event-department-select">
+        <div
+          class="form-field"
+          class:opacity-50={isCompanyWide}
+        >
+          <label
+            class="form-field__label"
+            for="event-department-select"
+          >
             <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
           </label>
           <select
@@ -260,22 +326,30 @@
           >
             {#each availableDepartments as dept (dept.id)}
               <option value={dept.id}>
-                {dept.name}{dept.areaName !== undefined && dept.areaName !== ''
-                  ? ` (${dept.areaName})`
-                  : ''}
+                {dept.name}{(
+                  dept.areaName !== undefined && dept.areaName !== ''
+                ) ?
+                  ` (${dept.areaName})`
+                : ''}
               </option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits durch Bereiche abgedeckt
-            sind.
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
+            durch Bereiche abgedeckt sind.
           </span>
         </div>
 
         <!-- Team Selection -->
-        <div class="form-field" class:opacity-50={isCompanyWide}>
-          <label class="form-field__label" for="event-team-select">
+        <div
+          class="form-field"
+          class:opacity-50={isCompanyWide}
+        >
+          <label
+            class="form-field__label"
+            for="event-team-select"
+          >
             <i class="fas fa-users mr-1"></i> Teams
           </label>
           <select
@@ -291,7 +365,8 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet zugehoerige Teams.
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet
+            zugehoerige Teams.
           </span>
         </div>
 
@@ -323,14 +398,19 @@
             <span>{selectedRecurrenceText}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
-          <div class="dropdown__menu" class:active={recurrenceDropdownOpen}>
+          <div
+            class="dropdown__menu"
+            class:active={recurrenceDropdownOpen}
+          >
             {#each RECURRENCE_OPTIONS as option (option.label)}
               <button
                 type="button"
                 class="dropdown__option"
-                class:dropdown__option--selected={formData.recurrence === option.value}
+                class:dropdown__option--selected={formData.recurrence ===
+                  option.value}
                 onclick={() => {
-                  formData.recurrence = option.value as typeof formData.recurrence;
+                  formData.recurrence =
+                    option.value as typeof formData.recurrence;
                   recurrenceDropdownOpen = false;
                 }}
               >
@@ -358,14 +438,19 @@
               <span>{selectedRecurrenceEndText}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div class="dropdown__menu" class:active={recurrenceEndDropdownOpen}>
+            <div
+              class="dropdown__menu"
+              class:active={recurrenceEndDropdownOpen}
+            >
               {#each RECURRENCE_END_OPTIONS as option (option.value)}
                 <button
                   type="button"
                   class="dropdown__option"
-                  class:dropdown__option--selected={formData.recurrenceEndType === option.value}
+                  class:dropdown__option--selected={formData.recurrenceEndType ===
+                    option.value}
                   onclick={() => {
-                    formData.recurrenceEndType = option.value as typeof formData.recurrenceEndType;
+                    formData.recurrenceEndType =
+                      option.value as typeof formData.recurrenceEndType;
                     recurrenceEndDropdownOpen = false;
                   }}
                 >
@@ -378,7 +463,10 @@
 
         {#if formData.recurrenceEndType === 'after'}
           <div class="form-field">
-            <label class="form-field__label" for="recurrenceCount">Anzahl der Wiederholungen</label>
+            <label
+              class="form-field__label"
+              for="recurrenceCount">Anzahl der Wiederholungen</label
+            >
             <input
               type="number"
               class="form-field__control"
@@ -392,7 +480,10 @@
 
         {#if formData.recurrenceEndType === 'until'}
           <div class="form-field">
-            <label class="form-field__label" for="recurrenceUntil">Enddatum</label>
+            <label
+              class="form-field__label"
+              for="recurrenceUntil">Enddatum</label
+            >
             <input
               type="date"
               class="form-field__control"
@@ -404,8 +495,17 @@
       {/if}
     </div>
     <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={onclose}> Abbrechen </button>
-      <button type="submit" class="btn btn-modal">
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={onclose}
+      >
+        Abbrechen
+      </button>
+      <button
+        type="submit"
+        class="btn btn-modal"
+      >
         <i class="fas fa-save"></i> Speichern
       </button>
     </div>

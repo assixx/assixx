@@ -87,11 +87,16 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const user = parentData.user;
 
   // Load conversations
-  const conversationsData = await apiFetch<Conversation[]>('/chat/conversations', token, fetch);
+  const conversationsData = await apiFetch<Conversation[]>(
+    '/chat/conversations',
+    token,
+    fetch,
+  );
 
   // Normalize conversations (ensure participants array exists)
-  const conversations = Array.isArray(conversationsData)
-    ? conversationsData.map((conv) => ({
+  const conversations =
+    Array.isArray(conversationsData) ?
+      conversationsData.map((conv) => ({
         ...conv,
         participants: Array.isArray(conv.participants) ? conv.participants : [],
       }))

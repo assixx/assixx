@@ -12,7 +12,9 @@
   transition: all 0.2s ease;
   box-shadow: var(--shadow-md);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl); /* 12px - Same as card-accent for consistency */
+  border-radius: var(
+    --radius-xl
+  ); /* 12px - Same as card-accent for consistency */
 
   background: rgb(255 255 255 / 2%);
   padding: var(--spacing-6); /* 24px */
@@ -42,7 +44,10 @@
 /* With Icon */
 .card-stat__icon {
   margin-bottom: var(--spacing-2);
-  color: var(--color-icon-primary); /* #a9d9ff - Consistent light blue for all icons */
+  color: var(
+    --color-icon-primary
+  ); /* #a9d9ff - Consistent light blue for all icons */
+
   font-size: 2rem; /* 40px */
 }
 

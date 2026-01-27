@@ -7,14 +7,21 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import {
+    showSuccessAlert,
+    showWarningAlert,
+    showErrorAlert,
+  } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageAdminsPage');
 
   import AdminFormModal from './_lib/AdminFormModal.svelte';
   import AdminTableRow from './_lib/AdminTableRow.svelte';
-  import { saveAdminWithPermissions, deleteAdmin as apiDeleteAdmin } from './_lib/api';
+  import {
+    saveAdminWithPermissions,
+    deleteAdmin as apiDeleteAdmin,
+  } from './_lib/api';
   import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
@@ -22,7 +29,13 @@
   import { buildAdminFormData, populateFormFromAdmin } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { Admin, Area, Department, StatusFilter, FormIsActiveStatus } from './_lib/types';
+  import type {
+    Admin,
+    Area,
+    Department,
+    StatusFilter,
+    FormIsActiveStatus,
+  } from './_lib/types';
 
   import '../../../../styles/manage-admins.css';
   import '../../../../styles/password-strength.css';
@@ -86,7 +99,9 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE);
+  const modalTitle = $derived(
+    isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE,
+  );
 
   // Derived: Filtered admins based on current filter/search state
   const filteredAdmins = $derived(
@@ -162,14 +177,18 @@
       await saveAdminWithPermissions(formData, currentEditId);
 
       // Show success message based on mode
-      showSuccessAlert(isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED);
+      showSuccessAlert(
+        isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+      );
 
       closeAdminModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error saving admin');
-      showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED);
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
+      );
     } finally {
       submitting = false;
     }
@@ -359,7 +378,10 @@
 
       <div class="flex gap-4 items-center justify-between mt-6">
         <!-- Status Toggle Group -->
-        <div class="toggle-group" id="admin-status-toggle">
+        <div
+          class="toggle-group"
+          id="admin-status-toggle"
+        >
           <button
             type="button"
             class="toggle-group__btn"
@@ -411,8 +433,14 @@
         </div>
 
         <!-- Search Input -->
-        <div class="search-input-wrapper max-w-80" class:search-input-wrapper--open={searchOpen}>
-          <div class="search-input" id="admin-search-container">
+        <div
+          class="search-input-wrapper max-w-80"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="admin-search-container"
+          >
             <i class="search-input__icon fas fa-search"></i>
             <input
               type="search"
@@ -433,7 +461,10 @@
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="search-input__results" id="admin-search-results">
+          <div
+            class="search-input__results"
+            id="admin-search-results"
+          >
             <SearchResults
               searchQuery={currentSearchQuery}
               {filteredAdmins}
@@ -447,20 +478,31 @@
     <div class="card__body">
       {#if error}
         <div class="text-center p-6">
-          <i class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"></i>
+          <i
+            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
-          <button type="button" class="btn btn-primary mt-4" onclick={() => invalidateAll()}
-            >{MESSAGES.BTN_RETRY}</button
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => invalidateAll()}>{MESSAGES.BTN_RETRY}</button
           >
         </div>
       {:else if filteredAdmins.length === 0}
-        <div id="admins-empty" class="empty-state">
+        <div
+          id="admins-empty"
+          class="empty-state"
+        >
           <div class="empty-state__icon">
             <i class="fas fa-users"></i>
           </div>
           <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
           <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
-          <button type="button" class="btn btn-primary" onclick={openAddModal}>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openAddModal}
+          >
             <i class="fas fa-plus"></i>
             {MESSAGES.BTN_ADD_ADMIN}
           </button>
@@ -468,7 +510,10 @@
       {:else}
         <div id="admins-table-content">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped" id="admins-table">
+            <table
+              class="data-table data-table--hover data-table--striped"
+              id="admins-table"
+            >
               <thead>
                 <tr>
                   <th scope="col">{MESSAGES.TH_ID}</th>
@@ -485,7 +530,11 @@
               </thead>
               <tbody>
                 {#each filteredAdmins as admin (admin.id)}
-                  <AdminTableRow {admin} onedit={openEditModal} ondelete={openDeleteModal} />
+                  <AdminTableRow
+                    {admin}
+                    onedit={openEditModal}
+                    ondelete={openDeleteModal}
+                  />
                 {/each}
               </tbody>
             </table>

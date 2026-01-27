@@ -87,9 +87,9 @@ function buildConfirmModal(config: {
   const overlay = createElement('div', 'confirm-overlay');
   const modal = createElement(
     'div',
-    config.modifier !== undefined && config.modifier !== ''
-      ? `confirm-modal confirm-modal--${config.modifier}`
-      : 'confirm-modal',
+    config.modifier !== undefined && config.modifier !== '' ?
+      `confirm-modal confirm-modal--${config.modifier}`
+    : 'confirm-modal',
   );
 
   // Icon
@@ -102,7 +102,11 @@ function buildConfirmModal(config: {
   modal.appendChild(titleEl);
 
   // Message
-  const messageEl = createElement('p', 'confirm-modal__message', config.message);
+  const messageEl = createElement(
+    'p',
+    'confirm-modal__message',
+    config.message,
+  );
   modal.appendChild(messageEl);
 
   // Actions
@@ -254,7 +258,10 @@ export async function showConfirmWarning(
 /**
  * Build info modal structure using DOM methods (single button variant)
  */
-function buildInfoModal(config: { message: string; title: string }): HTMLDivElement {
+function buildInfoModal(config: {
+  message: string;
+  title: string;
+}): HTMLDivElement {
   const container = createElement('div', CONFIRM_DIALOG_CLASS);
   const overlay = createElement('div', 'confirm-overlay');
   const modal = createElement('div', 'confirm-modal confirm-modal--info');
@@ -269,12 +276,20 @@ function buildInfoModal(config: { message: string; title: string }): HTMLDivElem
   modal.appendChild(titleEl);
 
   // Message
-  const messageEl = createElement('p', 'confirm-modal__message', config.message);
+  const messageEl = createElement(
+    'p',
+    'confirm-modal__message',
+    config.message,
+  );
   modal.appendChild(messageEl);
 
   // Actions (single button)
   const actionsDiv = createElement('div', 'confirm-modal__actions');
-  const okBtn = createElement('button', 'confirm-modal__btn confirm-modal__btn--confirm', 'OK');
+  const okBtn = createElement(
+    'button',
+    'confirm-modal__btn confirm-modal__btn--confirm',
+    'OK',
+  );
   actionsDiv.appendChild(okBtn);
   modal.appendChild(actionsDiv);
 
@@ -287,7 +302,10 @@ function buildInfoModal(config: { message: string; title: string }): HTMLDivElem
 /**
  * Show an informational modal dialog
  */
-export async function showInfoModal(message: string, title: string = 'Hinweis'): Promise<void> {
+export async function showInfoModal(
+  message: string,
+  title: string = 'Hinweis',
+): Promise<void> {
   if (!browser) return;
 
   await new Promise<void>((resolve) => {

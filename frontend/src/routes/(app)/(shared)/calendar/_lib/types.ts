@@ -16,12 +16,22 @@ export type ResponseStatus = 'accepted' | 'declined' | 'tentative' | 'pending';
 /**
  * Calendar filter levels
  */
-export type FilterLevel = 'all' | 'company' | 'department' | 'team' | 'area' | 'personal';
+export type FilterLevel =
+  | 'all'
+  | 'company'
+  | 'department'
+  | 'team'
+  | 'area'
+  | 'personal';
 
 /**
  * Calendar view modes
  */
-export type ViewMode = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek';
+export type ViewMode =
+  | 'dayGridMonth'
+  | 'timeGridWeek'
+  | 'timeGridDay'
+  | 'listWeek';
 
 /**
  * Calendar Event (API v2 camelCase)

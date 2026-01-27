@@ -13,7 +13,10 @@ import { RoleEnumSchema } from './role-id-param.dto.js';
  * Check user role request body schema
  */
 export const CheckUserRoleSchema = z.object({
-  userId: z.number().int('User ID must be an integer').positive('User ID must be positive'),
+  userId: z
+    .number()
+    .int('User ID must be an integer')
+    .positive('User ID must be positive'),
   requiredRole: RoleEnumSchema,
 });
 

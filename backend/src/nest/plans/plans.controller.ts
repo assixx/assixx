@@ -27,7 +27,11 @@ import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
-import { GetAllPlansQueryDto, UpdateAddonsDto, UpgradePlanDto } from './dto/index.js';
+import {
+  GetAllPlansQueryDto,
+  UpdateAddonsDto,
+  UpgradePlanDto,
+} from './dto/index.js';
 import type {
   CostCalculation,
   CurrentPlanResponse,
@@ -43,12 +47,16 @@ export class PlansController {
 
   @Get()
   @Public()
-  async getAllPlans(@Query() query: GetAllPlansQueryDto): Promise<PlanWithFeatures[]> {
+  async getAllPlans(
+    @Query() query: GetAllPlansQueryDto,
+  ): Promise<PlanWithFeatures[]> {
     return await this.plansService.getAllPlans(query.includeInactive);
   }
 
   @Get('current')
-  async getCurrentPlan(@TenantId() tenantId: number): Promise<CurrentPlanResponse> {
+  async getCurrentPlan(
+    @TenantId() tenantId: number,
+  ): Promise<CurrentPlanResponse> {
     const currentPlan = await this.plansService.getCurrentPlan(tenantId);
     if (currentPlan === null) {
       throw new NotFoundException('No active plan found');
@@ -86,7 +94,9 @@ export class PlansController {
 
   @Get(':id')
   @Public()
-  async getPlanById(@Param('id', ParseIntPipe) id: number): Promise<PlanWithFeatures> {
+  async getPlanById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PlanWithFeatures> {
     const plan = await this.plansService.getPlanById(id);
     if (plan === null) {
       throw new NotFoundException('Plan not found');
@@ -96,7 +106,9 @@ export class PlansController {
 
   @Get(':id/features')
   @Public()
-  async getPlanFeatures(@Param('id', ParseIntPipe) id: number): Promise<PlanFeature[]> {
+  async getPlanFeatures(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PlanFeature[]> {
     return await this.plansService.getPlanFeatures(id);
   }
 
@@ -108,7 +120,13 @@ export class PlansController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<CurrentPlanResponse> {
-    const effectiveDate = dto.effectiveDate !== undefined ? new Date(dto.effectiveDate) : undefined;
-    return await this.plansService.upgradePlan(tenantId, dto.newPlanCode, effectiveDate, user.id);
+    const effectiveDate =
+      dto.effectiveDate !== undefined ? new Date(dto.effectiveDate) : undefined;
+    return await this.plansService.upgradePlan(
+      tenantId,
+      dto.newPlanCode,
+      effectiveDate,
+      user.id,
+    );
   }
 }

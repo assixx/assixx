@@ -1,11 +1,14 @@
-/* eslint-disable max-lines */
 // =============================================================================
 // SHIFTS - EVENT HANDLERS
 // Based on: frontend/src/scripts/shifts/handlers/*.ts
 // Adapted for Svelte 5 (pure functions for use in components)
 // =============================================================================
 
-import { performAutofill, type AutofillConfig, type AutofillResult } from './autofill';
+import {
+  performAutofill,
+  type AutofillConfig,
+  type AutofillResult,
+} from './autofill';
 import { getDropTargetData, getEmployeeIdFromDrag } from './drag-drop';
 import {
   validateEmployeeAvailability,
@@ -45,7 +48,12 @@ export function validateShiftAssignment(
   }
 
   // Check if already assigned to this shift
-  const alreadyAssigned = checkAlreadyAssigned(employeeId, date, shiftType, getShiftEmployees);
+  const alreadyAssigned = checkAlreadyAssigned(
+    employeeId,
+    date,
+    shiftType,
+    getShiftEmployees,
+  );
   if (!alreadyAssigned.valid) {
     return { valid: false, error: alreadyAssigned.message };
   }
@@ -57,7 +65,12 @@ export function validateShiftAssignment(
   }
 
   // Check for duplicate shift on same day
-  const duplicate = checkDuplicateShiftAssignment(employee, date, shiftType, getShiftEmployees);
+  const duplicate = checkDuplicateShiftAssignment(
+    employee,
+    date,
+    shiftType,
+    getShiftEmployees,
+  );
   if (!duplicate.valid) {
     return { valid: false, error: duplicate.message };
   }
@@ -538,7 +551,10 @@ export function validateDropOperation(
   // 1. Check if employee is available on this date
   const availabilityResult = validateEmployeeAvailability(employee, dateKey);
   if (!availabilityResult.valid) {
-    return { valid: false, error: availabilityResult.message ?? 'Mitarbeiter nicht verfügbar' };
+    return {
+      valid: false,
+      error: availabilityResult.message ?? 'Mitarbeiter nicht verfügbar',
+    };
   }
 
   // 2. Check if employee is already assigned to another shift on the same day (Doppelschicht!)
@@ -549,13 +565,19 @@ export function validateDropOperation(
     getShiftEmployees,
   );
   if (!duplicateResult.valid) {
-    return { valid: false, error: duplicateResult.message ?? 'Doppelschicht nicht erlaubt' };
+    return {
+      valid: false,
+      error: duplicateResult.message ?? 'Doppelschicht nicht erlaubt',
+    };
   }
 
   // 3. Check if employee is already assigned to THIS shift
   const currentEmployeesForShift = getShiftEmployees(dateKey, shiftType);
   if (currentEmployeesForShift.includes(employeeId)) {
-    return { valid: false, warning: 'Mitarbeiter ist bereits dieser Schicht zugewiesen' };
+    return {
+      valid: false,
+      warning: 'Mitarbeiter ist bereits dieser Schicht zugewiesen',
+    };
   }
 
   return { valid: true };
