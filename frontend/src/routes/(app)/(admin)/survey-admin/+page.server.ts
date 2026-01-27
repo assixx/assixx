@@ -90,7 +90,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     areas,
     currentUser: {
       userId: user?.id ?? 0,
-      role: (user?.role ?? 'employee'),
+      role: user?.role ?? 'employee',
       hasFullAccess: user?.hasFullAccess ?? false,
     },
   };
