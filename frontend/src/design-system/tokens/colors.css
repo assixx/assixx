@@ -81,6 +81,7 @@
 
   --color-border: var(--color-gray-800); /* #424242 - Borders */
   --color-border-subtle: var(--color-gray-900); /* #212121 - Subtle borders */
+  --color-border-hover: #a9d9ff54; /* Blue tint ~33% opacity - Card/element hover borders */
 
   /* ========== SURFACE (Glassmorphism) ========== */
   --color-glass-bg: rgb(255 255 255 / 2%); /* Ultra-subtle glass */

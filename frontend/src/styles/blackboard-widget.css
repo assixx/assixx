@@ -41,6 +41,10 @@
   opacity: 100%;
 }
 
+.card--blackboard.loaded:hover {
+  border-color: var(--color-border-hover);
+}
+
 /* ========================================
    CARD HEADER CUSTOMIZATION
    ======================================== */
