@@ -366,8 +366,8 @@
       <!-- Content Section -->
       <div class="content-section">
         <h3 class="section-title"><i class="fas fa-align-left"></i> Inhalt</h3>
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Sanitized via DOMPurify -->
         <div class="section-content">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Sanitized via DOMPurify in sanitizeWithLineBreaks() -->
           {@html sanitizeWithLineBreaks(entry.content)}
         </div>
       </div>
