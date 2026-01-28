@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import {
     showWarningAlert,
     showErrorAlert,
@@ -30,7 +31,6 @@
     getAreaDisplay,
     getLeadDisplay,
     getTeamCountText,
-    highlightMatch,
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -442,8 +442,10 @@
                 >
                   <div class="search-result-item">
                     <div class="search-result-item__name">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes input -->
-                      {@html highlightMatch(dept.name, currentSearchQuery)}
+                      <HighlightText
+                        text={dept.name}
+                        query={currentSearchQuery}
+                      />
                     </div>
                     <div class="search-result-item__email">
                       {getAreaDisplay(dept.areaName)}

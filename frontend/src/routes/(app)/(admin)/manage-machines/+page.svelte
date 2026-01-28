@@ -38,13 +38,14 @@
     formatOperatingHours,
     getEmptyStateTitle,
     getEmptyStateDescription,
-    highlightMatch,
     buildMachineFormData,
     populateFormFromMachine,
     getTeamsBadgeData,
     getAreaBadgeData,
     getDepartmentBadgeData,
   } from './_lib/utils';
+
+  import HighlightText from '$lib/components/HighlightText.svelte';
 
   import type { PageData } from './$types';
   import type { Machine, MachineStatusFilter } from './_lib/types';
@@ -453,24 +454,22 @@
                 >
                   <div class="search-result__content">
                     <div class="search-result__name">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                      {@html highlightMatch(
-                        machine.name,
-                        machineState.currentSearchQuery,
-                      )}
+                      <HighlightText
+                        text={machine.name}
+                        query={machineState.currentSearchQuery}
+                      />
                     </div>
                     <div class="search-result__details">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                      {@html highlightMatch(
-                        machine.model ?? '',
-                        machineState.currentSearchQuery,
-                      )}
+                      <HighlightText
+                        text={machine.model ?? ''}
+                        query={machineState.currentSearchQuery}
+                      />
                       {#if machine.manufacturer}
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                        · {@html highlightMatch(
-                          machine.manufacturer,
-                          machineState.currentSearchQuery,
-                        )}
+                        ·
+                        <HighlightText
+                          text={machine.manufacturer}
+                          query={machineState.currentSearchQuery}
+                        />
                       {/if}
                     </div>
                   </div>

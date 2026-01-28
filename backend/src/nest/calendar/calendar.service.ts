@@ -284,28 +284,18 @@ export class CalendarService {
     const hasUnrestrictedAccess =
       userRole.has_full_access || userRole.role === 'root';
 
-    if (!hasUnrestrictedAccess) {
-      // Users without full access get permission-based visibility filtering
-      const permissionFilter = this.buildPermissionBasedFilter(
-        filterType,
-        userId,
-        tenantId,
-        paramIndex,
-      );
-      query += permissionFilter.clause;
-      params.push(...permissionFilter.newParams);
-      paramIndex = permissionFilter.newIndex;
-    } else {
-      // Full access users can see all events, apply UI filter only
-      const adminFilter = this.buildAdminOrgLevelFilter(
-        filterType,
-        userId,
-        paramIndex,
-      );
-      query += adminFilter.clause;
-      params.push(...adminFilter.newParams);
-      paramIndex = adminFilter.newIndex;
-    }
+    const accessFilter =
+      hasUnrestrictedAccess ?
+        this.buildAdminOrgLevelFilter(filterType, userId, paramIndex)
+      : this.buildPermissionBasedFilter(
+          filterType,
+          userId,
+          tenantId,
+          paramIndex,
+        );
+    query += accessFilter.clause;
+    params.push(...accessFilter.newParams);
+    paramIndex = accessFilter.newIndex;
 
     // Apply date and search filters
     const dateSearch = this.appendDateSearchFilters(
@@ -712,27 +702,39 @@ export class CalendarService {
       dto.teamIds !== undefined;
 
     if (hasAssignmentUpdate) {
-      const { orgLevel, departmentId, teamId, areaId } =
-        this.determineOrgTarget(dto);
-
-      updates.push(`org_level = $${paramIndex}`);
-      params.push(orgLevel);
-      paramIndex++;
-
-      updates.push(`department_id = $${paramIndex}`);
-      params.push(departmentId);
-      paramIndex++;
-
-      updates.push(`team_id = $${paramIndex}`);
-      params.push(teamId);
-      paramIndex++;
-
-      updates.push(`area_id = $${paramIndex}`);
-      params.push(areaId);
-      paramIndex++;
+      paramIndex = this.appendAssignmentUpdates(
+        dto,
+        updates,
+        params,
+        paramIndex,
+      );
     }
 
     // Handle non-assignment fields
+    const fields = this.getEventFieldMappings(hasAssignmentUpdate);
+
+    for (const { key, column, transform } of fields) {
+      // Safe: key is from hardcoded array with keyof UpdateEventDto, not user input
+
+      const fieldValue = (dto as Record<string, unknown>)[key];
+      if (fieldValue !== undefined) {
+        const value =
+          transform !== undefined ? transform(fieldValue) : fieldValue;
+        updates.push(`${column} = $${paramIndex}`);
+        params.push(value);
+        paramIndex++;
+      }
+    }
+
+    return { updates, params };
+  }
+
+  /** Field-to-column mappings for event updates (excludes org assignment fields) */
+  private getEventFieldMappings(hasAssignmentUpdate: boolean): {
+    key: keyof UpdateEventDto;
+    column: string;
+    transform?: (v: unknown) => unknown;
+  }[] {
     const fields: {
       key: keyof UpdateEventDto;
       column: string;
@@ -765,25 +767,38 @@ export class CalendarService {
       { key: 'color', column: 'color' },
     ];
 
-    // Only include orgLevel if no assignment update (otherwise already handled above)
+    // Only include orgLevel if no assignment update (otherwise handled by appendAssignmentUpdates)
     if (!hasAssignmentUpdate) {
       fields.push({ key: 'orgLevel', column: 'org_level' });
     }
 
-    for (const { key, column, transform } of fields) {
-      // Safe: key is from hardcoded array with keyof UpdateEventDto, not user input
+    return fields;
+  }
 
-      const fieldValue = (dto as Record<string, unknown>)[key];
-      if (fieldValue !== undefined) {
-        const value =
-          transform !== undefined ? transform(fieldValue) : fieldValue;
-        updates.push(`${column} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
+  /** Append org assignment columns (org_level, department_id, team_id, area_id) */
+  private appendAssignmentUpdates(
+    dto: UpdateEventDto,
+    updates: string[],
+    params: unknown[],
+    paramIndex: number,
+  ): number {
+    const { orgLevel, departmentId, teamId, areaId } =
+      this.determineOrgTarget(dto);
+
+    const assignments: [string, unknown][] = [
+      ['org_level', orgLevel],
+      ['department_id', departmentId],
+      ['team_id', teamId],
+      ['area_id', areaId],
+    ];
+
+    for (const [column, value] of assignments) {
+      updates.push(`${column} = $${paramIndex}`);
+      params.push(value);
+      paramIndex++;
     }
 
-    return { updates, params };
+    return paramIndex;
   }
 
   /**

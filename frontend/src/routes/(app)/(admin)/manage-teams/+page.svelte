@@ -33,12 +33,13 @@
     getStatusBadgeClass,
     getStatusLabel,
     formatDate,
-    highlightMatch,
     getDefaultFormValues,
     getDepartmentBadge,
     getMembersBadge,
     getMachinesBadge,
   } from './_lib/utils';
+
+  import HighlightText from '$lib/components/HighlightText.svelte';
 
   import type { PageData } from './$types';
   import type {
@@ -477,10 +478,12 @@
                   }}
                 >
                   <i class="fas fa-users-cog text-blue-500"></i>
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  <span
-                    >{@html highlightMatch(team.name, currentSearchQuery)}</span
-                  >
+                  <span>
+                    <HighlightText
+                      text={team.name}
+                      query={currentSearchQuery}
+                    />
+                  </span>
                   {#if team.departmentName}
                     <span
                       class="text-[var(--color-text-secondary)] text-sm ml-2"
