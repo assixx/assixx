@@ -13,4 +13,6 @@ export class ConversationAttachmentsParamDto extends createZodDto(
 ) {}
 
 // Type export
-export type ConversationAttachmentsParam = z.infer<typeof ConversationAttachmentsParamSchema>;
+export type ConversationAttachmentsParam = z.infer<
+  typeof ConversationAttachmentsParamSchema
+>;

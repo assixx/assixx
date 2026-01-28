@@ -9,7 +9,10 @@ import { z } from 'zod';
 /**
  * Notification types preferences structure
  */
-const NotificationTypesSchema = z.record(z.string(), z.record(z.string(), z.boolean()));
+const NotificationTypesSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.boolean()),
+);
 
 /**
  * Update preferences request body schema
@@ -24,4 +27,6 @@ export const UpdatePreferencesSchema = z.object({
 /**
  * Update Preferences DTO class
  */
-export class UpdatePreferencesDto extends createZodDto(UpdatePreferencesSchema) {}
+export class UpdatePreferencesDto extends createZodDto(
+  UpdatePreferencesSchema,
+) {}

@@ -455,7 +455,11 @@ export class SettingsController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<SettingsListResponse> {
-    const settings = await this.settingsService.getAdminUserSettings(userId, tenantId, user.role);
+    const settings = await this.settingsService.getAdminUserSettings(
+      userId,
+      tenantId,
+      user.role,
+    );
     return { settings };
   }
 
@@ -484,14 +488,16 @@ export class SettingsController {
     @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<BulkUpdateResponse> {
     const contextId = dto.type === 'user' ? user.id : tenantId;
-    const settingsData: SettingData[] = dto.settings.map((s: BulkSettingItem) => ({
-      setting_key: s.setting_key,
-      setting_value: s.setting_value,
-      value_type: s.value_type,
-      category: s.category,
-      description: s.description,
-      is_public: s.is_public,
-    }));
+    const settingsData: SettingData[] = dto.settings.map(
+      (s: BulkSettingItem) => ({
+        setting_key: s.setting_key,
+        setting_value: s.setting_value,
+        value_type: s.value_type,
+        category: s.category,
+        description: s.description,
+        is_public: s.is_public,
+      }),
+    );
 
     const results = await this.settingsService.bulkUpdate(
       dto.type,

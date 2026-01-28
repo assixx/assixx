@@ -28,7 +28,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
-import { getUploadDirectory, sanitizeFilename, validatePath } from '../../utils/pathSecurity.js';
+import {
+  getUploadDirectory,
+  sanitizeFilename,
+  validatePath,
+} from '../../utils/pathSecurity.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
@@ -149,17 +153,23 @@ export class ChatController {
   // ============================================================
 
   @Get('conversations')
-  async getConversations(@Query() query: GetConversationsQueryDto): Promise<unknown> {
+  async getConversations(
+    @Query() query: GetConversationsQueryDto,
+  ): Promise<unknown> {
     return await this.chatService.getConversations(query);
   }
 
   @Post('conversations')
-  async createConversation(@Body() dto: CreateConversationDto): Promise<unknown> {
+  async createConversation(
+    @Body() dto: CreateConversationDto,
+  ): Promise<unknown> {
     return await this.chatService.createConversation(dto);
   }
 
   @Get('conversations/:id')
-  async getConversation(@Param() params: ConversationIdParamDto): Promise<unknown> {
+  async getConversation(
+    @Param() params: ConversationIdParamDto,
+  ): Promise<unknown> {
     return await this.chatService.getConversation(params.id);
   }
 
@@ -172,7 +182,9 @@ export class ChatController {
   }
 
   @Delete('conversations/:id')
-  async deleteConversation(@Param() params: ConversationIdParamDto): Promise<{ message: string }> {
+  async deleteConversation(
+    @Param() params: ConversationIdParamDto,
+  ): Promise<{ message: string }> {
     return await this.chatService.deleteConversation(params.id);
   }
 
@@ -201,7 +213,9 @@ export class ChatController {
     @Body() dto: SendMessageDto,
     @UploadedFile() file?: MulterFile,
   ): Promise<unknown> {
-    let attachment: { path: string; filename: string; mimeType: string; size: number } | undefined;
+    let attachment:
+      | { path: string; filename: string; mimeType: string; size: number }
+      | undefined;
 
     if (file) {
       attachment = {
@@ -224,7 +238,9 @@ export class ChatController {
   }
 
   @Delete('messages/:id')
-  async deleteMessage(@Param() params: MessageIdParamDto): Promise<{ message: string }> {
+  async deleteMessage(
+    @Param() params: MessageIdParamDto,
+  ): Promise<{ message: string }> {
     return await this.chatService.deleteMessage(params.id);
   }
 
@@ -239,7 +255,9 @@ export class ChatController {
   }
 
   @Get('search')
-  async searchMessages(@Query() query: SearchMessagesQueryDto): Promise<unknown> {
+  async searchMessages(
+    @Query() query: SearchMessagesQueryDto,
+  ): Promise<unknown> {
     return await this.chatService.searchMessages(query);
   }
 
@@ -256,12 +274,16 @@ export class ChatController {
   }
 
   @Delete('conversations/:id/participants/:userId')
-  async removeParticipant(@Param() params: RemoveParticipantParamsDto): Promise<unknown> {
+  async removeParticipant(
+    @Param() params: RemoveParticipantParamsDto,
+  ): Promise<unknown> {
     return await this.chatService.removeParticipant(params.id, params.userId);
   }
 
   @Post('conversations/:id/leave')
-  async leaveConversation(@Param() params: ConversationIdParamDto): Promise<unknown> {
+  async leaveConversation(
+    @Param() params: ConversationIdParamDto,
+  ): Promise<unknown> {
     return await this.chatService.leaveConversation(params.id);
   }
 
@@ -304,7 +326,9 @@ export class ChatController {
   // ============================================================
 
   @Post('scheduled-messages')
-  async createScheduledMessage(@Body() dto: CreateScheduledMessageDto): Promise<unknown> {
+  async createScheduledMessage(
+    @Body() dto: CreateScheduledMessageDto,
+  ): Promise<unknown> {
     return await this.chatService.createScheduledMessage(dto);
   }
 
@@ -314,7 +338,9 @@ export class ChatController {
   }
 
   @Get('scheduled-messages/:id')
-  async getScheduledMessage(@Param() params: ScheduledMessageIdParamDto): Promise<unknown> {
+  async getScheduledMessage(
+    @Param() params: ScheduledMessageIdParamDto,
+  ): Promise<unknown> {
     return await this.chatService.getScheduledMessage(params.id);
   }
 
@@ -362,7 +388,10 @@ export class ChatController {
     const conversationId = params.id;
     const fileUuid = uuidv7();
     const extension = path.extname(file.originalname).toLowerCase();
-    const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    const checksum = crypto
+      .createHash('sha256')
+      .update(file.buffer)
+      .digest('hex');
 
     const now = new Date();
     const year = now.getFullYear();
@@ -407,12 +436,16 @@ export class ChatController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ documents: Record<string, unknown>[]; total: number }> {
-    const result = await this.documentsService.listDocuments(tenantId, user.id, {
-      conversationId: params.id,
-      isActive: 1,
-      page: 1,
-      limit: 100,
-    });
+    const result = await this.documentsService.listDocuments(
+      tenantId,
+      user.id,
+      {
+        conversationId: params.id,
+        isActive: 1,
+        page: 1,
+        limit: 100,
+      },
+    );
 
     return { documents: result.documents, total: result.pagination.total };
   }
@@ -439,12 +472,19 @@ export class ChatController {
     }
 
     const documentId = document['id'] as number;
-    const content = await this.documentsService.getDocumentContent(documentId, user.id, tenantId);
+    const content = await this.documentsService.getDocumentContent(
+      documentId,
+      user.id,
+      tenantId,
+    );
     const disposition = query.inline === true ? 'inline' : 'attachment';
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `${disposition}; filename="${content.originalName}"`)
+      .header(
+        'Content-Disposition',
+        `${disposition}; filename="${content.originalName}"`,
+      )
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);
@@ -460,7 +500,11 @@ export class ChatController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ message: string }> {
-    await this.documentsService.deleteDocument(params.documentId, tenantId, user.id);
+    await this.documentsService.deleteDocument(
+      params.documentId,
+      tenantId,
+      user.id,
+    );
     return { message: 'Attachment deleted successfully' };
   }
 }

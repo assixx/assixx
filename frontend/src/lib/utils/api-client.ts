@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * API Client for SvelteKit
  * 1:1 Copy from frontend/src/utils/api-client.ts + SSR adaptations
@@ -401,7 +400,9 @@ export class ApiClient {
    */
   private combineSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
     const controller = new AbortController();
-    const validSignals = signals.filter((s): s is AbortSignal => s !== undefined);
+    const validSignals = signals.filter(
+      (s): s is AbortSignal => s !== undefined,
+    );
 
     for (const signal of validSignals) {
       // If already aborted, abort immediately
@@ -465,7 +466,10 @@ export class ApiClient {
   /**
    * Determine the Content-Type header value for a request
    */
-  private getContentType(options: RequestInit, config: ApiConfig): string | null {
+  private getContentType(
+    options: RequestInit,
+    config: ApiConfig,
+  ): string | null {
     const hasBody = options.body !== undefined && options.body !== null;
     if (!hasBody) {
       return null;
@@ -500,7 +504,10 @@ export class ApiClient {
     return `Bearer ${token}`;
   }
 
-  private buildHeaders(options: RequestInit, config: ApiConfig): Record<string, string> {
+  private buildHeaders(
+    options: RequestInit,
+    config: ApiConfig,
+  ): Record<string, string> {
     const headers: Record<string, string> = {};
 
     // Copy existing headers
@@ -609,7 +616,9 @@ export class ApiClient {
   private getCredentialsMode(endpoint: string): RequestCredentials {
     // Auth endpoints need cookies for HttpOnly refresh token
     const authEndpoints = ['/auth/login', '/auth/logout', '/auth/refresh'];
-    const isAuthEndpoint = authEndpoints.some((auth) => endpoint.startsWith(auth));
+    const isAuthEndpoint = authEndpoints.some((auth) =>
+      endpoint.startsWith(auth),
+    );
     return isAuthEndpoint ? 'include' : 'omit';
   }
 
@@ -635,7 +644,8 @@ export class ApiClient {
 
     // Create timeout signal (default 30s, configurable via config.timeout)
     const timeoutMs = config.timeout ?? DEFAULT_TIMEOUT_MS;
-    const { signal: timeoutSignal, cleanup: cleanupTimeout } = this.createTimeoutSignal(timeoutMs);
+    const { signal: timeoutSignal, cleanup: cleanupTimeout } =
+      this.createTimeoutSignal(timeoutMs);
 
     // Combine user signal (if provided) with timeout signal
     const combinedSignal = this.combineSignals(config.signal, timeoutSignal);
@@ -698,7 +708,10 @@ export class ApiClient {
     if (error.name === 'AbortError') {
       return true;
     }
-    return error.message.includes('NetworkError') || error.message.includes('aborted');
+    return (
+      error.message.includes('NetworkError') ||
+      error.message.includes('aborted')
+    );
   }
 
   /**
@@ -707,7 +720,11 @@ export class ApiClient {
   private handleRequestError(error: unknown, timeoutMs: number): never {
     if (error instanceof Error) {
       if (this.isTimeoutError(error)) {
-        throw new ApiError(`Request timeout after ${timeoutMs}ms`, 'TIMEOUT', 0);
+        throw new ApiError(
+          `Request timeout after ${timeoutMs}ms`,
+          'TIMEOUT',
+          0,
+        );
       }
 
       // Don't log abort errors (expected during navigation)
@@ -756,24 +773,24 @@ export class ApiClient {
     return await response.text();
   }
 
-  private extractErrorMessage(data: Record<string, unknown>): { message: string; details: string } {
-    const error = data.error as { message?: string; details?: string } | undefined;
+  private extractErrorMessage(data: Record<string, unknown>): {
+    message: string;
+    details: string;
+  } {
+    const error = data.error as
+      | { message?: string; details?: string }
+      | undefined;
 
     const message =
-      typeof error?.message === 'string'
-        ? error.message
-        : typeof data.error === 'string'
-          ? data.error
-          : typeof data.message === 'string'
-            ? data.message
-            : '';
+      typeof error?.message === 'string' ? error.message
+      : typeof data.error === 'string' ? data.error
+      : typeof data.message === 'string' ? data.message
+      : '';
 
     const details =
-      typeof data.details === 'string'
-        ? data.details
-        : typeof error?.details === 'string'
-          ? error.details
-          : '';
+      typeof data.details === 'string' ? data.details
+      : typeof error?.details === 'string' ? error.details
+      : '';
 
     return { message, details };
   }
@@ -793,22 +810,28 @@ export class ApiClient {
     }
   }
 
-  private createApiError(response: Response, data: Record<string, unknown>): ApiError {
-    const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
+  private createApiError(
+    response: Response,
+    data: Record<string, unknown>,
+  ): ApiError {
+    const error = data.error as
+      | { message?: string; code?: string; details?: unknown }
+      | undefined;
 
     const message =
-      typeof error?.message === 'string'
-        ? error.message
-        : typeof data.message === 'string'
-          ? data.message
-          : `Request failed with status ${response.status}`;
+      typeof error?.message === 'string' ? error.message
+      : typeof data.message === 'string' ? data.message
+      : `Request failed with status ${response.status}`;
 
     const code = typeof error?.code === 'string' ? error.code : 'API_ERROR';
 
     return new ApiError(message, code, response.status, error?.details);
   }
 
-  private handleV2Response(response: Response, data: Record<string, unknown>): unknown {
+  private handleV2Response(
+    response: Response,
+    data: Record<string, unknown>,
+  ): unknown {
     if ('success' in data && typeof data.success === 'boolean') {
       const apiResponse = data as unknown as ApiResponseWrapper;
 
@@ -892,7 +915,10 @@ export class ApiClient {
       // PERFORMANCE: Deduplicate concurrent requests for same endpoint
       const pending = this.pendingRequests.get(endpoint);
       if (pending !== undefined) {
-        log.debug({ endpoint, source: 'dedup' }, `⚡ Request DEDUP: ${endpoint}`);
+        log.debug(
+          { endpoint, source: 'dedup' },
+          `⚡ Request DEDUP: ${endpoint}`,
+        );
         return await (pending as Promise<T>);
       }
     }
@@ -921,15 +947,21 @@ export class ApiClient {
     }
   }
 
-  async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async post<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    config?: ApiConfig,
+  ): Promise<T> {
     const body =
-      data === undefined || data === null
-        ? null
-        : data instanceof FormData
-          ? data
-          : JSON.stringify(data);
+      data === undefined || data === null ? null
+      : data instanceof FormData ? data
+      : JSON.stringify(data);
 
-    const result = await this.request<T>(endpoint, { method: 'POST', body }, config);
+    const result = await this.request<T>(
+      endpoint,
+      { method: 'POST', body },
+      config,
+    );
 
     // Invalidate related cache entries after successful POST
     this.invalidateCache(endpoint);
@@ -937,7 +969,11 @@ export class ApiClient {
     return result;
   }
 
-  async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async put<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    config?: ApiConfig,
+  ): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -953,7 +989,11 @@ export class ApiClient {
     return result;
   }
 
-  async patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async patch<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    config?: ApiConfig,
+  ): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -969,7 +1009,11 @@ export class ApiClient {
     return result;
   }
 
-  async delete<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async delete<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    config?: ApiConfig,
+  ): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -985,7 +1029,11 @@ export class ApiClient {
     return result;
   }
 
-  async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
+  async upload<T = unknown>(
+    endpoint: string,
+    formData: FormData,
+    config?: ApiConfig,
+  ): Promise<T> {
     return await this.request<T>(
       endpoint,
       { method: 'POST', body: formData },

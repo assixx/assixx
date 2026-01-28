@@ -41,8 +41,16 @@
   <header class="header">
     <nav class="nav">
       <div class="logo-container u-cursor-pointer">
-        <button type="button" class="logo-button" onclick={handleReloadPage}>
-          <img src="/images/logo.png" alt="Assixx Logo" class="logo" />
+        <button
+          type="button"
+          class="logo-button"
+          onclick={handleReloadPage}
+        >
+          <img
+            src="/images/logo.png"
+            alt="Assixx Logo"
+            class="logo"
+          />
         </button>
       </div>
       <div class="nav-links">
@@ -50,8 +58,9 @@
         <a href="#security">Sicherheit</a>
         <a href="#pricing">Preise</a>
         <a href={resolve('/login', {})}>Anmelden</a>
-        <a href={resolve('/signup', {})} class="btn btn-primary btn-primary--transparent"
-          >Registrieren</a
+        <a
+          href={resolve('/signup', {})}
+          class="btn btn-primary btn-primary--transparent">Registrieren</a
         >
       </div>
     </nav>
@@ -61,31 +70,48 @@
   <section class="hero">
     <h1>Die digitale Lösung für Industriefirmen</h1>
     <p>
-      Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung. Dokumentenverwaltung, Kommunikation
-      und mehr - alles in einer Plattform.
+      Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung.
+      Dokumentenverwaltung, Kommunikation und mehr - alles in einer Plattform.
     </p>
-    <a href={resolve('/signup', {})} class="btn btn-primary btn-primary--transparent"
-      >Jetzt registrieren</a
+    <a
+      href={resolve('/signup', {})}
+      class="btn btn-primary btn-primary--transparent">Jetzt registrieren</a
     >
   </section>
 
   <!-- Features Section -->
-  <section class="features" id="features">
+  <section
+    class="features"
+    id="features"
+  >
     <div class="features-grid">
       <div class="feature-card">
         <h3>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
             />
           </svg>
           Dokumentenverwaltung
         </h3>
-        <p>Lohnabrechnungen, Bescheinigungen und mehr - digital und sicher verwaltet.</p>
+        <p>
+          Lohnabrechnungen, Bescheinigungen und mehr - digital und sicher
+          verwaltet.
+        </p>
       </div>
       <div class="feature-card">
         <h3>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"
             />
@@ -96,7 +122,12 @@
       </div>
       <div class="feature-card">
         <h3>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1
                 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19
@@ -106,11 +137,19 @@
           </svg>
           Benachrichtigungen
         </h3>
-        <p>Wichtige Infos erreichen jeden Mitarbeiter sofort per Push-Notification.</p>
+        <p>
+          Wichtige Infos erreichen jeden Mitarbeiter sofort per
+          Push-Notification.
+        </p>
       </div>
       <div class="feature-card">
         <h3>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2
                 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1
@@ -126,31 +165,39 @@
   </section>
 
   <!-- Security Section -->
-  <section class="security-section" id="security">
+  <section
+    class="security-section"
+    id="security"
+  >
     <div class="security-section__container">
       <h2 class="security-section__title">🔒 Ihre Daten sind bei uns sicher</h2>
       <p class="security-section__subtitle">
-        Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre sensiblen Unternehmensdaten
-        sind durch modernste Verschlüsselung und strikte Sicherheitsmaßnahmen geschützt.
+        Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre
+        sensiblen Unternehmensdaten sind durch modernste Verschlüsselung und
+        strikte Sicherheitsmaßnahmen geschützt.
       </p>
 
       <div class="security-features-grid">
         <!-- Security Feature Cards -->
         <div class="feature-card u-text-center">
           <div class="u-fs-3xl u-mb-md">🇩🇪</div>
-          <h3 class="u-color-primary u-mb-md u-text-center">100% Deutsche Server</h3>
+          <h3 class="u-color-primary u-mb-md u-text-center">
+            100% Deutsche Server
+          </h3>
           <p>
-            Alle Daten werden ausschließlich auf Servern in Deutschland gespeichert. Kein
-            Datentransfer ins Ausland.
+            Alle Daten werden ausschließlich auf Servern in Deutschland
+            gespeichert. Kein Datentransfer ins Ausland.
           </p>
         </div>
 
         <div class="feature-card u-text-center">
           <div class="u-fs-3xl u-mb-md">🔐</div>
-          <h3 class="u-color-primary u-mb-md u-text-center">Ende-zu-Ende Verschlüsselung</h3>
+          <h3 class="u-color-primary u-mb-md u-text-center">
+            Ende-zu-Ende Verschlüsselung
+          </h3>
           <p>
-            Militärgrade AES-256 Verschlüsselung für alle Daten - sowohl bei der Übertragung als
-            auch bei der Speicherung.
+            Militärgrade AES-256 Verschlüsselung für alle Daten - sowohl bei der
+            Übertragung als auch bei der Speicherung.
           </p>
         </div>
 
@@ -158,34 +205,41 @@
           <div class="u-fs-3xl u-mb-md">📋</div>
           <h3 class="u-color-primary u-mb-md u-text-center">DSGVO-konform</h3>
           <p>
-            Vollständige Compliance mit allen deutschen und europäischen Datenschutzgesetzen.
-            Regelmäßige Audits garantiert.
+            Vollständige Compliance mit allen deutschen und europäischen
+            Datenschutzgesetzen. Regelmäßige Audits garantiert.
           </p>
         </div>
 
         <div class="feature-card u-text-center">
           <div class="u-fs-3xl u-mb-md">🔍</div>
-          <h3 class="u-color-primary u-mb-md u-text-center">Transparente Datenverarbeitung</h3>
+          <h3 class="u-color-primary u-mb-md u-text-center">
+            Transparente Datenverarbeitung
+          </h3>
           <p>
-            Sie behalten jederzeit die volle Kontrolle über Ihre Daten. Einsicht, Export und
-            Löschung auf Knopfdruck.
+            Sie behalten jederzeit die volle Kontrolle über Ihre Daten.
+            Einsicht, Export und Löschung auf Knopfdruck.
           </p>
         </div>
 
         <div class="feature-card u-text-center">
           <div class="u-fs-3xl u-mb-md">🛡️</div>
-          <h3 class="u-color-primary u-mb-md u-text-center">ISO 27001 zertifiziert</h3>
+          <h3 class="u-color-primary u-mb-md u-text-center">
+            ISO 27001 zertifiziert
+          </h3>
           <p>
-            Unsere Sicherheitsprozesse entsprechen den höchsten internationalen Standards für
-            Informationssicherheit.
+            Unsere Sicherheitsprozesse entsprechen den höchsten internationalen
+            Standards für Informationssicherheit.
           </p>
         </div>
 
         <div class="feature-card u-text-center">
           <div class="u-fs-3xl u-mb-md">🚫</div>
-          <h3 class="u-color-primary u-mb-md u-text-center">Keine Datenweitergabe</h3>
+          <h3 class="u-color-primary u-mb-md u-text-center">
+            Keine Datenweitergabe
+          </h3>
           <p>
-            Ihre Daten gehören nur Ihnen. Keine Weitergabe an Dritte, keine Werbung, kein Tracking.
+            Ihre Daten gehören nur Ihnen. Keine Weitergabe an Dritte, keine
+            Werbung, kein Tracking.
           </p>
         </div>
       </div>
@@ -194,20 +248,27 @@
       <div class="enterprise-box">
         <h3 class="enterprise-box__title">🏢 Enterprise On-Premise Lösung</h3>
         <p class="enterprise-box__description">
-          Für Unternehmen mit besonderen Sicherheitsanforderungen bieten wir die Möglichkeit, Assixx
-          vollständig auf Ihren eigenen Servern zu betreiben.
-          <strong>100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong>
+          Für Unternehmen mit besonderen Sicherheitsanforderungen bieten wir die
+          Möglichkeit, Assixx vollständig auf Ihren eigenen Servern zu
+          betreiben.
+          <strong
+            >100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong
+          >
         </p>
         <div class="enterprise-features-grid">
           <div>
             <div class="u-fs-xl u-mb-sm">✅</div>
             <p class="u-fw-600">Eigene Server</p>
-            <p class="u-fs-09rem u-opacity-80">Installation in Ihrem Rechenzentrum</p>
+            <p class="u-fs-09rem u-opacity-80">
+              Installation in Ihrem Rechenzentrum
+            </p>
           </div>
           <div>
             <div class="u-fs-xl u-mb-sm">✅</div>
             <p class="u-fw-600">Volle Kontrolle</p>
-            <p class="u-fs-09rem u-opacity-80">Sie behalten alle Zugriffsrechte</p>
+            <p class="u-fs-09rem u-opacity-80">
+              Sie behalten alle Zugriffsrechte
+            </p>
           </div>
           <div>
             <div class="u-fs-xl u-mb-sm">✅</div>
@@ -223,14 +284,17 @@
         <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
           href={`${resolve('/signup', {})}?plan=enterprise`}
-          class="btn btn-primary enterprise-box__button">Enterprise-Beratung anfragen</a
+          class="btn btn-primary enterprise-box__button"
+          >Enterprise-Beratung anfragen</a
         >
         <!-- eslint-enable svelte/no-navigation-without-resolve -->
       </div>
 
       <!-- Trust Badges -->
       <div class="trust-badges">
-        <p class="trust-badges__label">Vertraut von führenden Industrieunternehmen</p>
+        <p class="trust-badges__label">
+          Vertraut von führenden Industrieunternehmen
+        </p>
         <div class="trust-badges__list">
           <div class="u-fs-09rem">🔒 SSL-verschlüsselt</div>
           <div class="u-fs-09rem">✅ DSGVO-konform</div>
@@ -242,9 +306,14 @@
   </section>
 
   <!-- Pricing Section -->
-  <section class="pricing" id="pricing">
+  <section
+    class="pricing"
+    id="pricing"
+  >
     <h2>Einfache, transparente Preise</h2>
-    <p class="pricing-subtitle">Alle Pläne beinhalten 14 Tage kostenlose Testphase</p>
+    <p class="pricing-subtitle">
+      Alle Pläne beinhalten 14 Tage kostenlose Testphase
+    </p>
 
     <div class="pricing-grid">
       <!-- Basic Plan -->
@@ -273,7 +342,8 @@
 
       <!-- Professional Plan (Featured) -->
       <div class="pricing-card featured u-relative">
-        <span class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
+        <span
+          class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
           >Beliebt</span
         >
         <h3>Professional</h3>
@@ -510,14 +580,25 @@
 {#if showSignupModal}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="signup-modal" style="display: flex" onclick={handleModalBackdropClick}>
+  <div
+    class="signup-modal"
+    style="display: flex"
+    onclick={handleModalBackdropClick}
+  >
     <div class="modal-content">
       <h2>Jetzt kostenlos testen</h2>
       <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
-      <p class="u-mb-md">Bitte nutzen Sie unser vollständiges Registrierungsformular:</p>
-      <a href={resolve('/signup', {})} class="btn btn-primary u-w-full">Zur Registrierung</a>
-      <button type="button" class="btn btn-secondary btn-cancel--full" onclick={closeSignupModal}
-        >Abbrechen</button
+      <p class="u-mb-md">
+        Bitte nutzen Sie unser vollständiges Registrierungsformular:
+      </p>
+      <a
+        href={resolve('/signup', {})}
+        class="btn btn-primary u-w-full">Zur Registrierung</a
+      >
+      <button
+        type="button"
+        class="btn btn-secondary btn-cancel--full"
+        onclick={closeSignupModal}>Abbrechen</button
       >
     </div>
   </div>

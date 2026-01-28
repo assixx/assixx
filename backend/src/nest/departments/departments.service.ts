@@ -4,7 +4,12 @@
  * Business logic for department management.
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { RowDataPacket } from '../../utils/db.js';
@@ -138,7 +143,10 @@ export class DepartmentsService {
   /**
    * Map database row to API response
    */
-  private mapToResponse(dept: DepartmentRow, includeExtended: boolean): DepartmentResponse {
+  private mapToResponse(
+    dept: DepartmentRow,
+    includeExtended: boolean,
+  ): DepartmentResponse {
     const response: DepartmentResponse = {
       id: dept.id,
       name: dept.name,
@@ -179,14 +187,18 @@ export class DepartmentsService {
     this.logger.debug(`Fetching departments for tenant ${tenantId}`);
 
     try {
-      const [rows] = await execute<DepartmentRow[]>(this.FIND_ALL_DEPARTMENTS_QUERY, [
-        tenantId,
-        tenantId,
-      ]);
+      const [rows] = await execute<DepartmentRow[]>(
+        this.FIND_ALL_DEPARTMENTS_QUERY,
+        [tenantId, tenantId],
+      );
 
-      return rows.map((dept: DepartmentRow) => this.mapToResponse(dept, includeExtended));
+      return rows.map((dept: DepartmentRow) =>
+        this.mapToResponse(dept, includeExtended),
+      );
     } catch (error: unknown) {
-      this.logger.warn(`Extended query failed, using simple query: ${(error as Error).message}`);
+      this.logger.warn(
+        `Extended query failed, using simple query: ${(error as Error).message}`,
+      );
 
       const [rows] = await execute<DepartmentRow[]>(
         'SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (0, 1, 3) ORDER BY name',
@@ -229,15 +241,17 @@ export class DepartmentsService {
    * Get a single department by ID
    * Note: Does NOT filter by is_active to allow fetching inactive/archived departments
    */
-  async getDepartmentById(id: number, tenantId: number): Promise<DepartmentResponse> {
+  async getDepartmentById(
+    id: number,
+    tenantId: number,
+  ): Promise<DepartmentResponse> {
     this.logger.debug(`Fetching department ${id} for tenant ${tenantId}`);
 
     try {
-      const [rows] = await execute<DepartmentRow[]>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
-        tenantId,
-        id,
-        tenantId,
-      ]);
+      const [rows] = await execute<DepartmentRow[]>(
+        this.FIND_DEPARTMENT_BY_ID_QUERY,
+        [tenantId, id, tenantId],
+      );
 
       if (rows.length === 0 || rows[0] === undefined) {
         throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
@@ -248,7 +262,9 @@ export class DepartmentsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.warn(`Extended query failed, using simple query: ${(error as Error).message}`);
+      this.logger.warn(
+        `Extended query failed, using simple query: ${(error as Error).message}`,
+      );
 
       const [rows] = await execute<DepartmentRow[]>(
         'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
@@ -278,7 +294,9 @@ export class DepartmentsService {
       );
 
       if (existing.length > 0) {
-        this.logger.log(`Leader ${leaderId} already assigned to department ${departmentId}`);
+        this.logger.log(
+          `Leader ${leaderId} already assigned to department ${departmentId}`,
+        );
         return;
       }
 
@@ -289,7 +307,9 @@ export class DepartmentsService {
       );
       this.logger.log(`Added leader ${leaderId} to department ${departmentId}`);
     } catch (error: unknown) {
-      this.logger.error(`Error ensuring leader in department: ${(error as Error).message}`);
+      this.logger.error(
+        `Error ensuring leader in department: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -332,7 +352,11 @@ export class DepartmentsService {
     const departmentId = rows[0].id;
 
     if (dto.departmentLeadId !== undefined && dto.departmentLeadId !== null) {
-      await this.ensureLeaderInDepartment(dto.departmentLeadId, departmentId, tenantId);
+      await this.ensureLeaderInDepartment(
+        dto.departmentLeadId,
+        departmentId,
+        tenantId,
+      );
     }
 
     const result = await this.getDepartmentById(departmentId, tenantId);
@@ -357,7 +381,10 @@ export class DepartmentsService {
   /**
    * Build update fields from DTO
    */
-  private buildUpdateFields(dto: UpdateDepartmentDto): { fields: string[]; values: unknown[] } {
+  private buildUpdateFields(dto: UpdateDepartmentDto): {
+    fields: string[];
+    values: unknown[];
+  } {
     const fields: string[] = [];
     const values: unknown[] = [];
 
@@ -481,7 +508,9 @@ export class DepartmentsService {
     ];
 
     const counts = await Promise.all(
-      tables.map((table: string) => this.countDependencies(table, id, tenantId)),
+      tables.map((table: string) =>
+        this.countDependencies(table, id, tenantId),
+      ),
     );
 
     return {
@@ -515,10 +544,10 @@ export class DepartmentsService {
         [departmentId, tenantId],
       );
     } else {
-      await execute(`DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`, [
-        departmentId,
-        tenantId,
-      ]);
+      await execute(
+        `DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
+        [departmentId, tenantId],
+      );
     }
   }
 
@@ -530,18 +559,50 @@ export class DepartmentsService {
     tenantId: number,
     deps: DepartmentDependencies,
   ): Promise<void> {
-    const cleanupStrategies: { table: string; operation: 'UPDATE' | 'DELETE'; count: number }[] = [
-      { table: 'user_departments', operation: 'DELETE', count: deps.userDepartments },
+    const cleanupStrategies: {
+      table: string;
+      operation: 'UPDATE' | 'DELETE';
+      count: number;
+    }[] = [
+      {
+        table: 'user_departments',
+        operation: 'DELETE',
+        count: deps.userDepartments,
+      },
       { table: 'teams', operation: 'UPDATE', count: deps.teams },
       { table: 'machines', operation: 'UPDATE', count: deps.machines },
       { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
       { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
-      { table: 'shift_favorites', operation: 'DELETE', count: deps.shiftFavorites },
-      { table: 'kvp_suggestions', operation: 'UPDATE', count: deps.kvpSuggestions },
-      { table: 'calendar_events', operation: 'UPDATE', count: deps.calendarEvents },
-      { table: 'survey_assignments', operation: 'DELETE', count: deps.surveyAssignments },
-      { table: 'admin_department_permissions', operation: 'DELETE', count: deps.adminPermissions },
-      { table: 'document_permissions', operation: 'DELETE', count: deps.documentPermissions },
+      {
+        table: 'shift_favorites',
+        operation: 'DELETE',
+        count: deps.shiftFavorites,
+      },
+      {
+        table: 'kvp_suggestions',
+        operation: 'UPDATE',
+        count: deps.kvpSuggestions,
+      },
+      {
+        table: 'calendar_events',
+        operation: 'UPDATE',
+        count: deps.calendarEvents,
+      },
+      {
+        table: 'survey_assignments',
+        operation: 'DELETE',
+        count: deps.surveyAssignments,
+      },
+      {
+        table: 'admin_department_permissions',
+        operation: 'DELETE',
+        count: deps.adminPermissions,
+      },
+      {
+        table: 'document_permissions',
+        operation: 'DELETE',
+        count: deps.documentPermissions,
+      },
     ];
 
     interface CleanupStrategy {
@@ -553,7 +614,12 @@ export class DepartmentsService {
       cleanupStrategies
         .filter((strategy: CleanupStrategy) => strategy.count > 0)
         .map((strategy: CleanupStrategy) =>
-          this.removeDependencyFrom(strategy.table, strategy.operation, id, tenantId),
+          this.removeDependencyFrom(
+            strategy.table,
+            strategy.operation,
+            id,
+            tenantId,
+          ),
         ),
     );
   }
@@ -588,7 +654,9 @@ export class DepartmentsService {
           message: 'Cannot delete department with dependencies',
           details: {
             totalDependencies: deps.total,
-            ...(deps.userDepartments > 0 && { userDepartments: deps.userDepartments }),
+            ...(deps.userDepartments > 0 && {
+              userDepartments: deps.userDepartments,
+            }),
             ...(deps.teams > 0 && { teams: deps.teams }),
             ...(deps.machines > 0 && { machines: deps.machines }),
             ...(deps.shifts > 0 && { shifts: deps.shifts }),
@@ -623,7 +691,10 @@ export class DepartmentsService {
   /**
    * Get department members
    */
-  async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
+  async getDepartmentMembers(
+    id: number,
+    tenantId: number,
+  ): Promise<DepartmentMember[]> {
     this.logger.debug(`Fetching members for department ${id}`);
 
     const [existing] = await execute<DepartmentRow[]>(
@@ -679,12 +750,14 @@ export class DepartmentsService {
     }
 
     const [[deptRows], [teamRows]] = await Promise.all([
-      execute<CountResult[]>('SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1', [
-        tenantId,
-      ]),
-      execute<CountResult[]>('SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1', [
-        tenantId,
-      ]),
+      execute<CountResult[]>(
+        'SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1',
+        [tenantId],
+      ),
+      execute<CountResult[]>(
+        'SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1',
+        [tenantId],
+      ),
     ]);
 
     return {

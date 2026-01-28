@@ -103,15 +103,20 @@
       "
     >
       <!-- Icon -->
-      <span style="color: {colors.textColor}; display: flex; align-items: center;">
-        <i class="fas {getIconClass(toast.type)}" style="font-size: 18px;"></i>
+      <span
+        style="color: {colors.textColor}; display: flex; align-items: center;"
+      >
+        <i
+          class="fas {getIconClass(toast.type)}"
+          style="font-size: 18px;"
+        ></i>
       </span>
 
       <!-- Text -->
       <span style="flex: 1; color: {colors.textColor};">
-        {toast.title}{toast.message !== undefined && toast.message !== ''
-          ? `: ${toast.message}`
-          : ''}
+        {toast.title}{toast.message !== undefined && toast.message !== '' ?
+          `: ${toast.message}`
+        : ''}
       </span>
     </div>
   {/each}

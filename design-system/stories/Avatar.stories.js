@@ -396,7 +396,8 @@ export const CommentSection = {
             initials: 'MC',
             color: 5,
             time: '5 hours ago',
-            comment: 'Love the attention to detail. The color palette is perfect for our brand.',
+            comment:
+              'Love the attention to detail. The color palette is perfect for our brand.',
           },
           {
             name: 'Emily Rodriguez',

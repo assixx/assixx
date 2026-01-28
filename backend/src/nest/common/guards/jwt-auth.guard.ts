@@ -19,7 +19,11 @@ import { ClsService } from 'nestjs-cls';
 
 import { DatabaseService } from '../../database/database.service.js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
-import type { JwtPayload, NestAuthUser, UserRole } from '../interfaces/auth.interface.js';
+import type {
+  JwtPayload,
+  NestAuthUser,
+  UserRole,
+} from '../interfaces/auth.interface.js';
 import { VALID_ROLES } from '../interfaces/auth.interface.js';
 
 /**
@@ -189,7 +193,10 @@ export class JwtAuthGuard implements CanActivate {
   /**
    * Lookup user in database (fresh data, not from token)
    */
-  private async lookupUser(userId: number, tenantId: number): Promise<UserRow | null> {
+  private async lookupUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, email, role, tenant_id, first_name, last_name, is_active
        FROM users

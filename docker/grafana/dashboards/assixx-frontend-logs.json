@@ -30,7 +30,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -59,7 +62,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "red", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -88,7 +94,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "yellow", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -117,7 +126,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -146,7 +158,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -194,14 +209,22 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "short"
         }
       },
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 5 },
       "id": 10,
       "options": {
-        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Log Volume by Level",
@@ -261,7 +284,12 @@
       },
       "title": "Errors Only",
       "type": "logs",
-      "targets": [{ "expr": "{service=\"frontend\", level=\"error\"} | json", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "{service=\"frontend\", level=\"error\"} | json",
+          "refId": "A"
+        }
+      ]
     },
     {
       "datasource": { "type": "loki", "uid": "${loki}" },
@@ -279,7 +307,12 @@
       },
       "title": "Warnings Only",
       "type": "logs",
-      "targets": [{ "expr": "{service=\"frontend\", level=\"warning\"} | json", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "{service=\"frontend\", level=\"warning\"} | json",
+          "refId": "A"
+        }
+      ]
     },
     {
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
@@ -305,7 +338,10 @@
           "title": "Development Logs",
           "type": "logs",
           "targets": [
-            { "expr": "{service=\"frontend\", env=\"development\"} | json", "refId": "A" }
+            {
+              "expr": "{service=\"frontend\", env=\"development\"} | json",
+              "refId": "A"
+            }
           ]
         },
         {
@@ -324,7 +360,12 @@
           },
           "title": "Production Logs",
           "type": "logs",
-          "targets": [{ "expr": "{service=\"frontend\", env=\"production\"} | json", "refId": "A" }]
+          "targets": [
+            {
+              "expr": "{service=\"frontend\", env=\"production\"} | json",
+              "refId": "A"
+            }
+          ]
         }
       ]
     }

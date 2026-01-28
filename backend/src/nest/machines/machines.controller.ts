@@ -84,14 +84,22 @@ export class MachinesController {
     return await this.machinesService.listMachines(tenantId, {
       ...(query.search !== undefined && { search: query.search }),
       ...(query.status !== undefined && { status: query.status }),
-      ...(query.machineType !== undefined && { machine_type: query.machineType }),
-      ...(query.departmentId !== undefined && { department_id: query.departmentId }),
-      ...(query.needsMaintenance !== undefined && { needs_maintenance: query.needsMaintenance }),
+      ...(query.machineType !== undefined && {
+        machine_type: query.machineType,
+      }),
+      ...(query.departmentId !== undefined && {
+        department_id: query.departmentId,
+      }),
+      ...(query.needsMaintenance !== undefined && {
+        needs_maintenance: query.needsMaintenance,
+      }),
     });
   }
 
   @Get('statistics')
-  async getStatistics(@TenantId() tenantId: number): Promise<MachineStatistics> {
+  async getStatistics(
+    @TenantId() tenantId: number,
+  ): Promise<MachineStatistics> {
     return await this.machinesService.getStatistics(tenantId);
   }
 
@@ -105,7 +113,10 @@ export class MachinesController {
     @Query() query: UpcomingMaintenanceQueryDto,
     @TenantId() tenantId: number,
   ): Promise<MachineResponse[]> {
-    return await this.machinesService.getUpcomingMaintenance(tenantId, query.days);
+    return await this.machinesService.getUpcomingMaintenance(
+      tenantId,
+      query.days,
+    );
   }
 
   @Post('maintenance')
@@ -123,17 +134,29 @@ export class MachinesController {
       performedDate: dto.performedDate,
       statusAfter: dto.statusAfter, // has default, always defined
       ...(dto.performedBy !== undefined && { performedBy: dto.performedBy }),
-      ...(dto.externalCompany !== undefined && { externalCompany: dto.externalCompany }),
+      ...(dto.externalCompany !== undefined && {
+        externalCompany: dto.externalCompany,
+      }),
       ...(dto.description !== undefined && { description: dto.description }),
-      ...(dto.partsReplaced !== undefined && { partsReplaced: dto.partsReplaced }),
+      ...(dto.partsReplaced !== undefined && {
+        partsReplaced: dto.partsReplaced,
+      }),
       ...(dto.cost !== undefined && { cost: dto.cost }),
-      ...(dto.durationHours !== undefined && { durationHours: dto.durationHours }),
+      ...(dto.durationHours !== undefined && {
+        durationHours: dto.durationHours,
+      }),
       ...(dto.nextMaintenanceDate !== undefined && {
         nextMaintenanceDate: dto.nextMaintenanceDate,
       }),
       ...(dto.reportUrl !== undefined && { reportUrl: dto.reportUrl }),
     };
-    return await this.machinesService.addMaintenanceRecord(data, tenantId, user.id, ip, userAgent);
+    return await this.machinesService.addMaintenanceRecord(
+      data,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
   }
 
   /**
@@ -184,7 +207,12 @@ export class MachinesController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<MachineTeamResponse[]> {
-    return await this.machinesService.setMachineTeams(id, dto.teamIds, tenantId, user.id);
+    return await this.machinesService.setMachineTeams(
+      id,
+      dto.teamIds,
+      tenantId,
+      user.id,
+    );
   }
 
   @Post()
@@ -221,7 +249,13 @@ export class MachinesController {
         notes: dto.notes,
       }),
     } as MachineCreateRequest;
-    return await this.machinesService.createMachine(data, tenantId, user.id, ip, userAgent);
+    return await this.machinesService.createMachine(
+      data,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
   }
 
   /**
@@ -260,7 +294,12 @@ export class MachinesController {
       notes: dto.notes,
       isActive: dto.isActive,
     }) as MachineUpdateRequest;
-    return await this.machinesService.updateMachineByUuid(uuid, data, tenantId, user.id);
+    return await this.machinesService.updateMachineByUuid(
+      uuid,
+      data,
+      tenantId,
+      user.id,
+    );
   }
 
   /**
@@ -301,7 +340,14 @@ export class MachinesController {
       notes: dto.notes,
       isActive: dto.isActive,
     }) as MachineUpdateRequest;
-    return await this.machinesService.updateMachine(id, data, tenantId, user.id, ip, userAgent);
+    return await this.machinesService.updateMachine(
+      id,
+      data,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
   }
 
   /**
@@ -332,7 +378,13 @@ export class MachinesController {
     @Ip() ip: string,
     @Headers(HEADER_USER_AGENT) userAgent: string,
   ): Promise<MessageResponse> {
-    await this.machinesService.deleteMachine(id, tenantId, user.id, ip, userAgent);
+    await this.machinesService.deleteMachine(
+      id,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
     return { message: 'Machine deleted successfully' };
   }
 
@@ -345,7 +397,13 @@ export class MachinesController {
     @Ip() ip: string,
     @Headers(HEADER_USER_AGENT) userAgent: string,
   ): Promise<MessageResponse> {
-    await this.machinesService.deactivateMachine(id, tenantId, user.id, ip, userAgent);
+    await this.machinesService.deactivateMachine(
+      id,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
     return { message: 'Machine deactivated successfully' };
   }
 
@@ -358,7 +416,13 @@ export class MachinesController {
     @Ip() ip: string,
     @Headers(HEADER_USER_AGENT) userAgent: string,
   ): Promise<MessageResponse> {
-    await this.machinesService.activateMachine(id, tenantId, user.id, ip, userAgent);
+    await this.machinesService.activateMachine(
+      id,
+      tenantId,
+      user.id,
+      ip,
+      userAgent,
+    );
     return { message: 'Machine activated successfully' };
   }
 }

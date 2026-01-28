@@ -5,7 +5,9 @@ Status indicators, labels, and tags for UI feedback and categorization.
 ## Structure
 
 ```html
-<span class="badge [badge--variant] [badge--size] [badge--modifier]">Label</span>
+<span class="badge [badge--variant] [badge--size] [badge--modifier]"
+  >Label</span
+>
 ```
 
 ## Usage
@@ -149,7 +151,9 @@ Badges are intrinsically responsive and scale with font-size.
 
 ```html
 <!-- Good: Using appropriate semantic element -->
-<span class="badge badge--success" role="status" aria-label="Status: Success"> Success </span>
+<span class="badge badge--success" role="status" aria-label="Status: Success">
+  Success
+</span>
 
 <!-- Good: With screen reader text -->
 <span class="badge badge--danger">

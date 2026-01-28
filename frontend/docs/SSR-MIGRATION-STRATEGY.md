@@ -119,7 +119,9 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    return 'success' in json && json.success ? (json.data ?? null) : (json as unknown as T);
+    return 'success' in json && json.success ?
+        (json.data ?? null)
+      : (json as unknown as T);
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;

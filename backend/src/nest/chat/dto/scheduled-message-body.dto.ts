@@ -32,15 +32,21 @@ const ScheduledMessageBaseSchema = z.object({
         const minTime = new Date(Date.now() + MIN_SCHEDULE_MINUTES * 60 * 1000);
         return scheduledDate > minTime;
       },
-      { message: `Time must be at least ${MIN_SCHEDULE_MINUTES} minutes in the future` },
+      {
+        message: `Time must be at least ${MIN_SCHEDULE_MINUTES} minutes in the future`,
+      },
     )
     .refine(
       (dateStr: string): boolean => {
         const scheduledDate = new Date(dateStr);
-        const maxTime = new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000);
+        const maxTime = new Date(
+          Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000,
+        );
         return scheduledDate <= maxTime;
       },
-      { message: `Time must be at most ${MAX_SCHEDULE_DAYS} days in the future` },
+      {
+        message: `Time must be at most ${MAX_SCHEDULE_DAYS} days in the future`,
+      },
     ),
 
   attachmentPath: z.string().max(500).optional(),
@@ -53,16 +59,24 @@ const ScheduledMessageBaseSchema = z.object({
 type ScheduledMessageBase = z.infer<typeof ScheduledMessageBaseSchema>;
 
 /** Schema with validation: requires either content OR attachment */
-export const CreateScheduledMessageBodySchema = ScheduledMessageBaseSchema.refine(
-  (data: ScheduledMessageBase): boolean => {
-    const hasContent = typeof data.content === 'string' && data.content.trim().length > 0;
-    const hasAttachment = typeof data.attachmentPath === 'string' && data.attachmentPath.length > 0;
-    return hasContent || hasAttachment;
-  },
-  { message: 'Either message content or attachment is required' },
-);
+export const CreateScheduledMessageBodySchema =
+  ScheduledMessageBaseSchema.refine(
+    (data: ScheduledMessageBase): boolean => {
+      const hasContent =
+        typeof data.content === 'string' && data.content.trim().length > 0;
+      const hasAttachment =
+        typeof data.attachmentPath === 'string' &&
+        data.attachmentPath.length > 0;
+      return hasContent || hasAttachment;
+    },
+    { message: 'Either message content or attachment is required' },
+  );
 
-export class CreateScheduledMessageDto extends createZodDto(CreateScheduledMessageBodySchema) {}
+export class CreateScheduledMessageDto extends createZodDto(
+  CreateScheduledMessageBodySchema,
+) {}
 
 // Type exports
-export type CreateScheduledMessageBody = z.infer<typeof CreateScheduledMessageBodySchema>;
+export type CreateScheduledMessageBody = z.infer<
+  typeof CreateScheduledMessageBodySchema
+>;

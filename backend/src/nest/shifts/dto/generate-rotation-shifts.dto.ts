@@ -16,4 +16,6 @@ export const GenerateRotationShiftsSchema = z.object({
   preview: z.boolean().default(false),
 });
 
-export class GenerateRotationShiftsDto extends createZodDto(GenerateRotationShiftsSchema) {}
+export class GenerateRotationShiftsDto extends createZodDto(
+  GenerateRotationShiftsSchema,
+) {}

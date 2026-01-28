@@ -102,10 +102,14 @@
      (Original dashboard-theme.css order preserved) */
 
   --font-primary:
-    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
   --font-display:
-    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
-  --font-body: 'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
+  --font-body:
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
   --text-primary: var(--color-text-primary, #fff);
   --text-secondary: var(--color-text-secondary, #e0e0e0);
   --primary-color: var(--color-primary, #2196f3);

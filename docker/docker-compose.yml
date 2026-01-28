@@ -3,8 +3,8 @@
 # =============================================================================
 #
 # SECURITY NOTES:
-# 1. Default passwords are provided for development convenience only.
-#    For production, ALWAYS use strong passwords via .env file without defaults!
+# 1. All secrets are managed by Doppler. Start with: doppler run -- docker-compose up -d
+#    Without Doppler, required secrets (:? checks) will cause clear error messages.
 #
 # 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17-alpine).
 #    For production deployments, consider pinning images with SHA256 digests:
@@ -47,7 +47,7 @@ services:
       - "track_io_timing=on"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - use doppler run}
       POSTGRES_DB: ${POSTGRES_DB}
       TZ: Europe/Berlin
     ports:
@@ -73,7 +73,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_DEV:-24.13.0-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.28.0}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
@@ -96,12 +96,12 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
       DB_NAME: ${POSTGRES_DB}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set in .env}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
@@ -116,7 +116,7 @@ services:
       # Redis Connection (for rate limiting)
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
       # Sentry Error Tracking
       SENTRY_DSN: ${SENTRY_DSN:-}
       # Loki Log Aggregation - Dual Target Support
@@ -183,7 +183,7 @@ services:
     container_name: assixx-redis
     restart: unless-stopped
     # SECURITY: Redis with password authentication
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     # Resource limits for cache service (generous for dev)
@@ -229,15 +229,15 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
       DB_NAME: ${POSTGRES_DB}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set in .env}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
       DELETION_WORKER_HEALTH_PORT: 3002
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
@@ -295,7 +295,8 @@ services:
       timeout: 10s
       retries: 3
     # Worker command - use tsx directly
-    command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
+    command:
+      ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
   # ===========================================================================
   # SvelteKit Frontend (Production)
@@ -307,7 +308,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_PROD:-24.13.0-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.28.0}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     image: assixx-frontend:prod

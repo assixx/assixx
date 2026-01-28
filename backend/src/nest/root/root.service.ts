@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Root Service (NestJS)
  *
@@ -470,13 +469,20 @@ export class RootService {
   /**
    * Update admin user
    */
-  async updateAdmin(id: number, data: UpdateAdminRequest, tenantId: number): Promise<void> {
+  async updateAdmin(
+    id: number,
+    data: UpdateAdminRequest,
+    tenantId: number,
+  ): Promise<void> {
     this.logger.log(`Updating admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
     const admin = await this.getAdminById(id, tenantId);
     if (admin === null) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Admin not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Admin not found',
+      });
     }
 
     const { fields, values, nextIndex } = this.buildAdminUpdateFields(data);
@@ -507,13 +513,20 @@ export class RootService {
   /**
    * Delete admin user
    */
-  async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
+  async deleteAdmin(
+    id: number,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<void> {
     this.logger.log(`Deleting admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
     const admin = await this.getAdminById(id, tenantId);
     if (admin === null) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Admin not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Admin not found',
+      });
     }
 
     // Log activity BEFORE deleting
@@ -531,19 +544,29 @@ export class RootService {
       },
     );
 
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
   }
 
   /**
    * Get admin logs
    */
-  async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
+  async getAdminLogs(
+    adminId: number,
+    tenantId: number,
+    days?: number,
+  ): Promise<AdminLog[]> {
     this.logger.debug(`Getting logs for admin ${adminId}`);
 
     // Verify admin exists
     const admin = await this.getAdminById(adminId, tenantId);
     if (admin === null) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Admin not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Admin not found',
+      });
     }
 
     let query = `SELECT * FROM root_logs WHERE user_id = $1`;
@@ -571,9 +594,10 @@ export class RootService {
     this.logger.debug(`Getting tenants for tenant ${tenantId}`);
 
     // Only return user's own tenant (multi-tenant isolation)
-    const tenants = await this.db.query<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
-      tenantId,
-    ]);
+    const tenants = await this.db.query<DbTenantRow>(
+      'SELECT * FROM tenants WHERE id = $1',
+      [tenantId],
+    );
 
     if (tenants.length === 0) {
       return [];
@@ -633,7 +657,10 @@ export class RootService {
   /**
    * Get single root user
    */
-  async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
+  async getRootUserById(
+    id: number,
+    tenantId: number,
+  ): Promise<RootUser | null> {
     this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
     // SECURITY: Only return active root users (is_active = 1)
@@ -701,7 +728,10 @@ export class RootService {
 
     // Generate and update employee_id
     const employeeId = generateEmployeeId(subdomain, 'root', userId);
-    await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
+    await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
+      employeeId,
+      userId,
+    ]);
 
     // Log activity
     await this.activityLogger.logCreate(
@@ -725,13 +755,20 @@ export class RootService {
   /**
    * Update root user
    */
-  async updateRootUser(id: number, data: UpdateRootUserRequest, tenantId: number): Promise<void> {
+  async updateRootUser(
+    id: number,
+    data: UpdateRootUserRequest,
+    tenantId: number,
+  ): Promise<void> {
     this.logger.log(`Updating root user ${id} for tenant ${tenantId}`);
 
     // Check if user exists
     const user = await this.getRootUserById(id, tenantId);
     if (user === null) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Root user not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Root user not found',
+      });
     }
 
     const { fields, values, nextIndex } = this.buildRootUserUpdateFields(data);
@@ -751,13 +788,20 @@ export class RootService {
     fields.push('updated_at = NOW()');
     values.push(id);
 
-    await this.db.query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}`, values);
+    await this.db.query(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}`,
+      values,
+    );
   }
 
   /**
    * Delete root user
    */
-  async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
+  async deleteRootUser(
+    id: number,
+    tenantId: number,
+    currentUserId: number,
+  ): Promise<void> {
     this.logger.log(`Deleting root user ${id} for tenant ${tenantId}`);
 
     // Prevent self-deletion
@@ -771,7 +815,10 @@ export class RootService {
     // Check if user exists
     const user = await this.getRootUserById(id, tenantId);
     if (user === null) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Root user not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Root user not found',
+      });
     }
 
     // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
@@ -803,21 +850,24 @@ export class RootService {
     );
 
     // Delete related data first (foreign key constraints)
-    await this.db.query('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
-    await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
-    await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    await this.db.query(
+      'DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
+    await this.db.query(
+      'DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
+    await this.db.query(
+      'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
 
     // Delete the user
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
   }
 
   // ==========================================================================
@@ -831,18 +881,21 @@ export class RootService {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
-    const [adminCount, employeeCount, totalUserCount, tenantCount, features] = await Promise.all([
-      this.userRepository.countByRole('admin', tenantId),
-      this.userRepository.countByRole('employee', tenantId),
-      this.userRepository.countAll(tenantId),
-      this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
-      this.db.query<DbFeatureCodeRow>(
-        `SELECT f.code FROM tenant_features tf
+    const [adminCount, employeeCount, totalUserCount, tenantCount, features] =
+      await Promise.all([
+        this.userRepository.countByRole('admin', tenantId),
+        this.userRepository.countByRole('employee', tenantId),
+        this.userRepository.countAll(tenantId),
+        this.db.query<DbCountRow>(
+          "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
+        ),
+        this.db.query<DbFeatureCodeRow>(
+          `SELECT f.code FROM tenant_features tf
          JOIN features f ON tf.feature_id = f.id
          WHERE tf.tenant_id = $1 AND tf.is_active = 1`,
-        [tenantId],
-      ),
-    ]);
+          [tenantId],
+        ),
+      ]);
 
     const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
 
@@ -874,7 +927,10 @@ export class RootService {
 
     const tenantData = tenant[0];
     if (tenantData === undefined) {
-      throw new NotFoundException({ code: ERROR_CODES.NOT_FOUND, message: 'Tenant not found' });
+      throw new NotFoundException({
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Tenant not found',
+      });
     }
 
     const planKey = tenantData.current_plan ?? 'basic';
@@ -907,7 +963,8 @@ export class RootService {
     const attachments = Number(attachmentsSize[0]?.total ?? 0);
     const logs = Number(logsSize[0]?.total ?? 0);
     const usedStorage = documents + attachments + logs;
-    const percentage = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
+    const percentage =
+      totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
     return {
       used: usedStorage,
@@ -995,7 +1052,8 @@ export class RootService {
     const hasUserId = currentUserId !== undefined && currentUserId !== 0;
     const isCreator = hasUserId ? deletion.created_by === currentUserId : false;
     const canApprove = deletion.status === 'pending_approval' && !isCreator;
-    const canCancel = ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
+    const canCancel =
+      ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
 
     return {
       queueId: deletion.id,
@@ -1037,7 +1095,10 @@ export class RootService {
       [tenantId],
     );
 
-    const records = report.affectedRecords as Record<string, number | undefined>;
+    const records = report.affectedRecords as Record<
+      string,
+      number | undefined
+    >;
 
     return {
       tenantId: report.tenantId,
@@ -1095,7 +1156,9 @@ export class RootService {
   /**
    * Get pending approvals
    */
-  async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
+  async getPendingApprovals(
+    currentUserId: number,
+  ): Promise<DeletionApproval[]> {
     this.logger.debug(`Getting pending approvals for user ${currentUserId}`);
 
     const approvals = await this.db.query<DbDeletionRequestRow>(
@@ -1146,7 +1209,9 @@ export class RootService {
 
     const userRecord = users[0];
     if (userRecord === undefined) {
-      this.logger.error(`User ${userId} not found or inactive for deletion approval`);
+      this.logger.error(
+        `User ${userId} not found or inactive for deletion approval`,
+      );
       throw new Error('User not found or inactive');
     }
 
@@ -1159,18 +1224,26 @@ export class RootService {
 
     const isPasswordValid = await bcrypt.compare(password, storedHash);
     if (!isPasswordValid) {
-      this.logger.warn(`Invalid password for deletion approval by user ${userId}`);
+      this.logger.warn(
+        `Invalid password for deletion approval by user ${userId}`,
+      );
       throw new Error('Ungültiges Passwort');
     }
 
-    this.logger.log(`Password verified for user ${userId}, proceeding with approval`);
+    this.logger.log(
+      `Password verified for user ${userId}, proceeding with approval`,
+    );
     await tenantDeletionService.approveDeletion(queueId, userId, comment);
   }
 
   /**
    * Reject deletion
    */
-  async rejectDeletion(queueId: number, userId: number, reason: string): Promise<void> {
+  async rejectDeletion(
+    queueId: number,
+    userId: number,
+    reason: string,
+  ): Promise<void> {
     this.logger.log(`Rejecting deletion ${queueId}`);
     await tenantDeletionService.rejectDeletion(queueId, userId, reason);
   }
@@ -1191,7 +1264,10 @@ export class RootService {
    * Check for duplicate email among ACTIVE users
    * SECURITY: Uses UserRepository which filters by is_active = 1
    */
-  private async checkDuplicateEmail(email: string, tenantId: number): Promise<void> {
+  private async checkDuplicateEmail(
+    email: string,
+    tenantId: number,
+  ): Promise<void> {
     const isTaken = await this.userRepository.isEmailTaken(email, tenantId);
 
     if (isTaken) {
@@ -1335,7 +1411,10 @@ export class RootService {
    * Map database user row to AdminUser
    */
   private mapDbUserToAdminUser(
-    admin: DbUserRow & { tenant_name?: string; profile_picture?: string | null },
+    admin: DbUserRow & {
+      tenant_name?: string;
+      profile_picture?: string | null;
+    },
   ): AdminUser {
     const result: AdminUser = {
       id: admin.id,
@@ -1351,8 +1430,10 @@ export class RootService {
 
     if (admin.notes !== null) result.notes = admin.notes;
     if (admin.position !== null) result.position = admin.position;
-    if (admin.employee_number !== '') result.employeeNumber = admin.employee_number;
-    if (admin.profile_picture !== undefined) result.profilePicture = admin.profile_picture;
+    if (admin.employee_number !== '')
+      result.employeeNumber = admin.employee_number;
+    if (admin.profile_picture !== undefined)
+      result.profilePicture = admin.profile_picture;
     if (admin.tenant_name !== undefined) result.tenantName = admin.tenant_name;
     if (admin.last_login !== null && admin.last_login !== undefined)
       result.lastLogin = admin.last_login;
@@ -1377,7 +1458,8 @@ export class RootService {
 
     if (user.position !== null) result.position = user.position;
     if (user.notes !== null) result.notes = user.notes;
-    if (user.employee_number !== '') result.employeeNumber = user.employee_number;
+    if (user.employee_number !== '')
+      result.employeeNumber = user.employee_number;
     if (user.department_id !== null && user.department_id !== undefined)
       result.departmentId = user.department_id;
     if (user.employee_id !== null) result.employeeId = user.employee_id;

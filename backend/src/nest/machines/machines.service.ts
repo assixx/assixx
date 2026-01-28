@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Machines Service (Native NestJS)
  *
@@ -31,7 +30,12 @@ type MachineType =
 /**
  * Machine status enum
  */
-type MachineStatus = 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
+type MachineStatus =
+  | 'operational'
+  | 'maintenance'
+  | 'repair'
+  | 'standby'
+  | 'decommissioned';
 
 /**
  * Maintenance type enum
@@ -362,15 +366,19 @@ export class MachinesService {
   /**
    * Build optional string fields from machine row
    */
-  private buildMachineStringFields(row: DbMachineRow): Partial<MachineResponse> {
+  private buildMachineStringFields(
+    row: DbMachineRow,
+  ): Partial<MachineResponse> {
     const fields: Partial<MachineResponse> = {};
     if (row.model !== null) fields.model = row.model;
     if (row.manufacturer !== null) fields.manufacturer = row.manufacturer;
     if (row.serial_number !== null) fields.serialNumber = row.serial_number;
     if (row.asset_number !== null) fields.assetNumber = row.asset_number;
     if (row.location !== null) fields.location = row.location;
-    if (row.production_capacity !== null) fields.productionCapacity = row.production_capacity;
-    if (row.energy_consumption !== null) fields.energyConsumption = row.energy_consumption;
+    if (row.production_capacity !== null)
+      fields.productionCapacity = row.production_capacity;
+    if (row.energy_consumption !== null)
+      fields.energyConsumption = row.energy_consumption;
     if (row.manual_url !== null) fields.manualUrl = row.manual_url;
     if (row.qr_code !== null) fields.qrCode = row.qr_code;
     if (row.notes !== null) fields.notes = row.notes;
@@ -382,7 +390,8 @@ export class MachinesService {
    */
   private buildMachineDateFields(row: DbMachineRow): Partial<MachineResponse> {
     const fields: Partial<MachineResponse> = {};
-    if (row.purchase_date !== null) fields.purchaseDate = new Date(row.purchase_date).toISOString();
+    if (row.purchase_date !== null)
+      fields.purchaseDate = new Date(row.purchase_date).toISOString();
     if (row.installation_date !== null)
       fields.installationDate = new Date(row.installation_date).toISOString();
     if (row.warranty_until !== null)
@@ -416,17 +425,23 @@ export class MachinesService {
   /**
    * Build optional reference fields from machine row
    */
-  private buildMachineReferenceFields(row: DbMachineRow): Partial<MachineResponse> {
+  private buildMachineReferenceFields(
+    row: DbMachineRow,
+  ): Partial<MachineResponse> {
     const fields: Partial<MachineResponse> = {};
     if (row.department_id !== null) fields.departmentId = row.department_id;
-    if (row.department_name !== undefined) fields.departmentName = row.department_name;
+    if (row.department_name !== undefined)
+      fields.departmentName = row.department_name;
     if (row.area_id !== null) fields.areaId = row.area_id;
     if (row.area_name !== undefined) fields.areaName = row.area_name;
-    if (row.operating_hours !== null) fields.operatingHours = row.operating_hours;
+    if (row.operating_hours !== null)
+      fields.operatingHours = row.operating_hours;
     if (row.created_by !== null) fields.createdBy = row.created_by;
-    if (row.created_by_name !== undefined) fields.createdByName = row.created_by_name;
+    if (row.created_by_name !== undefined)
+      fields.createdByName = row.created_by_name;
     if (row.updated_by !== null) fields.updatedBy = row.updated_by;
-    if (row.updated_by_name !== undefined) fields.updatedByName = row.updated_by_name;
+    if (row.updated_by_name !== undefined)
+      fields.updatedByName = row.updated_by_name;
     const parsedTeams = this.parseTeamsJson(row.teams);
     if (parsedTeams !== undefined) fields.teams = parsedTeams;
     return fields;
@@ -454,18 +469,25 @@ export class MachinesService {
   /**
    * Build optional detail fields from maintenance row
    */
-  private buildMaintenanceDetailFields(row: DbMaintenanceRow): Partial<MaintenanceHistoryResponse> {
+  private buildMaintenanceDetailFields(
+    row: DbMaintenanceRow,
+  ): Partial<MaintenanceHistoryResponse> {
     const fields: Partial<MaintenanceHistoryResponse> = {};
     if (row.performed_by !== null) fields.performedBy = row.performed_by;
-    if (row.performed_by_name !== undefined) fields.performedByName = row.performed_by_name;
-    if (row.external_company !== null) fields.externalCompany = row.external_company;
+    if (row.performed_by_name !== undefined)
+      fields.performedByName = row.performed_by_name;
+    if (row.external_company !== null)
+      fields.externalCompany = row.external_company;
     if (row.description !== null) fields.description = row.description;
     if (row.parts_replaced !== null) fields.partsReplaced = row.parts_replaced;
     if (row.report_url !== null) fields.reportUrl = row.report_url;
     if (row.created_by !== null) fields.createdBy = row.created_by;
-    if (row.created_by_name !== undefined) fields.createdByName = row.created_by_name;
+    if (row.created_by_name !== undefined)
+      fields.createdByName = row.created_by_name;
     if (row.next_maintenance_date !== null)
-      fields.nextMaintenanceDate = new Date(row.next_maintenance_date).toISOString();
+      fields.nextMaintenanceDate = new Date(
+        row.next_maintenance_date,
+      ).toISOString();
     return fields;
   }
 
@@ -490,7 +512,9 @@ export class MachinesService {
   /**
    * Map maintenance row to API response
    */
-  private mapMaintenanceToApi(row: DbMaintenanceRow): MaintenanceHistoryResponse {
+  private mapMaintenanceToApi(
+    row: DbMaintenanceRow,
+  ): MaintenanceHistoryResponse {
     return {
       id: row.id,
       tenantId: row.tenant_id,
@@ -508,7 +532,10 @@ export class MachinesService {
    * List all machines with filters
    * Excludes soft-deleted machines (is_active = 4) by default
    */
-  async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
+  async listMachines(
+    tenantId: number,
+    filters: MachineFilters = {},
+  ): Promise<MachineResponse[]> {
     this.logger.debug(`Listing machines for tenant ${tenantId}`);
 
     let sql = `
@@ -643,10 +670,16 @@ export class MachinesService {
       data.machineType ?? 'production',
       data.status ?? 'operational',
       this.hasContent(data.purchaseDate) ? new Date(data.purchaseDate) : null,
-      this.hasContent(data.installationDate) ? new Date(data.installationDate) : null,
+      this.hasContent(data.installationDate) ?
+        new Date(data.installationDate)
+      : null,
       this.hasContent(data.warrantyUntil) ? new Date(data.warrantyUntil) : null,
-      this.hasContent(data.lastMaintenance) ? new Date(data.lastMaintenance) : null,
-      this.hasContent(data.nextMaintenance) ? new Date(data.nextMaintenance) : null,
+      this.hasContent(data.lastMaintenance) ?
+        new Date(data.lastMaintenance)
+      : null,
+      this.hasContent(data.nextMaintenance) ?
+        new Date(data.nextMaintenance)
+      : null,
       data.operatingHours ?? 0,
       data.productionCapacity ?? null,
       data.energyConsumption ?? null,
@@ -673,7 +706,12 @@ export class MachinesService {
     await this.validateSerialNumberUnique(data.serialNumber, tenantId);
 
     const machineUuid = uuidv7();
-    const params = this.buildMachineInsertParams(data, tenantId, userId, machineUuid);
+    const params = this.buildMachineInsertParams(
+      data,
+      tenantId,
+      userId,
+      machineUuid,
+    );
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO machines (
         tenant_id, name, model, manufacturer, serial_number, asset_number,
@@ -710,7 +748,10 @@ export class MachinesService {
   /**
    * Field mappings for machine update (API field to DB column)
    */
-  private readonly machineFieldMappings: [keyof MachineUpdateRequest, string][] = [
+  private readonly machineFieldMappings: [
+    keyof MachineUpdateRequest,
+    string,
+  ][] = [
     ['name', 'name'],
     ['model', 'model'],
     ['manufacturer', 'manufacturer'],
@@ -733,7 +774,10 @@ export class MachinesService {
   /**
    * Date field mappings for machine update
    */
-  private readonly machineDateFieldMappings: [keyof MachineUpdateRequest, string][] = [
+  private readonly machineDateFieldMappings: [
+    keyof MachineUpdateRequest,
+    string,
+  ][] = [
     ['purchaseDate', 'purchase_date'],
     ['installationDate', 'installation_date'],
     ['warrantyUntil', 'warranty_until'],
@@ -789,11 +833,17 @@ export class MachinesService {
     this.logger.log(`Updating machine ${id}`);
 
     const existing = await this.getMachineById(id, tenantId);
-    if (this.hasContent(data.serialNumber) && data.serialNumber !== existing.serialNumber) {
+    if (
+      this.hasContent(data.serialNumber) &&
+      data.serialNumber !== existing.serialNumber
+    ) {
       await this.validateSerialNumberUnique(data.serialNumber, tenantId, id);
     }
 
-    const { fields, params, paramIndex } = this.buildMachineUpdateFields(data, userId);
+    const { fields, params, paramIndex } = this.buildMachineUpdateFields(
+      data,
+      userId,
+    );
     params.push(id, tenantId);
 
     const sql = `
@@ -811,7 +861,11 @@ export class MachinesService {
       'machine',
       id,
       `Maschine aktualisiert: ${existing.name}`,
-      { name: existing.name, status: existing.status, serialNumber: existing.serialNumber },
+      {
+        name: existing.name,
+        status: existing.status,
+        serialNumber: existing.serialNumber,
+      },
       {
         name: data.name ?? existing.name,
         status: data.status ?? existing.status,
@@ -836,7 +890,10 @@ export class MachinesService {
 
     const existing = await this.getMachineById(id, tenantId);
 
-    await this.db.query('DELETE FROM machines WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.query(
+      'DELETE FROM machines WHERE id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
 
     // Log activity to root_logs
     await this.activityLogger.logDelete(
@@ -931,8 +988,12 @@ export class MachinesService {
     nextMaintenanceDate: string | undefined,
     statusAfter: StatusAfter,
   ): Promise<void> {
-    const machineStatus: MachineStatus = statusAfter === 'needs_repair' ? 'repair' : 'operational';
-    const nextDate = this.hasContent(nextMaintenanceDate) ? new Date(nextMaintenanceDate) : null;
+    const machineStatus: MachineStatus =
+      statusAfter === 'needs_repair' ? 'repair' : 'operational';
+    const nextDate =
+      this.hasContent(nextMaintenanceDate) ?
+        new Date(nextMaintenanceDate)
+      : null;
 
     await this.db.query(
       `UPDATE machines SET last_maintenance = $1, next_maintenance = $2, status = $3,
@@ -961,7 +1022,9 @@ export class MachinesService {
       data.cost ?? null,
       data.durationHours ?? null,
       data.statusAfter ?? 'operational',
-      this.hasContent(data.nextMaintenanceDate) ? new Date(data.nextMaintenanceDate) : null,
+      this.hasContent(data.nextMaintenanceDate) ?
+        new Date(data.nextMaintenanceDate)
+      : null,
       data.reportUrl ?? null,
       userId,
     ];
@@ -990,7 +1053,9 @@ export class MachinesService {
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new InternalServerErrorException('Failed to add maintenance record');
+      throw new InternalServerErrorException(
+        'Failed to add maintenance record',
+      );
     }
 
     const recordId = rows[0].id;
@@ -1004,7 +1069,9 @@ export class MachinesService {
     );
 
     const history = await this.getMaintenanceHistory(data.machineId, tenantId);
-    const record = history.find((h: MaintenanceHistoryResponse) => h.id === recordId);
+    const record = history.find(
+      (h: MaintenanceHistoryResponse) => h.id === recordId,
+    );
     if (record === undefined) {
       throw new NotFoundException('Maintenance record not found');
     }
@@ -1014,7 +1081,10 @@ export class MachinesService {
   /**
    * Get upcoming maintenance
    */
-  async getUpcomingMaintenance(tenantId: number, days: number = 30): Promise<MachineResponse[]> {
+  async getUpcomingMaintenance(
+    tenantId: number,
+    days: number = 30,
+  ): Promise<MachineResponse[]> {
     this.logger.debug(`Getting upcoming maintenance for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbMachineRow>(
@@ -1111,7 +1181,10 @@ export class MachinesService {
   /**
    * Get teams assigned to a machine
    */
-  async getMachineTeams(machineId: number, tenantId: number): Promise<MachineTeamResponse[]> {
+  async getMachineTeams(
+    machineId: number,
+    tenantId: number,
+  ): Promise<MachineTeamResponse[]> {
     this.logger.debug(`Getting teams for machine ${machineId}`);
 
     await this.getMachineById(machineId, tenantId);
@@ -1139,8 +1212,10 @@ export class MachinesService {
       };
 
       if (row.department_id !== null) team.departmentId = row.department_id;
-      if (row.department_name !== null) team.departmentName = row.department_name;
-      if (row.assigned_at !== null) team.assignedAt = row.assigned_at.toISOString();
+      if (row.department_name !== null)
+        team.departmentName = row.department_name;
+      if (row.assigned_at !== null)
+        team.assignedAt = row.assigned_at.toISOString();
       if (row.notes !== null) team.notes = row.notes;
 
       return team;
@@ -1161,7 +1236,9 @@ export class MachinesService {
     await this.getMachineById(machineId, tenantId);
 
     if (teamIds.length > 0) {
-      const placeholders = teamIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+      const placeholders = teamIds
+        .map((_: number, i: number) => `$${i + 2}`)
+        .join(', ');
       const validTeams = await this.db.query<{ id: number }>(
         `SELECT id FROM teams WHERE id IN (${placeholders}) AND tenant_id = $1`,
         [tenantId, ...teamIds],
@@ -1172,10 +1249,10 @@ export class MachinesService {
       }
     }
 
-    await this.db.query('DELETE FROM machine_teams WHERE machine_id = $1 AND tenant_id = $2', [
-      machineId,
-      tenantId,
-    ]);
+    await this.db.query(
+      'DELETE FROM machine_teams WHERE machine_id = $1 AND tenant_id = $2',
+      [machineId, tenantId],
+    );
 
     if (teamIds.length > 0) {
       const values: unknown[] = [];
@@ -1207,7 +1284,10 @@ export class MachinesService {
   /**
    * Resolve machine UUID to internal ID
    */
-  private async resolveMachineIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolveMachineIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.db.query<{ id: number }>(
       `SELECT id FROM machines WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -1221,7 +1301,10 @@ export class MachinesService {
   /**
    * Get machine by UUID
    */
-  async getMachineByUuid(uuid: string, tenantId: number): Promise<MachineResponse> {
+  async getMachineByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<MachineResponse> {
     const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
     return await this.getMachineById(machineId, tenantId);
   }
@@ -1242,7 +1325,11 @@ export class MachinesService {
   /**
    * Delete machine by UUID
    */
-  async deleteMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+  async deleteMachineByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
     await this.deleteMachine(machineId, tenantId, userId);
   }
@@ -1250,7 +1337,11 @@ export class MachinesService {
   /**
    * Deactivate machine by UUID
    */
-  async deactivateMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+  async deactivateMachineByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
     await this.deactivateMachine(machineId, tenantId, userId);
   }
@@ -1258,7 +1349,11 @@ export class MachinesService {
   /**
    * Activate machine by UUID
    */
-  async activateMachineByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
+  async activateMachineByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     const machineId = await this.resolveMachineIdByUuid(uuid, tenantId);
     await this.activateMachine(machineId, tenantId, userId);
   }

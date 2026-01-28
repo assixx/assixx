@@ -9,7 +9,15 @@ export const DateSchema = z
 export const IdSchema = z.coerce.number().int().positive();
 
 export const ReportTypeSchema = z.enum(
-  ['overview', 'employees', 'departments', 'shifts', 'kvp', 'attendance', 'compliance'],
+  [
+    'overview',
+    'employees',
+    'departments',
+    'shifts',
+    'kvp',
+    'attendance',
+    'compliance',
+  ],
   { message: 'Invalid report type' },
 );
 

@@ -30,7 +30,11 @@
 
 /* Hover state - Slightly darker gradient */
 .btn-upload:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-primary-hover), var(--color-blue-800));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-hover),
+    var(--color-blue-800)
+  );
 }
 
 /* Active/Pressed state */

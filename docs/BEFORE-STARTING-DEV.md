@@ -23,7 +23,7 @@
 **Bei Problemen:**
 
 ```bash
-# TypeScript Errors fixen (außer den 56 Test-Errors)
+# TypeScript Errors fixen
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
 
 # Docker neu starten
@@ -45,7 +45,7 @@ curl -s http://localhost:3000/health | jq '.'
 # Code Quality Check - NICHT VERGESSEN! Dieser Befehl ist KRITISCH!
 docker exec assixx-backend pnpm run type-check
 
-# Bei TypeScript Errors (außer den 56 bekannten Test-Errors):
+# Bei TypeScript Errors:
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix"
 ```
 

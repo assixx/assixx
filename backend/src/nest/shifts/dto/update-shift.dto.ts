@@ -30,16 +30,28 @@ export const UpdateShiftSchema = z.object({
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
   machineId: z.number().int().positive().optional(),
-  title: z.string().trim().max(200, 'Title cannot exceed 200 characters').optional(),
+  title: z
+    .string()
+    .trim()
+    .max(200, 'Title cannot exceed 200 characters')
+    .optional(),
   requiredEmployees: z
     .number()
     .int()
     .positive('Required employees must be a positive integer')
     .optional(),
-  breakMinutes: z.number().int().min(0, 'Break minutes must be non-negative').optional(),
+  breakMinutes: z
+    .number()
+    .int()
+    .min(0, 'Break minutes must be non-negative')
+    .optional(),
   status: ShiftStatusSchema.optional(),
   type: ShiftTypeSchema.optional(),
-  notes: z.string().trim().max(1000, 'Notes cannot exceed 1000 characters').optional(),
+  notes: z
+    .string()
+    .trim()
+    .max(1000, 'Notes cannot exceed 1000 characters')
+    .optional(),
 });
 
 export class UpdateShiftDto extends createZodDto(UpdateShiftSchema) {}

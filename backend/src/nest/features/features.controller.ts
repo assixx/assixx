@@ -14,7 +14,15 @@
  * - GET    /features/all-tenants          - Get all tenants with features (root)
  * - GET    /features/:code                - Get feature by code (authenticated)
  */
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
@@ -52,18 +60,26 @@ export class FeaturesController {
 
   @Get()
   @Public()
-  async getAllFeatures(@Query() query: GetAllFeaturesQueryDto): Promise<Feature[]> {
+  async getAllFeatures(
+    @Query() query: GetAllFeaturesQueryDto,
+  ): Promise<Feature[]> {
     return await this.featuresService.getAllFeatures(query.includeInactive);
   }
 
   @Get('categories')
   @Public()
-  async getFeaturesByCategory(@Query() query: GetAllFeaturesQueryDto): Promise<FeatureCategory[]> {
-    return await this.featuresService.getFeaturesByCategory(query.includeInactive);
+  async getFeaturesByCategory(
+    @Query() query: GetAllFeaturesQueryDto,
+  ): Promise<FeatureCategory[]> {
+    return await this.featuresService.getFeaturesByCategory(
+      query.includeInactive,
+    );
   }
 
   @Get('my-features')
-  async getMyFeatures(@TenantId() tenantId: number): Promise<FeatureWithTenantInfo[]> {
+  async getMyFeatures(
+    @TenantId() tenantId: number,
+  ): Promise<FeatureWithTenantInfo[]> {
     return await this.featuresService.getFeaturesWithTenantInfo(tenantId);
   }
 
@@ -72,7 +88,10 @@ export class FeaturesController {
     @Param('featureCode') featureCode: string,
     @TenantId() tenantId: number,
   ): Promise<FeatureAccessResponse> {
-    const hasAccess = await this.featuresService.checkTenantAccess(tenantId, featureCode);
+    const hasAccess = await this.featuresService.checkTenantAccess(
+      tenantId,
+      featureCode,
+    );
     return { hasAccess, featureCode };
   }
 
@@ -129,7 +148,11 @@ export class FeaturesController {
     @Body() dto: DeactivateFeatureDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
-    await this.featuresService.deactivateFeature(dto.tenantId, dto.featureCode, user.id);
+    await this.featuresService.deactivateFeature(
+      dto.tenantId,
+      dto.featureCode,
+      user.id,
+    );
     return { message: `Feature ${dto.featureCode} deactivated successfully` };
   }
 

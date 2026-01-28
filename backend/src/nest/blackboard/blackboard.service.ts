@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Blackboard Service - Native NestJS Implementation
  *
@@ -224,7 +223,12 @@ export class BlackboardService {
     const user = rows[0];
 
     if (user === undefined) {
-      return { role: null, departmentId: null, teamId: null, hasFullAccess: false };
+      return {
+        role: null,
+        departmentId: null,
+        teamId: null,
+        hasFullAccess: false,
+      };
     }
 
     return {
@@ -267,7 +271,11 @@ export class BlackboardService {
     }
 
     const content = entry.content;
-    if (typeof content === 'object' && 'type' in content && Array.isArray(content.data)) {
+    if (
+      typeof content === 'object' &&
+      'type' in content &&
+      Array.isArray(content.data)
+    ) {
       entry.content = Buffer.from(content.data).toString('utf8');
     }
   }
@@ -285,7 +293,10 @@ export class BlackboardService {
     if (entry.author_full_name !== undefined && entry.author_full_name !== '') {
       transformed['authorFullName'] = entry.author_full_name;
     }
-    if (entry.author_first_name !== undefined && entry.author_first_name !== '') {
+    if (
+      entry.author_first_name !== undefined &&
+      entry.author_first_name !== ''
+    ) {
       transformed['authorFirstName'] = entry.author_first_name;
     }
     if (entry.author_last_name !== undefined && entry.author_last_name !== '') {
@@ -312,8 +323,10 @@ export class BlackboardService {
       createdAt: comment.created_at.toISOString(),
     };
 
-    if (comment.user_first_name !== undefined) result.firstName = comment.user_first_name;
-    if (comment.user_last_name !== undefined) result.lastName = comment.user_last_name;
+    if (comment.user_first_name !== undefined)
+      result.firstName = comment.user_first_name;
+    if (comment.user_last_name !== undefined)
+      result.lastName = comment.user_last_name;
     if (comment.user_role !== undefined) result.role = comment.user_role;
     if (comment.user_profile_picture !== undefined)
       result.profilePicture = comment.user_profile_picture;
@@ -401,11 +414,12 @@ export class BlackboardService {
     departmentIds: number[] = [],
     teamIds: number[] = [],
   ): Promise<void> {
-    const [accessibleAreas, accessibleDepts, accessibleTeams] = await Promise.all([
-      hierarchyPermissionService.getAccessibleAreaIds(userId, tenantId),
-      hierarchyPermissionService.getAccessibleDepartmentIds(userId, tenantId),
-      hierarchyPermissionService.getAccessibleTeamIds(userId, tenantId),
-    ]);
+    const [accessibleAreas, accessibleDepts, accessibleTeams] =
+      await Promise.all([
+        hierarchyPermissionService.getAccessibleAreaIds(userId, tenantId),
+        hierarchyPermissionService.getAccessibleDepartmentIds(userId, tenantId),
+        hierarchyPermissionService.getAccessibleTeamIds(userId, tenantId),
+      ]);
 
     const accessibleAreaSet = new Set(accessibleAreas);
     const accessibleDeptSet = new Set(accessibleDepts);
@@ -413,19 +427,25 @@ export class BlackboardService {
 
     for (const areaId of areaIds) {
       if (!accessibleAreaSet.has(areaId)) {
-        throw new ForbiddenException(`No permission to create entries for area ${areaId}`);
+        throw new ForbiddenException(
+          `No permission to create entries for area ${areaId}`,
+        );
       }
     }
 
     for (const deptId of departmentIds) {
       if (!accessibleDeptSet.has(deptId)) {
-        throw new ForbiddenException(`No permission to create entries for department ${deptId}`);
+        throw new ForbiddenException(
+          `No permission to create entries for department ${deptId}`,
+        );
       }
     }
 
     for (const teamId of teamIds) {
       if (!accessibleTeamSet.has(teamId)) {
-        throw new ForbiddenException(`No permission to create entries for team ${teamId}`);
+        throw new ForbiddenException(
+          `No permission to create entries for team ${teamId}`,
+        );
       }
     }
   }
@@ -447,7 +467,12 @@ export class BlackboardService {
     const userAccess = await this.getUserDepartmentAndTeam(userId);
     const normalized = this.normalizeEntryFilters(filters);
 
-    const { query, params } = this.buildEntryListQuery(userId, tenantId, normalized, userAccess);
+    const { query, params } = this.buildEntryListQuery(
+      userId,
+      tenantId,
+      normalized,
+      userAccess,
+    );
 
     const total = await this.countEntries(query, params);
     const entries = await this.fetchPaginatedEntries(query, params, normalized);
@@ -527,7 +552,10 @@ export class BlackboardService {
   }
 
   /** Count total entries matching query */
-  private async countEntries(query: string, params: unknown[]): Promise<number> {
+  private async countEntries(
+    query: string,
+    params: unknown[],
+  ): Promise<number> {
     const countQuery = query.replace(
       /SELECT e\.id.*FROM blackboard_entries e/,
       'SELECT COUNT(*) as total FROM blackboard_entries e',
@@ -545,7 +573,11 @@ export class BlackboardService {
     const limitIdx = params.length + 1;
     const offsetIdx = params.length + 2;
     const query = `${baseQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${filters.sortBy} ${filters.sortDir} LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
-    const paginatedParams = [...params, filters.limit, (filters.page - 1) * filters.limit];
+    const paginatedParams = [
+      ...params,
+      filters.limit,
+      (filters.page - 1) * filters.limit,
+    ];
     return await this.db.query<DbBlackboardEntry>(query, paginatedParams);
   }
 
@@ -582,7 +614,11 @@ export class BlackboardService {
       WHERE e.${idColumn} = $2 AND e.tenant_id = $3
     `;
 
-    const entries = await this.db.query<DbBlackboardEntry>(query, [userId, id, tenantId]);
+    const entries = await this.db.query<DbBlackboardEntry>(query, [
+      userId,
+      id,
+      tenantId,
+    ]);
     const entry = entries[0];
 
     if (entry === undefined) {
@@ -699,7 +735,9 @@ export class BlackboardService {
     comments: BlackboardComment[];
     attachments: Record<string, unknown>[];
   }> {
-    this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(
+      `Getting full entry ${String(id)} for tenant ${tenantId}`,
+    );
 
     const entry = await this.getEntryById(id, tenantId, userId);
     const comments = await this.getComments(id, tenantId);
@@ -731,10 +769,22 @@ export class BlackboardService {
     }
 
     const { orgLevel, orgId, areaId } = this.determineOrgTarget(dto);
-    const insertedId = await this.insertEntry(dto, tenantId, userId, orgLevel, orgId, areaId);
+    const insertedId = await this.insertEntry(
+      dto,
+      tenantId,
+      userId,
+      orgLevel,
+      orgId,
+      areaId,
+    );
 
     if (hasMultiOrg) {
-      await this.syncEntryOrganizations(insertedId, dto.departmentIds, dto.teamIds, dto.areaIds);
+      await this.syncEntryOrganizations(
+        insertedId,
+        dto.departmentIds,
+        dto.teamIds,
+        dto.areaIds,
+      );
     }
 
     const createdEntry = await this.getEntryById(insertedId, tenantId, userId);
@@ -759,7 +809,11 @@ export class BlackboardService {
 
   /** Check if DTO targets multiple organizations */
   private hasMultiOrgTargets(dto: CreateEntryDto): boolean {
-    return dto.departmentIds.length > 0 || dto.teamIds.length > 0 || dto.areaIds.length > 0;
+    return (
+      dto.departmentIds.length > 0 ||
+      dto.teamIds.length > 0 ||
+      dto.areaIds.length > 0
+    );
   }
 
   /** Determine org_level, org_id, and area_id from DTO */
@@ -772,12 +826,20 @@ export class BlackboardService {
       return { orgLevel: 'area', orgId: null, areaId: dto.areaIds[0] ?? null };
     }
     if (dto.departmentIds.length > 0) {
-      return { orgLevel: 'department', orgId: dto.departmentIds[0] ?? null, areaId: null };
+      return {
+        orgLevel: 'department',
+        orgId: dto.departmentIds[0] ?? null,
+        areaId: null,
+      };
     }
     if (dto.teamIds.length > 0) {
       return { orgLevel: 'team', orgId: dto.teamIds[0] ?? null, areaId: null };
     }
-    return { orgLevel: dto.orgLevel ?? 'company', orgId: dto.orgId ?? null, areaId: null };
+    return {
+      orgLevel: dto.orgLevel ?? 'company',
+      orgId: dto.orgId ?? null,
+      areaId: null,
+    };
   }
 
   /** Insert entry into database and return ID */
@@ -791,7 +853,9 @@ export class BlackboardService {
   ): Promise<number> {
     const uuid = uuidv7();
     const expiresAt =
-      dto.expiresAt !== undefined && dto.expiresAt !== null ? new Date(dto.expiresAt) : null;
+      dto.expiresAt !== undefined && dto.expiresAt !== null ?
+        new Date(dto.expiresAt)
+      : null;
 
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO blackboard_entries
@@ -829,9 +893,10 @@ export class BlackboardService {
     teamIds: number[],
     areaIds: number[],
   ): Promise<void> {
-    await this.db.query('DELETE FROM blackboard_entry_organizations WHERE entry_id = $1', [
-      entryId,
-    ]);
+    await this.db.query(
+      'DELETE FROM blackboard_entry_organizations WHERE entry_id = $1',
+      [entryId],
+    );
 
     for (const orgId of departmentIds) {
       await this.db.query(
@@ -866,13 +931,16 @@ export class BlackboardService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
-      string,
-      unknown
-    >;
+    const existingEntry = (await this.getEntryById(
+      id,
+      tenantId,
+      userId,
+    )) as Record<string, unknown>;
 
     const hasMultiOrg =
-      dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
+      dto.departmentIds !== undefined ||
+      dto.teamIds !== undefined ||
+      dto.areaIds !== undefined;
 
     if (hasMultiOrg) {
       await this.validateOrgPermissions(
@@ -884,7 +952,12 @@ export class BlackboardService {
       );
     }
 
-    const { query, params } = this.buildUpdateQuery(id, tenantId, dto, hasMultiOrg);
+    const { query, params } = this.buildUpdateQuery(
+      id,
+      tenantId,
+      dto,
+      hasMultiOrg,
+    );
     await this.db.query(query, params);
 
     const numericId = await this.resolveNumericEntryId(id, tenantId);
@@ -982,7 +1055,8 @@ export class BlackboardService {
 
       const fieldValue = (dto as Record<string, unknown>)[key];
       if (fieldValue !== undefined) {
-        const value = transform !== undefined ? transform(fieldValue) : fieldValue;
+        const value =
+          transform !== undefined ? transform(fieldValue) : fieldValue;
         params.push(value);
         append(`, ${column} = $${params.length}`);
       }
@@ -1001,7 +1075,9 @@ export class BlackboardService {
 
     if (firstAreaId !== undefined) {
       params.push(firstAreaId, 'area');
-      append(`, area_id = $${params.length - 1}, org_level = $${params.length}`);
+      append(
+        `, area_id = $${params.length - 1}, org_level = $${params.length}`,
+      );
     } else if (firstDeptId !== undefined) {
       params.push(firstDeptId, 'department');
       append(`, org_id = $${params.length - 1}, org_level = $${params.length}`);
@@ -1017,7 +1093,10 @@ export class BlackboardService {
   }
 
   /** Resolve UUID to numeric ID if needed */
-  private async resolveNumericEntryId(id: number | string, tenantId: number): Promise<number> {
+  private async resolveNumericEntryId(
+    id: number | string,
+    tenantId: number,
+  ): Promise<number> {
     if (typeof id === 'number') {
       return id;
     }
@@ -1118,7 +1197,10 @@ export class BlackboardService {
    * Confirm reading a blackboard entry
    * Uses UPSERT: first_seen_at is set only on first confirmation (never reset)
    */
-  async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
+  async confirmEntry(
+    id: number | string,
+    userId: number,
+  ): Promise<{ message: string }> {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
@@ -1160,7 +1242,10 @@ export class BlackboardService {
    * Remove confirmation (mark as unread)
    * Sets is_confirmed = false instead of deleting to preserve first_seen_at
    */
-  async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
+  async unconfirmEntry(
+    id: number | string,
+    userId: number,
+  ): Promise<{ message: string }> {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
@@ -1206,7 +1291,11 @@ export class BlackboardService {
 
     // Get entry info
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
-    const entries = await this.db.query<{ id: number; org_level: string; org_id: number }>(
+    const entries = await this.db.query<{
+      id: number;
+      org_level: string;
+      org_id: number;
+    }>(
       `SELECT id, org_level, org_id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -1234,7 +1323,10 @@ export class BlackboardService {
       queryParams.push(entry.org_id);
     }
 
-    const users = await this.db.query<DbConfirmationUser>(usersQuery, queryParams);
+    const users = await this.db.query<DbConfirmationUser>(
+      usersQuery,
+      queryParams,
+    );
     return users.map((user: DbConfirmationUser) =>
       dbToApi(user as unknown as Record<string, unknown>),
     );
@@ -1313,7 +1405,10 @@ export class BlackboardService {
   /**
    * Get comments for an entry
    */
-  async getComments(id: number | string, tenantId: number): Promise<BlackboardComment[]> {
+  async getComments(
+    id: number | string,
+    tenantId: number,
+  ): Promise<BlackboardComment[]> {
     this.logger.debug(`Getting comments for entry ${String(id)}`);
 
     // Get numeric ID
@@ -1391,13 +1486,16 @@ export class BlackboardService {
   /**
    * Delete a comment
    */
-  async deleteComment(commentId: number, tenantId: number): Promise<{ message: string }> {
+  async deleteComment(
+    commentId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     this.logger.log(`Deleting comment ${commentId}`);
 
-    await this.db.query('DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2', [
-      commentId,
-      tenantId,
-    ]);
+    await this.db.query(
+      'DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2',
+      [commentId, tenantId],
+    );
 
     return { message: 'Comment deleted successfully' };
   }
@@ -1422,7 +1520,10 @@ export class BlackboardService {
 
     const fileUuid = uuidv7();
     const extension = path.extname(file.originalname).toLowerCase();
-    const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    const checksum = crypto
+      .createHash('sha256')
+      .update(file.buffer)
+      .digest('hex');
 
     const now = new Date();
     const year = now.getFullYear();
@@ -1487,9 +1588,18 @@ export class BlackboardService {
     attachmentId: number,
     userId: number,
     tenantId: number,
-  ): Promise<{ content: Buffer; originalName: string; mimeType: string; fileSize: number }> {
+  ): Promise<{
+    content: Buffer;
+    originalName: string;
+    mimeType: string;
+    fileSize: number;
+  }> {
     this.logger.log(`Downloading attachment ${attachmentId}`);
-    return await this.documentsService.getDocumentContent(attachmentId, userId, tenantId);
+    return await this.documentsService.getDocumentContent(
+      attachmentId,
+      userId,
+      tenantId,
+    );
   }
 
   /**
@@ -1499,9 +1609,18 @@ export class BlackboardService {
     attachmentId: number,
     userId: number,
     tenantId: number,
-  ): Promise<{ content: Buffer; originalName: string; mimeType: string; fileSize: number }> {
+  ): Promise<{
+    content: Buffer;
+    originalName: string;
+    mimeType: string;
+    fileSize: number;
+  }> {
     this.logger.log(`Previewing attachment ${attachmentId}`);
-    return await this.documentsService.getDocumentContent(attachmentId, userId, tenantId);
+    return await this.documentsService.getDocumentContent(
+      attachmentId,
+      userId,
+      tenantId,
+    );
   }
 
   /**
@@ -1511,7 +1630,12 @@ export class BlackboardService {
     fileUuid: string,
     userId: number,
     tenantId: number,
-  ): Promise<{ content: Buffer; originalName: string; mimeType: string; fileSize: number }> {
+  ): Promise<{
+    content: Buffer;
+    originalName: string;
+    mimeType: string;
+    fileSize: number;
+  }> {
     this.logger.log(`Downloading attachment by UUID ${fileUuid}`);
 
     // Get document ID by file_uuid
@@ -1524,7 +1648,11 @@ export class BlackboardService {
       throw new NotFoundException('Attachment not found');
     }
 
-    return await this.documentsService.getDocumentContent(docs[0].id, userId, tenantId);
+    return await this.documentsService.getDocumentContent(
+      docs[0].id,
+      userId,
+      tenantId,
+    );
   }
 
   /**
@@ -1548,7 +1676,10 @@ export class BlackboardService {
    * Get count of unconfirmed entries for a user
    * Used for notification badge in sidebar
    */
-  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
+  async getUnconfirmedCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
     // Get user info for visibility filtering
     const users = await this.db.query<{
       role: string;

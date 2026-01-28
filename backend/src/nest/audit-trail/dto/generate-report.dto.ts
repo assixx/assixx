@@ -12,9 +12,12 @@ import type { AuditEntryResponse } from './get-entries.dto.js';
 /**
  * Report type enum for compliance reports
  */
-const ReportTypeSchema = z.enum(['gdpr', 'data_access', 'data_changes', 'user_activity'], {
-  message: 'Invalid report type',
-});
+const ReportTypeSchema = z.enum(
+  ['gdpr', 'data_access', 'data_changes', 'user_activity'],
+  {
+    message: 'Invalid report type',
+  },
+);
 
 /**
  * Generate compliance report request body schema
@@ -53,7 +56,9 @@ export const GenerateReportBodySchema = z
 /**
  * DTO for generate report request body
  */
-export class GenerateReportBodyDto extends createZodDto(GenerateReportBodySchema) {}
+export class GenerateReportBodyDto extends createZodDto(
+  GenerateReportBodySchema,
+) {}
 
 /**
  * Compliance report response type

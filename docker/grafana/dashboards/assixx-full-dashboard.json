@@ -34,7 +34,11 @@
       "id": 1,
       "options": {
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
@@ -69,14 +73,22 @@
       "id": 2,
       "options": {
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
       "title": "Memory (RSS)",
       "type": "gauge",
       "targets": [
-        { "expr": "assixx_process_resident_memory_bytes", "legendFormat": "RSS", "refId": "A" }
+        {
+          "expr": "assixx_process_resident_memory_bytes",
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
       ]
     },
     {
@@ -100,14 +112,22 @@
       "id": 3,
       "options": {
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
       "title": "Event Loop Lag",
       "type": "gauge",
       "targets": [
-        { "expr": "assixx_nodejs_eventloop_lag_seconds", "legendFormat": "Lag", "refId": "A" }
+        {
+          "expr": "assixx_nodejs_eventloop_lag_seconds",
+          "legendFormat": "Lag",
+          "refId": "A"
+        }
       ]
     },
     {
@@ -116,7 +136,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
           "unit": "s"
         }
       },
@@ -127,7 +150,11 @@
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Uptime",
@@ -146,7 +173,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -157,13 +187,21 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Active Handles",
       "type": "stat",
       "targets": [
-        { "expr": "assixx_nodejs_active_handles_total", "legendFormat": "Handles", "refId": "A" }
+        {
+          "expr": "assixx_nodejs_active_handles_total",
+          "legendFormat": "Handles",
+          "refId": "A"
+        }
       ]
     },
     {
@@ -172,7 +210,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -183,12 +224,22 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Open FDs",
       "type": "stat",
-      "targets": [{ "expr": "assixx_process_open_fds", "legendFormat": "FDs", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "assixx_process_open_fds",
+          "legendFormat": "FDs",
+          "refId": "A"
+        }
+      ]
     },
     {
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
@@ -221,7 +272,10 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "percent"
         }
       },
@@ -276,7 +330,10 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "bytes"
         }
       },
@@ -294,14 +351,26 @@
       "title": "Memory Usage Over Time",
       "type": "timeseries",
       "targets": [
-        { "expr": "assixx_process_resident_memory_bytes", "legendFormat": "RSS", "refId": "A" },
-        { "expr": "assixx_nodejs_heap_size_used_bytes", "legendFormat": "Heap Used", "refId": "B" },
+        {
+          "expr": "assixx_process_resident_memory_bytes",
+          "legendFormat": "RSS",
+          "refId": "A"
+        },
+        {
+          "expr": "assixx_nodejs_heap_size_used_bytes",
+          "legendFormat": "Heap Used",
+          "refId": "B"
+        },
         {
           "expr": "assixx_nodejs_heap_size_total_bytes",
           "legendFormat": "Heap Total",
           "refId": "C"
         },
-        { "expr": "assixx_nodejs_external_memory_bytes", "legendFormat": "External", "refId": "D" }
+        {
+          "expr": "assixx_nodejs_external_memory_bytes",
+          "legendFormat": "External",
+          "refId": "D"
+        }
       ]
     },
     {
@@ -354,10 +423,26 @@
       "title": "Event Loop Latency",
       "type": "timeseries",
       "targets": [
-        { "expr": "assixx_nodejs_eventloop_lag_seconds", "legendFormat": "Current", "refId": "A" },
-        { "expr": "assixx_nodejs_eventloop_lag_p50_seconds", "legendFormat": "p50", "refId": "B" },
-        { "expr": "assixx_nodejs_eventloop_lag_p90_seconds", "legendFormat": "p90", "refId": "C" },
-        { "expr": "assixx_nodejs_eventloop_lag_p99_seconds", "legendFormat": "p99", "refId": "D" }
+        {
+          "expr": "assixx_nodejs_eventloop_lag_seconds",
+          "legendFormat": "Current",
+          "refId": "A"
+        },
+        {
+          "expr": "assixx_nodejs_eventloop_lag_p50_seconds",
+          "legendFormat": "p50",
+          "refId": "B"
+        },
+        {
+          "expr": "assixx_nodejs_eventloop_lag_p90_seconds",
+          "legendFormat": "p90",
+          "refId": "C"
+        },
+        {
+          "expr": "assixx_nodejs_eventloop_lag_p99_seconds",
+          "legendFormat": "p99",
+          "refId": "D"
+        }
       ]
     },
     {
@@ -385,7 +470,10 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -403,14 +491,26 @@
       "title": "Active Resources",
       "type": "timeseries",
       "targets": [
-        { "expr": "assixx_nodejs_active_handles_total", "legendFormat": "Handles", "refId": "A" },
-        { "expr": "assixx_nodejs_active_requests_total", "legendFormat": "Requests", "refId": "B" },
+        {
+          "expr": "assixx_nodejs_active_handles_total",
+          "legendFormat": "Handles",
+          "refId": "A"
+        },
+        {
+          "expr": "assixx_nodejs_active_requests_total",
+          "legendFormat": "Requests",
+          "refId": "B"
+        },
         {
           "expr": "assixx_nodejs_active_resources_total",
           "legendFormat": "Resources",
           "refId": "C"
         },
-        { "expr": "assixx_process_open_fds", "legendFormat": "Open FDs", "refId": "D" }
+        {
+          "expr": "assixx_process_open_fds",
+          "legendFormat": "Open FDs",
+          "refId": "D"
+        }
       ]
     },
     {
@@ -462,14 +562,22 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
           "unit": "short"
         }
       },
       "gridPos": { "h": 6, "w": 12, "x": 0, "y": 34 },
       "id": 21,
       "options": {
-        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Log Volume by Level",
@@ -488,7 +596,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "red", "value": null }]
+          },
           "unit": "short"
         }
       },
@@ -517,7 +628,10 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "yellow", "value": null }]
+          },
           "unit": "short"
         }
       },

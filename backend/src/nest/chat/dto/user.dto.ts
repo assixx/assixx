@@ -14,7 +14,10 @@ const MIN_SEARCH_LENGTH = 2;
 export const GetUsersQuerySchema = z.object({
   search: z
     .string()
-    .min(MIN_SEARCH_LENGTH, `Search term must be at least ${MIN_SEARCH_LENGTH} characters`)
+    .min(
+      MIN_SEARCH_LENGTH,
+      `Search term must be at least ${MIN_SEARCH_LENGTH} characters`,
+    )
     .optional(),
 });
 

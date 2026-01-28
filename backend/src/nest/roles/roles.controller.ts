@@ -15,7 +15,11 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
 import { CheckUserRoleDto, type RoleName } from './dto/index.js';
-import type { Role, RoleCheckResult, RoleHierarchyEntry } from './roles.service.js';
+import type {
+  Role,
+  RoleCheckResult,
+  RoleHierarchyEntry,
+} from './roles.service.js';
 import { RolesService } from './roles.service.js';
 
 @Controller('roles')
@@ -68,6 +72,10 @@ export class RolesController {
     @Body() dto: CheckUserRoleDto,
     @TenantId() tenantId: number,
   ): Promise<RoleCheckResult> {
-    return await this.rolesService.checkUserRole(dto.userId, tenantId, dto.requiredRole);
+    return await this.rolesService.checkUserRole(
+      dto.userId,
+      tenantId,
+      dto.requiredRole,
+    );
   }
 }

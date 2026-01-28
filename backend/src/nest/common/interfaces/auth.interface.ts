@@ -65,4 +65,8 @@ export interface JwtPayload {
 /**
  * Valid roles array for validation
  */
-export const VALID_ROLES: readonly UserRole[] = ['root', 'admin', 'employee'] as const;
+export const VALID_ROLES: readonly UserRole[] = [
+  'root',
+  'admin',
+  'employee',
+] as const;

@@ -27,7 +27,8 @@ export const AttendanceReportQuerySchema = AttendanceReportBaseSchema.refine(
   (data: z.infer<typeof AttendanceReportBaseSchema>) => {
     const dateFrom = new Date(data.dateFrom);
     const dateTo = new Date(data.dateTo);
-    const daysDiff = (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24);
+    const daysDiff =
+      (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24);
     return daysDiff <= 90;
   },
   {
@@ -36,4 +37,6 @@ export const AttendanceReportQuerySchema = AttendanceReportBaseSchema.refine(
   },
 );
 
-export class AttendanceReportQueryDto extends createZodDto(AttendanceReportQuerySchema) {}
+export class AttendanceReportQueryDto extends createZodDto(
+  AttendanceReportQuerySchema,
+) {}

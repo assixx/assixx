@@ -33,7 +33,10 @@ export async function checkTenantFeatureAccess(
       AND tf.is_active = 1
       AND (tf.valid_until IS NULL OR tf.valid_until > NOW())
     `;
-    const [rows] = await executeQuery<RowDataPacket[]>(query, [tenantId, featureCode]);
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [
+      tenantId,
+      featureCode,
+    ]);
     return rows.length > 0;
   } catch (error: unknown) {
     logger.error(`Error checking feature access: ${(error as Error).message}`);
@@ -58,9 +61,10 @@ export async function logFeatureUsage(
 ): Promise<boolean> {
   try {
     // Find feature ID
-    const [features] = await executeQuery<DbFeature[]>('SELECT id FROM features WHERE code = $1', [
-      featureCode,
-    ]);
+    const [features] = await executeQuery<DbFeature[]>(
+      'SELECT id FROM features WHERE code = $1',
+      [featureCode],
+    );
     const feature = features[0];
 
     if (feature === undefined) {

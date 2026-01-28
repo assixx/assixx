@@ -1,11 +1,15 @@
-/* eslint-disable max-lines */
 /**
  * KVP Service - Native NestJS Implementation
  *
  * Business logic for Continuous Improvement Process (Kontinuierlicher Verbesserungsprozess).
  * Fully migrated to NestJS - no dependency on routes/v2/
  */
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
@@ -113,7 +117,8 @@ const EXTENDED_ORG_INFO_QUERY = `
 
 function isUuid(value: string | number): boolean {
   if (typeof value === 'number') return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
 
@@ -157,10 +162,10 @@ export class KvpService {
     userId: number,
     tenantId: number,
   ): Promise<ExtendedUserOrgInfo> {
-    const rows = await this.db.query<DbExtendedOrgInfo>(EXTENDED_ORG_INFO_QUERY, [
-      userId,
-      tenantId,
-    ]);
+    const rows = await this.db.query<DbExtendedOrgInfo>(
+      EXTENDED_ORG_INFO_QUERY,
+      [userId, tenantId],
+    );
     const row = rows[0];
     if (row === undefined) return KvpService.EMPTY_ORG_INFO;
 
@@ -215,16 +220,22 @@ export class KvpService {
     params.push(orgInfo.departmentIds.length > 0 ? orgInfo.departmentIds : [0]);
 
     const teamsDeptIdsParam = `$${idx++}`;
-    params.push(orgInfo.teamsDepartmentIds.length > 0 ? orgInfo.teamsDepartmentIds : [0]);
+    params.push(
+      orgInfo.teamsDepartmentIds.length > 0 ? orgInfo.teamsDepartmentIds : [0],
+    );
 
     const deptLeadOfParam = `$${idx++}`;
-    params.push(orgInfo.departmentLeadOf.length > 0 ? orgInfo.departmentLeadOf : [0]);
+    params.push(
+      orgInfo.departmentLeadOf.length > 0 ? orgInfo.departmentLeadOf : [0],
+    );
 
     const areaIdsParam = `$${idx++}`;
     params.push(orgInfo.areaIds.length > 0 ? orgInfo.areaIds : [0]);
 
     const deptsAreaIdsParam = `$${idx++}`;
-    params.push(orgInfo.departmentsAreaIds.length > 0 ? orgInfo.departmentsAreaIds : [0]);
+    params.push(
+      orgInfo.departmentsAreaIds.length > 0 ? orgInfo.departmentsAreaIds : [0],
+    );
 
     const areaLeadOfParam = `$${idx++}`;
     params.push(orgInfo.areaLeadOf.length > 0 ? orgInfo.areaLeadOf : [0]);
@@ -285,19 +296,32 @@ export class KvpService {
   }
 
   /** Helper: Attach category object to response */
-  private attachCategoryIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
+  private attachCategoryIfPresent(
+    base: KVPSuggestionResponse,
+    suggestion: DbSuggestion,
+  ): void {
     if (suggestion.category_name === undefined) return;
-    const category: { id: number; name: string; color?: string; icon?: string } = {
+    const category: {
+      id: number;
+      name: string;
+      color?: string;
+      icon?: string;
+    } = {
       id: suggestion.category_id,
       name: suggestion.category_name,
     };
-    if (suggestion.category_color !== undefined) category.color = suggestion.category_color;
-    if (suggestion.category_icon !== undefined) category.icon = suggestion.category_icon;
+    if (suggestion.category_color !== undefined)
+      category.color = suggestion.category_color;
+    if (suggestion.category_icon !== undefined)
+      category.icon = suggestion.category_icon;
     base.category = category;
   }
 
   /** Helper: Attach submitter object to response */
-  private attachSubmitterIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
+  private attachSubmitterIfPresent(
+    base: KVPSuggestionResponse,
+    suggestion: DbSuggestion,
+  ): void {
     if (suggestion.submitted_by_name === undefined) return;
     base.submitter = {
       firstName: suggestion.submitted_by_name,
@@ -306,17 +330,26 @@ export class KvpService {
   }
 
   /** Helper: Attach read confirmation status to response */
-  private attachConfirmationStatus(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
+  private attachConfirmationStatus(
+    base: KVPSuggestionResponse,
+    suggestion: DbSuggestion,
+  ): void {
     // COALESCE(is_confirmed, false) ensures boolean, never null
     if (suggestion.is_confirmed !== undefined) {
       base.isConfirmed = suggestion.is_confirmed;
     }
     // Timestamps can be null from LEFT JOIN
-    if (suggestion.confirmed_at !== undefined && suggestion.confirmed_at !== null) {
+    if (
+      suggestion.confirmed_at !== undefined &&
+      suggestion.confirmed_at !== null
+    ) {
       base.confirmedAt = new Date(suggestion.confirmed_at).toISOString();
     }
     // firstSeenAt: only set if user has seen it (undefined = "Neu" badge)
-    if (suggestion.first_seen_at !== undefined && suggestion.first_seen_at !== null) {
+    if (
+      suggestion.first_seen_at !== undefined &&
+      suggestion.first_seen_at !== null
+    ) {
       base.firstSeenAt = new Date(suggestion.first_seen_at).toISOString();
     }
   }
@@ -331,7 +364,9 @@ export class KvpService {
   async getCategories(_tenantId: number): Promise<Category[]> {
     this.logger.debug('Getting categories');
 
-    const rows = await this.db.query<DbCategory>('SELECT * FROM kvp_categories ORDER BY name ASC');
+    const rows = await this.db.query<DbCategory>(
+      'SELECT * FROM kvp_categories ORDER BY name ASC',
+    );
 
     return rows.map((row: DbCategory) =>
       dbToApi(row as unknown as Record<string, unknown>),
@@ -360,7 +395,10 @@ export class KvpService {
       WHERE tenant_id = $1
     `;
 
-    const rows = await this.db.query<DbDashboardStats & { approved: number }>(query, [tenantId]);
+    const rows = await this.db.query<DbDashboardStats & { approved: number }>(
+      query,
+      [tenantId],
+    );
     const stats = rows[0];
 
     if (stats === undefined) {
@@ -430,10 +468,18 @@ export class KvpService {
     idx: number,
   ): { clause: string; param: string | null; nextIdx: number } {
     if (status === 'archived') {
-      return { clause: ` AND s.status = 'archived'`, param: null, nextIdx: idx };
+      return {
+        clause: ` AND s.status = 'archived'`,
+        param: null,
+        nextIdx: idx,
+      };
     }
     if (status !== undefined && status !== '') {
-      return { clause: ` AND s.status = $${idx}`, param: status, nextIdx: idx + 1 };
+      return {
+        clause: ` AND s.status = $${idx}`,
+        param: status,
+        nextIdx: idx + 1,
+      };
     }
     return { clause: ` AND s.status != 'archived'`, param: null, nextIdx: idx };
   }
@@ -483,7 +529,9 @@ export class KvpService {
     userRole: string,
     filters: SuggestionFilters,
   ): Promise<PaginatedSuggestionsResult> {
-    this.logger.debug(`Listing suggestions for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(
+      `Listing suggestions for tenant ${tenantId}, user ${userId}`,
+    );
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
@@ -497,7 +545,11 @@ export class KvpService {
     // Only users with has_full_access=TRUE bypass this
     // See /docs/kvp-share-doc.md for full visibility logic
     const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
-    const visibility = this.buildVisibilityClause(orgInfo, userId, params.length + 1);
+    const visibility = this.buildVisibilityClause(
+      orgInfo,
+      userId,
+      params.length + 1,
+    );
     query += visibility.clause;
     params.push(...visibility.params);
 
@@ -533,7 +585,10 @@ export class KvpService {
         if (n <= 1) return `$${n}`; // $1 (tenantId) stays
         return `$${n - 1}`; // $2→$1, $3→$2, etc. (shift down by 1)
       });
-    const countRows = await this.db.query<{ total: number }>(countQuery, countParams);
+    const countRows = await this.db.query<{ total: number }>(
+      countQuery,
+      countParams,
+    );
     const total = countRows[0]?.total ?? 0;
 
     // Add sorting and pagination
@@ -543,7 +598,9 @@ export class KvpService {
     const suggestions = await this.db.query<DbSuggestion>(query, params);
 
     return {
-      suggestions: suggestions.map((s: DbSuggestion) => this.transformSuggestion(s)),
+      suggestions: suggestions.map((s: DbSuggestion) =>
+        this.transformSuggestion(s),
+      ),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -595,7 +652,9 @@ export class KvpService {
     userId: number,
     userRole: string,
   ): Promise<KVPSuggestionResponse> {
-    this.logger.debug(`Getting suggestion ${String(id)} for tenant ${tenantId}`);
+    this.logger.debug(
+      `Getting suggestion ${String(id)} for tenant ${tenantId}`,
+    );
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
     // $1=id, $2=tenantId, $3=userId for confirmation
@@ -605,7 +664,11 @@ export class KvpService {
     // Apply visibility restrictions for ALL users (not just employees!)
     // Only users with has_full_access=TRUE bypass this
     const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
-    const visibility = this.buildVisibilityClause(orgInfo, userId, params.length + 1);
+    const visibility = this.buildVisibilityClause(
+      orgInfo,
+      userId,
+      params.length + 1,
+    );
     query += visibility.clause;
     params.push(...visibility.params);
 
@@ -684,7 +747,12 @@ export class KvpService {
       throw new Error('Failed to create suggestion');
     }
 
-    const createdSuggestion = await this.getSuggestionById(rows[0].id, tenantId, userId, 'admin');
+    const createdSuggestion = await this.getSuggestionById(
+      rows[0].id,
+      tenantId,
+      userId,
+      'admin',
+    );
 
     // Log and notify (fire-and-forget)
     void this.logAndNotifyKvpCreated(rows[0].id, dto, tenantId, userId);
@@ -748,7 +816,8 @@ export class KvpService {
     // Create persistent notification for ADR-004
     const recipient = this.mapOrgLevelToRecipient(dto);
     const description =
-      dto.description.substring(0, 100) + (dto.description.length > 100 ? '...' : '');
+      dto.description.substring(0, 100) +
+      (dto.description.length > 100 ? '...' : '');
     void this.notificationsService.createFeatureNotification(
       'kvp',
       suggestionId,
@@ -825,12 +894,21 @@ export class KvpService {
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Updating suggestion ${String(id)}`);
 
-    const existing = await this.getSuggestionById(id, tenantId, userId, userRole);
+    const existing = await this.getSuggestionById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
 
     if (userRole === 'employee' && existing.submittedBy !== userId) {
       throw new ForbiddenException('You can only update your own suggestions');
     }
-    if (dto.status !== undefined && userRole !== 'admin' && userRole !== 'root') {
+    if (
+      dto.status !== undefined &&
+      userRole !== 'admin' &&
+      userRole !== 'root'
+    ) {
       throw new ForbiddenException('Only admins can update status');
     }
 
@@ -850,7 +928,12 @@ export class KvpService {
     const query = `UPDATE kvp_suggestions SET ${updates.join(', ')} WHERE ${idColumn} = $${params.length - 1} AND tenant_id = $${params.length}`;
     await this.db.query(query, params);
 
-    const updated = await this.getSuggestionById(id, tenantId, userId, userRole);
+    const updated = await this.getSuggestionById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
 
     // Log activity
     const newValues = {
@@ -884,17 +967,22 @@ export class KvpService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting suggestion ${String(id)}`);
 
-    const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
+    const suggestion = await this.getSuggestionById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
 
     if (suggestion.submittedBy !== userId && userRole !== 'root') {
       throw new ForbiddenException('You can only delete your own suggestions');
     }
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
-    await this.db.query(`DELETE FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`, [
-      id,
-      tenantId,
-    ]);
+    await this.db.query(
+      `DELETE FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
+      [id, tenantId],
+    );
 
     // Log activity
     await this.activityLogger.logDelete(
@@ -925,7 +1013,9 @@ export class KvpService {
     userId: number,
     _userRole: string,
   ): Promise<{ message: string }> {
-    this.logger.log(`Sharing suggestion ${String(id)} at ${dto.orgLevel} level`);
+    this.logger.log(
+      `Sharing suggestion ${String(id)} at ${dto.orgLevel} level`,
+    );
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
     await this.db.query(
@@ -981,7 +1071,12 @@ export class KvpService {
     this.logger.debug(`Getting comments for suggestion ${String(id)}`);
 
     // Get numeric ID
-    const suggestion = await this.getSuggestionById(id, tenantId, _userId, userRole);
+    const suggestion = await this.getSuggestionById(
+      id,
+      tenantId,
+      _userId,
+      userRole,
+    );
     const numericId = suggestion.id;
 
     let query = `
@@ -1010,8 +1105,10 @@ export class KvpService {
         createdAt: row.created_at.toISOString(),
       };
       if (row.first_name !== undefined) comment.createdByName = row.first_name;
-      if (row.last_name !== undefined) comment.createdByLastname = row.last_name;
-      if (row.profile_picture !== undefined) comment.profilePicture = row.profile_picture;
+      if (row.last_name !== undefined)
+        comment.createdByLastname = row.last_name;
+      if (row.profile_picture !== undefined)
+        comment.profilePicture = row.profile_picture;
       return comment;
     });
   }
@@ -1032,11 +1129,18 @@ export class KvpService {
 
     // Security: Only admin/root can add comments (Defense in Depth - also enforced at controller level)
     if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException('Only admins can add comments to KVP suggestions');
+      throw new ForbiddenException(
+        'Only admins can add comments to KVP suggestions',
+      );
     }
 
     // Get numeric ID
-    const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
+    const suggestion = await this.getSuggestionById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
     const numericId = suggestion.id;
 
     // isInternal is allowed since we already verified user is admin/root above
@@ -1079,7 +1183,12 @@ export class KvpService {
     this.logger.debug(`Getting attachments for suggestion ${String(id)}`);
 
     // Get numeric ID
-    const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
+    const suggestion = await this.getSuggestionById(
+      id,
+      tenantId,
+      userId,
+      userRole,
+    );
     const numericId = suggestion.id;
 
     const rows = await this.db.query<DbAttachment>(
@@ -1102,7 +1211,9 @@ export class KvpService {
       uploadedBy: row.uploaded_by,
       fileUuid: row.file_uuid,
       createdAt:
-        row.uploaded_at !== null ? row.uploaded_at.toISOString() : new Date().toISOString(),
+        row.uploaded_at !== null ?
+          row.uploaded_at.toISOString()
+        : new Date().toISOString(),
     }));
   }
 
@@ -1127,7 +1238,12 @@ export class KvpService {
     this.logger.log(`Adding attachment to suggestion ${String(suggestionId)}`);
 
     // Get numeric ID
-    const suggestion = await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
+    const suggestion = await this.getSuggestionById(
+      suggestionId,
+      tenantId,
+      userId,
+      userRole,
+    );
     const numericId = suggestion.id;
 
     const rows = await this.db.query<{ id: number }>(
@@ -1180,7 +1296,9 @@ export class KvpService {
 
     // Team level: member or lead
     if (orgLevel === 'team') {
-      return orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId);
+      return (
+        orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId)
+      );
     }
 
     // Department level: member, team in dept, or lead
@@ -1217,7 +1335,12 @@ export class KvpService {
     this.logger.debug(`Getting attachment by UUID ${fileUuid}`);
 
     const rows = await this.db.query<
-      DbAttachment & { submitted_by: number; status: string; org_level: string; org_id: number }
+      DbAttachment & {
+        submitted_by: number;
+        status: string;
+        org_level: string;
+        org_id: number;
+      }
     >(
       `SELECT a.*, s.submitted_by, s.tenant_id, s.org_level, s.org_id, s.status
        FROM kvp_attachments a
@@ -1238,7 +1361,13 @@ export class KvpService {
 
     if (!isOwner && !isPublic) {
       const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
-      if (!this.hasExtendedOrgAccess(attachment.org_level, attachment.org_id, orgInfo)) {
+      if (
+        !this.hasExtendedOrgAccess(
+          attachment.org_level,
+          attachment.org_id,
+          orgInfo,
+        )
+      ) {
         throw new ForbiddenException('No access to this attachment');
       }
     }
@@ -1256,8 +1385,13 @@ export class KvpService {
    * Get count of unconfirmed KVP suggestions for notification badge
    * Counts suggestions visible to user that haven't been marked as read
    */
-  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    this.logger.debug(`Getting unconfirmed count for user ${userId}, tenant ${tenantId}`);
+  async getUnconfirmedCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    this.logger.debug(
+      `Getting unconfirmed count for user ${userId}, tenant ${tenantId}`,
+    );
 
     // Base query: count suggestions without confirmation (or is_confirmed = false)
     let query = `
@@ -1272,7 +1406,11 @@ export class KvpService {
     // Apply visibility restrictions for ALL users (not just employees!)
     // Only users with has_full_access=TRUE bypass this
     const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
-    const visibility = this.buildVisibilityClause(orgInfo, userId, params.length + 1);
+    const visibility = this.buildVisibilityClause(
+      orgInfo,
+      userId,
+      params.length + 1,
+    );
     query += visibility.clause;
     params.push(...visibility.params);
 
@@ -1366,7 +1504,11 @@ export class KvpService {
     const idColumn = isUuid(id) ? 'uuid' : 'id';
 
     // Get suggestion for logging
-    const rows = await this.db.query<{ id: number; title: string; status: string }>(
+    const rows = await this.db.query<{
+      id: number;
+      title: string;
+      status: string;
+    }>(
       `SELECT id, title, status FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -1409,7 +1551,11 @@ export class KvpService {
     const idColumn = isUuid(id) ? 'uuid' : 'id';
 
     // Get suggestion for logging
-    const rows = await this.db.query<{ id: number; title: string; status: string }>(
+    const rows = await this.db.query<{
+      id: number;
+      title: string;
+      status: string;
+    }>(
       `SELECT id, title, status FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );

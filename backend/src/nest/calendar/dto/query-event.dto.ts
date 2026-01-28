@@ -32,7 +32,9 @@ const SortOrderSchema = z.enum(['asc', 'desc'], {
  */
 export const ListEventsQuerySchema = z.object({
   status: EventStatusSchema.optional(),
-  filter: z.enum(['all', 'company', 'department', 'team', 'area', 'personal']).optional(),
+  filter: z
+    .enum(['all', 'company', 'department', 'team', 'area', 'personal'])
+    .optional(),
   search: z.string().optional(),
   startDate: z.iso.datetime().optional(),
   endDate: z.iso.datetime().optional(),

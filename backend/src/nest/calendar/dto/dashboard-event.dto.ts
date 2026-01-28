@@ -17,4 +17,6 @@ export const DashboardEventsQuerySchema = z.object({
 /**
  * Dashboard Events Query DTO class
  */
-export class DashboardEventsQueryDto extends createZodDto(DashboardEventsQuerySchema) {}
+export class DashboardEventsQueryDto extends createZodDto(
+  DashboardEventsQuerySchema,
+) {}

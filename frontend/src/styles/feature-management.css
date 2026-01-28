@@ -25,17 +25,29 @@
 
 .btn-primary {
   border-color: rgb(0 142 255 / 30%);
-  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
+  background: linear-gradient(
+    135deg,
+    rgb(0 142 255 / 20%),
+    rgb(0 142 255 / 10%)
+  );
 }
 
 .btn-success {
   border-color: rgb(76 175 80 / 30%);
-  background: linear-gradient(135deg, rgb(76 175 80 / 20%), rgb(76 175 80 / 10%));
+  background: linear-gradient(
+    135deg,
+    rgb(76 175 80 / 20%),
+    rgb(76 175 80 / 10%)
+  );
 }
 
 .btn-danger {
   border-color: rgb(244 67 54 / 30%);
-  background: linear-gradient(135deg, rgb(244 67 54 / 20%), rgb(244 67 54 / 10%));
+  background: linear-gradient(
+    135deg,
+    rgb(244 67 54 / 20%),
+    rgb(244 67 54 / 10%)
+  );
 }
 
 .btn:hover {
@@ -51,7 +63,12 @@
 
   transition: transform 0.6s;
 
-  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgb(255 255 255 / 10%) 50%,
+    transparent 70%
+  );
 
   width: 200%;
   height: 200%;

@@ -17,6 +17,7 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import { KvpService } from '../kvp/kvp.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { SurveysService } from '../surveys/surveys.service.js';
 import type {
   ChatCounts,
   DashboardCounts,
@@ -28,7 +29,11 @@ import type {
 const EMPTY_CHAT: ChatCounts = { totalUnread: 0, conversations: [] };
 
 /** Fallback for notification stats on error */
-const EMPTY_NOTIFICATIONS: NotificationStats = { total: 0, unread: 0, byType: {} };
+const EMPTY_NOTIFICATIONS: NotificationStats = {
+  total: 0,
+  unread: 0,
+  byType: {},
+};
 
 /** Fallback for simple counts on error */
 const EMPTY_COUNT = { count: 0 };
@@ -44,6 +49,7 @@ export class DashboardService {
     private readonly calendarService: CalendarService,
     private readonly documentsService: DocumentsService,
     private readonly kvpService: KvpService,
+    private readonly surveysService: SurveysService,
   ) {}
 
   /**
@@ -56,7 +62,10 @@ export class DashboardService {
    * @param tenantId - Current tenant ID
    * @returns Combined counts from all services
    */
-  async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCountsResponse> {
+  async getCounts(
+    user: NestAuthUser,
+    tenantId: number,
+  ): Promise<DashboardCountsResponse> {
     // Execute all count queries in parallel
     const [
       chatResult,
@@ -65,6 +74,7 @@ export class DashboardService {
       calendarResult,
       documentsResult,
       kvpResult,
+      surveysResult,
     ] = await Promise.all([
       this.fetchChatCounts().catch((err: unknown) => {
         this.logger.warn(`Chat counts failed: ${String(err)}`);
@@ -90,6 +100,10 @@ export class DashboardService {
         this.logger.warn(`KVP count failed: ${String(err)}`);
         return EMPTY_COUNT;
       }),
+      this.fetchSurveyPendingCount(user.id, tenantId).catch((err: unknown) => {
+        this.logger.warn(`Survey count failed: ${String(err)}`);
+        return EMPTY_COUNT;
+      }),
     ]);
 
     const data: DashboardCounts = {
@@ -99,6 +113,7 @@ export class DashboardService {
       calendar: calendarResult,
       documents: documentsResult,
       kvp: kvpResult,
+      surveys: surveysResult,
       fetchedAt: new Date().toISOString(),
     };
 
@@ -134,7 +149,10 @@ export class DashboardService {
     userId: number,
     tenantId: number,
   ): Promise<NotificationStats> {
-    const stats = await this.notificationsService.getPersonalStats(userId, tenantId);
+    const stats = await this.notificationsService.getPersonalStats(
+      userId,
+      tenantId,
+    );
     return {
       total: stats.total,
       unread: stats.unread,
@@ -145,7 +163,10 @@ export class DashboardService {
   /**
    * Fetch blackboard unconfirmed count
    */
-  private async fetchBlackboardCount(userId: number, tenantId: number): Promise<{ count: number }> {
+  private async fetchBlackboardCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
     return await this.blackboardService.getUnconfirmedCount(userId, tenantId);
   }
 
@@ -158,7 +179,12 @@ export class DashboardService {
   ): Promise<{ count: number }> {
     const departmentId = user.departmentId ?? 0;
     const teamId = user.teamId ?? 0;
-    return await this.calendarService.getUpcomingCount(tenantId, user.id, departmentId, teamId);
+    return await this.calendarService.getUpcomingCount(
+      tenantId,
+      user.id,
+      departmentId,
+      teamId,
+    );
   }
 
   /**
@@ -168,13 +194,30 @@ export class DashboardService {
     user: NestAuthUser,
     tenantId: number,
   ): Promise<{ count: number }> {
-    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
+    return await this.documentsService.getUnreadCount(
+      tenantId,
+      user.id,
+      user.activeRole,
+    );
   }
 
   /**
    * Fetch KVP unconfirmed count (Pattern 2: Individual read tracking)
    */
-  private async fetchKvpCount(userId: number, tenantId: number): Promise<{ count: number }> {
+  private async fetchKvpCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
     return await this.kvpService.getUnconfirmedCount(userId, tenantId);
+  }
+
+  /**
+   * Fetch pending survey count (active surveys not yet responded to by user)
+   */
+  private async fetchSurveyPendingCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    return await this.surveysService.getPendingSurveyCount(userId, tenantId);
   }
 }

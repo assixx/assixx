@@ -92,8 +92,10 @@
   /* ========== TYPOGRAPHY ========== */
   /* Font Families - Generates: font-sans, font-mono */
   --font-family-sans:
-    outfit, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
-  --font-family-mono: 'SF Mono', monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
+    outfit, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
+  --font-family-mono:
+    'SF Mono', monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
 
   /* Font Sizes - Legacy Design System (16px base)
      MUST match Legacy exactly per "Legacy = Goldstandard" */
@@ -150,11 +152,15 @@
   /* ========== SHADOWS ========== */
   /* Generates: shadow-none, shadow-sm, shadow, shadow-md, shadow-lg, shadow-xl, shadow-2xl, shadow-inner */
   --shadow-none: none;
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 12%), 0 1px 2px 0 rgb(0 0 0 / 6%); /* Legacy */
+  --shadow-sm:
+    0 1px 3px 0 rgb(0 0 0 / 12%), 0 1px 2px 0 rgb(0 0 0 / 6%); /* Legacy */
+
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 10px 10px -5px rgb(0 0 0 / 4%);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 10%), 0 10px 10px -5px rgb(0 0 0 / 4%);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 25%);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 6%);
 

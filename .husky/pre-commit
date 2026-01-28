@@ -64,15 +64,25 @@ for file in $FILES_TO_CHECK; do
     fi
 
     # Pattern 1: Password assignments with quoted values (8+ chars)
-    if echo "$CONTENT" | grep -iE '(password|passwd|pwd)\s*[:=]\s*["\x27][^"\x27]{8,}["\x27]' > /dev/null 2>&1; then
-        FOUND_SECRETS=1
-        PROBLEM_FILES="$PROBLEM_FILES\n  - $file (password pattern)"
+    # Exclude shell variable references ($VAR, ${VAR}) - not actual secrets
+    PASS_MATCHES=$(echo "$CONTENT" | grep -iE '(password|passwd|pwd)\s*[:=]\s*["\x27][^"\x27]{8,}["\x27]' 2>/dev/null || true)
+    if [ -n "$PASS_MATCHES" ]; then
+        REAL_PASS=$(echo "$PASS_MATCHES" | grep -ivE '(password|passwd|pwd)\s*[:=]\s*["\x27]\$' 2>/dev/null || true)
+        if [ -n "$REAL_PASS" ]; then
+            FOUND_SECRETS=1
+            PROBLEM_FILES="$PROBLEM_FILES\n  - $file (password pattern)"
+        fi
     fi
 
     # Pattern 2: Secret/API key assignments with quoted values
-    if echo "$CONTENT" | grep -iE '(secret|api_key|apikey|api-key)\s*[:=]\s*["\x27][^"\x27]{8,}["\x27]' > /dev/null 2>&1; then
-        FOUND_SECRETS=1
-        PROBLEM_FILES="$PROBLEM_FILES\n  - $file (secret/api_key pattern)"
+    # Exclude shell variable references ($VAR, ${VAR}) - not actual secrets
+    SECRET_MATCHES=$(echo "$CONTENT" | grep -iE '(secret|api_key|apikey|api-key)\s*[:=]\s*["\x27][^"\x27]{8,}["\x27]' 2>/dev/null || true)
+    if [ -n "$SECRET_MATCHES" ]; then
+        REAL_SECRET=$(echo "$SECRET_MATCHES" | grep -ivE '(secret|api_key|apikey|api-key)\s*[:=]\s*["\x27]\$' 2>/dev/null || true)
+        if [ -n "$REAL_SECRET" ]; then
+            FOUND_SECRETS=1
+            PROBLEM_FILES="$PROBLEM_FILES\n  - $file (secret/api_key pattern)"
+        fi
     fi
 
     # Pattern 3: JWT tokens (eyJ... pattern)

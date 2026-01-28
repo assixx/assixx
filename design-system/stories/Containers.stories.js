@@ -37,7 +37,8 @@ export const PageContainer = {
     width: {
       control: 'select',
       options: ['narrow', 'default', 'wide'],
-      description: 'Container width (narrow=800px, default=1200px, wide=1600px)',
+      description:
+        'Container width (narrow=800px, default=1200px, wide=1600px)',
     },
     centered: {
       control: 'boolean',
@@ -104,7 +105,8 @@ export const PageContainer = {
 export const SignupBox = {
   render: () => {
     const container = document.createElement('div');
-    container.className = 'page-container page-container--narrow page-container--centered';
+    container.className =
+      'page-container page-container--narrow page-container--centered';
 
     container.innerHTML = `
       <div style="text-align: center; margin-bottom: var(--spacing-8);">

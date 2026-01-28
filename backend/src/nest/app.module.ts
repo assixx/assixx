@@ -1,4 +1,4 @@
-/* eslint-disable import-x/max-dependencies */
+/* eslint-disable import-x/max-dependencies -- NestJS root module imports all feature modules by design */
 /**
  * Root Application Module
  *

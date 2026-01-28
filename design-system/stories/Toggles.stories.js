@@ -50,7 +50,8 @@ export const ViewModeToggle = {
     },
     defaultActive: {
       control: { type: 'range', min: 0, max: 2, step: 1 },
-      description: 'Default active button (0 = Aktive, 1 = Archiviert, 2 = Alle)',
+      description:
+        'Default active button (0 = Aktive, 1 = Archiviert, 2 = Alle)',
     },
     buttonCount: {
       control: { type: 'range', min: 2, max: 3, step: 1 },
@@ -137,9 +138,24 @@ export const IconOnlyToggle = {
     const container = document.createElement('div');
 
     const views = [
-      { icon: 'fa-th', view: 'grid', title: 'Grid View', show: args.showGridView },
-      { icon: 'fa-list', view: 'list', title: 'List View', show: args.showListView },
-      { icon: 'fa-table', view: 'table', title: 'Table View', show: args.showTableView },
+      {
+        icon: 'fa-th',
+        view: 'grid',
+        title: 'Grid View',
+        show: args.showGridView,
+      },
+      {
+        icon: 'fa-list',
+        view: 'list',
+        title: 'List View',
+        show: args.showListView,
+      },
+      {
+        icon: 'fa-table',
+        view: 'table',
+        title: 'Table View',
+        show: args.showTableView,
+      },
     ].filter((v) => v.show);
 
     container.innerHTML = `

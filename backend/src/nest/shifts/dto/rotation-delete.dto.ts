@@ -18,4 +18,6 @@ export const DeleteRotationHistorySchema = z.object({
   patternId: z.coerce.number().int().positive().optional(),
 });
 
-export class DeleteRotationHistoryDto extends createZodDto(DeleteRotationHistorySchema) {}
+export class DeleteRotationHistoryDto extends createZodDto(
+  DeleteRotationHistorySchema,
+) {}

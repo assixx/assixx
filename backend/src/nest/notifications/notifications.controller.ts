@@ -185,9 +185,17 @@ function registerSSEHandlers(
   const handlers: EventHandler[] = [];
 
   // Document notifications for all users
-  const documentHandler = createSSEHandler('NEW_DOCUMENT', 'document', tenantId, eventSubject);
+  const documentHandler = createSSEHandler(
+    'NEW_DOCUMENT',
+    'document',
+    tenantId,
+    eventSubject,
+  );
   eventBus.on(SSE_EVENTS.DOCUMENT_UPLOADED, documentHandler);
-  handlers.push({ event: SSE_EVENTS.DOCUMENT_UPLOADED, handler: documentHandler });
+  handlers.push({
+    event: SSE_EVENTS.DOCUMENT_UPLOADED,
+    handler: documentHandler,
+  });
 
   // Message notifications for all users (checks recipientIds inside handler)
   const messageHandler = createMessageHandler(userId, tenantId, eventSubject);
@@ -196,7 +204,12 @@ function registerSSEHandlers(
 
   // Survey notifications for employees
   if (role === 'employee') {
-    const surveyCreatedHandler = createSSEHandler('NEW_SURVEY', 'survey', tenantId, eventSubject);
+    const surveyCreatedHandler = createSSEHandler(
+      'NEW_SURVEY',
+      'survey',
+      tenantId,
+      eventSubject,
+    );
     const surveyUpdatedHandler = createSSEHandler(
       'SURVEY_UPDATED',
       'survey',
@@ -205,13 +218,24 @@ function registerSSEHandlers(
     );
     eventBus.on(SSE_EVENTS.SURVEY_CREATED, surveyCreatedHandler);
     eventBus.on(SSE_EVENTS.SURVEY_UPDATED, surveyUpdatedHandler);
-    handlers.push({ event: SSE_EVENTS.SURVEY_CREATED, handler: surveyCreatedHandler });
-    handlers.push({ event: SSE_EVENTS.SURVEY_UPDATED, handler: surveyUpdatedHandler });
+    handlers.push({
+      event: SSE_EVENTS.SURVEY_CREATED,
+      handler: surveyCreatedHandler,
+    });
+    handlers.push({
+      event: SSE_EVENTS.SURVEY_UPDATED,
+      handler: surveyUpdatedHandler,
+    });
   }
 
   // Admin notifications
   if (role === 'admin' || role === 'root') {
-    const kvpHandler = createSSEHandler('NEW_KVP', 'kvp', tenantId, eventSubject);
+    const kvpHandler = createSSEHandler(
+      'NEW_KVP',
+      'kvp',
+      tenantId,
+      eventSubject,
+    );
     const adminSurveyHandler = createSSEHandler(
       'NEW_SURVEY_CREATED',
       'survey',
@@ -221,7 +245,10 @@ function registerSSEHandlers(
     eventBus.on(SSE_EVENTS.KVP_SUBMITTED, kvpHandler);
     eventBus.on(SSE_EVENTS.SURVEY_CREATED, adminSurveyHandler);
     handlers.push({ event: SSE_EVENTS.KVP_SUBMITTED, handler: kvpHandler });
-    handlers.push({ event: SSE_EVENTS.SURVEY_CREATED, handler: adminSurveyHandler });
+    handlers.push({
+      event: SSE_EVENTS.SURVEY_CREATED,
+      handler: adminSurveyHandler,
+    });
   }
 
   return handlers;
@@ -250,13 +277,17 @@ export class NotificationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<PaginatedNotificationsResult> {
-    return await this.notificationsService.listNotifications(user.id, tenantId, {
-      type: query.type,
-      priority: query.priority,
-      unread: query.unread,
-      page: query.page,
-      limit: query.limit,
-    });
+    return await this.notificationsService.listNotifications(
+      user.id,
+      tenantId,
+      {
+        type: query.type,
+        priority: query.priority,
+        unread: query.unread,
+        page: query.page,
+        limit: query.limit,
+      },
+    );
   }
 
   /**
@@ -292,7 +323,10 @@ export class NotificationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ preferences: unknown }> {
-    const preferences = await this.notificationsService.getPreferences(user.id, tenantId);
+    const preferences = await this.notificationsService.getPreferences(
+      user.id,
+      tenantId,
+    );
     return { preferences };
   }
 
@@ -308,7 +342,13 @@ export class NotificationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ): Promise<MessageResponse> {
-    await this.notificationsService.updatePreferences(user.id, tenantId, dto, ipAddress, userAgent);
+    await this.notificationsService.updatePreferences(
+      user.id,
+      tenantId,
+      dto,
+      ipAddress,
+      userAgent,
+    );
     return { message: 'Preferences updated successfully' };
   }
 
@@ -361,7 +401,10 @@ export class NotificationsController {
       tenantId,
     );
 
-    return { marked, message: `${marked} ${type} notifications marked as read` };
+    return {
+      marked,
+      message: `${marked} ${type} notifications marked as read`,
+    };
   }
 
   /**
@@ -473,7 +516,11 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const notificationId = Number.parseInt(id, 10);
-    await this.notificationsService.markAsRead(notificationId, user.id, tenantId);
+    await this.notificationsService.markAsRead(
+      notificationId,
+      user.id,
+      tenantId,
+    );
     return { message: 'Notification marked as read' };
   }
 
@@ -590,11 +637,21 @@ export class NotificationsController {
     return {
       activeEvents: eventBus.getActiveEvents(),
       listenerCounts: {
-        [SSE_EVENTS.SURVEY_CREATED]: eventBus.getListenerCount(SSE_EVENTS.SURVEY_CREATED),
-        [SSE_EVENTS.SURVEY_UPDATED]: eventBus.getListenerCount(SSE_EVENTS.SURVEY_UPDATED),
-        [SSE_EVENTS.DOCUMENT_UPLOADED]: eventBus.getListenerCount(SSE_EVENTS.DOCUMENT_UPLOADED),
-        [SSE_EVENTS.KVP_SUBMITTED]: eventBus.getListenerCount(SSE_EVENTS.KVP_SUBMITTED),
-        [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(SSE_EVENTS.MESSAGE_CREATED),
+        [SSE_EVENTS.SURVEY_CREATED]: eventBus.getListenerCount(
+          SSE_EVENTS.SURVEY_CREATED,
+        ),
+        [SSE_EVENTS.SURVEY_UPDATED]: eventBus.getListenerCount(
+          SSE_EVENTS.SURVEY_UPDATED,
+        ),
+        [SSE_EVENTS.DOCUMENT_UPLOADED]: eventBus.getListenerCount(
+          SSE_EVENTS.DOCUMENT_UPLOADED,
+        ),
+        [SSE_EVENTS.KVP_SUBMITTED]: eventBus.getListenerCount(
+          SSE_EVENTS.KVP_SUBMITTED,
+        ),
+        [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(
+          SSE_EVENTS.MESSAGE_CREATED,
+        ),
       },
       timestamp: new Date().toISOString(),
     };

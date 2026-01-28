@@ -39,9 +39,11 @@
   --font-size-base: 16px;
   --font-size-sm: 14px;
   --font-size-xs: 12px;
-  --font-family-mono: 'SF Mono', monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-family-mono:
+    'SF Mono', monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
   --font-family-sans:
-    outfit, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
+    outfit, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
   --spacing-32: 128px;
   --spacing-28: 112px;
   --spacing-24: 96px;
@@ -62,8 +64,10 @@
   --spacing-0: 0;
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 6%);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 25%);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 10px 10px -5px rgb(0 0 0 / 4%);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 10%), 0 10px 10px -5px rgb(0 0 0 / 4%);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 12%), 0 1px 2px 0 rgb(0 0 0 / 6%);
   --shadow-none: none;
@@ -138,7 +142,8 @@
   --button-border-radius: var(--radius-3xl);
   --button-padding-y: var(--spacing-2);
   --button-padding-x: var(--spacing-4);
-  --glass-backdrop: blur(var(--glass-blur-md)) saturate(var(--glass-saturate-medium));
+  --glass-backdrop: blur(var(--glass-blur-md))
+    saturate(var(--glass-saturate-medium));
   --glass-border: rgb(0 0 0 / var(--glass-opacity-light));
   --glass-background-active: rgb(0 0 0 / var(--glass-opacity-medium));
   --glass-background-hover: rgb(0 0 0 / var(--glass-opacity-light));
