@@ -20,7 +20,7 @@ ARG NODE_VERSION=24.13.0-alpine3.22
 FROM node:${NODE_VERSION} AS builder
 
 # pnpm version is configurable for consistency across environments
-ARG PNPM_VERSION=10.28.0
+ARG PNPM_VERSION=10.28.2
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /app
