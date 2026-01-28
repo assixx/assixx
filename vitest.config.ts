@@ -27,7 +27,12 @@ export default defineConfig({
     include: ['backend/src/**/*.{test,spec}.ts'],
 
     // Exclude patterns
-    exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'frontend/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      'frontend/**',
+    ],
 
     // Coverage configuration
     coverage: {

@@ -17,7 +17,9 @@ const apiClient = getApiClient();
  * @returns Promise with registration result
  * @throws Error if registration fails
  */
-export async function registerUser(payload: RegisterPayload): Promise<RegisterResponse> {
+export async function registerUser(
+  payload: RegisterPayload,
+): Promise<RegisterResponse> {
   try {
     // Public signup endpoint (creates tenant + admin user)
     // Note: /auth/register is for admins creating users, /signup is for public tenant registration
@@ -27,7 +29,9 @@ export async function registerUser(payload: RegisterPayload): Promise<RegisterRe
   } catch (err) {
     // Re-throw with user-friendly message
     const message =
-      err instanceof Error && err.message !== '' ? err.message : ERROR_MESSAGES.registrationFailed;
+      err instanceof Error && err.message !== '' ?
+        err.message
+      : ERROR_MESSAGES.registrationFailed;
     throw new Error(message);
   }
 }

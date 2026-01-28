@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Reports Service - Native NestJS Implementation
  *
@@ -541,20 +540,29 @@ export class ReportsService {
   /**
    * Get company overview report with all KPIs aggregated
    */
-  async getOverviewReport(tenantId: number, dateFrom?: string, dateTo?: string): Promise<unknown> {
+  async getOverviewReport(
+    tenantId: number,
+    dateFrom?: string,
+    dateTo?: string,
+  ): Promise<unknown> {
     this.logger.debug(`Getting overview report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
 
-    const [employeeMetrics, departmentMetrics, shiftMetrics, kvpMetrics, surveyMetrics] =
-      await Promise.all([
-        this.getEmployeeMetrics(tenantId, from, to),
-        this.getDepartmentMetrics(tenantId, from, to),
-        this.getShiftMetrics(tenantId, from, to),
-        this.getKvpMetrics(tenantId, from, to),
-        this.getSurveyMetrics(tenantId, from, to),
-      ]);
+    const [
+      employeeMetrics,
+      departmentMetrics,
+      shiftMetrics,
+      kvpMetrics,
+      surveyMetrics,
+    ] = await Promise.all([
+      this.getEmployeeMetrics(tenantId, from, to),
+      this.getDepartmentMetrics(tenantId, from, to),
+      this.getShiftMetrics(tenantId, from, to),
+      this.getKvpMetrics(tenantId, from, to),
+      this.getSurveyMetrics(tenantId, from, to),
+    ]);
 
     return {
       period: { from, to },
@@ -600,7 +608,13 @@ export class ReportsService {
       [tenantId, from, to],
     );
 
-    const attendanceData = this.getAttendanceMetricsData(tenantId, from, to, departmentId, teamId);
+    const attendanceData = this.getAttendanceMetricsData(
+      tenantId,
+      from,
+      to,
+      departmentId,
+      teamId,
+    );
     const performanceData = await this.getPerformanceMetrics(
       tenantId,
       from,
@@ -673,17 +687,19 @@ export class ReportsService {
       [from, to, tenantId, from, to, tenantId],
     );
 
-    const result: DepartmentPerformanceData[] = rows.map((dept: DbDepartmentRow) => ({
-      departmentId: Number(dept.department_id),
-      departmentName: String(dept.department_name),
-      metrics: {
-        employees: this.parseIntOrZero(dept.employees),
-        teams: this.parseIntOrZero(dept.teams),
-        kvpSuggestions: this.parseIntOrZero(dept.kvp_suggestions),
-        shiftCoverage: this.parseFloatOrZero(dept.shift_coverage),
-        avgOvertime: this.parseFloatOrZero(dept.avg_overtime),
-      },
-    }));
+    const result: DepartmentPerformanceData[] = rows.map(
+      (dept: DbDepartmentRow) => ({
+        departmentId: Number(dept.department_id),
+        departmentName: String(dept.department_name),
+        metrics: {
+          employees: this.parseIntOrZero(dept.employees),
+          teams: this.parseIntOrZero(dept.teams),
+          kvpSuggestions: this.parseIntOrZero(dept.kvp_suggestions),
+          shiftCoverage: this.parseFloatOrZero(dept.shift_coverage),
+          avgOvertime: this.parseFloatOrZero(dept.avg_overtime),
+        },
+      }),
+    );
 
     return { departments: result };
   }
@@ -746,7 +762,11 @@ export class ReportsService {
     };
 
     const summary = await this.getShiftSummary(filters);
-    const overtimeByDept = await this.getShiftOvertimeByDepartment(tenantId, from, to);
+    const overtimeByDept = await this.getShiftOvertimeByDepartment(
+      tenantId,
+      from,
+      to,
+    );
     const peakHours = await this.getShiftPeakHours(tenantId, from, to);
 
     const totalShifts = this.parseIntOrZero(summary.total_shifts);
@@ -906,7 +926,9 @@ export class ReportsService {
     const conditions = [`k.tenant_id = $${paramIndex++}`];
     const params: (string | number)[] = [tenantId];
 
-    conditions.push(`k.created_at BETWEEN $${paramIndex++} AND $${paramIndex++}`);
+    conditions.push(
+      `k.created_at BETWEEN $${paramIndex++} AND $${paramIndex++}`,
+    );
     params.push(from, to);
 
     if (categoryId !== undefined && categoryId > 0) {
@@ -1019,7 +1041,11 @@ export class ReportsService {
     const startDate = new Date(dateFrom);
     const endDate = new Date(dateTo);
 
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    for (
+      let d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
       const dateStr = d.toISOString().split('T')[0];
       daily.push({
         date: dateStr,
@@ -1126,7 +1152,11 @@ export class ReportsService {
           );
           break;
         case 'kvp':
-          data['kvp'] = await this.getKvpMetrics(params.tenantId, params.dateFrom, params.dateTo);
+          data['kvp'] = await this.getKvpMetrics(
+            params.tenantId,
+            params.dateFrom,
+            params.dateTo,
+          );
           break;
         case 'attendance':
           data['attendance'] = this.getAttendanceMetricsData(
@@ -1171,10 +1201,11 @@ export class ReportsService {
 
     switch (params.reportType) {
       case 'overview':
-        return (await this.getOverviewReport(params.tenantId, dateFrom, dateTo)) as Record<
-          string,
-          unknown
-        >;
+        return (await this.getOverviewReport(
+          params.tenantId,
+          dateFrom,
+          dateTo,
+        )) as Record<string, unknown>;
       case 'employees':
         return (await this.getEmployeeReport(
           params.tenantId,
@@ -1185,7 +1216,11 @@ export class ReportsService {
         )) as Record<string, unknown>;
       case 'departments':
         return {
-          departments: await this.getDepartmentReport(params.tenantId, dateFrom, dateTo),
+          departments: await this.getDepartmentReport(
+            params.tenantId,
+            dateFrom,
+            dateTo,
+          ),
         };
       case 'shifts':
         return (await this.getShiftReport(
@@ -1196,10 +1231,11 @@ export class ReportsService {
           params.filters.teamId,
         )) as Record<string, unknown>;
       case 'kvp':
-        return (await this.getKvpReport(params.tenantId, dateFrom, dateTo)) as Record<
-          string,
-          unknown
-        >;
+        return (await this.getKvpReport(
+          params.tenantId,
+          dateFrom,
+          dateTo,
+        )) as Record<string, unknown>;
       case 'attendance':
         return this.getAttendanceReport(
           params.tenantId,
@@ -1229,12 +1265,21 @@ export class ReportsService {
     lines.push(`Generated: ${new Date().toISOString()}`);
     lines.push('');
 
-    const flattenObject = (obj: Record<string, unknown>, prefix: string = ''): string[] => {
+    const flattenObject = (
+      obj: Record<string, unknown>,
+      prefix: string = '',
+    ): string[] => {
       const rows: string[] = [];
       for (const [key, value] of Object.entries(obj)) {
         const fullKey = prefix !== '' ? `${prefix}.${key}` : key;
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          rows.push(...flattenObject(value as Record<string, unknown>, fullKey));
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
+          rows.push(
+            ...flattenObject(value as Record<string, unknown>, fullKey),
+          );
         } else if (Array.isArray(value)) {
           rows.push(`"${fullKey}","${value.length} items"`);
         } else {
@@ -1270,7 +1315,8 @@ export class ReportsService {
         return {
           filename: `report-${reportType}-${timestamp}.xlsx`,
           content: Buffer.from(JSON.stringify(reportData, null, 2)),
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
       case 'csv':
         return {
@@ -1287,8 +1333,14 @@ export class ReportsService {
    * Export report in specified format (PDF, Excel, or CSV)
    */
   async exportReport(params: ExportReportParams): Promise<ExportResult> {
-    this.logger.log(`Exporting ${params.reportType} report as ${params.format}`);
+    this.logger.log(
+      `Exporting ${params.reportType} report as ${params.format}`,
+    );
     const reportData = await this.getReportDataByType(params);
-    return this.formatReportForExport(reportData, params.reportType, params.format);
+    return this.formatReportForExport(
+      reportData,
+      params.reportType,
+      params.format,
+    );
   }
 }

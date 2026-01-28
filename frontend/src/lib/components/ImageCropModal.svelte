@@ -47,14 +47,20 @@
   /**
    * Handle crop complete event from Cropper
    */
-  function handleCropComplete(event: { pixels: CropArea; percent: CropArea }): void {
+  function handleCropComplete(event: {
+    pixels: CropArea;
+    percent: CropArea;
+  }): void {
     croppedAreaPixels = event.pixels;
   }
 
   /**
    * Create cropped image from source and crop area
    */
-  async function createCroppedImage(src: string, pixelCrop: CropArea): Promise<Blob> {
+  async function createCroppedImage(
+    src: string,
+    pixelCrop: CropArea,
+  ): Promise<Blob> {
     const image = new Image();
     image.crossOrigin = 'anonymous';
 
@@ -149,7 +155,10 @@
 {#if show && imageSrc !== null}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay modal-overlay--active" onclick={handleOverlayClick}>
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={handleOverlayClick}
+  >
     <div
       class="ds-modal ds-modal--md"
       onclick={(e) => {
@@ -161,7 +170,10 @@
       tabindex="-1"
     >
       <div class="ds-modal__header">
-        <h3 class="ds-modal__title" id="crop-modal-title">
+        <h3
+          class="ds-modal__title"
+          id="crop-modal-title"
+        >
           <i class="fas fa-crop-alt mr-2"></i>
           Bild zuschneiden
         </h3>
@@ -192,7 +204,10 @@
 
         <!-- Zoom Control -->
         <div class="zoom-control">
-          <label class="zoom-label" for="zoom-slider">
+          <label
+            class="zoom-label"
+            for="zoom-slider"
+          >
             <i class="fas fa-search-minus"></i>
           </label>
           <input
@@ -204,7 +219,10 @@
             step="0.1"
             bind:value={zoom}
           />
-          <label class="zoom-label" for="zoom-slider">
+          <label
+            class="zoom-label"
+            for="zoom-slider"
+          >
             <i class="fas fa-search-plus"></i>
           </label>
         </div>
@@ -216,7 +234,12 @@
       </div>
 
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={onclose} disabled={saving}>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={onclose}
+          disabled={saving}
+        >
           <i class="fas fa-times mr-2"></i>
           Abbrechen
         </button>

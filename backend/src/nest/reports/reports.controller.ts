@@ -37,7 +37,11 @@ export class ReportsController {
     @TenantId() tenantId: number,
     @Query() query: DateRangeQueryDto,
   ): Promise<unknown> {
-    return await this.reportsService.getOverviewReport(tenantId, query.dateFrom, query.dateTo);
+    return await this.reportsService.getOverviewReport(
+      tenantId,
+      query.dateFrom,
+      query.dateTo,
+    );
   }
 
   @Get('employees')
@@ -59,7 +63,11 @@ export class ReportsController {
     @TenantId() tenantId: number,
     @Query() query: DateRangeQueryDto,
   ): Promise<unknown> {
-    return await this.reportsService.getDepartmentReport(tenantId, query.dateFrom, query.dateTo);
+    return await this.reportsService.getDepartmentReport(
+      tenantId,
+      query.dateFrom,
+      query.dateTo,
+    );
   }
 
   @Get('shifts')
@@ -154,7 +162,10 @@ export class ReportsController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.filename}"`)
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${result.filename}"`,
+      )
       .send(result.content);
   }
 }

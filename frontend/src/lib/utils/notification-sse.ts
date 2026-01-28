@@ -187,7 +187,11 @@ class NotificationSSEClient implements INotificationSSE {
     const delay = this.reconnectDelay;
 
     log.warn(
-      { delay, attempt: this.reconnectAttempts, maxAttempts: this.maxReconnectAttempts },
+      {
+        delay,
+        attempt: this.reconnectAttempts,
+        maxAttempts: this.maxReconnectAttempts,
+      },
       'Reconnecting',
     );
 

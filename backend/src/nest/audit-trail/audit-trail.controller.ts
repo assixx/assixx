@@ -111,7 +111,8 @@ export class AuditTrailController {
   @Get()
   async getEntries(
     @CurrentUser() currentUser: NestAuthUser,
-    @Query(new ZodValidationPipe(GetEntriesQuerySchema)) dto: GetEntriesQueryDto,
+    @Query(new ZodValidationPipe(GetEntriesQuerySchema))
+    dto: GetEntriesQueryDto,
   ): Promise<GetEntriesApiResponse> {
     this.logger.log(`[getEntries] User: ${currentUser.id}`);
 
@@ -151,11 +152,17 @@ export class AuditTrailController {
   @Roles('admin', 'root')
   async generateReport(
     @CurrentUser() currentUser: NestAuthUser,
-    @Body(new ZodValidationPipe(GenerateReportBodySchema)) dto: GenerateReportBodyDto,
+    @Body(new ZodValidationPipe(GenerateReportBodySchema))
+    dto: GenerateReportBodyDto,
   ): Promise<GenerateReportApiResponse> {
-    this.logger.log(`[generateReport] User: ${currentUser.id}, Type: ${dto.reportType}`);
+    this.logger.log(
+      `[generateReport] User: ${currentUser.id}, Type: ${dto.reportType}`,
+    );
 
-    const report = await this.auditTrailService.generateReport(currentUser, dto);
+    const report = await this.auditTrailService.generateReport(
+      currentUser,
+      dto,
+    );
 
     return {
       success: true,
@@ -171,11 +178,14 @@ export class AuditTrailController {
   @Roles('admin', 'root')
   async exportEntries(
     @CurrentUser() currentUser: NestAuthUser,
-    @Query(new ZodValidationPipe(ExportEntriesQuerySchema)) dto: ExportEntriesQueryDto,
+    @Query(new ZodValidationPipe(ExportEntriesQuerySchema))
+    dto: ExportEntriesQueryDto,
     @Req() req: FastifyRequest,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    this.logger.log(`[exportEntries] User: ${currentUser.id}, Format: ${dto.format ?? 'json'}`);
+    this.logger.log(
+      `[exportEntries] User: ${currentUser.id}, Format: ${dto.format ?? 'json'}`,
+    );
 
     const result = await this.auditTrailService.exportEntries(
       currentUser,
@@ -188,7 +198,10 @@ export class AuditTrailController {
       const csv = this.auditTrailService.generateCSV(result.entries);
       await reply
         .header('Content-Type', 'text/csv')
-        .header('Content-Disposition', 'attachment; filename=audit-trail-export.csv')
+        .header(
+          'Content-Disposition',
+          'attachment; filename=audit-trail-export.csv',
+        )
         .send(csv);
     } else {
       await reply.send({
@@ -206,10 +219,13 @@ export class AuditTrailController {
   @Roles('root')
   async deleteOldEntries(
     @CurrentUser() currentUser: NestAuthUser,
-    @Body(new ZodValidationPipe(DeleteOldEntriesBodySchema)) dto: DeleteOldEntriesBodyDto,
+    @Body(new ZodValidationPipe(DeleteOldEntriesBodySchema))
+    dto: DeleteOldEntriesBodyDto,
     @Req() req: FastifyRequest,
   ): Promise<DeleteOldEntriesApiResponse> {
-    this.logger.log(`[deleteOldEntries] User: ${currentUser.id}, Days: ${dto.olderThanDays}`);
+    this.logger.log(
+      `[deleteOldEntries] User: ${currentUser.id}, Days: ${dto.olderThanDays}`,
+    );
 
     const result = await this.auditTrailService.deleteOldEntries(
       currentUser,
@@ -235,7 +251,10 @@ export class AuditTrailController {
   ): Promise<GetEntryApiResponse> {
     this.logger.log(`[getEntry] User: ${currentUser.id}, Entry: ${params.id}`);
 
-    const entry = await this.auditTrailService.getEntryById(currentUser, params.id);
+    const entry = await this.auditTrailService.getEntryById(
+      currentUser,
+      params.id,
+    );
 
     return {
       success: true,

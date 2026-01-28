@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Shifts Service
  *
@@ -259,7 +258,9 @@ export class ShiftsService {
   // Helper Methods
   // ============================================================
 
-  private parseTimeFromDateTime(dateTimeValue: string | Date | undefined): string | undefined {
+  private parseTimeFromDateTime(
+    dateTimeValue: string | Date | undefined,
+  ): string | undefined {
     if (dateTimeValue === undefined) return undefined;
     try {
       const dateTime = new Date(dateTimeValue);
@@ -272,7 +273,9 @@ export class ShiftsService {
     }
   }
 
-  private parseDateToString(dateValue: string | Date | undefined): string | undefined {
+  private parseDateToString(
+    dateValue: string | Date | undefined,
+  ): string | undefined {
     if (dateValue === undefined) return undefined;
     try {
       const date = new Date(dateValue);
@@ -290,7 +293,11 @@ export class ShiftsService {
    * @param defaultTime - Optional default time if timeStr is invalid
    * @returns Full timestamp string or null if inputs are invalid
    */
-  private buildTimestamp(dateStr: unknown, timeStr: unknown, defaultTime?: string): string | null {
+  private buildTimestamp(
+    dateStr: unknown,
+    timeStr: unknown,
+    defaultTime?: string,
+  ): string | null {
     if (typeof dateStr !== 'string' || dateStr === '') return null;
     const datePart: string = dateStr.split('T')[0] ?? dateStr;
     if (typeof timeStr === 'string' && timeStr !== '') {
@@ -324,7 +331,9 @@ export class ShiftsService {
   }
 
   private dbShiftToApi(dbShift: DbShiftRow): ShiftResponse {
-    const apiShift = dbToApi(dbShift as unknown as Record<string, unknown>) as ShiftResponse;
+    const apiShift = dbToApi(
+      dbShift as unknown as Record<string, unknown>,
+    ) as ShiftResponse;
     const startTime = this.parseTimeFromDateTime(dbShift.start_time);
     if (startTime !== undefined && startTime !== '') {
       apiShift.startTime = startTime;
@@ -348,7 +357,11 @@ export class ShiftsService {
     return apiShift;
   }
 
-  private calculateHours(startTime: string, endTime: string, breakMinutes?: number): number {
+  private calculateHours(
+    startTime: string,
+    endTime: string,
+    breakMinutes?: number,
+  ): number {
     const start = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
     const diffMs = end.getTime() - start.getTime();
@@ -372,7 +385,11 @@ export class ShiftsService {
     const params: unknown[] = [];
     let idx = startParamIndex;
 
-    const filterMap: { key: keyof ShiftFilters; column: string; isDate?: boolean }[] = [
+    const filterMap: {
+      key: keyof ShiftFilters;
+      column: string;
+      isDate?: boolean;
+    }[] = [
       { key: 'date', column: 'DATE(s.date)', isDate: true },
       { key: 'startDate', column: 's.date' },
       { key: 'endDate', column: 's.date' },
@@ -390,7 +407,9 @@ export class ShiftsService {
         key === 'startDate' ? '>='
         : key === 'endDate' ? '<='
         : '=';
-      conditions.push(isDate === true ? `${column} = $${idx}` : `${column} ${op} $${idx}`);
+      conditions.push(
+        isDate === true ? `${column} = $${idx}` : `${column} ${op} $${idx}`,
+      );
 
       params.push(filters[key]);
       idx++;
@@ -399,7 +418,10 @@ export class ShiftsService {
     return { conditions: conditions.join(' AND '), params, nextIndex: idx };
   }
 
-  async listShifts(tenantId: number, filters: ShiftFilters): Promise<ShiftResponse[]> {
+  async listShifts(
+    tenantId: number,
+    filters: ShiftFilters,
+  ): Promise<ShiftResponse[]> {
     this.logger.debug(`Listing shifts for tenant ${tenantId}`);
 
     const baseQuery = `
@@ -431,7 +453,8 @@ export class ShiftsService {
       type: 's.type',
     };
     const sortColumn = SORT_COLUMN_MAP[filters.sortBy] ?? 's.date';
-    const sortDirection = filters.sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    const sortDirection =
+      filters.sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     const orderClause = ` ORDER BY ${sortColumn} ${sortDirection}`;
     const limitClause = ` LIMIT $${nextIndex} OFFSET $${nextIndex + 1}`;
     params.push(filters.limit, (filters.page - 1) * filters.limit);
@@ -471,7 +494,9 @@ export class ShiftsService {
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<ShiftResponse> {
-    this.logger.debug(`Creating shift for tenant ${tenantId} by user ${userId}`);
+    this.logger.debug(
+      `Creating shift for tenant ${tenantId} by user ${userId}`,
+    );
 
     const dbData = apiToDb(dto as unknown as Record<string, unknown>);
 
@@ -543,8 +568,10 @@ export class ShiftsService {
 
     // Determine the date for timestamp construction (new date or existing)
     const rawDate = dbData['date'];
-    const existingDate = typeof existingShift.date === 'string' ? existingShift.date : '';
-    const dateForTimestamp = typeof rawDate === 'string' ? rawDate : existingDate;
+    const existingDate =
+      typeof existingShift.date === 'string' ? existingShift.date : '';
+    const dateForTimestamp =
+      typeof rawDate === 'string' ? rawDate : existingDate;
 
     // Convert time-only fields to full timestamps
     this.convertTimeFieldsToTimestamps(dbData, dateForTimestamp);
@@ -579,7 +606,11 @@ export class ShiftsService {
       'shift',
       id,
       `Schicht aktualisiert: ${existingShift.date}`,
-      { date: existingShift.date, type: existingShift.type, status: existingShift.status },
+      {
+        date: existingShift.date,
+        type: existingShift.type,
+        status: existingShift.status,
+      },
       {
         date: dto.date ?? existingShift.date,
         type: dto.type ?? existingShift.type,
@@ -600,10 +631,10 @@ export class ShiftsService {
     this.logger.debug(`Deleting shift ${id} for tenant ${tenantId}`);
 
     const existingShift = await this.getShiftById(id, tenantId);
-    await this.databaseService.query(`DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`, [
-      id,
-      tenantId,
-    ]);
+    await this.databaseService.query(
+      `DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`,
+      [id, tenantId],
+    );
 
     // Log activity to root_logs
     await this.activityLogger.logDelete(
@@ -631,7 +662,9 @@ export class ShiftsService {
     endDate: string,
     tenantId: number,
   ): Promise<{ shiftsDeleted: number }> {
-    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
+    this.logger.debug(
+      `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
+    );
 
     const result = await this.databaseService.query<{ count: string }>(
       `WITH deleted AS (
@@ -651,7 +684,10 @@ export class ShiftsService {
   /**
    * Delete ALL shifts for a team (no date range)
    */
-  async deleteShiftsByTeam(teamId: number, tenantId: number): Promise<{ shiftsDeleted: number }> {
+  async deleteShiftsByTeam(
+    teamId: number,
+    tenantId: number,
+  ): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
 
     const result = await this.databaseService.query<{ count: string }>(
@@ -699,7 +735,10 @@ export class ShiftsService {
     }
 
     planQuery += ` ORDER BY created_at DESC LIMIT 1`;
-    const plans = await this.databaseService.query<DbShiftPlanRow>(planQuery, planParams);
+    const plans = await this.databaseService.query<DbShiftPlanRow>(
+      planQuery,
+      planParams,
+    );
     const plan = plans[0];
 
     // Get shifts for the date range - if we have a plan, use plan_id for more accurate filtering
@@ -716,7 +755,10 @@ export class ShiftsService {
     });
 
     return {
-      plan: plan !== undefined ? dbToApi(plan as unknown as Record<string, unknown>) : undefined,
+      plan:
+        plan !== undefined ?
+          dbToApi(plan as unknown as Record<string, unknown>)
+        : undefined,
       shifts,
       notes: [],
     };
@@ -767,7 +809,10 @@ export class ShiftsService {
     shifts: CreateShiftPlanDto['shifts'],
     planId: number,
     tenantId: number,
-    context: Pick<CreateShiftPlanDto, 'areaId' | 'departmentId' | 'teamId' | 'machineId'>,
+    context: Pick<
+      CreateShiftPlanDto,
+      'areaId' | 'departmentId' | 'teamId' | 'machineId'
+    >,
     createdBy: number,
   ): Promise<number[]> {
     const shiftIds: number[] = [];
@@ -826,8 +871,16 @@ export class ShiftsService {
     const shiftIds: number[] = [];
     for (const shift of shifts) {
       // Combine date + time to create full timestamps for PostgreSQL (with defaults)
-      const startTimestamp = this.buildTimestamp(shift.date, shift.startTime, '08:00');
-      const endTimestamp = this.buildTimestamp(shift.date, shift.endTime, '16:00');
+      const startTimestamp = this.buildTimestamp(
+        shift.date,
+        shift.startTime,
+        '08:00',
+      );
+      const endTimestamp = this.buildTimestamp(
+        shift.date,
+        shift.endTime,
+        '16:00',
+      );
 
       const result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shifts (
@@ -865,7 +918,9 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    this.logger.debug(`Updating shift plan ${planId}, DTO: ${JSON.stringify(dto, null, 2)}`);
+    this.logger.debug(
+      `Updating shift plan ${planId}, DTO: ${JSON.stringify(dto, null, 2)}`,
+    );
 
     const plans = await this.databaseService.query<DbShiftPlanRow>(
       `SELECT * FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
@@ -897,7 +952,12 @@ export class ShiftsService {
       : [];
 
     // Clean up orphaned shifts and rotation history
-    await this.deleteOrphanedPlanShifts(planId, tenantId, shiftIds, dto.shifts?.length === 0);
+    await this.deleteOrphanedPlanShifts(
+      planId,
+      tenantId,
+      shiftIds,
+      dto.shifts?.length === 0,
+    );
     const teamId = dto.teamId ?? plan?.team_id ?? null;
     if (teamId !== null && dto.shifts !== undefined) {
       await this.cleanupOrphanedRotationHistory(tenantId, teamId, dto.shifts);
@@ -947,18 +1007,22 @@ export class ShiftsService {
       `deleteOrphanedPlanShifts: keepShiftIds=[${keepShiftIds.join(', ')}], deleteAll=${deleteAll}`,
     );
     if (keepShiftIds.length > 0) {
-      const placeholders = keepShiftIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
+      const placeholders = keepShiftIds
+        .map((_: number, i: number) => `$${i + 3}`)
+        .join(', ');
       await this.databaseService.query(
         `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2 AND id NOT IN (${placeholders})`,
         [planId, tenantId, ...keepShiftIds],
       );
       this.logger.debug(`Cleaned up orphaned shifts for plan ${planId}`);
     } else if (deleteAll) {
-      await this.databaseService.query(`DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`, [
-        planId,
-        tenantId,
-      ]);
-      this.logger.debug(`Deleted all shifts for plan ${planId} (empty shifts array)`);
+      await this.databaseService.query(
+        `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
+        [planId, tenantId],
+      );
+      this.logger.debug(
+        `Deleted all shifts for plan ${planId} (empty shifts array)`,
+      );
     }
   }
 
@@ -989,7 +1053,10 @@ export class ShiftsService {
 
     // Build VALUES clause for the kept shifts
     const keptValues = keptShifts
-      .map((_: KeptShift, i: number) => `($${i * 2 + 4}::integer, $${i * 2 + 5}::date)`)
+      .map(
+        (_: KeptShift, i: number) =>
+          `($${i * 2 + 4}::integer, $${i * 2 + 5}::date)`,
+      )
       .join(', ');
     const keptParams = keptShifts.flatMap((s: KeptShift) => [s.userId, s.date]);
 
@@ -1026,7 +1093,10 @@ export class ShiftsService {
    * Resolves a shift plan UUID to its internal ID
    * @throws NotFoundException if plan not found
    */
-  private async resolveShiftPlanIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolveShiftPlanIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM shift_plans WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -1071,16 +1141,16 @@ export class ShiftsService {
     }
 
     // Delete associated shifts first
-    await this.databaseService.query(`DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`, [
-      planId,
-      tenantId,
-    ]);
+    await this.databaseService.query(
+      `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
+      [planId, tenantId],
+    );
 
     // Delete the plan
-    await this.databaseService.query(`DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`, [
-      planId,
-      tenantId,
-    ]);
+    await this.databaseService.query(
+      `DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
+      [planId, tenantId],
+    );
   }
 
   // ============================================================
@@ -1109,7 +1179,10 @@ export class ShiftsService {
 
     query += ` ORDER BY created_at DESC`;
 
-    const requests = await this.databaseService.query<DbSwapRequestRow>(query, params);
+    const requests = await this.databaseService.query<DbSwapRequestRow>(
+      query,
+      params,
+    );
     return requests.map(
       (r: DbSwapRequestRow) =>
         dbToApi(r as unknown as Record<string, unknown>) as SwapRequestResponse,
@@ -1128,14 +1201,22 @@ export class ShiftsService {
     // Verify shift exists and belongs to user
     const shift = await this.getShiftById(dto.shiftId, tenantId);
     if (shift.userId !== userId) {
-      throw new ForbiddenException('You can only request swaps for your own shifts');
+      throw new ForbiddenException(
+        'You can only request swaps for your own shifts',
+      );
     }
 
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_swap_requests (tenant_id, shift_id, requested_by, requested_with, reason, status)
        VALUES ($1, $2, $3, $4, $5, 'pending')
        RETURNING id`,
-      [tenantId, dto.shiftId, userId, dto.requestedWithUserId ?? null, dto.reason ?? null],
+      [
+        tenantId,
+        dto.shiftId,
+        userId,
+        dto.requestedWithUserId ?? null,
+        dto.reason ?? null,
+      ],
     );
 
     const requestId = result[0]?.id ?? 0;
@@ -1159,7 +1240,9 @@ export class ShiftsService {
     _ipAddress?: string,
     _userAgent?: string,
   ): Promise<{ message: string }> {
-    this.logger.debug(`Updating swap request ${id} status for tenant ${tenantId}`);
+    this.logger.debug(
+      `Updating swap request ${id} status for tenant ${tenantId}`,
+    );
 
     const requests = await this.databaseService.query<DbSwapRequestRow>(
       `SELECT * FROM shift_swap_requests WHERE id = $1 AND tenant_id = $2`,
@@ -1272,7 +1355,9 @@ export class ShiftsService {
 
     return [
       headers.join(','),
-      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
+      ...rows.map((row: unknown[]) =>
+        row.map((cell: unknown) => `"${String(cell)}"`).join(','),
+      ),
     ].join('\n');
   }
 
@@ -1286,9 +1371,14 @@ export class ShiftsService {
     startDate: string,
     endDate: string,
   ): Promise<CalendarShiftResponse[]> {
-    this.logger.debug(`Getting calendar shifts for user ${userId} in tenant ${tenantId}`);
+    this.logger.debug(
+      `Getting calendar shifts for user ${userId} in tenant ${tenantId}`,
+    );
 
-    const rows = await this.databaseService.query<{ date: string; type: string }>(
+    const rows = await this.databaseService.query<{
+      date: string;
+      type: string;
+    }>(
       `SELECT DISTINCT date, type FROM (
         SELECT DATE(date) as date, type::TEXT as type
         FROM shifts
@@ -1300,7 +1390,16 @@ export class ShiftsService {
         WHERE user_id = $5 AND tenant_id = $6 AND shift_date BETWEEN $7 AND $8
       ) AS combined_shifts
       ORDER BY date ASC`,
-      [userId, tenantId, startDate, endDate, userId, tenantId, startDate, endDate],
+      [
+        userId,
+        tenantId,
+        startDate,
+        endDate,
+        userId,
+        tenantId,
+        startDate,
+        endDate,
+      ],
     );
 
     return rows.map((row: { date: string; type: string }) => ({
@@ -1317,8 +1416,13 @@ export class ShiftsService {
   // FAVORITES
   // ============================================================
 
-  async listFavorites(tenantId: number, userId: number): Promise<FavoriteResponse[]> {
-    this.logger.debug(`Listing favorites for user ${userId} in tenant ${tenantId}`);
+  async listFavorites(
+    tenantId: number,
+    userId: number,
+  ): Promise<FavoriteResponse[]> {
+    this.logger.debug(
+      `Listing favorites for user ${userId} in tenant ${tenantId}`,
+    );
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
@@ -1326,7 +1430,8 @@ export class ShiftsService {
     );
 
     return favorites.map(
-      (f: DbFavoriteRow) => dbToApi(f as unknown as Record<string, unknown>) as FavoriteResponse,
+      (f: DbFavoriteRow) =>
+        dbToApi(f as unknown as Record<string, unknown>) as FavoriteResponse,
     );
   }
 
@@ -1335,7 +1440,9 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<FavoriteResponse> {
-    this.logger.debug(`Creating favorite for user ${userId} in tenant ${tenantId}`);
+    this.logger.debug(
+      `Creating favorite for user ${userId} in tenant ${tenantId}`,
+    );
 
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_favorites (
@@ -1364,11 +1471,19 @@ export class ShiftsService {
       [favoriteId, tenantId],
     );
 
-    return dbToApi(favorites[0] as unknown as Record<string, unknown>) as FavoriteResponse;
+    return dbToApi(
+      favorites[0] as unknown as Record<string, unknown>,
+    ) as FavoriteResponse;
   }
 
-  async deleteFavorite(favoriteId: number, tenantId: number, userId: number): Promise<void> {
-    this.logger.debug(`Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`);
+  async deleteFavorite(
+    favoriteId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    this.logger.debug(
+      `Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`,
+    );
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,

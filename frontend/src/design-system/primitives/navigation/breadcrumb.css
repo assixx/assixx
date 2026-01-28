@@ -115,11 +115,17 @@
 
 /* Hide middle items on very small screens (keep first, last, and second-to-last) */
 @media (width <= 480px) {
-  .breadcrumb .breadcrumb__item:not(:first-of-type, :last-of-type, :nth-last-of-type(2)) {
+  .breadcrumb
+    .breadcrumb__item:not(:first-of-type, :last-of-type, :nth-last-of-type(2)) {
     display: none;
   }
 
-  .breadcrumb .breadcrumb__separator:not(:first-of-type, :last-of-type, :nth-last-of-type(3)) {
+  .breadcrumb
+    .breadcrumb__separator:not(
+      :first-of-type,
+      :last-of-type,
+      :nth-last-of-type(3)
+    ) {
     display: none;
   }
 }

@@ -42,9 +42,9 @@
 
 {#if show}
   <span
-    class="notification-badge notification-badge--{position} {sizeClasses[size]} {variantClasses[
-      variant
-    ]}"
+    class="notification-badge notification-badge--{position} {sizeClasses[
+      size
+    ]} {variantClasses[variant]}"
     aria-label="{count} ungelesene Benachrichtigungen"
   >
     {displayCount}

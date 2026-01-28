@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Session Manager - Handles user session timeout and activity tracking
  * 1:1 Copy from frontend/src/scripts/utils/session-manager.ts
@@ -44,7 +43,10 @@ export class SessionManager {
     this.DEBUG_MODE = import.meta.env.DEV && isBrowser();
 
     if (this.DEBUG_MODE) {
-      log.debug({ lastActivityTime: new Date(this.lastActivityTime).toISOString() }, 'Initialized');
+      log.debug(
+        { lastActivityTime: new Date(this.lastActivityTime).toISOString() },
+        'Initialized',
+      );
     }
 
     this.setupActivityListeners();
@@ -155,7 +157,10 @@ export class SessionManager {
 
       this.idleCallbackId = requestIdleCallback(
         () => {
-          localStorage.setItem('lastActivity', this.lastActivityTime.toString());
+          localStorage.setItem(
+            'lastActivity',
+            this.lastActivityTime.toString(),
+          );
           this.scheduleNextCheck();
         },
         { timeout: 2000 },
@@ -179,7 +184,9 @@ export class SessionManager {
 
     if (this.warningShown) {
       if (this.DEBUG_MODE) {
-        log.debug('Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben"');
+        log.debug(
+          'Auto-refresh blocked - warning modal active. User must click "Aktiv bleiben"',
+        );
       }
       return;
     }
@@ -200,7 +207,10 @@ export class SessionManager {
     }
 
     if (this.DEBUG_MODE) {
-      log.debug({ remaining }, 'Active interaction + token < 10min → refreshing');
+      log.debug(
+        { remaining },
+        'Active interaction + token < 10min → refreshing',
+      );
     }
     void tokenManager.refresh();
   }
@@ -241,7 +251,8 @@ export class SessionManager {
     }
 
     const timeSinceActivity = Date.now() - this.lastActivityTime;
-    const timeUntilWarning = this.INACTIVITY_TIMEOUT - this.WARNING_TIME - timeSinceActivity;
+    const timeUntilWarning =
+      this.INACTIVITY_TIMEOUT - this.WARNING_TIME - timeSinceActivity;
     const timeUntilTimeout = this.INACTIVITY_TIMEOUT - timeSinceActivity;
 
     // Determine next check interval
@@ -329,10 +340,14 @@ export class SessionManager {
       return;
     }
 
-    const warningThreshold = this.INACTIVITY_TIMEOUT - this.WARNING_TIME - 60000;
+    const warningThreshold =
+      this.INACTIVITY_TIMEOUT - this.WARNING_TIME - 60000;
     if (timeSinceActivity >= warningThreshold) {
       const timeSinceActivityMinutes = Math.floor(timeSinceActivity / 60000);
-      log.warn({ inactivityMinutes: timeSinceActivityMinutes }, 'Approaching inactivity threshold');
+      log.warn(
+        { inactivityMinutes: timeSinceActivityMinutes },
+        'Approaching inactivity threshold',
+      );
     }
   }
 
@@ -552,7 +567,10 @@ export class SessionManager {
       this.updateModalTimer(remainingSeconds);
 
       // Stop timer if token expired or modal was closed
-      if (remainingSeconds === 0 || document.querySelector('#session-warning-modal') === null) {
+      if (
+        remainingSeconds === 0 ||
+        document.querySelector('#session-warning-modal') === null
+      ) {
         clearInterval(modalInterval);
       }
     }, 1000); // ALWAYS 1 second for modal, regardless of progressive timer mode!
@@ -609,7 +627,9 @@ export class SessionManager {
       log.error('CRITICAL: Token refresh failed! Cannot extend session.');
 
       // Update modal to show error (if it still exists)
-      const modalMessage = document.querySelector('#session-warning-modal .confirm-modal__message');
+      const modalMessage = document.querySelector(
+        '#session-warning-modal .confirm-modal__message',
+      );
       if (modalMessage !== null) {
         // Clear existing content and build error message with DOM APIs
         modalMessage.textContent = '';
@@ -692,13 +712,15 @@ export class SessionManager {
     localStorage.removeItem('rateLimitTimestamp');
 
     // COOKIE
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+    document.cookie =
+      'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
 
     // ===========================================
     // TokenManager handles redirect to login
     // ===========================================
     const tokenManager = getTokenManager();
-    const reason: 'inactivity_timeout' | 'logout' = isTimeout ? 'inactivity_timeout' : 'logout';
+    const reason: 'inactivity_timeout' | 'logout' =
+      isTimeout ? 'inactivity_timeout' : 'logout';
     tokenManager.clearTokens(reason);
   }
 

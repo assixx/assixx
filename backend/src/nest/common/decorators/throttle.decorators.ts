@@ -35,7 +35,13 @@ type ThrottleDecorator = MethodDecorator & ClassDecorator;
 export const AuthThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } }),
-    SkipThrottle({ public: true, user: true, admin: true, upload: true, export: true }),
+    SkipThrottle({
+      public: true,
+      user: true,
+      admin: true,
+      upload: true,
+      export: true,
+    }),
   ) as ThrottleDecorator;
 
 /**
@@ -46,7 +52,13 @@ export const AuthThrottle = (): ThrottleDecorator =>
 export const PublicThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ public: { limit: 100, ttl: 15 * MS_MINUTE } }),
-    SkipThrottle({ auth: true, user: true, admin: true, upload: true, export: true }),
+    SkipThrottle({
+      auth: true,
+      user: true,
+      admin: true,
+      upload: true,
+      export: true,
+    }),
   ) as ThrottleDecorator;
 
 /**
@@ -57,7 +69,13 @@ export const PublicThrottle = (): ThrottleDecorator =>
 export const UserThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ user: { limit: 1000, ttl: 15 * MS_MINUTE } }),
-    SkipThrottle({ auth: true, public: true, admin: true, upload: true, export: true }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      admin: true,
+      upload: true,
+      export: true,
+    }),
   ) as ThrottleDecorator;
 
 /**
@@ -68,7 +86,13 @@ export const UserThrottle = (): ThrottleDecorator =>
 export const AdminThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ admin: { limit: 2000, ttl: 15 * MS_MINUTE } }),
-    SkipThrottle({ auth: true, public: true, user: true, upload: true, export: true }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      upload: true,
+      export: true,
+    }),
   ) as ThrottleDecorator;
 
 /**
@@ -79,7 +103,13 @@ export const AdminThrottle = (): ThrottleDecorator =>
 export const UploadThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ upload: { limit: 20, ttl: MS_HOUR } }),
-    SkipThrottle({ auth: true, public: true, user: true, admin: true, export: true }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      admin: true,
+      export: true,
+    }),
   ) as ThrottleDecorator;
 
 /**
@@ -91,7 +121,13 @@ export const UploadThrottle = (): ThrottleDecorator =>
 export const ExportThrottle = (): ThrottleDecorator =>
   applyDecorators(
     Throttle({ export: { limit: 1, ttl: MS_MINUTE } }),
-    SkipThrottle({ auth: true, public: true, user: true, admin: true, upload: true }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      admin: true,
+      upload: true,
+    }),
   ) as ThrottleDecorator;
 
 /**

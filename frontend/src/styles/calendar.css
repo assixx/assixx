@@ -9,7 +9,9 @@
    Define here so library picks up our theme colors automatically
    ============================================================================ */
 :root {
-  --ec-border-color: hsl(0deg 0% 83.5% / 35%); /* Light gray, 35% opacity - more visible */
+  --ec-border-color: hsl(
+    0deg 0% 83.5% / 35%
+  ); /* Light gray, 35% opacity - more visible */
 }
 
 /* ============================================================================
@@ -132,7 +134,9 @@
 }
 
 .ec-today {
-  background-color: rgb(92 185 247 / 12%) !important; /* Light yellow highlight */
+  background-color: rgb(
+    92 185 247 / 12%
+  ) !important; /* Light yellow highlight */
 }
 
 .ec-other-month {
@@ -223,7 +227,12 @@
 /* Area + Department + Team */
 .ec-event-area-department-team {
   border-color: #e53935 !important;
-  background: linear-gradient(135deg, #e53935 0%, #e67e22 50%, #2ecc71 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #e53935 0%,
+    #e67e22 50%,
+    #2ecc71 100%
+  ) !important;
 }
 
 /* ============================================================================

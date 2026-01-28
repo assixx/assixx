@@ -7,7 +7,11 @@
     return (resolve as (p: string) => string)(path);
   }
 
-  import { showWarningAlert, showErrorAlert, showInfoAlert } from '$lib/stores/toast';
+  import {
+    showWarningAlert,
+    showErrorAlert,
+    showInfoAlert,
+  } from '$lib/stores/toast';
 
   // Page-specific CSS
   import '../../styles/signup.css';
@@ -89,7 +93,9 @@
   const passwordMatch = $derived(passwordsMatch(password, passwordConfirm));
   const phoneValid = $derived(isPhoneValid(phone));
   const passwordStrengthScore = $derived(getPasswordStrengthScore(password));
-  const passwordStrengthLabel = $derived(getPasswordStrengthLabel(passwordStrengthScore));
+  const passwordStrengthLabel = $derived(
+    getPasswordStrengthLabel(passwordStrengthScore),
+  );
 
   const isFormValid = $derived(
     companyName !== '' &&
@@ -109,7 +115,9 @@
       termsAccepted,
   );
 
-  const buttonText = $derived(loading ? '⏳ Wird erstellt...' : 'Jetzt registrieren →');
+  const buttonText = $derived(
+    loading ? '⏳ Wird erstellt...' : 'Jetzt registrieren →',
+  );
 
   // =============================================================================
   // EVENT HANDLERS
@@ -118,20 +126,27 @@
   function handleSubdomainInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     subdomain = target.value.toLowerCase();
-    subdomainError = subdomain !== '' && !subdomainValid ? ERROR_MESSAGES.subdomainInvalid : null;
+    subdomainError =
+      subdomain !== '' && !subdomainValid ?
+        ERROR_MESSAGES.subdomainInvalid
+      : null;
   }
 
   function handleEmailConfirmInput(): void {
-    emailMatchError = emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
+    emailMatchError =
+      emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
   }
 
   function handlePhoneInput(): void {
-    phoneError = phone !== '' && !phoneValid ? ERROR_MESSAGES.phoneInvalid : null;
+    phoneError =
+      phone !== '' && !phoneValid ? ERROR_MESSAGES.phoneInvalid : null;
   }
 
   function handlePasswordConfirmInput(): void {
     passwordMatchError =
-      passwordConfirm !== '' && !passwordMatch ? ERROR_MESSAGES.passwordMismatch : null;
+      passwordConfirm !== '' && !passwordMatch ?
+        ERROR_MESSAGES.passwordMismatch
+      : null;
   }
 
   function togglePasswordVisibility(field: 'password' | 'confirm'): void {
@@ -192,7 +207,8 @@
         void goto(resolvePath('/login'));
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err) {
-      const message = err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
+      const message =
+        err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
       showErrorAlert(message);
     } finally {
       loading = false;
@@ -221,7 +237,10 @@
 <svelte:window onclick={handleClickOutside} />
 
 <!-- Back to Homepage Button -->
-<a href={resolvePath('/')} class="back-button">
+<a
+  href={resolvePath('/')}
+  class="back-button"
+>
   <span class="icon">←</span>
   <span>Zurück zur Hauptseite</span>
 </a>
@@ -229,39 +248,60 @@
 <!-- Help Button -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="help-button" onclick={showHelp}>?</div>
+<div
+  class="help-button"
+  onclick={showHelp}
+>
+  ?
+</div>
 
 <div class="page-container page-container--centered">
   <!-- Header -->
   <div class="signup-header">
     <div class="header-left">
-      <img src="/images/logo.png" alt="Assixx Logo" class="signup-logo" />
+      <img
+        src="/images/logo.png"
+        alt="Assixx Logo"
+        class="signup-logo"
+      />
     </div>
   </div>
 
   <!-- Success Message -->
   {#if showSuccess}
-    <div class="toast toast--success" role="alert">
+    <div
+      class="toast toast--success"
+      role="alert"
+    >
       <div class="toast__icon">
         <i class="fas fa-check-circle"></i>
       </div>
       <div class="toast__content">
         <div class="toast__title">Erfolgreich registriert!</div>
-        <div class="toast__message">Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...</div>
+        <div class="toast__message">
+          Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...
+        </div>
       </div>
       <div class="toast__progress">
-        <div class="toast__progress-bar" style="animation-duration: 5s"></div>
+        <div
+          class="toast__progress-bar"
+          style="animation-duration: 5s"
+        ></div>
       </div>
     </div>
   {/if}
 
   <!-- Signup Form -->
-  <form id="signupForm" onsubmit={handleSubmit}>
+  <form
+    id="signupForm"
+    onsubmit={handleSubmit}
+  >
     <div class="form-grid">
       <!-- Erste Zeile -->
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="company_name"
-          >Firmenname</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="company_name">Firmenname</label
         >
         <input
           type="text"
@@ -277,8 +317,9 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="subdomain"
-          >Subdomain</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="subdomain">Subdomain</label
         >
         <div class="subdomain-input-group">
           <input
@@ -301,7 +342,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="email">E-Mail</label>
+        <label
+          class="form-field__label form-field__label--required"
+          for="email">E-Mail</label
+        >
         <input
           type="email"
           id="email"
@@ -317,8 +361,9 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="email_confirm"
-          >E-Mail bestätigen</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="email_confirm">E-Mail bestätigen</label
         >
         <input
           type="email"
@@ -333,13 +378,17 @@
           disabled={loading}
         />
         {#if emailMatchError}
-          <p class="form-field__message form-field__message--error">{emailMatchError}</p>
+          <p class="form-field__message form-field__message--error">
+            {emailMatchError}
+          </p>
         {/if}
       </div>
 
       <!-- Zweite Zeile -->
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="first_name">Vorname</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="first_name">Vorname</label
         >
         <input
           type="text"
@@ -355,7 +404,9 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="last_name">Nachname</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="last_name">Nachname</label
         >
         <input
           type="text"
@@ -371,7 +422,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="phone">Telefon</label>
+        <label
+          class="form-field__label form-field__label--required"
+          for="phone">Telefon</label
+        >
         <div class="phone-input-group">
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -398,7 +452,10 @@
                 />
               </svg>
             </div>
-            <div class="country-dropdown" class:active={countryDropdownOpen}>
+            <div
+              class="country-dropdown"
+              class:active={countryDropdownOpen}
+            >
               {#each COUNTRIES as country (country.code)}
                 <div
                   class="country-option"
@@ -427,13 +484,18 @@
           />
         </div>
         {#if phoneError}
-          <p class="form-field__message form-field__message--error">{phoneError}</p>
+          <p class="form-field__message form-field__message--error">
+            {phoneError}
+          </p>
         {/if}
       </div>
 
       <!-- Dritte Zeile -->
       <div class="form-field">
-        <label class="form-field__label form-field__label--required" for="password">
+        <label
+          class="form-field__label form-field__label--required"
+          for="password"
+        >
           Passwort
           <span class="tooltip ml-1">
             <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
@@ -441,8 +503,8 @@
               class="tooltip__content tooltip__content--info tooltip__content--right"
               role="tooltip"
             >
-              Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben,
-              Zahlen, Sonderzeichen (!@#$%^&*)
+              Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
+              Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
             </span>
           </span>
         </label>
@@ -477,7 +539,10 @@
       {#if password.length > 0}
         <div class="password-strength-container">
           <div class="password-strength-meter">
-            <div class="password-strength-bar" data-score={passwordStrengthScore}></div>
+            <div
+              class="password-strength-bar"
+              data-score={passwordStrengthScore}
+            ></div>
           </div>
           <div class="password-strength-info">
             <span class="password-strength-label">{passwordStrengthLabel}</span>
@@ -490,8 +555,9 @@
         class:is-error={passwordMatchError}
         class:is-success={passwordConfirm !== '' && passwordMatch}
       >
-        <label class="form-field__label form-field__label--required" for="password_confirm"
-          >Passwort bestätigen</label
+        <label
+          class="form-field__label form-field__label--required"
+          for="password_confirm">Passwort bestätigen</label
         >
         <div class="form-field__password-wrapper">
           <input
@@ -516,11 +582,14 @@
               togglePasswordVisibility('confirm');
             }}
           >
-            <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
+            <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
+            ></i>
           </button>
         </div>
         {#if passwordMatchError}
-          <p class="form-field__message form-field__message--error">{passwordMatchError}</p>
+          <p class="form-field__message form-field__message--error">
+            {passwordMatchError}
+          </p>
         {:else if passwordConfirm !== '' && passwordMatch}
           <p class="form-field__message form-field__message--success">
             <i class="fas fa-check"></i> Passwörter stimmen überein
@@ -529,11 +598,18 @@
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="planValue">Plan</label>
+        <label
+          class="form-field__label"
+          for="planValue">Plan</label
+        >
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="custom-plan-select">
-          <div class="plan-display" class:active={planDropdownOpen} onclick={togglePlanDropdown}>
+          <div
+            class="plan-display"
+            class:active={planDropdownOpen}
+            onclick={togglePlanDropdown}
+          >
             <span id="selectedPlan">{selectedPlanName}</span>
             <svg
               width="10"
@@ -550,7 +626,10 @@
               />
             </svg>
           </div>
-          <div class="plan-dropdown" class:active={planDropdownOpen}>
+          <div
+            class="plan-dropdown"
+            class:active={planDropdownOpen}
+          >
             {#each PLANS as plan (plan.value)}
               <div
                 class="plan-option"
@@ -587,10 +666,17 @@
             >
           </span>
         </label>
-        <button type="submit" class="btn btn-primary" disabled={loading || !isFormValid}>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={loading || !isFormValid}
+        >
           {buttonText}
         </button>
-        <a href={resolvePath('/login')} class="login-link">Bereits registriert?</a>
+        <a
+          href={resolvePath('/login')}
+          class="login-link">Bereits registriert?</a
+        >
       </div>
     </div>
   </form>

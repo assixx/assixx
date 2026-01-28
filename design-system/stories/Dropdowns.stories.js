@@ -147,7 +147,19 @@ export const CountrySelector = {
     },
     defaultCountry: {
       control: 'select',
-      options: ['de', 'at', 'ch', 'fr', 'it', 'es', 'nl', 'be', 'pl', 'us', 'gb'],
+      options: [
+        'de',
+        'at',
+        'ch',
+        'fr',
+        'it',
+        'es',
+        'nl',
+        'be',
+        'pl',
+        'us',
+        'gb',
+      ],
       description: 'Default selected country',
     },
     scrollable: {
@@ -321,7 +333,9 @@ export const DepartmentSelector = {
         }
 
         // Append text safely using createTextNode (XSS-safe)
-        triggerSpan.appendChild(document.createTextNode(option.textContent.trim()));
+        triggerSpan.appendChild(
+          document.createTextNode(option.textContent.trim()),
+        );
 
         trigger.classList.remove('active');
         menu.classList.remove('active');
@@ -459,9 +473,12 @@ export const NativeVsCustom = {
     options.forEach((option) => {
       option.addEventListener('click', () => {
         const name = option.querySelector('span:first-child').textContent;
-        const price = option.querySelector('.dropdown__option-secondary').textContent;
+        const price = option.querySelector(
+          '.dropdown__option-secondary',
+        ).textContent;
         trigger.querySelector('span:first-child').textContent = name;
-        trigger.querySelector('.dropdown__option-secondary').textContent = price;
+        trigger.querySelector('.dropdown__option-secondary').textContent =
+          price;
         trigger.classList.remove('active');
         menu.classList.remove('active');
       });

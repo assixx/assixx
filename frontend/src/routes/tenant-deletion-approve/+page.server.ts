@@ -40,7 +40,9 @@ function errorResult(queueId: number | null, error: string): LoadResult {
   return { queueData: null, queueId, error };
 }
 
-type ParseResult = { success: true; queueId: number } | { success: false; error: string };
+type ParseResult =
+  | { success: true; queueId: number }
+  | { success: false; error: string };
 
 /** Parses and validates the queueId from URL search params */
 function parseQueueId(url: URL): ParseResult {
@@ -102,11 +104,16 @@ async function fetchDeletionStatus(
   }
 
   if (!response.ok) {
-    log.error({ status: response.status, endpoint: '/root/tenant/deletion-status' }, 'API error');
+    log.error(
+      { status: response.status, endpoint: '/root/tenant/deletion-status' },
+      'API error',
+    );
     return errorResult(queueId, 'Fehler beim Laden der Löschanfrage');
   }
 
-  const json = (await response.json()) as ApiResponse<DeletionStatusData> | DeletionStatusData;
+  const json = (await response.json()) as
+    | ApiResponse<DeletionStatusData>
+    | DeletionStatusData;
   const statusData = extractStatusData(json);
 
   if (statusData === null) {

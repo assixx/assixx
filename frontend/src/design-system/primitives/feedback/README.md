@@ -83,7 +83,9 @@ Professional feedback components following atomic design principles. Comprehensi
   <div class="alert__icon"><i class="fas fa-exclamation-triangle"></i></div>
   <div class="alert__content">
     <div class="alert__title">Unsaved Changes</div>
-    <div class="alert__message">You have unsaved changes. Save before leaving?</div>
+    <div class="alert__message">
+      You have unsaved changes. Save before leaving?
+    </div>
     <div class="alert__actions">
       <button class="btn btn-primary">Save</button>
       <button class="btn btn-cancel">Discard</button>
@@ -595,10 +597,17 @@ All components are **WCAG AAA compliant**:
 
 ```html
 <!-- Alert -->
-<div class="alert alert--error" role="alert" aria-live="polite">Error message</div>
+<div class="alert alert--error" role="alert" aria-live="polite">
+  Error message
+</div>
 
 <!-- Toast -->
-<div class="toast toast--success" role="status" aria-live="polite" aria-atomic="true">
+<div
+  class="toast toast--success"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+>
   Success toast
 </div>
 
@@ -608,7 +617,11 @@ All components are **WCAG AAA compliant**:
 </div>
 
 <!-- Skeleton -->
-<div class="skeleton skeleton--text" aria-busy="true" aria-label="Loading content"></div>
+<div
+  class="skeleton skeleton--text"
+  aria-busy="true"
+  aria-label="Loading content"
+></div>
 ```
 
 ---

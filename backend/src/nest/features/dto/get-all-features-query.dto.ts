@@ -12,4 +12,6 @@ export const GetAllFeaturesQuerySchema = z.object({
     .default(false),
 });
 
-export class GetAllFeaturesQueryDto extends createZodDto(GetAllFeaturesQuerySchema) {}
+export class GetAllFeaturesQueryDto extends createZodDto(
+  GetAllFeaturesQuerySchema,
+) {}

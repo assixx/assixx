@@ -1,17 +1,24 @@
-/* eslint-disable max-lines */
 /**
  * Calendar Service
  *
  * Native NestJS implementation for calendar event management.
  * No Express dependencies - uses DatabaseService directly.
  */
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FeatureVisitsService } from '../feature-visits/feature-visits.service.js';
-import { generateCsvExport, generateIcsExport } from './calendar-export.utils.js';
+import {
+  generateCsvExport,
+  generateIcsExport,
+} from './calendar-export.utils.js';
 import type { CreateEventDto } from './dto/create-event.dto.js';
 import type { UpdateEventDto } from './dto/update-event.dto.js';
 
@@ -274,7 +281,8 @@ export class CalendarService {
 
     // CRITICAL: Only root OR has_full_access=true gets unrestricted access
     const filterType = filters.filter ?? 'all';
-    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+    const hasUnrestrictedAccess =
+      userRole.has_full_access || userRole.role === 'root';
 
     if (!hasUnrestrictedAccess) {
       // Users without full access get permission-based visibility filtering
@@ -289,14 +297,22 @@ export class CalendarService {
       paramIndex = permissionFilter.newIndex;
     } else {
       // Full access users can see all events, apply UI filter only
-      const adminFilter = this.buildAdminOrgLevelFilter(filterType, userId, paramIndex);
+      const adminFilter = this.buildAdminOrgLevelFilter(
+        filterType,
+        userId,
+        paramIndex,
+      );
       query += adminFilter.clause;
       params.push(...adminFilter.newParams);
       paramIndex = adminFilter.newIndex;
     }
 
     // Apply date and search filters
-    const dateSearch = this.appendDateSearchFilters(filters, params, paramIndex);
+    const dateSearch = this.appendDateSearchFilters(
+      filters,
+      params,
+      paramIndex,
+    );
     query += dateSearch.clause;
     paramIndex = dateSearch.newIndex;
 
@@ -307,11 +323,15 @@ export class CalendarService {
     const sortBy = this.validateSortColumn(
       SORT_BY_MAP[filters.sortBy ?? 'startDate'] ?? 'start_date',
     );
-    const sortDir = filters.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    const sortDir =
+      filters.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     query += ` ORDER BY e.${sortBy} ${sortDir} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.query<DbCalendarEvent>(
+      query,
+      params,
+    );
 
     return {
       events: events.map((e: DbCalendarEvent) => this.dbToApiEvent(e)),
@@ -411,10 +431,22 @@ export class CalendarService {
     );
 
     // Add attendees to parent event
-    await this.addAttendeesToEvent(parentEventId, userId, dto.attendeeIds, tenantId);
+    await this.addAttendeesToEvent(
+      parentEventId,
+      userId,
+      dto.attendeeIds,
+      tenantId,
+    );
 
     // Create child events for remaining occurrences
-    await this.createChildEvents(recurrenceDates, dto, tenantId, userId, durationMs, parentEventId);
+    await this.createChildEvents(
+      recurrenceDates,
+      dto,
+      tenantId,
+      userId,
+      durationMs,
+      parentEventId,
+    );
 
     // Log activity to root_logs
     await this.logEventCreated(tenantId, userId, parentEventId, dto);
@@ -445,7 +477,12 @@ export class CalendarService {
         parentEventId,
         null,
       );
-      await this.addAttendeesToEvent(childEventId, userId, dto.attendeeIds, tenantId);
+      await this.addAttendeesToEvent(
+        childEventId,
+        userId,
+        dto.attendeeIds,
+        tenantId,
+      );
     }
   }
 
@@ -541,7 +578,8 @@ export class CalendarService {
     recurrenceRule: string | null,
   ): Promise<number> {
     const eventUuid = uuidv7();
-    const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
+    const { orgLevel, departmentId, teamId, areaId } =
+      this.determineOrgTarget(dto);
 
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO calendar_events
@@ -618,7 +656,11 @@ export class CalendarService {
       currentDate = this.addRecurrenceInterval(currentDate, recurrence);
 
       // Check if we've passed the until date
-      if (endType === 'until' && untilDateObj !== null && currentDate > untilDateObj) {
+      if (
+        endType === 'until' &&
+        untilDateObj !== null &&
+        currentDate > untilDateObj
+      ) {
         break;
       }
 
@@ -655,17 +697,23 @@ export class CalendarService {
   }
 
   /** Build update query parts for event */
-  private buildEventUpdateQuery(dto: UpdateEventDto): { updates: string[]; params: unknown[] } {
+  private buildEventUpdateQuery(dto: UpdateEventDto): {
+    updates: string[];
+    params: unknown[];
+  } {
     const updates: string[] = ['updated_at = NOW()'];
     const params: unknown[] = [];
     let paramIndex = 1;
 
     // Handle assignment fields specially - use determineOrgTarget for consistency
     const hasAssignmentUpdate =
-      dto.areaIds !== undefined || dto.departmentIds !== undefined || dto.teamIds !== undefined;
+      dto.areaIds !== undefined ||
+      dto.departmentIds !== undefined ||
+      dto.teamIds !== undefined;
 
     if (hasAssignmentUpdate) {
-      const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
+      const { orgLevel, departmentId, teamId, areaId } =
+        this.determineOrgTarget(dto);
 
       updates.push(`org_level = $${paramIndex}`);
       params.push(orgLevel);
@@ -693,13 +741,26 @@ export class CalendarService {
       { key: 'title', column: 'title' },
       { key: 'description', column: 'description' },
       { key: 'location', column: 'location' },
-      { key: 'startTime', column: 'start_date', transform: (v: unknown) => new Date(v as string) },
-      { key: 'endTime', column: 'end_date', transform: (v: unknown) => new Date(v as string) },
-      { key: 'allDay', column: 'all_day', transform: (v: unknown) => (v === true ? 1 : 0) },
+      {
+        key: 'startTime',
+        column: 'start_date',
+        transform: (v: unknown) => new Date(v as string),
+      },
+      {
+        key: 'endTime',
+        column: 'end_date',
+        transform: (v: unknown) => new Date(v as string),
+      },
+      {
+        key: 'allDay',
+        column: 'all_day',
+        transform: (v: unknown) => (v === true ? 1 : 0),
+      },
       {
         key: 'status',
         column: 'status',
-        transform: (v: unknown) => (v === 'cancelled' ? 'cancelled' : 'confirmed'),
+        transform: (v: unknown) =>
+          v === 'cancelled' ? 'cancelled' : 'confirmed',
       },
       { key: 'color', column: 'color' },
     ];
@@ -714,7 +775,8 @@ export class CalendarService {
 
       const fieldValue = (dto as Record<string, unknown>)[key];
       if (fieldValue !== undefined) {
-        const value = transform !== undefined ? transform(fieldValue) : fieldValue;
+        const value =
+          transform !== undefined ? transform(fieldValue) : fieldValue;
         updates.push(`${column} = $${paramIndex}`);
         params.push(value);
         paramIndex++;
@@ -746,8 +808,14 @@ export class CalendarService {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
-    if (existing.user_id !== userId && userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException('You do not have permission to update this event');
+    if (
+      existing.user_id !== userId &&
+      userRole !== 'admin' &&
+      userRole !== 'root'
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to update this event',
+      );
     }
 
     const { updates, params } = this.buildEventUpdateQuery(dto);
@@ -766,8 +834,16 @@ export class CalendarService {
       'calendar',
       eventId,
       `Kalender-Event aktualisiert: ${existing.title}`,
-      { title: existing.title, startDate: existing.start_date, endDate: existing.end_date },
-      { title: dto.title ?? existing.title, startTime: dto.startTime, endTime: dto.endTime },
+      {
+        title: existing.title,
+        startDate: existing.start_date,
+        endDate: existing.end_date,
+      },
+      {
+        title: dto.title ?? existing.title,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+      },
     );
 
     return await this.getEventById(eventId, tenantId, userId);
@@ -794,14 +870,21 @@ export class CalendarService {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
-    if (existing.user_id !== userId && userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException('You do not have permission to delete this event');
+    if (
+      existing.user_id !== userId &&
+      userRole !== 'admin' &&
+      userRole !== 'root'
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to delete this event',
+      );
     }
 
     // Delete attendees first
-    await this.databaseService.query(`DELETE FROM calendar_attendees WHERE event_id = $1`, [
-      eventId,
-    ]);
+    await this.databaseService.query(
+      `DELETE FROM calendar_attendees WHERE event_id = $1`,
+      [eventId],
+    );
 
     // Delete event
     await this.databaseService.query(
@@ -833,7 +916,10 @@ export class CalendarService {
    * Resolve event ID from UUID
    * @throws NotFoundException if event not found
    */
-  private async resolveEventIdByUuid(uuid: string, tenantId: number): Promise<number> {
+  private async resolveEventIdByUuid(
+    uuid: string,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM calendar_events WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -920,13 +1006,21 @@ export class CalendarService {
   ): Promise<CalendarEventResponse[]> {
     const today = new Date();
     // End of current month
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+    const endOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
 
     const todayStr = today.toISOString().split('T')[0];
     const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
 
     const userRole = await this.getUserRole(userId, tenantId);
-    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+    const hasUnrestrictedAccess =
+      userRole.has_full_access || userRole.role === 'root';
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -952,7 +1046,10 @@ export class CalendarService {
     query += ` ORDER BY e.start_date ASC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.query<DbCalendarEvent>(
+      query,
+      params,
+    );
     return events.map((e: DbCalendarEvent) => this.dbToApiEvent(e));
   }
 
@@ -966,7 +1063,8 @@ export class CalendarService {
     limit: number = 3,
   ): Promise<CalendarEventResponse[]> {
     const userRole = await this.getUserRole(userId, tenantId);
-    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+    const hasUnrestrictedAccess =
+      userRole.has_full_access || userRole.role === 'root';
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -991,7 +1089,10 @@ export class CalendarService {
     query += ` ORDER BY e.created_at DESC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.query<DbCalendarEvent>(
+      query,
+      params,
+    );
     return events.map((e: DbCalendarEvent) => this.dbToApiEvent(e));
   }
 
@@ -1001,7 +1102,10 @@ export class CalendarService {
   /**
    * Get user role info with department and team
    */
-  private async getUserRole(userId: number, tenantId: number): Promise<UserRoleInfo> {
+  private async getUserRole(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserRoleInfo> {
     const rows = await this.databaseService.query<UserRoleInfo>(
       `SELECT u.role,
               u.has_full_access,
@@ -1048,7 +1152,10 @@ export class CalendarService {
     }
 
     // Department events visible to department members
-    if (event.org_level === 'department' && event.department_id === userRole.department_id) {
+    if (
+      event.org_level === 'department' &&
+      event.department_id === userRole.department_id
+    ) {
       return true;
     }
 
@@ -1139,7 +1246,10 @@ export class CalendarService {
   /**
    * Get event attendees
    */
-  private async getEventAttendees(eventId: number, tenantId: number): Promise<DbEventAttendee[]> {
+  private async getEventAttendees(
+    eventId: number,
+    tenantId: number,
+  ): Promise<DbEventAttendee[]> {
     return await this.databaseService.query<DbEventAttendee>(
       `SELECT a.user_id, u.username, u.first_name, u.last_name, u.email, u.profile_picture
        FROM calendar_attendees a
@@ -1154,7 +1264,11 @@ export class CalendarService {
   /**
    * Add event attendee
    */
-  private async addEventAttendee(eventId: number, userId: number, tenantId: number): Promise<void> {
+  private async addEventAttendee(
+    eventId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
     // Check if already attendee
     const existing = await this.databaseService.query<{ user_id: number }>(
       `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,
@@ -1211,12 +1325,18 @@ export class CalendarService {
   }
 
   /** Count total events matching the query */
-  private async countEvents(baseQuery: string, params: unknown[]): Promise<number> {
+  private async countEvents(
+    baseQuery: string,
+    params: unknown[],
+  ): Promise<number> {
     const countQuery = baseQuery.replace(
       'SELECT e.*, u.username as creator_name',
       'SELECT COUNT(*) as count',
     );
-    const countResult = await this.databaseService.query<{ count: string }>(countQuery, params);
+    const countResult = await this.databaseService.query<{ count: string }>(
+      countQuery,
+      params,
+    );
     return Number.parseInt(countResult[0]?.count ?? '0', 10);
   }
 
@@ -1281,13 +1401,18 @@ export class CalendarService {
     );
 
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const endOfWeek = new Date(startOfDay);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
 
     // CRITICAL: Only root OR has_full_access=true gets unrestricted access
     // Regular admins use permission-based visibility like employees
-    const hasUnrestrictedAccess = userRole.has_full_access || userRole.role === 'root';
+    const hasUnrestrictedAccess =
+      userRole.has_full_access || userRole.role === 'root';
     const lastVisitDate = lastVisited ?? new Date('1970-01-01');
 
     const count =

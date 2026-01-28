@@ -14,7 +14,11 @@
   /* ========== BUTTON GRADIENTS ========== */
 
   /* Primary - Blue gradient (135deg like original) */
-  --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-hover)
+  );
 
   /* Outputs: linear-gradient(135deg, #2196f3, #1976d2) */
 
@@ -25,17 +29,30 @@
   --gradient-danger-hover: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
 
   /* Success - Green gradient */
-  --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-success-hover));
+  --gradient-success: linear-gradient(
+    135deg,
+    var(--color-success),
+    var(--color-success-hover)
+  );
 
   /* ========== ACCENT GRADIENTS ========== */
 
   /* Subtle glass gradient (for card tops) */
-  --gradient-glass-accent: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  --gradient-glass-accent: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-light)
+  );
 
   /* ========== SHINE EFFECT GRADIENT ========== */
 
   /* Button shine animation (transparent → white → transparent) */
-  --gradient-shine: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
+  --gradient-shine: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 20%),
+    transparent
+  );
 
   /* ========== BACKGROUND GRADIENTS ========== */
 

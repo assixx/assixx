@@ -10,7 +10,10 @@ import { z } from 'zod';
  * Add machine request body
  */
 export const AddMachineSchema = z.object({
-  machineId: z.coerce.number().int().positive('Machine ID must be a positive integer'),
+  machineId: z.coerce
+    .number()
+    .int()
+    .positive('Machine ID must be a positive integer'),
 });
 
 /**

@@ -29,7 +29,10 @@ import { getInitials, getColorClass, createAvatar } from './avatar.js';
 
 const initials = getInitials('John Doe'); // "JD"
 const color = getColorClass('john.doe'); // "avatar--color-4" (consistent)
-const avatar = createAvatar('John Doe', 'john.doe', { size: 'lg', status: 'online' });
+const avatar = createAvatar('John Doe', 'john.doe', {
+  size: 'lg',
+  status: 'online',
+});
 ```
 
 ## Sizes

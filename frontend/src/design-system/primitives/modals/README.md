@@ -16,7 +16,9 @@ Glassmorphism overlay modals for forms, confirmations, and dialogs.
     <div class="ds-modal__body">
       <!-- Content here -->
     </div>
-    <div class="ds-modal__footer [ds-modal__footer--centered|ds-modal__footer--spaced]">
+    <div
+      class="ds-modal__footer [ds-modal__footer--centered|ds-modal__footer--spaced]"
+    >
       <button class="btn btn-cancel">Cancel</button>
       <button class="btn btn-primary">Save</button>
     </div>
@@ -63,13 +65,24 @@ Glassmorphism overlay modals for forms, confirmations, and dialogs.
       <form>
         <!-- Use Design System form-field components -->
         <div class="form-field">
-          <label class="form-field__label form-field__label--required" for="title"> Title </label>
+          <label
+            class="form-field__label form-field__label--required"
+            for="title"
+          >
+            Title
+          </label>
           <input type="text" id="title" class="form-field__control" required />
         </div>
 
         <div class="form-field">
-          <label class="form-field__label" for="description"> Description </label>
-          <textarea id="description" class="form-field__control" rows="4"></textarea>
+          <label class="form-field__label" for="description">
+            Description
+          </label>
+          <textarea
+            id="description"
+            class="form-field__control"
+            rows="4"
+          ></textarea>
         </div>
       </form>
     </div>
@@ -188,7 +201,12 @@ closeBtn.addEventListener('click', () => {
 **Screen Readers:**
 
 ```html
-<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+<div
+  class="modal-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+>
   <div class="ds-modal">
     <div class="ds-modal__header">
       <h2 class="ds-modal__title" id="modal-title">Modal Title</h2>
@@ -256,10 +274,18 @@ closeBtn.addEventListener('click', () => {
     <div class="ds-modal__body">
       <form style="display: grid; gap: var(--spacing-4);">
         <div class="form-field">
-          <label class="form-field__label form-field__label--required" for="eventTitle">
+          <label
+            class="form-field__label form-field__label--required"
+            for="eventTitle"
+          >
             Title
           </label>
-          <input type="text" id="eventTitle" class="form-field__control" required />
+          <input
+            type="text"
+            id="eventTitle"
+            class="form-field__control"
+            required
+          />
         </div>
 
         <!-- Use Design System dropdown -->

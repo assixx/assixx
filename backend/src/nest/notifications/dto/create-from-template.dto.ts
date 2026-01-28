@@ -28,4 +28,6 @@ export const CreateFromTemplateSchema = z.object({
 /**
  * Create From Template DTO class
  */
-export class CreateFromTemplateDto extends createZodDto(CreateFromTemplateSchema) {}
+export class CreateFromTemplateDto extends createZodDto(
+  CreateFromTemplateSchema,
+) {}

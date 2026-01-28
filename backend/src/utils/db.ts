@@ -222,7 +222,7 @@ export interface RLSContextOptions {
  * @param callback - Transaction callback
  * @param context - RLS context (tenantId, userId) or just tenantId for backward compatibility
  */
-// eslint-disable-next-line sonarjs/cognitive-complexity
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Transaction management with multiple error recovery paths
 export async function transaction<T>(
   callback: (connection: PoolConnection) => Promise<T>,
   context?: number | RLSContextOptions,

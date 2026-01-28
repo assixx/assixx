@@ -54,7 +54,15 @@ export default {
 };
 
 // Helper function to create button HTML
-const createButton = ({ variant, label, size, disabled, loading, icon, fullWidth }) => {
+const createButton = ({
+  variant,
+  label,
+  size,
+  disabled,
+  loading,
+  icon,
+  fullWidth,
+}) => {
   const classes = [
     'btn',
     `btn-${variant}`,
@@ -366,7 +374,16 @@ export const Sizes = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: [
+        'primary',
+        'cancel',
+        'danger',
+        'success',
+        'warning',
+        'info',
+        'dark',
+        'manage',
+      ],
       description: 'Button variant',
     },
     label: {
@@ -393,15 +410,27 @@ export const Sizes = {
     container.style.alignItems = 'center';
 
     if (args.showSmall) {
-      const small = createButton({ variant: args.variant, label: args.label, size: 'sm' });
+      const small = createButton({
+        variant: args.variant,
+        label: args.label,
+        size: 'sm',
+      });
       container.appendChild(small);
     }
     if (args.showMedium) {
-      const medium = createButton({ variant: args.variant, label: args.label, size: 'md' });
+      const medium = createButton({
+        variant: args.variant,
+        label: args.label,
+        size: 'md',
+      });
       container.appendChild(medium);
     }
     if (args.showLarge) {
-      const large = createButton({ variant: args.variant, label: args.label, size: 'lg' });
+      const large = createButton({
+        variant: args.variant,
+        label: args.label,
+        size: 'lg',
+      });
       container.appendChild(large);
     }
 
@@ -424,7 +453,16 @@ export const WithIcons = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: [
+        'primary',
+        'cancel',
+        'danger',
+        'success',
+        'warning',
+        'info',
+        'dark',
+        'manage',
+      ],
       description: 'Button variant',
     },
     label: {
@@ -469,7 +507,16 @@ export const Loading = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: [
+        'primary',
+        'cancel',
+        'danger',
+        'success',
+        'warning',
+        'info',
+        'dark',
+        'manage',
+      ],
       description: 'Button variant',
     },
     label: {
@@ -510,7 +557,16 @@ export const Disabled = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: [
+        'primary',
+        'cancel',
+        'danger',
+        'success',
+        'warning',
+        'info',
+        'dark',
+        'manage',
+      ],
       description: 'Button variant',
     },
     label: {
@@ -680,7 +736,11 @@ export const ModalButtonStates = {
 
     const states = [
       { label: 'Default', props: {}, text: 'Submit' },
-      { label: 'Hover (hover over me)', props: { class: 'hover-simulation' }, text: 'Submit' },
+      {
+        label: 'Hover (hover over me)',
+        props: { class: 'hover-simulation' },
+        text: 'Submit',
+      },
       { label: 'Active (click me)', props: {}, text: 'Submit' },
       { label: 'Disabled', props: { disabled: true }, text: 'Disabled' },
     ];
@@ -760,9 +820,24 @@ export const FloatingActionButtonVariants = {
 
     const variants = [
       { title: 'Primary (Default)', class: '', icon: 'fa-plus', label: 'Add' },
-      { title: 'Success', class: 'btn-float--success', icon: 'fa-check', label: 'Approve' },
-      { title: 'Danger', class: 'btn-float--danger', icon: 'fa-trash', label: 'Delete' },
-      { title: 'Warning', class: 'btn-float--warning', icon: 'fa-exclamation', label: 'Warning' },
+      {
+        title: 'Success',
+        class: 'btn-float--success',
+        icon: 'fa-check',
+        label: 'Approve',
+      },
+      {
+        title: 'Danger',
+        class: 'btn-float--danger',
+        icon: 'fa-trash',
+        label: 'Delete',
+      },
+      {
+        title: 'Warning',
+        class: 'btn-float--warning',
+        icon: 'fa-exclamation',
+        label: 'Warning',
+      },
     ];
 
     variants.forEach(({ title, class: className, icon, label }) => {
@@ -1143,9 +1218,21 @@ export const ActionIconStates = {
     grid.style.gap = '24px';
 
     const states = [
-      { label: 'Default', disabled: false, note: 'Normal state, ready for interaction' },
-      { label: 'Hover', disabled: false, note: 'Hover over buttons to see color change' },
-      { label: 'Disabled', disabled: true, note: 'Cannot interact, reduced opacity' },
+      {
+        label: 'Default',
+        disabled: false,
+        note: 'Normal state, ready for interaction',
+      },
+      {
+        label: 'Hover',
+        disabled: false,
+        note: 'Hover over buttons to see color change',
+      },
+      {
+        label: 'Disabled',
+        disabled: true,
+        note: 'Cannot interact, reduced opacity',
+      },
     ];
 
     states.forEach(({ label, disabled, note }) => {

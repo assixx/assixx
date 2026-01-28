@@ -411,9 +411,11 @@ module.exports = {
     const broadMatches = content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [];
     // Match classes in classList.add/remove/toggle
     const classListMatches =
-      content.match(/classList\.(add|remove|toggle)\(['"]([^'"]+)['"]\)/g) || [];
+      content.match(/classList\.(add|remove|toggle)\(['"]([^'"]+)['"]\)/g) ||
+      [];
     // Match classes in className assignments
-    const classNameMatches = content.match(/className\s*=\s*['"]([^'"]+)['"]/g) || [];
+    const classNameMatches =
+      content.match(/className\s*=\s*['"]([^'"]+)['"]/g) || [];
 
     // Svelte class: directive — class:foo={condition} → extract "foo"
     const svelteClassDirectiveMatches = [];

@@ -27,4 +27,6 @@ export const DeleteDepartmentQuerySchema = z.object({
 /**
  * Delete Department Query DTO class
  */
-export class DeleteDepartmentQueryDto extends createZodDto(DeleteDepartmentQuerySchema) {}
+export class DeleteDepartmentQueryDto extends createZodDto(
+  DeleteDepartmentQuerySchema,
+) {}

@@ -9,4 +9,6 @@ export const DeactivateFeatureSchema = z.object({
   featureCode: z.string().min(1, 'Feature code is required'),
 });
 
-export class DeactivateFeatureDto extends createZodDto(DeactivateFeatureSchema) {}
+export class DeactivateFeatureDto extends createZodDto(
+  DeactivateFeatureSchema,
+) {}

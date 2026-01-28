@@ -31,7 +31,15 @@ export const StatusBadges = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['success', 'warning', 'danger', 'error', 'info', 'primary', 'dark'],
+      options: [
+        'success',
+        'warning',
+        'danger',
+        'error',
+        'info',
+        'primary',
+        'dark',
+      ],
       description: 'Badge color variant',
     },
     label: {
@@ -184,9 +192,21 @@ export const SizeComparison = {
     container.style.padding = '20px';
 
     const sizes = [
-      { size: 'sm', label: 'Small Badge', description: 'Compact size for roles and tags' },
-      { size: '', label: 'Default Badge', description: 'Standard size for most use cases' },
-      { size: 'lg', label: 'Large Badge', description: 'Prominent size for emphasis' },
+      {
+        size: 'sm',
+        label: 'Small Badge',
+        description: 'Compact size for roles and tags',
+      },
+      {
+        size: '',
+        label: 'Default Badge',
+        description: 'Standard size for most use cases',
+      },
+      {
+        size: 'lg',
+        label: 'Large Badge',
+        description: 'Prominent size for emphasis',
+      },
     ];
 
     sizes.forEach(({ size, label, description }) => {
@@ -196,7 +216,8 @@ export const SizeComparison = {
       row.style.gap = '16px';
 
       const badge = document.createElement('span');
-      badge.className = size ? `badge badge--${size} badge--success` : 'badge badge--success';
+      badge.className =
+        size ? `badge badge--${size} badge--success` : 'badge badge--success';
       badge.textContent = label;
 
       const desc = document.createElement('span');
@@ -401,7 +422,11 @@ export const VisibilityBadges = {
 
     const visibilities = [
       { variant: 'visibility-team', label: 'Team', icon: 'fa-users' },
-      { variant: 'visibility-department', label: 'Department', icon: 'fa-building' },
+      {
+        variant: 'visibility-department',
+        label: 'Department',
+        icon: 'fa-building',
+      },
       { variant: 'visibility-company', label: 'Company', icon: 'fa-globe' },
     ];
 
@@ -831,9 +856,18 @@ export const CombinedExamples = {
       {
         title: 'Notifications',
         badges: [
-          { classes: 'badge badge--sm badge--uppercase badge--primary', text: 'new' },
-          { classes: 'badge badge--sm badge--uppercase badge--warning', text: 'beta' },
-          { classes: 'badge badge--sm badge--uppercase badge--success', text: 'pro' },
+          {
+            classes: 'badge badge--sm badge--uppercase badge--primary',
+            text: 'new',
+          },
+          {
+            classes: 'badge badge--sm badge--uppercase badge--warning',
+            text: 'beta',
+          },
+          {
+            classes: 'badge badge--sm badge--uppercase badge--success',
+            text: 'pro',
+          },
         ],
       },
       {

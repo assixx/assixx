@@ -5,12 +5,24 @@
  * - POST /signup          - Register new tenant (public)
  * - GET  /signup/check-subdomain/:subdomain - Check subdomain availability (public)
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+} from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { Public } from '../common/decorators/public.decorator.js';
 import { CheckSubdomainParamDto, SignupDto } from './dto/index.js';
-import type { SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
+import type {
+  SignupResponseData,
+  SubdomainCheckResponseData,
+} from './dto/index.js';
 import { SignupService } from './signup.service.js';
 
 /**
@@ -43,7 +55,10 @@ export class SignupController {
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  async signup(@Body() dto: SignupDto, @Req() req: FastifyRequest): Promise<SignupResponseData> {
+  async signup(
+    @Body() dto: SignupDto,
+    @Req() req: FastifyRequest,
+  ): Promise<SignupResponseData> {
     const { ipAddress, userAgent } = getClientInfo(req);
     return await this.signupService.registerTenant(dto, ipAddress, userAgent);
   }
@@ -63,6 +78,8 @@ export class SignupController {
   async checkSubdomain(
     @Param() params: CheckSubdomainParamDto,
   ): Promise<SubdomainCheckResponseData> {
-    return await this.signupService.checkSubdomainAvailability(params.subdomain);
+    return await this.signupService.checkSubdomainAvailability(
+      params.subdomain,
+    );
   }
 }

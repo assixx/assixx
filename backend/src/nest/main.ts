@@ -19,7 +19,10 @@ import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { createReadStream, existsSync } from 'fs';
 import { Logger } from 'nestjs-pino';
@@ -30,7 +33,10 @@ import { ChatWebSocketServer } from '../websocket.js';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
-import { REDACTED_VALUE, REDACT_PATHS } from './common/logger/logger.constants.js';
+import {
+  REDACTED_VALUE,
+  REDACT_PATHS,
+} from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 
 /** Frontend routes that map to HTML pages */
@@ -134,7 +140,10 @@ function setupHealthCheck(fastify: FastifyInstance): void {
 }
 
 /** Register static file serving for frontend assets */
-async function setupStaticAssets(app: NestFastifyApplication, paths: ProjectPaths): Promise<void> {
+async function setupStaticAssets(
+  app: NestFastifyApplication,
+  paths: ProjectPaths,
+): Promise<void> {
   const { distPath, srcPath, uploadsPath, publicPath, storybookPath } = paths;
 
   // Main dist directory (Vite build output) - serves /css, /js, /images, /fonts, /pages
@@ -184,17 +193,26 @@ async function setupStaticAssets(app: NestFastifyApplication, paths: ProjectPath
 }
 
 /** Setup HTML page routes */
-function setupHtmlRoutes(fastify: FastifyInstance, pagesPath: string, publicPath: string): void {
+function setupHtmlRoutes(
+  fastify: FastifyInstance,
+  pagesPath: string,
+  publicPath: string,
+): void {
   // Favicon route
-  fastify.get('/favicon.ico', async (_request: FastifyRequest, reply: FastifyReply) => {
-    const faviconPath = path.join(publicPath, 'favicon.ico');
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted publicPath + literal 'favicon.ico'
-    if (existsSync(faviconPath)) {
+  fastify.get(
+    '/favicon.ico',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const faviconPath = path.join(publicPath, 'favicon.ico');
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted publicPath + literal 'favicon.ico'
-      return await reply.type('image/x-icon').send(createReadStream(faviconPath));
-    }
-    return await reply.code(404).send({ error: 'Favicon not found' });
-  });
+      if (existsSync(faviconPath)) {
+        return await reply
+          .type('image/x-icon')
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted publicPath + literal 'favicon.ico'
+          .send(createReadStream(faviconPath));
+      }
+      return await reply.code(404).send({ error: 'Favicon not found' });
+    },
+  );
 
   // Root route
   fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
@@ -208,34 +226,44 @@ function setupHtmlRoutes(fastify: FastifyInstance, pagesPath: string, publicPath
   });
 
   // Login page
-  fastify.get('/login', async (_request: FastifyRequest, reply: FastifyReply) => {
-    const loginPath = path.join(pagesPath, 'login.html');
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-    if (existsSync(loginPath)) {
+  fastify.get(
+    '/login',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const loginPath = path.join(pagesPath, 'login.html');
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-      return await reply.type('text/html').send(createReadStream(loginPath));
-    }
-    return await reply.code(404).send({ error: 'Page not found' });
-  });
+      if (existsSync(loginPath)) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
+        return await reply.type('text/html').send(createReadStream(loginPath));
+      }
+      return await reply.code(404).send({ error: 'Page not found' });
+    },
+  );
 
   // All other frontend routes (FRONTEND_ROUTES is a compile-time constant array)
   for (const route of FRONTEND_ROUTES) {
-    fastify.get(`/${route}`, async (_request: FastifyRequest, reply: FastifyReply) => {
-      const routePath = path.join(pagesPath, `${route}.html`);
-      const fallbackPath = path.join(pagesPath, 'index.html');
+    fastify.get(
+      `/${route}`,
+      async (_request: FastifyRequest, reply: FastifyReply) => {
+        const routePath = path.join(pagesPath, `${route}.html`);
+        const fallbackPath = path.join(pagesPath, 'index.html');
 
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- route is from FRONTEND_ROUTES constant, not user input
-      if (existsSync(routePath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename -- route is from FRONTEND_ROUTES constant, not user input
-        return await reply.type('text/html').send(createReadStream(routePath));
-      }
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-      if (existsSync(fallbackPath)) {
+        if (existsSync(routePath)) {
+          return await reply
+            .type('text/html')
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- route is from FRONTEND_ROUTES constant, not user input
+            .send(createReadStream(routePath));
+        }
         // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-        return await reply.type('text/html').send(createReadStream(fallbackPath));
-      }
-      return await reply.code(404).send({ error: 'Page not found' });
-    });
+        if (existsSync(fallbackPath)) {
+          return await reply
+            .type('text/html')
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
+            .send(createReadStream(fallbackPath));
+        }
+        return await reply.code(404).send({ error: 'Page not found' });
+      },
+    );
   }
 }
 
@@ -276,7 +304,8 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
 
   // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)
   const allowedOrigins = (
-    process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173'
+    process.env['ALLOWED_ORIGINS'] ??
+    'http://localhost:3000,http://localhost:5173'
   )
     .split(',')
     .map((origin: string) => origin.trim());
@@ -427,7 +456,9 @@ async function bootstrap(): Promise<void> {
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 
   bootstrapLogger.log(`NestJS+Fastify application running on port ${port}`);
-  bootstrapLogger.log(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
+  bootstrapLogger.log(
+    `Environment: ${process.env['NODE_ENV'] ?? 'development'}`,
+  );
 }
 
 bootstrap().catch((error: unknown) => {

@@ -19,11 +19,24 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
-  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+  import {
+    getAvatarColorClass,
+    getProfilePictureUrl,
+  } from '$lib/utils/avatar-helpers';
   import { createLogger } from '$lib/utils/logger';
-  import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
-  import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
-  import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
+  import {
+    perf,
+    logPageLoadTiming,
+    logResourceTiming,
+  } from '$lib/utils/perf-logger';
+  import {
+    getRoleSyncManager,
+    type RoleSyncManager,
+  } from '$lib/utils/role-sync.svelte';
+  import {
+    getSessionManager,
+    type SessionManager,
+  } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
@@ -41,9 +54,7 @@
    * statically typed by SvelteKit's route system.
    */
   function resolveDynamicPath(path: string): string {
-    // Dynamic paths computed at runtime can't match SvelteKit's static route types.
-    // This is intentional - we need to resolve paths from data/config, not just literals.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Dynamic paths can't match SvelteKit's static route types
     return resolve(path as any, {});
   }
 
@@ -91,8 +102,8 @@
 
   const getInitialActiveRole = (): 'root' | 'admin' | 'employee' => {
     const stored = getStorageValue('activeRole');
-    return stored === 'root' || stored === 'admin' || stored === 'employee'
-      ? stored
+    return stored === 'root' || stored === 'admin' || stored === 'employee' ?
+        stored
       : (data.user?.role ?? 'employee');
   };
 
@@ -101,11 +112,17 @@
 
   // Role Switch State - activeRole read from localStorage IMMEDIATELY during hydration
   // svelte-ignore state_referenced_locally
-  let userRole = $state<'root' | 'admin' | 'employee'>(data.user?.role ?? 'employee');
-  let activeRole = $state<'root' | 'admin' | 'employee'>(getInitialActiveRole());
+  let userRole = $state<'root' | 'admin' | 'employee'>(
+    data.user?.role ?? 'employee',
+  );
+  let activeRole = $state<'root' | 'admin' | 'employee'>(
+    getInitialActiveRole(),
+  );
   let sidebarCollapsed = $state(false);
   let openSubmenu = $state<string | null>(null);
-  let roleSwitchBannerDismissed = $state(isBannerDismissed(getInitialActiveRole()));
+  let roleSwitchBannerDismissed = $state(
+    isBannerDismissed(getInitialActiveRole()),
+  );
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
@@ -119,7 +136,9 @@
   // Tenant Info - initialize from SSR data to prevent hydration FOUC
   // INTENTIONAL: Capture initial SSR value. Updates via ssrTenant → effect sync.
   // svelte-ignore state_referenced_locally
-  let tenant = $state<{ id?: number; companyName?: string } | null>(data.tenant ?? null);
+  let tenant = $state<{ id?: number; companyName?: string } | null>(
+    data.tenant ?? null,
+  );
 
   // Session Manager instance (for cleanup on destroy)
   let sessionManagerInstance = $state<SessionManager | null>(null);
@@ -133,7 +152,9 @@
 
   // Role Switch Banner: Show when user is viewing as different role
   const isRoleSwitched = $derived(userRole !== activeRole);
-  const showRoleSwitchBanner = $derived(isRoleSwitched && !roleSwitchBannerDismissed);
+  const showRoleSwitchBanner = $derived(
+    isRoleSwitched && !roleSwitchBannerDismissed,
+  );
 
   // Role display names for banner
   const roleDisplayNames: Record<'root' | 'admin' | 'employee', string> = {
@@ -207,7 +228,9 @@
   function isSubmenuItemActive(subItem: NavItem): boolean {
     const currentPath = $page.url.pathname;
     if (subItem.url === undefined || subItem.url === '') return false;
-    return currentPath === subItem.url || currentPath.startsWith(subItem.url + '/');
+    return (
+      currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')
+    );
   }
 
   // =============================================================================
@@ -383,7 +406,9 @@
       const tokenManager = getTokenManager();
 
       // Subscribe to timer updates (fires every second with remaining seconds)
-      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(handleTokenTimerUpdate);
+      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(
+        handleTokenTimerUpdate,
+      );
 
       // Subscribe to token expiration events
       tokenManager.onTokenExpired(() => {
@@ -405,7 +430,11 @@
         log.warn({ newRole }, 'Role changed in another tab');
 
         // Update local state - the manager handles redirect/reload
-        if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
+        if (
+          newRole === 'root' ||
+          newRole === 'admin' ||
+          newRole === 'employee'
+        ) {
           activeRole = newRole;
         }
 
@@ -473,7 +502,13 @@
       onclick={toggleSidebar}
       title="Sidebar ein-/ausklappen"
     >
-      <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
+      <svg
+        class="toggle-icon"
+        width="30"
+        height="30"
+        viewBox="0 0 24 24"
+        fill="white"
+      >
         {#if sidebarCollapsed}
           <path d="M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z"></path>
         {:else}
@@ -482,11 +517,24 @@
       </svg>
     </button>
 
-    <a href={resolveDynamicPath(`/${currentRole}-dashboard`)} class="logo-container">
+    <a
+      href={resolveDynamicPath(`/${currentRole}-dashboard`)}
+      class="logo-container"
+    >
       {#if sidebarCollapsed}
-        <img src="/images/logo_collapsed.png" alt="Assixx Logo" class="logo" id="header-logo" />
+        <img
+          src="/images/logo_collapsed.png"
+          alt="Assixx Logo"
+          class="logo"
+          id="header-logo"
+        />
       {:else}
-        <img src="/images/logo.png" alt="Assixx Logo" class="logo" id="header-logo" />
+        <img
+          src="/images/logo.png"
+          alt="Assixx Logo"
+          class="logo"
+          id="header-logo"
+        />
       {/if}
     </a>
 
@@ -494,7 +542,10 @@
       <div class="header-actions">
         <!-- Role Switch Dropdown (only for root/admin users) -->
         {#if userRole === 'root' || userRole === 'admin'}
-          <RoleSwitch {userRole} {activeRole} />
+          <RoleSwitch
+            {userRole}
+            {activeRole}
+          />
         {/if}
 
         <span
@@ -538,16 +589,26 @@
 
   <!-- Role Switch Warning Banner -->
   {#if showRoleSwitchBanner}
-    <div class="role-switch-banner" id="role-switch-warning-banner">
+    <div
+      class="role-switch-banner"
+      id="role-switch-warning-banner"
+    >
       <div class="role-switch-banner-content">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="mr-2"
+        >
           <path
             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
           />
         </svg>
         <span>
-          Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>. Ihre
-          ursprüngliche Rolle ist <strong>{roleDisplayNames[userRole]}</strong>.
+          Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong
+          >. Ihre ursprüngliche Rolle ist
+          <strong>{roleDisplayNames[userRole]}</strong>.
         </span>
         <button
           type="button"
@@ -555,7 +616,12 @@
           onclick={dismissRoleSwitchBanner}
           title="Banner schließen"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
             />
@@ -568,7 +634,10 @@
   <!-- Main Layout -->
   <div class="layout-container">
     <!-- Sidebar -->
-    <aside class="sidebar" class:collapsed={sidebarCollapsed}>
+    <aside
+      class="sidebar"
+      class:collapsed={sidebarCollapsed}
+    >
       <nav class="sidebar-nav">
         <ul class="sidebar-menu">
           {#each menuItems as item (item.id)}
@@ -585,23 +654,40 @@
                     toggleSubmenu(item.id);
                   }}
                 >
-                  <span class="icon" style="position: relative;">
+                  <span
+                    class="icon"
+                    style="position: relative;"
+                  >
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded ICONS object, safe -->
                     {@html item.icon}
                     {#if openSubmenu !== item.id}
-                      <NotificationBadge count={getSubmenuBadgeCount(item.submenu)} size="sm" />
+                      <NotificationBadge
+                        count={getSubmenuBadgeCount(item.submenu)}
+                        size="sm"
+                      />
                     {/if}
                   </span>
                   <span class="label">{item.label}</span>
                   <span class="submenu-arrow">
-                    <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      width="21"
+                      height="21"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </span>
                 </button>
-                <ul class="submenu" class:u-hidden={openSubmenu !== item.id}>
+                <ul
+                  class="submenu"
+                  class:u-hidden={openSubmenu !== item.id}
+                >
                   {#each item.submenu as subItem (subItem.id)}
-                    <li class="submenu-item" class:active={isSubmenuItemActive(subItem)}>
+                    <li
+                      class="submenu-item"
+                      class:active={isSubmenuItemActive(subItem)}
+                    >
                       <a
                         href={resolveDynamicPath(subItem.url ?? '')}
                         class="submenu-link"
@@ -621,9 +707,18 @@
                 </ul>
               </li>
             {:else}
-              <li class="sidebar-item" class:active={isActive(item)}>
-                <a href={resolveDynamicPath(item.url ?? '')} class="sidebar-link">
-                  <span class="icon" style="position: relative;">
+              <li
+                class="sidebar-item"
+                class:active={isActive(item)}
+              >
+                <a
+                  href={resolveDynamicPath(item.url ?? '')}
+                  class="sidebar-link"
+                >
+                  <span
+                    class="icon"
+                    style="position: relative;"
+                  >
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -- Hardcoded ICONS, safe -->
                     {@html item.icon}
                     {#if item.badgeType}
@@ -670,7 +765,9 @@
           {#if user?.employeeNumber}
             <span class="employee-number__text">{user.employeeNumber}</span>
           {/if}
-          <span class="badge badge--sm {getRoleBadgeClass()}">{getRoleBadgeText()}</span>
+          <span class="badge badge--sm {getRoleBadgeClass()}"
+            >{getRoleBadgeText()}</span
+          >
         </div>
       </div>
 
@@ -686,7 +783,10 @@
               <span>-- GB</span> von <span>-- GB</span>
             </div>
             <div class="storage-progress">
-              <div class="storage-progress-bar" style="width: 0%"></div>
+              <div
+                class="storage-progress-bar"
+                style="width: 0%"
+              ></div>
             </div>
             <div class="storage-percentage">0% belegt</div>
           </div>
@@ -695,7 +795,9 @@
     </aside>
 
     <!-- Main Content (Child Routes) -->
-    <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
+    <main
+      class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]"
+    >
       <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">
         <Breadcrumb userRole={currentRole} />
@@ -709,7 +811,10 @@
   <!-- Logout Confirmation Modal -->
   {#if showLogoutModal}
     <div class="modal-overlay modal-overlay--active">
-      <div class="confirm-modal confirm-modal--info" style="bottom: 10%;">
+      <div
+        class="confirm-modal confirm-modal--info"
+        style="bottom: 10%;"
+      >
         <div class="confirm-modal__icon">
           <i class="fas fa-sign-out-alt"></i>
         </div>
@@ -717,7 +822,8 @@
         <p class="confirm-modal__message">
           Möchten Sie sich wirklich abmelden?<br />
           <small
-            ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.</small
+            ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen
+            verloren.</small
           >
         </p>
         <div class="confirm-modal__actions confirm-modal__actions--centered">

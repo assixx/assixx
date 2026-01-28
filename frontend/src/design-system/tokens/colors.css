@@ -16,37 +16,51 @@
 :root {
   /* ========== PRIMARY (Brand Blue) ========== */
   --color-primary: var(--color-blue-500); /* #2196f3 - Main brand color */
-  --color-primary-hover: var(--color-blue-700); /* #1976d2 - Hover/Active state */
+  --color-primary-hover: var(
+    --color-blue-700
+  ); /* #1976d2 - Hover/Active state */
+
   --color-primary-light: var(--color-blue-400); /* #42a5f5 - Lighter variant */
   --color-primary-dark: var(--color-blue-800); /* #1565c0 - Darker variant */
 
   /* Alpha variants for overlays and highlights */
   --color-primary-alpha-5: #2196f30d; /* 5% - Subtle hover (tables, cards) */
-  --color-primary-alpha-15: rgb(33 150 243 / 15%); /* 15% - Active backgrounds */
+  --color-primary-alpha-15: rgb(
+    33 150 243 / 15%
+  ); /* 15% - Active backgrounds */
+
   --color-primary-alpha-30: rgb(33 150 243 / 30%); /* 30% - Active borders */
   --color-primary-alpha-70: rgb(33 150 243 / 70%); /* 70% - Accent bars */
-  --color-primary-light-alpha-60: rgb(66 165 245 / 60%); /* 60% - Accent gradients */
+  --color-primary-light-alpha-60: rgb(
+    66 165 245 / 60%
+  ); /* 60% - Accent gradients */
 
   /* ========== DANGER (Destructive Actions) ========== */
   --color-danger: var(--color-red-500); /* #f44336 - Delete, Remove */
   --color-danger-hover: var(--color-red-600); /* #e53935 - Hover state */
   --color-danger-light: var(--color-red-400); /* #ef5350 - Light variant */
   --color-danger-alpha-70: rgb(244 67 54 / 70%); /* 70% - Accent bars */
-  --color-danger-light-alpha-60: rgb(239 83 80 / 60%); /* 60% - Accent gradients */
+  --color-danger-light-alpha-60: rgb(
+    239 83 80 / 60%
+  ); /* 60% - Accent gradients */
 
   /* ========== SUCCESS (Positive Actions) ========== */
   --color-success: var(--color-green-500); /* #4caf50 - Success, Confirm */
   --color-success-hover: var(--color-green-600); /* #43a047 - Hover state */
   --color-success-light: var(--color-green-400); /* #66bb6a - Light variant */
   --color-success-alpha-70: rgb(76 175 80 / 70%); /* 70% - Accent bars */
-  --color-success-light-alpha-60: rgb(102 187 106 / 60%); /* 60% - Accent gradients */
+  --color-success-light-alpha-60: rgb(
+    102 187 106 / 60%
+  ); /* 60% - Accent gradients */
 
   /* ========== WARNING (Caution) ========== */
   --color-warning: var(--color-orange-500); /* #ff9800 - Warning */
   --color-warning-hover: var(--color-orange-600); /* #fb8c00 - Hover state */
   --color-warning-light: var(--color-orange-400); /* #ffa726 - Light variant */
   --color-warning-alpha-70: rgb(255 152 0 / 70%); /* 70% - Accent bars */
-  --color-warning-light-alpha-60: rgb(255 167 38 / 60%); /* 60% - Accent gradients */
+  --color-warning-light-alpha-60: rgb(
+    255 167 38 / 60%
+  ); /* 60% - Accent gradients */
 
   /* ========== STATUS TOGGLES (Custom) ========== */
   /* Active → Deactivate (Deep Red) */
@@ -61,9 +75,13 @@
   /* NOTE: --color-text-primary/secondary are defined in variables-dark.css
    * to allow theme-specific overrides (gray-300 for dark, gray-600 for light) */
   --color-background-dark: var(--color-gray-950); /* #121212 - Main dark BG */
-  --color-background-light: var(--color-gray-900); /* #212121 - Lighter dark BG */
+  --color-background-light: var(
+    --color-gray-900
+  ); /* #212121 - Lighter dark BG */
+
   --color-border: var(--color-gray-800); /* #424242 - Borders */
   --color-border-subtle: var(--color-gray-900); /* #212121 - Subtle borders */
+  --color-border-hover: #a9d9ff54; /* Blue tint ~33% opacity - Card/element hover borders */
 
   /* ========== SURFACE (Glassmorphism) ========== */
   --color-glass-bg: rgb(255 255 255 / 2%); /* Ultra-subtle glass */

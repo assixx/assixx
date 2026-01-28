@@ -13,7 +13,9 @@ const snakeCase = (str: string): string => lodash.snakeCase(str);
  * @param dbObject - Object from database with snake_case keys
  * @returns Object with camelCase keys for API
  */
-export const dbToApi = (dbObject: Record<string, unknown>): Record<string, unknown> => {
+export const dbToApi = (
+  dbObject: Record<string, unknown>,
+): Record<string, unknown> => {
   return mapKeys(dbObject, (_value: unknown, key: string) => camelCase(key));
 };
 
@@ -22,14 +24,18 @@ export const dbToApi = (dbObject: Record<string, unknown>): Record<string, unkno
  * @param apiObject - Object from API with camelCase keys
  * @returns Object with snake_case keys for database
  */
-export const apiToDb = (apiObject: Record<string, unknown>): Record<string, unknown> => {
+export const apiToDb = (
+  apiObject: Record<string, unknown>,
+): Record<string, unknown> => {
   return mapKeys(apiObject, (_value: unknown, key: string) => snakeCase(key));
 };
 
 /**
  * Convert database calendar event to API format
  */
-export function dbToApiEvent(dbEvent: Record<string, unknown>): Record<string, unknown> {
+export function dbToApiEvent(
+  dbEvent: Record<string, unknown>,
+): Record<string, unknown> {
   const apiEvent = dbToApi(dbEvent);
 
   // Map specific calendar fields

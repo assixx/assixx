@@ -15,13 +15,21 @@ export const CreateTeamSchema = z.object({
     .trim()
     .min(2, 'Team name must be at least 2 characters')
     .max(100, 'Team name must not exceed 100 characters'),
-  description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
+  description: z
+    .string()
+    .trim()
+    .max(500, 'Description cannot exceed 500 characters')
+    .optional(),
   departmentId: z.coerce
     .number()
     .int()
     .positive('Department ID must be a positive integer')
     .optional(),
-  leaderId: z.coerce.number().int().positive('Leader ID must be a positive integer').optional(),
+  leaderId: z.coerce
+    .number()
+    .int()
+    .positive('Leader ID must be a positive integer')
+    .optional(),
 });
 
 /**

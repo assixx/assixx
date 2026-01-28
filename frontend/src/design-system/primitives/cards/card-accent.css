@@ -28,7 +28,7 @@
 /* No colored lines at the top of cards anymore */
 
 .card-accent:hover {
-  border-color: rgb(33 150 243 / 50%);
+  border-color: var(--color-border-hover);
   background: rgb(255 255 255 / 3%);
 }
 
@@ -74,5 +74,5 @@
 }
 
 .card-accent--static:hover {
-  border-color: var(--color-icon-primary);
+  border-color: var(--color-border-hover);
 }

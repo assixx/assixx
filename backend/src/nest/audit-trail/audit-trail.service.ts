@@ -6,7 +6,12 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import type { QueryResultRow } from 'pg';
 
@@ -165,7 +170,10 @@ export class AuditTrailService {
   /**
    * Get audit entry by ID
    */
-  async getEntryById(currentUser: NestAuthUser, id: number): Promise<AuditEntryResponse> {
+  async getEntryById(
+    currentUser: NestAuthUser,
+    id: number,
+  ): Promise<AuditEntryResponse> {
     const rows = await this.db.query<DbAuditEntry>(
       `SELECT * FROM audit_trail WHERE id = $1 AND tenant_id = $2`,
       [id, currentUser.tenantId],
@@ -299,8 +307,16 @@ export class AuditTrailService {
   ): Promise<ComplianceReportResponseData> {
     this.verifyAdminAccess(currentUser);
 
-    const conditions: string[] = ['tenant_id = $1', 'created_at >= $2', 'created_at <= $3'];
-    const params: (string | number)[] = [currentUser.tenantId, dto.dateFrom, dto.dateTo];
+    const conditions: string[] = [
+      'tenant_id = $1',
+      'created_at >= $2',
+      'created_at <= $3',
+    ];
+    const params: (string | number)[] = [
+      currentUser.tenantId,
+      dto.dateFrom,
+      dto.dateTo,
+    ];
 
     // Add report-specific filters
     switch (dto.reportType) {
@@ -333,7 +349,9 @@ export class AuditTrailService {
     const entries = rows.map((row: DbAuditEntry) => this.mapDbRowToEntry(row));
 
     // Calculate summary
-    const uniqueUsers = new Set(entries.map((e: AuditEntryResponse) => e.userId)).size;
+    const uniqueUsers = new Set(
+      entries.map((e: AuditEntryResponse) => e.userId),
+    ).size;
     const dataAccessCount = entries.filter((e: AuditEntryResponse) =>
       ['read', 'export'].includes(e.action),
     ).length;
@@ -481,7 +499,9 @@ export class AuditTrailService {
 
     return [
       headers.join(','),
-      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
+      ...rows.map((row: unknown[]) =>
+        row.map((cell: unknown) => `"${String(cell)}"`).join(','),
+      ),
     ].join('\n');
   }
 
@@ -511,7 +531,12 @@ export class AuditTrailService {
     const total = Number(countRows[0]?.total ?? 0);
 
     // Validate sort field
-    const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
+    const validSortFields = [
+      'created_at',
+      'action',
+      'user_id',
+      'resource_type',
+    ];
     const orderBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
@@ -608,7 +633,10 @@ export class AuditTrailService {
   /**
    * Build filter from DTO
    */
-  private buildFilter(currentUser: NestAuthUser, dto: GetEntriesQueryDto): AuditFilter {
+  private buildFilter(
+    currentUser: NestAuthUser,
+    dto: GetEntriesQueryDto,
+  ): AuditFilter {
     const filter: AuditFilter = {
       tenantId: currentUser.tenantId,
       page: dto.page,
@@ -632,7 +660,11 @@ export class AuditTrailService {
   /**
    * Build pagination response
    */
-  private buildPagination(total: number, page: number, limit: number): AuditPaginationResponse {
+  private buildPagination(
+    total: number,
+    page: number,
+    limit: number,
+  ): AuditPaginationResponse {
     return {
       currentPage: page,
       pageSize: limit,
@@ -703,13 +735,18 @@ export class AuditTrailService {
       action: row.action,
       resourceType: row.resource_type,
       status: row.status,
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+      createdAt:
+        row.created_at instanceof Date ?
+          row.created_at.toISOString()
+        : row.created_at,
       ...this.buildOptionalEntryFields(row),
     };
   }
 
   /** Build optional fields for audit entry response */
-  private buildOptionalEntryFields(row: DbAuditEntry): Partial<AuditEntryResponse> {
+  private buildOptionalEntryFields(
+    row: DbAuditEntry,
+  ): Partial<AuditEntryResponse> {
     const fields: Partial<AuditEntryResponse> = {};
 
     if (row.user_name !== null) fields.userName = row.user_name;
@@ -728,7 +765,9 @@ export class AuditTrailService {
   }
 
   /** Safely parse JSON changes field */
-  private parseChangesJson(changes: string): Record<string, unknown> | undefined {
+  private parseChangesJson(
+    changes: string,
+  ): Record<string, unknown> | undefined {
     try {
       return JSON.parse(changes) as Record<string, unknown>;
     } catch {
@@ -758,7 +797,10 @@ export class AuditTrailService {
    * Verify password for destructive operations
    * SECURITY: Only allows ACTIVE users (is_active = 1) to perform destructive operations
    */
-  private async verifyPassword(currentUser: NestAuthUser, password: string): Promise<void> {
+  private async verifyPassword(
+    currentUser: NestAuthUser,
+    password: string,
+  ): Promise<void> {
     const passwordHash = await this.userRepository.getPasswordHash(
       currentUser.id,
       currentUser.tenantId,

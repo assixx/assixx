@@ -126,13 +126,21 @@
 
 .confirm-modal__btn--confirm {
   border: 1px solid rgb(0 212 255 / 30%);
-  background: linear-gradient(135deg, rgb(0 212 255 / 20%), rgb(0 153 204 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(0 212 255 / 20%),
+    rgb(0 153 204 / 20%)
+  );
   color: #fff;
 }
 
 .confirm-modal__btn--confirm:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(0 212 255 / 20%);
-  background: linear-gradient(135deg, rgb(0 212 255 / 30%), rgb(0 153 204 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(0 212 255 / 30%),
+    rgb(0 153 204 / 30%)
+  );
 }
 
 /* ========== VARIANT: WARNING (Orange/Yellow) ========== */
@@ -142,7 +150,11 @@
 }
 
 .confirm-modal--warning .confirm-modal__icon {
-  background: linear-gradient(135deg, rgb(251 146 60 / 20%), rgb(249 115 22 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(251 146 60 / 20%),
+    rgb(249 115 22 / 20%)
+  );
   color: #fb923c; /* Tailwind orange-400 */
 }
 
@@ -152,12 +164,20 @@
 
 .confirm-modal--warning .confirm-modal__btn--confirm {
   border: 1px solid rgb(251 146 60 / 30%);
-  background: linear-gradient(135deg, rgb(251 146 60 / 20%), rgb(249 115 22 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(251 146 60 / 20%),
+    rgb(249 115 22 / 20%)
+  );
 }
 
 .confirm-modal--warning .confirm-modal__btn--confirm:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(251 146 60 / 20%);
-  background: linear-gradient(135deg, rgb(251 146 60 / 30%), rgb(249 115 22 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(251 146 60 / 30%),
+    rgb(249 115 22 / 30%)
+  );
 }
 
 /* ========== VARIANT: DANGER (Red) ========== */
@@ -167,7 +187,11 @@
 }
 
 .confirm-modal--danger .confirm-modal__icon {
-  background: linear-gradient(135deg, rgb(239 68 68 / 20%), rgb(220 38 38 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(239 68 68 / 20%),
+    rgb(220 38 38 / 20%)
+  );
   color: #ef4444; /* Tailwind red-500 */
 }
 
@@ -177,12 +201,20 @@
 
 .confirm-modal--danger .confirm-modal__btn--confirm {
   border: 1px solid rgb(239 68 68 / 30%);
-  background: linear-gradient(135deg, rgb(239 68 68 / 20%), rgb(220 38 38 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(239 68 68 / 20%),
+    rgb(220 38 38 / 20%)
+  );
 }
 
 .confirm-modal--danger .confirm-modal__btn--confirm:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(239 68 68 / 20%);
-  background: linear-gradient(135deg, rgb(239 68 68 / 30%), rgb(220 38 38 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(239 68 68 / 30%),
+    rgb(220 38 38 / 30%)
+  );
 }
 
 /* ========== VARIANT: INFO (Blue) ========== */
@@ -192,7 +224,11 @@
 }
 
 .confirm-modal--info .confirm-modal__icon {
-  background: linear-gradient(135deg, rgb(59 130 246 / 20%), rgb(37 99 235 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 20%),
+    rgb(37 99 235 / 20%)
+  );
   color: #3b82f6; /* Tailwind blue-500 */
 }
 
@@ -202,12 +238,20 @@
 
 .confirm-modal--info .confirm-modal__btn--confirm {
   border: 1px solid rgb(59 130 246 / 30%);
-  background: linear-gradient(135deg, rgb(59 130 246 / 20%), rgb(37 99 235 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 20%),
+    rgb(37 99 235 / 20%)
+  );
 }
 
 .confirm-modal--info .confirm-modal__btn--confirm:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(59 130 246 / 20%);
-  background: linear-gradient(135deg, rgb(59 130 246 / 30%), rgb(37 99 235 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 30%),
+    rgb(37 99 235 / 30%)
+  );
 }
 
 /* ========== VARIANT: SUCCESS (Green) ========== */
@@ -217,7 +261,11 @@
 }
 
 .confirm-modal--success .confirm-modal__icon {
-  background: linear-gradient(135deg, rgb(34 197 94 / 20%), rgb(22 163 74 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(34 197 94 / 20%),
+    rgb(22 163 74 / 20%)
+  );
   color: #22c55e; /* Tailwind green-500 */
 }
 
@@ -227,12 +275,20 @@
 
 .confirm-modal--success .confirm-modal__btn--confirm {
   border: 1px solid rgb(34 197 94 / 30%);
-  background: linear-gradient(135deg, rgb(34 197 94 / 20%), rgb(22 163 74 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(34 197 94 / 20%),
+    rgb(22 163 74 / 20%)
+  );
 }
 
 .confirm-modal--success .confirm-modal__btn--confirm:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(34 197 94 / 20%);
-  background: linear-gradient(135deg, rgb(34 197 94 / 30%), rgb(22 163 74 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(34 197 94 / 30%),
+    rgb(22 163 74 / 30%)
+  );
 }
 
 /* ========== INPUT GROUP (for prompt modals) ========== */
@@ -273,52 +329,84 @@
 
 .confirm-modal__btn--danger {
   border: 1px solid rgb(239 68 68 / 30%);
-  background: linear-gradient(135deg, rgb(239 68 68 / 20%), rgb(220 38 38 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(239 68 68 / 20%),
+    rgb(220 38 38 / 20%)
+  );
   color: #fff;
 }
 
 .confirm-modal__btn--danger:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(239 68 68 / 20%);
-  background: linear-gradient(135deg, rgb(239 68 68 / 30%), rgb(220 38 38 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(239 68 68 / 30%),
+    rgb(220 38 38 / 30%)
+  );
 }
 
 /* ========== WARNING BUTTON (standalone) ========== */
 
 .confirm-modal__btn--warning {
   border: 1px solid rgb(251 146 60 / 30%);
-  background: linear-gradient(135deg, rgb(251 146 60 / 20%), rgb(249 115 22 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(251 146 60 / 20%),
+    rgb(249 115 22 / 20%)
+  );
   color: #fff;
 }
 
 .confirm-modal__btn--warning:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(251 146 60 / 20%);
-  background: linear-gradient(135deg, rgb(251 146 60 / 30%), rgb(249 115 22 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(251 146 60 / 30%),
+    rgb(249 115 22 / 30%)
+  );
 }
 
 /* ========== INFO BUTTON (standalone) ========== */
 
 .confirm-modal__btn--info {
   border: 1px solid rgb(59 130 246 / 30%);
-  background: linear-gradient(135deg, rgb(59 130 246 / 20%), rgb(37 99 235 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 20%),
+    rgb(37 99 235 / 20%)
+  );
   color: #fff;
 }
 
 .confirm-modal__btn--info:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(59 130 246 / 20%);
-  background: linear-gradient(135deg, rgb(59 130 246 / 30%), rgb(37 99 235 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 30%),
+    rgb(37 99 235 / 30%)
+  );
 }
 
 /* ========== SUCCESS BUTTON (standalone) ========== */
 
 .confirm-modal__btn--success {
   border: 1px solid rgb(34 197 94 / 30%);
-  background: linear-gradient(135deg, rgb(34 197 94 / 20%), rgb(22 163 74 / 20%));
+  background: linear-gradient(
+    135deg,
+    rgb(34 197 94 / 20%),
+    rgb(22 163 74 / 20%)
+  );
   color: #fff;
 }
 
 .confirm-modal__btn--success:hover:not(:disabled) {
   box-shadow: 0 5px 15px rgb(34 197 94 / 20%);
-  background: linear-gradient(135deg, rgb(34 197 94 / 30%), rgb(22 163 74 / 30%));
+  background: linear-gradient(
+    135deg,
+    rgb(34 197 94 / 30%),
+    rgb(22 163 74 / 30%)
+  );
 }
 
 /* ========== RESPONSIVE ========== */

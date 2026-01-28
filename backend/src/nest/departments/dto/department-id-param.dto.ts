@@ -16,4 +16,6 @@ export const DepartmentIdParamSchema = z.object({
 /**
  * Department ID Param DTO class
  */
-export class DepartmentIdParamDto extends createZodDto(DepartmentIdParamSchema) {}
+export class DepartmentIdParamDto extends createZodDto(
+  DepartmentIdParamSchema,
+) {}

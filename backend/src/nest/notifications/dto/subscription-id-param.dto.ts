@@ -14,4 +14,6 @@ export const SubscriptionIdParamSchema = z.object({
 /**
  * Subscription ID Param DTO class
  */
-export class SubscriptionIdParamDto extends createZodDto(SubscriptionIdParamSchema) {}
+export class SubscriptionIdParamDto extends createZodDto(
+  SubscriptionIdParamSchema,
+) {}

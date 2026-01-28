@@ -31,7 +31,11 @@ function formatDateIcs(date: Date): string {
  * Generate ICS format export
  */
 export function generateIcsExport(events: ExportableEvent[]): string {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Assixx//Calendar//EN'];
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Assixx//Calendar//EN',
+  ];
 
   for (const event of events) {
     lines.push('BEGIN:VEVENT');
@@ -56,7 +60,15 @@ export function generateIcsExport(events: ExportableEvent[]): string {
  * Generate CSV format export
  */
 export function generateCsvExport(events: ExportableEvent[]): string {
-  const headers = ['ID', 'Title', 'Start', 'End', 'Location', 'Description', 'Status'];
+  const headers = [
+    'ID',
+    'Title',
+    'Start',
+    'End',
+    'Location',
+    'Description',
+    'Status',
+  ];
   const rows = events.map((event: ExportableEvent) => {
     const desc = typeof event.description === 'string' ? event.description : '';
     return [
@@ -70,5 +82,7 @@ export function generateCsvExport(events: ExportableEvent[]): string {
     ];
   });
 
-  return [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join('\n');
+  return [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join(
+    '\n',
+  );
 }

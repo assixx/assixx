@@ -74,7 +74,7 @@ sleep 10
 # Check container status
 echo ""
 echo "📊 Container Status:"
-docker-compose ps
+docker-compose ps / doppler run -- docker-compose ps
 
 # Show access URLs
 echo ""

@@ -24,13 +24,29 @@ const AvailabilityStatusSchema = z.enum([
  */
 export const UpdateAvailabilityEntrySchema = z.object({
   status: AvailabilityStatusSchema,
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  reason: z.string().trim().max(255, 'Reason must not exceed 255 characters').nullable().optional(),
-  notes: z.string().trim().max(500, 'Notes must not exceed 500 characters').nullable().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  reason: z
+    .string()
+    .trim()
+    .max(255, 'Reason must not exceed 255 characters')
+    .nullable()
+    .optional(),
+  notes: z
+    .string()
+    .trim()
+    .max(500, 'Notes must not exceed 500 characters')
+    .nullable()
+    .optional(),
 });
 
 /**
  * Update Availability Entry DTO class
  */
-export class UpdateAvailabilityEntryDto extends createZodDto(UpdateAvailabilityEntrySchema) {}
+export class UpdateAvailabilityEntryDto extends createZodDto(
+  UpdateAvailabilityEntrySchema,
+) {}

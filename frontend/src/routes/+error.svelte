@@ -37,43 +37,46 @@
 
   // Variant class for empty-state
   const variantClass = $derived(
-    isNotFound
-      ? 'empty-state--warning'
-      : isServerError
-        ? 'empty-state--error'
-        : 'empty-state--info',
+    isNotFound ? 'empty-state--warning'
+    : isServerError ? 'empty-state--error'
+    : 'empty-state--info',
   );
 
   // Icon based on error type
   const iconClass = $derived(
-    isNotFound ? 'fa-search' : isServerError ? 'fa-server' : 'fa-exclamation-circle',
+    isNotFound ? 'fa-search'
+    : isServerError ? 'fa-server'
+    : 'fa-exclamation-circle',
   );
 
   // Badge variant
   const badgeClass = $derived(
-    isNotFound ? 'badge--warning' : isServerError ? 'badge--danger' : 'badge--info',
+    isNotFound ? 'badge--warning'
+    : isServerError ? 'badge--danger'
+    : 'badge--info',
   );
 
   // German error titles
   const errorTitle = $derived(
-    isNotFound
-      ? 'Seite nicht gefunden'
-      : isServerError
-        ? 'Server-Fehler'
-        : 'Ein Fehler ist aufgetreten',
+    isNotFound ? 'Seite nicht gefunden'
+    : isServerError ? 'Server-Fehler'
+    : 'Ein Fehler ist aufgetreten',
   );
 
   // German descriptions
   const errorDescription = $derived(
-    isNotFound
-      ? 'Die angeforderte Seite existiert nicht oder wurde verschoben.'
-      : isServerError
-        ? 'Der Server konnte die Anfrage nicht verarbeiten. Bitte versuchen Sie es später erneut.'
-        : message,
+    isNotFound ? 'Die angeforderte Seite existiert nicht oder wurde verschoben.'
+    : isServerError ?
+      'Der Server konnte die Anfrage nicht verarbeiten. Bitte versuchen Sie es später erneut.'
+    : message,
   );
 
   // Status text
-  const statusText = $derived(isNotFound ? 'Not Found' : isServerError ? 'Server Error' : 'Error');
+  const statusText = $derived(
+    isNotFound ? 'Not Found'
+    : isServerError ? 'Server Error'
+    : 'Error',
+  );
 </script>
 
 <svelte:head>
@@ -81,7 +84,10 @@
 </svelte:head>
 
 <div class="error-page">
-  <div class="empty-state {variantClass} empty-state--bordered" role="alert">
+  <div
+    class="empty-state {variantClass} empty-state--bordered"
+    role="alert"
+  >
     <!-- Icon -->
     <div class="empty-state__icon">
       <i class="fas {iconClass}"></i>
@@ -103,12 +109,20 @@
 
     <!-- Actions -->
     <div class="empty-state__actions">
-      <button type="button" class="btn btn-cancel" onclick={goBack}>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={goBack}
+      >
         <i class="fas fa-arrow-left"></i>
         Zurück
       </button>
 
-      <button type="button" class="btn btn-primary" onclick={goHome}>
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick={goHome}
+      >
         <i class="fas fa-home"></i>
         Zur Startseite
       </button>

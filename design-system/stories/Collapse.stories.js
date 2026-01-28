@@ -33,7 +33,8 @@ export const BasicCollapse = () => {
   container.style.cssText = 'padding: 40px; max-width: 600px;';
 
   const title = document.createElement('h3');
-  title.style.cssText = 'color: var(--color-text-primary); margin-bottom: 24px;';
+  title.style.cssText =
+    'color: var(--color-text-primary); margin-bottom: 24px;';
   title.textContent = 'Basic Collapse';
   container.appendChild(title);
 
@@ -41,14 +42,16 @@ export const BasicCollapse = () => {
   const trigger1 = document.createElement('button');
   trigger1.className = 'collapse__trigger';
   trigger1.style.marginBottom = '12px';
-  trigger1.innerHTML = 'Show more information <i class="fas fa-chevron-down collapse__icon"></i>';
+  trigger1.innerHTML =
+    'Show more information <i class="fas fa-chevron-down collapse__icon"></i>';
 
   const content1 = document.createElement('div');
   content1.className = 'collapse__content';
 
   const body1 = document.createElement('div');
   body1.className = 'collapse__body';
-  body1.style.cssText = 'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
+  body1.style.cssText =
+    'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
   body1.innerHTML =
     '<p style="margin: 0;">This is hidden content that appears when you click the trigger button. Perfect for "Read more" sections, additional details, or progressive disclosure.</p>';
 
@@ -64,7 +67,8 @@ export const BasicCollapse = () => {
   // Second collapse - NO .collapse wrapper!
   const trigger2 = document.createElement('button');
   trigger2.className = 'collapse__trigger';
-  trigger2.innerHTML = 'Advanced settings <i class="fas fa-chevron-down collapse__icon"></i>';
+  trigger2.innerHTML =
+    'Advanced settings <i class="fas fa-chevron-down collapse__icon"></i>';
 
   const content2 = document.createElement('div');
   content2.className = 'collapse__content';
@@ -72,7 +76,8 @@ export const BasicCollapse = () => {
 
   const body2 = document.createElement('div');
   body2.className = 'collapse__body';
-  body2.style.cssText = 'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
+  body2.style.cssText =
+    'padding: 16px; background: rgb(255 255 255 / 5%); border-radius: 8px;';
   body2.innerHTML =
     '<p style="margin: 0 0 12px 0;">Configure advanced options:</p><ul style="margin: 0; padding-left: 20px;"><li>Auto-save enabled</li><li>Notification preferences</li><li>Theme customization</li></ul>';
 
@@ -93,7 +98,8 @@ export const CardVariant = () => {
   container.style.cssText = 'padding: 40px; max-width: 600px;';
 
   const title = document.createElement('h3');
-  title.style.cssText = 'color: var(--color-text-primary); margin-bottom: 24px;';
+  title.style.cssText =
+    'color: var(--color-text-primary); margin-bottom: 24px;';
   title.textContent = 'Card Variant';
   container.appendChild(title);
 
@@ -232,7 +238,8 @@ export const SizeVariants = () => {
   container.style.cssText = 'padding: 40px; max-width: 600px;';
 
   const title = document.createElement('h3');
-  title.style.cssText = 'color: var(--color-text-primary); margin-bottom: 24px;';
+  title.style.cssText =
+    'color: var(--color-text-primary); margin-bottom: 24px;';
   title.textContent = 'Size Variants';
   container.appendChild(title);
 
@@ -242,7 +249,8 @@ export const SizeVariants = () => {
 
   const trigger1 = document.createElement('button');
   trigger1.className = 'collapse__trigger';
-  trigger1.innerHTML = 'Small collapse <i class="fas fa-chevron-down collapse__icon"></i>';
+  trigger1.innerHTML =
+    'Small collapse <i class="fas fa-chevron-down collapse__icon"></i>';
 
   const content1 = document.createElement('div');
   content1.className = 'collapse__content';
@@ -264,7 +272,8 @@ export const SizeVariants = () => {
 
   const trigger2 = document.createElement('button');
   trigger2.className = 'collapse__trigger';
-  trigger2.innerHTML = 'Default size collapse <i class="fas fa-chevron-down collapse__icon"></i>';
+  trigger2.innerHTML =
+    'Default size collapse <i class="fas fa-chevron-down collapse__icon"></i>';
 
   const content2 = document.createElement('div');
   content2.className = 'collapse__content';
@@ -286,7 +295,8 @@ export const SizeVariants = () => {
 
   const trigger3 = document.createElement('button');
   trigger3.className = 'collapse__trigger';
-  trigger3.innerHTML = 'Large collapse <i class="fas fa-chevron-down collapse__icon"></i>';
+  trigger3.innerHTML =
+    'Large collapse <i class="fas fa-chevron-down collapse__icon"></i>';
 
   const content3 = document.createElement('div');
   content3.className = 'collapse__content';
@@ -310,7 +320,8 @@ export const AllVariants = () => {
   container.style.cssText = 'padding: 40px;';
 
   const mainTitle = document.createElement('h2');
-  mainTitle.style.cssText = 'color: var(--color-text-primary); margin-bottom: 32px;';
+  mainTitle.style.cssText =
+    'color: var(--color-text-primary); margin-bottom: 32px;';
   mainTitle.textContent = 'Complete Collapse System';
   container.appendChild(mainTitle);
 
@@ -323,7 +334,8 @@ export const AllVariants = () => {
     section.style.marginBottom = '48px';
 
     const h3 = document.createElement('h3');
-    h3.style.cssText = 'color: var(--color-text-secondary); margin-bottom: 16px;';
+    h3.style.cssText =
+      'color: var(--color-text-secondary); margin-bottom: 16px;';
     h3.textContent = title;
     section.appendChild(h3);
 
@@ -332,7 +344,9 @@ export const AllVariants = () => {
 
     const trigger = document.createElement('button');
     trigger.className = 'collapse__trigger';
-    trigger.innerHTML = (iconHtml || text) + ' <i class="fas fa-chevron-down collapse__icon"></i>';
+    trigger.innerHTML =
+      (iconHtml || text) +
+      ' <i class="fas fa-chevron-down collapse__icon"></i>';
 
     const content = document.createElement('div');
     content.className = 'collapse__content';
@@ -347,7 +361,12 @@ export const AllVariants = () => {
     contents.push(content);
   }
 
-  createSection('Basic', '', 'Basic unstyled collapse for flexible integration.', 'Show details');
+  createSection(
+    'Basic',
+    '',
+    'Basic unstyled collapse for flexible integration.',
+    'Show details',
+  );
   createSection(
     'Card Style',
     'collapse--card',

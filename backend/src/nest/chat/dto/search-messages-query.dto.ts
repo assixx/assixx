@@ -11,7 +11,10 @@ const MAX_PAGE_LIMIT = 100;
 export const SearchMessagesQuerySchema = z.object({
   q: z
     .string()
-    .min(MIN_SEARCH_LENGTH, `Search query must be at least ${MIN_SEARCH_LENGTH} characters`)
+    .min(
+      MIN_SEARCH_LENGTH,
+      `Search query must be at least ${MIN_SEARCH_LENGTH} characters`,
+    )
     .max(MAX_SEARCH_LENGTH),
   page: z.coerce.number().int().min(1, 'Invalid page number').optional(),
   limit: z.coerce
@@ -22,7 +25,9 @@ export const SearchMessagesQuerySchema = z.object({
     .optional(),
 });
 
-export class SearchMessagesQueryDto extends createZodDto(SearchMessagesQuerySchema) {}
+export class SearchMessagesQueryDto extends createZodDto(
+  SearchMessagesQuerySchema,
+) {}
 
 // Type export
 export type SearchMessagesQuery = z.infer<typeof SearchMessagesQuerySchema>;

@@ -8,7 +8,11 @@ export const AttachmentDocumentIdParamSchema = z.object({
   documentId: z.coerce.number().int().min(1, 'Invalid document ID'),
 });
 
-export class AttachmentDocumentIdParamDto extends createZodDto(AttachmentDocumentIdParamSchema) {}
+export class AttachmentDocumentIdParamDto extends createZodDto(
+  AttachmentDocumentIdParamSchema,
+) {}
 
 // Type export
-export type AttachmentDocumentIdParam = z.infer<typeof AttachmentDocumentIdParamSchema>;
+export type AttachmentDocumentIdParam = z.infer<
+  typeof AttachmentDocumentIdParamSchema
+>;

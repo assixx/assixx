@@ -145,7 +145,10 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
   try {
     const response = await fetch(`${API_BASE}/users/me`, {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -185,11 +188,21 @@ function isSuccessfulLogin(
 }
 
 /** Get error response for failed login based on status */
-function getLoginErrorResponse(response: Response, result: LoginResponse, email: string) {
+function getLoginErrorResponse(
+  response: Response,
+  result: LoginResponse,
+  email: string,
+) {
   if (response.status === 429) {
-    return fail(429, { error: 'Zu viele Anmeldeversuche. Bitte warten Sie.', email });
+    return fail(429, {
+      error: 'Zu viele Anmeldeversuche. Bitte warten Sie.',
+      email,
+    });
   }
-  return fail(401, { error: result.error?.message ?? 'Login fehlgeschlagen', email });
+  return fail(401, {
+    error: result.error?.message ?? 'Login fehlgeschlagen',
+    email,
+  });
 }
 
 export const actions: Actions = {
@@ -200,7 +213,10 @@ export const actions: Actions = {
 
     if (!isValidStringField(email) || !isValidStringField(password)) {
       const emailValue = typeof email === 'string' ? email : '';
-      return fail(400, { error: 'E-Mail und Passwort sind erforderlich', email: emailValue });
+      return fail(400, {
+        error: 'E-Mail und Passwort sind erforderlich',
+        email: emailValue,
+      });
     }
 
     try {

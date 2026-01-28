@@ -8,6 +8,9 @@ import { CreateRotationPatternSchema } from './create-rotation-pattern.dto.js';
 /**
  * Update rotation pattern request body (all fields optional)
  */
-export const UpdateRotationPatternSchema = CreateRotationPatternSchema.partial();
+export const UpdateRotationPatternSchema =
+  CreateRotationPatternSchema.partial();
 
-export class UpdateRotationPatternDto extends createZodDto(UpdateRotationPatternSchema) {}
+export class UpdateRotationPatternDto extends createZodDto(
+  UpdateRotationPatternSchema,
+) {}

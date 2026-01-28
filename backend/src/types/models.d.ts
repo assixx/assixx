@@ -221,7 +221,13 @@ export interface Shift {
 
 export interface SurveyQuestion {
   id: number;
-  type: 'text' | 'number' | 'single-choice' | 'multiple-choice' | 'rating' | 'date';
+  type:
+    | 'text'
+    | 'number'
+    | 'single-choice'
+    | 'multiple-choice'
+    | 'rating'
+    | 'date';
   text: string;
   required: boolean;
   order: number;
@@ -269,7 +275,13 @@ export interface EmployeeAvailability {
   id: number;
   employeeId: number;
   tenant_id: number;
-  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  status:
+    | 'available'
+    | 'unavailable'
+    | 'vacation'
+    | 'sick'
+    | 'training'
+    | 'other';
   startDate: Date | string;
   endDate: Date | string;
   reason?: string;
@@ -283,7 +295,13 @@ export interface DatabaseEmployeeAvailability {
   id: number;
   employee_id: number;
   tenant_id: number;
-  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  status:
+    | 'available'
+    | 'unavailable'
+    | 'vacation'
+    | 'sick'
+    | 'training'
+    | 'other';
   start_date: Date | string;
   end_date: Date | string;
   reason?: string;

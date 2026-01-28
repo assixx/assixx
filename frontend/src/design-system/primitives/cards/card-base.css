@@ -20,7 +20,9 @@
 
   /* Glassmorphism */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl); /* 12px - Consistent with all card components */
+  border-radius: var(
+    --radius-xl
+  ); /* 12px - Consistent with all card components */
 
   background: rgb(255 255 255 / 2%);
   background-clip: border-box;

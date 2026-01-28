@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Chat Service
  *
@@ -347,15 +346,25 @@ export class ChatService {
   /**
    * Get users available for chat based on role permissions
    */
-  async getChatUsers(query: GetUsersQuery): Promise<{ users: ChatUser[]; total: number }> {
+  async getChatUsers(
+    query: GetUsersQuery,
+  ): Promise<{ users: ChatUser[]; total: number }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.debug(`Getting chat users for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(
+      `Getting chat users for tenant ${tenantId}, user ${userId}`,
+    );
 
     const currentUser = await this.getCurrentUserPermissions(tenantId, userId);
-    const users = await this.fetchChatUsersByPermissions(tenantId, userId, currentUser);
+    const users = await this.fetchChatUsersByPermissions(
+      tenantId,
+      userId,
+      currentUser,
+    );
     const filteredUsers = this.filterUsersBySearch(users, query.search);
-    const chatUsers = filteredUsers.map((user: ChatUserRow) => this.mapRowToChatUser(user));
+    const chatUsers = filteredUsers.map((user: ChatUserRow) =>
+      this.mapRowToChatUser(user),
+    );
 
     return { users: chatUsers, total: chatUsers.length };
   }
@@ -387,7 +396,8 @@ export class ChatService {
     currentUser: UserPermissions,
   ): Promise<ChatUserRow[]> {
     const baseQuery = this.getChatUsersBaseQuery();
-    const isPrivileged = currentUser.role === 'admin' || currentUser.role === 'root';
+    const isPrivileged =
+      currentUser.role === 'admin' || currentUser.role === 'root';
 
     if (isPrivileged) {
       return await this.databaseService.query<ChatUserRow>(
@@ -425,13 +435,17 @@ export class ChatService {
   }
 
   /** Filter users by search term (username, email, or full name) */
-  private filterUsersBySearch(users: ChatUserRow[], search: string | undefined): ChatUserRow[] {
+  private filterUsersBySearch(
+    users: ChatUserRow[],
+    search: string | undefined,
+  ): ChatUserRow[] {
     if (search === undefined || search === '') {
       return users;
     }
     const searchLower = search.toLowerCase();
     return users.filter((user: ChatUserRow) => {
-      const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
+      const fullName =
+        `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
       return (
         user.username.toLowerCase().includes(searchLower) ||
         user.email.toLowerCase().includes(searchLower) ||
@@ -472,35 +486,52 @@ export class ChatService {
   ): Promise<{ data: Conversation[]; pagination: PaginationMeta }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.debug(`Getting conversations for tenant ${tenantId}, user ${userId}`);
+    this.logger.debug(
+      `Getting conversations for tenant ${tenantId}, user ${userId}`,
+    );
 
     const page = query.page ?? 1;
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const offset = (page - 1) * limit;
 
     const totalItems = await this.getConversationCount(tenantId, userId);
-    const conversations = await this.fetchConversationsPage(tenantId, userId, limit, offset);
+    const conversations = await this.fetchConversationsPage(
+      tenantId,
+      userId,
+      limit,
+      offset,
+    );
 
     if (conversations.length === 0) {
-      return { data: [], pagination: this.buildPaginationMeta(page, limit, totalItems) };
+      return {
+        data: [],
+        pagination: this.buildPaginationMeta(page, limit, totalItems),
+      };
     }
 
     const conversationIds = conversations.map((c: ConversationRow) => c.id);
-    const participants = await this.fetchParticipantsForConversations(conversationIds);
+    const participants =
+      await this.fetchParticipantsForConversations(conversationIds);
     const unreadCounts = await this.getUnreadCounts(conversationIds, userId);
 
     const data = conversations.map((conv: ConversationRow) =>
       this.mapConversationToApiFormat(conv, participants, unreadCounts),
     );
 
-    return { data, pagination: this.buildPaginationMeta(page, limit, totalItems) };
+    return {
+      data,
+      pagination: this.buildPaginationMeta(page, limit, totalItems),
+    };
   }
 
   /**
    * Get total count of conversations for a user
    * WhatsApp-style: Show conversation if not deleted OR if new messages exist after deletion
    */
-  private async getConversationCount(tenantId: number, userId: number): Promise<number> {
+  private async getConversationCount(
+    tenantId: number,
+    userId: number,
+  ): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(DISTINCT c.id) as count
        FROM conversations c
@@ -559,7 +590,9 @@ export class ChatService {
   private async fetchParticipantsForConversations(
     conversationIds: number[],
   ): Promise<ParticipantRow[]> {
-    const placeholders = conversationIds.map((_: number, i: number) => `$${i + 1}`).join(',');
+    const placeholders = conversationIds
+      .map((_: number, i: number) => `$${i + 1}`)
+      .join(',');
     return await this.databaseService.query<ParticipantRow>(
       `SELECT cp.conversation_id, cp.user_id, cp.joined_at, cp.is_admin,
               u.username, u.first_name, u.last_name, u.profile_picture
@@ -627,7 +660,9 @@ export class ChatService {
   /**
    * Get single conversation by ID
    */
-  async getConversation(conversationId: number): Promise<{ conversation: Conversation }> {
+  async getConversation(
+    conversationId: number,
+  ): Promise<{ conversation: Conversation }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
@@ -696,22 +731,40 @@ export class ChatService {
   /**
    * Create a new conversation
    */
-  async createConversation(dto: CreateConversationBody): Promise<{ conversation: Conversation }> {
+  async createConversation(
+    dto: CreateConversationBody,
+  ): Promise<{ conversation: Conversation }> {
     const tenantId = this.getTenantId();
     const creatorId = this.getUserId();
-    this.logger.log(`Creating conversation for tenant ${tenantId}, creator ${creatorId}`);
+    this.logger.log(
+      `Creating conversation for tenant ${tenantId}, creator ${creatorId}`,
+    );
 
     const isGroup = dto.isGroup ?? dto.participantIds.length > 1;
 
     // Return existing 1:1 conversation if found
-    const existing = await this.tryGetExisting1to1Conversation(tenantId, creatorId, dto, isGroup);
+    const existing = await this.tryGetExisting1to1Conversation(
+      tenantId,
+      creatorId,
+      dto,
+      isGroup,
+    );
     if (existing !== null) {
       return existing;
     }
 
     await this.validateParticipantIds(dto.participantIds, tenantId);
-    const conversationId = await this.insertConversation(tenantId, dto.name, isGroup);
-    await this.addConversationParticipants(tenantId, conversationId, creatorId, dto.participantIds);
+    const conversationId = await this.insertConversation(
+      tenantId,
+      dto.name,
+      isGroup,
+    );
+    await this.addConversationParticipants(
+      tenantId,
+      conversationId,
+      creatorId,
+      dto.participantIds,
+    );
     await this.sendInitialMessageIfProvided(
       tenantId,
       conversationId,
@@ -738,17 +791,29 @@ export class ChatService {
       throw new BadRequestException('Participant ID is required');
     }
 
-    const existingId = await this.findExisting1to1(tenantId, creatorId, participantId);
+    const existingId = await this.findExisting1to1(
+      tenantId,
+      creatorId,
+      participantId,
+    );
     if (existingId === null) {
       return null;
     }
 
-    await this.sendInitialMessageIfProvided(tenantId, existingId, creatorId, dto.initialMessage);
+    await this.sendInitialMessageIfProvided(
+      tenantId,
+      existingId,
+      creatorId,
+      dto.initialMessage,
+    );
     return await this.getConversation(existingId);
   }
 
   /** Validate that all participant IDs exist in the same tenant */
-  private async validateParticipantIds(participantIds: number[], tenantId: number): Promise<void> {
+  private async validateParticipantIds(
+    participantIds: number[],
+    tenantId: number,
+  ): Promise<void> {
     if (participantIds.length === 0) {
       return;
     }
@@ -821,7 +886,12 @@ export class ChatService {
     initialMessage: string | undefined,
   ): Promise<void> {
     if (initialMessage !== undefined && initialMessage !== '') {
-      await this.insertMessage(tenantId, conversationId, senderId, initialMessage);
+      await this.insertMessage(
+        tenantId,
+        conversationId,
+        senderId,
+        initialMessage,
+      );
     }
   }
 
@@ -829,7 +899,10 @@ export class ChatService {
    * Update a conversation (stub)
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async updateConversation(_conversationId: number, _dto: UpdateConversationBody): Promise<never> {
+  async updateConversation(
+    _conversationId: number,
+    _dto: UpdateConversationBody,
+  ): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -841,12 +914,17 @@ export class ChatService {
    * - Other participants still see the conversation
    * - Any participant can delete for themselves (no admin required)
    */
-  async deleteConversation(conversationId: number): Promise<{ message: string }> {
+  async deleteConversation(
+    conversationId: number,
+  ): Promise<{ message: string }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
     // Check if user is participant and not already deleted
-    const participant = await this.databaseService.query<{ id: number; deleted_at: Date | null }>(
+    const participant = await this.databaseService.query<{
+      id: number;
+      deleted_at: Date | null;
+    }>(
       `SELECT id, deleted_at FROM conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
@@ -854,7 +932,9 @@ export class ChatService {
 
     const participantRecord = participant[0];
     if (participantRecord === undefined) {
-      throw new ForbiddenException('You are not a participant of this conversation');
+      throw new ForbiddenException(
+        'You are not a participant of this conversation',
+      );
     }
 
     if (participantRecord.deleted_at !== null) {
@@ -893,7 +973,9 @@ export class ChatService {
     const offset = (page - 1) * limit;
 
     // Get user's deleted_at timestamp for this conversation
-    const participantInfo = await this.databaseService.query<{ deleted_at: Date | null }>(
+    const participantInfo = await this.databaseService.query<{
+      deleted_at: Date | null;
+    }>(
       `SELECT deleted_at FROM conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
@@ -919,7 +1001,10 @@ export class ChatService {
     const data = messages.map((msg: MessageRow) => this.transformMessage(msg));
     await this.attachDocumentsToMessages(data, tenantId);
 
-    return { data, pagination: this.buildPaginationMeta(page, limit, totalItems) };
+    return {
+      data,
+      pagination: this.buildPaginationMeta(page, limit, totalItems),
+    };
   }
 
   /**
@@ -966,7 +1051,10 @@ export class ChatService {
   }
 
   /** Get total count of messages matching the query */
-  private async getMessagesCount(whereClause: string, params: unknown[]): Promise<number> {
+  private async getMessagesCount(
+    whereClause: string,
+    params: unknown[],
+  ): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(*) as count FROM messages m ${whereClause}`,
       params,
@@ -1014,12 +1102,18 @@ export class ChatService {
   }
 
   /** Load and attach document attachments to messages */
-  private async attachDocumentsToMessages(messages: Message[], tenantId: number): Promise<void> {
+  private async attachDocumentsToMessages(
+    messages: Message[],
+    tenantId: number,
+  ): Promise<void> {
     const messageIds = messages.map((m: Message) => m.id);
     if (messageIds.length === 0) {
       return;
     }
-    const attachmentMap = await this.loadDocumentAttachments(messageIds, tenantId);
+    const attachmentMap = await this.loadDocumentAttachments(
+      messageIds,
+      tenantId,
+    );
     for (const message of messages) {
       message.attachments = attachmentMap.get(message.id) ?? [];
     }
@@ -1049,7 +1143,10 @@ export class ChatService {
     const sender = await this.fetchSenderInfo(senderId, tenantId);
 
     // Emit event for SSE notifications (notify all participants except sender)
-    const recipientIds = await this.getConversationRecipientIds(conversationId, senderId);
+    const recipientIds = await this.getConversationRecipientIds(
+      conversationId,
+      senderId,
+    );
     eventBus.emitNewMessage(tenantId, {
       id: messageId,
       uuid: messageUuid,
@@ -1081,7 +1178,9 @@ export class ChatService {
       content = '📎 Attachment';
     }
     if (content === '' && attachment === undefined) {
-      throw new BadRequestException('Message content or attachment is required');
+      throw new BadRequestException(
+        'Message content or attachment is required',
+      );
     }
     return content;
   }
@@ -1095,7 +1194,10 @@ export class ChatService {
     attachment?: MessageAttachmentInput,
   ): Promise<{ id: number; uuid: string }> {
     const messageUuid = uuidv7();
-    const insertResult = await this.databaseService.query<{ id: number; uuid: string }>(
+    const insertResult = await this.databaseService.query<{
+      id: number;
+      uuid: string;
+    }>(
       `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
          attachment_path, attachment_name, attachment_type, attachment_size,
          uuid, uuid_created_at, created_at)
@@ -1113,7 +1215,10 @@ export class ChatService {
         messageUuid,
       ],
     );
-    return { id: insertResult[0]?.id ?? 0, uuid: insertResult[0]?.uuid ?? messageUuid };
+    return {
+      id: insertResult[0]?.id ?? 0,
+      uuid: insertResult[0]?.uuid ?? messageUuid,
+    };
   }
 
   /** Update conversation's updated_at timestamp */
@@ -1131,7 +1236,10 @@ export class ChatService {
    * Fetch sender information for message response
    * SECURITY: Only returns info for ACTIVE users (is_active = 1)
    */
-  private async fetchSenderInfo(senderId: number, tenantId: number): Promise<SenderInfo> {
+  private async fetchSenderInfo(
+    senderId: number,
+    tenantId: number,
+  ): Promise<SenderInfo> {
     const senderInfo = await this.databaseService.query<SenderInfo>(
       `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [senderId, tenantId],
@@ -1152,7 +1260,8 @@ export class ChatService {
     sender: SenderInfo,
     attachment?: MessageAttachmentInput,
   ): Message {
-    const fullName = `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim();
+    const fullName =
+      `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim();
     return {
       id: messageId,
       conversationId,
@@ -1205,7 +1314,9 @@ export class ChatService {
     await this.verifyConversationAccess(conversationId, userId, tenantId);
 
     // Get latest message ID
-    const latestMessage = await this.databaseService.query<{ max_id: number | null }>(
+    const latestMessage = await this.databaseService.query<{
+      max_id: number | null;
+    }>(
       `SELECT MAX(id) as max_id FROM messages WHERE conversation_id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
     );
@@ -1295,7 +1406,10 @@ export class ChatService {
    * Add participants (stub)
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async addParticipants(_conversationId: number, _dto: AddParticipantsBody): Promise<never> {
+  async addParticipants(
+    _conversationId: number,
+    _dto: AddParticipantsBody,
+  ): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -1303,7 +1417,10 @@ export class ChatService {
    * Remove participant (stub)
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async removeParticipant(_conversationId: number, _userId: number): Promise<never> {
+  async removeParticipant(
+    _conversationId: number,
+    _userId: number,
+  ): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -1322,7 +1439,9 @@ export class ChatService {
   /**
    * Create a scheduled message
    */
-  async createScheduledMessage(dto: CreateScheduledMessageBody): Promise<ScheduledMessage> {
+  async createScheduledMessage(
+    dto: CreateScheduledMessageBody,
+  ): Promise<ScheduledMessage> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
@@ -1379,7 +1498,9 @@ export class ChatService {
       [userId, tenantId, SCHEDULED_STATUS.PENDING],
     );
 
-    return result.map((row: ScheduledMessageRow) => this.mapScheduledMessage(row));
+    return result.map((row: ScheduledMessageRow) =>
+      this.mapScheduledMessage(row),
+    );
   }
 
   /**
@@ -1430,10 +1551,10 @@ export class ChatService {
       throw new BadRequestException('This message has already been cancelled');
     }
 
-    await this.databaseService.query(`UPDATE scheduled_messages SET is_active = $1 WHERE id = $2`, [
-      SCHEDULED_STATUS.CANCELLED,
-      id,
-    ]);
+    await this.databaseService.query(
+      `UPDATE scheduled_messages SET is_active = $1 WHERE id = $2`,
+      [SCHEDULED_STATUS.CANCELLED, id],
+    );
 
     return { message: 'Scheduled message cancelled successfully' };
   }
@@ -1441,7 +1562,9 @@ export class ChatService {
   /**
    * Get scheduled messages for a conversation
    */
-  async getConversationScheduledMessages(conversationId: number): Promise<ScheduledMessage[]> {
+  async getConversationScheduledMessages(
+    conversationId: number,
+  ): Promise<ScheduledMessage[]> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
@@ -1455,14 +1578,20 @@ export class ChatService {
       [conversationId, userId, tenantId, SCHEDULED_STATUS.PENDING],
     );
 
-    return result.map((row: ScheduledMessageRow) => this.mapScheduledMessage(row));
+    return result.map((row: ScheduledMessageRow) =>
+      this.mapScheduledMessage(row),
+    );
   }
 
   // ============================================
   // Private Helpers
   // ============================================
 
-  private buildPaginationMeta(page: number, limit: number, totalItems: number): PaginationMeta {
+  private buildPaginationMeta(
+    page: number,
+    limit: number,
+    totalItems: number,
+  ): PaginationMeta {
     const totalPages = Math.ceil(totalItems / limit);
     return {
       currentPage: page,
@@ -1486,7 +1615,9 @@ export class ChatService {
     );
 
     if (participant.length === 0) {
-      throw new ForbiddenException('You are not a participant of this conversation');
+      throw new ForbiddenException(
+        'You are not a participant of this conversation',
+      );
     }
   }
 
@@ -1516,7 +1647,9 @@ export class ChatService {
       [tenantId, user1Id, user2Id],
     );
 
-    return existing.length > 0 && existing[0] !== undefined ? existing[0].id : null;
+    return existing.length > 0 && existing[0] !== undefined ?
+        existing[0].id
+      : null;
   }
 
   private async insertMessage(
@@ -1548,7 +1681,9 @@ export class ChatService {
       return unreadCounts;
     }
 
-    const convPlaceholders = conversationIds.map((_: number, i: number) => `$${i + 1}`).join(',');
+    const convPlaceholders = conversationIds
+      .map((_: number, i: number) => `$${i + 1}`)
+      .join(',');
     const userIdIndex1 = conversationIds.length + 1;
     const userIdIndex2 = conversationIds.length + 2;
 
@@ -1582,13 +1717,15 @@ export class ChatService {
   }
 
   private transformMessage(msg: MessageRow): Message {
-    const fullName = `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim();
+    const fullName =
+      `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim();
     return {
       id: msg.id,
       conversationId: msg.conversation_id,
       senderId: msg.sender_id,
       senderName: fullName !== '' ? fullName : 'Unknown',
-      senderUsername: msg.sender_username !== '' ? msg.sender_username : 'unknown',
+      senderUsername:
+        msg.sender_username !== '' ? msg.sender_username : 'unknown',
       senderProfilePicture: msg.sender_profile_picture,
       content: msg.content,
       attachment:
@@ -1597,7 +1734,8 @@ export class ChatService {
             url: `/api/v2/chat/attachments/${msg.attachment_path}/download`,
             filename: msg.attachment_name ?? 'attachment',
             mimeType: msg.attachment_type ?? 'application/octet-stream',
-            size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
+            size:
+              typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
           }
         : null,
       attachments: [],
@@ -1633,7 +1771,9 @@ export class ChatService {
       uploaded_at: Date | null;
     }
 
-    const placeholders = messageIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
+    const placeholders = messageIds
+      .map((_: number, i: number) => `$${i + 2}`)
+      .join(', ');
     const rows = await this.databaseService.query<DocumentAttachmentRow>(
       `SELECT id, message_id, file_uuid, filename, original_name, file_size, mime_type, uploaded_at
        FROM documents
@@ -1654,7 +1794,9 @@ export class ChatService {
         fileSize: row.file_size,
         mimeType: row.mime_type,
         downloadUrl: `/api/v2/documents/${row.id}/download`,
-        ...(row.uploaded_at !== null ? { createdAt: new Date(row.uploaded_at).toISOString() } : {}),
+        ...(row.uploaded_at !== null ?
+          { createdAt: new Date(row.uploaded_at).toISOString() }
+        : {}),
       });
       attachmentMap.set(row.message_id, attachments);
     }
@@ -1665,7 +1807,9 @@ export class ChatService {
   private validateScheduledTime(scheduledFor: Date): void {
     const now = new Date();
     const minTime = new Date(now.getTime() + MIN_SCHEDULE_MINUTES * 60 * 1000);
-    const maxTime = new Date(now.getTime() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000);
+    const maxTime = new Date(
+      now.getTime() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000,
+    );
 
     if (scheduledFor <= minTime) {
       throw new BadRequestException(
@@ -1693,7 +1837,12 @@ export class ChatService {
         status = 'pending';
     }
 
-    let attachment: { path: string; name: string; type: string; size: number } | null = null;
+    let attachment: {
+      path: string;
+      name: string;
+      type: string;
+      size: number;
+    } | null = null;
     if (
       row.attachment_path !== null &&
       row.attachment_name !== null &&

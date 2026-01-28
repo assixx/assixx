@@ -10,4 +10,6 @@ export const AttachmentIdParamSchema = z.object({
   attachmentId: z.coerce.number().int().positive(),
 });
 
-export class AttachmentIdParamDto extends createZodDto(AttachmentIdParamSchema) {}
+export class AttachmentIdParamDto extends createZodDto(
+  AttachmentIdParamSchema,
+) {}
