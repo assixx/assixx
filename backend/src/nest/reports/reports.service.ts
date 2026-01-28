@@ -1198,59 +1198,69 @@ export class ReportsService {
   ): Promise<Record<string, unknown> | Buffer | unknown[]> {
     const dateFrom = params.filters.dateFrom ?? this.getDefaultDateFrom();
     const dateTo = params.filters.dateTo ?? this.getDefaultDateTo();
+    const { tenantId, filters } = params;
 
-    switch (params.reportType) {
+    return await this.executeReportHandler(
+      params.reportType,
+      tenantId,
+      dateFrom,
+      dateTo,
+      filters.departmentId,
+      filters.teamId,
+    );
+  }
+
+  /** Execute the appropriate report handler based on type */
+  private async executeReportHandler(
+    type: string,
+    tid: number,
+    from: string,
+    to: string,
+    deptId?: number,
+    teamId?: number,
+  ): Promise<Record<string, unknown> | unknown[]> {
+    switch (type) {
       case 'overview':
-        return (await this.getOverviewReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-        )) as Record<string, unknown>;
+        return (await this.getOverviewReport(tid, from, to)) as Record<
+          string,
+          unknown
+        >;
       case 'employees':
         return (await this.getEmployeeReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-          params.filters.departmentId,
-          params.filters.teamId,
+          tid,
+          from,
+          to,
+          deptId,
+          teamId,
         )) as Record<string, unknown>;
       case 'departments':
-        return {
-          departments: await this.getDepartmentReport(
-            params.tenantId,
-            dateFrom,
-            dateTo,
-          ),
-        };
+        return { departments: await this.getDepartmentReport(tid, from, to) };
       case 'shifts':
         return (await this.getShiftReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-          params.filters.departmentId,
-          params.filters.teamId,
+          tid,
+          from,
+          to,
+          deptId,
+          teamId,
         )) as Record<string, unknown>;
       case 'kvp':
-        return (await this.getKvpReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-        )) as Record<string, unknown>;
+        return (await this.getKvpReport(tid, from, to)) as Record<
+          string,
+          unknown
+        >;
       case 'attendance':
         return this.getAttendanceReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-          params.filters.departmentId,
-          params.filters.teamId,
+          tid,
+          from,
+          to,
+          deptId,
+          teamId,
         ) as Record<string, unknown>;
       case 'compliance':
-        return this.getComplianceReport(
-          params.tenantId,
-          dateFrom,
-          dateTo,
-          params.filters.departmentId,
-        ) as Record<string, unknown>;
+        return this.getComplianceReport(tid, from, to, deptId) as Record<
+          string,
+          unknown
+        >;
       default:
         throw new BadRequestException('Invalid report type');
     }

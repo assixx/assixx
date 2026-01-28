@@ -13,6 +13,7 @@
     return (resolve as (p: string) => string)(path);
   }
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -32,7 +33,6 @@
     getStatusLabel,
     formatDate,
     getAvatarColor,
-    highlightMatch,
     populateFormFromUser,
     getDefaultFormValues,
     validateEmailMatch,
@@ -441,31 +441,30 @@
                 >
                   <div class="search-result-item">
                     <div class="search-result-item__name">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes regex -->
-                      {@html highlightMatch(
-                        `${user.firstName} ${user.lastName}`,
-                        currentSearchQuery,
-                      )}
+                      <HighlightText
+                        text={`${user.firstName} ${user.lastName}`}
+                        query={currentSearchQuery}
+                      />
                     </div>
                     <div class="search-result-item__email">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe -->
-                      {@html highlightMatch(user.email, currentSearchQuery)}
+                      <HighlightText
+                        text={user.email}
+                        query={currentSearchQuery}
+                      />
                     </div>
                     <div class="search-result-item__meta">
                       <span>
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes -->
-                        {@html highlightMatch(
-                          user.position ?? MESSAGES.NO_POSITION,
-                          currentSearchQuery,
-                        )}
+                        <HighlightText
+                          text={user.position ?? MESSAGES.NO_POSITION}
+                          query={currentSearchQuery}
+                        />
                       </span>
                       {#if user.employeeNumber}
                         <span>
-                          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes -->
-                          • {@html highlightMatch(
-                            user.employeeNumber,
-                            currentSearchQuery,
-                          )}
+                          • <HighlightText
+                            text={user.employeeNumber}
+                            query={currentSearchQuery}
+                          />
                         </span>
                       {/if}
                     </div>

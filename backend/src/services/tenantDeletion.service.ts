@@ -319,15 +319,63 @@ export class TenantDeletionService {
     tenantId: number,
     conn: ConnectionWrapper,
   ): Promise<string> {
-    // 1. Get tenant info
-    const tenantInfo = await conn.query<TenantInfoRow[]>(
+    const tenant = await this.fetchTenantInfo(tenantId, conn);
+    const companyName = tenant?.company_name ?? 'unknown';
+
+    const { backupDir, dataDir, backupDirName } = this.setupBackupPaths(
+      companyName,
+      tenantId,
+    );
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: sanitizedName removes special chars
+    await fs.mkdir(dataDir, { recursive: true });
+    logger.info(`📦 Creating tenant backup in ${backupDir}`);
+
+    await this.createSqlBackup(
+      tenantId,
+      companyName,
+      `${backupDir}/backup.sql`,
+      conn,
+    );
+    const { tables, totalRecords } = await this.exportTablesToJson(
+      tenantId,
+      dataDir,
+      conn,
+    );
+    await this.writeBackupMetadata(
+      backupDir,
+      tenantId,
+      companyName,
+      tenant,
+      tables.length,
+      totalRecords,
+    );
+
+    return await this.createArchiveAndStore(
+      tenantId,
+      backupDir,
+      backupDirName,
+      conn,
+    );
+  }
+
+  /** Fetches tenant info for backup */
+  private async fetchTenantInfo(
+    tenantId: number,
+    conn: ConnectionWrapper,
+  ): Promise<TenantInfoRow | undefined> {
+    const rows = await conn.query<TenantInfoRow[]>(
       'SELECT company_name, subdomain, email, created_at FROM tenants WHERE id = $1',
       [tenantId],
     );
-    const tenant = tenantInfo[0];
-    const companyName = tenant?.company_name ?? 'unknown';
+    return rows[0];
+  }
 
-    // 2. Setup backup directories
+  /** Sets up backup directory paths */
+  private setupBackupPaths(
+    companyName: string,
+    tenantId: number,
+  ): { backupDir: string; dataDir: string; backupDirName: string } {
     const sanitizedName = this.sanitizeCompanyName(companyName);
     const timestamp = new Date()
       .toISOString()
@@ -335,28 +383,18 @@ export class TenantDeletionService {
       .substring(0, 19);
     const backupDirName = `${sanitizedName}_${tenantId}_${timestamp}`;
     const backupDir = `/backups/tenant_deletions/${backupDirName}`;
-    const dataDir = `${backupDir}/data`;
+    return { backupDir, dataDir: `${backupDir}/data`, backupDirName };
+  }
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: sanitizedName removes special chars
-    await fs.mkdir(dataDir, { recursive: true });
-    logger.info(`📦 Creating tenant backup in ${backupDir}`);
-
-    // 3. Create SQL backup
-    await this.createSqlBackup(
-      tenantId,
-      companyName,
-      `${backupDir}/backup.sql`,
-      conn,
-    );
-
-    // 4. Export JSON files
-    const { tables, totalRecords } = await this.exportTablesToJson(
-      tenantId,
-      dataDir,
-      conn,
-    );
-
-    // 5. Create metadata
+  /** Writes backup metadata JSON file */
+  private async writeBackupMetadata(
+    backupDir: string,
+    tenantId: number,
+    companyName: string,
+    tenant: TenantInfoRow | undefined,
+    tablesExported: number,
+    totalRecords: number,
+  ): Promise<void> {
     const metadata = {
       tenantId,
       companyName,
@@ -364,7 +402,7 @@ export class TenantDeletionService {
       email: tenant?.email ?? null,
       tenantCreatedAt: tenant?.created_at ?? null,
       backupCreatedAt: new Date().toISOString(),
-      tablesExported: tables.length,
+      tablesExported,
       totalRecords,
       backupType: 'pre_deletion',
       version: '1.0',
@@ -374,8 +412,15 @@ export class TenantDeletionService {
       `${backupDir}/metadata.json`,
       JSON.stringify(metadata, null, 2),
     );
+  }
 
-    // 6. Create archive and store in DB
+  /** Creates tar.gz archive and stores reference in DB */
+  private async createArchiveAndStore(
+    tenantId: number,
+    backupDir: string,
+    backupDirName: string,
+    conn: ConnectionWrapper,
+  ): Promise<string> {
     const archivePath = `${backupDir}.tar.gz`;
     const { exec } = await import('child_process');
     const { promisify } = await import('util');
@@ -383,7 +428,7 @@ export class TenantDeletionService {
       `tar -czf "${archivePath}" -C /backups/tenant_deletions "${backupDirName}"`,
     );
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: constructed from sanitized values above
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: constructed from sanitized values
     const archiveStats = await fs.stat(archivePath);
     await conn.query(
       `INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES ($1, $2, $3, 'final')`,

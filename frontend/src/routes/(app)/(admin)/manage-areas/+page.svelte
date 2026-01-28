@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // =============================================================================
@@ -27,7 +28,6 @@
     getStatusBadgeClass,
     getStatusLabel,
     getTypeLabel,
-    highlightMatch,
     populateFormFromArea,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -422,8 +422,10 @@
                   >
                     <div class="search-result-item">
                       <div class="search-result-item__name">
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- highlightMatch escapes HTML -->
-                        {@html highlightMatch(area.name, searchQuery)}
+                        <HighlightText
+                          text={area.name}
+                          query={searchQuery}
+                        />
                       </div>
                       <div class="search-result-item__email">
                         {getTypeLabel(area.type)}

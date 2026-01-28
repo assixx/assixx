@@ -973,17 +973,36 @@ export class BlackboardService {
 
     const updatedEntry = await this.getEntryById(numericId, tenantId, userId);
 
-    // Log activity (handles both regular updates and archive/unarchive)
+    await this.logEntryUpdateActivity(
+      tenantId,
+      userId,
+      numericId,
+      dto,
+      existingEntry,
+    );
+
+    return updatedEntry;
+  }
+
+  /** Log activity for entry update (regular update, archive, or unarchive) */
+  private async logEntryUpdateActivity(
+    tenantId: number,
+    userId: number,
+    entryId: number,
+    dto: UpdateEntryDto,
+    existingEntry: Record<string, unknown>,
+  ): Promise<void> {
     // is_active: 0=inactive, 1=active, 3=archive, 4=deleted
     const action =
       dto.isActive === 3 ? 'archiviert'
       : dto.isActive === 1 ? 'reaktiviert'
       : 'aktualisiert';
+
     await this.activityLogger.logUpdate(
       tenantId,
       userId,
       'blackboard',
-      numericId,
+      entryId,
       `Blackboard-Eintrag ${action}: ${existingEntry['title'] as string}`,
       {
         title: existingEntry['title'],
@@ -996,8 +1015,6 @@ export class BlackboardService {
         priority: dto.priority ?? existingEntry['priority'],
       },
     );
-
-    return updatedEntry;
   }
 
   /** Build UPDATE query with field and org updates */

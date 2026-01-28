@@ -65,6 +65,19 @@ interface DbExtendedOrgInfo {
   departments_area_ids: number[];
 }
 
+/** SQL placeholder strings for org-based visibility queries */
+interface OrgPlaceholders {
+  teamIds: string;
+  teamLeadOf: string;
+  deptIds: string;
+  teamsDeptIds: string;
+  deptLeadOf: string;
+  areaIds: string;
+  deptsAreaIds: string;
+  areaLeadOf: string;
+  userId: string;
+}
+
 /**
  * SQL query to get all user org info in one query
  * SECURITY: Only returns data for ACTIVE users (is_active = 1)
@@ -201,80 +214,61 @@ export class KvpService {
     userId: number,
     startIdx: number,
   ): { clause: string; params: unknown[] } {
-    // If user has full access, no visibility restrictions
     if (orgInfo.hasFullAccess) {
       return { clause: '', params: [] };
     }
 
-    const params: unknown[] = [];
-    let idx = startIdx;
-
-    // Build arrays for ANY() comparisons
-    const teamIdsParam = `$${idx++}`;
-    params.push(orgInfo.teamIds.length > 0 ? orgInfo.teamIds : [0]); // [0] = no match
-
-    const teamLeadOfParam = `$${idx++}`;
-    params.push(orgInfo.teamLeadOf.length > 0 ? orgInfo.teamLeadOf : [0]);
-
-    const deptIdsParam = `$${idx++}`;
-    params.push(orgInfo.departmentIds.length > 0 ? orgInfo.departmentIds : [0]);
-
-    const teamsDeptIdsParam = `$${idx++}`;
-    params.push(
-      orgInfo.teamsDepartmentIds.length > 0 ? orgInfo.teamsDepartmentIds : [0],
+    const { params, placeholders: h } = this.buildOrgParams(
+      orgInfo,
+      userId,
+      startIdx,
     );
-
-    const deptLeadOfParam = `$${idx++}`;
-    params.push(
-      orgInfo.departmentLeadOf.length > 0 ? orgInfo.departmentLeadOf : [0],
-    );
-
-    const areaIdsParam = `$${idx++}`;
-    params.push(orgInfo.areaIds.length > 0 ? orgInfo.areaIds : [0]);
-
-    const deptsAreaIdsParam = `$${idx++}`;
-    params.push(
-      orgInfo.departmentsAreaIds.length > 0 ? orgInfo.departmentsAreaIds : [0],
-    );
-
-    const areaLeadOfParam = `$${idx++}`;
-    params.push(orgInfo.areaLeadOf.length > 0 ? orgInfo.areaLeadOf : [0]);
-
-    const userIdParam = `$${idx++}`;
-    params.push(userId);
 
     const clause = ` AND (
-      -- Own suggestions (always visible)
-      s.submitted_by = ${userIdParam}
-
-      -- Implemented = public within tenant
-      OR s.status = 'implemented'
-
-      -- STUFE 1: Team-weit
-      OR (s.org_level = 'team' AND (
-        s.org_id = ANY(${teamIdsParam})
-        OR s.org_id = ANY(${teamLeadOfParam})
-      ))
-
-      -- STUFE 2: Department-weit (mit Vererbung)
-      OR (s.org_level = 'department' AND (
-        s.org_id = ANY(${deptIdsParam})
-        OR s.org_id = ANY(${teamsDeptIdsParam})
-        OR s.org_id = ANY(${deptLeadOfParam})
-      ))
-
-      -- STUFE 3: Area-weit (mit Vererbung)
-      OR (s.org_level = 'area' AND (
-        s.org_id = ANY(${areaIdsParam})
-        OR s.org_id = ANY(${deptsAreaIdsParam})
-        OR s.org_id = ANY(${areaLeadOfParam})
-      ))
-
-      -- STUFE 4: Firmenweit
+      s.submitted_by = ${h.userId} OR s.status = 'implemented'
+      OR (s.org_level = 'team' AND (s.org_id = ANY(${h.teamIds}) OR s.org_id = ANY(${h.teamLeadOf})))
+      OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
+      OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
       OR s.org_level = 'company'
     )`;
 
     return { clause, params };
+  }
+
+  /** Build parameterized arrays for org-based visibility checks */
+  private buildOrgParams(
+    orgInfo: ExtendedUserOrgInfo,
+    userId: number,
+    startIdx: number,
+  ): { params: unknown[]; placeholders: OrgPlaceholders } {
+    const toArray = (arr: number[]): number[] => (arr.length > 0 ? arr : [0]);
+    let idx = startIdx;
+
+    const params: unknown[] = [
+      toArray(orgInfo.teamIds),
+      toArray(orgInfo.teamLeadOf),
+      toArray(orgInfo.departmentIds),
+      toArray(orgInfo.teamsDepartmentIds),
+      toArray(orgInfo.departmentLeadOf),
+      toArray(orgInfo.areaIds),
+      toArray(orgInfo.departmentsAreaIds),
+      toArray(orgInfo.areaLeadOf),
+      userId,
+    ];
+
+    const placeholders: OrgPlaceholders = {
+      teamIds: `$${idx++}`,
+      teamLeadOf: `$${idx++}`,
+      deptIds: `$${idx++}`,
+      teamsDeptIds: `$${idx++}`,
+      deptLeadOf: `$${idx++}`,
+      areaIds: `$${idx++}`,
+      deptsAreaIds: `$${idx++}`,
+      areaLeadOf: `$${idx++}`,
+      userId: `$${idx++}`,
+    };
+
+    return { params, placeholders };
   }
 
   /**
@@ -570,26 +564,8 @@ export class KvpService {
       params.push(userId);
     }
 
-    // Get total count (strip the confirmation join for count query)
-    // Remove userId ($2) from params since confirmation JOIN is stripped
-    const countParams = [params[0], ...params.slice(2)];
-    const countQuery = query
-      .replace(
-        /SELECT\s+s\.\*[\s\S]*?FROM kvp_suggestions s/i,
-        'SELECT COUNT(*) as total FROM kvp_suggestions s',
-      )
-      .replace(/LEFT JOIN kvp_confirmations kc[^\n]*/i, '')
-      .replace(/,\s*CASE WHEN kc\.id[^\n]*/i, '')
-      .replace(/\$(\d+)/g, (_match: string, num: string) => {
-        const n = Number.parseInt(num, 10);
-        if (n <= 1) return `$${n}`; // $1 (tenantId) stays
-        return `$${n - 1}`; // $2→$1, $3→$2, etc. (shift down by 1)
-      });
-    const countRows = await this.db.query<{ total: number }>(
-      countQuery,
-      countParams,
-    );
-    const total = countRows[0]?.total ?? 0;
+    // Get total count
+    const total = await this.executeCountQuery(query, params);
 
     // Add sorting and pagination
     query += ` ORDER BY s.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -608,6 +584,33 @@ export class KvpService {
         totalItems: total,
       },
     };
+  }
+
+  /** Execute count query by stripping confirmation JOIN and adjusting placeholders */
+  private async executeCountQuery(
+    query: string,
+    params: unknown[],
+  ): Promise<number> {
+    // Remove userId ($2) from params since confirmation JOIN is stripped
+    const countParams = [params[0], ...params.slice(2)];
+    const countQuery = query
+      .replace(
+        /SELECT\s+s\.\*[\s\S]*?FROM kvp_suggestions s/i,
+        'SELECT COUNT(*) as total FROM kvp_suggestions s',
+      )
+      .replace(/LEFT JOIN kvp_confirmations kc[^\n]*/i, '')
+      .replace(/,\s*CASE WHEN kc\.id[^\n]*/i, '')
+      .replace(/\$(\d+)/g, (_match: string, num: string) => {
+        const n = Number.parseInt(num, 10);
+        if (n <= 1) return `$${n}`; // $1 (tenantId) stays
+        return `$${n - 1}`; // $2→$1, $3→$2, etc. (shift down by 1)
+      });
+
+    const countRows = await this.db.query<{ total: number }>(
+      countQuery,
+      countParams,
+    );
+    return countRows[0]?.total ?? 0;
   }
 
   /**

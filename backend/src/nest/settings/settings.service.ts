@@ -586,64 +586,105 @@ export class SettingsService {
       data.setting_value,
       data.value_type ?? 'string',
     );
-    const settingTeamId = data.team_id !== undefined ? data.team_id : teamId;
+    const settingTeamId = data.team_id ?? teamId ?? null;
+    const valueType = data.value_type ?? 'string';
+    const category = data.category ?? DEFAULT_CATEGORY;
 
-    // Check if exists with exact team_id match
-    let checkQuery = `SELECT id FROM user_settings WHERE setting_key = $1 AND user_id = $2 AND tenant_id = $3`;
-    const checkParams: (string | number | null)[] = [
+    const existing = await this.findUserSettingByKey(
       data.setting_key,
       userId,
       tenantId,
-    ];
+      settingTeamId,
+    );
 
-    if (settingTeamId === null || settingTeamId === undefined) {
-      checkQuery += ` AND team_id IS NULL`;
-    } else {
-      checkQuery += ` AND team_id = $4`;
-      checkParams.push(settingTeamId);
-    }
-
-    const existing = await this.db.query<DbIdResult>(checkQuery, checkParams);
-
-    if (existing.length > 0) {
-      let updateQuery = `UPDATE user_settings
-         SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
-         WHERE setting_key = $4 AND user_id = $5 AND tenant_id = $6`;
-      const updateParams: (string | number | null)[] = [
-        serializedValue,
-        data.value_type ?? 'string',
-        data.category ?? DEFAULT_CATEGORY,
+    if (existing !== null) {
+      await this.updateUserSettingRecord(
         data.setting_key,
+        serializedValue,
+        valueType,
+        category,
         userId,
         tenantId,
-      ];
-
-      if (settingTeamId === null || settingTeamId === undefined) {
-        updateQuery += ` AND team_id IS NULL`;
-      } else {
-        updateQuery += ` AND team_id = $7`;
-        updateParams.push(settingTeamId);
-      }
-
-      await this.db.query(updateQuery, updateParams);
+        settingTeamId,
+      );
     } else {
-      await this.db.query(
-        `INSERT INTO user_settings
-         (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          userId,
-          tenantId,
-          settingTeamId ?? null,
-          data.setting_key,
-          serializedValue,
-          data.value_type ?? 'string',
-          data.category ?? DEFAULT_CATEGORY,
-        ],
+      await this.insertUserSettingRecord(
+        data.setting_key,
+        serializedValue,
+        valueType,
+        category,
+        userId,
+        tenantId,
+        settingTeamId,
       );
     }
 
     return { success: true };
+  }
+
+  /** Find user setting by key with team_id match */
+  private async findUserSettingByKey(
+    key: string,
+    userId: number,
+    tenantId: number,
+    teamId: number | null,
+  ): Promise<DbIdResult | null> {
+    const teamCondition =
+      teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $4';
+    const params: (string | number)[] = [key, userId, tenantId];
+    if (teamId !== null) params.push(teamId);
+
+    const result = await this.db.query<DbIdResult>(
+      `SELECT id FROM user_settings WHERE setting_key = $1 AND user_id = $2 AND tenant_id = $3 ${teamCondition}`,
+      params,
+    );
+    return result[0] ?? null;
+  }
+
+  /** Update existing user setting record */
+  private async updateUserSettingRecord(
+    key: string,
+    value: string,
+    valueType: string,
+    category: string,
+    userId: number,
+    tenantId: number,
+    teamId: number | null,
+  ): Promise<void> {
+    const teamCondition =
+      teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $7';
+    const params: (string | number)[] = [
+      value,
+      valueType,
+      category,
+      key,
+      userId,
+      tenantId,
+    ];
+    if (teamId !== null) params.push(teamId);
+
+    await this.db.query(
+      `UPDATE user_settings SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
+       WHERE setting_key = $4 AND user_id = $5 AND tenant_id = $6 ${teamCondition}`,
+      params,
+    );
+  }
+
+  /** Insert new user setting record */
+  private async insertUserSettingRecord(
+    key: string,
+    value: string,
+    valueType: string,
+    category: string,
+    userId: number,
+    tenantId: number,
+    teamId: number | null,
+  ): Promise<void> {
+    await this.db.query(
+      `INSERT INTO user_settings (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, tenantId, teamId, key, value, valueType, category],
+    );
   }
 
   /**

@@ -348,33 +348,13 @@ export class AuditTrailService {
 
     const entries = rows.map((row: DbAuditEntry) => this.mapDbRowToEntry(row));
 
-    // Calculate summary
-    const uniqueUsers = new Set(
-      entries.map((e: AuditEntryResponse) => e.userId),
-    ).size;
-    const dataAccessCount = entries.filter((e: AuditEntryResponse) =>
-      ['read', 'export'].includes(e.action),
-    ).length;
-    const dataModificationCount = entries.filter((e: AuditEntryResponse) =>
-      ['create', 'update'].includes(e.action),
-    ).length;
-    const dataDeletionCount = entries.filter(
-      (e: AuditEntryResponse) => e.action === 'delete',
-    ).length;
-
     return {
       tenantId: currentUser.tenantId,
       reportType: dto.reportType,
       dateFrom: dto.dateFrom,
       dateTo: dto.dateTo,
       entries,
-      summary: {
-        totalActions: entries.length,
-        uniqueUsers,
-        dataAccessCount,
-        dataModificationCount,
-        dataDeletionCount,
-      },
+      summary: this.calculateReportSummary(entries),
       generatedAt: new Date().toISOString(),
       generatedBy: currentUser.id,
     };
@@ -773,6 +753,32 @@ export class AuditTrailService {
     } catch {
       return undefined;
     }
+  }
+
+  /** Calculate summary statistics for a compliance report */
+  private calculateReportSummary(
+    entries: AuditEntryResponse[],
+  ): ComplianceReportResponseData['summary'] {
+    const uniqueUsers = new Set(
+      entries.map((e: AuditEntryResponse) => e.userId),
+    ).size;
+    const dataAccessCount = entries.filter((e: AuditEntryResponse) =>
+      ['read', 'export'].includes(e.action),
+    ).length;
+    const dataModificationCount = entries.filter((e: AuditEntryResponse) =>
+      ['create', 'update'].includes(e.action),
+    ).length;
+    const dataDeletionCount = entries.filter(
+      (e: AuditEntryResponse) => e.action === 'delete',
+    ).length;
+
+    return {
+      totalActions: entries.length,
+      uniqueUsers,
+      dataAccessCount,
+      dataModificationCount,
+      dataDeletionCount,
+    };
   }
 
   /**

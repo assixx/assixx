@@ -1,6 +1,8 @@
 <script lang="ts">
+  import HighlightText from '$lib/components/HighlightText.svelte';
+
   import { MESSAGES } from './constants';
-  import { getPositionDisplay, highlightMatch } from './utils';
+  import { getPositionDisplay } from './utils';
 
   import type { Admin } from './types';
 
@@ -33,30 +35,32 @@
     >
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="font-weight: 500; color: var(--color-text-primary);">
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-          {@html highlightMatch(
-            `${admin.firstName} ${admin.lastName}`,
-            searchQuery,
-          )}
+          <HighlightText
+            text={`${admin.firstName} ${admin.lastName}`}
+            query={searchQuery}
+          />
         </div>
         <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-          {@html highlightMatch(admin.email, searchQuery)}
+          <HighlightText
+            text={admin.email}
+            query={searchQuery}
+          />
         </div>
         <div
           style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
         >
           <span>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-            {@html highlightMatch(
-              getPositionDisplay(admin.position ?? ''),
-              searchQuery,
-            )}
+            <HighlightText
+              text={getPositionDisplay(admin.position ?? '')}
+              query={searchQuery}
+            />
           </span>
           {#if admin.employeeNumber}
             <span>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-              • {@html highlightMatch(admin.employeeNumber, searchQuery)}
+              • <HighlightText
+                text={admin.employeeNumber}
+                query={searchQuery}
+              />
             </span>
           {/if}
         </div>

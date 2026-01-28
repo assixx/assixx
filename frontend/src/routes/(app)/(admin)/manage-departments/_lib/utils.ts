@@ -2,8 +2,6 @@
 // MANAGE DEPARTMENTS - UTILITY FUNCTIONS
 // =============================================================================
 
-import { escapeHtml } from '$lib/utils/sanitize-html';
-
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -69,30 +67,6 @@ export function getLeadDisplay(leadName: string | null | undefined): string {
  */
 export function getTeamCountText(count: number): string {
   return count === 1 ? '1 Team' : `${count} Teams`;
-}
-
-// =============================================================================
-// SEARCH HELPERS
-// =============================================================================
-
-/**
- * Highlight search term in text with <strong> tags
- * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
- *
- * @param text - Text to search in (potentially untrusted)
- * @param query - Search query
- * @returns Sanitized HTML string with highlighted matches
- */
-export function highlightMatch(text: string, query: string): string {
-  // SECURITY FIX: Escape HTML first to prevent XSS
-  const safeText = escapeHtml(text);
-  if (query.trim() === '') return safeText;
-
-  // Escape all regex special characters to prevent ReDoS attacks
-  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-
-  const regex = new RegExp(`(${escapedQuery})`, 'gi');
-  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================

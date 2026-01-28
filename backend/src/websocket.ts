@@ -610,11 +610,6 @@ export class ChatWebSocketServer {
   ): Promise<void> {
     const { conversationId, content, attachments: attachmentIds = [] } = data;
 
-    // DEBUG: Log incoming data to verify attachments are received
-    logger.info(
-      `[WS] handleSendMessage: convId=${conversationId}, attachmentIds=${JSON.stringify(attachmentIds)}, raw data.attachments=${JSON.stringify(data.attachments)}`,
-    );
-
     if (ws.userId === undefined || ws.tenantId === undefined) {
       this.sendMessage(ws, {
         type: 'error',
@@ -637,40 +632,14 @@ export class ChatWebSocketServer {
         return;
       }
 
-      // Save message
-      const messageId = await this.saveMessage(
+      const messageId = await this.processAndBroadcastMessage(
+        ws,
         conversationId,
-        ws.userId,
         content,
-        ws.tenantId,
-      );
-
-      // Link attachments to message (updates documents.message_id)
-      if (attachmentIds.length > 0) {
-        await this.linkAttachmentsToMessage(
-          messageId,
-          attachmentIds,
-          ws.tenantId,
-        );
-      }
-
-      // Get attachment details for broadcast
-      const attachments = await this.getMessageAttachments(
         attachmentIds,
-        ws.tenantId,
+        participantIds,
       );
 
-      const sender = await this.getSenderInfo(ws.userId, ws.tenantId);
-      const messageData = this.buildMessageData(
-        messageId,
-        conversationId,
-        content,
-        ws.userId,
-        sender,
-        attachments,
-      );
-
-      this.broadcastToParticipants(participantIds, 'new_message', messageData);
       this.sendMessage(ws, {
         type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
@@ -682,6 +651,50 @@ export class ChatWebSocketServer {
         data: { message: 'Fehler beim Senden der Nachricht' },
       });
     }
+  }
+
+  /** Saves message, links attachments, and broadcasts to participants */
+  private async processAndBroadcastMessage(
+    ws: ExtendedWebSocket,
+    conversationId: number,
+    content: string,
+    attachmentIds: number[],
+    participantIds: number[],
+  ): Promise<number> {
+    const messageId = await this.saveMessage(
+      conversationId,
+      ws.userId as number,
+      content,
+      ws.tenantId as number,
+    );
+
+    if (attachmentIds.length > 0) {
+      await this.linkAttachmentsToMessage(
+        messageId,
+        attachmentIds,
+        ws.tenantId as number,
+      );
+    }
+
+    const attachments = await this.getMessageAttachments(
+      attachmentIds,
+      ws.tenantId as number,
+    );
+    const sender = await this.getSenderInfo(
+      ws.userId as number,
+      ws.tenantId as number,
+    );
+    const messageData = this.buildMessageData(
+      messageId,
+      conversationId,
+      content,
+      ws.userId as number,
+      sender,
+      attachments,
+    );
+
+    this.broadcastToParticipants(participantIds, 'new_message', messageData);
+    return messageId;
   }
 
   private async handleTyping(

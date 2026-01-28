@@ -2,8 +2,6 @@
 // MANAGE ADMINS - UTILITY FUNCTIONS
 // =============================================================================
 
-import { escapeHtml } from '$lib/utils/sanitize-html';
-
 import {
   BADGE_CLASS,
   STATUS_BADGE_CLASSES,
@@ -233,30 +231,6 @@ export function getTeamsBadge(admin: Admin): BadgeInfo {
     text: MESSAGES.BADGE_NONE,
     title: MESSAGES.BADGE_NO_TEAMS,
   };
-}
-
-// =============================================================================
-// SEARCH HELPERS
-// =============================================================================
-
-/**
- * Highlight search term in text with <strong> tags
- * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
- *
- * @param text - Text to highlight in (potentially untrusted)
- * @param query - Search query to highlight
- * @returns Sanitized HTML string with highlighted matches
- */
-export function highlightMatch(text: string, query: string): string {
-  // SECURITY FIX: Escape HTML first to prevent XSS
-  const safeText = escapeHtml(text);
-  if (query.trim() === '') return safeText;
-
-  // Escape all regex special characters to prevent ReDoS attacks
-  const escapedQuery = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-
-  const regex = new RegExp(`(${escapedQuery})`, 'gi');
-  return safeText.replace(regex, '<strong>$1</strong>');
 }
 
 // =============================================================================
