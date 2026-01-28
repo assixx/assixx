@@ -21,6 +21,9 @@
   // Page-specific CSS (reuses kvp-detail layout)
   import '../../../../../styles/kvp-detail.css';
 
+  // Smart Edit Modal (self-contained with org data loading)
+  import BlackboardEditModal from '../_lib/BlackboardEditModal.svelte';
+
   // _lib/ imports
   import {
     addComment as addCommentApi,
@@ -123,6 +126,9 @@
   let showPreviewModal = $state(false);
   let previewAttachment = $state<PreviewAttachment | null>(null);
 
+  // Edit Modal State
+  let showEditModal = $state(false);
+
   // =============================================================================
   // API HANDLERS (with invalidateAll after mutations)
   // =============================================================================
@@ -211,9 +217,14 @@
     showDeleteModal = false;
   }
 
-  /** Navigate to blackboard list with edit parameter */
-  function goToBlackboardForEdit(): void {
-    void goto(resolvePath(`/blackboard?edit=${entry.uuid}`));
+  /** Open edit modal */
+  function openEditModal(): void {
+    showEditModal = true;
+  }
+
+  /** Handle successful save from edit modal */
+  async function handleEditSaved(): Promise<void> {
+    await invalidateAll();
   }
 
   // =============================================================================
@@ -254,6 +265,7 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showDeleteModal) showDeleteModal = false;
+      else if (showEditModal) showEditModal = false;
       else if (showPreviewModal) closePreview();
     }
   }
@@ -582,7 +594,7 @@
               <button
                 type="button"
                 class="btn btn-light w-full mb-2"
-                onclick={goToBlackboardForEdit}
+                onclick={openEditModal}
                 ><i class="fas fa-edit mr-2"></i>Bearbeiten</button
               >
               <button
@@ -783,6 +795,15 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Edit Entry Modal (Smart - loads org data internally) -->
+{#if showEditModal}
+  <BlackboardEditModal
+    {entry}
+    onclose={() => (showEditModal = false)}
+    onsaved={handleEditSaved}
+  />
 {/if}
 
 <style>
