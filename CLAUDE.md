@@ -14,13 +14,13 @@ wir bleibebn und arbeiten in dev : pnpm run dev:svelte
 
 ## URL Quick Reference
 
-| URL                             | Mode            | Was                   | Command                                     |
-| ------------------------------- | --------------- | --------------------- | ------------------------------------------- |
+| URL                             | Mode            | Was                   | Command                                                    |
+| ------------------------------- | --------------- | --------------------- | ---------------------------------------------------------- |
 | `http://localhost/login`        | **Production**  | Nginx → SvelteKit     | `doppler run -- docker-compose --profile production up -d` |
-| `http://localhost:3001/login`   | Production      | SvelteKit direkt      | (umgeht Nginx)                              |
-| `http://localhost:5173/login`   | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte`                       |
+| `http://localhost:3001/login`   | Production      | SvelteKit direkt      | (umgeht Nginx)                                             |
+| `http://localhost:5173/login`   | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte`                                      |
 | `http://localhost:3000/api/v2/` | Both            | Backend API           | `doppler run -- docker-compose up -d`                      |
-| `http://localhost/health`       | Production      | Health Check          | via Nginx                                   |
+| `http://localhost/health`       | Production      | Health Check          | via Nginx                                                  |
 
 **NOW USING (2026-01 Standard):**
 

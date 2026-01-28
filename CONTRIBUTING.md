@@ -1,19 +1,33 @@
 # Contributing to Assixx
 
-**Version:** 1.1.0 | **Updated:** 2026-01-28
+**Version:** 2.0.0 | **Updated:** 2026-01-28
 
 Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 
 ---
 
+## Tech Stack
+
+| Layer      | Technology                         |
+| ---------- | ---------------------------------- |
+| Backend    | NestJS 11 + Fastify                |
+| Frontend   | SvelteKit 5 + Tailwind v4          |
+| Database   | PostgreSQL 17 + Row Level Security |
+| Cache      | Redis 7                            |
+| Secrets    | Doppler                            |
+| Validation | Zod (nestjs-zod)                   |
+| Testing    | Bruno CLI (API), Vitest (Unit)     |
+| Container  | Docker + Nginx (Reverse Proxy)     |
+
+---
+
 ## Prerequisites
 
-- Node.js 24.x
-- pnpm 10.x (not npm, not yarn)
+- Node.js 24.x LTS
+- pnpm 10.x (`npm` and `yarn` are blocked)
 - Docker & Docker Compose
-- [Doppler CLI](https://docs.doppler.com/docs/install-cli) (required for secret management)
-- A Doppler Service Token (request from project maintainer)
-- PostgreSQL client (for debugging)
+- [Doppler CLI](https://docs.doppler.com/docs/install-cli) (secret management)
+- Doppler Service Token (request from project maintainer)
 
 ---
 
@@ -21,45 +35,52 @@ Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 
 ### 1. Doppler Setup (Required)
 
-All secrets (DB passwords, JWT keys, Redis credentials) are managed via [Doppler](https://www.doppler.com/).
-**Without a Doppler token, Docker containers will not start.**
+All secrets are managed via Doppler. **Without a Doppler token, Docker will not start.**
 
-You need a Service Token from the project maintainer. You do **not** need:
-
-- A Doppler account
-- Access to the Doppler dashboard
-- Knowledge of the actual secret values
-
-Once you have your token, install the Doppler CLI:
+You need a Service Token from the maintainer. You do **not** need a Doppler account or dashboard access.
 
 ```bash
+# Install Doppler CLI
 curl -Ls --tlsv1.2 --proto "=https" "https://cli.doppler.com/install.sh" | sudo sh
 ```
+
+See [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md) for the full reference.
 
 ### 2. Clone & Start
 
 ```bash
-# Clone repository
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
 
-# Start Docker containers (token inline - recommended for first-time setup)
-cd docker
-DOPPLER_TOKEN="your-token-here" doppler run -- docker-compose up -d
+# Install dependencies
+pnpm install
 
-# Or export once per shell session
+# Start Docker (backend, postgres, redis)
+cd docker
 export DOPPLER_TOKEN="your-token-here"
 doppler run -- docker-compose up -d
 
-# Verify health
+# Verify backend is healthy
 curl -s http://localhost:3000/health | jq '.'
-
-# Run inside container
-docker exec assixx-backend pnpm run type-check
-docker exec assixx-backend pnpm run lint
 ```
 
-> **Note:** See [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md) for the full Doppler reference.
+### 3. Start Frontend Dev Server
+
+```bash
+# From project root
+pnpm run dev:svelte
+# Opens http://localhost:5173 with HMR
+```
+
+### URLs
+
+| URL                     | What                |
+| ----------------------- | ------------------- |
+| `http://localhost:5173` | SvelteKit Dev (HMR) |
+| `http://localhost:3000` | Backend API         |
+| `http://localhost`      | Production (Nginx)  |
+
+See [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) for full architecture.
 
 ---
 
@@ -68,59 +89,72 @@ docker exec assixx-backend pnpm run lint
 ### 1. Create Branch
 
 ```bash
-# From master
-git checkout master
-git pull origin master
+git checkout master && git pull origin master
 git checkout -b feature/short-description
 ```
 
-**Branch naming:**
+| Prefix      | Use for           |
+| ----------- | ----------------- |
+| `feature/`  | New functionality |
+| `bugfix/`   | Bug fixes         |
+| `hotfix/`   | Production fixes  |
+| `refactor/` | Code improvements |
 
-- `feature/description` - New functionality
-- `bugfix/issue-123-description` - Bug fixes
-- `hotfix/critical-fix` - Production fixes
-- `refactor/area-description` - Code improvements
-
-### 2. Make Changes
+### 2. Develop
 
 ```bash
-# Edit files, then verify
-docker exec assixx-backend pnpm run type-check
-docker exec assixx-backend pnpm run lint
+# Frontend: SvelteKit dev server (auto-reload)
+pnpm run dev:svelte
 
-# Build
-docker exec assixx-backend pnpm run build
+# Backend: Docker handles it. After code changes:
+cd docker && doppler run -- docker-compose restart backend
 ```
 
-### 3. Test
+### 3. Validate
 
 ```bash
-# API tests with Bruno
+# Run ALL checks at once (recommended before commit)
+pnpm run validate:all
+
+# Or individual checks:
+pnpm run lint:all:fix          # ESLint backend + frontend
+pnpm run type-check            # TypeScript backend + frontend
+cd frontend && pnpm run check  # Svelte-specific checks
+pnpm run stylelint:fix         # CSS linting
+```
+
+### 4. Test
+
+```bash
+# API tests (Bruno CLI)
 pnpm run test:api
+
+# Full test suite (including tenant setup)
+pnpm run test:api:full
 
 # Single module
 cd api-tests && npx bru run calendar --env local
 ```
 
-### 4. Commit
+See [HOW-TO-TEST-WITH-BRUNO.md](./docs/HOW-TO-TEST-WITH-BRUNO.md) for details.
+
+### 5. Commit
 
 ```bash
 # Format: <type>(<scope>): <description>
-git add .
 git commit -m "feat(calendar): add recurring events support"
 ```
 
-**Commit types:**
-| Type | Use for |
-|------|---------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
+| Type       | Use for                      |
+| ---------- | ---------------------------- |
+| `feat`     | New feature                  |
+| `fix`      | Bug fix                      |
+| `docs`     | Documentation only           |
 | `refactor` | Code change (no feature/fix) |
-| `test` | Adding tests |
-| `chore` | Maintenance |
+| `test`     | Adding tests                 |
+| `chore`    | Maintenance, dependencies    |
 
-### 5. Push & Create PR
+### 6. Push & PR
 
 ```bash
 git push -u origin feature/short-description
@@ -131,36 +165,93 @@ git push -u origin feature/short-description
 
 ## Pull Request Requirements
 
-Before submitting:
-
-- [ ] `pnpm run lint` = 0 errors
-- [ ] `pnpm run type-check` = 0 errors
+- [ ] `pnpm run validate:all` passes
 - [ ] `pnpm run test:api` passes
 - [ ] No `any` types without justification
 - [ ] No `// TODO:` comments
 - [ ] Functions <= 60 lines
-- [ ] Commits follow format
+- [ ] Commits follow `<type>(<scope>): <description>`
 
-**PR Title:** Same format as commits (`feat(scope): description`)
+**Merge strategy:** Always `--no-ff` (no fast-forward).
 
-**PR Description:**
+---
 
-```markdown
-## Summary
+## Project Structure
 
-Brief description of changes.
-
-## Test Plan
-
-- [ ] Tested endpoint X with Bruno
-- [ ] Verified edge case Y
+```
+Assixx/
+├── backend/src/nest/          # NestJS Backend
+│   ├── auth/                  #   Module: controller + service + dto/
+│   ├── users/                 #   Module: controller + service + dto/
+│   ├── calendar/              #   ... (30 modules total)
+│   ├── common/                #   Guards, Pipes, Interceptors, Decorators
+│   ├── config/                #   Environment config
+│   └── database/              #   DB connection service
+├── frontend/src/              # SvelteKit 5 Frontend
+│   ├── routes/(app)/          #   Authenticated pages
+│   ├── routes/login/          #   Public pages
+│   ├── lib/                   #   Shared utilities, types, stores
+│   ├── styles/                #   Page-specific CSS
+│   └── design-system/         #   CSS component library (29 components)
+├── database/                  # Database
+│   ├── migrations/            #   node-pg-migrate TypeScript migrations
+│   └── seeds/                 #   Idempotent seed data (SQL)
+├── docker/                    # Docker Compose + Dockerfiles + Nginx
+├── api-tests/                 # Bruno API test collections
+└── docs/                      # All documentation
 ```
 
 ---
 
-## Code Standards Summary
+## Common Tasks
 
-**See:** [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md) for full details.
+### Add New API Endpoint
+
+1. Create NestJS module in `backend/src/nest/<module>/`
+   - `<module>.controller.ts` - Route handlers
+   - `<module>.service.ts` - Business logic
+   - `<module>.module.ts` - Module definition
+   - `dto/` - Zod validation schemas (`createZodDto`)
+2. Register module in `app.module.ts`
+3. Add Bruno tests in `api-tests/<module>/`
+4. Run `pnpm run validate:all`
+
+See [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md) for DTO patterns.
+
+### Add New Frontend Page
+
+1. Create route in `frontend/src/routes/(app)/<page>/+page.svelte`
+2. Add `_lib/` folder for API calls, types, state
+3. Use design system components (see `frontend/src/design-system/README.md`)
+4. Svelte 5 Runes: `$state`, `$derived`, `$effect`, `$props`
+
+See [CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md) for Svelte patterns.
+
+### Database Changes
+
+1. Read [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
+2. Create migration:
+   ```bash
+   doppler run -- pnpm run db:migrate:create add-feature-x
+   ```
+3. Implement `up()` and `down()` in generated TypeScript file
+4. Include RLS policy + `app_user` GRANTs for tenant-specific tables
+5. Run:
+   ```bash
+   doppler run -- ./scripts/run-migrations.sh up
+   ```
+
+### Fix a Bug
+
+1. Reproduce with Bruno or browser
+2. Find **root cause** (not symptoms)
+3. Write fix
+4. Add test case for the bug
+5. `pnpm run validate:all`
+
+---
+
+## Code Standards (Quick Reference)
 
 ```
 FORBIDDEN                      REQUIRED
@@ -171,64 +262,51 @@ if (value)                     if (value !== null)
 // TODO:                       Implement immediately
 ? placeholders                 $1, $2, $3 (PostgreSQL)
 var                            const or let
+console.log                    console.warn / console.error
+```
+
+Full details: [TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md)
+
+---
+
+## Docker Reference
+
+```bash
+cd docker
+
+# Development (backend + DB + Redis)
+doppler run -- docker-compose up -d
+doppler run -- docker-compose ps
+doppler run -- docker-compose restart backend
+
+# Production (+ SvelteKit + Nginx)
+doppler run -- docker-compose --profile production up -d
+doppler run -- docker-compose --profile production build frontend
+
+# Logs
+docker logs -f assixx-backend
+docker logs -f assixx-postgres
+
+# Backend checks inside container
+docker exec assixx-backend pnpm run type-check
+docker exec assixx-backend pnpm run lint
 ```
 
 ---
 
-## Project Structure
+## Key Documentation
 
-```
-Assixx/
-├── backend/src/
-│   ├── routes/v2/          # API endpoints
-│   ├── models/             # Database models
-│   ├── services/           # Business logic
-│   ├── middleware/         # Express middleware
-│   └── types/              # TypeScript types
-├── frontend/src/
-│   ├── pages/              # HTML pages
-│   ├── scripts/            # TypeScript modules
-│   ├── styles/             # CSS files
-│   └── design-system/      # Component library
-├── docker/                 # Docker configuration
-├── api-tests/              # Bruno API tests
-└── docs/                   # Documentation
-```
-
----
-
-## Common Tasks
-
-### Add New API Endpoint
-
-1. Create route in `backend/src/routes/v2/<module>/`
-2. Add Zod validation schema
-3. Implement service layer
-4. Add Bruno tests in `api-tests/<module>/`
-5. Run `pnpm run lint` and `pnpm run type-check`
-
-### Fix a Bug
-
-1. Reproduce with Bruno or browser
-2. Find root cause (not symptoms)
-3. Write fix
-4. Add test case for the bug
-5. Verify fix doesn't break other tests
-
-### Database Changes
-
-1. Read [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
-2. Create migration SQL file
-3. Test on local first
-4. Include RLS policy if tenant-specific table
-
----
-
-## Getting Help
-
-- Check existing documentation in `/docs/`
-- Review similar code in the codebase
-- Ask in team chat
+| Document                                                                              | Purpose                       |
+| ------------------------------------------------------------------------------------- | ----------------------------- |
+| [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md)                                       | Code standards & rules        |
+| [CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)                         | Svelte 5 & SvelteKit patterns |
+| [TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md)                             | TypeScript strict rules       |
+| [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)                     | PostgreSQL migrations & RLS   |
+| [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md)                             | Secret management setup       |
+| [HOW-TO-TEST-WITH-BRUNO.md](./docs/HOW-TO-TEST-WITH-BRUNO.md)                         | API testing with Bruno        |
+| [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) | Docker/Nginx/SvelteKit setup  |
+| [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)                   | Zod validation in NestJS      |
+| [ADR Index](./docs/infrastructure/adr/README.md)                                      | Architecture Decision Records |
 
 ---
 
@@ -239,12 +317,7 @@ Assixx/
 3. Address feedback
 4. Approval + merge with `--no-ff`
 
-**Merge is blocked if:**
-
-- ESLint errors exist
-- TypeScript errors exist
-- Tests fail
-- No approval from reviewer
+**Merge is blocked if:** ESLint errors, TypeScript errors, failing tests, or no reviewer approval.
 
 ---
 
