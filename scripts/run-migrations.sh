@@ -25,9 +25,9 @@ MIGRATE_DB="${POSTGRES_DB:-assixx}"
 MIGRATE_USER="${POSTGRES_USER:-assixx_user}"
 MIGRATE_PASS="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (use: doppler run -- ./scripts/run-migrations.sh)}"
 
-# When DB_HOST is "postgres" (Docker internal), redirect to localhost
+# When DB_HOST is Docker internal hostname, redirect to localhost
 # because migrations run from the host, not inside a container
-if [ "${MIGRATE_HOST}" = "postgres" ]; then
+if [ "${MIGRATE_HOST}" = "postgres" ] || [ "${MIGRATE_HOST}" = "assixx-postgres" ]; then
   MIGRATE_HOST="localhost"
 fi
 
