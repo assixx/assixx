@@ -8,6 +8,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -44,8 +45,6 @@
     getAreaBadgeData,
     getDepartmentBadgeData,
   } from './_lib/utils';
-
-  import HighlightText from '$lib/components/HighlightText.svelte';
 
   import type { PageData } from './$types';
   import type { Machine, MachineStatusFilter } from './_lib/types';
