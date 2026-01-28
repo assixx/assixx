@@ -16,10 +16,10 @@ wir bleibebn und arbeiten in dev : pnpm run dev:svelte
 
 | URL                             | Mode            | Was                   | Command                                     |
 | ------------------------------- | --------------- | --------------------- | ------------------------------------------- |
-| `http://localhost/login`        | **Production**  | Nginx → SvelteKit     | `docker-compose --profile production up -d` |
+| `http://localhost/login`        | **Production**  | Nginx → SvelteKit     | `doppler run -- docker-compose --profile production up -d` |
 | `http://localhost:3001/login`   | Production      | SvelteKit direkt      | (umgeht Nginx)                              |
 | `http://localhost:5173/login`   | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte`                       |
-| `http://localhost:3000/api/v2/` | Both            | Backend API           | `docker-compose up -d`                      |
+| `http://localhost:3000/api/v2/` | Both            | Backend API           | `doppler run -- docker-compose up -d`                      |
 | `http://localhost/health`       | Production      | Health Check          | via Nginx                                   |
 
 **NOW USING (2026-01 Standard):**
@@ -90,7 +90,7 @@ Complete mandatory checklist WITHOUT dev-status.sh
 
 ```bash
 cd /home/scs/projects/Assixx/docker
-docker-compose ps && curl -s http://localhost:3000/health | jq '.'
+doppler run -- docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 # Or use the status script:
 /home/scs/projects/Assixx/scripts/dev-status.sh
@@ -106,8 +106,8 @@ cd frontend && pnpm run dev
 # Test on http://localhost:5173
 
 # Production Test: Rebuild Docker image
-docker-compose --profile production build frontend
-docker-compose --profile production up -d
+doppler run -- docker-compose --profile production build frontend
+doppler run -- docker-compose --profile production up -d
 # Test on http://localhost (via Nginx)
 ```
 
@@ -115,7 +115,7 @@ docker-compose --profile production up -d
 
 ```bash
 docker exec assixx-backend pnpm run type-check
-docker-compose restart backend
+doppler run -- docker-compose restart backend
 docker logs -f assixx-backend
 ```
 
@@ -143,25 +143,25 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/XXX-migration.
 cd /home/scs/projects/Assixx/docker
 
 # Development (Backend only)
-docker-compose up -d
-docker-compose ps
+doppler run -- docker-compose up -d
+doppler run -- docker-compose ps
 
-frontend neu bauen:  Bash(docker-compose --profile production build frontend 2>&1 | tail -30)
+frontend neu bauen:  Bash(doppler run -- docker-compose --profile production build frontend 2>&1 | tail -30)
 
  # Nach Frontend-Code-Änderungen:
-  docker-compose --profile production up -d --build frontend
+  doppler run -- docker-compose --profile production up -d --build frontend
 
   # Oder alles neu bauen + starten:
-  docker-compose --profile production up -d --build
+  doppler run -- docker-compose --profile production up -d --build
 
 
 # Production (mit SvelteKit + Nginx)
-docker-compose --profile production up -d
-docker-compose --profile production ps
+doppler run -- docker-compose --profile production up -d
+doppler run -- docker-compose --profile production ps
 ./scripts/check-production.sh  # Health Check Script
 
-docker-compose down
-docker-compose restart backend
+doppler run -- docker-compose down
+doppler run -- docker-compose restart backend
 ```
 
 ## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
@@ -239,7 +239,7 @@ git diff master..<branch-name> -- TODO.md
 - **IF User wants to commit/push:** ALWAYS ask: "Should I commit the changes?"
 - **IF Creating new file:** STOP! First check if existing file can be edited
 - **IF Database Error:** Check Foreign Key Constraints
-- **IF Docker Container won't start:** docker-compose down && docker-compose up -d
+- **IF Docker Container won't start:** doppler run -- docker-compose down && doppler run -- docker-compose up -d
 
 ## KNOWN ISSUES
 
