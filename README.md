@@ -4,13 +4,13 @@
 
 # Was ist Assixx?
 
-**Multi-Tenant SaaS Platform für Industrieunternehmen**
+**Enterprise 2.0 Platform für Industrieunternehmen**
 
 [![Version](https://img.shields.io/badge/Version-0.1.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/SCS-Technik/Assixx)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./docs/LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-Digitalisierung von Papier zu Cloud – speziell für produzierende Unternehmen.
+Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in produzierenden Unternehmen.
 
 ---
 

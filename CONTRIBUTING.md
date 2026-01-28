@@ -37,7 +37,7 @@ Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 
 All secrets are managed via Doppler. **Without a Doppler token, Docker will not start.**
 
-You need a Service Token from the maintainer. You do **not** need a Doppler account or dashboard access.
+You need a Service Token from the maintainer. Request one via **assixx@scs-technik.de**. You do **not** need a Doppler account or dashboard access.
 
 ```bash
 # Install Doppler CLI
