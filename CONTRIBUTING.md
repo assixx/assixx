@@ -1,6 +1,6 @@
 # Contributing to Assixx
 
-**Version:** 1.0.0 | **Updated:** 2025-12-16
+**Version:** 1.1.0 | **Updated:** 2026-01-28
 
 Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 
@@ -11,28 +11,55 @@ Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 - Node.js 24.x
 - pnpm 10.x (not npm, not yarn)
 - Docker & Docker Compose
+- [Doppler CLI](https://docs.doppler.com/docs/install-cli) (required for secret management)
+- A Doppler Service Token (request from project maintainer)
 - PostgreSQL client (for debugging)
 
 ---
 
 ## Getting Started
 
+### 1. Doppler Setup (Required)
+
+All secrets (DB passwords, JWT keys, Redis credentials) are managed via [Doppler](https://www.doppler.com/).
+**Without a Doppler token, Docker containers will not start.**
+
+You need a Service Token from the project maintainer. You do **not** need:
+
+- A Doppler account
+- Access to the Doppler dashboard
+- Knowledge of the actual secret values
+
+Once you have your token, install the Doppler CLI:
+
 ```bash
-# 1. Clone repository
+curl -Ls --tlsv1.2 --proto "=https" "https://cli.doppler.com/install.sh" | sudo sh
+```
+
+### 2. Clone & Start
+
+```bash
+# Clone repository
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
 
-# 2. Start Docker containers
+# Start Docker containers (token inline - recommended for first-time setup)
 cd docker
-docker-compose up -d
+DOPPLER_TOKEN="your-token-here" doppler run -- docker-compose up -d
 
-# 3. Verify health
+# Or export once per shell session
+export DOPPLER_TOKEN="your-token-here"
+doppler run -- docker-compose up -d
+
+# Verify health
 curl -s http://localhost:3000/health | jq '.'
 
-# 4. Run inside container
+# Run inside container
 docker exec assixx-backend pnpm run type-check
 docker exec assixx-backend pnpm run lint
 ```
+
+> **Note:** See [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md) for the full Doppler reference.
 
 ---
 
