@@ -12,7 +12,7 @@ import type { Priority, OrgLevel, EntryColor } from './types';
 export const ZOOM_CONFIG = {
   DEFAULT: 100,
   MIN: 50,
-  MAX: 150,
+  MAX: 120,
   STEP: 10,
 } as const;
 
