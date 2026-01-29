@@ -34,7 +34,8 @@
     onclick={handleOverlayClick}
   >
     <div
-      class="ds-modal ds-modal--xl"
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh"
       onclick={(e) => {
         e.stopPropagation();
       }}
@@ -59,13 +60,13 @@
           <iframe
             id="preview-iframe"
             src={previewUrl}
-            class="block w-full h-[70vh] min-h-[600px] border-none"
+            class="block w-full h-[80vh] min-h-[600px] border-none"
             title="Dokumentenvorschau"
           ></iframe>
         {:else if getFileType(document) === 'image'}
           <div
             id="preview-image-container"
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="h-[80vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
           >
             <img
               id="preview-image"
@@ -77,7 +78,7 @@
         {:else}
           <div
             id="preview-no-preview"
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="h-[80vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
           >
             <div class="text-center text-content-secondary">
               <i class="fas fa-file-alt text-6xl mb-4"></i>
