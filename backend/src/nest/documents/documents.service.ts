@@ -270,7 +270,7 @@ export class DocumentsService {
     this.logger.debug(`Getting document ${documentId} for tenant ${tenantId}`);
 
     const documents = await this.databaseService.query<DbDocument>(
-      `SELECT d.*, u.username as uploaded_by_name
+      `SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name
        FROM documents d
        LEFT JOIN users u ON d.created_by = u.id
        WHERE d.id = $1 AND d.tenant_id = $2`,
@@ -312,7 +312,7 @@ export class DocumentsService {
     this.logger.debug(`Getting document by fileUuid ${fileUuid}`);
 
     const documents = await this.databaseService.query<DbDocument>(
-      `SELECT d.*, u.username as uploaded_by_name
+      `SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name
        FROM documents d
        LEFT JOIN users u ON d.created_by = u.id
        WHERE d.file_uuid = $1 AND d.tenant_id = $2`,

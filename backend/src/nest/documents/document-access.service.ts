@@ -95,7 +95,7 @@ export class DocumentAccessService {
     userId: number,
   ): { baseQuery: string; params: unknown[]; paramIndex: number } {
     let baseQuery = `
-      SELECT d.*, u.username as uploaded_by_name
+      SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name
       FROM documents d
       LEFT JOIN users u ON d.created_by = u.id
       WHERE d.tenant_id = $1 AND d.is_active = $2
