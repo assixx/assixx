@@ -1,23 +1,35 @@
 /**
- * Documents Service
+ * Documents Service (Facade)
  *
- * Native NestJS implementation for document management.
- * No Express dependencies - uses DatabaseService directly.
+ * Orchestrates document CRUD operations by delegating to sub-services:
+ * - DocumentAccessService: access control, query building, read status
+ * - DocumentStorageService: file I/O, content resolution
+ * - DocumentNotificationService: upload notifications
+ *
+ * Pure functions live in documents.helpers.ts.
  */
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import fs from 'fs/promises';
-import path from 'path';
 
 import { eventBus } from '../../utils/eventBus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
+import { DocumentAccessService } from './document-access.service.js';
+import { DocumentNotificationService } from './document-notification.service.js';
+import { DocumentStorageService } from './document-storage.service.js';
+import {
+  buildDocumentFilters,
+  buildDocumentUpdateClause,
+  enrichDocument,
+  getDocumentRow,
+  getDocumentsCount,
+  insertDocumentRecord,
+  validateDocumentInput,
+} from './documents.helpers.js';
 import type { ListDocumentsQueryDto } from './dto/query-documents.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 
@@ -154,7 +166,7 @@ export interface DocumentCreateInput {
 /**
  * Document filters
  */
-interface DocumentFilters {
+export interface DocumentFilters {
   category?: string | undefined;
   accessScope?: string | undefined;
   ownerUserId?: number | undefined;
@@ -173,30 +185,7 @@ interface DocumentFilters {
 // ============================================
 
 const ERROR_DOCUMENT_NOT_FOUND = 'Document not found';
-
-const ALLOWED_CATEGORIES = [
-  'general',
-  'contract',
-  'certificate',
-  'payroll',
-  'training',
-  'other',
-  'blackboard',
-  'chat',
-];
-
 const ERROR_USER_NOT_FOUND = 'User not found';
-
-const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-];
 
 // ============================================
 // Service
@@ -208,7 +197,9 @@ export class DocumentsService {
 
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly notificationsService: NotificationsService,
+    private readonly accessService: DocumentAccessService,
+    private readonly storageService: DocumentStorageService,
+    private readonly notificationService: DocumentNotificationService,
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
@@ -216,9 +207,7 @@ export class DocumentsService {
   // Public Methods
   // ============================================
 
-  /**
-   * List documents with filters and pagination
-   */
+  /** List documents with filters and pagination */
   async listDocuments(
     tenantId: number,
     userId: number,
@@ -234,16 +223,21 @@ export class DocumentsService {
       throw new NotFoundException(ERROR_USER_NOT_FOUND);
     }
     const isAdmin = user.role === 'admin' || user.role === 'root';
-    const filters = this.buildDocumentFilters(query, isActive);
+    const filters = buildDocumentFilters(query, isActive);
 
-    const { baseQuery, params, paramIndex } = this.buildDocumentQuery(
-      tenantId,
-      isActive,
-      filters,
-      isAdmin,
-      userId,
+    const { baseQuery, params, paramIndex } =
+      this.accessService.buildDocumentQuery(
+        tenantId,
+        isActive,
+        filters,
+        isAdmin,
+        userId,
+      );
+    const total = await getDocumentsCount(
+      this.databaseService,
+      baseQuery,
+      params,
     );
-    const total = await this.getDocumentsCount(baseQuery, params);
 
     const paginatedQuery = `${baseQuery} ORDER BY d.uploaded_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     const documents = await this.databaseService.query<DbDocument>(
@@ -251,9 +245,14 @@ export class DocumentsService {
       [...params, limit, offset],
     );
     const apiDocuments = await Promise.all(
-      documents.map((doc: DbDocument) =>
-        this.enrichDocument(doc, userId, tenantId),
-      ),
+      documents.map(async (doc: DbDocument) => {
+        const isRead = await this.accessService.isDocumentRead(
+          doc.id,
+          userId,
+          tenantId,
+        );
+        return enrichDocument(doc, isRead);
+      }),
     );
 
     return {
@@ -262,128 +261,7 @@ export class DocumentsService {
     };
   }
 
-  /** Build document filters from query parameters */
-  private buildDocumentFilters(
-    query: ListDocumentsQueryDto,
-    isActive: number,
-  ): DocumentFilters {
-    return {
-      isActive,
-      category: query.category,
-      accessScope: query.accessScope,
-      ownerUserId: query.ownerUserId,
-      targetTeamId: query.targetTeamId,
-      targetDepartmentId: query.targetDepartmentId,
-      salaryYear: query.salaryYear,
-      salaryMonth: query.salaryMonth,
-      blackboardEntryId: query.blackboardEntryId,
-      conversationId: query.conversationId,
-      search: query.search,
-    };
-  }
-
-  /** Build document query with filters and access control */
-  private buildDocumentQuery(
-    tenantId: number,
-    isActive: number,
-    filters: DocumentFilters,
-    isAdmin: boolean,
-    userId: number,
-  ): { baseQuery: string; params: unknown[]; paramIndex: number } {
-    let baseQuery = `
-      SELECT d.*, u.username as uploaded_by_name
-      FROM documents d
-      LEFT JOIN users u ON d.created_by = u.id
-      WHERE d.tenant_id = $1 AND d.is_active = $2
-    `;
-    const params: unknown[] = [tenantId, isActive];
-    let paramIndex = 3;
-
-    const filterResult = this.applyDocumentFilters(
-      baseQuery,
-      params,
-      paramIndex,
-      filters,
-    );
-    baseQuery = filterResult.baseQuery;
-    paramIndex = filterResult.paramIndex;
-
-    if (!isAdmin) {
-      baseQuery += ` AND (
-        d.access_scope = 'company' OR
-        (d.access_scope = 'personal' AND d.owner_user_id = $${paramIndex}) OR
-        (d.access_scope = 'payroll' AND d.owner_user_id = $${paramIndex})
-      )`;
-      params.push(userId);
-      paramIndex++;
-    }
-
-    return { baseQuery, params, paramIndex };
-  }
-
-  /** Apply document filters to query */
-  private applyDocumentFilters(
-    baseQuery: string,
-    params: unknown[],
-    paramIndex: number,
-    filters: DocumentFilters,
-  ): { baseQuery: string; paramIndex: number } {
-    let query = baseQuery;
-    let idx = paramIndex;
-
-    if (filters.category !== undefined) {
-      query += ` AND d.category = $${idx}`;
-      params.push(filters.category);
-      idx++;
-    }
-    if (filters.accessScope !== undefined) {
-      query += ` AND d.access_scope = $${idx}`;
-      params.push(filters.accessScope);
-      idx++;
-    }
-    if (filters.ownerUserId !== undefined) {
-      query += ` AND d.owner_user_id = $${idx}`;
-      params.push(filters.ownerUserId);
-      idx++;
-    }
-    if (filters.blackboardEntryId !== undefined) {
-      query += ` AND d.blackboard_entry_id = $${idx}`;
-      params.push(filters.blackboardEntryId);
-      idx++;
-    }
-    if (filters.conversationId !== undefined) {
-      query += ` AND d.conversation_id = $${idx}`;
-      params.push(filters.conversationId);
-      idx++;
-    }
-    if (filters.search !== undefined && filters.search !== '') {
-      query += ` AND (d.filename ILIKE $${idx} OR d.original_name ILIKE $${idx} OR d.description ILIKE $${idx})`;
-      params.push(`%${filters.search}%`);
-      idx++;
-    }
-
-    return { baseQuery: query, paramIndex: idx };
-  }
-
-  /** Get total count of documents matching query */
-  private async getDocumentsCount(
-    baseQuery: string,
-    params: unknown[],
-  ): Promise<number> {
-    const countQuery = baseQuery.replace(
-      'SELECT d.*, u.username as uploaded_by_name',
-      'SELECT COUNT(*) as count',
-    );
-    const countResult = await this.databaseService.query<{ count: string }>(
-      countQuery,
-      params,
-    );
-    return Number.parseInt(countResult[0]?.count ?? '0', 10);
-  }
-
-  /**
-   * Get document by ID
-   */
+  /** Get document by ID */
   async getDocumentById(
     documentId: number,
     tenantId: number,
@@ -405,7 +283,7 @@ export class DocumentsService {
     }
 
     // Check access
-    const hasAccess = await this.checkDocumentAccess(
+    const hasAccess = await this.accessService.checkDocumentAccess(
       document,
       userId,
       tenantId,
@@ -417,12 +295,15 @@ export class DocumentsService {
     // Mark as read
     await this.markDocumentAsRead(documentId, tenantId, userId);
 
-    return await this.enrichDocument(document, userId, tenantId);
+    const isRead = await this.accessService.isDocumentRead(
+      documentId,
+      userId,
+      tenantId,
+    );
+    return enrichDocument(document, isRead);
   }
 
-  /**
-   * Get document by file UUID
-   */
+  /** Get document by file UUID */
   async getDocumentByFileUuid(
     fileUuid: string,
     tenantId: number,
@@ -444,7 +325,7 @@ export class DocumentsService {
     }
 
     // Check access
-    const hasAccess = await this.checkDocumentAccess(
+    const hasAccess = await this.accessService.checkDocumentAccess(
       document,
       userId,
       tenantId,
@@ -453,12 +334,15 @@ export class DocumentsService {
       return null;
     }
 
-    return await this.enrichDocument(document, userId, tenantId);
+    const isRead = await this.accessService.isDocumentRead(
+      document.id,
+      userId,
+      tenantId,
+    );
+    return enrichDocument(document, isRead);
   }
 
-  /**
-   * Update document metadata
-   */
+  /** Update document metadata */
   async updateDocument(
     documentId: number,
     dto: UpdateDocumentDto,
@@ -467,7 +351,11 @@ export class DocumentsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Updating document ${documentId}`);
 
-    const document = await this.getDocumentRow(documentId, tenantId);
+    const document = await getDocumentRow(
+      this.databaseService,
+      documentId,
+      tenantId,
+    );
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
@@ -486,7 +374,7 @@ export class DocumentsService {
     }
 
     // Build and execute update
-    const { updates, params, paramIndex } = this.buildDocumentUpdateClause(dto);
+    const { updates, params, paramIndex } = buildDocumentUpdateClause(dto);
     params.push(documentId, tenantId);
     await this.databaseService.query(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
@@ -515,9 +403,7 @@ export class DocumentsService {
     return { message: 'Document updated successfully' };
   }
 
-  /**
-   * Delete a document (soft delete)
-   */
+  /** Delete a document (soft delete) */
   async deleteDocument(
     documentId: number,
     tenantId: number,
@@ -525,7 +411,11 @@ export class DocumentsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting document ${documentId}`);
 
-    const document = await this.getDocumentRow(documentId, tenantId);
+    const document = await getDocumentRow(
+      this.databaseService,
+      documentId,
+      tenantId,
+    );
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
@@ -563,9 +453,7 @@ export class DocumentsService {
     return { message: 'Document deleted successfully' };
   }
 
-  /**
-   * Archive a document
-   */
+  /** Archive a document */
   async archiveDocument(
     documentId: number,
     tenantId: number,
@@ -589,9 +477,7 @@ export class DocumentsService {
     return { message: 'Document archived successfully' };
   }
 
-  /**
-   * Unarchive a document
-   */
+  /** Unarchive a document */
   async unarchiveDocument(
     documentId: number,
     tenantId: number,
@@ -617,9 +503,7 @@ export class DocumentsService {
     return { message: 'Document unarchived successfully' };
   }
 
-  /**
-   * Get document content for download
-   */
+  /** Get document content for download */
   async getDocumentContent(
     documentId: number,
     tenantId: number,
@@ -627,12 +511,16 @@ export class DocumentsService {
   ): Promise<DocumentContentResponse> {
     this.logger.debug(`Getting document content ${documentId}`);
 
-    const document = await this.getDocumentRow(documentId, tenantId);
+    const document = await getDocumentRow(
+      this.databaseService,
+      documentId,
+      tenantId,
+    );
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
-    const hasAccess = await this.checkDocumentAccess(
+    const hasAccess = await this.accessService.checkDocumentAccess(
       document,
       userId,
       tenantId,
@@ -641,26 +529,10 @@ export class DocumentsService {
       throw new ForbiddenException("You don't have access to this document");
     }
 
-    // Increment download count
-    await this.databaseService.query(
-      `UPDATE documents SET download_count = download_count + 1 WHERE id = $1 AND tenant_id = $2`,
-      [documentId, tenantId],
-    );
-
-    // Get content
-    const content = await this.resolveFileContent(document);
-
-    return {
-      content,
-      originalName: document.original_name ?? document.filename,
-      mimeType: document.mime_type ?? 'application/octet-stream',
-      fileSize: document.file_size ?? 0,
-    };
+    return await this.storageService.getDocumentContent(document);
   }
 
-  /**
-   * Mark document as read
-   */
+  /** Mark document as read */
   async markDocumentAsRead(
     documentId: number,
     tenantId: number,
@@ -679,28 +551,7 @@ export class DocumentsService {
   // UUID-based methods (for API consistency)
   // ============================================
 
-  /**
-   * Resolve document ID from UUID
-   * @throws NotFoundException if document not found
-   */
-  private async resolveDocumentIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM documents WHERE uuid = $1 AND tenant_id = $2`,
-      [uuid, tenantId],
-    );
-    const doc = result[0];
-    if (doc === undefined) {
-      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
-    }
-    return doc.id;
-  }
-
-  /**
-   * Get document by UUID
-   */
+  /** Get document by UUID */
   async getDocumentByUuid(
     uuid: string,
     tenantId: number,
@@ -710,9 +561,7 @@ export class DocumentsService {
     return await this.getDocumentById(documentId, tenantId, userId);
   }
 
-  /**
-   * Update document by UUID
-   */
+  /** Update document by UUID */
   async updateDocumentByUuid(
     uuid: string,
     dto: UpdateDocumentDto,
@@ -723,9 +572,7 @@ export class DocumentsService {
     return await this.updateDocument(documentId, dto, tenantId, userId);
   }
 
-  /**
-   * Delete document by UUID
-   */
+  /** Delete document by UUID */
   async deleteDocumentByUuid(
     uuid: string,
     tenantId: number,
@@ -735,9 +582,7 @@ export class DocumentsService {
     return await this.deleteDocument(documentId, tenantId, userId);
   }
 
-  /**
-   * Archive document by UUID
-   */
+  /** Archive document by UUID */
   async archiveDocumentByUuid(
     uuid: string,
     tenantId: number,
@@ -747,9 +592,7 @@ export class DocumentsService {
     return await this.archiveDocument(documentId, tenantId, userId);
   }
 
-  /**
-   * Unarchive document by UUID
-   */
+  /** Unarchive document by UUID */
   async unarchiveDocumentByUuid(
     uuid: string,
     tenantId: number,
@@ -759,9 +602,7 @@ export class DocumentsService {
     return await this.unarchiveDocument(documentId, tenantId, userId);
   }
 
-  /**
-   * Get document content by UUID
-   */
+  /** Get document content by UUID */
   async getDocumentContentByUuid(
     uuid: string,
     tenantId: number,
@@ -771,9 +612,7 @@ export class DocumentsService {
     return await this.getDocumentContent(documentId, tenantId, userId);
   }
 
-  /**
-   * Mark document as read by UUID
-   */
+  /** Mark document as read by UUID */
   async markDocumentAsReadByUuid(
     uuid: string,
     tenantId: number,
@@ -783,9 +622,7 @@ export class DocumentsService {
     return await this.markDocumentAsRead(documentId, tenantId, userId);
   }
 
-  /**
-   * Get document statistics
-   */
+  /** Get document statistics */
   async getDocumentStats(
     tenantId: number,
     userId: number,
@@ -838,8 +675,8 @@ export class DocumentsService {
   }
 
   /**
-   * Get count of unread documents for notification badge
-   * Applies the same access_scope filter as listDocuments to ensure consistency
+   * Get count of unread documents for notification badge.
+   * Applies the same access_scope filter as listDocuments to ensure consistency.
    */
   async getUnreadCount(
     tenantId: number,
@@ -859,7 +696,7 @@ export class DocumentsService {
     `;
     const params: unknown[] = [tenantId, userId];
 
-    // Apply access scope filter for non-admin users (same logic as buildDocumentsBaseQuery)
+    // Apply access scope filter for non-admin users (same logic as buildDocumentQuery)
     if (!isAdmin) {
       query += ` AND (
         d.access_scope = 'company' OR
@@ -878,9 +715,7 @@ export class DocumentsService {
     return { count };
   }
 
-  /**
-   * Get chat folders for document explorer
-   */
+  /** Get chat folders for document explorer */
   async getChatFolders(
     tenantId: number,
     userId: number,
@@ -910,22 +745,28 @@ export class DocumentsService {
     return { folders, total: folders.length };
   }
 
-  /**
-   * Create a new document
-   */
+  /** Create a new document */
   async createDocument(
     data: DocumentCreateInput,
     userId: number,
     tenantId: number,
   ): Promise<DocumentResponse> {
     this.logger.log(`Creating document for tenant ${tenantId}`);
-    this.validateDocumentInput(data);
+    validateDocumentInput(data);
 
     if (data.storageType === 'filesystem' && data.filePath !== undefined) {
-      await this.writeFileToDisk(data.filePath, data.fileContent);
+      await this.storageService.writeFileToDisk(
+        data.filePath,
+        data.fileContent,
+      );
     }
 
-    const documentId = await this.insertDocumentRecord(data, userId, tenantId);
+    const documentId = await insertDocumentRecord(
+      this.databaseService,
+      data,
+      userId,
+      tenantId,
+    );
     const createdDocument = await this.getDocumentById(
       documentId,
       tenantId,
@@ -939,19 +780,12 @@ export class DocumentsService {
     });
 
     // Create persistent notification for ADR-004
-    const recipientMapping = this.mapAccessScopeToRecipient(data);
-    if (recipientMapping !== null) {
-      void this.notificationsService.createFeatureNotification(
-        'document',
-        documentId,
-        `Neues Dokument: ${data.originalName}`,
-        `Kategorie: ${data.category}`,
-        recipientMapping.type,
-        recipientMapping.id,
-        tenantId,
-        userId,
-      );
-    }
+    this.notificationService.createUploadNotification(
+      data,
+      documentId,
+      tenantId,
+      userId,
+    );
 
     // Log activity to root_logs
     await this.activityLogger.logCreate(
@@ -970,134 +804,32 @@ export class DocumentsService {
     return createdDocument;
   }
 
+  // ============================================
+  // Private Helpers
+  // ============================================
+
   /**
-   * Map document access scope to notification recipient
-   * Returns null for scopes that don't need notifications (payroll, blackboard, chat)
+   * Resolve document ID from UUID.
+   * @throws NotFoundException if document not found
    */
-  private mapAccessScopeToRecipient(data: DocumentCreateInput): {
-    type: 'user' | 'department' | 'team' | 'all';
-    id: number | null;
-  } | null {
-    switch (data.accessScope) {
-      case 'personal':
-        return data.ownerUserId !== undefined ?
-            { type: 'user', id: data.ownerUserId }
-          : null;
-      case 'team':
-        return data.targetTeamId !== undefined ?
-            { type: 'team', id: data.targetTeamId }
-          : null;
-      case 'department':
-        return data.targetDepartmentId !== undefined ?
-            { type: 'department', id: data.targetDepartmentId }
-          : null;
-      case 'company':
-        return { type: 'all', id: null };
-      default:
-        // payroll, blackboard, chat have their own notification mechanisms
-        return null;
-    }
-  }
-
-  /** Validate document input data */
-  private validateDocumentInput(data: DocumentCreateInput): void {
-    if (!ALLOWED_CATEGORIES.includes(data.category)) {
-      throw new BadRequestException('Invalid document category');
-    }
-    if (!ALLOWED_MIME_TYPES.includes(data.mimeType)) {
-      throw new BadRequestException('File type not allowed');
-    }
-  }
-
-  /** Insert document record and return its ID */
-  private async insertDocumentRecord(
-    data: DocumentCreateInput,
-    userId: number,
+  private async resolveDocumentIdByUuid(
+    uuid: string,
     tenantId: number,
   ): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO documents (
-        uuid, tenant_id, filename, original_name, file_size, mime_type, category,
-        access_scope, owner_user_id, target_team_id, target_department_id,
-        description, salary_year, salary_month, blackboard_entry_id, conversation_id,
-        tags, created_by, file_uuid, file_checksum, file_path, storage_type, is_active
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, 1
-      ) RETURNING id`,
-      [
-        data.fileUuid,
-        tenantId,
-        data.filename,
-        data.originalName,
-        data.fileSize,
-        data.mimeType,
-        data.category,
-        data.accessScope,
-        data.ownerUserId ??
-          (data.accessScope === 'personal' || data.accessScope === 'payroll' ?
-            userId
-          : null),
-        data.targetTeamId ?? null,
-        data.targetDepartmentId ?? null,
-        data.description ?? null,
-        data.salaryYear ?? null,
-        data.salaryMonth ?? null,
-        data.blackboardEntryId ?? null,
-        data.conversationId ?? null,
-        data.tags !== undefined ? JSON.stringify(data.tags) : null,
-        userId,
-        data.fileUuid ?? null,
-        data.fileChecksum ?? null,
-        data.filePath ?? null,
-        data.storageType ?? 'filesystem',
-      ],
+      `SELECT id FROM documents WHERE uuid = $1 AND tenant_id = $2`,
+      [uuid, tenantId],
     );
-
-    const documentId = result[0]?.id;
-    if (documentId === undefined) {
-      throw new Error('Failed to create document');
+    const doc = result[0];
+    if (doc === undefined) {
+      throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
-    return documentId;
-  }
-
-  // ============================================
-  // Private Helper Methods
-  // ============================================
-
-  /** Build document update clause from DTO */
-  private buildDocumentUpdateClause(dto: UpdateDocumentDto): {
-    updates: string[];
-    params: unknown[];
-    paramIndex: number;
-  } {
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (dto.filename !== undefined) {
-      updates.push(`filename = $${paramIndex++}`);
-      params.push(dto.filename);
-    }
-    if (dto.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      params.push(dto.category);
-    }
-    if (dto.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      params.push(dto.description);
-    }
-    if (dto.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      params.push(JSON.stringify(dto.tags));
-    }
-
-    return { updates, params, paramIndex };
+    return doc.id;
   }
 
   /**
-   * Get user by ID
-   * SECURITY: Only returns data for ACTIVE users (is_active = 1)
+   * Get user by ID.
+   * SECURITY: Only returns data for ACTIVE users (is_active = 1).
    */
   private async getUserById(
     userId: number,
@@ -1108,231 +840,5 @@ export class DocumentsService {
       [userId, tenantId],
     );
     return rows[0] ?? null;
-  }
-
-  /**
-   * Get document row by ID
-   */
-  private async getDocumentRow(
-    documentId: number,
-    tenantId: number,
-  ): Promise<DbDocument | null> {
-    const rows = await this.databaseService.query<DbDocument>(
-      `SELECT * FROM documents WHERE id = $1 AND tenant_id = $2`,
-      [documentId, tenantId],
-    );
-    return rows[0] ?? null;
-  }
-
-  /**
-   * Check document access
-   */
-  private async checkDocumentAccess(
-    document: DbDocument,
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean> {
-    const user = await this.getUserById(userId, tenantId);
-    if (user === null) return false;
-
-    // Admins can access all
-    if (user.role === 'admin' || user.role === 'root') {
-      return true;
-    }
-
-    switch (document.access_scope) {
-      case 'personal':
-      case 'payroll':
-        return document.owner_user_id === userId;
-      case 'company':
-        return true;
-      case 'team':
-        // Simplified - would need team membership check
-        return true;
-      case 'department':
-        // Simplified - would need department membership check
-        return true;
-      case 'chat':
-        if (document.conversation_id === null) return false;
-        return await this.isConversationParticipant(
-          userId,
-          document.conversation_id,
-          tenantId,
-        );
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * Check if user is conversation participant
-   */
-  private async isConversationParticipant(
-    userId: number,
-    conversationId: number,
-    tenantId: number,
-  ): Promise<boolean> {
-    const rows = await this.databaseService.query<{ user_id: number }>(
-      `SELECT user_id FROM conversation_participants cp
-       JOIN conversations c ON cp.conversation_id = c.id
-       WHERE cp.conversation_id = $1 AND cp.user_id = $2 AND c.tenant_id = $3`,
-      [conversationId, userId, tenantId],
-    );
-    return rows.length > 0;
-  }
-
-  /**
-   * Check if document is read
-   */
-  private async isDocumentRead(
-    documentId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean> {
-    const rows = await this.databaseService.query<{ read_at: Date }>(
-      `SELECT read_at FROM document_read_status
-       WHERE document_id = $1 AND user_id = $2 AND tenant_id = $3`,
-      [documentId, userId, tenantId],
-    );
-    return rows.length > 0;
-  }
-
-  /**
-   * Parse tags from JSONB field
-   * Handles both already-parsed arrays and string fallback
-   */
-  private parseTags(tags: unknown): string[] {
-    if (tags === null || tags === undefined) {
-      return [];
-    }
-
-    // PostgreSQL JSONB returns already-parsed objects
-    if (Array.isArray(tags)) {
-      return tags.filter((t: unknown): t is string => typeof t === 'string');
-    }
-
-    // Fallback: if somehow it's a string, try to parse
-    if (typeof tags === 'string') {
-      try {
-        const parsed: unknown = JSON.parse(tags);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(
-            (t: unknown): t is string => typeof t === 'string',
-          );
-        }
-        return [];
-      } catch {
-        return [];
-      }
-    }
-
-    return [];
-  }
-
-  /**
-   * Enrich document with metadata
-   */
-  private async enrichDocument(
-    doc: DbDocument,
-    userId: number,
-    tenantId: number,
-  ): Promise<DocumentResponse> {
-    const isRead = await this.isDocumentRead(doc.id, userId, tenantId);
-    const tags = this.parseTags(doc.tags);
-
-    // Get extension from original_name for storedFilename construction
-    const extension =
-      doc.original_name !== null && doc.original_name !== '' ?
-        doc.original_name.substring(doc.original_name.lastIndexOf('.'))
-      : '';
-
-    return {
-      id: doc.id,
-      tenantId: doc.tenant_id,
-      filename: doc.filename, // Display name (custom or original)
-      storedFilename:
-        doc.file_uuid !== null && doc.file_uuid !== '' ?
-          `${doc.file_uuid}${extension}`
-        : doc.filename,
-      originalName: doc.original_name,
-      fileSize: doc.file_size,
-      mimeType: doc.mime_type,
-      category: doc.category,
-      accessScope: doc.access_scope,
-      ownerUserId: doc.owner_user_id,
-      targetTeamId: doc.target_team_id,
-      targetDepartmentId: doc.target_department_id,
-      description: doc.description,
-      salaryYear: doc.salary_year,
-      salaryMonth: doc.salary_month,
-      blackboardEntryId: doc.blackboard_entry_id,
-      conversationId: doc.conversation_id,
-      tags,
-      isActive: doc.is_active,
-      createdBy: doc.created_by,
-      uploaderName: doc.uploaded_by_name ?? 'Unknown',
-      createdAt: doc.created_at,
-      updatedAt: doc.updated_at,
-      fileUuid: doc.file_uuid,
-      downloadCount: doc.download_count,
-      isRead,
-      downloadUrl: `/api/v2/documents/${doc.id}/download`,
-      previewUrl: `/api/v2/documents/${doc.id}/preview`,
-    };
-  }
-
-  /**
-   * Resolve file content
-   */
-  private async resolveFileContent(document: DbDocument): Promise<Buffer> {
-    if (document.file_content !== null) {
-      return document.file_content;
-    }
-    if (document.file_path !== null) {
-      return await this.readFileFromDisk(document.file_path);
-    }
-    throw new NotFoundException('Document has no content or file path');
-  }
-
-  /**
-   * Write file to disk
-   */
-  private async writeFileToDisk(
-    filePath: string,
-    content: Buffer,
-  ): Promise<void> {
-    const baseDir = process.cwd();
-    const absolutePath = path.join(baseDir, filePath);
-
-    // Security: Validate path
-    if (!absolutePath.startsWith(baseDir)) {
-      throw new BadRequestException('Invalid file path');
-    }
-
-    const directory = path.dirname(absolutePath);
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
-    await fs.mkdir(directory, { recursive: true });
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
-    await fs.writeFile(absolutePath, content);
-  }
-
-  /**
-   * Read file from disk
-   */
-  private async readFileFromDisk(filePath: string): Promise<Buffer> {
-    const baseDir = process.cwd();
-    const absolutePath = path.join(baseDir, filePath);
-
-    // Security: Validate path
-    if (!absolutePath.startsWith(baseDir)) {
-      throw new ForbiddenException('Invalid file path');
-    }
-
-    try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
-      return await fs.readFile(absolutePath);
-    } catch {
-      throw new NotFoundException('Document file not found');
-    }
   }
 }
