@@ -89,7 +89,7 @@ graph TB
     subgraph Backend
         ZS[Zod Schema]
         BC[BCrypt Hashing]
-        DB[(MySQL Database)]
+        DB[(PostgreSQL Database)]
     end
 
     UI --> RT
@@ -424,7 +424,7 @@ try {
 
 ## Database Schema
 
-### MySQL Table Structure
+### PostgreSQL Table Structure
 
 ```sql
 -- Users table (root_users, admins, users)

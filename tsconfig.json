@@ -29,8 +29,6 @@
   // ============================================================
   "exclude": [
     "node_modules",
-    "node_modules_old_backup",
-    "**/node_modules_old_backup",
     "dist",
     "build",
     "backend/dist",
@@ -46,7 +44,6 @@
     "frontend/public",
     "backend/src/database/migrations/**/*.js",
     "database/**/*.js",
-    "backend/src/server-old.js",
     "backend/src/__tests__",
     "backend/**/*.test.ts",
     "backend/**/*.spec.ts",
