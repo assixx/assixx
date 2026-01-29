@@ -1,7 +1,6 @@
 /**
  * Reports DTOs barrel export
  */
-export * from './attendance-report-query.dto.js';
 export * from './custom-report.dto.js';
 export * from './date-range-query.dto.js';
 export * from './employee-report-query.dto.js';

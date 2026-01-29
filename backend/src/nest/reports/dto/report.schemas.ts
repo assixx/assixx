@@ -9,18 +9,10 @@ export const DateSchema = z
 export const IdSchema = z.coerce.number().int().positive();
 
 export const ReportTypeSchema = z.enum(
-  [
-    'overview',
-    'employees',
-    'departments',
-    'shifts',
-    'kvp',
-    'attendance',
-    'compliance',
-  ],
+  ['overview', 'employees', 'departments', 'shifts', 'kvp'],
   { message: 'Invalid report type' },
 );
 
-export const ExportFormatSchema = z.enum(['pdf', 'excel', 'csv'], {
-  message: 'Format must be pdf, excel, or csv',
+export const ExportFormatSchema = z.enum(['csv'], {
+  message: 'Format must be csv',
 });
