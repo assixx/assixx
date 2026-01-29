@@ -491,8 +491,6 @@ export class ShiftsService {
     dto: CreateShiftDto,
     tenantId: number,
     userId: number,
-    _ipAddress?: string,
-    _userAgent?: string,
   ): Promise<ShiftResponse> {
     this.logger.debug(
       `Creating shift for tenant ${tenantId} by user ${userId}`,
@@ -556,8 +554,6 @@ export class ShiftsService {
     dto: UpdateShiftDto,
     tenantId: number,
     userId: number,
-    _ipAddress?: string,
-    _userAgent?: string,
   ): Promise<ShiftResponse> {
     this.logger.debug(`Updating shift ${id} for tenant ${tenantId}`);
 
@@ -625,8 +621,6 @@ export class ShiftsService {
     id: number,
     tenantId: number,
     userId: number,
-    _ipAddress?: string,
-    _userAgent?: string,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift ${id} for tenant ${tenantId}`);
 
@@ -1193,8 +1187,6 @@ export class ShiftsService {
     dto: CreateSwapRequestDto,
     tenantId: number,
     userId: number,
-    _ipAddress?: string,
-    _userAgent?: string,
   ): Promise<SwapRequestResponse> {
     this.logger.debug(`Creating swap request for tenant ${tenantId}`);
 
@@ -1237,8 +1229,6 @@ export class ShiftsService {
     dto: UpdateSwapRequestStatusDto,
     tenantId: number,
     userId: number,
-    _ipAddress?: string,
-    _userAgent?: string,
   ): Promise<{ message: string }> {
     this.logger.debug(
       `Updating swap request ${id} status for tenant ${tenantId}`,
