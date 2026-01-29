@@ -18,8 +18,12 @@ COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren (für pnpm workspace)
+COPY shared/package.json ./shared/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+
+# Shared source kopieren (inject-workspace-packages needs source at install time)
+COPY shared/ ./shared/
 
 # Dependencies installieren
 RUN pnpm install --frozen-lockfile
@@ -66,8 +70,12 @@ COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren
+COPY shared/package.json ./shared/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+
+# Shared source kopieren (needed at runtime by tsx for @assixx/shared imports)
+COPY --from=builder --chown=nodejs:nodejs /app/shared ./shared
 
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune

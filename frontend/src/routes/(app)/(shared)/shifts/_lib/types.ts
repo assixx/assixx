@@ -3,10 +3,12 @@
 // Based on: frontend/src/scripts/shifts/types.ts
 // =============================================================================
 
-/**
- * User roles
- */
-export type UserRole = 'root' | 'admin' | 'employee' | 'team_lead' | 'manager';
+import type {
+  ExtendedUserRole as UserRole,
+  AvailabilityStatus,
+} from '@assixx/shared';
+
+export type { UserRole, AvailabilityStatus };
 
 /**
  * Shift types (frontend format)
@@ -17,17 +19,6 @@ export type ShiftType = 'early' | 'late' | 'night';
  * Shift types (API/DB format)
  */
 export type ShiftTypeAPI = 'F' | 'S' | 'N';
-
-/**
- * Availability status
- */
-export type AvailabilityStatus =
-  | 'available'
-  | 'vacation'
-  | 'sick'
-  | 'unavailable'
-  | 'training'
-  | 'other';
 
 /**
  * Rotation pattern types

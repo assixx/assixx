@@ -36,6 +36,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-012](./ADR-012-frontend-route-security-groups.md)   | Frontend Route Security Groups     | Accepted | 2026-01-26 |
 | [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)         | CI/CD Pipeline Hardening           | Accepted | 2026-01-26 |
 | [ADR-014](./ADR-014-database-migration-architecture.md)  | Database & Migration Architecture  | Accepted | 2026-01-27 |
+| [ADR-015](./ADR-015-shared-package-architecture.md)      | Shared Package Architecture & Plan | Accepted | 2026-01-30 |
 
 ## Template
 

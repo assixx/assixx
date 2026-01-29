@@ -41,6 +41,7 @@ export default [
       '*.min.js',
       '**/*.bak',
       'backend/dist/**',
+      'shared/dist/**',
       'backend/src/routes/v1/**',
       'backend/archive/**',
       'coverage/**',
@@ -82,7 +83,7 @@ export default [
   // PostgreSQL 17 + pg (Raw SQL) - Backend TypeScript Configuration
   // =============================================================================
   {
-    files: ['backend/**/*.ts', 'backend/**/*.tsx'],
+    files: ['backend/**/*.ts', 'backend/**/*.tsx', 'shared/**/*.ts'],
     ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
     languageOptions: {
       parser: tseslint.parser,

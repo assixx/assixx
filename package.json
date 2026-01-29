@@ -78,7 +78,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui --watch",
-    "type-check": "tsc --noEmit -p frontend && tsc --noEmit -p backend",
+    "type-check": "tsc --noEmit -p shared && tsc --noEmit -p frontend && tsc --noEmit -p backend",
     "type-check:prod": "sh scripts/check-types-prod.sh",
     "type-coverage": "pnpm exec type-coverage",
     "check": "tsc --noEmit -p frontend && tsc --noEmit -p backend",

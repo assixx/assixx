@@ -2,21 +2,13 @@
 // MANAGE ROOT - TYPE DEFINITIONS
 // =============================================================================
 
-/**
- * Status values for is_active field
- * 0 = inactive, 1 = active, 3 = archived, 4 = deleted (soft delete)
- */
-export type IsActiveStatus = 0 | 1 | 3 | 4;
+import type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+} from '@assixx/shared';
 
-/**
- * Form status (excludes deleted)
- */
-export type FormIsActiveStatus = 0 | 1 | 3;
-
-/**
- * Status filter options
- */
-export type StatusFilter = 'active' | 'inactive' | 'archived' | 'all';
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
 /**
  * Root User interface

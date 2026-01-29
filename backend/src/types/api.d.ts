@@ -1,16 +1,21 @@
 // API Request and Response Type Definitions
+//
+// Response types are now sourced from @assixx/shared.
+// Domain-specific request types remain here.
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-  errors?: {
-    field: string;
-    message: string;
-  }[];
-}
+// Re-export canonical response types from shared
+export type {
+  ApiResponse,
+  ApiSuccessResponse,
+  ApiErrorResponse,
+  ValidationError,
+  PaginationMeta,
+  ResponseMeta,
+} from '@assixx/shared';
 
+/**
+ * @deprecated Use ApiSuccessResponse with PaginationMeta instead
+ */
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
@@ -20,6 +25,18 @@ export interface PaginatedResponse<T> {
     total: number;
     totalPages: number;
   };
+}
+
+/**
+ * @deprecated Use ApiErrorResponse from \@assixx/shared instead
+ */
+export interface ErrorResponse {
+  success: false;
+  error: string;
+  message: string;
+  code?: string;
+  statusCode: number;
+  errors?: import('@assixx/shared').ValidationError[];
 }
 
 // Authentication Types
@@ -240,20 +257,4 @@ export interface SearchParams {
 export interface DateRangeParams {
   startDate?: string;
   endDate?: string;
-}
-
-// Error Types
-export interface ValidationError {
-  field: string;
-  message: string;
-  value?: unknown;
-}
-
-export interface ErrorResponse {
-  success: false;
-  error: string;
-  message: string;
-  code?: string;
-  statusCode: number;
-  errors?: ValidationError[];
 }
