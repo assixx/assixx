@@ -14,22 +14,22 @@ Multi-Tenant SaaS platform for industrial companies.
 | ---------- | ------- | ----------------------- |
 | Node.js    | 24.x    | Runtime                 |
 | TypeScript | 5.x     | Language                |
-| Express.js | 4.x     | Web framework           |
+| NestJS     | 11.x    | Web framework (Fastify) |
 | PostgreSQL | 17.x    | Database                |
 | Redis      | 7.x     | Sessions, rate limiting |
-| Socket.io  | 4.x     | WebSocket               |
+| WebSocket  | native  | Real-time communication |
 | Zod        | 3.x     | Validation              |
 | pnpm       | 10.x    | Package manager         |
 
 ### Frontend
 
-| Technology       | Version | Purpose    |
-| ---------------- | ------- | ---------- |
-| TypeScript       | 5.x     | Language   |
-| Vite             | 7.x     | Build tool |
-| Tailwind CSS     | 4.x     | Styling    |
-| FullCalendar     | 6.x     | Calendar   |
-| Socket.io Client | 4.x     | WebSocket  |
+| Technology   | Version | Purpose    |
+| ------------ | ------- | ---------- |
+| TypeScript   | 5.x     | Language   |
+| Vite         | 7.x     | Build tool |
+| Tailwind CSS | 4.x     | Styling    |
+| FullCalendar | 6.x     | Calendar   |
+| SvelteKit    | 5.x     | Framework  |
 
 ### Infrastructure
 
@@ -55,7 +55,7 @@ Multi-Tenant SaaS platform for industrial companies.
 ┌────────────────────────────┴────────────────────────────────┐
 │                    Backend (Node.js 24)                      │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │                  Express.js + TypeScript              │   │
+│  │              NestJS + Fastify + TypeScript              │   │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌────────┐ │   │
 │  │  │ Routes  │  │ Services│  │ Models  │  │  Zod   │ │   │
 │  │  │ /api/v2 │  │ (Logic) │  │ (Data)  │  │(Valid.)│ │   │
@@ -201,17 +201,16 @@ employee → Limited access (own data + shared)
 Assixx/
 ├── backend/
 │   └── src/
-│       ├── app.ts                 # Express setup
-│       ├── server.ts              # Entry point
-│       ├── websocket.ts           # Socket.io
+│       ├── nest/
+│       │   ├── main.ts            # NestJS entry point
+│       │   ├── app.module.ts      # Root module
+│       │   ├── common/            # Guards, decorators, pipes
+│       │   └── modules/           # Feature modules
+│       │       ├── auth/
+│       │       ├── users/
+│       │       ├── calendar/
+│       │       └── ...
 │       ├── config/                # DB, Redis config
-│       ├── middleware/            # Auth, RLS, security
-│       ├── routes/v2/             # API endpoints
-│       │   ├── auth/
-│       │   ├── users/
-│       │   ├── calendar/
-│       │   └── ...
-│       ├── models/                # Database models
 │       ├── services/              # Business logic
 │       ├── types/                 # TypeScript types
 │       └── utils/                 # Helpers

@@ -217,11 +217,11 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ### Phase 2: Pre-Production Security (Q3 2025)
 
 - [ ] **Encryption at Rest**
-  - [ ] MySQL Table Encryption aktivieren
-  - [ ] `ALTER DATABASE main ENCRYPTION='Y'`
+  - [ ] PostgreSQL Transparent Data Encryption (TDE) aktivieren
+  - [ ] pgcrypto Extension für Spalten-Verschlüsselung
   - [ ] Verschlüsselte Backups
 - [ ] **SSL/TLS für DB-Verbindungen**
-  - [ ] MySQL SSL Zertifikate
+  - [ ] PostgreSQL SSL Zertifikate
   - [ ] Erzwungene verschlüsselte Verbindungen
 - [ ] **Audit Logging**
   - [ ] Alle DB-Zugriffe protokollieren
