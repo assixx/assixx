@@ -78,7 +78,7 @@
    ======================================== */
 
 .sticky-note--yellow {
-  background: linear-gradient(135deg, #fff9c4, #ffe082);
+  background: linear-gradient(135deg, #fff6a5, #fcd35a);
 }
 
 .sticky-note--blue {
@@ -86,7 +86,7 @@
 }
 
 .sticky-note--green {
-  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+  background: linear-gradient(135deg, #bde9bf 0%, #8cdd8f 100%);
 }
 
 .sticky-note--red {
@@ -94,11 +94,11 @@
 }
 
 .sticky-note--orange {
-  background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
+  background: linear-gradient(135deg, #fbd397 0%, #ffaa2b 100%);
 }
 
 .sticky-note--pink {
-  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+  background: linear-gradient(135deg, #fce4ec 0%, #f894b7 100%);
 }
 
 /* ========================================
