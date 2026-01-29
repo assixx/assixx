@@ -237,3 +237,33 @@ export interface SuggestionFilters {
   limit: number | undefined;
   mineOnly: boolean | undefined;
 }
+
+// ============================================================================
+// INTERNAL TYPES (used by sub-services and helpers)
+// ============================================================================
+
+/** DB result interface for extended org info query */
+export interface DbExtendedOrgInfo {
+  has_full_access: boolean;
+  team_ids: number[];
+  department_ids: number[];
+  area_ids: number[];
+  team_lead_of: number[];
+  department_lead_of: number[];
+  area_lead_of: number[];
+  teams_department_ids: number[];
+  departments_area_ids: number[];
+}
+
+/** SQL placeholder strings for org-based visibility queries */
+export interface OrgPlaceholders {
+  teamIds: string;
+  teamLeadOf: string;
+  deptIds: string;
+  teamsDeptIds: string;
+  deptLeadOf: string;
+  areaIds: string;
+  deptsAreaIds: string;
+  areaLeadOf: string;
+  userId: string;
+}
