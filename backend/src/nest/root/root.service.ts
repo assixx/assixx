@@ -285,7 +285,7 @@ export interface DeletionDryRunReport {
   canProceed: boolean;
 }
 
-export interface CreateAdminRequest {
+interface CreateAdminRequest {
   email: string;
   password: string;
   firstName?: string | undefined;
@@ -295,7 +295,7 @@ export interface CreateAdminRequest {
   position?: string | undefined;
 }
 
-export interface UpdateAdminRequest {
+interface UpdateUserRequest {
   email?: string | undefined;
   password?: string | undefined;
   firstName?: string | undefined;
@@ -306,22 +306,11 @@ export interface UpdateAdminRequest {
   position?: string | undefined;
 }
 
-export interface CreateRootUserRequest {
+interface CreateRootUserRequest {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  position?: string | undefined;
-  notes?: string | undefined;
-  employeeNumber?: string | undefined;
-  isActive?: number | undefined;
-}
-
-export interface UpdateRootUserRequest {
-  firstName?: string | undefined;
-  lastName?: string | undefined;
-  email?: string | undefined;
-  password?: string | undefined;
   position?: string | undefined;
   notes?: string | undefined;
   employeeNumber?: string | undefined;
@@ -471,7 +460,7 @@ export class RootService {
    */
   async updateAdmin(
     id: number,
-    data: UpdateAdminRequest,
+    data: UpdateUserRequest,
     tenantId: number,
   ): Promise<void> {
     this.logger.log(`Updating admin ${id} for tenant ${tenantId}`);
@@ -485,12 +474,13 @@ export class RootService {
       });
     }
 
-    const { fields, values, nextIndex } = this.buildAdminUpdateFields(data);
+    const { fields, values, nextIndex } = this.buildUserUpdateFields(data);
+    let paramIndex = nextIndex;
 
     // Hash password if provided
     if (data.password !== undefined && data.password !== '') {
       const hashedPassword = await bcrypt.hash(data.password, 12);
-      fields.push(`password = $${nextIndex}`);
+      fields.push(`password = $${paramIndex++}`);
       values.push(hashedPassword);
     }
 
@@ -499,13 +489,12 @@ export class RootService {
     }
 
     fields.push('updated_at = NOW()');
+    const idParam = paramIndex++;
+    const tenantParam = paramIndex;
     values.push(id, tenantId);
 
-    const idIndex = values.length - 1;
-    const tenantIndex = values.length;
-
     await this.db.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idIndex} AND tenant_id = $${tenantIndex}`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idParam} AND tenant_id = $${tenantParam}`,
       values,
     );
   }
@@ -573,7 +562,8 @@ export class RootService {
     const params: unknown[] = [adminId];
 
     if (days !== undefined && days > 0) {
-      query += ` AND created_at >= NOW() - INTERVAL '${days} days'`;
+      params.push(days);
+      query += ` AND created_at >= NOW() - $${params.length} * INTERVAL '1 day'`;
     }
 
     query += ' ORDER BY created_at DESC';
@@ -701,55 +691,60 @@ export class RootService {
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
-    const userUuid = uuidv7();
-    const rows = await this.db.query<DbIdRow>(
-      `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, TRUE, $10, $11, NOW())
-       RETURNING id`,
-      [
-        normalizedEmail,
-        normalizedEmail,
-        hashedPassword,
-        data.firstName,
-        data.lastName,
-        data.position ?? null,
-        data.notes ?? null,
-        data.employeeNumber ?? null,
-        data.isActive ?? 1,
+    try {
+      const userUuid = uuidv7();
+      const rows = await this.db.query<DbIdRow>(
+        `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id, uuid, uuid_created_at)
+         VALUES ($1, $2, $3, $4, $5, 'root', $6, $7, $8, $9, TRUE, $10, $11, NOW())
+         RETURNING id`,
+        [
+          normalizedEmail,
+          normalizedEmail,
+          hashedPassword,
+          data.firstName,
+          data.lastName,
+          data.position ?? null,
+          data.notes ?? null,
+          data.employeeNumber ?? null,
+          data.isActive ?? 1,
+          tenantId,
+          userUuid,
+        ],
+      );
+
+      const userId = rows[0]?.id;
+      if (userId === undefined) {
+        throw new BadRequestException('Failed to create root user');
+      }
+
+      // Generate and update employee_id
+      const employeeId = generateEmployeeId(subdomain, 'root', userId);
+      await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
+        employeeId,
+        userId,
+      ]);
+
+      // Log activity
+      await this.activityLogger.logCreate(
         tenantId,
-        userUuid,
-      ],
-    );
+        actingUserId,
+        'user',
+        userId,
+        `Root-User erstellt: ${normalizedEmail} (Rolle: root)`,
+        {
+          email: normalizedEmail,
+          role: 'root',
+          firstName: data.firstName,
+          lastName: data.lastName,
+          hasFullAccess: true,
+        },
+      );
 
-    const userId = rows[0]?.id;
-    if (userId === undefined) {
-      throw new BadRequestException('Failed to create root user');
+      return userId;
+    } catch (error: unknown) {
+      this.handleDuplicateEntryError(error);
+      throw error;
     }
-
-    // Generate and update employee_id
-    const employeeId = generateEmployeeId(subdomain, 'root', userId);
-    await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
-      employeeId,
-      userId,
-    ]);
-
-    // Log activity
-    await this.activityLogger.logCreate(
-      tenantId,
-      actingUserId,
-      'user',
-      userId,
-      `Root-User erstellt: ${normalizedEmail} (Rolle: root)`,
-      {
-        email: normalizedEmail,
-        role: 'root',
-        firstName: data.firstName,
-        lastName: data.lastName,
-        hasFullAccess: true,
-      },
-    );
-
-    return userId;
   }
 
   /**
@@ -757,7 +752,7 @@ export class RootService {
    */
   async updateRootUser(
     id: number,
-    data: UpdateRootUserRequest,
+    data: UpdateUserRequest,
     tenantId: number,
   ): Promise<void> {
     this.logger.log(`Updating root user ${id} for tenant ${tenantId}`);
@@ -771,7 +766,7 @@ export class RootService {
       });
     }
 
-    const { fields, values, nextIndex } = this.buildRootUserUpdateFields(data);
+    const { fields, values, nextIndex } = this.buildUserUpdateFields(data);
     let paramIndex = nextIndex;
 
     // Hash password if provided
@@ -786,10 +781,12 @@ export class RootService {
     }
 
     fields.push('updated_at = NOW()');
-    values.push(id);
+    const idParam = paramIndex++;
+    const tenantParam = paramIndex;
+    values.push(id, tenantId);
 
     await this.db.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idParam} AND tenant_id = $${tenantParam}`,
       values,
     );
   }
@@ -1290,26 +1287,35 @@ export class RootService {
   }
 
   /**
+   * Type guard for PostgreSQL unique constraint violation (23505)
+   */
+  private isPgUniqueViolation(
+    error: unknown,
+  ): error is { code: string; message: string } {
+    if (typeof error !== 'object' || error === null) return false;
+    if (!('code' in error) || !('message' in error)) return false;
+    return (error as Record<string, unknown>)['code'] === '23505';
+  }
+
+  /**
    * Handle database duplicate entry errors
    */
   private handleDuplicateEntryError(error: unknown): void {
-    const dbError = error as { code?: string; message?: string };
-    if (dbError.code !== '23505') return; // PostgreSQL unique violation
+    if (!this.isPgUniqueViolation(error)) return;
 
-    const errorMessage = dbError.message ?? '';
-    if (errorMessage.includes('employee_number')) {
+    if (error.message.includes('employee_number')) {
       throw new ConflictException({
         code: ERROR_CODES.DUPLICATE_EMPLOYEE_NUMBER,
         message: 'Employee number already exists',
       });
     }
-    if (errorMessage.includes('email')) {
+    if (error.message.includes('email')) {
       throw new ConflictException({
         code: ERROR_CODES.DUPLICATE_EMAIL,
         message: 'Email already exists',
       });
     }
-    if (errorMessage.includes('username')) {
+    if (error.message.includes('username')) {
       throw new ConflictException({
         code: ERROR_CODES.DUPLICATE_USERNAME,
         message: 'Username already exists',
@@ -1318,9 +1324,9 @@ export class RootService {
   }
 
   /**
-   * Build admin update fields
+   * Build user update fields for dynamic UPDATE queries
    */
-  private buildAdminUpdateFields(data: UpdateAdminRequest): {
+  private buildUserUpdateFields(data: UpdateUserRequest): {
     fields: string[];
     values: unknown[];
     nextIndex: number;
@@ -1341,51 +1347,6 @@ export class RootService {
     if (data.lastName !== undefined) {
       fields.push(`last_name = $${paramIndex++}`);
       values.push(data.lastName);
-    }
-    if (data.notes !== undefined) {
-      fields.push(`notes = $${paramIndex++}`);
-      values.push(data.notes);
-    }
-    if (data.isActive !== undefined) {
-      fields.push(`is_active = $${paramIndex++}`);
-      values.push(data.isActive);
-    }
-    if (data.employeeNumber !== undefined) {
-      fields.push(`employee_number = $${paramIndex++}`);
-      values.push(data.employeeNumber);
-    }
-    if (data.position !== undefined) {
-      fields.push(`position = $${paramIndex++}`);
-      values.push(data.position);
-    }
-
-    return { fields, values, nextIndex: paramIndex };
-  }
-
-  /**
-   * Build root user update fields
-   */
-  private buildRootUserUpdateFields(data: UpdateRootUserRequest): {
-    fields: string[];
-    values: unknown[];
-    nextIndex: number;
-  } {
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
-
-    if (data.firstName !== undefined) {
-      fields.push(`first_name = $${paramIndex++}`);
-      values.push(data.firstName);
-    }
-    if (data.lastName !== undefined) {
-      fields.push(`last_name = $${paramIndex++}`);
-      values.push(data.lastName);
-    }
-    if (data.email !== undefined) {
-      const normalizedEmail = data.email.toLowerCase().trim();
-      fields.push(`email = $${paramIndex++}`, `username = $${paramIndex++}`);
-      values.push(normalizedEmail, normalizedEmail);
     }
     if (data.position !== undefined) {
       fields.push(`position = $${paramIndex++}`);
