@@ -5,7 +5,7 @@
  * Migrated from Express v2 to native NestJS with DatabaseService.
  *
  * Architecture:
- * - All metrics, overview, shift, kvp, employee, attendance, compliance, custom, and export
+ * - All metrics, overview, shift, kvp, employee, custom, and export
  *   reports consolidated into one service for maintainability.
  */
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
@@ -32,7 +32,6 @@ interface ReportFilters extends DateRangeFilter {
   tenantId: number;
   departmentId?: number | undefined;
   teamId?: number | undefined;
-  categoryId?: number | undefined;
 }
 
 /**
@@ -55,12 +54,12 @@ interface CustomReportParams {
 }
 
 /**
- * Parameters for report export
+ * Parameters for report export (CSV only)
  */
 interface ExportReportParams {
   tenantId: number;
   reportType: string;
-  format: 'pdf' | 'excel' | 'csv';
+  format: 'csv';
   filters: {
     dateFrom?: string | undefined;
     dateTo?: string | undefined;
@@ -93,8 +92,6 @@ interface DepartmentMetrics {
  */
 interface ShiftMetrics {
   totalScheduled: number;
-  overtimeHours: number;
-  coverageRate: number;
 }
 
 /**
@@ -112,26 +109,14 @@ interface KvpMetrics {
  */
 interface SurveyMetrics {
   totalSurveys: number;
-  completedSurveys: number;
   avgParticipation: number;
-  avgSatisfaction: number;
 }
 
 /**
- * Attendance metrics summary
+ * KVP participation rate for the given period
  */
-interface AttendanceMetrics {
-  avgRate: number;
-  absences: number;
-}
-
-/**
- * Performance metrics summary
- */
-interface PerformanceMetrics {
+interface KvpParticipationMetrics {
   kvpParticipation: number;
-  surveyCompletion: number;
-  overallScore: number;
 }
 
 /**
@@ -144,8 +129,6 @@ interface DepartmentPerformanceData {
     employees: number;
     teams: number;
     kvpSuggestions: number;
-    shiftCoverage: number;
-    avgOvertime: number;
   };
 }
 
@@ -170,8 +153,6 @@ interface DbMetricsRow {
   avg_per_department?: string | number;
   avg_employees?: string | number;
   total_scheduled?: string | number;
-  overtime_hours?: string | number;
-  coverage_rate?: string | number;
   total_suggestions?: string | number;
   implemented?: string | number;
   total_savings?: string | number;
@@ -182,9 +163,6 @@ interface DbMetricsRow {
   total_employees?: string | number;
   total_shifts?: string | number;
   total_required?: string | number;
-  total_filled?: string | number;
-  total_overtime_hours?: string | number;
-  total_overtime_cost?: string | number;
   total_cost?: string | number;
 }
 
@@ -194,10 +172,6 @@ interface DbDepartmentRow {
   employees?: string | number;
   teams?: string | number;
   kvp_suggestions?: string | number;
-  shift_coverage?: string | number;
-  avg_overtime?: string | number;
-  overtime_hours?: string | number;
-  overtime_cost?: string | number;
 }
 
 interface DbHeadcountRow {
@@ -223,7 +197,6 @@ interface DbKvpPerformerRow {
 interface DbShiftTypeRow {
   shift_type?: string;
   count?: string | number;
-  fill_rate?: string | number;
 }
 
 // ============================================================
@@ -285,13 +258,9 @@ export class ReportsService {
   // ============================================================
 
   /**
-   * Get employee metrics for the given period
+   * Get employee metrics (current snapshot, not date-filtered)
    */
-  private async getEmployeeMetrics(
-    tenantId: number,
-    _dateFrom: string,
-    _dateTo: string,
-  ): Promise<EmployeeMetrics> {
+  private async getEmployeeMetrics(tenantId: number): Promise<EmployeeMetrics> {
     const rows = await this.db.query<DbMetricsRow>(
       `
       SELECT
@@ -326,12 +295,10 @@ export class ReportsService {
   // ============================================================
 
   /**
-   * Get department metrics for the given period
+   * Get department metrics (current snapshot, not date-filtered)
    */
   private async getDepartmentMetrics(
     tenantId: number,
-    _dateFrom: string,
-    _dateTo: string,
   ): Promise<DepartmentMetrics> {
     const rows = await this.db.query<DbMetricsRow>(
       `
@@ -372,9 +339,7 @@ export class ReportsService {
     const rows = await this.db.query<DbMetricsRow>(
       `
       SELECT
-        COUNT(*) as total_scheduled,
-        0 as overtime_hours,
-        1 as coverage_rate
+        COUNT(*) as total_scheduled
       FROM shifts
       WHERE tenant_id = $1
         AND date BETWEEN $2 AND $3
@@ -385,8 +350,6 @@ export class ReportsService {
     const metrics = rows[0] ?? {};
     return {
       totalScheduled: this.parseIntOrZero(metrics.total_scheduled),
-      overtimeHours: this.parseFloatOrZero(metrics.overtime_hours),
-      coverageRate: this.parseFloatOrZero(metrics.coverage_rate),
     };
   }
 
@@ -465,46 +428,22 @@ export class ReportsService {
     const metrics = rows[0] ?? {};
     return {
       totalSurveys: this.parseIntOrZero(metrics.active_surveys),
-      completedSurveys: 0,
       avgParticipation: this.parseFloatOrZero(metrics.avg_response_rate),
-      avgSatisfaction: 0,
     };
   }
 
   // ============================================================
-  // ATTENDANCE METRICS (MOCK)
+  // KVP PARTICIPATION METRICS
   // ============================================================
 
   /**
-   * Get attendance metrics (mock implementation)
+   * Get KVP participation rate for the given period
    */
-  private getAttendanceMetricsData(
-    _tenantId: number,
-    _dateFrom: string,
-    _dateTo: string,
-    _departmentId?: number,
-    _teamId?: number,
-  ): AttendanceMetrics {
-    return {
-      avgRate: 0.92,
-      absences: Math.floor(Math.random() * 50) + 10,
-    };
-  }
-
-  // ============================================================
-  // PERFORMANCE METRICS
-  // ============================================================
-
-  /**
-   * Get performance metrics for the given period
-   */
-  private async getPerformanceMetrics(
+  private async getKvpParticipationMetrics(
     tenantId: number,
     dateFrom: string,
     dateTo: string,
-    _departmentId?: number,
-    _teamId?: number,
-  ): Promise<PerformanceMetrics> {
+  ): Promise<KvpParticipationMetrics> {
     // SECURITY: Only count ACTIVE employees (is_active = 1)
     const rows = await this.db.query<DbMetricsRow>(
       `
@@ -524,13 +463,7 @@ export class ReportsService {
         Number(kvpData.participants) / Number(kvpData.total_employees)
       : 0;
 
-    const avgShiftCompletion = 0.88 + Math.random() * 0.1;
-
-    return {
-      kvpParticipation,
-      surveyCompletion: 0,
-      overallScore: avgShiftCompletion,
-    };
+    return { kvpParticipation };
   }
 
   // ============================================================
@@ -557,8 +490,8 @@ export class ReportsService {
       kvpMetrics,
       surveyMetrics,
     ] = await Promise.all([
-      this.getEmployeeMetrics(tenantId, from, to),
-      this.getDepartmentMetrics(tenantId, from, to),
+      this.getEmployeeMetrics(tenantId),
+      this.getDepartmentMetrics(tenantId),
       this.getShiftMetrics(tenantId, from, to),
       this.getKvpMetrics(tenantId, from, to),
       this.getSurveyMetrics(tenantId, from, to),
@@ -579,7 +512,7 @@ export class ReportsService {
   // ============================================================
 
   /**
-   * Get detailed employee report with headcount, attendance, and performance
+   * Get detailed employee report with headcount and KVP participation
    */
   async getEmployeeReport(
     tenantId: number,
@@ -593,35 +526,23 @@ export class ReportsService {
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
 
-    const headcountTrend = await this.db.query<DbHeadcountRow>(
-      `
-      SELECT
-        DATE(created_at) as date,
-        COUNT(*) as count
-      FROM users
-      WHERE tenant_id = $1
-        AND role = 'employee'
-        AND created_at BETWEEN $2 AND $3
-      GROUP BY DATE(created_at)
-      ORDER BY date
-      `,
-      [tenantId, from, to],
-    );
-
-    const attendanceData = this.getAttendanceMetricsData(
-      tenantId,
-      from,
-      to,
-      departmentId,
-      teamId,
-    );
-    const performanceData = await this.getPerformanceMetrics(
-      tenantId,
-      from,
-      to,
-      departmentId,
-      teamId,
-    );
+    const [headcountTrend, kvpParticipation] = await Promise.all([
+      this.db.query<DbHeadcountRow>(
+        `
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*) as count
+        FROM users
+        WHERE tenant_id = $1
+          AND role = 'employee'
+          AND created_at BETWEEN $2 AND $3
+        GROUP BY DATE(created_at)
+        ORDER BY date
+        `,
+        [tenantId, from, to],
+      ),
+      this.getKvpParticipationMetrics(tenantId, from, to),
+    ]);
 
     return {
       period: { from, to },
@@ -631,8 +552,7 @@ export class ReportsService {
           fieldMapper.dbToApi(row as Record<string, unknown>),
         ),
       },
-      attendance: attendanceData,
-      performance: performanceData,
+      performance: kvpParticipation,
     };
   }
 
@@ -660,9 +580,7 @@ export class ReportsService {
         d.name as department_name,
         COUNT(DISTINCT ud.user_id) as employees,
         COUNT(DISTINCT t.id) as teams,
-        COUNT(DISTINCT k.id) as kvp_suggestions,
-        COALESCE(AVG(s.coverage_rate), 0) as shift_coverage,
-        0 as avg_overtime
+        COUNT(DISTINCT k.id) as kvp_suggestions
       FROM departments d
       LEFT JOIN user_departments ud ON ud.department_id = d.id AND ud.tenant_id = d.tenant_id
       LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = 1
@@ -670,21 +588,11 @@ export class ReportsService {
       LEFT JOIN kvp_suggestions k ON k.org_id = d.id
         AND k.org_level = 'department'
         AND k.created_at BETWEEN $1 AND $2
-      LEFT JOIN (
-        SELECT
-          department_id,
-          1 as coverage_rate,
-          0 as overtime_hours
-        FROM shifts
-        WHERE tenant_id = $3
-          AND date BETWEEN $4 AND $5
-        GROUP BY department_id
-      ) s ON s.department_id = d.id
-      WHERE d.tenant_id = $6
+      WHERE d.tenant_id = $3
       GROUP BY d.id, d.name
       ORDER BY d.name
       `,
-      [from, to, tenantId, from, to, tenantId],
+      [from, to, tenantId],
     );
 
     const result: DepartmentPerformanceData[] = rows.map(
@@ -695,8 +603,6 @@ export class ReportsService {
           employees: this.parseIntOrZero(dept.employees),
           teams: this.parseIntOrZero(dept.teams),
           kvpSuggestions: this.parseIntOrZero(dept.kvp_suggestions),
-          shiftCoverage: this.parseFloatOrZero(dept.shift_coverage),
-          avgOvertime: this.parseFloatOrZero(dept.avg_overtime),
         },
       }),
     );
@@ -739,7 +645,7 @@ export class ReportsService {
   }
 
   /**
-   * Get shift analytics report with coverage, overtime, and patterns
+   * Get shift analytics report with schedule and type breakdown
    */
   async getShiftReport(
     tenantId: number,
@@ -761,38 +667,18 @@ export class ReportsService {
       teamId,
     };
 
-    const summary = await this.getShiftSummary(filters);
-    const overtimeByDept = await this.getShiftOvertimeByDepartment(
-      tenantId,
-      from,
-      to,
-    );
-    const peakHours = await this.getShiftPeakHours(tenantId, from, to);
-
-    const totalShifts = this.parseIntOrZero(summary.total_shifts);
-    const totalFilled = this.parseIntOrZero(summary.total_filled);
+    const [summary, shiftsByType] = await Promise.all([
+      this.getShiftSummary(filters),
+      this.getShiftsByType(tenantId, from, to),
+    ]);
 
     return {
       period: { from, to },
-      totalShifts,
-      coverage: {
-        scheduled: this.parseIntOrZero(summary.total_required),
-        filled: totalFilled,
-        rate: this.parseFloatOrZero(summary.coverage_rate),
-      },
-      overtime: {
-        totalHours: this.parseFloatOrZero(summary.total_overtime_hours),
-        totalCost: this.parseFloatOrZero(summary.total_overtime_cost),
-        byDepartment: overtimeByDept.map((row: DbDepartmentRow) =>
-          fieldMapper.dbToApi(row as Record<string, unknown>),
-        ),
-      },
-      patterns: {
-        peakHours: peakHours.map((row: DbShiftTypeRow) =>
-          fieldMapper.dbToApi(row as Record<string, unknown>),
-        ),
-        understaffedShifts: totalShifts - totalFilled,
-      },
+      totalShifts: this.parseIntOrZero(summary.total_shifts),
+      totalRequired: this.parseIntOrZero(summary.total_required),
+      shiftsByType: shiftsByType.map((row: DbShiftTypeRow) =>
+        fieldMapper.dbToApi(row as Record<string, unknown>),
+      ),
     };
   }
 
@@ -805,11 +691,7 @@ export class ReportsService {
       `
       SELECT
         COUNT(*) as total_shifts,
-        SUM(required_employees) as total_required,
-        SUM(required_employees) as total_filled,
-        1 as coverage_rate,
-        0 as total_overtime_hours,
-        0 as total_overtime_cost
+        SUM(required_employees) as total_required
       FROM shifts s
       WHERE ${conditions.join(' AND ')}
       `,
@@ -819,36 +701,9 @@ export class ReportsService {
   }
 
   /**
-   * Get overtime hours grouped by department
+   * Get shift counts grouped by type
    */
-  private async getShiftOvertimeByDepartment(
-    tenantId: number,
-    from: string,
-    to: string,
-  ): Promise<DbDepartmentRow[]> {
-    return await this.db.query<DbDepartmentRow>(
-      `
-      SELECT
-        d.id as department_id,
-        d.name as department_name,
-        0 as overtime_hours,
-        0 as overtime_cost
-      FROM shifts s
-      JOIN departments d ON d.id = s.department_id
-      WHERE s.tenant_id = $1
-        AND s.date BETWEEN $2 AND $3
-      GROUP BY d.id, d.name
-      ORDER BY d.name DESC
-      LIMIT 10
-      `,
-      [tenantId, from, to],
-    );
-  }
-
-  /**
-   * Get peak hours analysis for shifts
-   */
-  private async getShiftPeakHours(
+  private async getShiftsByType(
     tenantId: number,
     from: string,
     to: string,
@@ -857,8 +712,7 @@ export class ReportsService {
       `
       SELECT
         type as shift_type,
-        COUNT(*) as count,
-        1 as fill_rate
+        COUNT(*) as count
       FROM shifts
       WHERE tenant_id = $1
         AND date BETWEEN $2 AND $3
@@ -1007,115 +861,6 @@ export class ReportsService {
   }
 
   // ============================================================
-  // ATTENDANCE REPORT (MOCK)
-  // ============================================================
-
-  /**
-   * Get attendance report with rate trends and absence tracking
-   */
-  getAttendanceReport(
-    tenantId: number,
-    dateFrom: string,
-    dateTo: string,
-    departmentId?: number,
-    teamId?: number,
-  ): unknown {
-    this.logger.debug(`Getting attendance report for tenant ${tenantId}`);
-
-    const avgAttendanceRate = 0.92;
-    const totalAbsences = Math.floor(Math.random() * 50) + 10;
-    const totalLateArrivals = Math.floor(Math.random() * 30) + 5;
-
-    const employees = [];
-    for (let i = 1; i <= 10; i++) {
-      employees.push({
-        userId: i,
-        name: `Employee ${i}`,
-        attendanceRate: 0.85 + Math.random() * 0.15,
-        absences: Math.floor(Math.random() * 5),
-        lateArrivals: Math.floor(Math.random() * 3),
-      });
-    }
-
-    const daily = [];
-    const startDate = new Date(dateFrom);
-    const endDate = new Date(dateTo);
-
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setDate(d.getDate() + 1)
-    ) {
-      const dateStr = d.toISOString().split('T')[0];
-      daily.push({
-        date: dateStr,
-        rate: 0.88 + Math.random() * 0.1,
-      });
-    }
-
-    return {
-      period: { from: dateFrom, to: dateTo },
-      filters: { departmentId, teamId },
-      summary: {
-        avgAttendanceRate,
-        totalAbsences,
-        totalLateArrivals,
-      },
-      byEmployee: employees,
-      trends: { daily },
-    };
-  }
-
-  // ============================================================
-  // COMPLIANCE REPORT (MOCK)
-  // ============================================================
-
-  /**
-   * Get compliance report with labor law violation tracking
-   */
-  getComplianceReport(
-    tenantId: number,
-    dateFrom: string,
-    dateTo: string,
-    departmentId?: number,
-  ): unknown {
-    this.logger.debug(`Getting compliance report for tenant ${tenantId}`);
-
-    const violations = {
-      total: Math.floor(Math.random() * 20) + 5,
-      byType: {
-        maxWorkingHours: Math.floor(Math.random() * 10),
-        missingBreaks: Math.floor(Math.random() * 8),
-        insufficientRest: Math.floor(Math.random() * 5),
-      },
-    };
-
-    const riskEmployees = [];
-    for (let i = 1; i <= 5; i++) {
-      const issues: string[] = [];
-      if (Math.random() > 0.5) issues.push('Exceeded max working hours');
-      if (Math.random() > 0.5) issues.push('Missing required breaks');
-      if (Math.random() > 0.5) issues.push('Insufficient rest period');
-
-      if (issues.length > 0) {
-        riskEmployees.push({
-          userId: i,
-          name: `Employee ${i}`,
-          violations: issues.length,
-          issues,
-        });
-      }
-    }
-
-    return {
-      period: { from: dateFrom, to: dateTo },
-      filters: { departmentId },
-      violations,
-      riskEmployees,
-    };
-  }
-
-  // ============================================================
   // CUSTOM REPORT
   // ============================================================
 
@@ -1131,11 +876,7 @@ export class ReportsService {
     for (const metric of params.metrics) {
       switch (metric) {
         case 'employees':
-          data['employees'] = await this.getEmployeeMetrics(
-            params.tenantId,
-            params.dateFrom,
-            params.dateTo,
-          );
+          data['employees'] = await this.getEmployeeMetrics(params.tenantId);
           break;
         case 'departments':
           data['departments'] = await this.getDepartmentReport(
@@ -1158,20 +899,6 @@ export class ReportsService {
             params.dateTo,
           );
           break;
-        case 'attendance':
-          data['attendance'] = this.getAttendanceMetricsData(
-            params.tenantId,
-            params.dateFrom,
-            params.dateTo,
-          );
-          break;
-        case 'compliance':
-          data['compliance'] = this.getComplianceReport(
-            params.tenantId,
-            params.dateFrom,
-            params.dateTo,
-          );
-          break;
       }
     }
 
@@ -1187,7 +914,7 @@ export class ReportsService {
   }
 
   // ============================================================
-  // EXPORT REPORT
+  // EXPORT REPORT (CSV)
   // ============================================================
 
   /**
@@ -1195,7 +922,7 @@ export class ReportsService {
    */
   private async getReportDataByType(
     params: ExportReportParams,
-  ): Promise<Record<string, unknown> | Buffer | unknown[]> {
+  ): Promise<Record<string, unknown>> {
     const dateFrom = params.filters.dateFrom ?? this.getDefaultDateFrom();
     const dateTo = params.filters.dateTo ?? this.getDefaultDateTo();
     const { tenantId, filters } = params;
@@ -1218,7 +945,7 @@ export class ReportsService {
     to: string,
     deptId?: number,
     teamId?: number,
-  ): Promise<Record<string, unknown> | unknown[]> {
+  ): Promise<Record<string, unknown>> {
     switch (type) {
       case 'overview':
         return (await this.getOverviewReport(tid, from, to)) as Record<
@@ -1245,19 +972,6 @@ export class ReportsService {
         )) as Record<string, unknown>;
       case 'kvp':
         return (await this.getKvpReport(tid, from, to)) as Record<
-          string,
-          unknown
-        >;
-      case 'attendance':
-        return this.getAttendanceReport(
-          tid,
-          from,
-          to,
-          deptId,
-          teamId,
-        ) as Record<string, unknown>;
-      case 'compliance':
-        return this.getComplianceReport(tid, from, to, deptId) as Record<
           string,
           unknown
         >;
@@ -1304,53 +1018,19 @@ export class ReportsService {
   }
 
   /**
-   * Format report data for export in specified format
+   * Export report as CSV
    */
-  private formatReportForExport(
-    reportData: Record<string, unknown> | Buffer | unknown[],
-    reportType: string,
-    format: string,
-  ): ExportResult {
+  async exportReport(params: ExportReportParams): Promise<ExportResult> {
+    this.logger.log(`Exporting ${params.reportType} report as CSV`);
+    const reportData = await this.getReportDataByType(params);
+
     const dateParts = new Date().toISOString().split('T');
     const timestamp = dateParts[0] ?? 'unknown';
 
-    switch (format) {
-      case 'pdf':
-        return {
-          filename: `report-${reportType}-${timestamp}.pdf`,
-          content: Buffer.from(JSON.stringify(reportData, null, 2)),
-          mimeType: 'application/pdf',
-        };
-      case 'excel':
-        return {
-          filename: `report-${reportType}-${timestamp}.xlsx`,
-          content: Buffer.from(JSON.stringify(reportData, null, 2)),
-          mimeType:
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        };
-      case 'csv':
-        return {
-          filename: `report-${reportType}-${timestamp}.csv`,
-          content: this.convertToCSV(reportData as Record<string, unknown>),
-          mimeType: 'text/csv',
-        };
-      default:
-        throw new BadRequestException('Invalid export format');
-    }
-  }
-
-  /**
-   * Export report in specified format (PDF, Excel, or CSV)
-   */
-  async exportReport(params: ExportReportParams): Promise<ExportResult> {
-    this.logger.log(
-      `Exporting ${params.reportType} report as ${params.format}`,
-    );
-    const reportData = await this.getReportDataByType(params);
-    return this.formatReportForExport(
-      reportData,
-      params.reportType,
-      params.format,
-    );
+    return {
+      filename: `report-${params.reportType}-${timestamp}.csv`,
+      content: this.convertToCSV(reportData),
+      mimeType: 'text/csv',
+    };
   }
 }
