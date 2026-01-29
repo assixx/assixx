@@ -2,6 +2,14 @@
 // MANAGE TEAMS - TYPE DEFINITIONS
 // =============================================================================
 
+import type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+} from '@assixx/shared';
+
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
+
 /**
  * Department interface - with area hierarchy info
  */
@@ -78,22 +86,6 @@ export interface Team {
   members?: TeamMember[];
   machines?: Machine[];
 }
-
-/**
- * Status filter type for team list filtering
- */
-export type StatusFilter = 'active' | 'inactive' | 'archived' | 'all';
-
-/**
- * isActive status values
- * 0 = inactive, 1 = active, 3 = archived, 4 = deleted (soft delete)
- */
-export type IsActiveStatus = 0 | 1 | 3 | 4;
-
-/**
- * Form-compatible isActive status (excludes deleted)
- */
-export type FormIsActiveStatus = 0 | 1 | 3;
 
 /**
  * Team form data structure

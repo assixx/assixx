@@ -295,7 +295,7 @@ export const ValidationStates = {
             input.type = 'text';
             input.id = id;
             input.name = id;
-            input.value = 'SCS Technik GmbH';
+            input.value = 'Assixx GmbH';
             input.disabled = true;
             return input;
           },

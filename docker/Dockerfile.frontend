@@ -30,9 +30,14 @@ COPY package.json ./
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
 COPY .npmrc ./
+COPY tsconfig.base.json ./
 
-# Copy frontend package.json
+# Copy workspace package.json files
+COPY shared/package.json ./shared/
 COPY frontend/package.json ./frontend/
+
+# Copy shared source (inject-workspace-packages needs source at install time)
+COPY shared/ ./shared/
 
 # Install dependencies with BuildKit cache mount for pnpm store
 # Cache persists between builds, so unchanged packages don't need re-download

@@ -36,6 +36,10 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
+
+# Shared source kopieren (inject-workspace-packages needs source at install time)
+COPY shared/ ./shared/
 
 # Install all workspace dependencies with BuildKit cache mount
 # Cache persists between builds, so unchanged packages don't need re-download

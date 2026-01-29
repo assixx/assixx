@@ -2,27 +2,9 @@
 // MANAGE DEPARTMENTS - CONSTANTS
 // =============================================================================
 
-import type { IsActiveStatus, FormIsActiveStatus } from './types';
+import type { FormIsActiveStatus } from './types';
 
-/**
- * Status badge CSS classes mapping
- */
-export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
-  1: 'badge--success',
-  0: 'badge--warning',
-  3: 'badge--secondary',
-  4: 'badge--error',
-};
-
-/**
- * Status labels for display
- */
-export const STATUS_LABELS: Record<IsActiveStatus, string> = {
-  1: 'Aktiv',
-  0: 'Inaktiv',
-  3: 'Archiviert',
-  4: 'Gelöscht',
-};
+export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 /**
  * Dependency labels for force delete message

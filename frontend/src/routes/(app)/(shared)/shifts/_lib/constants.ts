@@ -97,41 +97,11 @@ export const DROPDOWN_PLACEHOLDERS = {
  */
 export const SHIFT_TYPES = ['early', 'late', 'night'] as const;
 
-/**
- * Availability status labels (German)
- */
-export const AVAILABILITY_LABELS = {
-  available: 'Verfügbar',
-  vacation: 'Urlaub',
-  sick: 'Krank',
-  unavailable: 'Nicht verfügbar',
-  training: 'Schulung',
-  other: 'Sonstiges',
-} as const;
-
-/**
- * Availability status icons
- */
-export const AVAILABILITY_ICONS = {
-  available: 'fa-check-circle',
-  vacation: 'fa-plane',
-  sick: 'fa-notes-medical',
-  unavailable: 'fa-ban',
-  training: 'fa-graduation-cap',
-  other: 'fa-clock',
-} as const;
-
-/**
- * Availability status colors (CSS classes)
- */
-export const AVAILABILITY_COLORS = {
-  available: 'badge--success',
-  vacation: 'badge--warning',
-  sick: 'badge--danger',
-  unavailable: 'badge--error',
-  training: 'badge--info',
-  other: 'badge--dark',
-} as const;
+export {
+  AVAILABILITY_LABELS,
+  AVAILABILITY_ICONS,
+} from '@assixx/shared/constants';
+export { AVAILABILITY_BADGE_CLASSES as AVAILABILITY_COLORS } from '@assixx/shared/constants';
 
 /**
  * Local storage keys

@@ -5,6 +5,7 @@
  * Supports \@Public() decorator for bypassing authentication.
  * Sets user context in CLS for downstream services.
  */
+import { USER_ROLES } from '@assixx/shared';
 import {
   CanActivate,
   ExecutionContext,
@@ -24,7 +25,6 @@ import type {
   NestAuthUser,
   UserRole,
 } from '../interfaces/auth.interface.js';
-import { VALID_ROLES } from '../interfaces/auth.interface.js';
 
 /**
  * Database row type for user lookup
@@ -129,7 +129,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const role = user.role as UserRole;
-    if (!VALID_ROLES.includes(role)) {
+    if (!USER_ROLES.includes(role)) {
       throw new UnauthorizedException('Invalid user role');
     }
 
@@ -143,7 +143,7 @@ export class JwtAuthGuard implements CanActivate {
     const role = user.role as UserRole;
     const activeRole = payload.activeRole ?? role;
 
-    if (!VALID_ROLES.includes(activeRole)) {
+    if (!USER_ROLES.includes(activeRole)) {
       throw new UnauthorizedException('Invalid active role');
     }
 

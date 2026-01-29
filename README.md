@@ -104,4 +104,4 @@ docker-compose down                               # Stoppen
 
 ## Lizenz
 
-Proprietäre Software – Alle Rechte vorbehalten. Siehe [LICENSE](./docs/LICENSE).
+Proprietäre Software – Alle Rechte vorbehalten. Siehe [LICENSE](./LICENSE).

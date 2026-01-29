@@ -2,21 +2,13 @@
 // MANAGE AREAS - TYPE DEFINITIONS
 // =============================================================================
 
-/**
- * Status values for is_active field
- * 0 = inactive, 1 = active, 3 = archived, 4 = deleted
- */
-export type IsActiveStatus = 0 | 1 | 3 | 4;
+import type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+} from '@assixx/shared';
 
-/**
- * Form-only status values (excludes deleted)
- */
-export type FormIsActiveStatus = 0 | 1 | 3;
-
-/**
- * Status filter options for list view
- */
-export type StatusFilter = 'all' | 'active' | 'inactive' | 'archived';
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
 /**
  * Area type values

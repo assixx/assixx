@@ -88,6 +88,7 @@ routes/(app)/[page-name]/
  * @module [page-name]/+page.server
  */
 import { redirect } from '@sveltejs/kit';
+
 import type { PageServerLoad } from './$types';
 
 const API_BASE = process.env['API_URL'] ?? 'http://localhost:3000/api/v2';
@@ -100,11 +101,7 @@ interface ApiResponse<T> {
 }
 
 /** Fetch helper with auth and error handling */
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
+async function apiFetch<T>(endpoint: string, token: string, fetchFn: typeof fetch): Promise<T | null> {
   try {
     const response = await fetchFn(`${API_BASE}${endpoint}`, {
       headers: {
@@ -119,9 +116,7 @@ async function apiFetch<T>(
     }
 
     const json = (await response.json()) as ApiResponse<T>;
-    return 'success' in json && json.success ?
-        (json.data ?? null)
-      : (json as unknown as T);
+    return 'success' in json && json.success ? (json.data ?? null) : (json as unknown as T);
   } catch (error) {
     console.error(`[SSR] Fetch error for ${endpoint}:`, error);
     return null;
@@ -299,12 +294,13 @@ pnpm run dev
 ### ❌ DON'T: Use window.location for navigation
 
 ```typescript
+// CORRECT - client-side navigation
+import { goto } from '$app/navigation';
+
 // WRONG - causes full page reload
 window.location.href = '/dashboard';
 window.location.replace('/login');
 
-// CORRECT - client-side navigation
-import { goto } from '$app/navigation';
 await goto('/dashboard');
 await goto('/login', { replaceState: true });
 ```
