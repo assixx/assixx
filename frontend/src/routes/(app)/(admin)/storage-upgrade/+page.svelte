@@ -240,7 +240,7 @@
   </div>
 
   <!-- Storage Plans -->
-  <h2 class="text-center mb-6">Wählen Sie Ihre neue Speichergröße</h2>
+  <h2 class="mb-6 text-center">Wählen Sie Ihre neue Speichergröße</h2>
 
   <div class="storage-plans-grid">
     <!-- Basic Plan -->
@@ -366,7 +366,7 @@
 
   <!-- FAQ Section -->
   <div class="faq-section">
-    <h2 class="text-center mb-6">Häufig gestellte Fragen</h2>
+    <h2 class="mb-6 text-center">Häufig gestellte Fragen</h2>
 
     <div class="faq-item">
       <div class="faq-question">

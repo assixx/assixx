@@ -182,7 +182,7 @@
         <i class="fas fa-trash-alt mr-2"></i>
         Tenant Löschstatus
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         Übersicht aller Löschanfragen und deren Status
       </p>
     </div>
@@ -388,7 +388,7 @@
                   >
                     <i class="fas fa-stop-circle mr-2"></i> Emergency Stop
                   </button>
-                  <small class="text-muted block mt-2">
+                  <small class="text-muted mt-2 block">
                     {item.status === 'processing' ?
                       'Stoppt den laufenden Löschvorgang'
                     : 'Stoppt die geplante Löschung sofort'}

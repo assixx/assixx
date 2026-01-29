@@ -408,7 +408,7 @@
         />
       </div>
 
-      <div class="flex justify-end mt-6">
+      <div class="mt-6 flex justify-end">
         <button
           type="submit"
           class="btn btn-primary"

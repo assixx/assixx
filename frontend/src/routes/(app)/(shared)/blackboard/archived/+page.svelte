@@ -109,7 +109,7 @@
           <i class="fas fa-archive mr-2"></i>
           Archivierte Einträge
         </h2>
-        <p class="text-[var(--color-text-secondary)] mt-1">
+        <p class="mt-1 text-[var(--color-text-secondary)]">
           Schwarzes Brett - Archiv ({entries.length} Einträge)
         </p>
       </div>
@@ -117,9 +117,9 @@
 
     <div class="card__body">
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
         </div>

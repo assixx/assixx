@@ -347,11 +347,11 @@
         <i class="fas fa-cogs mr-2"></i>
         {MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
-      <div class="flex gap-4 items-center justify-between mt-6">
+      <div class="mt-6 flex items-center justify-between gap-4">
         <!-- Status Toggle Group -->
         <div
           class="toggle-group"
@@ -487,9 +487,9 @@
 
     <div class="card__body">
       {#if machineState.error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{machineState.error}</p>
           <button
@@ -590,12 +590,12 @@
                       {formatDateDE(machine.nextMaintenance)}
                       {#if maintenanceWarning === 'overdue'}
                         <i
-                          class="fas fa-exclamation-triangle text-red-500 ms-2"
+                          class="fas fa-exclamation-triangle ms-2 text-red-500"
                           title="Wartung überfällig"
                         ></i>
                       {:else if maintenanceWarning === 'soon'}
                         <i
-                          class="fas fa-exclamation-circle text-yellow-500 ms-2"
+                          class="fas fa-exclamation-circle ms-2 text-yellow-500"
                           title="Wartung bald fällig"
                         ></i>
                       {/if}

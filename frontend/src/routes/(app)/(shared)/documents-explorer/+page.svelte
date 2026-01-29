@@ -667,7 +667,7 @@
           <i class="fas fa-folder-open mr-2"></i>
           Dokumente Explorer
         </h2>
-        <p class="text-[var(--color-text-secondary)] mt-2">
+        <p class="mt-2 text-[var(--color-text-secondary)]">
           Dokumente hochladen und verwalten
         </p>
       </div>
@@ -675,8 +675,8 @@
       <!-- Toolbar -->
       <div class="border-t border-[var(--border-color)] pt-4">
         <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3 flex-1">
-            <div class="search-input flex-1 max-w-md">
+          <div class="flex flex-1 items-center gap-3">
+            <div class="search-input max-w-md flex-1">
               <i class="search-input__icon fas fa-search"></i>
               <input
                 type="search"
@@ -778,10 +778,10 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="flex items-center gap-6 mt-4 text-sm">
+        <div class="mt-4 flex items-center gap-6 text-sm">
           <div class="flex items-center gap-2">
             <svg
-              class="w-5 h-5 text-primary-500"
+              class="text-primary-500 h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -794,13 +794,13 @@
                   01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               ></path>
             </svg>
-            <span class="text-sm text-content-secondary"
+            <span class="text-content-secondary text-sm"
               >{stats.total} Dokumente</span
             >
           </div>
           {#if stats.unread > 0}
             <div class="flex items-center gap-2">
-              <span class="text-sm text-warning-500"
+              <span class="text-warning-500 text-sm"
                 >{stats.unread} Ungelesen</span
               >
             </div>
@@ -892,17 +892,17 @@
         />
 
         <!-- Content Area -->
-        <div class="flex-1 flex flex-col">
+        <div class="flex flex-1 flex-col">
           <div class="flex-1 overflow-y-auto p-2">
             {#if loading}
               <div class="flex items-center justify-center p-8">
                 <div class="spinner-ring spinner-ring--md"></div>
               </div>
             {:else if error}
-              <div class="flex items-center justify-center h-full">
+              <div class="flex h-full items-center justify-center">
                 <div class="text-center">
                   <i
-                    class="fas fa-exclamation-triangle text-4xl text-error-500 mb-4"
+                    class="fas fa-exclamation-triangle text-error-500 mb-4 text-4xl"
                   ></i>
                   <p class="text-content-secondary mb-4">{error}</p>
                   <button

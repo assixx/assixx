@@ -93,7 +93,7 @@
     class="content-section"
   >
     <!-- Dashboard Stats Grid - SSR: Data instantly available, no loading states -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-users"></i>
@@ -259,7 +259,7 @@
     </div>
 
     <!-- Main Grid Container - Accent Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       <!-- Employee Card -->
       <div class="max-w-[350px]">
         <div class="card-accent card-accent--static">
@@ -275,7 +275,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage w-4/5 mb-4"
+              class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-employees');
               }}
@@ -284,7 +284,7 @@
             </button>
             <div class="space-y-2">
               {#if recentEmployees.length === 0}
-                <p class="p-2 text-muted">{MESSAGES.noEmployees}</p>
+                <p class="text-muted p-2">{MESSAGES.noEmployees}</p>
               {:else}
                 {#each recentEmployees as employee (employee.id)}
                   <div class="compact-item">
@@ -314,7 +314,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage w-4/5 mb-4"
+              class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/document-upload');
               }}
@@ -323,7 +323,7 @@
             </button>
             <div class="space-y-2">
               {#if recentDocuments.length === 0}
-                <p class="p-2 text-muted">{MESSAGES.noDocuments}</p>
+                <p class="text-muted p-2">{MESSAGES.noDocuments}</p>
               {:else}
                 {#each recentDocuments as doc (doc.id)}
                   <div class="compact-item">
@@ -354,7 +354,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage w-4/5 mb-4"
+              class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-departments');
               }}
@@ -363,7 +363,7 @@
             </button>
             <div class="space-y-2">
               {#if departments.length === 0}
-                <p class="p-2 text-muted">{MESSAGES.noDepartments}</p>
+                <p class="text-muted p-2">{MESSAGES.noDepartments}</p>
               {:else}
                 {#each departments as dept (dept.id)}
                   <div class="compact-item">
@@ -391,7 +391,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage w-4/5 mb-4"
+              class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-teams');
               }}
@@ -400,7 +400,7 @@
             </button>
             <div class="space-y-2">
               {#if teams.length === 0}
-                <p class="p-2 text-muted">{MESSAGES.noTeams}</p>
+                <p class="text-muted p-2">{MESSAGES.noTeams}</p>
               {:else}
                 {#each teams as team (team.id)}
                   <div class="compact-item">
@@ -428,7 +428,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage w-4/5 mb-4"
+              class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/calendar');
               }}
@@ -437,11 +437,11 @@
             </button>
             <div class="space-y-2">
               {#if upcomingEvents.length === 0}
-                <div class="p-2 rounded text-xs">
+                <div class="rounded p-2 text-xs">
                   <strong class="block font-semibold"
                     >{MESSAGES.upcomingEvents}</strong
                   >
-                  <p class="text-[var(--color-text-secondary)] mt-1">
+                  <p class="mt-1 text-[var(--color-text-secondary)]">
                     {MESSAGES.noEvents}
                   </p>
                 </div>

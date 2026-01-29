@@ -281,7 +281,7 @@
 
 <div class="container">
   <div class="card">
-    <div class="card__header flex justify-between items-center">
+    <div class="card__header flex items-center justify-between">
       <div>
         <h2 class="card-title">Mitarbeiterumfragen</h2>
         <p class="text-secondary">
@@ -369,7 +369,7 @@
     >
       <div class="ds-modal__header flex-col items-stretch">
         <!-- Title Row: Title + Close Button -->
-        <div class="flex justify-between items-center w-full">
+        <div class="flex w-full items-center justify-between">
           <h3 class="ds-modal__title">{getTextFromBuffer(survey.title)}</h3>
           <button
             type="button"
@@ -395,7 +395,7 @@
               style="width: {surveyEmployeeState.progressPercentage}%"
             ></div>
           </div>
-          <div class="progress-text mt-2 text-center text-secondary text-sm">
+          <div class="progress-text text-secondary mt-2 text-center text-sm">
             {surveyEmployeeState.answeredCount} von {surveyEmployeeState.totalQuestions}
             Fragen beantwortet
           </div>
@@ -487,7 +487,7 @@
 
                   <!-- Rating -->
                 {:else if question.questionType === 'rating'}
-                  <div class="flex gap-3 flex-wrap">
+                  <div class="flex flex-wrap gap-3">
                     {#each [1, 2, 3, 4, 5] as value (value)}
                       <button
                         type="button"

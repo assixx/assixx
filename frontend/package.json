@@ -33,6 +33,7 @@
     "html-minifier-terser": "7.2.0",
     "prettier": "^3.8.1",
     "prettier-plugin-svelte": "3.4.1",
+    "prettier-plugin-tailwindcss": "0.7.2",
     "rollup-plugin-visualizer": "6.0.5",
     "svelte": "^5.49.0",
     "svelte-check": "^4.3.5",

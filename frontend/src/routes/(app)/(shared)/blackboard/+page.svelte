@@ -511,7 +511,7 @@
     </div>
     {#if filterExpanded}
       <div class="card__body">
-        <div class="flex flex-wrap gap-4 items-end">
+        <div class="flex flex-wrap items-end gap-4">
           <!-- Search Bar -->
           <div class="form-field">
             <label
@@ -528,7 +528,7 @@
                 onkeydown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <i
-                class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                class="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
               ></i>
             </div>
           </div>
@@ -611,7 +611,7 @@
   </div>
 
   <!-- Controls -->
-  <div class="flex justify-between mb-6">
+  <div class="mb-6 flex justify-between">
     <div class="controls-flex">
       <div class="zoom-controls zoom-controls-inline">
         <button
@@ -652,16 +652,16 @@
     id="blackboardContainer"
   >
     {#if loading}
-      <div class="text-center p-5">
+      <div class="p-5 text-center">
         <div class="spinner-ring spinner-ring--md"></div>
         <p class="mt-4 text-[var(--color-text-secondary)]">
           {MESSAGES.LOADING}
         </p>
       </div>
     {:else if error}
-      <div class="text-center p-5">
+      <div class="p-5 text-center">
         <i
-          class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+          class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
         ></i>
         <p class="text-[var(--color-text-secondary)]">{error}</p>
         <button
@@ -671,9 +671,9 @@
         >
       </div>
     {:else if entries.length === 0}
-      <div class="text-center p-5">
+      <div class="p-5 text-center">
         <i
-          class="fas fa-clipboard-list text-4xl text-[var(--color-text-secondary)] mb-4 opacity-50"
+          class="fas fa-clipboard-list mb-4 text-4xl text-[var(--color-text-secondary)] opacity-50"
         ></i>
         <p class="text-[var(--color-text-secondary)]">{MESSAGES.NO_ENTRIES}</p>
         {#if isAdmin}
@@ -800,7 +800,7 @@
 
   <!-- Pagination -->
   {#if totalPages > 1}
-    <div class="flex items-center justify-center mt-6 gap-2">
+    <div class="mt-6 flex items-center justify-center gap-2">
       <div class="pagination">
         <button
           type="button"
@@ -888,7 +888,7 @@
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
-          <i class="fas fa-trash-alt text-red-500 mr-2"
+          <i class="fas fa-trash-alt mr-2 text-red-500"
           ></i>{MESSAGES.DELETE_CONFIRM_TITLE}
         </h3>
         <button

@@ -44,15 +44,15 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-    <h1 class="text-2xl font-bold text-gray-800 mb-4">Sentry Test Page</h1>
+<div class="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+  <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+    <h1 class="mb-4 text-2xl font-bold text-gray-800">Sentry Test Page</h1>
 
-    <p class="text-gray-600 mb-6">
+    <p class="mb-6 text-gray-600">
       Click the button below to trigger test errors. This will:
     </p>
 
-    <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+    <ul class="mb-6 list-inside list-disc space-y-1 text-gray-600">
       <li>Call an API route (server-side error)</li>
       <li>Throw a frontend error</li>
       <li>Create a Sentry trace/span</li>
@@ -62,8 +62,8 @@
       type="button"
       onclick={throwSampleError}
       disabled={loading}
-      class="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-400
-        text-white font-bold py-3 px-4 rounded transition-colors"
+      class="w-full rounded bg-red-500 px-4
+        py-3 font-bold text-white transition-colors hover:bg-red-600 disabled:bg-gray-400"
     >
       {loading ? 'Loading...' : 'Throw Sample Error'}
     </button>
@@ -72,7 +72,7 @@
       <p class="mt-4 text-sm text-gray-500">{result}</p>
     {/if}
 
-    <div class="mt-6 pt-4 border-t border-gray-200">
+    <div class="mt-6 border-t border-gray-200 pt-4">
       <p class="text-sm text-gray-500">
         After clicking, check your
         <a
@@ -85,7 +85,7 @@
         </a>
       </p>
 
-      <p class="text-xs text-gray-400 mt-2">
+      <p class="mt-2 text-xs text-gray-400">
         Note: Errors from browser DevTools console are sandboxed and won't be
         captured.
       </p>

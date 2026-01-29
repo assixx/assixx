@@ -176,27 +176,27 @@
   />
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center p-5">
-  <div class="card w-full max-w-[450px] text-center animate-fade-in-up">
+<div class="flex min-h-screen items-center justify-center p-5">
+  <div class="card animate-fade-in-up w-full max-w-[450px] text-center">
     <span class="rate-limit-icon material-symbols-outlined"
       >hourglass_check</span
     >
-    <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">
+    <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
       Zu viele Anfragen
     </h1>
     <p
-      class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-8"
+      class="mb-8 text-base leading-relaxed text-[var(--color-text-secondary)]"
     >
       Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie
       einen Moment, bevor Sie es erneut versuchen.
     </p>
     <div
-      class="bg-[rgb(33_150_243/10%)] border border-[rgb(33_150_243/20%)] rounded-[var(--radius-xl)] p-6 mb-8"
+      class="mb-8 rounded-[var(--radius-xl)] border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/10%)] p-6"
     >
-      <div class="text-sm text-[var(--color-text-secondary)] mb-4">
+      <div class="mb-4 text-sm text-[var(--color-text-secondary)]">
         Versuchen Sie es wieder in:
       </div>
-      <div class="text-[32px] font-bold text-[var(--color-primary)] countdown">
+      <div class="countdown text-[32px] font-bold text-[var(--color-primary)]">
         {countdownText}
       </div>
     </div>

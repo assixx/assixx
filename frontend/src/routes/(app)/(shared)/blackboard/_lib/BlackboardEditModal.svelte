@@ -192,7 +192,7 @@
     aria-modal="true"
   >
     <div class="ds-modal ds-modal--sm">
-      <div class="ds-modal__body text-center p-8">
+      <div class="ds-modal__body p-8 text-center">
         <div class="spinner-ring spinner-ring--lg"></div>
         <p class="mt-4 text-[var(--color-text-secondary)]">Lade Daten...</p>
       </div>

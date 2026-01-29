@@ -227,7 +227,7 @@
               <tr>
                 <td
                   colspan="4"
-                  class="text-center text-gray-400 py-8"
+                  class="py-8 text-center text-gray-400"
                   >{MESSAGES.noActivities}</td
                 >
               </tr>

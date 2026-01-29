@@ -252,7 +252,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="form-field">
           <label
             class="form-field__label"
@@ -462,11 +462,11 @@
             >
               <i class="fas fa-camera"></i>
               <p>Klicken Sie hier, um Fotos auszuwaehlen</p>
-              <p class="text-sm text-gray-400 mt-2">
+              <p class="mt-2 text-sm text-gray-400">
                 oder ziehen Sie Dateien hierher
               </p>
             </div>
-            <div class="flex flex-wrap gap-2 mt-6">
+            <div class="mt-6 flex flex-wrap gap-2">
               {#each photoPreviews as preview, index (index)}
                 <div class="photo-preview-item">
                   <img

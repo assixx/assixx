@@ -403,7 +403,7 @@
           Verfügbarkeitshistorie
         </h2>
         {#if employee}
-          <p class="text-[var(--color-text-secondary)] mt-1">
+          <p class="mt-1 text-[var(--color-text-secondary)]">
             <i class="fas fa-user mr-1"></i>
             {employee.firstName}
             {employee.lastName} ({employee.email})
@@ -414,7 +414,7 @@
 
     <!-- Filter Section -->
     <div class="card__body border-b border-[var(--color-border)]">
-      <div class="flex flex-wrap gap-4 items-end">
+      <div class="flex flex-wrap items-end gap-4">
         <!-- Year Dropdown -->
         <div class="form-field">
           <label
@@ -526,9 +526,9 @@
 
     <div class="card__body">
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
         </div>
@@ -596,7 +596,7 @@
                   <td>{entry.createdByName ?? '-'}</td>
                   <td>{formatDateTime(entry.createdAt)}</td>
                   <td>
-                    <div class="flex gap-2 justify-end">
+                    <div class="flex justify-end gap-2">
                       {#if editable}
                         <button
                           type="button"
@@ -612,7 +612,7 @@
                       {:else}
                         <button
                           type="button"
-                          class="action-icon action-icon--edit opacity-30 cursor-not-allowed"
+                          class="action-icon action-icon--edit cursor-not-allowed opacity-30"
                           title="Vergangene Einträge können nicht bearbeitet werden"
                           aria-label="Bearbeiten nicht möglich"
                           disabled
@@ -860,8 +860,8 @@
         <p class="text-[var(--color-text-secondary)]">
           Möchten Sie diesen Verfügbarkeitseintrag wirklich löschen?
         </p>
-        <div class="mt-4 p-4 bg-[var(--color-bg-secondary)] rounded-lg">
-          <div class="flex items-center gap-2 mb-2">
+        <div class="mt-4 rounded-lg bg-[var(--color-bg-secondary)] p-4">
+          <div class="mb-2 flex items-center gap-2">
             <span class="badge {getStatusClass(selectedEntry.status)}">
               <i class="fas {getStatusIcon(selectedEntry.status)} mr-1"></i>
               {getStatusText(selectedEntry.status)}
@@ -874,13 +874,13 @@
             )}
           </p>
           {#if selectedEntry.reason}
-            <p class="text-sm mt-1">
+            <p class="mt-1 text-sm">
               <strong>Grund:</strong>
               {selectedEntry.reason}
             </p>
           {/if}
         </div>
-        <p class="text-sm text-[var(--color-warning)] mt-4">
+        <p class="mt-4 text-sm text-[var(--color-warning)]">
           <i class="fas fa-exclamation-triangle mr-1"></i>
           Diese Aktion kann nicht rückgängig gemacht werden.
         </p>

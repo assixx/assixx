@@ -45,7 +45,12 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { LogEntry, PaginationInfo, ExportFormat, ExportSource } from './_lib/types';
+  import type {
+    LogEntry,
+    PaginationInfo,
+    ExportFormat,
+    ExportSource,
+  } from './_lib/types';
 
   // SSR Data
   const { data }: { data: PageData } = $props();
@@ -133,11 +138,18 @@
   );
 
   const hasActiveFilters = $derived(
-    checkHasActiveFilters(filterUser, filterAction, filterEntity, filterTimerange),
+    checkHasActiveFilters(
+      filterUser,
+      filterAction,
+      filterEntity,
+      filterTimerange,
+    ),
   );
 
   const canDelete = $derived(filtersApplied);
-  const canConfirmDelete = $derived(deleteConfirmText === 'LÖSCHEN' && deletePassword !== '');
+  const canConfirmDelete = $derived(
+    deleteConfirmText === 'LÖSCHEN' && deletePassword !== '',
+  );
 
   const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
 
@@ -148,14 +160,21 @@
   const sourceDisplayText = $derived(
     getDropdownDisplayText(EXPORT_SOURCE_OPTIONS, exportSource, 'Alle Quellen'),
   );
-  const isRateLimited = $derived(rateLimitedUntil !== null && rateLimitedUntil > new Date());
+  const isRateLimited = $derived(
+    rateLimitedUntil !== null && rateLimitedUntil > new Date(),
+  );
   const rateLimitRemaining = $derived(() => {
     if (rateLimitedUntil === null) return 0;
-    const remaining = Math.ceil((rateLimitedUntil.getTime() - Date.now()) / 1000);
+    const remaining = Math.ceil(
+      (rateLimitedUntil.getTime() - Date.now()) / 1000,
+    );
     return remaining > 0 ? remaining : 0;
   });
   const canExport = $derived(
-    !exportLoading && !isRateLimited && exportDateFrom !== '' && exportDateTo !== '',
+    !exportLoading &&
+      !isRateLimited &&
+      exportDateFrom !== '' &&
+      exportDateTo !== '',
   );
 
   // =============================================================================
@@ -248,7 +267,8 @@
           exportError = '';
         }, err.retryAfter * 1000);
       } else {
-        exportError = err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
+        exportError =
+          err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
         log.error({ err }, 'Export failed');
       }
     } finally {
@@ -391,7 +411,9 @@
         <i class="fas fa-list-alt mr-2"></i>
         System-Logs
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Systemaktivitäten</p>
+      <p class="mt-2 text-[var(--color-text-secondary)]">
+        Übersicht aller Systemaktivitäten
+      </p>
     </div>
 
     <div class="card__body">
@@ -400,7 +422,10 @@
         <div class="filters-grid">
           <!-- User Filter -->
           <div class="form-field">
-            <label class="form-field__label" for="filter-user">Suche</label>
+            <label
+              class="form-field__label"
+              for="filter-user">Suche</label
+            >
             <input
               type="search"
               id="filter-user"
@@ -414,8 +439,14 @@
 
           <!-- Action Filter -->
           <div class="form-field">
-            <span class="form-field__label" id="action-label">Aktion</span>
-            <div class="dropdown" id="action-dropdown">
+            <span
+              class="form-field__label"
+              id="action-label">Aktion</span
+            >
+            <div
+              class="dropdown"
+              id="action-dropdown"
+            >
               <button
                 type="button"
                 class="dropdown__trigger"
@@ -425,7 +456,12 @@
                 onclick={() => (actionDropdownOpen = !actionDropdownOpen)}
               >
                 <span>{actionDisplayText}</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <svg
+                  width="12"
+                  height="8"
+                  viewBox="0 0 12 8"
+                  fill="none"
+                >
                   <path
                     d="M1 1L6 6L11 1"
                     stroke="currentColor"
@@ -456,8 +492,14 @@
 
           <!-- Entity Type Filter -->
           <div class="form-field">
-            <span class="form-field__label" id="entity-label">Entitätstyp</span>
-            <div class="dropdown" id="entity-dropdown">
+            <span
+              class="form-field__label"
+              id="entity-label">Entitätstyp</span
+            >
+            <div
+              class="dropdown"
+              id="entity-dropdown"
+            >
               <button
                 type="button"
                 class="dropdown__trigger"
@@ -467,7 +509,12 @@
                 onclick={() => (entityDropdownOpen = !entityDropdownOpen)}
               >
                 <span>{entityDisplayText}</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <svg
+                  width="12"
+                  height="8"
+                  viewBox="0 0 12 8"
+                  fill="none"
+                >
                   <path
                     d="M1 1L6 6L11 1"
                     stroke="currentColor"
@@ -498,8 +545,14 @@
 
           <!-- Timerange Filter -->
           <div class="form-field">
-            <span class="form-field__label" id="timerange-label">Zeitraum</span>
-            <div class="dropdown" id="timerange-dropdown">
+            <span
+              class="form-field__label"
+              id="timerange-label">Zeitraum</span
+            >
+            <div
+              class="dropdown"
+              id="timerange-dropdown"
+            >
               <button
                 type="button"
                 class="dropdown__trigger"
@@ -509,7 +562,12 @@
                 onclick={() => (timerangeDropdownOpen = !timerangeDropdownOpen)}
               >
                 <span>{timerangeDisplayText}</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <svg
+                  width="12"
+                  height="8"
+                  viewBox="0 0 12 8"
+                  fill="none"
+                >
                   <path
                     d="M1 1L6 6L11 1"
                     stroke="currentColor"
@@ -540,8 +598,12 @@
         </div>
 
         <!-- Filter Actions -->
-        <div class="flex flex-wrap gap-3 mt-6">
-          <button type="button" class="btn btn-info" onclick={applyFilters}>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="btn btn-info"
+            onclick={applyFilters}
+          >
             <i class="fas fa-filter mr-2"></i>
             Filter anwenden
           </button>
@@ -559,17 +621,20 @@
             class="btn btn-danger"
             onclick={openDeleteModal}
             disabled={!canDelete}
-            title={canDelete
-              ? hasActiveFilters
-                ? 'Gefilterte Logs löschen'
-                : 'Alle Logs löschen'
-              : MESSAGES.DELETE_BUTTON_DISABLED_TITLE}
+            title={canDelete ?
+              hasActiveFilters ? 'Gefilterte Logs löschen'
+              : 'Alle Logs löschen'
+            : MESSAGES.DELETE_BUTTON_DISABLED_TITLE}
           >
             <i class="fas fa-trash mr-2"></i>
             Gefilterte Logs löschen
           </button>
           <!-- Export Toggle Button -->
-          <button type="button" class="btn btn-success" onclick={toggleExportSection}>
+          <button
+            type="button"
+            class="btn btn-success"
+            onclick={toggleExportSection}
+          >
             <i class="fas fa-download mr-2"></i>
             {showExportSection ? 'Export schließen' : 'Logs exportieren'}
           </button>
@@ -578,9 +643,9 @@
         <!-- Export Section (collapsible) -->
         {#if showExportSection}
           <div
-            class="export-section mt-6 p-4 rounded-lg bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)]"
+            class="export-section mt-6 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.2)] p-4"
           >
-            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold">
               <i class="fas fa-file-export text-[var(--color-success)]"></i>
               Audit-Logs exportieren
             </h3>
@@ -601,7 +666,9 @@
 
             <!-- Quick Timerange Buttons -->
             <div class="mb-4">
-              <span class="form-field__label block mb-2">Schnellauswahl Zeitraum</span>
+              <span class="form-field__label mb-2 block"
+                >Schnellauswahl Zeitraum</span
+              >
               <div class="toggle-group">
                 {#each EXPORT_QUICK_TIMERANGE_OPTIONS as option (option.value)}
                   <button
@@ -618,10 +685,13 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <!-- Date From -->
               <div class="form-field">
-                <label class="form-field__label" for="export-date-from">Von Datum</label>
+                <label
+                  class="form-field__label"
+                  for="export-date-from">Von Datum</label
+                >
                 <input
                   type="date"
                   id="export-date-from"
@@ -633,7 +703,10 @@
 
               <!-- Date To -->
               <div class="form-field">
-                <label class="form-field__label" for="export-date-to">Bis Datum</label>
+                <label
+                  class="form-field__label"
+                  for="export-date-to">Bis Datum</label
+                >
                 <input
                   type="date"
                   id="export-date-to"
@@ -645,8 +718,14 @@
 
               <!-- Format Dropdown -->
               <div class="form-field">
-                <span class="form-field__label" id="format-label">Format</span>
-                <div class="dropdown" id="format-dropdown">
+                <span
+                  class="form-field__label"
+                  id="format-label">Format</span
+                >
+                <div
+                  class="dropdown"
+                  id="format-dropdown"
+                >
                   <button
                     type="button"
                     class="dropdown__trigger"
@@ -656,7 +735,12 @@
                     onclick={() => (formatDropdownOpen = !formatDropdownOpen)}
                   >
                     <span>{formatDisplayText}</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                    >
                       <path
                         d="M1 1L6 6L11 1"
                         stroke="currentColor"
@@ -665,7 +749,10 @@
                       />
                     </svg>
                   </button>
-                  <div class="dropdown__menu" class:active={formatDropdownOpen}>
+                  <div
+                    class="dropdown__menu"
+                    class:active={formatDropdownOpen}
+                  >
                     {#each EXPORT_FORMAT_OPTIONS as option (option.value)}
                       <button
                         type="button"
@@ -684,8 +771,14 @@
 
               <!-- Source Dropdown -->
               <div class="form-field">
-                <span class="form-field__label" id="source-label">Quelle</span>
-                <div class="dropdown" id="source-dropdown">
+                <span
+                  class="form-field__label"
+                  id="source-label">Quelle</span
+                >
+                <div
+                  class="dropdown"
+                  id="source-dropdown"
+                >
                   <button
                     type="button"
                     class="dropdown__trigger"
@@ -695,7 +788,12 @@
                     onclick={() => (sourceDropdownOpen = !sourceDropdownOpen)}
                   >
                     <span>{sourceDisplayText}</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                    >
                       <path
                         d="M1 1L6 6L11 1"
                         stroke="currentColor"
@@ -704,7 +802,10 @@
                       />
                     </svg>
                   </button>
-                  <div class="dropdown__menu" class:active={sourceDropdownOpen}>
+                  <div
+                    class="dropdown__menu"
+                    class:active={sourceDropdownOpen}
+                  >
                     {#each EXPORT_SOURCE_OPTIONS as option (option.value)}
                       <button
                         type="button"
@@ -753,7 +854,7 @@
             </div>
 
             <!-- Export Info -->
-            <p class="text-sm text-[var(--color-text-secondary)] mt-3">
+            <p class="mt-3 text-sm text-[var(--color-text-secondary)]">
               <i class="fas fa-shield-alt mr-1"></i>
               Max. 365 Tage | 1 Export pro Minute | RLS-geschützt
             </p>
@@ -762,7 +863,10 @@
       </div>
 
       <!-- Logs Table Container -->
-      <div class="table-responsive" id="logs-table-container">
+      <div
+        class="table-responsive"
+        id="logs-table-container"
+      >
         {#if loading}
           <div class="loading">
             <div class="spinner spinner--lg mx-auto">
@@ -772,11 +876,15 @@
           </div>
         {:else if error}
           <div class="empty-state empty-state--sm empty-state--error">
-            <div class="empty-state__icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="empty-state__icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
             <p class="empty-state__title">{error}</p>
             <div class="empty-state__actions">
-              <button type="button" class="btn btn-primary btn--sm" onclick={() => void loadLogs()}
-                >Erneut versuchen</button
+              <button
+                type="button"
+                class="btn btn-primary btn--sm"
+                onclick={() => void loadLogs()}>Erneut versuchen</button
               >
             </div>
           </div>
@@ -784,7 +892,9 @@
           <div class="empty-state empty-state--sm">
             <div class="empty-state__icon"><i class="fas fa-search"></i></div>
             <p class="empty-state__title">{MESSAGES.EMPTY_STATE_TITLE}</p>
-            <p class="empty-state__description">{MESSAGES.EMPTY_STATE_DESCRIPTION}</p>
+            <p class="empty-state__description">
+              {MESSAGES.EMPTY_STATE_DESCRIPTION}
+            </p>
           </div>
         {:else}
           <table class="data-table data-table--hover data-table--striped">
@@ -806,14 +916,17 @@
                   <td>
                     <div class="user-info">
                       <span class="user-name">{getDisplayName(entry)}</span>
-                      <span class="badge badge--sm {getRoleBadgeClass(entry.userRole)}"
-                        >{getRoleLabel(entry.userRole)}</span
+                      <span
+                        class="badge badge--sm {getRoleBadgeClass(
+                          entry.userRole,
+                        )}">{getRoleLabel(entry.userRole)}</span
                       >
                     </div>
                   </td>
                   <td class="text-muted">{entry.employeeNumber ?? '-'}</td>
                   <td>
-                    <span class="action-label action-{entry.action.toLowerCase()}"
+                    <span
+                      class="action-label action-{entry.action.toLowerCase()}"
                       >{getActionLabel(entry.action)}</span
                     >
                   </td>
@@ -836,7 +949,10 @@
 
       <!-- Pagination -->
       {#if !loading && logs.length > 0}
-        <nav class="pagination" id="pagination-container">
+        <nav
+          class="pagination"
+          id="pagination-container"
+        >
           <button
             type="button"
             class="pagination__btn pagination__btn--prev"
@@ -910,7 +1026,10 @@
     >
       <!-- Header -->
       <div class="ds-modal__header ds-modal__header--danger">
-        <h3 class="ds-modal__title flex items-center gap-3" id="delete-modal-title">
+        <h3
+          class="ds-modal__title flex items-center gap-3"
+          id="delete-modal-title"
+        >
           <i class="fas fa-exclamation-triangle text-[var(--color-danger)]"></i>
           {MESSAGES.DELETE_MODAL_TITLE}
         </h3>
@@ -927,30 +1046,47 @@
 
         <!-- Active Filters Display -->
         <div class="mb-6">
-          <p class="text-[var(--color-text-secondary)] mb-2">Folgende Filter werden gelöscht:</p>
-          <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded-lg border border-[rgba(255,255,255,0.1)]">
+          <p class="mb-2 text-[var(--color-text-secondary)]">
+            Folgende Filter werden gelöscht:
+          </p>
+          <div
+            class="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.3)] p-4"
+          >
             {#if hasActiveFilters}
               {#if filterUser !== ''}
-                <span class="badge badge--info mr-2 mb-2">Benutzer: {filterUser}</span>
+                <span class="badge badge--info mr-2 mb-2"
+                  >Benutzer: {filterUser}</span
+                >
               {/if}
               {#if filterAction !== '' && filterAction !== 'all'}
-                <span class="badge badge--info mr-2 mb-2">Aktion: {actionDisplayText}</span>
+                <span class="badge badge--info mr-2 mb-2"
+                  >Aktion: {actionDisplayText}</span
+                >
               {/if}
               {#if filterEntity !== '' && filterEntity !== 'all'}
-                <span class="badge badge--info mr-2 mb-2">Entitätstyp: {entityDisplayText}</span>
+                <span class="badge badge--info mr-2 mb-2"
+                  >Entitätstyp: {entityDisplayText}</span
+                >
               {/if}
               {#if filterTimerange !== '' && filterTimerange !== 'all'}
-                <span class="badge badge--info mr-2 mb-2">Zeitraum: {timerangeDisplayText}</span>
+                <span class="badge badge--info mr-2 mb-2"
+                  >Zeitraum: {timerangeDisplayText}</span
+                >
               {/if}
             {:else}
-              <span class="text-[var(--color-text-secondary)]">{MESSAGES.NO_FILTERS_WARNING}</span>
+              <span class="text-[var(--color-text-secondary)]"
+                >{MESSAGES.NO_FILTERS_WARNING}</span
+              >
             {/if}
           </div>
         </div>
 
         <!-- Confirmation Input -->
         <div class="form-field mb-4">
-          <label class="form-field__label" for="deleteLogsConfirmation">
+          <label
+            class="form-field__label"
+            for="deleteLogsConfirmation"
+          >
             {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[0]}
             <strong class="text-[var(--color-danger)]">LÖSCHEN</strong>
             {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[1]}
@@ -967,7 +1103,10 @@
 
         <!-- Password Section -->
         <div class="form-field">
-          <label class="form-field__label flex items-center gap-2" for="deleteLogsPassword">
+          <label
+            class="form-field__label flex items-center gap-2"
+            for="deleteLogsPassword"
+          >
             <i class="fas fa-lock text-[var(--color-danger)]"></i>
             {MESSAGES.DELETE_PASSWORD_LABEL}
           </label>
@@ -978,13 +1117,19 @@
             placeholder="Ihr Root-Passwort"
             bind:value={deletePassword}
           />
-          <span class="form-field__message">{MESSAGES.DELETE_PASSWORD_HINT}</span>
+          <span class="form-field__message"
+            >{MESSAGES.DELETE_PASSWORD_HINT}</span
+          >
         </div>
       </div>
 
       <!-- Footer -->
       <div class="ds-modal__footer">
-        <button type="button" class="btn btn-cancel" onclick={closeDeleteModal}>Abbrechen</button>
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeDeleteModal}>Abbrechen</button
+        >
         <button
           type="button"
           class="btn btn-danger"

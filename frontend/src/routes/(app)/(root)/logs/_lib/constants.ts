@@ -140,8 +140,10 @@ export const MESSAGES = {
   DELETE_CONFIRM_LABEL: 'Geben Sie LÖSCHEN zur Bestätigung ein:',
   DELETE_PASSWORD_LABEL: 'Root-Passwort zur Bestätigung',
   DELETE_PASSWORD_HINT: 'Erforderlich für Löschung von Audit-Logs',
-  NO_FILTERS_WARNING: 'Keine spezifischen Filter aktiv (ALLE Logs werden gelöscht!)',
-  DELETE_BUTTON_DISABLED_TITLE: 'Bitte "Filter anwenden" klicken um Logs zu löschen',
+  NO_FILTERS_WARNING:
+    'Keine spezifischen Filter aktiv (ALLE Logs werden gelöscht!)',
+  DELETE_BUTTON_DISABLED_TITLE:
+    'Bitte "Filter anwenden" klicken um Logs zu löschen',
   // Export Messages
   EXPORT_LOADING: 'Export wird erstellt...',
   EXPORT_ERROR: 'Fehler beim Export',

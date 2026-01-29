@@ -412,7 +412,7 @@
           {/if}
 
           <!-- Weekend Toggles -->
-          <div class="flex gap-4 mt-4">
+          <div class="mt-4 flex gap-4">
             <label class="toggle-switch">
               <input
                 type="checkbox"
@@ -494,12 +494,12 @@
         </div>
 
         <!-- Employee Assignment Area (Legacy Structure) -->
-        <div class="form-field mt-6 rotation-assignment-container">
+        <div class="form-field rotation-assignment-container mt-6">
           <h4 class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</h4>
 
           <!-- Available Employees -->
           <div class="glass-card mb-4 p-4">
-            <h4 class="font-medium mb-2 text-white/80">
+            <h4 class="mb-2 font-medium text-white/80">
               Verfügbare Mitarbeiter
             </h4>
             <div class="employee-list">
@@ -524,7 +524,7 @@
               {/each}
               {#if availableEmployees.length === 0}
                 <div
-                  class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+                  class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
                 >
                   Alle Mitarbeiter zugewiesen
                 </div>
@@ -534,19 +534,19 @@
 
           <!-- Shift Assignment Drop Zones -->
           <div class="glass-card p-4">
-            <h4 class="font-medium mb-2 text-white/80">
+            <h4 class="mb-2 font-medium text-white/80">
               Schichtzuweisung (Startschicht)
             </h4>
-            <div class="gap-4 grid grid-cols-3 shift-assignment-table">
+            <div class="shift-assignment-table grid grid-cols-3 gap-4">
               <!-- F-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header font-medium mb-2 text-blue-400 text-center"
+                  class="column-header mb-2 text-center font-medium text-blue-400"
                 >
                   F (Früh)
                 </div>
                 <div
-                  class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                   data-shift="F"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -582,12 +582,12 @@
               <!-- S-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header font-medium mb-2 text-center text-yellow-400"
+                  class="column-header mb-2 text-center font-medium text-yellow-400"
                 >
                   S (Spät)
                 </div>
                 <div
-                  class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                   data-shift="S"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -623,12 +623,12 @@
               <!-- N-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header font-medium mb-2 text-center text-purple-400"
+                  class="column-header mb-2 text-center font-medium text-purple-400"
                 >
                   N (Nacht)
                 </div>
                 <div
-                  class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                   data-shift="N"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -661,7 +661,7 @@
                 </div>
               </div>
             </div>
-            <small class="block form-field__hint mt-2">
+            <small class="form-field__hint mt-2 block">
               Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
               Startschicht festzulegen
             </small>

@@ -2,6 +2,9 @@
 node_modules/
 frontend/node_modules/
 
+# Frontend (formatted separately with Tailwind plugin)
+frontend/
+
 # Build outputs
 dist/
 build/

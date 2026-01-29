@@ -42,7 +42,7 @@
   // 3. isPlanLocked=true + isEditMode=false → Saved plan, locked → Show "Edit" button
 </script>
 
-<div class="admin-actions flex gap-4 flex-wrap">
+<div class="admin-actions flex flex-wrap gap-4">
   {#if !isPlanLocked && !isEditMode}
     <!-- NEW/UNLOCKED: Creating new plan - show Save button -->
     <button
