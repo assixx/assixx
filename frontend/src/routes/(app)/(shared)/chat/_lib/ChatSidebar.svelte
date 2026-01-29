@@ -115,7 +115,7 @@
                 onstartconversation(user);
               }}
             >
-              <div class="flex items-center gap-3 w-full">
+              <div class="flex w-full items-center gap-3">
                 <div
                   class="avatar avatar--sm {(
                     user.profileImageUrl !== undefined &&
@@ -140,7 +140,7 @@
                       'offline'}"
                   ></span>
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="min-w-0 flex-1">
                   <div class="user-name">
                     <!-- eslint-disable svelte/no-at-html-tags -- Highlighting search term -->
                     {@html highlightSearchTerm(

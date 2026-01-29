@@ -26,7 +26,11 @@ export function calculateStartDate(timerange: string): string {
 
   switch (timerange) {
     case 'today':
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      return new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      ).toISOString();
     case 'yesterday': {
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -138,7 +142,10 @@ export function getDropdownDisplayText(
 /**
  * Calculate visible page numbers for pagination
  */
-export function getVisiblePages(currentPage: number, totalPages: number): PaginationPageItem[] {
+export function getVisiblePages(
+  currentPage: number,
+  totalPages: number,
+): PaginationPageItem[] {
   const pages: PaginationPageItem[] = [];
 
   let startPage = Math.max(1, currentPage - 2);

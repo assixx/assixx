@@ -295,7 +295,7 @@
           >
             Passwort {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              <i class="fas fa-info-circle cursor-help text-sm text-blue-400"
               ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
@@ -487,8 +487,8 @@
         </div>
 
         <!-- Team Assignment Section -->
-        <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
-          <h4 class="text-[var(--color-text-primary)] font-medium mb-4">
+        <div class="mt-6 border-t border-[var(--color-border)] pt-6">
+          <h4 class="mb-4 font-medium text-[var(--color-text-primary)]">
             <i class="fas fa-users mr-2"></i>
             Team-Zuweisung
           </h4>
@@ -609,7 +609,7 @@
               </div>
             </div>
             <span
-              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
             >
               {MESSAGES.STATUS_HINT}
             </span>

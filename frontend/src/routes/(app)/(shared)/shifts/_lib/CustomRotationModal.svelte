@@ -183,14 +183,14 @@
       </button>
     </div>
     <div class="ds-modal__body">
-      <p class="text-[var(--color-text-secondary)] mb-4">
+      <p class="mb-4 text-[var(--color-text-secondary)]">
         Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das
         gewählte Muster wird automatisch für den gewählten Zeitraum wiederholt.
       </p>
 
       <!-- Section 1: Zeitraum festlegen -->
-      <div class="glass-card p-4 mb-4 border border-blue-500/30 bg-blue-500/5">
-        <h4 class="text-blue-400 font-medium mb-4">
+      <div class="glass-card mb-4 border border-blue-500/30 bg-blue-500/5 p-4">
+        <h4 class="mb-4 font-medium text-blue-400">
           <i class="fas fa-calendar-alt mr-2"></i>
           Zeitraum festlegen
         </h4>
@@ -228,7 +228,7 @@
             />
           </div>
         </div>
-        <p class="text-[var(--color-text-tertiary)] text-xs mt-2">
+        <p class="mt-2 text-xs text-[var(--color-text-tertiary)]">
           <i class="fas fa-info-circle mr-1"></i>
           Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für
           nahtlosen Übergang.
@@ -237,14 +237,14 @@
 
       <!-- Section 2: Schichtblock-Konfiguration -->
       <div
-        class="glass-card p-4 mb-4 border border-emerald-500/30 bg-emerald-500/5"
+        class="glass-card mb-4 border border-emerald-500/30 bg-emerald-500/5 p-4"
       >
-        <h4 class="text-emerald-400 font-medium mb-4">
+        <h4 class="mb-4 font-medium text-emerald-400">
           <i class="fas fa-cogs mr-2"></i>
           Schichtblock-Konfiguration
         </h4>
 
-        <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="mb-4 grid grid-cols-2 gap-4">
           <!-- Schichtblock-Länge -->
           <div class="form-field">
             <label
@@ -252,8 +252,8 @@
               for="shift-block-length"
             >
               Schichtblock-Länge (Tage)
-              <span class="ml-1 tooltip">
-                <i class="cursor-help fa-info-circle fas text-blue-400 text-sm"
+              <span class="tooltip ml-1">
+                <i class="fa-info-circle fas cursor-help text-sm text-blue-400"
                 ></i>
                 <span
                   class="tooltip__content tooltip__content--info tooltip__content--right"
@@ -408,14 +408,14 @@
 
       <!-- Section 3: Sonderregeln -->
       <div
-        class="glass-card p-4 mb-4 border border-amber-500/30 bg-amber-500/5"
+        class="glass-card mb-4 border border-amber-500/30 bg-amber-500/5 p-4"
       >
-        <h4 class="text-amber-400 font-medium mb-4">
+        <h4 class="mb-4 font-medium text-amber-400">
           <i class="fas fa-star mr-2"></i>
           Sonderregeln (optional)
         </h4>
 
-        <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex flex-wrap items-center gap-3">
           <label class="choice-card">
             <input
               type="checkbox"
@@ -496,23 +496,23 @@
       </div>
 
       <!-- Section 4: Mitarbeiter Schichtzuweisung -->
-      <div class="mt-6 custom-rotation-assignment-container">
+      <div class="custom-rotation-assignment-container mt-6">
         <h4 class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</h4>
 
         <!-- Available Employees -->
         <div class="glass-card mb-4 p-4">
-          <h4 class="font-medium mb-2 text-white/80">Verfügbare Mitarbeiter</h4>
+          <h4 class="mb-2 font-medium text-white/80">Verfügbare Mitarbeiter</h4>
           <div class="employee-list min-h-[60px]">
             {#if employees.length === 0}
               <div
-                class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+                class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
               >
                 <i class="fas fa-info-circle mr-1"></i>
                 Bitte wählen Sie zuerst ein Team aus, um die Mitarbeiter zu laden.
               </div>
             {:else if availableEmployees.length === 0}
               <div
-                class="text-[var(--color-text-tertiary)] text-sm italic py-2"
+                class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
               >
                 <i class="fas fa-check-circle mr-1 text-green-400"></i>
                 Alle Mitarbeiter wurden zugewiesen.
@@ -538,19 +538,19 @@
 
         <!-- Drop Zones for Shift Assignment -->
         <div class="glass-card p-4">
-          <h4 class="font-medium mb-2 text-white/80">
+          <h4 class="mb-2 font-medium text-white/80">
             Schichtzuweisung (Startschicht)
           </h4>
-          <div class="gap-4 grid grid-cols-3 shift-assignment-table">
+          <div class="shift-assignment-table grid grid-cols-3 gap-4">
             <!-- Early Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header font-medium mb-2 text-blue-400 text-center"
+                class="column-header mb-2 text-center font-medium text-blue-400"
               >
                 F (Früh)
               </div>
               <div
-                class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('F');
@@ -584,12 +584,12 @@
             <!-- Late Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header font-medium mb-2 text-center text-yellow-400"
+                class="column-header mb-2 text-center font-medium text-yellow-400"
               >
                 S (Spät)
               </div>
               <div
-                class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('S');
@@ -623,12 +623,12 @@
             <!-- Night Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header font-medium mb-2 text-center text-purple-400"
+                class="column-header mb-2 text-center font-medium text-purple-400"
               >
                 N (Nacht)
               </div>
               <div
-                class="border border-dashed border-white/20 drop-zone min-h-[100px] p-2 rounded"
+                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('N');
@@ -659,7 +659,7 @@
               </div>
             </div>
           </div>
-          <small class="block form-field__hint mt-2">
+          <small class="form-field__hint mt-2 block">
             Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
             Startschicht festzulegen
           </small>

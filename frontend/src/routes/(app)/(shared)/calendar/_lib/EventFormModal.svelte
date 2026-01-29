@@ -235,7 +235,7 @@
             <i class="fas fa-users mr-2"></i>
             Sichtbarkeit
           </span>
-          <p class="text-sm text-[var(--color-text-secondary)] mb-2">
+          <p class="mb-2 text-sm text-[var(--color-text-secondary)]">
             Waehlen Sie keine Organisation für firmenweite Events oder
             eine/mehrere spezifische Organisationen.
           </p>
@@ -374,7 +374,7 @@
         <div class="form-field">
           <span class="form-field__label">Teilnehmer</span>
           <div id="attendeesContainer">
-            <p class="text-[var(--color-info)] flex items-center gap-2">
+            <p class="flex items-center gap-2 text-[var(--color-info)]">
               <i class="fas fa-info-circle"></i>
               Alle Mitarbeiter der Firma werden automatisch eingeladen
             </p>

@@ -349,11 +349,11 @@
       <h2 class="card__title">
         <i class="fas fa-shield-alt mr-2"></i>{MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
-      <div class="flex items-center justify-between gap-4 mt-6">
+      <div class="mt-6 flex items-center justify-between gap-4">
         <div
           class="toggle-group"
           id="root-status-toggle"
@@ -492,9 +492,9 @@
       </div>
 
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
           <button

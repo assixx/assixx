@@ -227,7 +227,7 @@
           >
             Passwort {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              <i class="fas fa-info-circle cursor-help text-sm text-blue-400"
               ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
@@ -453,7 +453,7 @@
               </div>
             </div>
             <span
-              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
               >{MESSAGES.INACTIVE_HINT}</span
             >
           </div>

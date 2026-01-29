@@ -514,7 +514,7 @@
         <i class="fas fa-filter mr-2"></i>
         Filter & Anzeige
       </h3>
-      <div class="flex gap-6 flex-wrap items-end justify-between mt-6">
+      <div class="mt-6 flex flex-wrap items-end justify-between gap-6">
         <!-- Level Filter -->
         <div class="form-field">
           <span class="form-field__label">Organisationsebene</span>
@@ -652,7 +652,7 @@
   </div>
 
   <!-- Two-column layout for events -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Upcoming Events (Current Month) -->
     <div class="card">
       <div class="card__header">
@@ -660,7 +660,7 @@
           <i class="fas fa-clock mr-2"></i>
           Anstehende Termine
           <span
-            class="text-sm font-normal text-[var(--color-text-secondary)] ml-2"
+            class="ml-2 text-sm font-normal text-[var(--color-text-secondary)]"
           >
             (Aktueller Monat)
           </span>

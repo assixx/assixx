@@ -61,7 +61,7 @@
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           {#if isPdf}
-            <i class="fas fa-file-pdf mr-2 text-error-500"></i>
+            <i class="fas fa-file-pdf text-error-500 mr-2"></i>
           {:else}
             <i class="fas fa-image mr-2"></i>
           {/if}
@@ -80,27 +80,27 @@
         {#if isPdf}
           <iframe
             src={image.src}
-            class="block w-full h-[70vh] min-h-[600px] border-none"
+            class="block h-[70vh] min-h-[600px] w-full border-none"
             title="Dokumentenvorschau"
           ></iframe>
         {:else if isImage}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
           >
             <img
               src={image.src}
-              class="max-w-full max-h-full object-contain"
+              class="max-h-full max-w-full object-contain"
               alt={image.alt}
             />
           </div>
         {:else}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
           >
-            <div class="text-center text-content-secondary">
-              <i class="fas fa-file-alt text-6xl mb-4"></i>
+            <div class="text-content-secondary text-center">
+              <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Keine Vorschau verfügbar</p>
-              <p class="text-sm mt-2">
+              <p class="mt-2 text-sm">
                 Bitte laden Sie die Datei herunter, um sie anzuzeigen.
               </p>
             </div>

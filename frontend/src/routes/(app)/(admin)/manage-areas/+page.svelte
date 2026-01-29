@@ -318,12 +318,12 @@
         <i class="fas fa-map-marked-alt mr-2"></i>
         {MESSAGES.PAGE_TITLE}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
       <!-- Controls Section -->
-      <div class="flex gap-4 items-center justify-between mt-6 flex-wrap">
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
         <!-- Status Filter Toggle -->
         <div class="toggle-group">
           <button
@@ -495,7 +495,7 @@
                     </div>
                   </td>
                   <td>
-                    <div class="text-[var(--color-text-secondary)] text-sm">
+                    <div class="text-sm text-[var(--color-text-secondary)]">
                       {area.description ?? '-'}
                     </div>
                   </td>

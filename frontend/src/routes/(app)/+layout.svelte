@@ -796,7 +796,7 @@
 
     <!-- Main Content (Child Routes) -->
     <main
-      class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]"
+      class="min-h-[calc(100vh-60px)] flex-1 bg-[var(--background-primary)] p-4"
     >
       <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">

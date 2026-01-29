@@ -431,7 +431,7 @@
         <!-- Comment Form - Hidden for archived entries -->
         {#if !isArchived}
           <form
-            class="flex gap-4 mb-6"
+            class="mb-6 flex gap-4"
             onsubmit={handleAddComment}
           >
             <div class="form-field flex-1">
@@ -593,13 +593,13 @@
             {#if canEditOrDelete}
               <button
                 type="button"
-                class="btn btn-light w-full mb-2"
+                class="btn btn-light mb-2 w-full"
                 onclick={openEditModal}
                 ><i class="fas fa-edit mr-2"></i>Bearbeiten</button
               >
               <button
                 type="button"
-                class="btn btn-danger w-full mb-2"
+                class="btn btn-danger mb-2 w-full"
                 onclick={() => (showDeleteModal = true)}
                 ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
               >
@@ -616,10 +616,10 @@
         </div>
       {:else if isArchived}
         <div class="sidebar-card">
-          <div class="text-center p-4">
-            <i class="fas fa-archive text-3xl text-[var(--color-warning)] mb-2"
+          <div class="p-4 text-center">
+            <i class="fas fa-archive mb-2 text-3xl text-[var(--color-warning)]"
             ></i>
-            <p class="text-[var(--color-text-secondary)] mb-4">
+            <p class="mb-4 text-[var(--color-text-secondary)]">
               Dieser Eintrag ist archiviert
             </p>
             <button
@@ -684,33 +684,33 @@
               previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
             )}
             title="PDF Vorschau"
-            class="block w-full h-[70vh] min-h-[600px] border-none"
+            class="block h-[70vh] min-h-[600px] w-full border-none"
           ></iframe>
         {:else if getPreviewFileType(previewAttachment.mimeType) === 'image'}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-[var(--surface-1)]"
+            class="flex h-[70vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
           >
             <img
               src={buildDownloadUrl(
                 previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
               )}
               alt={previewAttachment.filename}
-              class="max-w-full max-h-full object-contain"
+              class="max-h-full max-w-full object-contain"
             />
           </div>
         {:else}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-[var(--surface-1)]"
+            class="flex h-[70vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
           >
             <div class="text-center text-[var(--color-text-secondary)]">
-              <i class="fas fa-file-alt text-6xl mb-4"></i>
+              <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Vorschau nicht verfügbar</p>
-              <p class="text-sm mt-2">Bitte laden Sie die Datei herunter.</p>
+              <p class="mt-2 text-sm">Bitte laden Sie die Datei herunter.</p>
             </div>
           </div>
         {/if}
         <div
-          class="p-4 bg-[var(--surface-2)] border-t border-[var(--border-subtle)]"
+          class="border-t border-[var(--border-subtle)] bg-[var(--surface-2)] p-4"
         >
           <div
             class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]"

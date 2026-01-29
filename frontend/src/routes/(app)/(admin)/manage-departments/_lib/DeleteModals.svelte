@@ -66,7 +66,7 @@
           class="ds-modal__title"
           id="delete-modal-title"
         >
-          <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+          <i class="fas fa-trash-alt mr-2 text-red-500"></i>
           {MESSAGES.DELETE_TITLE}
         </h3>
         <button

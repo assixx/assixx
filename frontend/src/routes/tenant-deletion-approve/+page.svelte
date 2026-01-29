@@ -106,25 +106,25 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-5">
-  <div class="card w-full max-w-[500px] text-center animate-fade-in-up">
+<div class="flex min-h-screen items-center justify-center p-5">
+  <div class="card animate-fade-in-up w-full max-w-[500px] text-center">
     {#if loading}
       <!-- Loading State -->
       <div class="py-8">
         <i
-          class="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"
+          class="fas fa-spinner fa-spin mb-4 text-4xl text-[var(--color-primary)]"
         ></i>
         <p class="text-[var(--color-text-secondary)]">Lade Löschanfrage...</p>
       </div>
     {:else if errorMessage !== null && queueData === null}
       <!-- Error State (no data loaded) -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
-          rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
+        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
+          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-[var(--color-danger)]"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">
+      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
         Fehler
       </h1>
       <div class="alert alert--danger mb-6">
@@ -143,12 +143,12 @@
     {:else if success}
       <!-- Success State -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
-          rounded-full text-[40px] text-[var(--color-success)] bg-[rgb(76_175_80/15%)]"
+        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
+          rounded-full bg-[rgb(76_175_80/15%)] text-[40px] text-[var(--color-success)]"
       >
         <i class="fas fa-check-circle"></i>
       </div>
-      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">
+      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
         Genehmigung erfolgreich!
       </h1>
       <div class="alert alert--success mb-6">
@@ -166,18 +166,18 @@
       <!-- Approval Form -->
       <!-- Warning Icon -->
       <div
-        class="flex items-center justify-center w-20 h-20 mx-auto mb-6
-          rounded-full text-[40px] text-[var(--color-danger)] bg-[rgb(244_67_54/15%)]"
+        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
+          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-[var(--color-danger)]"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
 
-      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">
+      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
         Tenant-Löschung genehmigen
       </h1>
 
       <p
-        class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-6"
+        class="mb-6 text-base leading-relaxed text-[var(--color-text-secondary)]"
       >
         Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu
         genehmigen. Nach der Genehmigung beginnt die
@@ -186,10 +186,10 @@
 
       <!-- Queue Info -->
       <div
-        class="p-4 mb-6 border border-[rgb(33_150_243/20%)] rounded-[var(--radius-lg)] bg-[rgb(33_150_243/5%)]"
+        class="mb-6 rounded-[var(--radius-lg)] border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/5%)] p-4"
       >
         <div
-          class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]"
+          class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
         >
           <span class="text-sm text-[var(--color-text-secondary)]"
             >Queue ID:</span
@@ -199,7 +199,7 @@
           </span>
         </div>
         <div
-          class="flex justify-between py-2 border-b border-[rgb(255_255_255/5%)]"
+          class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
         >
           <span class="text-sm text-[var(--color-text-secondary)]"
             >Tenant ID:</span

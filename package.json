@@ -86,7 +86,7 @@
     "test:all": "pnpm run check && pnpm run lint:ts && pnpm run format:check",
     "fix:all": "pnpm run format && pnpm run lint:fix && pnpm run stylelint:fix",
     "check:all": "pnpm run format && pnpm run lint:fix && pnpm run type-check && pnpm run stylelint",
-    "validate:all": "echo '=== VALIDATE ALL (no abort) ===' ; pnpm run format ; echo '\\n=== ESLint Backend ===' ; pnpm run lint:fix || true ; echo '\\n=== ESLint Frontend ===' ; pnpm run lint:frontend:fix || true ; echo '\\n=== TypeScript Check ===' ; pnpm run type-check || true ; echo '\\n=== Svelte Check ===' ; cd frontend && pnpm run check || true ; cd .. ; echo '\\n=== Stylelint ===' ; pnpm run stylelint:fix || true ; echo '\\n=== VALIDATE ALL COMPLETE ==='",
+    "validate:all": "echo '=== VALIDATE ALL (no abort) ===' ; pnpm run format ; echo '\\n=== Prettier Frontend (Tailwind) ===' ; cd frontend && pnpm run format && cd .. ; echo '\\n=== ESLint Backend ===' ; pnpm run lint:fix || true ; echo '\\n=== ESLint Frontend ===' ; pnpm run lint:frontend:fix || true ; echo '\\n=== TypeScript Check ===' ; pnpm run type-check || true ; echo '\\n=== Svelte Check ===' ; cd frontend && pnpm run check || true ; cd .. ; echo '\\n=== Stylelint ===' ; pnpm run stylelint:fix || true ; echo '\\n=== VALIDATE ALL COMPLETE ==='",
     "stylelint": "stylelint \"**/*.{css,scss}\" --cache --cache-location .stylelintcache",
     "stylelint:fix": "stylelint \"**/*.{css,scss}\" --fix --cache --cache-location .stylelintcache",
     "stylelint:report": "stylelint \"**/*.{css,scss}\" --formatter json > stylelint-report.json",

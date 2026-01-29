@@ -314,7 +314,7 @@ Key-value pair displays for detail views
 ### Before (Bootstrap):
 
 ```html
-<table class="table table-striped table-hover table-sm">
+<table class="table-striped table-hover table-sm table">
   <thead>
     <tr>
       <th>Name</th>
