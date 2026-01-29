@@ -43,6 +43,7 @@ import {
   UpcomingMaintenanceQueryDto,
   UpdateMachineDto,
 } from './dto/index.js';
+import { MachinesService } from './machines.service.js';
 import type {
   MachineCategory,
   MachineCreateRequest,
@@ -52,8 +53,7 @@ import type {
   MachineUpdateRequest,
   MaintenanceHistoryResponse,
   MaintenanceRecordRequest,
-} from './machines.service.js';
-import { MachinesService } from './machines.service.js';
+} from './machines.types.js';
 
 /** HTTP header name for user agent */
 const HEADER_USER_AGENT = 'user-agent';
