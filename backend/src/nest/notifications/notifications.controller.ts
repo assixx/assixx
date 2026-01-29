@@ -8,11 +8,7 @@
  * - PUT    /notifications/preferences        - Update preferences
  * - GET    /notifications/stats              - Get statistics (admin)
  * - GET    /notifications/stats/me           - Get personal stats
- * - POST   /notifications/subscribe          - Subscribe to push
- * - GET    /notifications/templates          - Get templates (admin)
- * - POST   /notifications/from-template      - Create from template (admin)
  * - PUT    /notifications/mark-all-read      - Mark all as read
- * - DELETE /notifications/subscribe/:id      - Unsubscribe
  * - PUT    /notifications/:id/read           - Mark as read
  * - DELETE /notifications/:id                - Delete notification
  * - GET    /notifications/stream             - SSE stream
@@ -29,7 +25,6 @@ import {
   HttpCode,
   HttpStatus,
   Ip,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -46,15 +41,12 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
-  CreateFromTemplateDto,
   CreateNotificationDto,
   ListNotificationsQueryDto,
-  SubscribeDto,
-  SubscriptionIdParamDto,
   UpdatePreferencesDto,
 } from './dto/index.js';
-import type { PaginatedNotificationsResult } from './notifications.service.js';
 import { NotificationsService } from './notifications.service.js';
+import type { PaginatedNotificationsResult } from './notifications.types.js';
 
 /**
  * Response type for message-only responses
@@ -396,63 +388,6 @@ export class NotificationsController {
   }
 
   /**
-   * POST /notifications/subscribe
-   * Subscribe to push notifications
-   */
-  @Post('subscribe')
-  subscribe(
-    @Body() dto: SubscribeDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): { subscriptionId: string; message: string } {
-    const result = this.notificationsService.subscribe(
-      user.id,
-      tenantId,
-      dto.deviceToken,
-      dto.platform,
-    );
-    return { ...result, message: 'Successfully subscribed to notifications' };
-  }
-
-  /**
-   * GET /notifications/templates
-   * Get notification templates (admin only)
-   */
-  @Get('templates')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  getTemplates(@TenantId() tenantId: number): { templates: unknown[] } {
-    return this.notificationsService.getTemplates(tenantId);
-  }
-
-  /**
-   * POST /notifications/from-template
-   * Create notification from template (admin only)
-   */
-  @Post('from-template')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  createFromTemplate(
-    @Body() dto: CreateFromTemplateDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): never {
-    try {
-      return this.notificationsService.createFromTemplate(
-        dto.templateId,
-        tenantId,
-        user.id,
-        dto.recipientType,
-        dto.recipientId,
-        dto.variables,
-      );
-    } catch {
-      throw new NotFoundException('Template not found');
-    }
-  }
-
-  /**
    * PUT /notifications/mark-all-read
    * Mark all notifications as read
    */
@@ -462,20 +397,6 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<{ updated: number }> {
     return await this.notificationsService.markAllAsRead(user.id, tenantId);
-  }
-
-  /**
-   * DELETE /notifications/subscribe/:id
-   * Unsubscribe from push notifications
-   */
-  @Delete('subscribe/:id')
-  unsubscribe(
-    @Param() params: SubscriptionIdParamDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): MessageResponse {
-    this.notificationsService.unsubscribe(user.id, tenantId, params.id);
-    return { message: 'Successfully unsubscribed from notifications' };
   }
 
   /**
