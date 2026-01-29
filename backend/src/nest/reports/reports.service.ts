@@ -20,7 +20,7 @@ import { DatabaseService } from '../database/database.service.js';
 /**
  * Date range filter for reports
  */
-export interface DateRangeFilter {
+interface DateRangeFilter {
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
 }
@@ -28,7 +28,7 @@ export interface DateRangeFilter {
 /**
  * Extended report filters with organizational context
  */
-export interface ReportFilters extends DateRangeFilter {
+interface ReportFilters extends DateRangeFilter {
   tenantId: number;
   departmentId?: number | undefined;
   teamId?: number | undefined;
@@ -38,7 +38,7 @@ export interface ReportFilters extends DateRangeFilter {
 /**
  * Parameters for custom report generation
  */
-export interface CustomReportParams {
+interface CustomReportParams {
   tenantId: number;
   name: string;
   description?: string | undefined;
@@ -57,7 +57,7 @@ export interface CustomReportParams {
 /**
  * Parameters for report export
  */
-export interface ExportReportParams {
+interface ExportReportParams {
   tenantId: number;
   reportType: string;
   format: 'pdf' | 'excel' | 'csv';
@@ -72,7 +72,7 @@ export interface ExportReportParams {
 /**
  * Employee metrics summary
  */
-export interface EmployeeMetrics {
+interface EmployeeMetrics {
   total: number;
   active: number;
   newThisMonth: number;
@@ -83,7 +83,7 @@ export interface EmployeeMetrics {
 /**
  * Department metrics summary
  */
-export interface DepartmentMetrics {
+interface DepartmentMetrics {
   total: number;
   avgEmployees: number;
 }
@@ -91,7 +91,7 @@ export interface DepartmentMetrics {
 /**
  * Shift metrics summary
  */
-export interface ShiftMetrics {
+interface ShiftMetrics {
   totalScheduled: number;
   overtimeHours: number;
   coverageRate: number;
@@ -100,7 +100,7 @@ export interface ShiftMetrics {
 /**
  * KVP metrics summary
  */
-export interface KvpMetrics {
+interface KvpMetrics {
   totalSuggestions: number;
   implemented: number;
   totalSavings: number;
@@ -110,7 +110,7 @@ export interface KvpMetrics {
 /**
  * Survey metrics summary
  */
-export interface SurveyMetrics {
+interface SurveyMetrics {
   totalSurveys: number;
   completedSurveys: number;
   avgParticipation: number;
@@ -120,7 +120,7 @@ export interface SurveyMetrics {
 /**
  * Attendance metrics summary
  */
-export interface AttendanceMetrics {
+interface AttendanceMetrics {
   avgRate: number;
   absences: number;
 }
@@ -128,7 +128,7 @@ export interface AttendanceMetrics {
 /**
  * Performance metrics summary
  */
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   kvpParticipation: number;
   surveyCompletion: number;
   overallScore: number;
@@ -137,7 +137,7 @@ export interface PerformanceMetrics {
 /**
  * Department performance data
  */
-export interface DepartmentPerformanceData {
+interface DepartmentPerformanceData {
   departmentId: number;
   departmentName: string;
   metrics: {
@@ -152,7 +152,7 @@ export interface DepartmentPerformanceData {
 /**
  * Export result with file metadata
  */
-export interface ExportResult {
+interface ExportResult {
   filename: string;
   content: Buffer | string;
   mimeType: string;
