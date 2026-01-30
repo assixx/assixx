@@ -46,7 +46,7 @@ jobs:
         run: cd backend && pnpm run prettier
 
       - name: Check formatting (Shared)
-        run: prettier --check "shared/src/**/*.ts"
+        run: cd shared && pnpm run prettier
 
   frontend-quality:
     runs-on: ubuntu-latest
