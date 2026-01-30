@@ -10,7 +10,7 @@
  */
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
-import { fieldMapper } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
 
 // ============================================================
@@ -549,7 +549,7 @@ export class ReportsService {
       filters: { departmentId, teamId },
       headcount: {
         trend: headcountTrend.map((row: DbHeadcountRow) =>
-          fieldMapper.dbToApi(row as Record<string, unknown>),
+          dbToApi(row as Record<string, unknown>),
         ),
       },
       performance: kvpParticipation,
@@ -677,7 +677,7 @@ export class ReportsService {
       totalShifts: this.parseIntOrZero(summary.total_shifts),
       totalRequired: this.parseIntOrZero(summary.total_required),
       shiftsByType: shiftsByType.map((row: DbShiftTypeRow) =>
-        fieldMapper.dbToApi(row as Record<string, unknown>),
+        dbToApi(row as Record<string, unknown>),
       ),
     };
   }
@@ -759,10 +759,10 @@ export class ReportsService {
         roi,
       },
       byCategory: byCategory.map((row: DbKvpCategoryRow) =>
-        fieldMapper.dbToApi(row as Record<string, unknown>),
+        dbToApi(row as Record<string, unknown>),
       ),
       topPerformers: topPerformers.map((row: DbKvpPerformerRow) =>
-        fieldMapper.dbToApi(row as Record<string, unknown>),
+        dbToApi(row as Record<string, unknown>),
       ),
     };
   }

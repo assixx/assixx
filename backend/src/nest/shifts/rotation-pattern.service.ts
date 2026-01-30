@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
 import type { UpdateRotationPatternDto } from './dto/update-rotation-pattern.dto.js';

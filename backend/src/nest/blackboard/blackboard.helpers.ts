@@ -4,7 +4,7 @@
  * Pure functions for data transformation and validation.
  * No dependencies on NestJS or database - stateless utilities.
  */
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { ALLOWED_SORT_COLUMNS } from './blackboard.constants.js';
 import type {
   BlackboardComment,
@@ -102,10 +102,6 @@ export function transformEntry(
 ): Record<string, unknown> {
   const transformed = dbToApi(entry as unknown as Record<string, unknown>);
 
-  transformed['isConfirmed'] = Boolean(entry.is_confirmed);
-  transformed['confirmedAt'] = entry.confirmed_at?.toISOString() ?? null;
-  transformed['firstSeenAt'] = entry.first_seen_at?.toISOString() ?? null;
-
   if (entry.author_full_name !== undefined && entry.author_full_name !== '') {
     transformed['authorFullName'] = entry.author_full_name;
   }
@@ -115,10 +111,6 @@ export function transformEntry(
   if (entry.author_last_name !== undefined && entry.author_last_name !== '') {
     transformed['authorLastName'] = entry.author_last_name;
   }
-
-  delete transformed['is_confirmed'];
-  delete transformed['confirmed_at'];
-  delete transformed['first_seen_at'];
 
   return transformed;
 }

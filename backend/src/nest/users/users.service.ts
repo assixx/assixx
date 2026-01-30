@@ -24,7 +24,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
-import { fieldMapper } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
@@ -1050,14 +1050,14 @@ export class UsersService {
 
   /**
    * Convert DB row to safe API response (camelCase, without password)
-   * Uses fieldMapper.dbToApi() for snake_case → camelCase transformation
+   * Uses dbToApi() for snake_case → camelCase transformation
    */
   private toSafeUserResponse(user: UserRow): SafeUserResponse {
     const { password, ...safeUser } = user;
     void password;
-    return fieldMapper.dbToApi(
+    return dbToApi(
       safeUser as unknown as Record<string, unknown>,
-    ) as SafeUserResponse;
+    ) as unknown as SafeUserResponse;
   }
 
   /**

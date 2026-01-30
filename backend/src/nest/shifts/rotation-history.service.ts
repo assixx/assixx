@@ -5,7 +5,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   DbHistoryRow,
