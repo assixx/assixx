@@ -49,12 +49,12 @@ import {
   UpdateResponseDto,
   UpdateSurveyDto,
 } from './dto/index.js';
+import { SurveysService } from './surveys.service.js';
 import type {
   PaginatedResponsesResult,
   SurveyResponse,
   SurveyStatisticsResponse,
-} from './surveys.service.js';
-import { SurveysService } from './surveys.service.js';
+} from './surveys.types.js';
 
 /**
  * Response type for message-only responses
