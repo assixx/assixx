@@ -1,8 +1,11 @@
 /**
- * Shifts Service
+ * Shifts Service (Facade)
  *
- * Native NestJS implementation for shift management.
- * No Express dependencies - uses DatabaseService directly.
+ * Thin orchestration layer for shift management.
+ * Delegates plan operations to ShiftPlansService and
+ * swap operations to ShiftSwapService.
+ * Keeps shifts CRUD, favorites, overtime, export, and calendar
+ * (all under the Decision Framework threshold for own sub-services).
  */
 import {
   BadRequestException,
@@ -12,7 +15,6 @@ import {
   NotFoundException,
   NotImplementedException,
 } from '@nestjs/common';
-import { v7 as uuidv7 } from 'uuid';
 
 import { apiToDb, dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -24,226 +26,42 @@ import type { CreateShiftPlanDto } from './dto/shift-plan.dto.js';
 import type { UpdateSwapRequestStatusDto } from './dto/swap-request-status.dto.js';
 import type { UpdateShiftPlanDto } from './dto/update-shift-plan.dto.js';
 import type { UpdateShiftDto } from './dto/update-shift.dto.js';
+import { ShiftPlansService } from './shift-plans.service.js';
+import { ShiftSwapService } from './shift-swap.service.js';
+import {
+  buildTimestamp,
+  calculateHours,
+  convertTimeFieldsToTimestamps,
+  dbShiftToApi,
+} from './shifts.helpers.js';
+import type {
+  CalendarShiftResponse,
+  DbFavoriteRow,
+  DbShiftRow,
+  ExportFilters,
+  FavoriteResponse,
+  OvertimeFilters,
+  ShiftFilters,
+  ShiftPlanFilters,
+  ShiftPlanResponse,
+  ShiftResponse,
+  SwapRequestFilters,
+  SwapRequestResponse,
+} from './shifts.types.js';
 
-// ============================================================
-// RESPONSE TYPES
-// ============================================================
-
-/**
- * Shift response type
- */
-export interface ShiftResponse {
-  id: number;
-  userId: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  breakMinutes?: number | undefined;
-  type?: string | undefined;
-  status?: string | undefined;
-  departmentId?: number | undefined;
-  departmentName?: string | undefined;
-  userName?: string | undefined;
-  notes?: string | undefined;
-  [key: string]: unknown;
-}
-
-/**
- * Shift plan response
- */
-export interface ShiftPlanResponse {
-  planId: number;
-  shiftIds: number[];
-  message: string;
-}
-
-/**
- * Swap request response
- */
-export interface SwapRequestResponse {
-  id: number;
-  shiftId: number;
-  requestedBy: number;
-  requestedWith?: number | undefined;
-  status: string;
-  reason?: string | undefined;
-  message?: string | undefined;
-  [key: string]: unknown;
-}
-
-/**
- * Calendar shift response
- */
-export interface CalendarShiftResponse {
-  date: string;
-  type: string;
-}
-
-/**
- * Favorite response
- */
-export interface FavoriteResponse {
-  id: number;
-  name: string;
-  areaId: number;
-  areaName: string;
-  departmentId: number;
-  departmentName: string;
-  machineId: number;
-  machineName: string;
-  teamId: number;
-  teamName: string;
-  [key: string]: unknown;
-}
-
-// ============================================================
-// FILTER TYPES
-// ============================================================
-
-/**
- * Shift list filters
- */
-export interface ShiftFilters {
-  date?: string | undefined;
-  startDate?: string | undefined;
-  endDate?: string | undefined;
-  userId?: number | undefined;
-  departmentId?: number | undefined;
-  teamId?: number | undefined;
-  status?: string | undefined;
-  type?: string | undefined;
-  templateId?: number | undefined;
-  planId?: number | undefined;
-  page: number;
-  limit: number;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
-
-/**
- * Shift plan filters
- */
-export interface ShiftPlanFilters {
-  areaId?: number | undefined;
-  departmentId?: number | undefined;
-  teamId?: number | undefined;
-  machineId?: number | undefined;
-  startDate?: string | undefined;
-  endDate?: string | undefined;
-}
-
-/**
- * Swap request filters
- */
-export interface SwapRequestFilters {
-  userId?: number | undefined;
-  status?: string | undefined;
-}
-
-/**
- * Overtime filters
- */
-export interface OvertimeFilters {
-  userId: number;
-  startDate: string;
-  endDate: string;
-}
-
-/**
- * Export filters
- */
-export interface ExportFilters {
-  startDate: string;
-  endDate: string;
-  departmentId?: number | undefined;
-  teamId?: number | undefined;
-  userId?: number | undefined;
-}
-
-// ============================================================
-// DATABASE ROW TYPES
-// ============================================================
-
-interface DbShiftRow {
-  id: number;
-  tenant_id: number;
-  plan_id: number | null;
-  user_id: number;
-  date: string | Date;
-  start_time: string | Date;
-  end_time: string | Date;
-  title: string | null;
-  required_employees: number | null;
-  actual_start: string | null;
-  actual_end: string | null;
-  break_minutes: number | null;
-  status: string | null;
-  type: string | null;
-  notes: string | null;
-  area_id: number | null;
-  department_id: number;
-  team_id: number | null;
-  machine_id: number | null;
-  created_by: number | null;
-  created_at: Date;
-  updated_at: Date;
-  // Joined fields
-  user_name?: string | undefined;
-  first_name?: string | undefined;
-  last_name?: string | undefined;
-  department_name?: string | undefined;
-  team_name?: string | undefined;
-}
-
-interface DbSwapRequestRow {
-  id: number;
-  tenant_id: number;
-  shift_id: number;
-  requested_by: number;
-  requested_with: number | null;
-  status: string;
-  reason: string | null;
-  reviewed_by: number | null;
-  reviewed_at: Date | null;
-  created_at: Date;
-}
-
-interface DbFavoriteRow {
-  id: number;
-  tenant_id: number;
-  user_id: number;
-  name: string;
-  area_id: number;
-  area_name: string;
-  department_id: number;
-  department_name: string;
-  machine_id: number;
-  machine_name: string;
-  team_id: number;
-  team_name: string;
-  created_at: Date;
-}
-
-interface DbShiftPlanRow {
-  id: number;
-  tenant_id: number;
-  area_id: number | null;
-  department_id: number;
-  team_id: number | null;
-  machine_id: number | null;
-  name: string | null;
-  start_date: string;
-  end_date: string;
-  shift_notes: string | null;
-  custom_rotation_pattern: string | null;
-  created_by: number;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// ============================================================
-// SERVICE IMPLEMENTATION
-// ============================================================
+// Re-export types for backward compatibility (controller and index.ts import from here)
+export type {
+  CalendarShiftResponse,
+  ExportFilters,
+  FavoriteResponse,
+  OvertimeFilters,
+  ShiftFilters,
+  ShiftPlanFilters,
+  ShiftPlanResponse,
+  ShiftResponse,
+  SwapRequestFilters,
+  SwapRequestResponse,
+} from './shifts.types.js';
 
 @Injectable()
 export class ShiftsService {
@@ -252,123 +70,9 @@ export class ShiftsService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly shiftPlansService: ShiftPlansService,
+    private readonly shiftSwapService: ShiftSwapService,
   ) {}
-
-  // ============================================================
-  // Helper Methods
-  // ============================================================
-
-  private parseTimeFromDateTime(
-    dateTimeValue: string | Date | undefined,
-  ): string | undefined {
-    if (dateTimeValue === undefined) return undefined;
-    try {
-      const dateTime = new Date(dateTimeValue);
-      if (Number.isNaN(dateTime.getTime())) return undefined;
-      const hours = dateTime.getHours().toString().padStart(2, '0');
-      const minutes = dateTime.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private parseDateToString(
-    dateValue: string | Date | undefined,
-  ): string | undefined {
-    if (dateValue === undefined) return undefined;
-    try {
-      const date = new Date(dateValue);
-      if (Number.isNaN(date.getTime())) return undefined;
-      return date.toISOString().split('T')[0];
-    } catch {
-      return undefined;
-    }
-  }
-
-  /**
-   * Builds a full timestamp from date and time strings for PostgreSQL
-   * @param dateStr - Date in YYYY-MM-DD format (or ISO string)
-   * @param timeStr - Time in HH:MM format
-   * @param defaultTime - Optional default time if timeStr is invalid
-   * @returns Full timestamp string or null if inputs are invalid
-   */
-  private buildTimestamp(
-    dateStr: unknown,
-    timeStr: unknown,
-    defaultTime?: string,
-  ): string | null {
-    if (typeof dateStr !== 'string' || dateStr === '') return null;
-    const datePart: string = dateStr.split('T')[0] ?? dateStr;
-    if (typeof timeStr === 'string' && timeStr !== '') {
-      const timePart: string = timeStr;
-      return `${datePart}T${timePart}:00`;
-    }
-    if (defaultTime !== undefined && defaultTime !== '') {
-      const defTime: string = defaultTime;
-      return `${datePart}T${defTime}:00`;
-    }
-    return null;
-  }
-
-  /**
-   * Converts time fields in dbData to full timestamps using the provided date
-   */
-  private convertTimeFieldsToTimestamps(
-    dbData: Record<string, unknown>,
-    dateForTimestamp: string,
-  ): void {
-    const startTime = dbData['start_time'];
-    if (startTime !== undefined) {
-      const builtTime = this.buildTimestamp(dateForTimestamp, startTime);
-      if (builtTime !== null) dbData['start_time'] = builtTime;
-    }
-    const endTime = dbData['end_time'];
-    if (endTime !== undefined) {
-      const builtTime = this.buildTimestamp(dateForTimestamp, endTime);
-      if (builtTime !== null) dbData['end_time'] = builtTime;
-    }
-  }
-
-  private dbShiftToApi(dbShift: DbShiftRow): ShiftResponse {
-    const apiShift = dbToApi(
-      dbShift as unknown as Record<string, unknown>,
-    ) as ShiftResponse;
-    const startTime = this.parseTimeFromDateTime(dbShift.start_time);
-    if (startTime !== undefined && startTime !== '') {
-      apiShift.startTime = startTime;
-    }
-    const endTime = this.parseTimeFromDateTime(dbShift.end_time);
-    if (endTime !== undefined && endTime !== '') {
-      apiShift.endTime = endTime;
-    }
-    const formattedDate = this.parseDateToString(dbShift.date);
-    if (formattedDate !== undefined && formattedDate !== '') {
-      apiShift.date = formattedDate;
-    }
-    // Add nested user object for frontend compatibility
-    // user_id is always defined (required field in DbShiftRow)
-    apiShift['user'] = {
-      id: dbShift.user_id,
-      username: dbShift.user_name ?? '',
-      firstName: dbShift.first_name ?? '',
-      lastName: dbShift.last_name ?? '',
-    };
-    return apiShift;
-  }
-
-  private calculateHours(
-    startTime: string,
-    endTime: string,
-    breakMinutes?: number,
-  ): number {
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    const diffMs = end.getTime() - start.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-    const breakHours = (breakMinutes ?? 0) / 60;
-    return Math.round((diffHours - breakHours) * 100) / 100;
-  }
 
   // ============================================================
   // SHIFTS CRUD
@@ -461,7 +165,7 @@ export class ShiftsService {
 
     const query = baseQuery + filterClause + orderClause + limitClause;
     const shifts = await this.databaseService.query<DbShiftRow>(query, params);
-    return shifts.map((s: DbShiftRow) => this.dbShiftToApi(s));
+    return shifts.map((s: DbShiftRow) => dbShiftToApi(s));
   }
 
   async getShiftById(id: number, tenantId: number): Promise<ShiftResponse> {
@@ -484,7 +188,7 @@ export class ShiftsService {
       throw new NotFoundException(`Shift ${id} not found`);
     }
 
-    return this.dbShiftToApi(shift);
+    return dbShiftToApi(shift);
   }
 
   async createShift(
@@ -499,8 +203,8 @@ export class ShiftsService {
     const dbData = apiToDb(dto as unknown as Record<string, unknown>);
 
     // Combine date + time to create full timestamps for PostgreSQL
-    const startTime = this.buildTimestamp(dbData['date'], dbData['start_time']);
-    const endTime = this.buildTimestamp(dbData['date'], dbData['end_time']);
+    const startTime = buildTimestamp(dbData['date'], dbData['start_time']);
+    const endTime = buildTimestamp(dbData['date'], dbData['end_time']);
 
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shifts (
@@ -532,7 +236,6 @@ export class ShiftsService {
 
     const shiftId = result[0]?.id ?? 0;
 
-    // Log activity to root_logs
     await this.activityLogger.logCreate(
       tenantId,
       userId,
@@ -570,7 +273,7 @@ export class ShiftsService {
       typeof rawDate === 'string' ? rawDate : existingDate;
 
     // Convert time-only fields to full timestamps
-    this.convertTimeFieldsToTimestamps(dbData, dateForTimestamp);
+    convertTimeFieldsToTimestamps(dbData, dateForTimestamp);
 
     const updates: string[] = [];
     const params: unknown[] = [];
@@ -595,7 +298,6 @@ export class ShiftsService {
       params,
     );
 
-    // Log activity to root_logs
     await this.activityLogger.logUpdate(
       tenantId,
       userId,
@@ -630,7 +332,6 @@ export class ShiftsService {
       [id, tenantId],
     );
 
-    // Log activity to root_logs
     await this.activityLogger.logDelete(
       tenantId,
       userId,
@@ -700,48 +401,27 @@ export class ShiftsService {
   }
 
   // ============================================================
-  // SHIFT PLANS
+  // SHIFT PLANS (delegated to ShiftPlansService)
   // ============================================================
 
+  /**
+   * Gets shift plan with shifts — orchestrates findPlan + listShifts
+   */
   async getShiftPlan(
     filters: ShiftPlanFilters,
     tenantId: number,
   ): Promise<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }> {
     this.logger.debug(`Getting shift plan for tenant ${tenantId}`);
 
-    let planQuery = `SELECT * FROM shift_plans WHERE tenant_id = $1`;
-    const planParams: unknown[] = [tenantId];
-    let planParamIndex = 2;
+    const plan = await this.shiftPlansService.findPlan(filters, tenantId);
 
-    if (filters.departmentId !== undefined) {
-      planQuery += ` AND department_id = $${planParamIndex}`;
-      planParams.push(filters.departmentId);
-      planParamIndex++;
-    }
-    if (filters.teamId !== undefined) {
-      planQuery += ` AND team_id = $${planParamIndex}`;
-      planParams.push(filters.teamId);
-      planParamIndex++;
-    }
-    if (filters.startDate !== undefined && filters.endDate !== undefined) {
-      planQuery += ` AND start_date <= $${planParamIndex} AND end_date >= $${planParamIndex + 1}`;
-      planParams.push(filters.endDate, filters.startDate);
-    }
-
-    planQuery += ` ORDER BY created_at DESC LIMIT 1`;
-    const plans = await this.databaseService.query<DbShiftPlanRow>(
-      planQuery,
-      planParams,
-    );
-    const plan = plans[0];
-
-    // Get shifts for the date range - if we have a plan, use plan_id for more accurate filtering
+    // Get shifts for the date range — if we have a plan, use plan_id for more accurate filtering
     const shifts = await this.listShifts(tenantId, {
       startDate: filters.startDate,
       endDate: filters.endDate,
       departmentId: filters.departmentId,
       teamId: filters.teamId,
-      planId: plan?.id, // Filter by plan_id if plan exists
+      planId: plan?.id,
       page: 1,
       limit: 1000,
       sortBy: 'date',
@@ -763,147 +443,7 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    this.logger.debug(`Creating shift plan for tenant ${tenantId}`);
-
-    const planUuid = uuidv7();
-    const planResult = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO shift_plans (
-        uuid, tenant_id, area_id, department_id, team_id, machine_id,
-        name, start_date, end_date, shift_notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING id`,
-      [
-        planUuid,
-        tenantId,
-        dto.areaId ?? null,
-        dto.departmentId,
-        dto.teamId ?? null,
-        dto.machineId ?? null,
-        dto.name ?? `Shift Plan ${dto.startDate}`,
-        dto.startDate,
-        dto.endDate,
-        dto.shiftNotes ?? null,
-        userId,
-      ],
-    );
-
-    const planId = planResult[0]?.id ?? 0;
-    const shiftIds =
-      dto.shifts.length > 0 ?
-        await this.insertPlanShifts(dto.shifts, planId, tenantId, dto, userId)
-      : [];
-
-    return { planId, shiftIds, message: 'Shift plan created successfully' };
-  }
-
-  /**
-   * Inserts shifts for a new plan
-   */
-  private async insertPlanShifts(
-    shifts: CreateShiftPlanDto['shifts'],
-    planId: number,
-    tenantId: number,
-    context: Pick<
-      CreateShiftPlanDto,
-      'areaId' | 'departmentId' | 'teamId' | 'machineId'
-    >,
-    createdBy: number,
-  ): Promise<number[]> {
-    const shiftIds: number[] = [];
-    for (const shift of shifts) {
-      const startTimestamp = this.buildTimestamp(shift.date, shift.startTime);
-      const endTimestamp = this.buildTimestamp(shift.date, shift.endTime);
-      const result = await this.databaseService.query<{ id: number }>(
-        `INSERT INTO shifts (
-          tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        RETURNING id`,
-        [
-          tenantId,
-          planId,
-          shift.userId,
-          shift.date,
-          startTimestamp,
-          endTimestamp,
-          shift.type,
-          context.areaId ?? null,
-          context.departmentId,
-          context.teamId ?? null,
-          context.machineId ?? null,
-          createdBy,
-        ],
-      );
-      if (result[0] !== undefined) {
-        shiftIds.push(result[0].id);
-      }
-    }
-    return shiftIds;
-  }
-
-  /**
-   * Upserts shifts for a plan, returns created/updated shift IDs
-   */
-  private async upsertPlanShifts(
-    shifts: {
-      userId: number;
-      date: string;
-      startTime?: string | undefined;
-      endTime?: string | undefined;
-      type?: string | undefined;
-    }[],
-    planId: number,
-    tenantId: number,
-    context: {
-      departmentId: number | undefined;
-      teamId: number | null | undefined;
-      areaId: number | null | undefined;
-      machineId: number | null | undefined;
-    },
-    createdBy: number,
-  ): Promise<number[]> {
-    const shiftIds: number[] = [];
-    for (const shift of shifts) {
-      // Combine date + time to create full timestamps for PostgreSQL (with defaults)
-      const startTimestamp = this.buildTimestamp(
-        shift.date,
-        shift.startTime,
-        '08:00',
-      );
-      const endTimestamp = this.buildTimestamp(
-        shift.date,
-        shift.endTime,
-        '16:00',
-      );
-
-      const result = await this.databaseService.query<{ id: number }>(
-        `INSERT INTO shifts (
-          tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-         ON CONFLICT (tenant_id, plan_id, user_id, date) DO UPDATE SET
-           start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, type = EXCLUDED.type
-         RETURNING id`,
-        [
-          tenantId,
-          planId,
-          shift.userId,
-          shift.date,
-          startTimestamp,
-          endTimestamp,
-          shift.type,
-          context.areaId ?? null,
-          context.departmentId,
-          context.teamId ?? null,
-          context.machineId ?? null,
-          createdBy,
-        ],
-      );
-      if (result[0] !== undefined) {
-        shiftIds.push(result[0].id);
-      }
-    }
-    return shiftIds;
+    return await this.shiftPlansService.createShiftPlan(dto, tenantId, userId);
   }
 
   async updateShiftPlan(
@@ -912,285 +452,56 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    this.logger.debug(
-      `Updating shift plan ${planId}, DTO: ${JSON.stringify(dto, null, 2)}`,
-    );
-
-    const plans = await this.databaseService.query<DbShiftPlanRow>(
-      `SELECT * FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
-      [planId, tenantId],
-    );
-    if (plans.length === 0) {
-      throw new NotFoundException(`Shift plan ${planId} not found`);
-    }
-
-    // Update plan metadata if changed
-    await this.applyShiftPlanUpdates(planId, tenantId, dto);
-
-    // Upsert shifts and get IDs of shifts that should exist
-    const plan = plans[0];
-    const shiftIds =
-      dto.shifts !== undefined && dto.shifts.length > 0 ?
-        await this.upsertPlanShifts(
-          dto.shifts,
-          planId,
-          tenantId,
-          {
-            departmentId: dto.departmentId ?? plan?.department_id,
-            teamId: dto.teamId ?? plan?.team_id,
-            areaId: dto.areaId ?? plan?.area_id,
-            machineId: dto.machineId ?? plan?.machine_id,
-          },
-          userId,
-        )
-      : [];
-
-    // Clean up orphaned shifts and rotation history
-    await this.deleteOrphanedPlanShifts(
+    return await this.shiftPlansService.updateShiftPlan(
       planId,
+      dto,
       tenantId,
-      shiftIds,
-      dto.shifts?.length === 0,
+      userId,
     );
-    const teamId = dto.teamId ?? plan?.team_id ?? null;
-    if (teamId !== null && dto.shifts !== undefined) {
-      await this.cleanupOrphanedRotationHistory(tenantId, teamId, dto.shifts);
-    }
-
-    return { planId, shiftIds, message: 'Shift plan updated successfully' };
   }
 
-  /**
-   * Apply updates to shift plan metadata (name, notes)
-   */
-  private async applyShiftPlanUpdates(
-    planId: number,
-    tenantId: number,
-    dto: UpdateShiftPlanDto,
-  ): Promise<void> {
-    const updates: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
-    if (dto.name !== undefined) {
-      updates.push(`name = $${idx++}`);
-      params.push(dto.name);
-    }
-    if (dto.shiftNotes !== undefined) {
-      updates.push(`shift_notes = $${idx++}`);
-      params.push(dto.shiftNotes);
-    }
-    if (updates.length > 0) {
-      params.push(planId, tenantId);
-      await this.databaseService.query(
-        `UPDATE shift_plans SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx++} AND tenant_id = $${idx}`,
-        params,
-      );
-    }
-  }
-
-  /**
-   * Deletes shifts that are no longer part of a plan (removed by user)
-   */
-  private async deleteOrphanedPlanShifts(
-    planId: number,
-    tenantId: number,
-    keepShiftIds: number[],
-    deleteAll: boolean,
-  ): Promise<void> {
-    this.logger.debug(
-      `deleteOrphanedPlanShifts: keepShiftIds=[${keepShiftIds.join(', ')}], deleteAll=${deleteAll}`,
-    );
-    if (keepShiftIds.length > 0) {
-      const placeholders = keepShiftIds
-        .map((_: number, i: number) => `$${i + 3}`)
-        .join(', ');
-      await this.databaseService.query(
-        `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2 AND id NOT IN (${placeholders})`,
-        [planId, tenantId, ...keepShiftIds],
-      );
-      this.logger.debug(`Cleaned up orphaned shifts for plan ${planId}`);
-    } else if (deleteAll) {
-      await this.databaseService.query(
-        `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
-        [planId, tenantId],
-      );
-      this.logger.debug(
-        `Deleted all shifts for plan ${planId} (empty shifts array)`,
-      );
-    }
-  }
-
-  /**
-   * Cleans up rotation_history entries that no longer have corresponding shifts.
-   * This is called when a user edits a shift plan and removes employees from shifts.
-   */
-  private async cleanupOrphanedRotationHistory(
-    tenantId: number,
-    teamId: number,
-    keptShifts: { userId: number; date: string }[],
-  ): Promise<void> {
-    if (keptShifts.length === 0) {
-      // If no shifts to keep, we could delete all rotation history for the team
-      // But that's too aggressive - only delete entries that match the current week/date range
-      return;
-    }
-
-    // Build list of (user_id, date) tuples that should be kept
-    // We'll delete rotation_history entries that are NOT in this list
-    // but only for the date range covered by the kept shifts
-    interface KeptShift {
-      userId: number;
-      date: string;
-    }
-    const dates = keptShifts.map((shift: KeptShift) => shift.date);
-    const minDate = dates.reduce((a: string, b: string) => (a < b ? a : b));
-
-    // Build VALUES clause for the kept shifts
-    const keptValues = keptShifts
-      .map(
-        (_: KeptShift, i: number) =>
-          `($${i * 2 + 4}::integer, $${i * 2 + 5}::date)`,
-      )
-      .join(', ');
-    const keptParams = keptShifts.flatMap((s: KeptShift) => [s.userId, s.date]);
-
-    // Delete rotation_history entries in the date range that are NOT in the kept list
-    const deleteQuery = `
-      DELETE FROM shift_rotation_history
-      WHERE tenant_id = $1
-        AND team_id = $2
-        AND shift_date >= $3::date
-        AND shift_date <= (SELECT MAX(d) FROM (VALUES ${keptValues}) AS t(u, d))
-        AND (user_id, shift_date) NOT IN (
-          SELECT u, d FROM (VALUES ${keptValues}) AS kept(u, d)
-        )
-    `;
-
-    const result = await this.databaseService.query<{ count: string }>(
-      `WITH deleted AS (${deleteQuery} RETURNING *) SELECT COUNT(*) as count FROM deleted`,
-      [tenantId, teamId, minDate, ...keptParams],
-    );
-
-    const deletedCount = Number.parseInt(result[0]?.count ?? '0', 10);
-    if (deletedCount > 0) {
-      this.logger.debug(
-        `Cleaned up ${deletedCount} orphaned rotation_history entries for team ${teamId}`,
-      );
-    }
-  }
-
-  // ============================================================
-  // UUID RESOLUTION METHODS (for API consistency)
-  // ============================================================
-
-  /**
-   * Resolves a shift plan UUID to its internal ID
-   * @throws NotFoundException if plan not found
-   */
-  private async resolveShiftPlanIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM shift_plans WHERE uuid = $1 AND tenant_id = $2`,
-      [uuid, tenantId],
-    );
-    if (result[0] === undefined) {
-      throw new NotFoundException(`Shift plan with UUID ${uuid} not found`);
-    }
-    return result[0].id;
-  }
-
-  /**
-   * Update shift plan by UUID (wrapper for UUID-based API)
-   */
   async updateShiftPlanByUuid(
     uuid: string,
     dto: UpdateShiftPlanDto,
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
-    return await this.updateShiftPlan(planId, dto, tenantId, userId);
+    return await this.shiftPlansService.updateShiftPlanByUuid(
+      uuid,
+      dto,
+      tenantId,
+      userId,
+    );
   }
 
-  /**
-   * Delete shift plan by UUID (wrapper for UUID-based API)
-   */
   async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
-    const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
-    await this.deleteShiftPlan(planId, tenantId);
+    await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId);
   }
 
   async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
-    this.logger.debug(`Deleting shift plan ${planId} for tenant ${tenantId}`);
-
-    const plans = await this.databaseService.query<DbShiftPlanRow>(
-      `SELECT * FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
-      [planId, tenantId],
-    );
-
-    if (plans.length === 0) {
-      throw new NotFoundException(`Shift plan ${planId} not found`);
-    }
-
-    // Delete associated shifts first
-    await this.databaseService.query(
-      `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
-      [planId, tenantId],
-    );
-
-    // Delete the plan
-    await this.databaseService.query(
-      `DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
-      [planId, tenantId],
-    );
+    await this.shiftPlansService.deleteShiftPlan(planId, tenantId);
   }
 
   // ============================================================
-  // SWAP REQUESTS
+  // SWAP REQUESTS (delegated to ShiftSwapService)
   // ============================================================
 
   async listSwapRequests(
     tenantId: number,
     filters: SwapRequestFilters,
   ): Promise<SwapRequestResponse[]> {
-    this.logger.debug(`Listing swap requests for tenant ${tenantId}`);
-
-    let query = `SELECT * FROM shift_swap_requests WHERE tenant_id = $1`;
-    const params: unknown[] = [tenantId];
-    let paramIndex = 2;
-
-    if (filters.userId !== undefined) {
-      query += ` AND (requested_by = $${paramIndex} OR requested_with = $${paramIndex})`;
-      params.push(filters.userId);
-      paramIndex++;
-    }
-    if (filters.status !== undefined) {
-      query += ` AND status = $${paramIndex}`;
-      params.push(filters.status);
-    }
-
-    query += ` ORDER BY created_at DESC`;
-
-    const requests = await this.databaseService.query<DbSwapRequestRow>(
-      query,
-      params,
-    );
-    return requests.map(
-      (r: DbSwapRequestRow) =>
-        dbToApi(r as unknown as Record<string, unknown>) as SwapRequestResponse,
-    );
+    return await this.shiftSwapService.listSwapRequests(tenantId, filters);
   }
 
+  /**
+   * Creates a swap request — verifies shift ownership (cross-domain) then delegates
+   */
   async createSwapRequest(
     dto: CreateSwapRequestDto,
     tenantId: number,
     userId: number,
   ): Promise<SwapRequestResponse> {
-    this.logger.debug(`Creating swap request for tenant ${tenantId}`);
-
-    // Verify shift exists and belongs to user
+    // Verify shift exists and belongs to user (cross-domain coordination)
     const shift = await this.getShiftById(dto.shiftId, tenantId);
     if (shift.userId !== userId) {
       throw new ForbiddenException(
@@ -1198,30 +509,7 @@ export class ShiftsService {
       );
     }
 
-    const result = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO shift_swap_requests (tenant_id, shift_id, requested_by, requested_with, reason, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')
-       RETURNING id`,
-      [
-        tenantId,
-        dto.shiftId,
-        userId,
-        dto.requestedWithUserId ?? null,
-        dto.reason ?? null,
-      ],
-    );
-
-    const requestId = result[0]?.id ?? 0;
-
-    return {
-      id: requestId,
-      shiftId: dto.shiftId,
-      requestedBy: userId,
-      requestedWith: dto.requestedWithUserId,
-      status: 'pending',
-      reason: dto.reason,
-      message: 'Swap request created successfully',
-    };
+    return await this.shiftSwapService.createSwapRequest(dto, tenantId, userId);
   }
 
   async updateSwapRequestStatus(
@@ -1230,26 +518,12 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    this.logger.debug(
-      `Updating swap request ${id} status for tenant ${tenantId}`,
+    return await this.shiftSwapService.updateSwapRequestStatus(
+      id,
+      dto,
+      tenantId,
+      userId,
     );
-
-    const requests = await this.databaseService.query<DbSwapRequestRow>(
-      `SELECT * FROM shift_swap_requests WHERE id = $1 AND tenant_id = $2`,
-      [id, tenantId],
-    );
-
-    if (requests.length === 0) {
-      throw new NotFoundException(`Swap request ${id} not found`);
-    }
-
-    await this.databaseService.query(
-      `UPDATE shift_swap_requests SET status = $1, reviewed_by = $2, reviewed_at = NOW()
-       WHERE id = $3 AND tenant_id = $4`,
-      [dto.status, userId, id, tenantId],
-    );
-
-    return { message: `Swap request ${dto.status} successfully` };
   }
 
   // ============================================================
@@ -1336,7 +610,7 @@ export class ShiftsService {
       shift.startTime,
       shift.endTime,
       shift.breakMinutes ?? 0,
-      this.calculateHours(shift.startTime, shift.endTime, shift.breakMinutes),
+      calculateHours(shift.startTime, shift.endTime, shift.breakMinutes),
       shift.type,
       shift.status,
       shift.departmentName ?? shift.departmentId,

@@ -13,6 +13,8 @@ import { RotationHistoryService } from './rotation-history.service.js';
 import { RotationPatternService } from './rotation-pattern.service.js';
 import { RotationController } from './rotation.controller.js';
 import { RotationService } from './rotation.service.js';
+import { ShiftPlansService } from './shift-plans.service.js';
+import { ShiftSwapService } from './shift-swap.service.js';
 import { ShiftsController } from './shifts.controller.js';
 import { ShiftsService } from './shifts.service.js';
 
@@ -20,6 +22,8 @@ import { ShiftsService } from './shifts.service.js';
   controllers: [ShiftsController, RotationController],
   providers: [
     ShiftsService,
+    ShiftPlansService,
+    ShiftSwapService,
     RotationService,
     RotationPatternService,
     RotationAssignmentService,
