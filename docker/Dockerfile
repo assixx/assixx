@@ -31,16 +31,24 @@ RUN pnpm install --frozen-lockfile
 # Backend Source kopieren
 COPY backend/ ./backend/
 
-# TypeScript kompilieren (für Type-Checking, tsx führt TS direkt aus)
-# Verify build output exists - fail fast if compilation fails silently
-RUN cd backend && pnpm run build && \
-    if [ ! -f "dist/nest/main.js" ]; then \
-      echo "ERROR: TypeScript build failed - dist/nest/main.js not found!" && \
-      echo "Contents of backend/dist:" && \
-      ls -la dist/ 2>/dev/null || echo "(dist/ does not exist)" && \
+# TypeScript kompilieren
+# 1. Shared zuerst (Backend importiert @assixx/shared/dist/*)
+# 2. Backend danach
+# Verify build outputs exist - fail fast if compilation fails silently
+RUN cd shared && pnpm run build && \
+    if [ ! -f "dist/index.js" ]; then \
+      echo "ERROR: Shared build failed - dist/index.js not found!" && \
+      ls -la dist/ 2>/dev/null || echo "(shared/dist/ does not exist)" && \
       exit 1; \
     fi && \
-    echo "Build successful: dist/nest/main.js exists"
+    echo "Shared build successful: dist/index.js exists" && \
+    cd /app/backend && pnpm run build && \
+    if [ ! -f "dist/nest/main.js" ]; then \
+      echo "ERROR: Backend build failed - dist/nest/main.js not found!" && \
+      ls -la dist/ 2>/dev/null || echo "(backend/dist/ does not exist)" && \
+      exit 1; \
+    fi && \
+    echo "Backend build successful: dist/nest/main.js exists"
 
 # Stage 2: Production Runtime
 FROM node:24.13.0-alpine3.22
