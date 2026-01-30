@@ -53,7 +53,7 @@
                 class="fas fa-level-up-alt"
                 style="font-size: 24px; color: var(--color-content-secondary);"
               ></i>
-              <span class="font-medium text-content-secondary">..</span>
+              <span class="text-content-secondary font-medium">..</span>
             </div>
           </td>
           <td class="text-content-tertiary">Übergeordneter Ordner</td>
@@ -73,7 +73,7 @@
             '<i class="fas fa-users" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'
           : '<i class="fas fa-user" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'}
         <tr
-          class="chat-folder-row cursor-pointer hover:bg-surface-2"
+          class="chat-folder-row hover:bg-surface-2 cursor-pointer"
           onclick={() => {
             onfolderClick(folder.conversationId);
           }}
@@ -81,7 +81,7 @@
           <td>
             <div class="flex items-center gap-3">
               <svg
-                class="w-6 h-6 text-amber-500"
+                class="h-6 w-6 text-amber-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -93,7 +93,7 @@
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                 ></path>
               </svg>
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex min-w-0 items-center gap-2">
                 <span
                   class="font-medium"
                   title={displayName}>{displayName}</span
@@ -115,7 +115,7 @@
         <tr>
           <td
             colspan="6"
-            class="text-center text-content-secondary py-8"
+            class="text-content-secondary py-8 text-center"
           >
             {MESSAGES.EMPTY_DESCRIPTION}
           </td>

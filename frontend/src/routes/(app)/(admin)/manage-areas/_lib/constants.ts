@@ -2,12 +2,9 @@
 // MANAGE AREAS - CONSTANTS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  AreaType,
-  TypeOption,
-  FormIsActiveStatus,
-} from './types';
+import type { AreaType, TypeOption, FormIsActiveStatus } from './types';
+
+export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 /**
  * Area type labels for display
@@ -32,26 +29,6 @@ export const TYPE_OPTIONS: TypeOption[] = [
   { value: 'outdoor', label: 'Außenbereich' },
   { value: 'other', label: 'Sonstiges' },
 ];
-
-/**
- * Status badge CSS classes mapping
- */
-export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
-  1: 'badge--success',
-  0: 'badge--warning',
-  3: 'badge--secondary',
-  4: 'badge--error',
-};
-
-/**
- * Status labels for display
- */
-export const STATUS_LABELS: Record<IsActiveStatus, string> = {
-  1: 'Aktiv',
-  0: 'Inaktiv',
-  3: 'Archiviert',
-  4: 'Gelöscht',
-};
 
 /**
  * UI Messages for i18n preparation

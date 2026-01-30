@@ -11,6 +11,9 @@
 
 import { createLogger } from './logger';
 
+// Valid user roles in the system - single source of truth from @assixx/shared
+import type { UserRole } from '@assixx/shared';
+
 const log = createLogger('Auth');
 
 // Storage key constants - MUST match Vite frontend!
@@ -24,8 +27,7 @@ const STORAGE_KEYS = {
   ACTIVE_ROLE: 'activeRole',
 } as const;
 
-// Valid user roles in the system
-export type UserRole = 'root' | 'admin' | 'employee';
+export type { UserRole };
 
 // =============================================================================
 // SSR SAFETY HELPER

@@ -24,7 +24,7 @@ RUN apk add --no-cache curl jq && \
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version is configurable for consistency across environments
 ARG PNPM_VERSION=10.28.2
-RUN npm install -g npm@latest pnpm@${PNPM_VERSION}
+RUN npm install -g npm@11.8.0 pnpm@${PNPM_VERSION}
 
 # Arbeitsverzeichnis
 WORKDIR /app
@@ -36,6 +36,10 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
+
+# Shared source kopieren (inject-workspace-packages needs source at install time)
+COPY shared/ ./shared/
 
 # Install all workspace dependencies with BuildKit cache mount
 # Cache persists between builds, so unchanged packages don't need re-download

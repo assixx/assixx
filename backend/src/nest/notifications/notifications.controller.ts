@@ -8,11 +8,7 @@
  * - PUT    /notifications/preferences        - Update preferences
  * - GET    /notifications/stats              - Get statistics (admin)
  * - GET    /notifications/stats/me           - Get personal stats
- * - POST   /notifications/subscribe          - Subscribe to push
- * - GET    /notifications/templates          - Get templates (admin)
- * - POST   /notifications/from-template      - Create from template (admin)
  * - PUT    /notifications/mark-all-read      - Mark all as read
- * - DELETE /notifications/subscribe/:id      - Unsubscribe
  * - PUT    /notifications/:id/read           - Mark as read
  * - DELETE /notifications/:id                - Delete notification
  * - GET    /notifications/stream             - SSE stream
@@ -29,7 +25,6 @@ import {
   HttpCode,
   HttpStatus,
   Ip,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -46,15 +41,12 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
-  CreateFromTemplateDto,
   CreateNotificationDto,
   ListNotificationsQueryDto,
-  SubscribeDto,
-  SubscriptionIdParamDto,
   UpdatePreferencesDto,
 } from './dto/index.js';
-import type { PaginatedNotificationsResult } from './notifications.service.js';
 import { NotificationsService } from './notifications.service.js';
+import type { PaginatedNotificationsResult } from './notifications.types.js';
 
 /**
  * Response type for message-only responses
@@ -173,6 +165,16 @@ function createMessageHandler(
   };
 }
 
+/** Register a handler on eventBus and track it for cleanup */
+function registerHandler(
+  handlers: EventHandler[],
+  event: string,
+  handler: (eventData: NotificationEventData) => void,
+): void {
+  eventBus.on(event, handler);
+  handlers.push({ event, handler });
+}
+
 /**
  * Register SSE handlers based on user role
  */
@@ -183,72 +185,50 @@ function registerSSEHandlers(
   eventSubject: Subject<{ data: SSEMessageData }>,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
+  const makeHandler = (
+    type: string,
+    key: string,
+  ): ((e: NotificationEventData) => void) =>
+    createSSEHandler(type, key, tenantId, eventSubject);
 
-  // Document notifications for all users
-  const documentHandler = createSSEHandler(
-    'NEW_DOCUMENT',
-    'document',
-    tenantId,
-    eventSubject,
+  // All users: documents and messages
+  registerHandler(
+    handlers,
+    SSE_EVENTS.DOCUMENT_UPLOADED,
+    makeHandler('NEW_DOCUMENT', 'document'),
   );
-  eventBus.on(SSE_EVENTS.DOCUMENT_UPLOADED, documentHandler);
-  handlers.push({
-    event: SSE_EVENTS.DOCUMENT_UPLOADED,
-    handler: documentHandler,
-  });
+  registerHandler(
+    handlers,
+    SSE_EVENTS.MESSAGE_CREATED,
+    createMessageHandler(userId, tenantId, eventSubject),
+  );
 
-  // Message notifications for all users (checks recipientIds inside handler)
-  const messageHandler = createMessageHandler(userId, tenantId, eventSubject);
-  eventBus.on(SSE_EVENTS.MESSAGE_CREATED, messageHandler);
-  handlers.push({ event: SSE_EVENTS.MESSAGE_CREATED, handler: messageHandler });
-
-  // Survey notifications for employees
+  // Employee: survey notifications
   if (role === 'employee') {
-    const surveyCreatedHandler = createSSEHandler(
-      'NEW_SURVEY',
-      'survey',
-      tenantId,
-      eventSubject,
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      makeHandler('NEW_SURVEY', 'survey'),
     );
-    const surveyUpdatedHandler = createSSEHandler(
-      'SURVEY_UPDATED',
-      'survey',
-      tenantId,
-      eventSubject,
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_UPDATED,
+      makeHandler('SURVEY_UPDATED', 'survey'),
     );
-    eventBus.on(SSE_EVENTS.SURVEY_CREATED, surveyCreatedHandler);
-    eventBus.on(SSE_EVENTS.SURVEY_UPDATED, surveyUpdatedHandler);
-    handlers.push({
-      event: SSE_EVENTS.SURVEY_CREATED,
-      handler: surveyCreatedHandler,
-    });
-    handlers.push({
-      event: SSE_EVENTS.SURVEY_UPDATED,
-      handler: surveyUpdatedHandler,
-    });
   }
 
-  // Admin notifications
+  // Admin/Root: KVP and survey notifications
   if (role === 'admin' || role === 'root') {
-    const kvpHandler = createSSEHandler(
-      'NEW_KVP',
-      'kvp',
-      tenantId,
-      eventSubject,
+    registerHandler(
+      handlers,
+      SSE_EVENTS.KVP_SUBMITTED,
+      makeHandler('NEW_KVP', 'kvp'),
     );
-    const adminSurveyHandler = createSSEHandler(
-      'NEW_SURVEY_CREATED',
-      'survey',
-      tenantId,
-      eventSubject,
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      makeHandler('NEW_SURVEY_CREATED', 'survey'),
     );
-    eventBus.on(SSE_EVENTS.KVP_SUBMITTED, kvpHandler);
-    eventBus.on(SSE_EVENTS.SURVEY_CREATED, adminSurveyHandler);
-    handlers.push({ event: SSE_EVENTS.KVP_SUBMITTED, handler: kvpHandler });
-    handlers.push({
-      event: SSE_EVENTS.SURVEY_CREATED,
-      handler: adminSurveyHandler,
-    });
   }
 
   return handlers;
@@ -408,63 +388,6 @@ export class NotificationsController {
   }
 
   /**
-   * POST /notifications/subscribe
-   * Subscribe to push notifications
-   */
-  @Post('subscribe')
-  subscribe(
-    @Body() dto: SubscribeDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): { subscriptionId: string; message: string } {
-    const result = this.notificationsService.subscribe(
-      user.id,
-      tenantId,
-      dto.deviceToken,
-      dto.platform,
-    );
-    return { ...result, message: 'Successfully subscribed to notifications' };
-  }
-
-  /**
-   * GET /notifications/templates
-   * Get notification templates (admin only)
-   */
-  @Get('templates')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  getTemplates(@TenantId() tenantId: number): { templates: unknown[] } {
-    return this.notificationsService.getTemplates(tenantId);
-  }
-
-  /**
-   * POST /notifications/from-template
-   * Create notification from template (admin only)
-   */
-  @Post('from-template')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  createFromTemplate(
-    @Body() dto: CreateFromTemplateDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): never {
-    try {
-      return this.notificationsService.createFromTemplate(
-        dto.templateId,
-        tenantId,
-        user.id,
-        dto.recipientType,
-        dto.recipientId,
-        dto.variables,
-      );
-    } catch {
-      throw new NotFoundException('Template not found');
-    }
-  }
-
-  /**
    * PUT /notifications/mark-all-read
    * Mark all notifications as read
    */
@@ -474,20 +397,6 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<{ updated: number }> {
     return await this.notificationsService.markAllAsRead(user.id, tenantId);
-  }
-
-  /**
-   * DELETE /notifications/subscribe/:id
-   * Unsubscribe from push notifications
-   */
-  @Delete('subscribe/:id')
-  unsubscribe(
-    @Param() params: SubscriptionIdParamDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): MessageResponse {
-    this.notificationsService.unsubscribe(user.id, tenantId, params.id);
-    return { message: 'Successfully unsubscribed from notifications' };
   }
 
   /**

@@ -49,7 +49,7 @@
   <!-- Comment Form (Admin only) -->
   {#if canAddComments(kvpDetailState.effectiveRole)}
     <form
-      class="flex gap-4 mb-6"
+      class="mb-6 flex gap-4"
       onsubmit={(e) => {
         e.preventDefault();
         onaddcomment();

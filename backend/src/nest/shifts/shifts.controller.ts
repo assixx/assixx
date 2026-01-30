@@ -9,10 +9,8 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
-  Ip,
   Logger,
   Param,
   ParseIntPipe,
@@ -50,9 +48,6 @@ import type {
   SwapRequestResponse,
 } from './shifts.service.js';
 import { ShiftsService } from './shifts.service.js';
-
-/** Header constant to avoid duplicate string */
-const USER_AGENT_HEADER = 'user-agent';
 
 // ============================================================
 // RESPONSE TYPES
@@ -136,16 +131,12 @@ export class ShiftsController {
   async createSwapRequest(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateSwapRequestDto,
-    @Ip() ip: string,
-    @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<SwapRequestResponse>> {
     this.logger.debug(`Creating swap request for user ${user.id}`);
     const request = await this.shiftsService.createSwapRequest(
       dto,
       user.tenantId,
       user.id,
-      ip,
-      userAgent,
     );
     return { success: true, data: request };
   }
@@ -160,8 +151,6 @@ export class ShiftsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateSwapRequestStatusDto,
-    @Ip() ip: string,
-    @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<{ message: string }>> {
     this.logger.debug(`Updating swap request ${id} status`);
     const result = await this.shiftsService.updateSwapRequestStatus(
@@ -169,8 +158,6 @@ export class ShiftsController {
       dto,
       user.tenantId,
       user.id,
-      ip,
-      userAgent,
     );
     return { success: true, data: result };
   }
@@ -451,16 +438,12 @@ export class ShiftsController {
   async createShift(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateShiftDto,
-    @Ip() ip: string,
-    @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<ShiftResponse>> {
     this.logger.debug(`Creating shift for tenant ${user.tenantId}`);
     const shift = await this.shiftsService.createShift(
       dto,
       user.tenantId,
       user.id,
-      ip,
-      userAgent,
     );
     return { success: true, data: shift };
   }
@@ -475,8 +458,6 @@ export class ShiftsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateShiftDto,
-    @Ip() ip: string,
-    @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<ShiftResponse>> {
     this.logger.debug(`Updating shift ${id}`);
     const shift = await this.shiftsService.updateShift(
@@ -484,8 +465,6 @@ export class ShiftsController {
       dto,
       user.tenantId,
       user.id,
-      ip,
-      userAgent,
     );
     return { success: true, data: shift };
   }
@@ -541,16 +520,12 @@ export class ShiftsController {
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
-    @Ip() ip: string,
-    @Headers(USER_AGENT_HEADER) userAgent: string,
   ): Promise<SuccessResponse<{ message: string }>> {
     this.logger.debug(`Deleting shift ${id}`);
     const result = await this.shiftsService.deleteShift(
       id,
       user.tenantId,
       user.id,
-      ip,
-      userAgent,
     );
     return { success: true, data: result };
   }

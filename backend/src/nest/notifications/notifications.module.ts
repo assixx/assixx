@@ -2,15 +2,28 @@
  * Notifications Module
  *
  * Handles notification management, preferences, and real-time SSE streaming.
+ *
+ * Sub-services:
+ * - NotificationPreferencesService - user preference CRUD
+ * - NotificationStatisticsService - analytics and stats
+ * - NotificationFeatureService - feature-specific notifications (ADR-004)
  */
 import { Module } from '@nestjs/common';
 
+import { NotificationFeatureService } from './notification-feature.service.js';
+import { NotificationPreferencesService } from './notification-preferences.service.js';
+import { NotificationStatisticsService } from './notification-statistics.service.js';
 import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
 
 @Module({
   controllers: [NotificationsController],
-  providers: [NotificationsService],
+  providers: [
+    NotificationsService,
+    NotificationPreferencesService,
+    NotificationStatisticsService,
+    NotificationFeatureService,
+  ],
   exports: [NotificationsService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty classes by design

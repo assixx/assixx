@@ -4,7 +4,7 @@ FROM node:24.13.0-alpine3.22 AS builder
 
 # pnpm installieren (pinned version matching packageManager field)
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.28.2
+RUN npm install -g npm@11.8.0 pnpm@10.28.2
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -18,8 +18,12 @@ COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren (für pnpm workspace)
+COPY shared/package.json ./shared/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+
+# Shared source kopieren (inject-workspace-packages needs source at install time)
+COPY shared/ ./shared/
 
 # Dependencies installieren
 RUN pnpm install --frozen-lockfile
@@ -27,16 +31,24 @@ RUN pnpm install --frozen-lockfile
 # Backend Source kopieren
 COPY backend/ ./backend/
 
-# TypeScript kompilieren (für Type-Checking, tsx führt TS direkt aus)
-# Verify build output exists - fail fast if compilation fails silently
-RUN cd backend && pnpm run build && \
-    if [ ! -f "dist/nest/main.js" ]; then \
-      echo "ERROR: TypeScript build failed - dist/nest/main.js not found!" && \
-      echo "Contents of backend/dist:" && \
-      ls -la dist/ 2>/dev/null || echo "(dist/ does not exist)" && \
+# TypeScript kompilieren
+# 1. Shared zuerst (Backend importiert @assixx/shared/dist/*)
+# 2. Backend danach
+# Verify build outputs exist - fail fast if compilation fails silently
+RUN cd shared && pnpm run build && \
+    if [ ! -f "dist/index.js" ]; then \
+      echo "ERROR: Shared build failed - dist/index.js not found!" && \
+      ls -la dist/ 2>/dev/null || echo "(shared/dist/ does not exist)" && \
       exit 1; \
     fi && \
-    echo "Build successful: dist/nest/main.js exists"
+    echo "Shared build successful: dist/index.js exists" && \
+    cd /app/backend && pnpm run build && \
+    if [ ! -f "dist/nest/main.js" ]; then \
+      echo "ERROR: Backend build failed - dist/nest/main.js not found!" && \
+      ls -la dist/ 2>/dev/null || echo "(backend/dist/ does not exist)" && \
+      exit 1; \
+    fi && \
+    echo "Backend build successful: dist/nest/main.js exists"
 
 # Stage 2: Production Runtime
 FROM node:24.13.0-alpine3.22
@@ -44,7 +56,7 @@ FROM node:24.13.0-alpine3.22
 # pnpm installieren (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-RUN npm install -g npm@latest pnpm@10.28.2
+RUN npm install -g npm@11.8.0 pnpm@10.28.2
 
 # Install dumb-init for proper signal handling (SIGTERM, SIGINT)
 # This ensures graceful shutdown when Node.js runs as PID 1
@@ -66,8 +78,12 @@ COPY tsconfig.json ./
 COPY tsconfig.base.json ./
 
 # Workspace package.json files kopieren
+COPY shared/package.json ./shared/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+
+# Shared source kopieren (needed at runtime by tsx for @assixx/shared imports)
+COPY --from=builder --chown=nodejs:nodejs /app/shared ./shared
 
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune

@@ -19,7 +19,7 @@
 </script>
 
 <div
-  class="w-64 bg-[var(--background-secondary)] border-r border-[var(--border-color)]"
+  class="w-64 border-r border-[var(--border-color)] bg-[var(--background-secondary)]"
 >
   <nav
     id="folder-tree"
@@ -35,7 +35,7 @@
         <li>
           <button
             type="button"
-            class="folder-item w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-left {(
+            class="folder-item flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors {(
               isActive
             ) ?
               'bg-surface-3 text-primary-500'
@@ -54,7 +54,7 @@
             <span class="text-sm {isActive ? 'font-medium' : ''}"
               >{folder.label}</span
             >
-            <span class="ml-auto text-xs text-content-tertiary">{count}</span>
+            <span class="text-content-tertiary ml-auto text-xs">{count}</span>
           </button>
         </li>
       {/each}

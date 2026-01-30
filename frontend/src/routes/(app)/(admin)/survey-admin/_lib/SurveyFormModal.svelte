@@ -208,7 +208,7 @@
               <span class="toggle-switch__label">Verpflichtende Teilnahme</span>
             </label>
           </div>
-          <p class="mt-3 text-secondary text-sm">
+          <p class="text-secondary mt-3 text-sm">
             <i class="fas fa-info-circle"></i>
             Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie koennen
             nicht sehen, wer geantwortet hat.
@@ -286,7 +286,7 @@
             <i class="fas fa-users mr-2"></i>
             Sichtbarkeit
           </span>
-          <p class="text-sm text-[var(--color-text-secondary)] mb-2">
+          <p class="mb-2 text-sm text-[var(--color-text-secondary)]">
             Waehlen Sie keine Organisation fuer firmenweite Umfragen oder
             eine/mehrere spezifische Organisationen.
           </p>

@@ -125,9 +125,9 @@
 <div class="container">
   <!-- Welcome Hero Section -->
   <div
-    class="welcome-hero-custom relative flex items-center justify-between min-h-[120px]
-      overflow-hidden rounded-xl px-8 py-6 mb-8 border border-white/10
-      backdrop-blur-[20px] backdrop-saturate-[180%] shadow-sm text-white"
+    class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
+      justify-between overflow-hidden rounded-xl border border-white/10 px-8 py-6
+      text-white shadow-sm backdrop-blur-[20px] backdrop-saturate-[180%]"
   >
     <!-- Floating sakura petals (generated via floatingDotsCount) -->
     <div class="floating-elements">
@@ -138,10 +138,10 @@
 
     <!-- Welcome content -->
     <div class="relative z-10">
-      <h1 class="text-3xl font-bold mb-1">{MESSAGES.welcomeBack}</h1>
+      <h1 class="mb-1 text-3xl font-bold">{MESSAGES.welcomeBack}</h1>
       <p class="text-lg text-white/90">
         {MESSAGES.niceToSeeYou}&nbsp;
-        <span class="text-[var(--color-primary)] font-semibold"
+        <span class="font-semibold text-[var(--color-primary)]"
           >{employeeName}</span
         >
       </p>
@@ -157,7 +157,7 @@
   </div>
 
   <!-- Employee Info Grid - 4 Stat Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
     <div class="card-stat">
       <div class="card-stat__icon">
         <i class="fas fa-map-marker-alt"></i>
@@ -323,7 +323,7 @@
   </div>
 
   <!-- Quick Access Features - 4 Accent Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
     <!-- Documents Card -->
     <div class="max-w-[350px]">
       <div class="card-accent card-accent--success card-accent--static">
@@ -339,7 +339,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage w-4/5 mb-4"
+            class="btn btn-manage mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.documents);
             }}
@@ -351,7 +351,7 @@
             id="recent-documents"
           >
             {#if recentDocuments.length === 0}
-              <p class="p-2 text-muted">{PLACEHOLDER_TEXT.noDocuments}</p>
+              <p class="text-muted p-2">{PLACEHOLDER_TEXT.noDocuments}</p>
             {:else}
               {#each recentDocuments as doc (doc.id)}
                 <div class="compact-item">
@@ -382,7 +382,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage w-4/5 mb-4"
+            class="btn btn-manage mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.calendar);
             }}
@@ -394,11 +394,11 @@
             id="calendar-events-list"
           >
             {#if upcomingEvents.length === 0}
-              <div class="p-2 rounded text-xs">
+              <div class="rounded p-2 text-xs">
                 <strong class="block font-semibold"
                   >{MESSAGES.upcomingEvents}</strong
                 >
-                <p class="text-[var(--color-text-secondary)] mt-1">
+                <p class="mt-1 text-[var(--color-text-secondary)]">
                   {PLACEHOLDER_TEXT.noEvents}
                 </p>
               </div>
@@ -485,7 +485,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage w-4/5 mb-4"
+            class="btn btn-manage mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.kvp);
             }}
@@ -514,7 +514,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage w-4/5 mb-4"
+            class="btn btn-manage mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.profile);
             }}

@@ -40,18 +40,18 @@
       if (e.key === 'Enter') onedit(survey.id ?? surveyId);
     }}
   >
-    <div class="flex justify-between items-start mb-4">
-      <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>
+    <div class="mb-4 flex items-start justify-between">
+      <h3 class="text-primary m-0 text-xl font-semibold">{title}</h3>
       <span class="badge badge--warning badge--uppercase">Entwurf</span>
     </div>
 
     {#if creatorName !== ''}
-      <p class="text-xs text-secondary mt-0 mb-3">
+      <p class="text-secondary mt-0 mb-3 text-xs">
         <i class="fas fa-user-pen"></i> Erstellt von {creatorName}
       </p>
     {/if}
 
-    <p class="mb-4 text-sm leading-relaxed text-secondary">
+    <p class="text-secondary mb-4 text-sm leading-relaxed">
       {description !== '' ? description : 'Keine Beschreibung'}
     </p>
 
@@ -82,18 +82,18 @@
   </div>
 {:else}
   <div class="card">
-    <div class="flex justify-between items-start mb-4">
-      <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>
+    <div class="mb-4 flex items-start justify-between">
+      <h3 class="text-primary m-0 text-xl font-semibold">{title}</h3>
       <span class="badge badge--warning badge--uppercase">Entwurf</span>
     </div>
 
     {#if creatorName !== ''}
-      <p class="text-xs text-secondary mt-0 mb-3">
+      <p class="text-secondary mt-0 mb-3 text-xs">
         <i class="fas fa-user-pen"></i> Erstellt von {creatorName}
       </p>
     {/if}
 
-    <p class="mb-4 text-sm leading-relaxed text-secondary">
+    <p class="text-secondary mb-4 text-sm leading-relaxed">
       {description !== '' ? description : 'Keine Beschreibung'}
     </p>
   </div>

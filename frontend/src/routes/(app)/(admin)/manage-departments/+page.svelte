@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import {
     showWarningAlert,
     showErrorAlert,
@@ -30,7 +31,6 @@
     getAreaDisplay,
     getLeadDisplay,
     getTeamCountText,
-    highlightMatch,
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -334,11 +334,11 @@
         <i class="fas fa-building mr-2"></i>
         {MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
-      <div class="flex gap-4 items-center justify-between mt-6">
+      <div class="mt-6 flex items-center justify-between gap-4">
         <!-- Status Toggle Group -->
         <div
           class="toggle-group"
@@ -442,8 +442,10 @@
                 >
                   <div class="search-result-item">
                     <div class="search-result-item__name">
-                      <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes input -->
-                      {@html highlightMatch(dept.name, currentSearchQuery)}
+                      <HighlightText
+                        text={dept.name}
+                        query={currentSearchQuery}
+                      />
                     </div>
                     <div class="search-result-item__email">
                       {getAreaDisplay(dept.areaName)}
@@ -467,9 +469,9 @@
 
     <div class="card__body">
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
           <button
@@ -524,7 +526,7 @@
                       </div>
                     </td>
                     <td>
-                      <div class="text-[var(--color-text-secondary)] text-sm">
+                      <div class="text-sm text-[var(--color-text-secondary)]">
                         {dept.description ?? '-'}
                       </div>
                     </td>

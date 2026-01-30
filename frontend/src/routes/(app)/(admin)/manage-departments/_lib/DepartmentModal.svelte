@@ -371,7 +371,7 @@
               </div>
             </div>
             <span
-              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
             >
               {MESSAGES.STATUS_HINT}
             </span>

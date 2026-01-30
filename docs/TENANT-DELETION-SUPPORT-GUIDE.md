@@ -244,7 +244,7 @@ docker-compose exec deletion-worker node -e "console.info('DB Test')"
 **Lösung:**
 
 1. Worker neustarten
-2. MySQL/Redis Verbindung prüfen
+2. PostgreSQL/Redis Verbindung prüfen
 3. Disk Space prüfen
 
 ### Problem 4: "Datenexport fehlt"
@@ -306,11 +306,11 @@ node backend/src/utils/scripts/manual-export.js {TENANT_ID}
 docker-compose stop deletion-worker
 
 # 2. Hängende Jobs resetten
-mysql -u root -p main -e "
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "
 UPDATE tenant_deletion_queue
 SET status = 'queued', started_at = NULL
 WHERE status = 'processing'
-AND TIMESTAMPDIFF(HOUR, started_at, NOW()) > 2;"
+AND started_at < NOW() - INTERVAL '2 hours';"
 
 # 3. Worker neu starten
 docker-compose up -d deletion-worker

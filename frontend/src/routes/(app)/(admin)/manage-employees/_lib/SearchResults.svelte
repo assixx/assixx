@@ -1,6 +1,7 @@
 <script lang="ts">
+  import HighlightText from '$lib/components/HighlightText.svelte';
+
   import { MESSAGES } from './constants';
-  import { highlightMatch } from './utils';
 
   import type { Employee } from './types';
 
@@ -37,27 +38,32 @@
       >
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <div style="font-weight: 500; color: var(--color-text-primary);">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-            {@html highlightMatch(
-              `${employee.firstName} ${employee.lastName}`,
-              searchQuery,
-            )}
+            <HighlightText
+              text={`${employee.firstName} ${employee.lastName}`}
+              query={searchQuery}
+            />
           </div>
           <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-            {@html highlightMatch(employee.email, searchQuery)}
+            <HighlightText
+              text={employee.email}
+              query={searchQuery}
+            />
           </div>
           <div
             style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
           >
             <span>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-              {@html highlightMatch(employee.position ?? '', searchQuery)}
+              <HighlightText
+                text={employee.position ?? ''}
+                query={searchQuery}
+              />
             </span>
             {#if employee.employeeNumber}
               <span>
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: highlightMatch escapes HTML -->
-                • {@html highlightMatch(employee.employeeNumber, searchQuery)}
+                • <HighlightText
+                  text={employee.employeeNumber}
+                  query={searchQuery}
+                />
               </span>
             {/if}
           </div>

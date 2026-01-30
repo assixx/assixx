@@ -1,28 +1,44 @@
 // =============================================================================
 // SHIFTS STATE - SHIFT DATA MODULE
 // Weekly shifts, shift details, notes
+// Decomposed: notes | core state | operations | composition
 // =============================================================================
 
 import {
   addAssignment,
-  removeAssignment,
   createShiftDetail,
+  removeAssignment,
 } from './shift-operations';
 
-import type { WeeklyShiftsMap, ShiftDetailData, Employee } from './types';
+import type { Employee, ShiftDetailData, WeeklyShiftsMap } from './types';
 
-function createShiftDataState() {
-  let weeklyShifts = $state<WeeklyShiftsMap>(new Map());
-  let shiftDetails = $state<Map<string, ShiftDetailData>>(new Map());
+function createNotesState() {
   let currentShiftNotes = $state('');
   let weeklyNotes = $state('');
 
-  const clearCore = (): void => {
-    weeklyShifts = new Map();
-    shiftDetails = new Map();
-    currentShiftNotes = '';
-    weeklyNotes = '';
+  return {
+    get currentShiftNotes() {
+      return currentShiftNotes;
+    },
+    get weeklyNotes() {
+      return weeklyNotes;
+    },
+    setCurrentShiftNotes: (notes: string) => {
+      currentShiftNotes = notes;
+    },
+    setWeeklyNotes: (notes: string) => {
+      weeklyNotes = notes;
+    },
+    clear: () => {
+      currentShiftNotes = '';
+      weeklyNotes = '';
+    },
   };
+}
+
+function createCoreShiftState() {
+  let weeklyShifts = $state<WeeklyShiftsMap>(new Map());
+  let shiftDetails = $state<Map<string, ShiftDetailData>>(new Map());
 
   return {
     get weeklyShifts() {
@@ -31,31 +47,26 @@ function createShiftDataState() {
     get shiftDetails() {
       return shiftDetails;
     },
-    get currentShiftNotes() {
-      return currentShiftNotes;
-    },
-    get weeklyNotes() {
-      return weeklyNotes;
-    },
     get hasShiftData() {
       return weeklyShifts.size > 0;
     },
-
     setWeeklyShifts: (shifts: WeeklyShiftsMap) => {
       weeklyShifts = shifts;
     },
     setShiftDetails: (details: Map<string, ShiftDetailData>) => {
       shiftDetails = details;
     },
-    setCurrentShiftNotes: (notes: string) => {
-      currentShiftNotes = notes;
+    clear: () => {
+      weeklyShifts = new Map();
+      shiftDetails = new Map();
     },
-    setWeeklyNotes: (notes: string) => {
-      weeklyNotes = notes;
-    },
+  };
+}
 
+function createShiftOperations(core: ReturnType<typeof createCoreShiftState>) {
+  return {
     getShiftEmployees: (date: string, shiftType: string): number[] => {
-      const dayShifts = weeklyShifts.get(date);
+      const dayShifts = core.weeklyShifts.get(date);
       return dayShifts === undefined ? [] : (dayShifts.get(shiftType) ?? []);
     },
 
@@ -64,7 +75,9 @@ function createShiftDataState() {
       shiftType: string,
       employeeId: number,
     ) => {
-      weeklyShifts = addAssignment(weeklyShifts, date, shiftType, employeeId);
+      core.setWeeklyShifts(
+        addAssignment(core.weeklyShifts, date, shiftType, employeeId),
+      );
     },
 
     removeShiftAssignment: (
@@ -73,14 +86,14 @@ function createShiftDataState() {
       employeeId: number,
     ) => {
       const result = removeAssignment(
-        weeklyShifts,
-        shiftDetails,
+        core.weeklyShifts,
+        core.shiftDetails,
         date,
         shiftType,
         employeeId,
       );
-      weeklyShifts = result.weeklyShifts;
-      shiftDetails = result.shiftDetails;
+      core.setWeeklyShifts(result.weeklyShifts);
+      core.setShiftDetails(result.shiftDetails);
     },
 
     addShiftDetail: (
@@ -89,14 +102,49 @@ function createShiftDataState() {
       employeeId: number,
       employee: Employee,
     ) => {
-      shiftDetails = createShiftDetail(shiftDetails, date, shiftType, employee);
+      core.setShiftDetails(
+        createShiftDetail(core.shiftDetails, date, shiftType, employee),
+      );
     },
+  };
+}
 
-    clearShiftData: clearCore,
+function createShiftDataState() {
+  const core = createCoreShiftState();
+  const notes = createNotesState();
+  const ops = createShiftOperations(core);
 
-    reset: () => {
-      clearCore();
+  const clearAll = (): void => {
+    core.clear();
+    notes.clear();
+  };
+
+  return {
+    get weeklyShifts() {
+      return core.weeklyShifts;
     },
+    get shiftDetails() {
+      return core.shiftDetails;
+    },
+    get currentShiftNotes() {
+      return notes.currentShiftNotes;
+    },
+    get weeklyNotes() {
+      return notes.weeklyNotes;
+    },
+    get hasShiftData() {
+      return core.hasShiftData;
+    },
+    setWeeklyShifts: core.setWeeklyShifts,
+    setShiftDetails: core.setShiftDetails,
+    setCurrentShiftNotes: notes.setCurrentShiftNotes,
+    setWeeklyNotes: notes.setWeeklyNotes,
+    getShiftEmployees: ops.getShiftEmployees,
+    addShiftAssignment: ops.addShiftAssignment,
+    removeShiftAssignment: ops.removeShiftAssignment,
+    addShiftDetail: ops.addShiftDetail,
+    clearShiftData: clearAll,
+    reset: clearAll,
   };
 }
 

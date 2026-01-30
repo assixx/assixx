@@ -44,8 +44,11 @@ export interface FetchLogsResult {
 /**
  * Load logs with filters and pagination
  */
-export async function fetchLogs(params: FetchLogsParams): Promise<FetchLogsResult> {
-  const { offset, filterUser, filterAction, filterEntity, filterTimerange } = params;
+export async function fetchLogs(
+  params: FetchLogsParams,
+): Promise<FetchLogsResult> {
+  const { offset, filterUser, filterAction, filterEntity, filterTimerange } =
+    params;
 
   const searchParams = new URLSearchParams({
     limit: LOGS_PER_PAGE.toString(),
@@ -76,7 +79,9 @@ export async function fetchLogs(params: FetchLogsParams): Promise<FetchLogsResul
     }
   }
 
-  const response: LogsApiResponse = await apiClient.get(`/logs?${searchParams.toString()}`);
+  const response: LogsApiResponse = await apiClient.get(
+    `/logs?${searchParams.toString()}`,
+  );
 
   return {
     logs: response.logs ?? [],
@@ -105,7 +110,8 @@ export interface DeleteLogsParams {
  * Delete logs matching the current filters
  */
 export async function deleteLogs(params: DeleteLogsParams): Promise<void> {
-  const { password, filterUser, filterAction, filterEntity, filterTimerange } = params;
+  const { password, filterUser, filterAction, filterEntity, filterTimerange } =
+    params;
 
   const body: DeleteLogsBody = {
     confirmPassword: password,
@@ -173,9 +179,15 @@ interface ApiErrorResponse {
  * Build export query parameters.
  */
 function buildExportParams(params: ExportLogsParams): URLSearchParams {
-  const { dateFrom, dateTo, format, source, action, userId, entityType } = params;
+  const { dateFrom, dateTo, format, source, action, userId, entityType } =
+    params;
 
-  const searchParams = new URLSearchParams({ dateFrom, dateTo, format, source });
+  const searchParams = new URLSearchParams({
+    dateFrom,
+    dateTo,
+    format,
+    source,
+  });
 
   if (action !== undefined && action !== 'all') {
     searchParams.append('action', action);
@@ -231,13 +243,19 @@ function downloadBlob(blob: Blob, filename: string): void {
 export async function exportLogs(params: ExportLogsParams): Promise<void> {
   const searchParams = buildExportParams(params);
 
-  const response = await fetch(`/api/v2/logs/export?${searchParams.toString()}`, {
-    method: 'GET',
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `/api/v2/logs/export?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    },
+  );
 
   if (response.status === 429) {
-    const retryAfter = Number.parseInt(response.headers.get('Retry-After') ?? '60', 10);
+    const retryAfter = Number.parseInt(
+      response.headers.get('Retry-After') ?? '60',
+      10,
+    );
     throw new RateLimitError(retryAfter);
   }
 
@@ -251,7 +269,8 @@ export async function exportLogs(params: ExportLogsParams): Promise<void> {
         return { message: 'Export failed' };
       })
       .catch((): ApiErrorResponse => ({ message: 'Export failed' }));
-    const message = errorData.error?.message ?? errorData.message ?? 'Export failed';
+    const message =
+      errorData.error?.message ?? errorData.message ?? 'Export failed';
     throw new Error(message);
   }
 
@@ -263,7 +282,10 @@ export async function exportLogs(params: ExportLogsParams): Promise<void> {
 /**
  * Calculate default date range for export (last 30 days).
  */
-export function getDefaultExportDateRange(): { dateFrom: string; dateTo: string } {
+export function getDefaultExportDateRange(): {
+  dateFrom: string;
+  dateTo: string;
+} {
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

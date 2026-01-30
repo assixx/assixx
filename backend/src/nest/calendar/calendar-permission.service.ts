@@ -1,0 +1,179 @@
+/**
+ * Calendar Permission Service
+ *
+ * Handles access control and permission-based filtering for calendar events.
+ * Determines user visibility based on org hierarchy, roles, and memberships.
+ */
+import { Injectable } from '@nestjs/common';
+
+import { DatabaseService } from '../database/database.service.js';
+import { buildVisibilityClause } from './calendar.helpers.js';
+import type {
+  DbCalendarEvent,
+  DbEventAttendee,
+  UserRoleInfo,
+} from './calendar.types.js';
+
+@Injectable()
+export class CalendarPermissionService {
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  /**
+   * Get user role info with department and team
+   */
+  async getUserRole(userId: number, tenantId: number): Promise<UserRoleInfo> {
+    const rows = await this.databaseService.query<UserRoleInfo>(
+      `SELECT u.role,
+              u.has_full_access,
+              ud.department_id,
+              ut.team_id
+       FROM users u
+       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
+       LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+       WHERE u.id = $1 AND u.tenant_id = $2
+       LIMIT 1`,
+      [userId, tenantId],
+    );
+    return (
+      rows[0] ?? {
+        role: null,
+        department_id: null,
+        team_id: null,
+        has_full_access: false,
+      }
+    );
+  }
+
+  /**
+   * Check if user has access to event
+   */
+  async checkEventAccess(
+    event: DbCalendarEvent,
+    userId: number,
+    userRole: UserRoleInfo,
+  ): Promise<boolean> {
+    // Admins/root can see all events
+    if (userRole.role === 'admin' || userRole.role === 'root') {
+      return true;
+    }
+
+    // Creator can see their event
+    if (event.user_id === userId) {
+      return true;
+    }
+
+    // Company events visible to all
+    if (event.org_level === 'company') {
+      return true;
+    }
+
+    // Department events visible to department members
+    if (
+      event.org_level === 'department' &&
+      event.department_id === userRole.department_id
+    ) {
+      return true;
+    }
+
+    // Team events visible to team members
+    if (event.org_level === 'team' && event.team_id === userRole.team_id) {
+      return true;
+    }
+
+    // Check if user is an attendee
+    const attendees = await this.databaseService.query<{ user_id: number }>(
+      `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,
+      [event.id, userId],
+    );
+    return attendees.length > 0;
+  }
+
+  /**
+   * Get event attendees
+   */
+  async getEventAttendees(
+    eventId: number,
+    tenantId: number,
+  ): Promise<DbEventAttendee[]> {
+    return await this.databaseService.query<DbEventAttendee>(
+      `SELECT a.user_id, u.username, u.first_name, u.last_name, u.email, u.profile_picture
+       FROM calendar_attendees a
+       JOIN users u ON a.user_id = u.id
+       JOIN calendar_events e ON a.event_id = e.id
+       WHERE a.event_id = $1 AND e.tenant_id = $2
+       ORDER BY u.first_name, u.last_name`,
+      [eventId, tenantId],
+    );
+  }
+
+  /**
+   * Build org level filter for ADMIN users (UI filter only, no visibility restrictions)
+   * Admins can see ALL events but may want to filter by org_level type
+   */
+  buildAdminOrgLevelFilter(
+    filterType: string,
+    userId: number,
+    startIndex: number,
+  ): { clause: string; newParams: unknown[]; newIndex: number } {
+    const params: unknown[] = [];
+    let clause = '';
+    let index = startIndex;
+
+    switch (filterType) {
+      case 'company':
+        clause = ` AND e.org_level = 'company'`;
+        break;
+      case 'area':
+        clause = ` AND e.org_level = 'area'`;
+        break;
+      case 'department':
+        clause = ` AND e.org_level = 'department'`;
+        break;
+      case 'team':
+        clause = ` AND e.org_level = 'team'`;
+        break;
+      case 'personal':
+        // For admins, show their own personal events only
+        clause = ` AND e.org_level = 'personal' AND e.user_id = $${index}`;
+        params.push(userId);
+        index++;
+        break;
+      default:
+        // 'all' - show everything EXCEPT other users' personal events
+        // ADR-010: personal events are ONLY visible to their creator
+        clause = ` AND (e.org_level != 'personal' OR e.user_id = $${index})`;
+        params.push(userId);
+        index++;
+        break;
+    }
+
+    return { clause, newParams: params, newIndex: index };
+  }
+
+  /**
+   * Build permission-based filter for users without full_access
+   * Uses shared buildVisibilityClause helper for consistency
+   */
+  buildPermissionBasedFilter(
+    filterType: string,
+    userId: number,
+    tenantId: number,
+    startIndex: number,
+  ): { clause: string; newParams: unknown[]; newIndex: number } {
+    // Use helper to build visibility clause with correct parameter indices
+    const visibilityClause = buildVisibilityClause(startIndex, startIndex + 1);
+    let clause = ` AND ${visibilityClause}`;
+
+    // Apply additional UI filter if requested
+    const orgLevelFilters: Record<string, string> = {
+      company: ` AND e.org_level = 'company'`,
+      area: ` AND e.org_level = 'area'`,
+      department: ` AND e.org_level = 'department'`,
+      team: ` AND e.org_level = 'team'`,
+      personal: ` AND e.org_level = 'personal'`,
+    };
+    clause += orgLevelFilters[filterType] ?? '';
+
+    return { clause, newParams: [userId, tenantId], newIndex: startIndex + 2 };
+  }
+}

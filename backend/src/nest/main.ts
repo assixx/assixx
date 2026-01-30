@@ -23,8 +23,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { createReadStream, existsSync } from 'fs';
+import type { FastifyInstance } from 'fastify';
 import { Logger } from 'nestjs-pino';
 import path from 'path';
 import 'reflect-metadata';
@@ -39,85 +38,9 @@ import {
 } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 
-/** Frontend routes that map to HTML pages */
-const FRONTEND_ROUTES = [
-  'dashboard',
-  'employees',
-  'departments',
-  'teams',
-  'settings',
-  'calendar',
-  'chat',
-  'shifts',
-  'blackboard',
-  'documents',
-  'kvp',
-  'surveys',
-  'machines',
-  'notifications',
-  'areas',
-  'features',
-  'plans',
-  'reports',
-  'role-switch',
-  'root',
-  'signup',
-  'profile',
-  'admin',
-  'account-settings',
-  'admin-dashboard',
-  'admin-profile',
-  'blackboard-detail',
-  'documents-explorer',
-  'employee-dashboard',
-  'employee-profile',
-  'kvp-detail',
-  'logs',
-  'manage-admins',
-  'manage-areas',
-  'manage-departments',
-  'manage-employees',
-  'manage-machines',
-  'manage-root',
-  'manage-teams',
-  'root-dashboard',
-  'root-features',
-  'root-profile',
-  'survey-admin',
-  'survey-employee',
-  'survey-results',
-] as const;
-
-interface ProjectPaths {
-  projectRoot: string;
-  distPath: string;
-  publicPath: string;
-  srcPath: string;
-  uploadsPath: string;
-  pagesPath: string;
-  storybookPath: string;
-}
-
-/** Calculate project paths based on Docker setup */
-function getProjectPaths(): ProjectPaths {
-  // In Docker: process.cwd() = /app (backend directory)
-  // Uploads are at /app/uploads (volume mounted)
-  // Frontend is at /app/../frontend = /frontend (not used in Docker)
-  const backendRoot = process.cwd(); // /app
-  const projectRoot = path.resolve(backendRoot, '..');
-  const frontendPath = path.join(projectRoot, 'frontend');
-  const distPath = path.join(frontendPath, 'dist');
-
-  return {
-    projectRoot,
-    distPath,
-    publicPath: path.join(frontendPath, 'public'),
-    srcPath: path.join(frontendPath, 'src'),
-    // Uploads are in backend directory, not project root
-    uploadsPath: path.join(backendRoot, 'uploads'),
-    pagesPath: path.join(distPath, 'pages'),
-    storybookPath: path.join(projectRoot, 'storybook-static'),
-  };
+/** Get uploads directory path (Docker: /app/uploads, volume mounted) */
+function getUploadsPath(): string {
+  return path.join(process.cwd(), 'uploads');
 }
 
 /** Setup health check endpoint for Docker health checks */
@@ -139,132 +62,18 @@ function setupHealthCheck(fastify: FastifyInstance): void {
   }
 }
 
-/** Register static file serving for frontend assets */
-async function setupStaticAssets(
+/** Register static file serving for user uploads only.
+ * Frontend is served by SvelteKit (:3001 via Nginx), NOT by the backend.
+ */
+async function setupUploadsServing(
   app: NestFastifyApplication,
-  paths: ProjectPaths,
+  uploadsPath: string,
 ): Promise<void> {
-  const { distPath, srcPath, uploadsPath, publicPath, storybookPath } = paths;
-
-  // Main dist directory (Vite build output) - serves /css, /js, /images, /fonts, /pages
-  await app.register(fastifyStatic, {
-    root: distPath,
-    prefix: '/',
-    decorateReply: false,
-  });
-
-  // Source assets (non-bundled)
-  await app.register(fastifyStatic, {
-    root: path.join(srcPath, 'assets'),
-    prefix: '/assets/',
-    decorateReply: false,
-  });
-
-  // Scripts from src
-  await app.register(fastifyStatic, {
-    root: path.join(srcPath, 'scripts'),
-    prefix: '/scripts/',
-    decorateReply: false,
-  });
-
-  // Uploads (user-generated content)
   await app.register(fastifyStatic, {
     root: uploadsPath,
     prefix: '/uploads/',
     decorateReply: false,
   });
-
-  // Public folder (favicon, robots.txt, etc.)
-  await app.register(fastifyStatic, {
-    root: publicPath,
-    prefix: '/public/',
-    decorateReply: false,
-  });
-
-  // Storybook (dev only)
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path from getProjectPaths() built with process.cwd() + known constants
-  if (process.env['NODE_ENV'] !== 'production' && existsSync(storybookPath)) {
-    await app.register(fastifyStatic, {
-      root: storybookPath,
-      prefix: '/storybook/',
-      decorateReply: false,
-    });
-  }
-}
-
-/** Setup HTML page routes */
-function setupHtmlRoutes(
-  fastify: FastifyInstance,
-  pagesPath: string,
-  publicPath: string,
-): void {
-  // Favicon route
-  fastify.get(
-    '/favicon.ico',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      const faviconPath = path.join(publicPath, 'favicon.ico');
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted publicPath + literal 'favicon.ico'
-      if (existsSync(faviconPath)) {
-        return await reply
-          .type('image/x-icon')
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted publicPath + literal 'favicon.ico'
-          .send(createReadStream(faviconPath));
-      }
-      return await reply.code(404).send({ error: 'Favicon not found' });
-    },
-  );
-
-  // Root route
-  fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
-    const indexPath = path.join(pagesPath, 'index.html');
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-    if (existsSync(indexPath)) {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-      return await reply.type('text/html').send(createReadStream(indexPath));
-    }
-    return await reply.code(404).send({ error: 'Page not found' });
-  });
-
-  // Login page
-  fastify.get(
-    '/login',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      const loginPath = path.join(pagesPath, 'login.html');
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-      if (existsSync(loginPath)) {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-        return await reply.type('text/html').send(createReadStream(loginPath));
-      }
-      return await reply.code(404).send({ error: 'Page not found' });
-    },
-  );
-
-  // All other frontend routes (FRONTEND_ROUTES is a compile-time constant array)
-  for (const route of FRONTEND_ROUTES) {
-    fastify.get(
-      `/${route}`,
-      async (_request: FastifyRequest, reply: FastifyReply) => {
-        const routePath = path.join(pagesPath, `${route}.html`);
-        const fallbackPath = path.join(pagesPath, 'index.html');
-
-        // eslint-disable-next-line security/detect-non-literal-fs-filename -- route is from FRONTEND_ROUTES constant, not user input
-        if (existsSync(routePath)) {
-          return await reply
-            .type('text/html')
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- route is from FRONTEND_ROUTES constant, not user input
-            .send(createReadStream(routePath));
-        }
-        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-        if (existsSync(fallbackPath)) {
-          return await reply
-            .type('text/html')
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from trusted pagesPath + literal filename
-            .send(createReadStream(fallbackPath));
-        }
-        return await reply.code(404).send({ error: 'Page not found' });
-      },
-    );
-  }
 }
 
 /** Register security plugins */
@@ -431,16 +240,12 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api/v2');
 
   const fastify = app.getHttpAdapter().getInstance();
-  const paths = getProjectPaths();
-
-  bootstrapLogger.log(`[Static] Project root: ${paths.projectRoot}`);
-  bootstrapLogger.log(`[Static] Frontend dist: ${paths.distPath}`);
+  const uploadsPath = getUploadsPath();
 
   // Setup in order
   setupHealthCheck(fastify);
-  await setupStaticAssets(app, paths);
-  setupHtmlRoutes(fastify, paths.pagesPath, paths.publicPath);
-  bootstrapLogger.log('Static file serving configured');
+  await setupUploadsServing(app, uploadsPath);
+  bootstrapLogger.log(`Uploads serving configured: ${uploadsPath}`);
 
   await setupSecurity(app);
   setupGlobalMiddleware(app);

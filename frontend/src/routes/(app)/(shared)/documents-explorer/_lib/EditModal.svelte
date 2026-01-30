@@ -221,9 +221,9 @@
         </div>
 
         <!-- Info about current file -->
-        <div class="p-3 bg-surface-2 rounded-lg border border-border-subtle">
-          <div class="text-sm text-content-secondary">
-            <div class="flex items-center gap-2 mb-1">
+        <div class="bg-surface-2 border-border-subtle rounded-lg border p-3">
+          <div class="text-content-secondary text-sm">
+            <div class="mb-1 flex items-center gap-2">
               <i class="fas fa-file"></i>
               <span>Originaldatei: {document.storedFilename}</span>
             </div>

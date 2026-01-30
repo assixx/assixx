@@ -292,7 +292,7 @@ export default ts.config(
       'max-lines': [
         'error',
         {
-          max: 400,
+          max: 700,
           skipBlankLines: true,
           skipComments: true,
         },

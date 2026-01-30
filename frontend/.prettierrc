@@ -3,7 +3,8 @@
   "printWidth": 80,
   "endOfLine": "lf",
   "experimentalTernaries": true,
-  "plugins": ["prettier-plugin-svelte"],
+  "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "./src/styles/tailwind.css",
   "overrides": [
     {
       "files": "*.svelte",

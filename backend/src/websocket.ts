@@ -26,7 +26,6 @@ interface ExtendedWebSocket extends WebSocket {
   tenantId?: number;
   role?: string;
   isAlive?: boolean;
-  conversations?: Set<number>;
 }
 
 interface WebSocketMessage {
@@ -130,12 +129,10 @@ export class ChatWebSocketServer {
     this.wss.on(
       'connection',
       (ws: ExtendedWebSocket, request: IncomingMessage) => {
-        // Extract only the properties we need from IncomingMessage to satisfy exactOptionalPropertyTypes
         const sanitizedRequest = {
           url: request.url,
           headers: {
             host: request.headers.host,
-            authorization: request.headers.authorization,
           },
         };
         void this.handleConnection(ws, sanitizedRequest);
@@ -146,7 +143,7 @@ export class ChatWebSocketServer {
   /** Extract connection ticket from request URL query parameter */
   private extractTicketFromRequest(request: {
     url: string | undefined;
-    headers: { host: string | undefined; authorization: string | undefined };
+    headers: { host: string | undefined };
   }): string | null {
     const url = new URL(
       request.url ?? '/',
@@ -235,7 +232,7 @@ export class ChatWebSocketServer {
     ws: ExtendedWebSocket,
     request: {
       url: string | undefined;
-      headers: { host: string | undefined; authorization: string | undefined };
+      headers: { host: string | undefined };
     },
   ): Promise<void> {
     try {
@@ -369,6 +366,25 @@ export class ChatWebSocketServer {
       [conversationId, tenantId, tenantId],
     );
 
+    return participants.map((p: ConversationParticipantResult) => p.user_id);
+  }
+
+  /** Get participant IDs for a conversation, excluding a specific user */
+  private async getOtherParticipantIds(
+    conversationId: number,
+    tenantId: number,
+    excludeUserId: number,
+  ): Promise<number[]> {
+    const [participants] = await query<ConversationParticipantResult[]>(
+      `SELECT cp.user_id
+       FROM conversation_participants cp
+       JOIN conversations c ON cp.conversation_id = c.id
+       WHERE cp.conversation_id = $1
+       AND c.tenant_id = $2
+       AND cp.tenant_id = $3
+       AND cp.user_id != $4`,
+      [conversationId, tenantId, tenantId, excludeUserId],
+    );
     return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
 
@@ -593,27 +609,11 @@ export class ChatWebSocketServer {
     }
   }
 
-  /**
-   * Check if user has permission to send to conversation
-   */
-  private checkUserInParticipants(
-    userId: number,
-    participantIds: number[],
-  ): boolean {
-    const participantIdsStr = participantIds.map((id: number) => String(id));
-    return participantIdsStr.includes(String(userId));
-  }
-
   private async handleSendMessage(
     ws: ExtendedWebSocket,
     data: SendMessageData,
   ): Promise<void> {
     const { conversationId, content, attachments: attachmentIds = [] } = data;
-
-    // DEBUG: Log incoming data to verify attachments are received
-    logger.info(
-      `[WS] handleSendMessage: convId=${conversationId}, attachmentIds=${JSON.stringify(attachmentIds)}, raw data.attachments=${JSON.stringify(data.attachments)}`,
-    );
 
     if (ws.userId === undefined || ws.tenantId === undefined) {
       this.sendMessage(ws, {
@@ -629,7 +629,7 @@ export class ChatWebSocketServer {
         ws.tenantId,
       );
 
-      if (!this.checkUserInParticipants(ws.userId, participantIds)) {
+      if (!participantIds.includes(ws.userId)) {
         this.sendMessage(ws, {
           type: 'error',
           data: { message: 'Keine Berechtigung für diese Unterhaltung' },
@@ -637,40 +637,15 @@ export class ChatWebSocketServer {
         return;
       }
 
-      // Save message
-      const messageId = await this.saveMessage(
-        conversationId,
+      const messageId = await this.processAndBroadcastMessage(
         ws.userId,
-        content,
         ws.tenantId,
-      );
-
-      // Link attachments to message (updates documents.message_id)
-      if (attachmentIds.length > 0) {
-        await this.linkAttachmentsToMessage(
-          messageId,
-          attachmentIds,
-          ws.tenantId,
-        );
-      }
-
-      // Get attachment details for broadcast
-      const attachments = await this.getMessageAttachments(
+        conversationId,
+        content,
         attachmentIds,
-        ws.tenantId,
+        participantIds,
       );
 
-      const sender = await this.getSenderInfo(ws.userId, ws.tenantId);
-      const messageData = this.buildMessageData(
-        messageId,
-        conversationId,
-        content,
-        ws.userId,
-        sender,
-        attachments,
-      );
-
-      this.broadcastToParticipants(participantIds, 'new_message', messageData);
       this.sendMessage(ws, {
         type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
@@ -684,6 +659,44 @@ export class ChatWebSocketServer {
     }
   }
 
+  /** Saves message, links attachments, and broadcasts to participants */
+  private async processAndBroadcastMessage(
+    userId: number,
+    tenantId: number,
+    conversationId: number,
+    content: string,
+    attachmentIds: number[],
+    participantIds: number[],
+  ): Promise<number> {
+    const messageId = await this.saveMessage(
+      conversationId,
+      userId,
+      content,
+      tenantId,
+    );
+
+    if (attachmentIds.length > 0) {
+      await this.linkAttachmentsToMessage(messageId, attachmentIds, tenantId);
+    }
+
+    const attachments = await this.getMessageAttachments(
+      attachmentIds,
+      tenantId,
+    );
+    const sender = await this.getSenderInfo(userId, tenantId);
+    const messageData = this.buildMessageData(
+      messageId,
+      conversationId,
+      content,
+      userId,
+      sender,
+      attachments,
+    );
+
+    this.broadcastToParticipants(participantIds, 'new_message', messageData);
+    return messageId;
+  }
+
   private async handleTyping(
     ws: ExtendedWebSocket,
     data: TypingData,
@@ -692,36 +705,20 @@ export class ChatWebSocketServer {
     const { conversationId } = data;
 
     try {
-      // Teilnehmer der Unterhaltung ermitteln
-      const participantQuery = `
-        SELECT cp.user_id
-        FROM conversation_participants cp
-        JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = $1
-        AND c.tenant_id = $2
-        AND cp.tenant_id = $3
-        AND cp.user_id != $4
-      `;
-      const [participants] = await query<ConversationParticipantResult[]>(
-        participantQuery,
-        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
+      const participantIds = await this.getOtherParticipantIds(
+        conversationId,
+        ws.tenantId as number,
+        ws.userId as number,
       );
-
-      // Typing-Event an andere Teilnehmer senden
-      for (const participant of participants) {
-        const userId = participant.user_id;
-        const clientWs = this.clients.get(userId);
-        if (clientWs?.readyState === WebSocket.OPEN) {
-          this.sendMessage(clientWs, {
-            type: isTyping ? 'user_typing' : 'user_stopped_typing',
-            data: {
-              conversationId,
-              userId: ws.userId,
-              timestamp: new Date().toISOString(),
-            },
-          });
-        }
-      }
+      this.broadcastToParticipants(
+        participantIds,
+        isTyping ? 'user_typing' : 'user_stopped_typing',
+        {
+          conversationId,
+          userId: ws.userId,
+          timestamp: new Date().toISOString(),
+        },
+      );
     } catch (error: unknown) {
       logger.error({ err: error }, 'Fehler beim Typing-Event');
     }
@@ -784,40 +781,17 @@ export class ChatWebSocketServer {
   ): Promise<void> {
     const { conversationId } = data;
 
-    // Conversation-ID zur WebSocket-Verbindung hinzufügen für Gruppierung
-    ws.conversations ??= new Set();
-    ws.conversations.add(conversationId);
-
-    // Anderen Teilnehmern mitteilen, dass Benutzer online ist
     try {
-      const participantQuery = `
-        SELECT cp.user_id
-        FROM conversation_participants cp
-        JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = $1
-        AND c.tenant_id = $2
-        AND cp.tenant_id = $3
-        AND cp.user_id != $4
-      `;
-      const [participants] = await query<ConversationParticipantResult[]>(
-        participantQuery,
-        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
+      const participantIds = await this.getOtherParticipantIds(
+        conversationId,
+        ws.tenantId as number,
+        ws.userId as number,
       );
-
-      for (const participant of participants) {
-        const userId = participant.user_id;
-        const clientWs = this.clients.get(userId);
-        if (clientWs?.readyState === WebSocket.OPEN) {
-          this.sendMessage(clientWs, {
-            type: 'user_joined_conversation',
-            data: {
-              conversationId,
-              userId: ws.userId,
-              timestamp: new Date().toISOString(),
-            },
-          });
-        }
-      }
+      this.broadcastToParticipants(participantIds, 'user_joined_conversation', {
+        conversationId,
+        userId: ws.userId,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error: unknown) {
       logger.error({ err: error }, 'Fehler beim Beitreten zur Unterhaltung');
     }
@@ -860,13 +834,13 @@ export class ChatWebSocketServer {
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
-        const userId = user.user_id;
-        const clientWs = this.clients.get(userId);
+        const relatedUserId = user.user_id;
+        const clientWs = this.clients.get(relatedUserId);
         if (clientWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_status_changed',
             data: {
-              userId,
+              userId: relatedUserId,
               status,
               timestamp: new Date().toISOString(),
             },
@@ -947,5 +921,3 @@ export class ChatWebSocketServer {
     logger.info('ChatWebSocketServer shutdown complete');
   }
 }
-
-export default ChatWebSocketServer;

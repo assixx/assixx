@@ -66,7 +66,7 @@
                 class="fas fa-level-up-alt"
                 style="font-size: 24px; color: var(--color-content-secondary);"
               ></i>
-              <span class="font-medium text-content-secondary">..</span>
+              <span class="text-content-secondary font-medium">..</span>
             </div>
           </td>
           <td class="text-content-tertiary">Übergeordneter Ordner</td>
@@ -81,7 +81,7 @@
         <tr>
           <td
             colspan="6"
-            class="text-center text-content-secondary py-8"
+            class="text-content-secondary py-8 text-center"
           >
             {MESSAGES.EMPTY_DESCRIPTION}
           </td>
@@ -117,7 +117,7 @@
                 {/if}
                 {#if !doc.isRead}
                   <span
-                    class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"
+                    class="bg-primary-500 h-2 w-2 flex-shrink-0 rounded-full"
                     title="Ungelesen"
                   ></span>
                 {/if}
@@ -135,7 +135,7 @@
                   >
                 {/each}
                 {#if doc.tags.length > 3}
-                  <span class="text-xs text-content-tertiary"
+                  <span class="text-content-tertiary text-xs"
                     >+{doc.tags.length - 3}</span
                   >
                 {/if}

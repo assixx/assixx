@@ -2,7 +2,9 @@
 // MANAGE ADMINS - CONSTANTS
 // =============================================================================
 
-import type { IsActiveStatus, FormIsActiveStatus } from './types';
+import type { FormIsActiveStatus } from './types';
+
+export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 /**
  * Position options for admin selection dropdown
@@ -45,26 +47,6 @@ export const BADGE_CLASS = {
   WARNING: 'badge--warning',
   ERROR: 'badge--error',
 } as const;
-
-/**
- * Status badge CSS class mapping
- */
-export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
-  1: BADGE_CLASS.SUCCESS,
-  0: BADGE_CLASS.WARNING,
-  3: BADGE_CLASS.SECONDARY,
-  4: BADGE_CLASS.ERROR,
-};
-
-/**
- * Status label mapping (German)
- */
-export const STATUS_LABELS: Record<IsActiveStatus, string> = {
-  1: 'Aktiv',
-  0: 'Inaktiv',
-  3: 'Archiviert',
-  4: 'Gelöscht',
-};
 
 /**
  * Status options for dropdown (excludes deleted)

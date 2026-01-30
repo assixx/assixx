@@ -253,6 +253,10 @@ function buildPinoHttpOptions(): Record<string, unknown> {
     PinoLoggerModule.forRoot({
       pinoHttp: buildPinoHttpOptions(),
 
+      // Override nestjs-pino default forRoutes which uses legacy '*' wildcard
+      // path-to-regexp v8+ requires named parameters: '{*path}' instead of '*'
+      forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
+
       // Exclude health check and metrics routes from logging
       exclude: EXCLUDED_ROUTES.map(
         (route: (typeof EXCLUDED_ROUTES)[number]) => ({

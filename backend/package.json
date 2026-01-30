@@ -27,9 +27,10 @@
     "typescript",
     "postgres"
   ],
-  "author": "SCS Technik",
-  "license": "MIT",
+  "author": "Assixx",
+  "license": "ASSIXX PROPRIETARY LICENSE",
   "dependencies": {
+    "@assixx/shared": "workspace:*",
     "@fastify/cookie": "11.0.2",
     "@fastify/helmet": "13.0.2",
     "@fastify/multipart": "9.4.0",

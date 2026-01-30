@@ -32,34 +32,34 @@
         {#if attachment.fileType.includes('pdf')}
           <iframe
             src={getAttachmentPreviewUrl(attachment.fileUuid)}
-            class="block w-full h-[70vh] min-h-[600px] border-none"
+            class="block h-[70vh] min-h-[600px] w-full border-none"
             title="Dokumentenvorschau"
           ></iframe>
         {:else if attachment.fileType.includes('image')}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
           >
             <img
               src={getAttachmentPreviewUrl(attachment.fileUuid)}
-              class="max-w-full max-h-full object-contain"
+              class="max-h-full max-w-full object-contain"
               alt={attachment.fileName}
             />
           </div>
         {:else}
           <div
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
           >
-            <div class="text-center text-content-secondary">
-              <i class="fas fa-file-alt text-6xl mb-4"></i>
+            <div class="text-content-secondary text-center">
+              <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Vorschau nicht verfügbar</p>
-              <p class="text-sm mt-2">
+              <p class="mt-2 text-sm">
                 Bitte laden Sie die Datei herunter, um sie anzuzeigen.
               </p>
             </div>
           </div>
         {/if}
-        <div class="p-4 bg-surface-2 border-t border-border-subtle">
-          <div class="flex items-center gap-6 text-sm text-content-secondary">
+        <div class="bg-surface-2 border-border-subtle border-t p-4">
+          <div class="text-content-secondary flex items-center gap-6 text-sm">
             <span class="flex items-center gap-2">
               <i class="fas fa-file-archive"></i>
               <span>{formatFileSize(attachment.fileSize)}</span>

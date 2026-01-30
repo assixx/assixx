@@ -124,11 +124,11 @@
 
     <!-- Optional question checkbox (only visible when mandatory) -->
     {#if isMandatory}
-      <div class="flex items-center gap-3 mt-2">
+      <div class="mt-2 flex items-center gap-3">
         <input
           type="checkbox"
           id="{question.id}_required"
-          class="w-5 h-5 cursor-pointer"
+          class="h-5 w-5 cursor-pointer"
           bind:checked={question.isOptional}
         />
         <label
@@ -142,7 +142,7 @@
   <!-- Options for choice questions -->
   {#if needsOptions}
     <div class="mt-4">
-      <div class="options-header flex justify-between items-center mb-2">
+      <div class="options-header mb-2 flex items-center justify-between">
         <span class="form-field__label">Antwortoptionen</span>
         <button
           type="button"

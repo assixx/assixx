@@ -857,7 +857,7 @@
 
       <!-- Loading Overlay (Design System) - ONLY during initial load, NOT during week changes -->
       {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
-        <div class="flex items-center justify-center py-12 gap-3">
+        <div class="flex items-center justify-center gap-3 py-12">
           <div class="spinner-ring spinner-ring--lg"></div>
           <span class="text-[var(--color-text-secondary)]">Laden...</span>
         </div>
@@ -866,8 +866,8 @@
       <!-- Employee Team Info Bar -->
       {#if shiftsState.employeeTeamInfo !== null}
         <div
-          class="flex flex-wrap items-center gap-3 mt-4 p-4 rounded-xl border
-            border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)]"
+          class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[rgba(255,255,255,0.1)]
+            bg-[rgba(255,255,255,0.03)] p-4"
           role="status"
         >
           <i class="fas fa-users text-[var(--color-text-secondary)]"></i>

@@ -2,6 +2,14 @@
 // MANAGE ADMINS - TYPE DEFINITIONS
 // =============================================================================
 
+import type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+} from '@assixx/shared';
+
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
+
 /**
  * Area entity - Organizational unit containing departments
  */
@@ -22,20 +30,6 @@ export interface Department {
   areaId?: number;
   areaName?: string;
 }
-
-/**
- * isActive status values:
- * - 0 = inactive
- * - 1 = active
- * - 3 = archived
- * - 4 = deleted (soft delete)
- */
-export type IsActiveStatus = 0 | 1 | 3 | 4;
-
-/**
- * Form status values (excludes deleted)
- */
-export type FormIsActiveStatus = 0 | 1 | 3;
 
 /**
  * Admin entity with organization permissions
@@ -70,11 +64,6 @@ export interface BadgeInfo {
   title: string;
   icon?: string;
 }
-
-/**
- * Status filter options
- */
-export type StatusFilter = 'active' | 'inactive' | 'archived' | 'all';
 
 /**
  * Admin form data for create/update
