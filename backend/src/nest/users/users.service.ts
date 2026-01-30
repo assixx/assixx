@@ -15,6 +15,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -37,7 +38,7 @@ import { UserAvailabilityService } from './user-availability.service.js';
  * User row type from database
  * NOTE: Availability fields removed - now in employee_availability table
  */
-export interface UserRow {
+interface UserRow {
   id: number;
   uuid: string;
   tenant_id: number;
@@ -102,7 +103,7 @@ export interface PaginatedResult<T> {
 /**
  * Tenant info for user response
  */
-export interface TenantInfo {
+interface TenantInfo {
   companyName: string;
   subdomain: string;
 }
@@ -160,18 +161,21 @@ const ERROR_MESSAGES = {
 } as const;
 
 /**
- * Valid sort fields for user queries
+ * Sort field mapping: camelCase API field → snake_case DB column
+ * Single source of truth for both validation and mapping (prevents SQL injection)
  */
-const VALID_SORT_FIELDS = new Set([
-  'firstName',
-  'lastName',
-  'email',
-  'createdAt',
-  'lastLogin',
-]);
+const SORT_FIELD_MAP: Record<string, string> = {
+  firstName: 'first_name',
+  lastName: 'last_name',
+  email: 'email',
+  createdAt: 'created_at',
+  lastLogin: 'last_login',
+};
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
@@ -728,7 +732,7 @@ export class UsersService {
     // Verify current password
     const isValid = await bcryptjs.compare(currentPassword, passwordHash);
     if (!isValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
     }
 
     // Hash and update new password
@@ -1091,29 +1095,10 @@ export class UsersService {
 
   /**
    * Map API sort field to database column
-   * Uses VALID_SORT_FIELDS for security validation
+   * Falls back to created_at for invalid fields (prevents SQL injection)
    */
   private mapSortField(sortBy: string): string {
-    // Validate sortBy is in allowed list (prevents SQL injection)
-    if (!VALID_SORT_FIELDS.has(sortBy)) {
-      return 'created_at';
-    }
-
-    // Safe mapping after validation
-    switch (sortBy) {
-      case 'firstName':
-        return 'first_name';
-      case 'lastName':
-        return 'last_name';
-      case 'email':
-        return 'email';
-      case 'createdAt':
-        return 'created_at';
-      case 'lastLogin':
-        return 'last_login';
-      default:
-        return 'created_at';
-    }
+    return SORT_FIELD_MAP[sortBy] ?? 'created_at';
   }
 
   // ============================================
@@ -1208,7 +1193,10 @@ export class UsersService {
       await fs.unlink(filePath);
     } catch (error: unknown) {
       // Log but don't fail if file doesn't exist
-      console.error('Failed to delete profile picture file:', error);
+      this.logger.warn('Failed to delete profile picture file', {
+        filePath,
+        error,
+      });
     }
 
     // Clear DB field
