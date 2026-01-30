@@ -279,10 +279,8 @@ export class ChatConversationsService {
       );
     }
 
-    if (participantRecord.deleted_at !== null) {
-      throw new BadRequestException('Conversation already deleted');
-    }
-
+    // Idempotent: always update deleted_at to NOW() regardless of current state.
+    // Handles: re-delete from stale UI, re-hide after new messages surfaced conversation.
     await this.databaseService.query(
       `UPDATE conversation_participants SET deleted_at = NOW()
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
@@ -506,6 +504,14 @@ export class ChatConversationsService {
     if (existingId === null) {
       return null;
     }
+
+    // WhatsApp-style: reset soft-delete when creator re-engages with conversation
+    await this.databaseService.query(
+      `UPDATE conversation_participants SET deleted_at = NULL
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3
+         AND deleted_at IS NOT NULL`,
+      [existingId, creatorId, tenantId],
+    );
 
     if (dto.initialMessage !== undefined && dto.initialMessage !== '') {
       await sendInitialMessage(
