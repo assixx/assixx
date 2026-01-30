@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { apiToDb, dbToApi } from '../../utils/fieldMapping.js';
+import { apiToDb, dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateShiftDto } from './dto/create-shift.dto.js';

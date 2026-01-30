@@ -4,7 +4,7 @@
  * Pure functions for the KVP module: transforms, query builders, visibility checks.
  * No dependency injection, no database calls, no side effects.
  */
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {

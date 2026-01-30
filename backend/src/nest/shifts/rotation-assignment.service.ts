@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
 import type {

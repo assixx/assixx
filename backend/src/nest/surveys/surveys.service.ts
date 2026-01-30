@@ -15,7 +15,7 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';

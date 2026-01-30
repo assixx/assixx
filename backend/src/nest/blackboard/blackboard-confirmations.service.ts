@@ -11,7 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapping.js';
+import { dbToApi } from '../../utils/fieldMapper.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ERROR_ENTRY_NOT_FOUND } from './blackboard.constants.js';
 import type { DbConfirmationUser } from './blackboard.types.js';
