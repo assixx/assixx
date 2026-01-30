@@ -13,26 +13,17 @@
   import { showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
-  const log = createLogger('LogsPage');
-
-  import {
-    deleteLogs,
-    fetchLogs,
-    exportLogs,
-    getDefaultExportDateRange,
-    getExportDateRangeFromMinutes,
-    RateLimitError,
-  } from './_lib/api';
+  import { deleteLogs, fetchLogs } from './_lib/api';
   import {
     ACTION_OPTIONS,
     ENTITY_OPTIONS,
-    EXPORT_FORMAT_OPTIONS,
-    EXPORT_QUICK_TIMERANGE_OPTIONS,
-    EXPORT_SOURCE_OPTIONS,
     LOGS_PER_PAGE,
     MESSAGES,
     TIMERANGE_OPTIONS,
   } from './_lib/constants';
+  import FilterDropdown from './_lib/FilterDropdown.svelte';
+  import LogsDeleteModal from './_lib/LogsDeleteModal.svelte';
+  import LogsExportPanel from './_lib/LogsExportPanel.svelte';
   import {
     formatDate,
     getActionLabel,
@@ -45,12 +36,9 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    LogEntry,
-    PaginationInfo,
-    ExportFormat,
-    ExportSource,
-  } from './_lib/types';
+  import type { LogEntry, PaginationInfo } from './_lib/types';
+
+  const log = createLogger('LogsPage');
 
   // SSR Data
   const { data }: { data: PageData } = $props();
@@ -95,30 +83,9 @@
   let filterTimerange = $state('all');
   let filtersApplied = $state(false);
 
-  // Dropdowns
-  let actionDropdownOpen = $state(false);
-  let entityDropdownOpen = $state(false);
-  let timerangeDropdownOpen = $state(false);
-
-  // Delete Modal
+  // UI State
   let showDeleteModal = $state(false);
-  let deleteConfirmText = $state('');
-  let deletePassword = $state('');
-
-  // Export State (ADR-009)
   let showExportSection = $state(false);
-  const defaultDates = getDefaultExportDateRange();
-  let exportDateFrom = $state(defaultDates.dateFrom);
-  let exportDateTo = $state(defaultDates.dateTo);
-  let exportFormat = $state<ExportFormat>('csv');
-  let exportSource = $state<ExportSource>('all');
-  let exportLoading = $state(false);
-  let exportError = $state('');
-  let exportSuccess = $state('');
-  let rateLimitedUntil = $state<Date | null>(null);
-  let formatDropdownOpen = $state(false);
-  let sourceDropdownOpen = $state(false);
-  let selectedQuickTimerange = $state<string | null>(null);
 
   // =============================================================================
   // DERIVED STATE
@@ -147,35 +114,7 @@
   );
 
   const canDelete = $derived(filtersApplied);
-  const canConfirmDelete = $derived(
-    deleteConfirmText === 'LÖSCHEN' && deletePassword !== '',
-  );
-
   const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
-
-  // Export derived state
-  const formatDisplayText = $derived(
-    getDropdownDisplayText(EXPORT_FORMAT_OPTIONS, exportFormat, 'CSV'),
-  );
-  const sourceDisplayText = $derived(
-    getDropdownDisplayText(EXPORT_SOURCE_OPTIONS, exportSource, 'Alle Quellen'),
-  );
-  const isRateLimited = $derived(
-    rateLimitedUntil !== null && rateLimitedUntil > new Date(),
-  );
-  const rateLimitRemaining = $derived(() => {
-    if (rateLimitedUntil === null) return 0;
-    const remaining = Math.ceil(
-      (rateLimitedUntil.getTime() - Date.now()) / 1000,
-    );
-    return remaining > 0 ? remaining : 0;
-  });
-  const canExport = $derived(
-    !exportLoading &&
-      !isRateLimited &&
-      exportDateFrom !== '' &&
-      exportDateTo !== '',
-  );
 
   // =============================================================================
   // API FUNCTIONS
@@ -204,21 +143,18 @@
     }
   }
 
-  async function handleDeleteLogs(): Promise<void> {
+  async function handleDeleteLogs(password: string): Promise<void> {
     try {
       await deleteLogs({
-        password: deletePassword,
+        password,
         filterUser,
         filterAction,
         filterEntity,
         filterTimerange,
       });
 
-      // Show success message
       showSuccessAlert(MESSAGES.DELETE_SUCCESS);
-
-      // Reset and reload
-      closeDeleteModal();
+      showDeleteModal = false;
       filtersApplied = false;
       currentOffset = 0;
       await invalidateAll();
@@ -226,53 +162,6 @@
     } catch (err) {
       log.error({ err }, 'Error deleting logs');
       error = MESSAGES.ERROR_DELETING;
-    }
-  }
-
-  /**
-   * Handle export logs request.
-   * Downloads file and handles rate limiting.
-   */
-  async function handleExportLogs(): Promise<void> {
-    exportLoading = true;
-    exportError = '';
-    exportSuccess = '';
-
-    try {
-      await exportLogs({
-        dateFrom: exportDateFrom,
-        dateTo: exportDateTo,
-        format: exportFormat,
-        source: exportSource,
-        action: filterAction !== 'all' ? filterAction : undefined,
-        entityType: filterEntity !== 'all' ? filterEntity : undefined,
-      });
-
-      exportSuccess = MESSAGES.EXPORT_SUCCESS;
-      log.info('Export completed successfully');
-
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        exportSuccess = '';
-      }, 5000);
-    } catch (err) {
-      if (err instanceof RateLimitError) {
-        rateLimitedUntil = new Date(Date.now() + err.retryAfter * 1000);
-        exportError = `${MESSAGES.EXPORT_RATE_LIMITED} (${err.retryAfter}s)`;
-        log.warn({ retryAfter: err.retryAfter }, 'Export rate limited');
-
-        // Clear rate limit after timeout
-        setTimeout(() => {
-          rateLimitedUntil = null;
-          exportError = '';
-        }, err.retryAfter * 1000);
-      } else {
-        exportError =
-          err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
-        log.error({ err }, 'Export failed');
-      }
-    } finally {
-      exportLoading = false;
     }
   }
 
@@ -296,16 +185,6 @@
     void loadLogs();
   }
 
-  function openDeleteModal(): void {
-    showDeleteModal = true;
-  }
-
-  function closeDeleteModal(): void {
-    showDeleteModal = false;
-    deleteConfirmText = '';
-    deletePassword = '';
-  }
-
   function handlePreviousPage(): void {
     if (currentOffset >= LOGS_PER_PAGE) {
       currentOffset -= LOGS_PER_PAGE;
@@ -325,76 +204,11 @@
     void loadLogs();
   }
 
-  function selectAction(value: string): void {
-    filterAction = value;
-    actionDropdownOpen = false;
-  }
-
-  function selectEntity(value: string): void {
-    filterEntity = value;
-    entityDropdownOpen = false;
-  }
-
-  function selectTimerange(value: string): void {
-    filterTimerange = value;
-    timerangeDropdownOpen = false;
-  }
-
-  function selectExportFormat(value: string): void {
-    exportFormat = value as ExportFormat;
-    formatDropdownOpen = false;
-  }
-
-  function selectExportSource(value: string): void {
-    exportSource = value as ExportSource;
-    sourceDropdownOpen = false;
-  }
-
-  /**
-   * Apply a quick timerange preset to the export date filters.
-   */
-  function selectQuickTimerange(preset: string, minutes: number): void {
-    selectedQuickTimerange = preset;
-    const range = getExportDateRangeFromMinutes(minutes);
-    exportDateFrom = range.dateFrom;
-    exportDateTo = range.dateTo;
-  }
-
-  /**
-   * Clear the quick timerange selection (when manually editing dates).
-   */
-  function clearQuickTimerangeSelection(): void {
-    selectedQuickTimerange = null;
-  }
-
-  function toggleExportSection(): void {
-    showExportSection = !showExportSection;
-  }
-
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
       applyFilters();
     }
   }
-
-  // Close dropdowns when clicking outside
-  $effect(() => {
-    function handleClickOutside(event: MouseEvent): void {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown')) {
-        actionDropdownOpen = false;
-        entityDropdownOpen = false;
-        timerangeDropdownOpen = false;
-        formatDropdownOpen = false;
-        sourceDropdownOpen = false;
-      }
-    }
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  });
 
   // =============================================================================
   // LIFECYCLE - SSR: Auth checked server-side, data already loaded
@@ -438,163 +252,43 @@
           </div>
 
           <!-- Action Filter -->
-          <div class="form-field">
-            <span
-              class="form-field__label"
-              id="action-label">Aktion</span
-            >
-            <div
-              class="dropdown"
-              id="action-dropdown"
-            >
-              <button
-                type="button"
-                class="dropdown__trigger"
-                class:active={actionDropdownOpen}
-                aria-labelledby="action-label"
-                aria-expanded={actionDropdownOpen}
-                onclick={() => (actionDropdownOpen = !actionDropdownOpen)}
-              >
-                <span>{actionDisplayText}</span>
-                <svg
-                  width="12"
-                  height="8"
-                  viewBox="0 0 12 8"
-                  fill="none"
-                >
-                  <path
-                    d="M1 1L6 6L11 1"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <div
-                class="dropdown__menu dropdown__menu--scrollable"
-                class:active={actionDropdownOpen}
-              >
-                {#each ACTION_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    class:selected={filterAction === option.value}
-                    onclick={() => {
-                      selectAction(option.value);
-                    }}
-                  >
-                    {option.text}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          </div>
+          <FilterDropdown
+            label="Aktion"
+            labelId="action-label"
+            options={ACTION_OPTIONS}
+            selectedValue={filterAction}
+            displayText={actionDisplayText}
+            scrollable
+            onselect={(value: string) => {
+              filterAction = value;
+            }}
+          />
 
           <!-- Entity Type Filter -->
-          <div class="form-field">
-            <span
-              class="form-field__label"
-              id="entity-label">Entitätstyp</span
-            >
-            <div
-              class="dropdown"
-              id="entity-dropdown"
-            >
-              <button
-                type="button"
-                class="dropdown__trigger"
-                class:active={entityDropdownOpen}
-                aria-labelledby="entity-label"
-                aria-expanded={entityDropdownOpen}
-                onclick={() => (entityDropdownOpen = !entityDropdownOpen)}
-              >
-                <span>{entityDisplayText}</span>
-                <svg
-                  width="12"
-                  height="8"
-                  viewBox="0 0 12 8"
-                  fill="none"
-                >
-                  <path
-                    d="M1 1L6 6L11 1"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <div
-                class="dropdown__menu dropdown__menu--scrollable"
-                class:active={entityDropdownOpen}
-              >
-                {#each ENTITY_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    class:selected={filterEntity === option.value}
-                    onclick={() => {
-                      selectEntity(option.value);
-                    }}
-                  >
-                    {option.text}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          </div>
+          <FilterDropdown
+            label="Entitätstyp"
+            labelId="entity-label"
+            options={ENTITY_OPTIONS}
+            selectedValue={filterEntity}
+            displayText={entityDisplayText}
+            scrollable
+            onselect={(value: string) => {
+              filterEntity = value;
+            }}
+          />
 
           <!-- Timerange Filter -->
-          <div class="form-field">
-            <span
-              class="form-field__label"
-              id="timerange-label">Zeitraum</span
-            >
-            <div
-              class="dropdown"
-              id="timerange-dropdown"
-            >
-              <button
-                type="button"
-                class="dropdown__trigger"
-                class:active={timerangeDropdownOpen}
-                aria-labelledby="timerange-label"
-                aria-expanded={timerangeDropdownOpen}
-                onclick={() => (timerangeDropdownOpen = !timerangeDropdownOpen)}
-              >
-                <span>{timerangeDisplayText}</span>
-                <svg
-                  width="12"
-                  height="8"
-                  viewBox="0 0 12 8"
-                  fill="none"
-                >
-                  <path
-                    d="M1 1L6 6L11 1"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <div
-                class="dropdown__menu dropdown__menu--scrollable"
-                class:active={timerangeDropdownOpen}
-              >
-                {#each TIMERANGE_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    class:selected={filterTimerange === option.value}
-                    onclick={() => {
-                      selectTimerange(option.value);
-                    }}
-                  >
-                    {option.text}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          </div>
+          <FilterDropdown
+            label="Zeitraum"
+            labelId="timerange-label"
+            options={TIMERANGE_OPTIONS}
+            selectedValue={filterTimerange}
+            displayText={timerangeDisplayText}
+            scrollable
+            onselect={(value: string) => {
+              filterTimerange = value;
+            }}
+          />
         </div>
 
         <!-- Filter Actions -->
@@ -619,7 +313,9 @@
           <button
             type="button"
             class="btn btn-danger"
-            onclick={openDeleteModal}
+            onclick={() => {
+              showDeleteModal = true;
+            }}
             disabled={!canDelete}
             title={canDelete ?
               hasActiveFilters ? 'Gefilterte Logs löschen'
@@ -633,7 +329,9 @@
           <button
             type="button"
             class="btn btn-success"
-            onclick={toggleExportSection}
+            onclick={() => {
+              showExportSection = !showExportSection;
+            }}
           >
             <i class="fas fa-download mr-2"></i>
             {showExportSection ? 'Export schließen' : 'Logs exportieren'}
@@ -642,223 +340,11 @@
 
         <!-- Export Section (collapsible) -->
         {#if showExportSection}
-          <div
-            class="export-section mt-6 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.2)] p-4"
-          >
-            <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold">
-              <i class="fas fa-file-export text-[var(--color-success)]"></i>
-              Audit-Logs exportieren
-            </h3>
-
-            <!-- Export Status Messages -->
-            {#if exportError}
-              <div class="alert alert--danger mb-4">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                {exportError}
-              </div>
-            {/if}
-            {#if exportSuccess}
-              <div class="alert alert--success mb-4">
-                <i class="fas fa-check-circle mr-2"></i>
-                {exportSuccess}
-              </div>
-            {/if}
-
-            <!-- Quick Timerange Buttons -->
-            <div class="mb-4">
-              <span class="form-field__label mb-2 block"
-                >Schnellauswahl Zeitraum</span
-              >
-              <div class="toggle-group">
-                {#each EXPORT_QUICK_TIMERANGE_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    class="toggle-group__btn"
-                    class:active={selectedQuickTimerange === option.value}
-                    onclick={() => {
-                      selectQuickTimerange(option.value, option.minutes);
-                    }}
-                  >
-                    {option.text}
-                  </button>
-                {/each}
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <!-- Date From -->
-              <div class="form-field">
-                <label
-                  class="form-field__label"
-                  for="export-date-from">Von Datum</label
-                >
-                <input
-                  type="date"
-                  id="export-date-from"
-                  class="form-field__control"
-                  bind:value={exportDateFrom}
-                  oninput={clearQuickTimerangeSelection}
-                />
-              </div>
-
-              <!-- Date To -->
-              <div class="form-field">
-                <label
-                  class="form-field__label"
-                  for="export-date-to">Bis Datum</label
-                >
-                <input
-                  type="date"
-                  id="export-date-to"
-                  class="form-field__control"
-                  bind:value={exportDateTo}
-                  oninput={clearQuickTimerangeSelection}
-                />
-              </div>
-
-              <!-- Format Dropdown -->
-              <div class="form-field">
-                <span
-                  class="form-field__label"
-                  id="format-label">Format</span
-                >
-                <div
-                  class="dropdown"
-                  id="format-dropdown"
-                >
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={formatDropdownOpen}
-                    aria-labelledby="format-label"
-                    aria-expanded={formatDropdownOpen}
-                    onclick={() => (formatDropdownOpen = !formatDropdownOpen)}
-                  >
-                    <span>{formatDisplayText}</span>
-                    <svg
-                      width="12"
-                      height="8"
-                      viewBox="0 0 12 8"
-                      fill="none"
-                    >
-                      <path
-                        d="M1 1L6 6L11 1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={formatDropdownOpen}
-                  >
-                    {#each EXPORT_FORMAT_OPTIONS as option (option.value)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        class:selected={exportFormat === option.value}
-                        onclick={() => {
-                          selectExportFormat(option.value);
-                        }}
-                      >
-                        {option.text}
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Source Dropdown -->
-              <div class="form-field">
-                <span
-                  class="form-field__label"
-                  id="source-label">Quelle</span
-                >
-                <div
-                  class="dropdown"
-                  id="source-dropdown"
-                >
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={sourceDropdownOpen}
-                    aria-labelledby="source-label"
-                    aria-expanded={sourceDropdownOpen}
-                    onclick={() => (sourceDropdownOpen = !sourceDropdownOpen)}
-                  >
-                    <span>{sourceDisplayText}</span>
-                    <svg
-                      width="12"
-                      height="8"
-                      viewBox="0 0 12 8"
-                      fill="none"
-                    >
-                      <path
-                        d="M1 1L6 6L11 1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={sourceDropdownOpen}
-                  >
-                    {#each EXPORT_SOURCE_OPTIONS as option (option.value)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        class:selected={exportSource === option.value}
-                        onclick={() => {
-                          selectExportSource(option.value);
-                        }}
-                      >
-                        {option.text}
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Export Button -->
-            <div class="mt-4 flex items-center gap-4">
-              <button
-                type="button"
-                class="btn btn-success"
-                onclick={() => void handleExportLogs()}
-                disabled={!canExport}
-              >
-                {#if exportLoading}
-                  <span class="spinner spinner--sm mr-2">
-                    <span class="spinner__circle"></span>
-                  </span>
-                  {MESSAGES.EXPORT_LOADING}
-                {:else if isRateLimited}
-                  <i class="fas fa-clock mr-2"></i>
-                  Warten ({rateLimitRemaining()}s)
-                {:else}
-                  <i class="fas fa-download mr-2"></i>
-                  Export starten
-                {/if}
-              </button>
-
-              {#if hasActiveFilters}
-                <span class="text-sm text-[var(--color-text-secondary)]">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  Aktive Filter werden beim Export berücksichtigt
-                </span>
-              {/if}
-            </div>
-
-            <!-- Export Info -->
-            <p class="mt-3 text-sm text-[var(--color-text-secondary)]">
-              <i class="fas fa-shield-alt mr-1"></i>
-              Max. 365 Tage | 1 Export pro Minute | RLS-geschützt
-            </p>
-          </div>
+          <LogsExportPanel
+            {filterAction}
+            {filterEntity}
+            {hasActiveFilters}
+          />
         {/if}
       </div>
 
@@ -1000,146 +486,18 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="delete-modal-title"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) closeDeleteModal();
+  <LogsDeleteModal
+    {hasActiveFilters}
+    {filterUser}
+    {filterAction}
+    {filterEntity}
+    {filterTimerange}
+    {actionDisplayText}
+    {entityDisplayText}
+    {timerangeDisplayText}
+    onclose={() => {
+      showDeleteModal = false;
     }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closeDeleteModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal ds-modal--md"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <!-- Header -->
-      <div class="ds-modal__header ds-modal__header--danger">
-        <h3
-          class="ds-modal__title flex items-center gap-3"
-          id="delete-modal-title"
-        >
-          <i class="fas fa-exclamation-triangle text-[var(--color-danger)]"></i>
-          {MESSAGES.DELETE_MODAL_TITLE}
-        </h3>
-      </div>
-
-      <div class="ds-modal__body">
-        <!-- Warning Alert -->
-        <div class="alert alert--danger mb-6">
-          <p class="font-bold">
-            <i class="fas fa-skull-crossbones mr-2"></i>
-            {MESSAGES.DELETE_WARNING}
-          </p>
-        </div>
-
-        <!-- Active Filters Display -->
-        <div class="mb-6">
-          <p class="mb-2 text-[var(--color-text-secondary)]">
-            Folgende Filter werden gelöscht:
-          </p>
-          <div
-            class="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.3)] p-4"
-          >
-            {#if hasActiveFilters}
-              {#if filterUser !== ''}
-                <span class="badge badge--info mr-2 mb-2"
-                  >Benutzer: {filterUser}</span
-                >
-              {/if}
-              {#if filterAction !== '' && filterAction !== 'all'}
-                <span class="badge badge--info mr-2 mb-2"
-                  >Aktion: {actionDisplayText}</span
-                >
-              {/if}
-              {#if filterEntity !== '' && filterEntity !== 'all'}
-                <span class="badge badge--info mr-2 mb-2"
-                  >Entitätstyp: {entityDisplayText}</span
-                >
-              {/if}
-              {#if filterTimerange !== '' && filterTimerange !== 'all'}
-                <span class="badge badge--info mr-2 mb-2"
-                  >Zeitraum: {timerangeDisplayText}</span
-                >
-              {/if}
-            {:else}
-              <span class="text-[var(--color-text-secondary)]"
-                >{MESSAGES.NO_FILTERS_WARNING}</span
-              >
-            {/if}
-          </div>
-        </div>
-
-        <!-- Confirmation Input -->
-        <div class="form-field mb-4">
-          <label
-            class="form-field__label"
-            for="deleteLogsConfirmation"
-          >
-            {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[0]}
-            <strong class="text-[var(--color-danger)]">LÖSCHEN</strong>
-            {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[1]}
-          </label>
-          <input
-            type="text"
-            id="deleteLogsConfirmation"
-            class="form-field__control"
-            placeholder="LÖSCHEN"
-            autocomplete="off"
-            bind:value={deleteConfirmText}
-          />
-        </div>
-
-        <!-- Password Section -->
-        <div class="form-field">
-          <label
-            class="form-field__label flex items-center gap-2"
-            for="deleteLogsPassword"
-          >
-            <i class="fas fa-lock text-[var(--color-danger)]"></i>
-            {MESSAGES.DELETE_PASSWORD_LABEL}
-          </label>
-          <input
-            type="password"
-            id="deleteLogsPassword"
-            class="form-field__control"
-            placeholder="Ihr Root-Passwort"
-            bind:value={deletePassword}
-          />
-          <span class="form-field__message"
-            >{MESSAGES.DELETE_PASSWORD_HINT}</span
-          >
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={closeDeleteModal}>Abbrechen</button
-        >
-        <button
-          type="button"
-          class="btn btn-danger"
-          onclick={handleDeleteLogs}
-          disabled={!canConfirmDelete}
-        >
-          <i class="fas fa-trash mr-2"></i>
-          Endgültig löschen
-        </button>
-      </div>
-    </div>
-  </div>
+    ondelete={(password: string) => void handleDeleteLogs(password)}
+  />
 {/if}
