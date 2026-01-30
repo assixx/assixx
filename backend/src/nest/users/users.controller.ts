@@ -64,8 +64,8 @@ import {
   UpdateUserDto,
 } from './dto/index.js';
 import { UserAvailabilityService } from './user-availability.service.js';
-import type { PaginatedResult, SafeUserResponse } from './users.service.js';
 import { UsersService } from './users.service.js';
+import type { PaginatedResult, SafeUserResponse } from './users.types.js';
 
 const { memoryStorage } = multer;
 
