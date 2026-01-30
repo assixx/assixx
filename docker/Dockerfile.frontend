@@ -20,8 +20,9 @@ ARG NODE_VERSION=24.13.0-alpine3.22
 FROM node:${NODE_VERSION} AS builder
 
 # pnpm version is configurable for consistency across environments
+# Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 ARG PNPM_VERSION=10.28.2
-RUN npm install -g pnpm@${PNPM_VERSION}
+RUN npm install -g npm@11.8.0 pnpm@${PNPM_VERSION}
 
 WORKDIR /app
 
@@ -44,6 +45,10 @@ COPY shared/ ./shared/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
+# Build shared package (TypeScript → dist/)
+# Must happen before frontend build since @assixx/shared exports point to dist/
+RUN pnpm run --filter=@assixx/shared build
+
 # Copy frontend source code
 COPY frontend/ ./frontend/
 
@@ -53,8 +58,12 @@ ARG PUBLIC_SENTRY_DSN=""
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 
 # Build SvelteKit application
+# SENTRY_AUTH_TOKEN is mounted as a BuildKit secret (never persisted in image layers)
+# The secret is only available during this RUN instruction
 WORKDIR /app/frontend
-RUN pnpm run build
+RUN --mount=type=secret,id=sentry_auth_token \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || echo '')" \
+    pnpm run build
 
 # Use pnpm deploy to create a self-contained deployment
 # This properly resolves pnpm workspace symlinks into real files

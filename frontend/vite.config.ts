@@ -8,12 +8,14 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     // Sentry MUSS vor SvelteKit kommen!
     sentrySvelteKit({
-      // Source maps upload (optional - requires auth token)
-      // sourceMapsUploadOptions: {
-      //   org: 'assixx',
-      //   project: 'javascript-sveltekit',
-      //   authToken: process.env.SENTRY_AUTH_TOKEN,
-      // },
+      autoUploadSourceMaps:
+        process.env.SENTRY_AUTH_TOKEN !== undefined &&
+        process.env.SENTRY_AUTH_TOKEN !== '',
+      sourceMapsUploadOptions: {
+        org: 'assixx',
+        project: 'javascript-sveltekit',
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      },
     }),
     // Tailwind MUSS vor SvelteKit kommen!
     tailwindcss(),
