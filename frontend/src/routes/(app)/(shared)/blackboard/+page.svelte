@@ -30,18 +30,12 @@
 
   // _lib/ imports
   import { fetchEntryByUuid, uploadAttachment, confirmEntry } from './_lib/api';
+  import BlackboardEntryCard from './_lib/BlackboardEntry.svelte';
   import BlackboardEntryModal from './_lib/BlackboardEntryModal.svelte';
-  import { ZOOM_CONFIG, SORT_OPTIONS, MESSAGES } from './_lib/constants';
-  import {
-    formatDateShort,
-    isExpired,
-    truncateText,
-    getPriorityLabel,
-    getPriorityClass,
-    getOrgLevelLabel,
-    getOrgLevelClass,
-    getSortLabel,
-  } from './_lib/utils';
+  import BlackboardFilterCard from './_lib/BlackboardFilterCard.svelte';
+  import { ZOOM_CONFIG, MESSAGES } from './_lib/constants';
+  import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
+  import { getSortLabel } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -128,12 +122,6 @@
   // User State (client-side only - from localStorage)
   let userRole = $state<string | null>(null);
 
-  // Dropdown State
-  let sortDropdownOpen = $state(false);
-
-  // Search input - writable $derived (Svelte 5.25+): syncs from URL, can be locally overridden
-  let searchInput = $derived(searchQuery);
-
   // =============================================================================
   // DERIVED VALUES
   // =============================================================================
@@ -178,12 +166,11 @@
 
   async function setSort(value: string): Promise<void> {
     const [by, dir] = value.split('|');
-    sortDropdownOpen = false;
     await navigateWithParams({ sortBy: by, sortDir: dir, page: 1 });
   }
 
-  async function handleSearch(): Promise<void> {
-    await navigateWithParams({ search: searchInput.trim(), page: 1 });
+  async function handleSearch(query: string): Promise<void> {
+    await navigateWithParams({ search: query.trim(), page: 1 });
   }
 
   async function goToPage(pageNum: number): Promise<void> {
@@ -393,6 +380,11 @@
     showEntryModal = true;
   }
 
+  function closeDeleteModals(): void {
+    showDeleteModal = false;
+    showDeleteConfirmModal = false;
+  }
+
   function proceedDelete(): void {
     showDeleteModal = false;
     showDeleteConfirmModal = true;
@@ -462,17 +454,11 @@
     }
   });
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#sort-dropdown')) sortDropdownOpen = false;
-  }
-
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showDeleteConfirmModal) showDeleteConfirmModal = false;
       else if (showDeleteModal) showDeleteModal = false;
       else if (showEntryModal) closeEntryModal();
-      sortDropdownOpen = false;
     }
   }
 </script>
@@ -481,134 +467,23 @@
   <title>Schwarzes Brett - Assixx</title>
 </svelte:head>
 
-<svelte:window
-  onclick={handleClickOutside}
-  onkeydown={handleKeyDown}
-/>
+<svelte:window onkeydown={handleKeyDown} />
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
 <div class="container">
   <!-- Filter Card -->
-  <div class="card mb-6">
-    <div
-      class="card__header cursor-pointer"
-      onclick={toggleFilter}
-      role="button"
-      tabindex="0"
-      onkeydown={(e) => {
-        if (e.key === 'Enter') toggleFilter();
-      }}
-    >
-      <div class="flex items-center justify-between">
-        <h3 class="card__title m-0">
-          <i class="fas fa-filter mr-2"></i>Filter & Suche
-        </h3>
-        <i
-          class="fas fa-chevron-down transition-transform duration-200"
-          class:rotate-180={filterExpanded}
-        ></i>
-      </div>
-    </div>
-    {#if filterExpanded}
-      <div class="card__body">
-        <div class="flex flex-wrap items-end gap-4">
-          <!-- Search Bar -->
-          <div class="form-field">
-            <label
-              class="form-field__label"
-              for="searchInput">Suche</label
-            >
-            <div class="relative">
-              <input
-                type="text"
-                id="searchInput"
-                class="form-field__control pl-10"
-                placeholder="Blackboard durchsuchen..."
-                bind:value={searchInput}
-                onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <i
-                class="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-              ></i>
-            </div>
-          </div>
-
-          <!-- Level Filter -->
-          <div class="form-field">
-            <span
-              class="form-field__label"
-              id="levelFilterLabel">Organisationsebene</span
-            >
-            <div
-              class="toggle-group mt-2"
-              role="group"
-              aria-labelledby="levelFilterLabel"
-            >
-              {#each [{ value: 'all', label: 'Alle', icon: 'fa-globe' }, { value: 'company', label: 'Firma', icon: 'fa-building' }, { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' }, { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' }, { value: 'team', label: 'Team', icon: 'fa-users' }] as opt (opt.value)}
-                <button
-                  type="button"
-                  class="toggle-group__btn"
-                  class:active={levelFilter === opt.value}
-                  onclick={() =>
-                    setLevelFilter(opt.value as typeof levelFilter)}
-                >
-                  <i
-                    class="fas {opt.icon}"
-                    aria-hidden="true"
-                  ></i>
-                  {opt.label}
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Sort Filter -->
-          <div class="form-field">
-            <label
-              class="form-field__label"
-              for="sortFilter">Sortierung</label
-            >
-            <div
-              class="dropdown"
-              id="sort-dropdown"
-              role="listbox"
-            >
-              <div
-                class="dropdown__trigger"
-                onclick={() => (sortDropdownOpen = !sortDropdownOpen)}
-                role="button"
-                tabindex="0"
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') sortDropdownOpen = !sortDropdownOpen;
-                }}
-              >
-                <span>{sortLabel}</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              {#if sortDropdownOpen}
-                <div class="dropdown__menu active">
-                  {#each SORT_OPTIONS as opt (opt.value)}
-                    <div
-                      class="dropdown__option"
-                      onclick={() => void setSort(opt.value)}
-                      onkeydown={(e) => {
-                        if (e.key === 'Enter') void setSort(opt.value);
-                      }}
-                      role="option"
-                      tabindex="0"
-                      aria-selected={`${sortBy}|${sortDir}` === opt.value}
-                    >
-                      {opt.label}
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          </div>
-        </div>
-      </div>
-    {/if}
-  </div>
+  <BlackboardFilterCard
+    {searchQuery}
+    {levelFilter}
+    {sortBy}
+    {sortDir}
+    {sortLabel}
+    expanded={filterExpanded}
+    onsearchchange={handleSearch}
+    onlevelchange={setLevelFilter}
+    onsortchange={setSort}
+    ontoggle={toggleFilter}
+  />
 
   <!-- Controls -->
   <div class="mb-6 flex justify-between">
@@ -691,108 +566,10 @@
         style="--zoom-level: {zoomLevel / 100};"
       >
         {#each entries as entry (entry.id)}
-          {@const isRead = entry.isConfirmed === true}
-          {@const isNew =
-            entry.firstSeenAt === null || entry.firstSeenAt === undefined}
-          <div
-            class="pinboard-item"
-            onclick={() => {
-              goToDetail(entry.uuid, isRead);
-            }}
-            role="button"
-            tabindex="0"
-            onkeydown={(e) => {
-              if (e.key === 'Enter') goToDetail(entry.uuid, isRead);
-            }}
-          >
-            <div
-              class="sticky-note sticky-note--{entry.color} sticky-note--large"
-            >
-              <div class="sticky-note__pin"></div>
-              <div class="sticky-note__header">
-                <div class="sticky-note__title">
-                  {entry.title}
-                  {#if isNew}<span class="badge badge--sm badge--success ml-2"
-                      >Neu</span
-                    >{/if}
-                </div>
-                {#if entry.expiresAt}
-                  <span
-                    class="sticky-note__expires"
-                    class:sticky-note__expires--expired={isExpired(
-                      entry.expiresAt,
-                    )}
-                    title={isExpired(entry.expiresAt) ? 'Abgelaufen' : (
-                      'Gültig bis'
-                    )}
-                  >
-                    <i class="fas fa-clock"></i>
-                    {formatDateShort(entry.expiresAt)}
-                  </span>
-                {/if}
-              </div>
-              <div class="sticky-note__content">
-                {truncateText(entry.content)}
-              </div>
-              <div class="sticky-note__indicators">
-                {#if (entry.commentCount ?? 0) > 0}
-                  <span
-                    class="sticky-note__comments"
-                    title="Kommentare"
-                    ><i class="fas fa-comments"></i> {entry.commentCount}</span
-                  >
-                {/if}
-                {#if (entry.attachmentCount ?? 0) > 0}
-                  <span
-                    class="sticky-note__attachments"
-                    title="Anhänge"
-                    ><i class="fas fa-paperclip"></i>
-                    {entry.attachmentCount}</span
-                  >
-                {/if}
-                <span
-                  class="sticky-note__read-status"
-                  class:sticky-note__read-status--read={entry.isConfirmed ===
-                    true}
-                  class:sticky-note__read-status--unread={entry.isConfirmed !==
-                    true}
-                  title={entry.isConfirmed === true ? 'Gelesen' : 'Ungelesen'}
-                >
-                  <i
-                    class="fas {entry.isConfirmed === true ?
-                      'fa-eye'
-                    : 'fa-eye-slash'}"
-                  ></i>
-                </span>
-              </div>
-              <div class="sticky-note__footer">
-                <div class="sticky-note__badges">
-                  <span
-                    class="sticky-note__badge {getPriorityClass(
-                      entry.priority,
-                    )}">{getPriorityLabel(entry.priority)}</span
-                  >
-                  <span
-                    class="sticky-note__badge {getOrgLevelClass(
-                      entry.orgLevel,
-                    )}">{getOrgLevelLabel(entry.orgLevel)}</span
-                  >
-                </div>
-                <div class="sticky-note__footer-row">
-                  <span class="sticky-note__author"
-                    ><i class="fas fa-user"></i>
-                    {entry.authorFullName ??
-                      entry.authorName ??
-                      'Unbekannt'}</span
-                  >
-                  <span class="sticky-note__date"
-                    ><i class="fas fa-calendar"></i>
-                    {formatDateShort(entry.createdAt)}</span
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
+          <BlackboardEntryCard
+            {entry}
+            onclick={goToDetail}
+          />
         {/each}
       </div>
     {/if}
@@ -863,107 +640,12 @@
   />
 {/if}
 
-<!-- Delete Modal Step 1 -->
-{#if showDeleteModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={() => (showDeleteModal = false)}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') showDeleteModal = false;
-    }}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal ds-modal--sm"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-trash-alt mr-2 text-red-500"
-          ></i>{MESSAGES.DELETE_CONFIRM_TITLE}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={() => (showDeleteModal = false)}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">
-          {MESSAGES.DELETE_CONFIRM_MESSAGE}
-        </p>
-      </div>
-      <div class="ds-modal__footer ds-modal__footer--right">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => (showDeleteModal = false)}>Abbrechen</button
-        >
-        <button
-          type="button"
-          class="btn btn-danger"
-          onclick={proceedDelete}
-          ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
-        >
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- Delete Modal Step 2 -->
-{#if showDeleteConfirmModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={() => (showDeleteConfirmModal = false)}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') showDeleteConfirmModal = false;
-    }}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--danger"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.DELETE_FINAL_TITLE}</h3>
-      <p class="confirm-modal__message">
-        <strong>ACHTUNG:</strong>
-        {MESSAGES.DELETE_FINAL_MESSAGE}
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => (showDeleteConfirmModal = false)}>Abbrechen</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={() => void deleteEntry()}
-          disabled={loading}>Endgültig löschen</button
-        >
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Delete Confirmation Modals (Two-Step) -->
+<DeleteConfirmModal
+  showStep1={showDeleteModal}
+  showStep2={showDeleteConfirmModal}
+  {loading}
+  oncancel={closeDeleteModals}
+  onproceed={proceedDelete}
+  onconfirm={deleteEntry}
+/>
