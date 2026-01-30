@@ -315,6 +315,9 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)
+      secrets:
+        - sentry_auth_token
     image: assixx-frontend:prod
     container_name: assixx-frontend
     restart: unless-stopped
@@ -535,6 +538,14 @@ services:
     profiles:
       - observability
       - production
+
+# =============================================================================
+# BuildKit Secrets - Passed to build steps without persisting in image layers
+# Requires: SENTRY_AUTH_TOKEN env var set via Doppler (or empty = skipped)
+# =============================================================================
+secrets:
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN
 
 networks:
   assixx-network:
