@@ -12,7 +12,7 @@ permissions:
 jobs:
   backend-quality:
     runs-on: ubuntu-latest
-    name: Backend (TypeScript, ESLint, Prettier)
+    name: Backend & Shared (TypeScript, ESLint, Prettier)
     permissions:
       contents: read
 
@@ -33,14 +33,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run TypeScript check
+      - name: Run TypeScript check (Shared)
+        run: cd shared && pnpm run typecheck
+
+      - name: Run TypeScript check (Backend)
         run: cd backend && pnpm run typecheck
 
-      - name: Run ESLint
+      - name: Run ESLint (Backend + Shared)
         run: cd backend && pnpm run lint
 
-      - name: Check formatting
+      - name: Check formatting (Backend)
         run: cd backend && pnpm run prettier
+
+      - name: Check formatting (Shared)
+        run: prettier --check "shared/src/**/*.ts"
 
   frontend-quality:
     runs-on: ubuntu-latest
