@@ -45,9 +45,13 @@ COPY shared/ ./shared/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
-# Build shared package (TypeScript → dist/)
-# Must happen before frontend build since @assixx/shared exports point to dist/
-RUN pnpm run --filter=@assixx/shared build
+# Build shared package (TypeScript → dist/) and sync into injected copy
+# inject-workspace-packages=true copies shared into node_modules at install time,
+# but dist/ doesn't exist yet during install. pnpm won't re-inject on subsequent
+# installs ("Already up to date"), so we sync dist/ into every injected copy.
+RUN pnpm run --filter=@assixx/shared build && \
+    find /app/node_modules -path '*/@assixx/shared' -type d \
+      -exec cp -r /app/shared/dist {} \;
 
 # Copy frontend source code
 COPY frontend/ ./frontend/
