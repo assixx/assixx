@@ -9,6 +9,7 @@
  * - Profile pictures
  *
  * NOTE: Availability logic extracted to UserAvailabilityService
+ * NOTE: Types extracted to users.types.ts, pure helpers to users.helpers.ts
  */
 import {
   BadRequestException,
@@ -24,7 +25,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
@@ -33,122 +33,23 @@ import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserAvailabilityService } from './user-availability.service.js';
-
-/**
- * User row type from database
- * NOTE: Availability fields removed - now in employee_availability table
- */
-interface UserRow {
-  id: number;
-  uuid: string;
-  tenant_id: number;
-  email: string;
-  password?: string;
-  role: string;
-  username: string;
-  first_name: string | null;
-  last_name: string | null;
-  is_active: number;
-  last_login: Date | null;
-  created_at: Date;
-  updated_at: Date | null;
-  phone: string | null;
-  address: string | null;
-  position: string | null;
-  employee_number: string | null;
-  profile_picture: string | null;
-  emergency_contact: string | null;
-  date_of_birth: string | null;
-  has_full_access: number | null;
-}
-
-/**
- * User department assignment row
- */
-interface UserDepartmentRow {
-  user_id: number;
-  department_id: number;
-  department_name: string;
-  is_primary: boolean;
-}
-
-/**
- * User team assignment row
- * INHERITANCE-FIX: Includes department and area info from team chain
- */
-interface UserTeamRow {
-  user_id: number;
-  team_id: number;
-  team_name: string;
-  // Inheritance chain: Team → Department → Area
-  team_department_id: number | null;
-  team_department_name: string | null;
-  team_area_id: number | null;
-  team_area_name: string | null;
-}
-
-/**
- * Pagination result
- */
-export interface PaginatedResult<T> {
-  data: T[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    pageSize: number;
-    totalItems: number;
-  };
-}
-
-/**
- * Tenant info for user response
- */
-interface TenantInfo {
-  companyName: string;
-  subdomain: string;
-}
-
-/**
- * Safe user response - API format (camelCase)
- * This is what gets returned to the frontend
- * isActive status: 0=inactive, 1=active, 3=archived, 4=deleted
- */
-export interface SafeUserResponse {
-  id: number;
-  uuid: string;
-  tenantId: number;
-  email: string;
-  role: string;
-  username: string;
-  firstName: string | null;
-  lastName: string | null;
-  isActive: number;
-  lastLogin: string | null;
-  createdAt: string;
-  updatedAt: string | null;
-  phone: string | null;
-  address: string | null;
-  position: string | null;
-  employeeNumber: string | null;
-  profilePicture: string | null;
-  emergencyContact: string | null;
-  dateOfBirth: string | null;
-  availabilityStatus: string | null;
-  availabilityStart: string | null;
-  availabilityEnd: string | null;
-  availabilityNotes: string | null;
-  hasFullAccess: boolean | null;
-  departmentIds?: number[];
-  departmentNames?: string[];
-  teamIds?: number[];
-  teamNames?: string[];
-  // INHERITANCE-FIX: Team → Department → Area chain (first team's chain)
-  teamDepartmentId?: number | null;
-  teamDepartmentName?: string | null;
-  teamAreaId?: number | null;
-  teamAreaName?: string | null;
-  tenant?: TenantInfo;
-}
+import {
+  addDepartmentInfo,
+  addTeamInfo,
+  buildUpdateFields,
+  buildUserListWhereClause,
+  isUniqueConstraintViolation,
+  mapSortField,
+  toSafeUserResponse,
+} from './users.helpers.js';
+import type {
+  PaginatedResult,
+  SafeUserResponse,
+  TenantInfo,
+  UserDepartmentRow,
+  UserRow,
+  UserTeamRow,
+} from './users.types.js';
 
 /**
  * Error message constants to avoid duplication
@@ -159,18 +60,6 @@ const ERROR_MESSAGES = {
   EMPLOYEE_NUMBER_EXISTS: 'Personalnummer bereits vergeben',
   INVALID_PASSWORD: 'Invalid current password',
 } as const;
-
-/**
- * Sort field mapping: camelCase API field → snake_case DB column
- * Single source of truth for both validation and mapping (prevents SQL injection)
- */
-const SORT_FIELD_MAP: Record<string, string> = {
-  firstName: 'first_name',
-  lastName: 'last_name',
-  email: 'email',
-  createdAt: 'created_at',
-  lastLogin: 'last_login',
-};
 
 @Injectable()
 export class UsersService {
@@ -199,7 +88,7 @@ export class UsersService {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause using helper
-    const { whereClause, params, paramIndex } = this.buildUserListWhereClause(
+    const { whereClause, params, paramIndex } = buildUserListWhereClause(
       tenantId,
       query,
     );
@@ -212,7 +101,7 @@ export class UsersService {
     const total = Number.parseInt(countResult[0]?.count ?? '0', 10);
 
     // Build ORDER BY clause
-    const sortBy = this.mapSortField(query.sortBy ?? 'createdAt');
+    const sortBy = mapSortField(query.sortBy ?? 'createdAt');
     const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
 
     // Get users (availability fields removed - now from employee_availability table)
@@ -230,9 +119,7 @@ export class UsersService {
     );
 
     // Convert to responses
-    const responses = users.map((user: UserRow) =>
-      this.toSafeUserResponse(user),
-    );
+    const responses = users.map((user: UserRow) => toSafeUserResponse(user));
 
     // Fetch team assignments and availability in batch (single query each for all users)
     const userIds = users.map((u: UserRow) => u.id);
@@ -244,7 +131,7 @@ export class UsersService {
     // Add team and availability info to each response
     for (const response of responses) {
       const teams = teamsByUser.get(response.id) ?? [];
-      this.addTeamInfo(response, teams);
+      addTeamInfo(response, teams);
       this.availabilityService.addAvailabilityInfo(
         response,
         availabilityByUser.get(response.id),
@@ -282,9 +169,9 @@ export class UsersService {
       this.getTenantInfo(tenantId),
     ]);
 
-    const response = this.toSafeUserResponse(user);
-    this.addDepartmentInfo(response, departments);
-    this.addTeamInfo(response, teams);
+    const response = toSafeUserResponse(user);
+    addDepartmentInfo(response, departments);
+    addTeamInfo(response, teams);
     this.availabilityService.addAvailabilityInfo(
       response,
       availability ?? undefined,
@@ -407,10 +294,10 @@ export class UsersService {
       return userId;
     } catch (error: unknown) {
       // Handle PostgreSQL unique constraint violations (code 23505)
-      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+      if (isUniqueConstraintViolation(error, 'employee_number')) {
         throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
       }
-      if (this.isUniqueConstraintViolation(error, 'email')) {
+      if (isUniqueConstraintViolation(error, 'email')) {
         throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
       }
       throw error;
@@ -513,7 +400,7 @@ export class UsersService {
     hasFullAccess: boolean | undefined,
     password: string | undefined,
   ): Promise<void> {
-    const { updates, params, paramIndex } = this.buildUpdateFields(
+    const { updates, params, paramIndex } = buildUpdateFields(
       updateData,
       hasFullAccess,
     );
@@ -536,84 +423,14 @@ export class UsersService {
       );
     } catch (error: unknown) {
       // Handle PostgreSQL unique constraint violations (code 23505)
-      if (this.isUniqueConstraintViolation(error, 'employee_number')) {
+      if (isUniqueConstraintViolation(error, 'employee_number')) {
         throw new ConflictException(ERROR_MESSAGES.EMPLOYEE_NUMBER_EXISTS);
       }
-      if (this.isUniqueConstraintViolation(error, 'email')) {
+      if (isUniqueConstraintViolation(error, 'email')) {
         throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
       }
       throw error;
     }
-  }
-
-  /**
-   * Check if error is a PostgreSQL unique constraint violation for a specific field
-   */
-  private isUniqueConstraintViolation(
-    error: unknown,
-    fieldName: string,
-  ): boolean {
-    if (typeof error !== 'object' || error === null) return false;
-    const pgError = error as { code?: string; constraint?: string };
-    // PostgreSQL unique violation code is 23505
-    if (pgError.code !== '23505') return false;
-    // Check if constraint name contains the field name
-    return (
-      pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ??
-      false
-    );
-  }
-
-  /**
-   * Build update fields and params from DTO data
-   * NOTE: Availability fields removed - now managed via employee_availability table
-   */
-  private buildUpdateFields(
-    data: Record<string, unknown>,
-    hasFullAccess: boolean | undefined,
-  ): { updates: string[]; params: unknown[]; paramIndex: number } {
-    // Availability fields removed - now in employee_availability table
-    const fieldMap: Record<string, string> = {
-      email: 'email',
-      firstName: 'first_name',
-      lastName: 'last_name',
-      role: 'role',
-      position: 'position',
-      phone: 'phone',
-      address: 'address',
-      employeeNumber: 'employee_number',
-      dateOfBirth: 'date_of_birth',
-    };
-
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    for (const [dtoField, dbColumn] of Object.entries(fieldMap)) {
-      // Safe: dtoField comes from hardcoded fieldMap keys, not user input
-
-      const value = data[dtoField];
-      if (value !== undefined) {
-        updates.push(`${dbColumn} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
-    }
-
-    if (data['isActive'] !== undefined) {
-      updates.push(`is_active = $${paramIndex}`);
-      // isActive is now a number (0, 1, 3) - pass through directly
-      params.push(data['isActive']);
-      paramIndex++;
-    }
-
-    if (hasFullAccess !== undefined) {
-      updates.push(`has_full_access = $${paramIndex}`);
-      params.push(hasFullAccess ? 1 : 0);
-      paramIndex++;
-    }
-
-    return { updates, params, paramIndex };
   }
 
   /**
@@ -645,8 +462,8 @@ export class UsersService {
     }
 
     const departments = await this.getUserDepartments(userId, tenantId);
-    const response = this.toSafeUserResponse(updatedUser);
-    this.addDepartmentInfo(response, departments);
+    const response = toSafeUserResponse(updatedUser);
+    addDepartmentInfo(response, departments);
 
     return response;
   }
@@ -707,7 +524,7 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    return this.toSafeUserResponse(updatedUser);
+    return toSafeUserResponse(updatedUser);
   }
 
   /**
@@ -829,45 +646,6 @@ export class UsersService {
   // ============================================
   // Private Helper Methods
   // ============================================
-
-  /**
-   * Build WHERE clause and params for user list query
-   * Always excludes soft-deleted users (is_active = 4) unless specific isActive filter is provided
-   */
-  private buildUserListWhereClause(
-    tenantId: number,
-    query: ListUsersQueryDto,
-  ): { whereClause: string; params: unknown[]; paramIndex: number } {
-    const conditions: string[] = ['tenant_id = $1'];
-    const params: unknown[] = [tenantId];
-    let paramIndex = 2;
-
-    if (query.role !== undefined) {
-      conditions.push(`role = $${paramIndex}`);
-      params.push(query.role);
-      paramIndex++;
-    }
-
-    if (query.isActive !== undefined) {
-      // Explicit isActive filter - use exactly what was requested
-      conditions.push(`is_active = $${paramIndex}`);
-      params.push(query.isActive);
-      paramIndex++;
-    } else {
-      // Default: exclude soft-deleted users (is_active = 4)
-      conditions.push('is_active != 4');
-    }
-
-    if (query.search !== undefined && query.search !== '') {
-      conditions.push(
-        `(first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`,
-      );
-      params.push(`%${query.search}%`);
-      paramIndex++;
-    }
-
-    return { whereClause: conditions.join(' AND '), params, paramIndex };
-  }
 
   /**
    * Find user by ID
@@ -1048,59 +826,6 @@ export class UsersService {
     );
   }
 
-  /**
-   * Convert DB row to safe API response (camelCase, without password)
-   * Uses dbToApi() for snake_case → camelCase transformation
-   */
-  private toSafeUserResponse(user: UserRow): SafeUserResponse {
-    const { password, ...safeUser } = user;
-    void password;
-    return dbToApi(
-      safeUser as unknown as Record<string, unknown>,
-    ) as unknown as SafeUserResponse;
-  }
-
-  /**
-   * Add department info to response
-   */
-  private addDepartmentInfo(
-    response: SafeUserResponse,
-    departments: UserDepartmentRow[],
-  ): void {
-    response.departmentIds = departments.map(
-      (d: UserDepartmentRow) => d.department_id,
-    );
-    response.departmentNames = departments.map(
-      (d: UserDepartmentRow) => d.department_name,
-    );
-  }
-
-  /**
-   * Add team info to response
-   * INHERITANCE-FIX: Includes department and area info from team chain
-   */
-  private addTeamInfo(response: SafeUserResponse, teams: UserTeamRow[]): void {
-    response.teamIds = teams.map((t: UserTeamRow) => t.team_id);
-    response.teamNames = teams.map((t: UserTeamRow) => t.team_name);
-
-    // INHERITANCE-FIX: Add inherited department/area from first (primary) team
-    const primaryTeam = teams[0];
-    if (primaryTeam !== undefined) {
-      response.teamDepartmentId = primaryTeam.team_department_id;
-      response.teamDepartmentName = primaryTeam.team_department_name;
-      response.teamAreaId = primaryTeam.team_area_id;
-      response.teamAreaName = primaryTeam.team_area_name;
-    }
-  }
-
-  /**
-   * Map API sort field to database column
-   * Falls back to created_at for invalid fields (prevents SQL injection)
-   */
-  private mapSortField(sortBy: string): string {
-    return SORT_FIELD_MAP[sortBy] ?? 'created_at';
-  }
-
   // ============================================
   // Profile Picture Methods (Native NestJS)
   // ============================================
@@ -1160,7 +885,7 @@ export class UsersService {
       throw new InternalServerErrorException('Failed to retrieve updated user');
     }
 
-    return this.toSafeUserResponse(updatedUser);
+    return toSafeUserResponse(updatedUser);
   }
 
   /**
