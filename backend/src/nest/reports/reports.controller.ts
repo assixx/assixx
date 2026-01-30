@@ -7,17 +7,14 @@
  * - GET    /reports/departments   - Get department analytics
  * - GET    /reports/shifts        - Get shift analytics
  * - GET    /reports/kvp           - Get KVP ROI report
- * - GET    /reports/attendance    - Get attendance report
- * - GET    /reports/compliance    - Get compliance report
  * - POST   /reports/custom        - Generate custom report
- * - GET    /reports/export/:type  - Export report (PDF/Excel/CSV)
+ * - GET    /reports/export/:type  - Export report (CSV)
  */
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import {
-  AttendanceReportQueryDto,
   CustomReportDto,
   DateRangeQueryDto,
   EmployeeReportQueryDto,
@@ -94,33 +91,6 @@ export class ReportsController {
       query.dateFrom,
       query.dateTo,
       query.categoryId,
-    );
-  }
-
-  @Get('attendance')
-  async getAttendanceReport(
-    @TenantId() tenantId: number,
-    @Query() query: AttendanceReportQueryDto,
-  ): Promise<unknown> {
-    return await this.reportsService.getAttendanceReport(
-      tenantId,
-      query.dateFrom,
-      query.dateTo,
-      query.departmentId,
-      query.teamId,
-    );
-  }
-
-  @Get('compliance')
-  async getComplianceReport(
-    @TenantId() tenantId: number,
-    @Query() query: AttendanceReportQueryDto,
-  ): Promise<unknown> {
-    return await this.reportsService.getComplianceReport(
-      tenantId,
-      query.dateFrom,
-      query.dateTo,
-      query.departmentId,
     );
   }
 

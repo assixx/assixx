@@ -21,15 +21,14 @@ import { dev } from '$app/environment';
 
 import { createLogger } from '$lib/utils/logger';
 
+import type { UserRole } from '@assixx/shared';
+
 /** Logger instance for hooks */
 const log = createLogger('hooks.server');
 
 // ============================================================================
 // Authentication Gate
 // ============================================================================
-
-/** User role type - matches backend UserRole enum */
-type UserRole = 'root' | 'admin' | 'employee';
 
 /** API base URL for server-side fetching */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';

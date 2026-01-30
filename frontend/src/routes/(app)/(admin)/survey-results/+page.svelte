@@ -178,7 +178,7 @@
   </div>
 
   <div class="card">
-    <div class="card__header flex justify-between items-center">
+    <div class="card__header flex items-center justify-between">
       <div>
         <h2 class="card-title">Umfrage-Ergebnisse</h2>
         <p class="text-secondary">Auswertung und Statistiken der Umfrage</p>
@@ -250,25 +250,25 @@
         <!-- Statistics Grid -->
         <div class="stats-grid">
           <div class="card-stat">
-            <h3 class="text-3xl font-bold text-blue-500 mb-1">
+            <h3 class="mb-1 text-3xl font-bold text-blue-500">
               {totalResponses}
             </h3>
             <p class="text-sm text-gray-400">Antworten</p>
           </div>
           <div class="card-stat">
-            <h3 class="text-3xl font-bold text-blue-500 mb-1">
+            <h3 class="mb-1 text-3xl font-bold text-blue-500">
               {completedResponses}
             </h3>
             <p class="text-sm text-gray-400">Abgeschlossen</p>
           </div>
           <div class="card-stat">
-            <h3 class="text-3xl font-bold text-blue-500 mb-1">
+            <h3 class="mb-1 text-3xl font-bold text-blue-500">
               {completionRate}%
             </h3>
             <p class="text-sm text-gray-400">Abschlussrate</p>
           </div>
           <div class="card-stat">
-            <h3 class="text-3xl font-bold text-blue-500 mb-1">
+            <h3 class="mb-1 text-3xl font-bold text-blue-500">
               {survey.status === 'active' ?
                 'Aktiv'
               : getStatusText(survey.status)}

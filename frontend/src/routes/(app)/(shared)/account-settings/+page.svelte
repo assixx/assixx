@@ -155,7 +155,7 @@
         <i class="fas fa-exclamation-triangle mr-2"></i>
         Kontoeinstellungen
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         Tenant-Verwaltung und Löschoptionen (Zwei-Personen-Prinzip)
       </p>
     </div>
@@ -199,7 +199,7 @@
             Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich
             gelöscht:
           </p>
-          <ul class="pl-5 mt-4 space-y-1 text-sm">
+          <ul class="mt-4 space-y-1 pl-5 text-sm">
             <li>Alle Administratoren und Mitarbeiter</li>
             <li>Alle Dokumente und Dateien</li>
             <li>Alle Nachrichten und Chats</li>
@@ -261,7 +261,7 @@
             <p class="alert__message">
               Sie sind dabei, Ihren gesamten Tenant zu löschen. Diese Aktion:
             </p>
-            <ul class="pl-5 mt-2 space-y-1 text-sm">
+            <ul class="mt-2 space-y-1 pl-5 text-sm">
               <li>Löscht ALLE Benutzer (Admins und Mitarbeiter)</li>
               <li>Löscht ALLE Daten und Dokumente</li>
               <li>Löscht ALLE Einstellungen</li>
@@ -273,9 +273,9 @@
         <!-- Two-Person-Principle Info Box -->
         <div class="info-box mb-6">
           <div class="flex items-start gap-3">
-            <i class="fas fa-shield-alt text-blue-500 mt-1"></i>
+            <i class="fas fa-shield-alt mt-1 text-blue-500"></i>
             <div>
-              <p class="font-semibold mb-2">
+              <p class="mb-2 font-semibold">
                 Zwei-Personen-Prinzip (4-Augen-Prinzip)
               </p>
               <p class="mb-2">

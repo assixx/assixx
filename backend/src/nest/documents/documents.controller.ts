@@ -47,6 +47,7 @@ import { DocumentsService } from './documents.service.js';
 import type {
   ChatFolderResponse,
   DocumentContentResponse,
+  DocumentCreateInput,
   DocumentResponse,
   DocumentStatsResponse,
   PaginatedDocumentsResult,
@@ -105,6 +106,69 @@ function buildStoragePath(
     month,
     `${fileUuid}${extension}`,
   );
+}
+
+/** Parse tags JSON array from request body */
+function parseTags(tagsJson: string): string[] {
+  const parsed: unknown = JSON.parse(tagsJson);
+  return Array.isArray(parsed) ?
+      parsed.filter((t: unknown): t is string => typeof t === 'string')
+    : [];
+}
+
+/** Build document create input from file and body */
+function buildDocumentCreateInput(
+  file: MulterFile,
+  body: Record<string, string>,
+  tenantId: number,
+): DocumentCreateInput {
+  const fileUuid = uuidv7();
+  const extension = path.extname(file.originalname).toLowerCase();
+  const checksum = crypto
+    .createHash('sha256')
+    .update(file.buffer)
+    .digest('hex');
+
+  const category = body['category'] ?? 'general';
+  const finalCategory =
+    VALID_CATEGORIES.includes(category) ? category : 'general';
+
+  const trimmedDocName = body['documentName']?.trim();
+  const displayName =
+    trimmedDocName !== undefined && trimmedDocName !== '' ?
+      trimmedDocName
+    : file.originalname;
+
+  return {
+    filename: displayName,
+    originalName: file.originalname,
+    fileSize: file.size,
+    fileContent: file.buffer,
+    mimeType: file.mimetype,
+    category: finalCategory,
+    description: body['description'] ?? '',
+    accessScope: (body['accessScope'] ?? 'personal') as AccessScope,
+    fileUuid,
+    fileChecksum: checksum,
+    filePath: buildStoragePath(tenantId, fileUuid, extension),
+    storageType: 'filesystem',
+    ...(body['tags'] !== undefined && { tags: parseTags(body['tags']) }),
+    ...(body['ownerUserId'] !== undefined && {
+      ownerUserId: Number.parseInt(body['ownerUserId'], 10),
+    }),
+    ...(body['targetTeamId'] !== undefined && {
+      targetTeamId: Number.parseInt(body['targetTeamId'], 10),
+    }),
+    ...(body['targetDepartmentId'] !== undefined && {
+      targetDepartmentId: Number.parseInt(body['targetDepartmentId'], 10),
+    }),
+    ...(body['salaryYear'] !== undefined && {
+      salaryYear: Number.parseInt(body['salaryYear'], 10),
+    }),
+    ...(body['salaryMonth'] !== undefined && {
+      salaryMonth: Number.parseInt(body['salaryMonth'], 10),
+    }),
+  };
 }
 
 /**
@@ -234,61 +298,7 @@ export class DocumentsController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const fileUuid = uuidv7();
-    const extension = path.extname(file.originalname).toLowerCase();
-    const checksum = crypto
-      .createHash('sha256')
-      .update(file.buffer)
-      .digest('hex');
-    const category = body['category'] ?? 'general';
-    const finalCategory =
-      VALID_CATEGORIES.includes(category) ? category : 'general';
-
-    // Use custom document name if provided, otherwise use original filename
-    const trimmedDocName = body['documentName']?.trim();
-    const displayName =
-      trimmedDocName !== undefined && trimmedDocName !== '' ?
-        trimmedDocName
-      : file.originalname;
-
-    const documentData = {
-      filename: displayName,
-      originalName: file.originalname,
-      fileSize: file.size,
-      fileContent: file.buffer,
-      mimeType: file.mimetype,
-      category: finalCategory,
-      description: body['description'] ?? '',
-      accessScope: (body['accessScope'] ?? 'personal') as AccessScope,
-      fileUuid,
-      fileChecksum: checksum,
-      filePath: buildStoragePath(tenantId, fileUuid, extension),
-      storageType: 'filesystem' as const,
-      // Parse tags if provided (JSON array)
-      ...(body['tags'] !== undefined && {
-        tags: (() => {
-          const parsed: unknown = JSON.parse(body['tags']);
-          return Array.isArray(parsed) ?
-              parsed.filter((t: unknown): t is string => typeof t === 'string')
-            : [];
-        })(),
-      }),
-      ...(body['ownerUserId'] !== undefined && {
-        ownerUserId: Number.parseInt(body['ownerUserId'], 10),
-      }),
-      ...(body['targetTeamId'] !== undefined && {
-        targetTeamId: Number.parseInt(body['targetTeamId'], 10),
-      }),
-      ...(body['targetDepartmentId'] !== undefined && {
-        targetDepartmentId: Number.parseInt(body['targetDepartmentId'], 10),
-      }),
-      ...(body['salaryYear'] !== undefined && {
-        salaryYear: Number.parseInt(body['salaryYear'], 10),
-      }),
-      ...(body['salaryMonth'] !== undefined && {
-        salaryMonth: Number.parseInt(body['salaryMonth'], 10),
-      }),
-    };
+    const documentData = buildDocumentCreateInput(file, body, tenantId);
 
     return await this.documentsService.createDocument(
       documentData,

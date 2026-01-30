@@ -2,34 +2,22 @@
  * Authentication Interfaces
  *
  * Type definitions for authenticated requests and user data.
+ * Imports shared types from \@assixx/shared, extends with backend-specific fields.
  */
+import type { BaseAuthUser, UserRole } from '@assixx/shared';
+
+// Re-export for backward compatibility (existing imports from this file still work)
+export type { UserRole };
 
 /**
- * Valid user roles in the system
+ * NestJS Authenticated user data attached to requests.
+ * Extends BaseAuthUser with backend-specific fields.
  */
-export type UserRole = 'root' | 'admin' | 'employee';
-
-/**
- * NestJS Authenticated user data attached to requests
- * Named NestAuthUser to avoid conflict with existing AuthUser during migration
- */
-export interface NestAuthUser {
-  /** User ID */
-  id: number;
-  /** User email */
-  email: string;
-  /** Original role from database */
-  role: UserRole;
+export interface NestAuthUser extends BaseAuthUser {
   /** Active role (may differ due to role switching) */
   activeRole: UserRole;
   /** Whether user is currently viewing as different role */
   isRoleSwitched: boolean;
-  /** Tenant ID for multi-tenant isolation */
-  tenantId: number;
-  /** User's first name */
-  firstName?: string;
-  /** User's last name */
-  lastName?: string;
   /** Department ID (for employees) */
   departmentId?: number;
   /** Team ID (for employees) */
@@ -61,12 +49,3 @@ export interface JwtPayload {
   /** Expiration timestamp */
   exp: number;
 }
-
-/**
- * Valid roles array for validation
- */
-export const VALID_ROLES: readonly UserRole[] = [
-  'root',
-  'admin',
-  'employee',
-] as const;

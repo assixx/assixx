@@ -57,35 +57,6 @@ export function getTypeLabel(type: string): string {
 }
 
 // =============================================================================
-// SEARCH HELPERS
-// =============================================================================
-
-/**
- * Escape HTML to prevent XSS
- * @param text - Text to escape
- * @returns Escaped text
- */
-export function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-/**
- * Highlight search term in text
- * Wraps matches in <strong> tags for display
- * @param text - Text to search in
- * @param query - Search query
- * @returns HTML string with highlighted matches
- */
-export function highlightMatch(text: string, query: string): string {
-  if (!query.trim()) return escapeHtml(text);
-  const escaped = query.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  return escapeHtml(text).replace(regex, '<strong>$1</strong>');
-}
-
-// =============================================================================
 // AREA LEAD HELPERS
 // =============================================================================
 

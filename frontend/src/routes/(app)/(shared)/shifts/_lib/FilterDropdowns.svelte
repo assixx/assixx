@@ -124,7 +124,7 @@
 
 <div
   id="admin-filter-controls"
-  class="mt-6 shift-info-row"
+  class="shift-info-row mt-6"
 >
   <!-- Area Dropdown -->
   <div class="info-item">

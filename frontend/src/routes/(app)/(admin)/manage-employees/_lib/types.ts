@@ -2,6 +2,20 @@
 // MANAGE EMPLOYEES - TYPE DEFINITIONS
 // =============================================================================
 
+import type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+  AvailabilityStatus,
+} from '@assixx/shared';
+
+export type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+  AvailabilityStatus,
+};
+
 /**
  * Area interface - inherited via teams→departments→areas
  */
@@ -79,33 +93,6 @@ export interface Employee {
 
   role?: string;
 }
-
-/**
- * Status filter type for employee list filtering
- */
-export type StatusFilter = 'active' | 'inactive' | 'archived' | 'all';
-
-/**
- * isActive status values
- * 0 = inactive, 1 = active, 3 = archived, 4 = deleted (soft delete)
- */
-export type IsActiveStatus = 0 | 1 | 3 | 4;
-
-/**
- * Form-compatible isActive status (excludes deleted)
- */
-export type FormIsActiveStatus = 0 | 1 | 3;
-
-/**
- * Availability status options
- */
-export type AvailabilityStatus =
-  | 'available'
-  | 'vacation'
-  | 'sick'
-  | 'unavailable'
-  | 'training'
-  | 'other';
 
 /**
  * Badge info for display

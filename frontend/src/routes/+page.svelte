@@ -32,7 +32,7 @@
 </script>
 
 <svelte:head>
-  <title>Assixx - Die SaaS-Lösung für Industriefirmen</title>
+  <title>Assixx - Enterprise 2.0 für Industriefirmen</title>
 </svelte:head>
 
 <!-- Landing Page Container -->
@@ -68,10 +68,10 @@
 
   <!-- Hero Section -->
   <section class="hero">
-    <h1>Die digitale Lösung für Industriefirmen</h1>
+    <h1>Enterprise 2.0 für Industriefirmen</h1>
     <p>
-      Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung.
-      Dokumentenverwaltung, Kommunikation und mehr - alles in einer Plattform.
+      Wissensmanagement, Kommunikation und Kollaboration - von der Produktion
+      bis zur Verwaltung. Alles in einer Plattform.
     </p>
     <a
       href={resolve('/signup', {})}
@@ -571,7 +571,7 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <p>&copy; 2025 Assixx. Alle Rechte vorbehalten.</p>
+    <p>&copy; 2026 Assixx. Alle Rechte vorbehalten.</p>
   </footer>
 </div>
 <!-- End .landing-page -->

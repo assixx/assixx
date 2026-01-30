@@ -232,13 +232,25 @@ export class UserAvailabilityService {
     tenantId: number,
     createdBy?: number,
   ): Promise<{ message: string }> {
-    // Verify user exists
     const userExists = await this.userExists(userId, tenantId);
     if (!userExists) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // Validate: start and end dates are required for non-available status
+    this.validateAvailabilityDates(dto);
+
+    if (
+      dto.availabilityStart !== undefined &&
+      dto.availabilityEnd !== undefined
+    ) {
+      await this.insertAvailabilityRecord(userId, tenantId, dto, createdBy);
+    }
+
+    return { message: 'Availability updated successfully' };
+  }
+
+  /** Validates availability date requirements */
+  private validateAvailabilityDates(dto: UpdateAvailabilityDto): void {
     if (
       dto.availabilityStatus !== 'available' &&
       (dto.availabilityStart === undefined || dto.availabilityEnd === undefined)
@@ -248,7 +260,6 @@ export class UserAvailabilityService {
       );
     }
 
-    // Validate: end date must be on or after start date
     if (
       dto.availabilityStart !== undefined &&
       dto.availabilityEnd !== undefined &&
@@ -258,46 +269,45 @@ export class UserAvailabilityService {
         'Bis-Datum muss nach oder gleich Von-Datum sein.',
       );
     }
+  }
 
-    // Insert into employee_availability table (single source of truth)
-    if (
-      dto.availabilityStart !== undefined &&
-      dto.availabilityEnd !== undefined
-    ) {
-      // Check for overlapping date ranges
-      const overlapping = await this.databaseService.query<{ id: number }>(
-        `SELECT id FROM employee_availability
-         WHERE employee_id = $1
-           AND tenant_id = $2
-           AND start_date <= $4::date
-           AND end_date >= $3::date`,
-        [userId, tenantId, dto.availabilityStart, dto.availabilityEnd],
-      );
+  /** Checks for overlapping ranges and inserts availability record */
+  private async insertAvailabilityRecord(
+    userId: number,
+    tenantId: number,
+    dto: UpdateAvailabilityDto,
+    createdBy?: number,
+  ): Promise<void> {
+    const overlapping = await this.databaseService.query<{ id: number }>(
+      `SELECT id FROM employee_availability
+       WHERE employee_id = $1
+         AND tenant_id = $2
+         AND start_date <= $4::date
+         AND end_date >= $3::date`,
+      [userId, tenantId, dto.availabilityStart, dto.availabilityEnd],
+    );
 
-      if (overlapping.length > 0) {
-        throw new ConflictException(
-          'Zeitraum bereits vergeben. Bitte in der Verlauf-Seite aktualisieren.',
-        );
-      }
-
-      await this.databaseService.query(
-        `INSERT INTO employee_availability
-          (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          userId,
-          tenantId,
-          dto.availabilityStatus,
-          dto.availabilityStart,
-          dto.availabilityEnd,
-          dto.availabilityReason ?? null,
-          dto.availabilityNotes ?? null,
-          createdBy ?? null,
-        ],
+    if (overlapping.length > 0) {
+      throw new ConflictException(
+        'Zeitraum bereits vergeben. Bitte in der Verlauf-Seite aktualisieren.',
       );
     }
 
-    return { message: 'Availability updated successfully' };
+    await this.databaseService.query(
+      `INSERT INTO employee_availability
+        (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        userId,
+        tenantId,
+        dto.availabilityStatus,
+        dto.availabilityStart,
+        dto.availabilityEnd,
+        dto.availabilityReason ?? null,
+        dto.availabilityNotes ?? null,
+        createdBy ?? null,
+      ],
+    );
   }
 
   /**

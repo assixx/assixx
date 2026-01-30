@@ -174,8 +174,8 @@
 
 **Technologie:**
 
-- WebSocket (Socket.io)
-- MySQL Message Storage
+- WebSocket
+- PostgreSQL Message Storage
 - File-Upload bis 10MB
 - Emoji-Support
 

@@ -54,14 +54,14 @@
 </script>
 
 {#snippet cardContent()}
-  <div class="flex justify-between items-start mb-4">
-    <h3 class="text-xl font-semibold text-primary m-0">{title}</h3>
+  <div class="mb-4 flex items-start justify-between">
+    <h3 class="text-primary m-0 text-xl font-semibold">{title}</h3>
     <span class="badge {getStatusBadgeClass(status)} badge--uppercase">
       {getStatusText(status)}
     </span>
   </div>
 
-  <div class="mb-4 flex items-center gap-2 flex-wrap">
+  <div class="mb-4 flex flex-wrap items-center gap-2">
     <span
       class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}"
     >
@@ -70,11 +70,11 @@
     </span>
   </div>
 
-  <p class="mb-4 text-sm leading-relaxed text-secondary">
+  <p class="text-secondary mb-4 text-sm leading-relaxed">
     {description !== '' ? description : 'Keine Beschreibung'}
   </p>
 
-  <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+  <div class="text-secondary mb-4 flex items-center gap-2 text-sm">
     <i class="fas fa-calendar-alt"></i>
     {#if startDate !== '' && endDate !== ''}
       <span>{startDate} - {endDate}</span>
@@ -86,14 +86,14 @@
   </div>
 
   {#if creatorName !== ''}
-    <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+    <div class="text-secondary mb-4 flex items-center gap-2 text-sm">
       <i class="fas fa-user-pen"></i>
       <span>Erstellt von {creatorName}</span>
     </div>
   {/if}
 
   {#if assignmentBadges.length > 0}
-    <div class="mb-4 flex items-center gap-2 flex-wrap">
+    <div class="mb-4 flex flex-wrap items-center gap-2">
       {#each assignmentBadges as badge (badge.text)}
         <span class="badge {badge.badgeClass}">
           <i class="fas {badge.icon}"></i>

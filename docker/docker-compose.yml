@@ -137,6 +137,7 @@ services:
       # Live-Reload Volumes für Entwicklung (source code - need write for hot reload)
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
+      - ../shared:/app/shared:delegated
       - ../scripts:/app/scripts:delegated
       - ../Testing:/app/Testing:delegated
       # Config files - read-only (edited on host, synced to container)
@@ -173,9 +174,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    # Development command - build NestJS and run (tsx doesn't support decorators)
-    # Note: pnpm install is done during docker build, not at runtime
-    command: sh -c "cd backend && pnpm run build && node dist/nest/main.js"
+    # Development command - build shared + NestJS, then run
+    # 1. Build @assixx/shared (TS → JS for Node runtime resolution)
+    # 2. Build backend (tsc for decorator metadata - tsx can't emit it)
+    # 3. Run compiled JS with Node
+    command: sh -c "pnpm --filter @assixx/shared run build && cd backend && pnpm run build && node dist/nest/main.js"
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
@@ -262,6 +265,7 @@ services:
       - "3002:3002" # Health check port (changed from 3001 - SvelteKit uses 3001)
     volumes:
       - ../backend:/app/backend:delegated
+      - ../shared:/app/shared:delegated
       - ../scripts:/app/scripts:delegated
       - ../package.json:/app/package.json:delegated
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
@@ -311,6 +315,9 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)
+      secrets:
+        - sentry_auth_token
     image: assixx-frontend:prod
     container_name: assixx-frontend
     restart: unless-stopped
@@ -509,6 +516,7 @@ services:
       GF_UNIFIED_ALERTING_ENABLED: true
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     depends_on:
       loki:
@@ -530,6 +538,14 @@ services:
     profiles:
       - observability
       - production
+
+# =============================================================================
+# BuildKit Secrets - Passed to build steps without persisting in image layers
+# Requires: SENTRY_AUTH_TOKEN env var set via Doppler (or empty = skipped)
+# =============================================================================
+secrets:
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN
 
 networks:
   assixx-network:

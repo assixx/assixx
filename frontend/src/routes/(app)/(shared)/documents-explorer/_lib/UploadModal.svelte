@@ -250,15 +250,15 @@
           {#if uploadSubmitting}
             <div
               id="upload-progress"
-              class="p-4 bg-[var(--background-secondary)] rounded-lg border border-[var(--color-border)]"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--background-secondary)] p-4"
             >
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[var(--color-text-primary)] text-sm"
+              <div class="mb-2 flex items-center justify-between">
+                <span class="text-sm text-[var(--color-text-primary)]"
                   >Hochladen...</span
                 >
                 <span
                   id="progress-text"
-                  class="text-[var(--color-text-secondary)] text-sm"
+                  class="text-sm text-[var(--color-text-secondary)]"
                   >{uploadProgress}%</span
                 >
               </div>

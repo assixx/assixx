@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // =============================================================================
@@ -27,7 +28,6 @@
     getStatusBadgeClass,
     getStatusLabel,
     getTypeLabel,
-    highlightMatch,
     populateFormFromArea,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -318,12 +318,12 @@
         <i class="fas fa-map-marked-alt mr-2"></i>
         {MESSAGES.PAGE_TITLE}
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
       <!-- Controls Section -->
-      <div class="flex gap-4 items-center justify-between mt-6 flex-wrap">
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
         <!-- Status Filter Toggle -->
         <div class="toggle-group">
           <button
@@ -422,8 +422,10 @@
                   >
                     <div class="search-result-item">
                       <div class="search-result-item__name">
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- highlightMatch escapes HTML -->
-                        {@html highlightMatch(area.name, searchQuery)}
+                        <HighlightText
+                          text={area.name}
+                          query={searchQuery}
+                        />
                       </div>
                       <div class="search-result-item__email">
                         {getTypeLabel(area.type)}
@@ -493,7 +495,7 @@
                     </div>
                   </td>
                   <td>
-                    <div class="text-[var(--color-text-secondary)] text-sm">
+                    <div class="text-sm text-[var(--color-text-secondary)]">
                       {area.description ?? '-'}
                     </div>
                   </td>

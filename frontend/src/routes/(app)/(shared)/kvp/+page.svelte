@@ -263,7 +263,7 @@
 
   <!-- Statistics Overview (Admin only) -->
   {#if kvpState.isAdmin}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-lightbulb"></i>
@@ -307,7 +307,7 @@
 
   <!-- Main Card -->
   <div class="card">
-    <div class="card__header flex justify-between items-center">
+    <div class="card__header flex items-center justify-between">
       <div>
         <h2 class="card-title">KVP-Vorschläge</h2>
         <p class="text-secondary">
@@ -525,7 +525,7 @@
         </div>
       {:else}
         <div
-          class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6"
+          class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]"
         >
           {#each kvpState.suggestions as suggestion (suggestion.id)}
             {@const visibilityInfo = getVisibilityInfo(suggestion)}
@@ -534,7 +534,7 @@
               suggestion.firstSeenAt === null ||
               suggestion.firstSeenAt === undefined}
             <div
-              class="glass-card kvp-card text-left w-full cursor-pointer"
+              class="glass-card kvp-card w-full cursor-pointer text-left"
               role="button"
               tabindex="0"
               onclick={() => {
@@ -601,7 +601,7 @@
               <div class="suggestion-description">{suggestion.description}</div>
 
               <div class="suggestion-footer">
-                <div class="flex gap-2 flex-wrap">
+                <div class="flex flex-wrap gap-2">
                   <span
                     class="badge {getPriorityBadgeClass(suggestion.priority)}"
                   >

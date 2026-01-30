@@ -2,11 +2,9 @@
 // MANAGE EMPLOYEES - CONSTANTS
 // =============================================================================
 
-import type {
-  AvailabilityOption,
-  AvailabilityStatus,
-  IsActiveStatus,
-} from './types';
+import type { AvailabilityOption, AvailabilityStatus } from './types';
+
+export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 /**
  * Default badge class for neutral/no-data states
@@ -42,26 +40,6 @@ export const AVAILABILITY_OPTIONS: readonly AvailabilityOption[] = [
   { value: 'training', label: 'Schulung' },
   { value: 'other', label: 'Sonstiges' },
 ] as const;
-
-/**
- * Status badge CSS classes mapping
- */
-export const STATUS_BADGE_CLASSES: Record<IsActiveStatus, string> = {
-  1: 'badge--success',
-  0: 'badge--warning',
-  3: DEFAULT_BADGE_CLASS,
-  4: 'badge--error',
-};
-
-/**
- * Status labels for display
- */
-export const STATUS_LABELS: Record<IsActiveStatus, string> = {
-  1: 'Aktiv',
-  0: 'Inaktiv',
-  3: 'Archiviert',
-  4: 'Gelöscht',
-};
 
 /**
  * Availability status badge classes

@@ -299,7 +299,7 @@
 
 <div class="container">
   <div class="card">
-    <div class="card__header flex justify-between items-center">
+    <div class="card__header flex items-center justify-between">
       <div>
         <h4 class="card-title">Umfrage-Verwaltung</h4>
         <p class="text-secondary">
@@ -323,7 +323,7 @@
         </div>
       {:else}
         <div
-          class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+          class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
         >
           {#each activeSurveys as survey (getSurveyId(survey))}
             <ActiveSurveyCard
@@ -363,7 +363,7 @@
           </div>
         {:else}
           <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
           >
             {#each completedSurveys as survey (getSurveyId(survey))}
               <CompletedSurveyCard
@@ -398,7 +398,7 @@
           </div>
         {:else}
           <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
           >
             {#each draftSurveys as survey (getSurveyId(survey))}
               <DraftSurveyCard
@@ -431,7 +431,7 @@
           </div>
         {:else}
           <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mb-8"
+            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
           >
             {#each templates as template (template.id)}
               <div
@@ -445,8 +445,8 @@
                   if (e.key === 'Enter') handleCreateFromTemplate(template.id);
                 }}
               >
-                <h4 class="mb-2 font-semibold text-primary">{template.name}</h4>
-                <p class="text-sm leading-normal text-secondary">
+                <h4 class="text-primary mb-2 font-semibold">{template.name}</h4>
+                <p class="text-secondary text-sm leading-normal">
                   {template.description}
                 </p>
               </div>

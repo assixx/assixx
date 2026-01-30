@@ -1,10 +1,7 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 
-/**
- * User role type - matches backend UserRole enum
- */
-type UserRole = 'root' | 'admin' | 'employee';
+import type { UserRole } from '@assixx/shared';
 
 /**
  * User data stored in locals after RBAC check

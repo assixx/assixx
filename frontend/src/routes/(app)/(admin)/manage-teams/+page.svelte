@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import HighlightText from '$lib/components/HighlightText.svelte';
   import { showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -33,7 +34,6 @@
     getStatusBadgeClass,
     getStatusLabel,
     formatDate,
-    highlightMatch,
     getDefaultFormValues,
     getDepartmentBadge,
     getMembersBadge,
@@ -370,11 +370,11 @@
         <i class="fas fa-users-cog mr-2"></i>
         Teamübersicht
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         Alle Teams verwalten und bearbeiten
       </p>
 
-      <div class="flex gap-4 items-center justify-between mt-6">
+      <div class="mt-6 flex items-center justify-between gap-4">
         <!-- Status Toggle Group -->
         <div
           class="toggle-group"
@@ -477,13 +477,15 @@
                   }}
                 >
                   <i class="fas fa-users-cog text-blue-500"></i>
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  <span
-                    >{@html highlightMatch(team.name, currentSearchQuery)}</span
-                  >
+                  <span>
+                    <HighlightText
+                      text={team.name}
+                      query={currentSearchQuery}
+                    />
+                  </span>
                   {#if team.departmentName}
                     <span
-                      class="text-[var(--color-text-secondary)] text-sm ml-2"
+                      class="ml-2 text-sm text-[var(--color-text-secondary)]"
                       >&rarr; {team.departmentName}</span
                     >
                   {/if}
@@ -497,9 +499,9 @@
 
     <div class="card__body">
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
           <button

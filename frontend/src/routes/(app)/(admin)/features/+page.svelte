@@ -223,7 +223,7 @@
           <i class="fas fa-crown mr-2"></i>
           Plan & Feature Management
         </h1>
-        <p class="text-[var(--color-text-secondary)] mt-2">
+        <p class="mt-2 text-[var(--color-text-secondary)]">
           Verwalten Sie Ihren Plan und aktivieren Sie Features für
           <strong>{tenantName}</strong>
         </p>
@@ -245,13 +245,13 @@
         <i class="fas fa-th-large mr-2"></i>
         Verfügbare Pläne
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         Wählen Sie den passenden Plan für Ihr Unternehmen
       </p>
     </div>
     <div class="card__body">
       <div
-        class="grid grid-cols-1 md:grid-cols-3 gap-6"
+        class="grid grid-cols-1 gap-6 md:grid-cols-3"
         id="plans-container"
       >
         {#each ['basic', 'professional', 'enterprise'] as planCode (planCode)}
@@ -300,13 +300,13 @@
 
   <!-- Features Section -->
   <div class="card mb-6">
-    <div class="card__header flex items-center justify-between flex-wrap gap-4">
+    <div class="card__header flex flex-wrap items-center justify-between gap-4">
       <div>
         <h2 class="card__title">
           <i class="fas fa-puzzle-piece mr-2"></i>
           Verfügbare Features
         </h2>
-        <p class="text-[var(--color-text-secondary)] mt-2">
+        <p class="mt-2 text-[var(--color-text-secondary)]">
           Aktivieren oder deaktivieren Sie Features
         </p>
       </div>
@@ -371,9 +371,9 @@
 
     <div class="card__body">
       {#if error}
-        <div class="text-center p-6">
+        <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle text-4xl text-[var(--color-danger)] mb-4"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
           ></i>
           <p class="text-[var(--color-text-secondary)]">{error}</p>
           <button
@@ -396,7 +396,7 @@
                 class="feature-category mb-8"
                 data-category={categoryName}
               >
-                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                <h3 class="mb-4 flex items-center gap-2 text-xl font-semibold">
                   <span class="text-2xl">{categoryData.icon}</span>
                   {categoryName}
                 </h3>
@@ -469,12 +469,12 @@
         <i class="fas fa-cubes mr-2"></i>
         Zusätzliche Ressourcen
       </h2>
-      <p class="text-[var(--color-text-secondary)] mt-2">
+      <p class="mt-2 text-[var(--color-text-secondary)]">
         Erweitern Sie Ihre Kapazitäten nach Bedarf
       </p>
     </div>
     <div class="card__body">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
         <!-- Zusätzliche Mitarbeiter -->
         <div class="addon-card">
           <div class="addon-icon"></div>

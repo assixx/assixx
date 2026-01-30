@@ -116,5 +116,8 @@ api-tests/
 *.key
 !*.key.example
 
+# Grafana (exported dashboards, provisioned at runtime)
+docker/grafana/dashboards/
+
 # Customer Deployment (contains customer-specific scripts, NOT for public repo)
 customer/

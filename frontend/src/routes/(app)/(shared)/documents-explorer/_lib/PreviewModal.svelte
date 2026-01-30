@@ -34,14 +34,15 @@
     onclick={handleOverlayClick}
   >
     <div
-      class="ds-modal ds-modal--xl"
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh"
       onclick={(e) => {
         e.stopPropagation();
       }}
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
-          <i class="fas fa-file-pdf mr-2 text-error-500"></i>
+          <i class="fas fa-file-pdf text-error-500 mr-2"></i>
           <span id="preview-title">{document.filename}</span>
         </h3>
         <button
@@ -59,36 +60,36 @@
           <iframe
             id="preview-iframe"
             src={previewUrl}
-            class="block w-full h-[70vh] min-h-[600px] border-none"
+            class="block h-[80vh] min-h-[600px] w-full border-none"
             title="Dokumentenvorschau"
           ></iframe>
         {:else if getFileType(document) === 'image'}
           <div
             id="preview-image-container"
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center"
           >
             <img
               id="preview-image"
               src={previewUrl}
               alt={document.filename}
-              class="max-w-full max-h-full object-contain block"
+              class="block max-h-full max-w-full object-contain"
             />
           </div>
         {:else}
           <div
             id="preview-no-preview"
-            class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1"
+            class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center"
           >
-            <div class="text-center text-content-secondary">
-              <i class="fas fa-file-alt text-6xl mb-4"></i>
+            <div class="text-content-secondary text-center">
+              <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">{MESSAGES.PREVIEW_NO_PREVIEW}</p>
-              <p class="text-sm mt-2">{MESSAGES.PREVIEW_NO_PREVIEW_DESC}</p>
+              <p class="mt-2 text-sm">{MESSAGES.PREVIEW_NO_PREVIEW_DESC}</p>
             </div>
           </div>
         {/if}
 
-        <div class="p-4 bg-surface-2 border-t border-border-subtle">
-          <div class="flex items-center gap-6 text-sm text-content-secondary">
+        <div class="bg-surface-2 border-border-subtle border-t p-4">
+          <div class="text-content-secondary flex items-center gap-6 text-sm">
             <span
               id="preview-size"
               class="flex items-center gap-2"

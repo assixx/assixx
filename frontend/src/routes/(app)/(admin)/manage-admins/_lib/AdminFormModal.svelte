@@ -297,7 +297,7 @@
             {MESSAGES.LABEL_PASSWORD}
             {#if !isEditMode}<span class="text-red-500">*</span>{/if}
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"
+              <i class="fas fa-info-circle cursor-help text-sm text-blue-400"
               ></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
@@ -477,8 +477,8 @@
         </div>
 
         <!-- N:M Organization Assignment Section -->
-        <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
-          <h4 class="text-[var(--color-text-primary)] font-medium mb-4">
+        <div class="mt-6 border-t border-[var(--color-border)] pt-6">
+          <h4 class="mb-4 font-medium text-[var(--color-text-primary)]">
             <i class="fas fa-sitemap mr-2"></i>
             Organisationszuweisung
           </h4>
@@ -498,7 +498,7 @@
               </span>
             </label>
             <span
-              class="form-field__message text-[var(--color-danger)] mt-2 block"
+              class="form-field__message mt-2 block text-[var(--color-danger)]"
             >
               <i class="fas fa-exclamation-triangle mr-1"></i>
               {MESSAGES.FULL_ACCESS_WARNING}
@@ -656,7 +656,7 @@
               </div>
             </div>
             <span
-              class="form-field__message text-[var(--color-text-secondary)] mt-1 block"
+              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
             >
               {MESSAGES.HINT_STATUS}
             </span>

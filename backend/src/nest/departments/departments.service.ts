@@ -101,6 +101,13 @@ interface DepartmentDependencies {
   total: number;
 }
 
+/** Cleanup strategy for department dependencies */
+interface DepartmentCleanupStrategy {
+  table: string;
+  operation: 'UPDATE' | 'DELETE';
+  count: number;
+}
+
 /** Error message constants */
 const ERROR_DEPARTMENT_NOT_FOUND = 'Department not found';
 
@@ -559,11 +566,22 @@ export class DepartmentsService {
     tenantId: number,
     deps: DepartmentDependencies,
   ): Promise<void> {
-    const cleanupStrategies: {
-      table: string;
-      operation: 'UPDATE' | 'DELETE';
-      count: number;
-    }[] = [
+    const strategies = this.buildDepartmentCleanupStrategies(deps);
+
+    await Promise.all(
+      strategies
+        .filter((s: DepartmentCleanupStrategy) => s.count > 0)
+        .map((s: DepartmentCleanupStrategy) =>
+          this.removeDependencyFrom(s.table, s.operation, id, tenantId),
+        ),
+    );
+  }
+
+  /** Map department dependencies to cleanup strategies (table + operation) */
+  private buildDepartmentCleanupStrategies(
+    deps: DepartmentDependencies,
+  ): DepartmentCleanupStrategy[] {
+    return [
       {
         table: 'user_departments',
         operation: 'DELETE',
@@ -604,24 +622,6 @@ export class DepartmentsService {
         count: deps.documentPermissions,
       },
     ];
-
-    interface CleanupStrategy {
-      table: string;
-      operation: 'UPDATE' | 'DELETE';
-      count: number;
-    }
-    await Promise.all(
-      cleanupStrategies
-        .filter((strategy: CleanupStrategy) => strategy.count > 0)
-        .map((strategy: CleanupStrategy) =>
-          this.removeDependencyFrom(
-            strategy.table,
-            strategy.operation,
-            id,
-            tenantId,
-          ),
-        ),
-    );
   }
 
   /**

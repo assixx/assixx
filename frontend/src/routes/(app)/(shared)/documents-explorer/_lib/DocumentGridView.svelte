@@ -33,33 +33,33 @@
 </script>
 
 <div
-  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+  class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
 >
   {#each documents as doc (doc.id)}
     {@const isNew = isDocumentNew(doc)}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="document-card bg-surface-2 border border-border-subtle rounded-lg p-4
-        hover:shadow-lg cursor-pointer transition-all duration-200"
+      class="document-card bg-surface-2 border-border-subtle cursor-pointer rounded-lg border
+        p-4 transition-all duration-200 hover:shadow-lg"
       data-document-id={doc.id}
       onclick={() => {
         onpreview(doc);
       }}
     >
-      <div class="flex items-start justify-between mb-4">
+      <div class="mb-4 flex items-start justify-between">
         <div class="flex items-center gap-3">
           <i class="fas fa-file-alt text-primary-500 text-3xl"></i>
           <div class="flex flex-col gap-1">
             {#if isNew}
               <span
-                class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded"
+                class="bg-success-100 text-success-700 rounded px-2 py-0.5 text-xs font-medium"
                 >Neu</span
               >
             {/if}
             {#if !doc.isRead}
               <span
-                class="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded"
+                class="bg-primary-100 text-primary-700 rounded px-2 py-0.5 text-xs font-medium"
                 >Ungelesen</span
               >
             {/if}
@@ -121,7 +121,7 @@
       </div>
       <div class="mb-4">
         <h3
-          class="text-sm font-medium text-content-primary truncate mb-1 {(
+          class="text-content-primary mb-1 truncate text-sm font-medium {(
             !doc.isRead
           ) ?
             'font-semibold'
@@ -130,10 +130,10 @@
         >
           {truncateFilename(getDisplayName(doc), 30)}
         </h3>
-        <p class="text-xs text-content-secondary">{doc.category}</p>
+        <p class="text-content-secondary text-xs">{doc.category}</p>
       </div>
       <div
-        class="flex items-center justify-between text-xs text-content-tertiary"
+        class="text-content-tertiary flex items-center justify-between text-xs"
       >
         <span>{formatFileSize(doc.size)}</span>
         <span>{formatRelativeDate(doc.uploadedAt)}</span>
