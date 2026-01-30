@@ -103,6 +103,11 @@
       icon: 'fa-info-circle',
     },
     { pattern: /^\/kvp\/[^/]+$/, label: 'KVP-Details', icon: 'fa-info-circle' },
+    {
+      pattern: /^\/manage-employees\/availability\/[^/]+$/,
+      label: 'Employee Name Placeholder',
+      icon: 'fa-calendar-alt',
+    },
   ];
 
   /**
@@ -130,6 +135,24 @@
     },
   };
 
+  /**
+   * Dynamic intermediate breadcrumbs - for routes with parameters
+   * Pattern: regex to match, result: intermediate breadcrumb to insert
+   */
+  const dynamicIntermediateBreadcrumbs: {
+    pattern: RegExp;
+    label: string;
+    href: string;
+    icon: string;
+  }[] = [
+    {
+      pattern: /^\/manage-employees\/availability\/[^/]+$/,
+      label: 'Mitarbeiter verwalten',
+      href: '/manage-employees',
+      icon: 'fa-users',
+    },
+  ];
+
   // =============================================================================
   // HELPER FUNCTIONS
   // =============================================================================
@@ -148,6 +171,71 @@
     current?: boolean;
   }
 
+  /** Resolve employee name from page data for availability breadcrumb */
+  function getEmployeeNameFromPageData(): string {
+    const pageData = $page.data as {
+      employee?: { firstName?: string; lastName?: string };
+    };
+    const employee = pageData.employee;
+    if (employee?.firstName !== undefined && employee.lastName !== undefined) {
+      return `${employee.firstName} ${employee.lastName}`;
+    }
+    return 'Mitarbeiter';
+  }
+
+  /** Build breadcrumb items for a matched dynamic route */
+  function buildDynamicRouteItems(
+    dynamicMatch: { pattern: RegExp; label: string; icon: string },
+    currentPath: string,
+    hasStaticIntermediate: boolean,
+    hasDynamicIntermediate: boolean,
+  ): BreadcrumbItem[] {
+    const items: BreadcrumbItem[] = [];
+
+    // Check for intermediate based on base path (e.g., /blackboard-detail)
+    const basePath = '/' + currentPath.split('/')[1];
+    const baseIntermediate = intermediateBreadcrumbs[basePath + '-detail'];
+    if (baseIntermediate && !hasStaticIntermediate && !hasDynamicIntermediate) {
+      items.push({
+        label: baseIntermediate.label,
+        href: resolvePath(baseIntermediate.href),
+        icon: baseIntermediate.icon,
+      });
+    }
+
+    // Special handling for employee availability route
+    const isAvailabilityRoute =
+      dynamicMatch.pattern.source ===
+      /^\/manage-employees\/availability\/[^/]+$/.source;
+
+    if (isAvailabilityRoute) {
+      items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+      items.push({
+        label: getEmployeeNameFromPageData(),
+        icon: 'fa-user',
+        current: true,
+      });
+    } else {
+      items.push({
+        label: dynamicMatch.label,
+        icon: dynamicMatch.icon,
+        current: true,
+      });
+    }
+
+    return items;
+  }
+
+  /** Build a fallback breadcrumb from the last URL path segment */
+  function buildFallbackItem(currentPath: string): BreadcrumbItem {
+    const pathSegments = currentPath.split('/').filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1] ?? '';
+    const label = lastSegment
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return { label: label || 'Seite', current: true };
+  }
+
   /**
    * Generate breadcrumb items from current URL
    * Structure: Home > [Intermediate] > Current Page
@@ -163,7 +251,7 @@
       icon: 'fa-home',
     });
 
-    // Check for intermediate breadcrumb (e.g., Umfragen for survey-results)
+    // Static intermediate breadcrumb (e.g., Umfragen for survey-results)
     const intermediate = intermediateBreadcrumbs[currentPath];
     if (intermediate) {
       items.push({
@@ -173,52 +261,37 @@
       });
     }
 
-    // Find mapping for current page
-    const mapping = urlMappings[currentPath];
-
-    if (mapping) {
-      // Add current page from mapping
+    // Dynamic intermediate breadcrumb (e.g., Mitarbeiter verwalten for availability/[uuid])
+    const dynIntermediate = dynamicIntermediateBreadcrumbs.find((route) =>
+      route.pattern.test(currentPath),
+    );
+    if (dynIntermediate && !intermediate) {
       items.push({
-        label: mapping.label,
-        icon: mapping.icon,
-        current: true,
+        label: dynIntermediate.label,
+        href: resolvePath(dynIntermediate.href),
+        icon: dynIntermediate.icon,
       });
+    }
+
+    // Current page: static mapping, dynamic route, or fallback
+    const mapping = urlMappings[currentPath];
+    if (mapping) {
+      items.push({ label: mapping.label, icon: mapping.icon, current: true });
     } else {
-      // Check dynamic routes (e.g., /blackboard/[uuid])
       const dynamicMatch = dynamicRoutes.find((route) =>
         route.pattern.test(currentPath),
       );
-
       if (dynamicMatch) {
-        // For dynamic routes, also check for intermediate based on base path
-        const basePath = '/' + currentPath.split('/')[1];
-        const dynamicIntermediate =
-          intermediateBreadcrumbs[basePath + '-detail'];
-        if (dynamicIntermediate && !intermediate) {
-          items.push({
-            label: dynamicIntermediate.label,
-            href: resolvePath(dynamicIntermediate.href),
-            icon: dynamicIntermediate.icon,
-          });
-        }
-
-        items.push({
-          label: dynamicMatch.label,
-          icon: dynamicMatch.icon,
-          current: true,
-        });
+        items.push(
+          ...buildDynamicRouteItems(
+            dynamicMatch,
+            currentPath,
+            intermediate !== undefined,
+            dynIntermediate !== undefined,
+          ),
+        );
       } else {
-        // Fallback: generate label from path
-        const pathSegments = currentPath.split('/').filter(Boolean);
-        const lastSegment = pathSegments[pathSegments.length - 1] ?? '';
-        const label = lastSegment
-          .replace(/-/g, ' ')
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-
-        items.push({
-          label: label || 'Seite',
-          current: true,
-        });
+        items.push(buildFallbackItem(currentPath));
       }
     }
 

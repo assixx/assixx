@@ -63,6 +63,16 @@
   let passwordTime = $state('');
 
   // =============================================================================
+  // DERIVED VALUES
+  // =============================================================================
+
+  const passwordMatch = $derived(
+    formPassword !== '' &&
+      formPasswordConfirm !== '' &&
+      formPassword === formPasswordConfirm,
+  );
+
+  // =============================================================================
   // DROPDOWN HANDLERS
   // =============================================================================
 
@@ -337,6 +347,7 @@
         <div
           class="form-field"
           id="password-confirm-group"
+          class:is-success={formPasswordConfirm !== '' && passwordMatch}
         >
           <label
             class="form-field__label"
@@ -353,6 +364,7 @@
               name="passwordConfirm"
               class="form-field__control"
               class:is-error={passwordError}
+              class:is-success={formPasswordConfirm !== '' && passwordMatch}
               required={!isEditMode}
               bind:value={formPasswordConfirm}
               oninput={onvalidatepasswords}
@@ -374,6 +386,10 @@
             <span class="form-field__message form-field__message--error"
               >{MESSAGES.PASSWORD_MISMATCH}</span
             >
+          {:else if formPasswordConfirm !== '' && passwordMatch}
+            <span class="form-field__message form-field__message--success">
+              <i class="fas fa-check"></i> Passwörter stimmen überein
+            </span>
           {/if}
         </div>
 

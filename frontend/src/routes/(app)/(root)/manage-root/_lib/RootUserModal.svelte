@@ -46,6 +46,10 @@
   // Password strength (derived from password)
   const passwordStrength = $derived(calculatePasswordStrength(password));
 
+  const passwordMatch = $derived(
+    password !== '' && passwordConfirm !== '' && password === passwordConfirm,
+  );
+
   function handleOverlayClick(e: MouseEvent): void {
     if (e.target === e.currentTarget) onclose();
   }
@@ -265,7 +269,10 @@
           </div>
         </div>
 
-        <div class="form-field">
+        <div
+          class="form-field"
+          class:is-success={passwordConfirm !== '' && passwordMatch}
+        >
           <label
             class="form-field__label"
             for="root-password-confirm"
@@ -280,6 +287,7 @@
               id="root-password-confirm"
               class="form-field__control"
               class:is-error={passwordError}
+              class:is-success={passwordConfirm !== '' && passwordMatch}
               required={!isEditMode}
               bind:value={passwordConfirm}
               oninput={onValidatePasswords}
@@ -303,6 +311,10 @@
             <span class="form-field__message form-field__message--error"
               >{MESSAGES.PASSWORDS_NOT_MATCH}</span
             >
+          {:else if passwordConfirm !== '' && passwordMatch}
+            <span class="form-field__message form-field__message--success">
+              <i class="fas fa-check"></i> Passwörter stimmen überein
+            </span>
           {/if}
         </div>
 
