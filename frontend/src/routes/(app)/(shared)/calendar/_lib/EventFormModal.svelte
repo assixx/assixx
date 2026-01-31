@@ -2,6 +2,8 @@
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
+    filterAvailableTeams,
+    filterTeamIdsByDepartments,
   } from '$lib/utils';
 
   import { RECURRENCE_OPTIONS, RECURRENCE_END_OPTIONS } from './constants';
@@ -56,9 +58,22 @@
     );
   });
 
+  // All department IDs covered by selection (explicit + area-inherited)
+  const coveredDepartmentIds = $derived.by(() => {
+    const inherited = departments
+      .filter((d) => formData.areaIds.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    return [...formData.departmentIds, ...inherited];
+  });
+
+  // Filter teams: hide teams whose department is already covered
+  const availableTeams = $derived.by(() => {
+    return filterAvailableTeams(teams, coveredDepartmentIds, isCompanyWide);
+  });
+
   /**
    * Handle area selection change.
-   * Also filters out departments that are now covered by selected areas.
+   * Filters out departments and teams covered by selected areas (inheritance).
    */
   function handleAreaChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
@@ -72,6 +87,34 @@
       departments,
       newAreaIds,
     );
+    // Remove teams whose department is now covered (explicit + area-inherited)
+    const areaDeptIds = departments
+      .filter((d) => newAreaIds.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    formData.teamIds = filterTeamIdsByDepartments(formData.teamIds, teams, [
+      ...formData.departmentIds,
+      ...areaDeptIds,
+    ]);
+  }
+
+  /**
+   * Handle department selection change.
+   * Filters out teams covered by selected departments.
+   */
+  function handleDepartmentChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    const newDeptIds = Array.from(select.selectedOptions).map((o) =>
+      Number(o.value),
+    );
+    formData.departmentIds = newDeptIds;
+    // Remove teams whose department is now covered (explicit + area-inherited)
+    const areaDeptIds = departments
+      .filter((d) => formData.areaIds.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    formData.teamIds = filterTeamIdsByDepartments(formData.teamIds, teams, [
+      ...newDeptIds,
+      ...areaDeptIds,
+    ]);
   }
 
   // Close all dropdowns
@@ -321,11 +364,15 @@
             id="event-department-select"
             multiple
             class="form-field__control min-h-[100px]"
-            bind:value={formData.departmentIds}
+            value={formData.departmentIds}
             disabled={isCompanyWide}
+            onchange={handleDepartmentChange}
           >
             {#each availableDepartments as dept (dept.id)}
-              <option value={dept.id}>
+              <option
+                value={dept.id}
+                selected={formData.departmentIds.includes(dept.id)}
+              >
                 {dept.name}{(
                   dept.areaName !== undefined && dept.areaName !== ''
                 ) ?
@@ -359,14 +406,14 @@
             bind:value={formData.teamIds}
             disabled={isCompanyWide}
           >
-            {#each teams as team (team.id)}
+            {#each availableTeams as team (team.id)}
               <option value={team.id}>{team.name}</option>
             {/each}
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet
-            zugehoerige Teams.
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
+            zugehoerige Teams aus.
           </span>
         </div>
 
