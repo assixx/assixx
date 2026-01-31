@@ -197,33 +197,39 @@
   // CREATE MODAL
   // ==========================================================================
 
+  /** Resolve team ID for current user (direct assignment or team lead) */
+  async function resolveUserTeamId(
+    user: CurrentUser,
+  ): Promise<number | undefined> {
+    if (user.teamId !== undefined && user.teamId !== 0) return user.teamId;
+    const leadTeam = await findUserTeamAsLead(user.id);
+    return leadTeam?.id;
+  }
+
   async function handleOpenCreateModal() {
-    // Validate employee has a team
-    if (kvpState.effectiveRole === 'employee') {
-      const user = kvpState.currentUser;
-      if (user === null) return;
-
-      // Check if user has team
-      let teamId = user.teamId;
-
-      if (teamId === undefined || teamId === 0) {
-        // Check if user is team lead
-        const userTeam = await findUserTeamAsLead(user.id);
-        if (userTeam !== null) {
-          teamId = userTeam.id;
-        }
-      }
-
-      if (teamId === undefined || teamId === 0) {
-        showErrorAlert(
-          'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-        );
-        return;
-      }
-
-      currentTeamId = teamId;
+    if (kvpState.effectiveRole !== 'employee') {
+      kvpState.openCreateModal();
+      return;
     }
 
+    const user = kvpState.currentUser;
+    if (user === null) return;
+
+    // Root users bypass team requirement (they have full access)
+    if (user.role === 'root') {
+      kvpState.openCreateModal();
+      return;
+    }
+
+    const teamId = await resolveUserTeamId(user);
+    if (teamId === undefined) {
+      showErrorAlert(
+        'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+      );
+      return;
+    }
+
+    currentTeamId = teamId;
     kvpState.openCreateModal();
   }
 
