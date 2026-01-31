@@ -264,7 +264,16 @@ export class TeamsService {
         d.name as department_name,
         a.name as department_area_name,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
-        (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count
+        (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
+        (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) as machine_count,
+        (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
+         FROM user_teams mut
+         JOIN users mu ON mut.user_id = mu.id
+         WHERE mut.team_id = t.id) as member_names,
+        (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
+         FROM machine_teams mmt
+         JOIN machines mm ON mmt.machine_id = mm.id
+         WHERE mmt.team_id = t.id) as machine_names
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN areas a ON d.area_id = a.id
@@ -819,8 +828,8 @@ export class TeamsService {
     }
 
     const [rows] = await execute<{ id: number }[]>(
-      `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, is_primary)
-       VALUES ($1, $2, $3, $4, false)
+      `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, assigned_at, is_primary)
+       VALUES ($1, $2, $3, $4, NOW(), false)
        RETURNING id`,
       [tenantId, machineId, teamId, assignedBy],
     );
