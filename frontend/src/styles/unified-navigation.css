@@ -438,7 +438,8 @@ body:has(.sidebar.collapsed) .header .logo {
 
   /* NOTE: 'color' doesn't work on ::before with empty content - use .icon instead (see above) */
 
-  background: var(--color-icon-primary);
+  /* background: var(--color-icon-primary); */
+  background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
   content: '';
 }
 
