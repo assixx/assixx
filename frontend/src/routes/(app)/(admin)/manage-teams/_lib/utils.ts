@@ -131,16 +131,28 @@ export function getMachinesBadge(team: Team): BadgeInfo {
   if (count === 0) {
     return {
       class: 'badge--secondary',
-      text: '0',
+      text: 'Keine',
       title: 'Keine Maschinen zugewiesen',
     };
   }
 
+  // SECURITY FIX: Escape user-provided names to prevent XSS
+  const safeNames = escapeHtml(names);
   const label = count === 1 ? 'Maschine' : 'Maschinen';
+
+  // Show names directly for 1-2 machines, count for 3+
+  if (count <= 2) {
+    return {
+      class: 'badge--info',
+      text: `<i class="fas fa-cog mr-1"></i>${safeNames}`,
+      title: `${count} ${label}: ${safeNames}`,
+    };
+  }
+
   return {
-    class: 'badge--secondary',
-    text: `<i class="fas fa-cog mr-1"></i>${count}`,
-    title: `${count} ${label}: ${names}`,
+    class: 'badge--info',
+    text: `<i class="fas fa-cog mr-1"></i>${count} ${label}`,
+    title: `${count} ${label}: ${safeNames}`,
   };
 }
 
