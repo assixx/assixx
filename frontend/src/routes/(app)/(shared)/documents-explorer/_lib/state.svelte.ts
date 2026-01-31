@@ -44,6 +44,30 @@ function handlePreviewOpen(doc: Document): void {
   if (!doc.isRead) void dataState.markAsRead(doc.id);
 }
 
+/** Navigate to previous document in filtered list (circular) */
+function navigatePreviewPrev(): void {
+  const docs = dataState.filteredDocuments;
+  const current = uiState.selectedDocument;
+  if (current === null || docs.length <= 1) return;
+  const idx = docs.findIndex((d) => d.id === current.id);
+  if (idx === -1) return;
+  const prevDoc = docs[idx === 0 ? docs.length - 1 : idx - 1];
+  uiState.openPreview(prevDoc);
+  if (!prevDoc.isRead) void dataState.markAsRead(prevDoc.id);
+}
+
+/** Navigate to next document in filtered list (circular) */
+function navigatePreviewNext(): void {
+  const docs = dataState.filteredDocuments;
+  const current = uiState.selectedDocument;
+  if (current === null || docs.length <= 1) return;
+  const idx = docs.findIndex((d) => d.id === current.id);
+  if (idx === -1) return;
+  const nextDoc = docs[idx === docs.length - 1 ? 0 : idx + 1];
+  uiState.openPreview(nextDoc);
+  if (!nextDoc.isRead) void dataState.markAsRead(nextDoc.id);
+}
+
 /**
  * Handle delete button click: permission check + open confirm modal
  */
@@ -297,6 +321,14 @@ export const docExplorerState = {
   get deleteSubmitting() {
     return uiState.deleteSubmitting;
   },
+  get previewIndex() {
+    const current = uiState.selectedDocument;
+    if (current === null) return -1;
+    return dataState.filteredDocuments.findIndex((d) => d.id === current.id);
+  },
+  get previewTotalCount() {
+    return dataState.filteredDocuments.length;
+  },
 
   // ---------------------------------------------------------------------------
   // DATA METHODS
@@ -325,6 +357,8 @@ export const docExplorerState = {
   // CROSS-CUTTING OPERATIONS
   // ---------------------------------------------------------------------------
   handlePreviewOpen,
+  navigatePreviewPrev,
+  navigatePreviewNext,
   handleDeleteDocument,
   confirmDeleteDocument,
   handleEditClick,

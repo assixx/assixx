@@ -120,7 +120,21 @@
 
   // Preview Modal State
   let showPreviewModal = $state(false);
-  let previewAttachment = $state<PreviewAttachment | null>(null);
+  let previewIndex = $state<number | null>(null);
+
+  const previewAttachment = $derived.by((): PreviewAttachment | null => {
+    if (previewIndex === null) return null;
+    const att = attachments[previewIndex];
+    return {
+      fileUuid: att.fileUuid,
+      filename: att.filename,
+      mimeType: att.mimeType,
+      fileSize: att.fileSize,
+      uploadedByName: att.uploadedByName,
+      downloadUrl: att.downloadUrl,
+      previewUrl: att.previewUrl,
+    };
+  });
 
   // Edit Modal State
   let showEditModal = $state(false);
@@ -212,21 +226,27 @@
   // =============================================================================
 
   function openPreview(att: Attachment): void {
-    previewAttachment = {
-      fileUuid: att.fileUuid,
-      filename: att.filename,
-      mimeType: att.mimeType,
-      fileSize: att.fileSize,
-      uploadedByName: att.uploadedByName,
-      downloadUrl: att.downloadUrl,
-      previewUrl: att.previewUrl,
-    };
+    const idx = attachments.findIndex((a) => a.fileUuid === att.fileUuid);
+    if (idx === -1) return;
+    previewIndex = idx;
     showPreviewModal = true;
   }
 
   function closePreview(): void {
     showPreviewModal = false;
-    previewAttachment = null;
+    previewIndex = null;
+  }
+
+  function handlePreviewPrev(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+  }
+
+  function handlePreviewNext(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
   }
 
   function cancelDelete(): void {
@@ -252,6 +272,9 @@
       if (showDeleteStep1 || showDeleteStep2) cancelDelete();
       else if (showEditModal) showEditModal = false;
       else if (showPreviewModal) closePreview();
+    } else if (showPreviewModal) {
+      if (e.key === 'ArrowLeft') handlePreviewPrev();
+      else if (e.key === 'ArrowRight') handlePreviewNext();
     }
   }
 </script>
@@ -517,6 +540,10 @@
   show={showPreviewModal}
   attachment={previewAttachment}
   onclose={closePreview}
+  onprev={handlePreviewPrev}
+  onnext={handlePreviewNext}
+  currentIndex={previewIndex ?? undefined}
+  totalCount={attachments.length}
 />
 
 <!-- Delete Confirmation Modal (two-step via parent component) -->
