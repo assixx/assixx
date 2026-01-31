@@ -67,7 +67,7 @@ export interface KvpSuggestion {
   categoryName: string;
   categoryIcon: string;
   categoryColor: string;
-  expectedBenefit?: string;
+  expectedBenefit?: string | null;
   estimatedCost?: number;
   actualSavings?: number;
   assignedTo?: number;

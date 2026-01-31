@@ -16,9 +16,28 @@
     show: boolean;
     attachment: PreviewAttachment | null;
     onclose: () => void;
+    onprev?: () => void;
+    onnext?: () => void;
+    currentIndex?: number;
+    totalCount?: number;
   }
 
-  const { show, attachment, onclose }: Props = $props();
+  const {
+    show,
+    attachment,
+    onclose,
+    onprev,
+    onnext,
+    currentIndex,
+    totalCount,
+  }: Props = $props();
+
+  const hasNavigation = $derived(
+    onprev !== undefined &&
+      onnext !== undefined &&
+      totalCount !== undefined &&
+      totalCount > 1,
+  );
 
   /** Open download URL in new tab */
   function downloadFile(): void {
@@ -131,5 +150,41 @@
         >
       </div>
     </div>
+    {#if hasNavigation}
+      <button
+        type="button"
+        class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e) => {
+          e.stopPropagation();
+          onprev?.();
+        }}
+        aria-label="Vorheriges"
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button
+        type="button"
+        class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e) => {
+          e.stopPropagation();
+          onnext?.();
+        }}
+        aria-label="Nächstes"
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      {#if currentIndex !== undefined}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+          onclick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {currentIndex + 1} / {totalCount}
+        </div>
+      {/if}
+    {/if}
   </div>
 {/if}

@@ -80,6 +80,9 @@
       } else if (docExplorerState.showPreviewModal) {
         docExplorerState.closePreview();
       }
+    } else if (docExplorerState.showPreviewModal) {
+      if (e.key === 'ArrowLeft') docExplorerState.navigatePreviewPrev();
+      else if (e.key === 'ArrowRight') docExplorerState.navigatePreviewNext();
     }
   }
 
@@ -413,6 +416,12 @@
   document={docExplorerState.selectedDocument}
   onclose={docExplorerState.closePreview}
   ondownload={docExplorerState.downloadDocument}
+  onprev={docExplorerState.navigatePreviewPrev}
+  onnext={docExplorerState.navigatePreviewNext}
+  currentIndex={docExplorerState.previewIndex >= 0 ?
+    docExplorerState.previewIndex
+  : undefined}
+  totalCount={docExplorerState.previewTotalCount}
 />
 
 <UploadModal

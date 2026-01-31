@@ -131,8 +131,13 @@
   let pendingStatus = $state<KvpStatus | null>(null);
   let rejectionReason = $state('');
 
-  // Lightbox state
-  let lightboxUrl = $state<string | null>(null);
+  // Lightbox state (index-based for prev/next navigation)
+  let lightboxIndex = $state<number | null>(null);
+  const lightboxUrl = $derived(
+    lightboxIndex !== null && lightboxIndex < photoAttachments.length ?
+      getAttachmentPreviewUrl(photoAttachments[lightboxIndex].fileUuid)
+    : null,
+  );
 
   // Auth token ready state - triggers re-render after hydration
   // Required because getAttachmentPreviewUrl() returns "" during SSR
@@ -396,11 +401,24 @@
   // ==========================================================================
 
   function handleOpenLightbox(fileUuid: string) {
-    lightboxUrl = getAttachmentPreviewUrl(fileUuid);
+    const idx = photoAttachments.findIndex((p) => p.fileUuid === fileUuid);
+    lightboxIndex = idx >= 0 ? idx : null;
   }
 
   function handleCloseLightbox() {
-    lightboxUrl = null;
+    lightboxIndex = null;
+  }
+
+  function handleLightboxPrev() {
+    if (lightboxIndex === null || photoAttachments.length <= 1) return;
+    lightboxIndex =
+      lightboxIndex === 0 ? photoAttachments.length - 1 : lightboxIndex - 1;
+  }
+
+  function handleLightboxNext() {
+    if (lightboxIndex === null || photoAttachments.length <= 1) return;
+    lightboxIndex =
+      lightboxIndex === photoAttachments.length - 1 ? 0 : lightboxIndex + 1;
   }
 
   // ==========================================================================
@@ -570,15 +588,21 @@
       </div>
 
       <!-- Expected Benefit -->
-      {#if suggestion.expectedBenefit !== undefined && suggestion.expectedBenefit !== ''}
-        <div class="content-section">
-          <h3 class="section-title">
-            <i class="fas fa-chart-line"></i>
-            Erwarteter Nutzen
-          </h3>
-          <div class="section-content">{suggestion.expectedBenefit}</div>
+      <div class="content-section">
+        <h3 class="section-title">
+          <i class="fas fa-chart-line"></i>
+          Erwarteter Nutzen
+        </h3>
+        <div class="section-content">
+          {(
+            suggestion.expectedBenefit !== null &&
+            suggestion.expectedBenefit !== undefined &&
+            suggestion.expectedBenefit !== ''
+          ) ?
+            suggestion.expectedBenefit
+          : 'Keine Angabe'}
         </div>
-      {/if}
+      </div>
 
       <!-- Photo Gallery -->
       {#if photoAttachments.length > 0}
@@ -669,17 +693,51 @@
 {#if lightboxUrl !== null}
   <div
     class="lightbox active"
-    role="button"
-    tabindex="0"
-    onclick={handleCloseLightbox}
+    role="dialog"
+    aria-label="Bildvorschau"
+    tabindex="-1"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) handleCloseLightbox();
+    }}
     onkeydown={(e) => {
       if (e.key === 'Escape') handleCloseLightbox();
+      if (e.key === 'ArrowLeft') handleLightboxPrev();
+      if (e.key === 'ArrowRight') handleLightboxNext();
     }}
   >
+    {#if photoAttachments.length > 1}
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav--prev"
+        aria-label="Vorheriges Bild"
+        onclick={handleLightboxPrev}
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    {/if}
+
     <img
       src={lightboxUrl}
       alt="Vorschau"
     />
+
+    {#if photoAttachments.length > 1}
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav--next"
+        aria-label="Naechstes Bild"
+        onclick={handleLightboxNext}
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    {/if}
+
+    {#if photoAttachments.length > 1}
+      <span class="lightbox-counter">
+        {(lightboxIndex ?? 0) + 1} / {photoAttachments.length}
+      </span>
+    {/if}
+
     <button
       type="button"
       class="lightbox-close"
