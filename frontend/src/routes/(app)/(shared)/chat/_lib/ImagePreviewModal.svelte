@@ -53,7 +53,7 @@
     onclick={handleOverlayClick}
   >
     <div
-      class="ds-modal ds-modal--xl"
+      class="ds-modal ds-modal--lg"
       onclick={(e) => {
         e.stopPropagation();
       }}
