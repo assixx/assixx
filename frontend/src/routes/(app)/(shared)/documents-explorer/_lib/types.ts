@@ -219,6 +219,25 @@ export interface UploadData {
 }
 
 /**
+ * Validated upload data with guaranteed non-null values
+ * Used after validateUploadData() confirms all fields are present
+ */
+export interface ValidatedUploadData {
+  file: File;
+  category: string;
+  user: CurrentUser;
+  requiresPayroll: boolean;
+}
+
+/**
+ * Validation result: either error info or validated data
+ * Discriminated union for type-safe upload validation
+ */
+export type UploadValidationResult =
+  | { valid: false; error: string; type: 'warning' | 'error' }
+  | { valid: true; data: ValidatedUploadData };
+
+/**
  * Generic API response wrapper
  */
 export interface ApiResponse<T> {
