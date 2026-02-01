@@ -14,7 +14,7 @@
   // KVP-specific styles (migrated from legacy)
   import '../../../../styles/kvp.css';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showErrorAlert } from '$lib/utils';
+  import { showErrorAlert, showWarningAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -207,30 +207,37 @@
   }
 
   async function handleOpenCreateModal() {
-    if (kvpState.effectiveRole !== 'employee') {
-      kvpState.openCreateModal();
-      return;
-    }
-
     const user = kvpState.currentUser;
     if (user === null) return;
 
-    // Root users bypass team requirement (they have full access)
-    if (user.role === 'root') {
+    // Employees: can always create (need team assignment)
+    if (user.role === 'employee') {
+      const teamId = await resolveUserTeamId(user);
+      if (teamId === undefined) {
+        showErrorAlert(
+          'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+        );
+        return;
+      }
+      currentTeamId = teamId;
       kvpState.openCreateModal();
       return;
     }
 
-    const teamId = await resolveUserTeamId(user);
-    if (teamId === undefined) {
-      showErrorAlert(
-        'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-      );
-      return;
+    // Admin/Root: only if they are team leads
+    if (user.role === 'admin' || user.role === 'root') {
+      const leadTeam = await findUserTeamAsLead(user.id);
+      if (leadTeam !== null) {
+        currentTeamId = leadTeam.id;
+        kvpState.openCreateModal();
+        return;
+      }
     }
 
-    currentTeamId = teamId;
-    kvpState.openCreateModal();
+    // Not authorized
+    showWarningAlert(
+      'Sie sind nicht berechtigt, KVP-Vorschläge zu erstellen. Nur Mitarbeiter und Teamleiter dürfen Vorschläge einreichen.',
+    );
   }
 
   function handleCloseCreateModal(): void {
@@ -632,17 +639,15 @@
   </div>
 </div>
 
-<!-- Floating Add Button (employees only) -->
-{#if kvpState.isEmployee}
-  <button
-    type="button"
-    class="btn-float"
-    aria-label="Neuen Vorschlag erstellen"
-    onclick={handleOpenCreateModal}
-  >
-    <i class="fas fa-plus"></i>
-  </button>
-{/if}
+<!-- Floating Add Button -->
+<button
+  type="button"
+  class="btn-float"
+  aria-label="Neuen Vorschlag erstellen"
+  onclick={handleOpenCreateModal}
+>
+  <i class="fas fa-plus"></i>
+</button>
 
 <!-- Create KVP Modal -->
 {#if kvpState.showCreateModal}

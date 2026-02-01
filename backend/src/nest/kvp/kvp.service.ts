@@ -297,7 +297,8 @@ export class KvpService {
 
   /**
    * Create a new suggestion
-   * Rate limit: 1 suggestion per user per day (employees only, admins/root unlimited)
+   * Permission: employees, or admin/root who are team leads
+   * Rate limit: 1 suggestion per user per day (employees only)
    */
   async createSuggestion(
     dto: CreateSuggestionDto,
@@ -306,6 +307,16 @@ export class KvpService {
     userRole: string = 'employee',
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
+
+    // Permission: admin/root must be team leads to create KVP suggestions
+    if (userRole !== 'employee') {
+      const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+      if (orgInfo.teamLeadOf.length === 0) {
+        throw new ForbiddenException(
+          'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
+        );
+      }
+    }
 
     // Rate limit: Employees can only create 1 KVP suggestion per day
     if (userRole === 'employee') {
