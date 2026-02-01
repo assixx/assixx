@@ -266,6 +266,15 @@ export async function syncTeamMemberships(
 }
 
 /**
+ * Upgrade employee role to admin
+ * @param userId - Employee ID to upgrade
+ */
+export async function upgradeToAdmin(userId: number): Promise<void> {
+  if (!checkAuth()) throw new Error('Not authenticated');
+  await apiClient.put(API_ENDPOINTS.user(userId), { role: 'admin' });
+}
+
+/**
  * Build employee payload from form data
  * NOTE: Availability is managed separately via AvailabilityModal
  */

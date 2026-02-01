@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -38,11 +40,12 @@
     onsubmit: (e: Event) => void;
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
+    onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -52,6 +55,10 @@
   // Dropdown States
   let positionDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
+
+  // Upgrade confirmation state
+  let upgradeConfirmActive = $state(false);
+  let dangerZoneEl: HTMLDivElement | undefined = $state();
 
   // Password Visibility
   let showPassword = $state(false);
@@ -142,6 +149,11 @@
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
+
+  // Reset upgrade confirmation when modal closes
+  $effect(() => {
+    if (!show) upgradeConfirmActive = false;
+  });
 
   $effect(() => {
     if (positionDropdownOpen || statusDropdownOpen) {
@@ -630,6 +642,69 @@
               {MESSAGES.STATUS_HINT}
             </span>
           </div>
+
+          <!-- Danger Zone: Role Upgrade -->
+          {#if onupgrade}
+            <div
+              bind:this={dangerZoneEl}
+              class="mt-6 border-t-2 border-[var(--color-danger)] pt-6"
+            >
+              <h4 class="mb-2 font-medium text-[var(--color-danger)]">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                {MESSAGES.UPGRADE_TITLE}
+              </h4>
+              <p class="mb-4 text-sm text-[var(--color-text-secondary)]">
+                {MESSAGES.UPGRADE_DESCRIPTION}
+              </p>
+              {#if !upgradeConfirmActive}
+                <button
+                  type="button"
+                  class="btn btn-status-active"
+                  onclick={async () => {
+                    upgradeConfirmActive = true;
+                    await tick();
+                    dangerZoneEl?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'end',
+                    });
+                  }}
+                >
+                  <i class="fas fa-arrow-up mr-1"></i>
+                  {MESSAGES.UPGRADE_BUTTON}
+                </button>
+              {:else}
+                <div class="alert alert--danger mb-4">
+                  <div class="alert__icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </div>
+                  <div class="alert__content">
+                    <p class="alert__message">
+                      {MESSAGES.UPGRADE_CONFIRM_MESSAGE}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    class="btn btn-cancel"
+                    onclick={() => {
+                      upgradeConfirmActive = false;
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    onclick={onupgrade}
+                  >
+                    <i class="fas fa-check mr-1"></i>
+                    {MESSAGES.UPGRADE_CONFIRM_BUTTON}
+                  </button>
+                </div>
+              {/if}
+            </div>
+          {/if}
         {/if}
       </div>
 

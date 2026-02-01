@@ -24,6 +24,7 @@ export const UpdateAdminSchema = z.object({
   isActive: z.coerce.number().int().min(0).max(4).optional(),
   employeeNumber: EmployeeNumberSchema,
   position: PositionSchema,
+  role: z.enum(['admin', 'root']).optional(),
 });
 
 export class UpdateAdminDto extends createZodDto(UpdateAdminSchema) {}

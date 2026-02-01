@@ -154,6 +154,7 @@ export class RootController {
         isActive: dto.isActive,
         employeeNumber: dto.employeeNumber,
         position: dto.position,
+        role: dto.role,
       },
       tenantId,
     );

@@ -21,6 +21,8 @@
   import {
     saveAdminWithPermissions,
     deleteAdmin as apiDeleteAdmin,
+    upgradeToRoot as apiUpgradeToRoot,
+    downgradeToEmployee as apiDowngradeToEmployee,
   } from './_lib/api';
   import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
@@ -51,6 +53,9 @@
   const allAreas = $derived<Area[]>(data.areas);
   const allDepartments = $derived<Department[]>(data.departments);
 
+  // Permission: Only root may upgrade admin → root
+  const canUpgrade = $derived(data.user !== null && data.user.role === 'root');
+
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
   // =============================================================================
@@ -69,6 +74,12 @@
   let showAdminModal = $state(false);
   let showDeleteModal = $state(false);
   let showDeleteConfirmModal = $state(false);
+  let showUpgradeConfirmModal = $state(false);
+  let upgradeAdminId = $state<number | null>(null);
+  let upgradeLoading = $state(false);
+  let showDowngradeConfirmModal = $state(false);
+  let downgradeAdminId = $state<number | null>(null);
+  let downgradeLoading = $state(false);
 
   // Edit State
   let currentEditId = $state<number | null>(null);
@@ -192,6 +203,92 @@
     } finally {
       submitting = false;
     }
+  }
+
+  /** Step 1: Inline confirm clicked → open warning modal */
+  function upgradeAdmin(): void {
+    if (currentEditId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    upgradeAdminId = currentEditId;
+    closeAdminModal();
+    showUpgradeConfirmModal = true;
+  }
+
+  /** Step 2: Warning modal confirmed → PUT role change */
+  async function confirmUpgradeAdmin(): Promise<void> {
+    if (upgradeAdminId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    const adminId = upgradeAdminId;
+    showUpgradeConfirmModal = false;
+    upgradeAdminId = null;
+    upgradeLoading = true;
+
+    try {
+      await apiUpgradeToRoot(adminId);
+      await invalidateAll();
+      showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
+    } catch (err) {
+      log.error({ err }, 'Error upgrading admin to root');
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
+      );
+    } finally {
+      upgradeLoading = false;
+    }
+  }
+
+  function closeUpgradeConfirmModal(): void {
+    showUpgradeConfirmModal = false;
+    upgradeAdminId = null;
+  }
+
+  /** Step 1: Inline downgrade confirm clicked → open warning modal */
+  function downgradeAdmin(): void {
+    if (currentEditId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    downgradeAdminId = currentEditId;
+    closeAdminModal();
+    showDowngradeConfirmModal = true;
+  }
+
+  /** Step 2: Warning modal confirmed → PUT role change to employee */
+  async function confirmDowngradeAdmin(): Promise<void> {
+    if (downgradeAdminId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    const adminId = downgradeAdminId;
+    showDowngradeConfirmModal = false;
+    downgradeAdminId = null;
+    downgradeLoading = true;
+
+    try {
+      await apiDowngradeToEmployee(adminId);
+      await invalidateAll();
+      showSuccessAlert(MESSAGES.DOWNGRADE_SUCCESS);
+    } catch (err) {
+      log.error({ err }, 'Error downgrading admin to employee');
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.DOWNGRADE_ERROR,
+      );
+    } finally {
+      downgradeLoading = false;
+    }
+  }
+
+  function closeDowngradeConfirmModal(): void {
+    showDowngradeConfirmModal = false;
+    downgradeAdminId = null;
   }
 
   async function deleteAdmin() {
@@ -352,7 +449,9 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (showDeleteConfirmModal) closeDeleteConfirmModal();
+      if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
+      else if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
+      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showAdminModal) closeAdminModal();
     }
@@ -578,6 +677,8 @@
   bind:formDepartmentIds
   onclose={closeAdminModal}
   onsubmit={handleFormSubmit}
+  onupgrade={canUpgrade ? upgradeAdmin : undefined}
+  ondowngrade={canUpgrade ? downgradeAdmin : undefined}
 />
 
 <!-- Delete Modals Component -->
@@ -589,3 +690,119 @@
   onproceedToConfirm={proceedToDeleteConfirm}
   onconfirmDelete={deleteAdmin}
 />
+
+<!-- Upgrade Confirm Modal (confirm-modal--warning) -->
+{#if showUpgradeConfirmModal}
+  <div
+    id="upgrade-confirm-modal"
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="upgrade-confirm-title"
+    tabindex="-1"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) closeUpgradeConfirmModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeUpgradeConfirmModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div
+      class="confirm-modal confirm-modal--warning"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <div class="confirm-modal__icon">
+        <i class="fas fa-arrow-up"></i>
+      </div>
+      <h3
+        class="confirm-modal__title"
+        id="upgrade-confirm-title"
+      >
+        {MESSAGES.UPGRADE_TITLE}
+      </h3>
+      <p class="confirm-modal__message">
+        <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
+      </p>
+      <div class="confirm-modal__actions">
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel"
+          disabled={upgradeLoading}
+          onclick={closeUpgradeConfirmModal}>{MESSAGES.BTN_CANCEL}</button
+        >
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--warning"
+          disabled={upgradeLoading}
+          onclick={() => void confirmUpgradeAdmin()}
+        >
+          {#if upgradeLoading}
+            <i class="fas fa-spinner fa-spin mr-2"></i>
+          {/if}
+          {MESSAGES.UPGRADE_CONFIRM_BUTTON}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Downgrade Confirm Modal (confirm-modal--warning) -->
+{#if showDowngradeConfirmModal}
+  <div
+    id="downgrade-confirm-modal"
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="downgrade-confirm-title"
+    tabindex="-1"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) closeDowngradeConfirmModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeDowngradeConfirmModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div
+      class="confirm-modal confirm-modal--warning"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <div class="confirm-modal__icon">
+        <i class="fas fa-arrow-down"></i>
+      </div>
+      <h3
+        class="confirm-modal__title"
+        id="downgrade-confirm-title"
+      >
+        {MESSAGES.UPGRADE_TITLE}
+      </h3>
+      <p class="confirm-modal__message">
+        <strong>{MESSAGES.DOWNGRADE_CONFIRM_MESSAGE}</strong>
+      </p>
+      <div class="confirm-modal__actions">
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel"
+          disabled={downgradeLoading}
+          onclick={closeDowngradeConfirmModal}>{MESSAGES.BTN_CANCEL}</button
+        >
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--warning"
+          disabled={downgradeLoading}
+          onclick={() => void confirmDowngradeAdmin()}
+        >
+          {#if downgradeLoading}
+            <i class="fas fa-spinner fa-spin mr-2"></i>
+          {/if}
+          {MESSAGES.DOWNGRADE_CONFIRM_BUTTON}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

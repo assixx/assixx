@@ -158,6 +158,10 @@ export function buildUserUpdateFields(data: UpdateUserRequest): {
     fields.push(`is_active = $${paramIndex++}`);
     values.push(data.isActive);
   }
+  if (data.role !== undefined) {
+    fields.push(`role = $${paramIndex++}`);
+    values.push(data.role);
+  }
 
   return { fields, values, nextIndex: paramIndex };
 }
